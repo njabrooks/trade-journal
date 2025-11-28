@@ -1,0 +1,17 @@
+0 verbose cli /opt/homebrew/Cellar/node/23.11.0/bin/node /opt/homebrew/bin/npm
+1 info using npm@10.9.2
+2 info using node@v23.11.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/twotrees/Desktop/trade-journal/.npmrc
+5 silly config load:file:/opt/homebrew/etc/npmrc
+6 verbose title npm run lint
+7 verbose argv "--loglevel" "verbose" "run" "lint"
+8 verbose logfile logs-max:10 dir:/Users/twotrees/Desktop/trade-journal/.npm/_logs/2025-11-27T12_41_51_977Z-
+9 verbose logfile /Users/twotrees/Desktop/trade-journal/.npm/_logs/2025-11-27T12_41_51_977Z-debug-0.log
+10 silly logfile done cleaning log files
+11 verbose cwd /Users/twotrees/Desktop/trade-journal
+12 verbose os Darwin 23.5.0
+13 verbose node v23.11.0
+14 verbose npm  v10.9.2
+15 verbose exit 2
+16 verbose code 2
