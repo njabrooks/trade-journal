@@ -120,3 +120,25 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sidebar positioning below persistent header */
+/* Header is now h-7 (1.75rem) - 60% of original h-12 */
+[data-slot="sidebar-container"] {
+  top: 1.75rem !important; /* h-7 = 1.75rem */
+  height: calc(100vh - 1.75rem) !important;
+}
+
+/* Sidebar gap also needs to account for header */
+[data-slot="sidebar-gap"] {
+  margin-top: 1.75rem !important;
+}
+
+/* Sidebar background - slightly darker grey */
+[data-slot="sidebar-inner"] {
+  background-color: rgb(241 245 249) !important; /* slate-100 */
+}
+
+/* Main body background - light grey */
+[data-slot="sidebar-inset"] {
+  background-color: rgb(248 250 252) !important; /* slate-50 */
+}

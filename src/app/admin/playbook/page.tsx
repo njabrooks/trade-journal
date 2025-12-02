@@ -23,7 +23,7 @@ interface PlaybookItemFormData {
 }
 
 const CATEGORIES = ['entry', 'profit', 'defense', 'time', 'risk', 'meta'] as const;
-const SEVERITIES = ['info', 'watch', 'attention', 'urgent'] as const;
+const SEVERITIES = ['info', 'attention', 'urgent'] as const;
 const CONTEXTS = ['strategy', 'position', 'portfolio', 'underlying'] as const;
 const CHECKLIST_TYPES = ['primary', 'secondary', 'risk'] as const;
 

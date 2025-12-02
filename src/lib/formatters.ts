@@ -40,3 +40,17 @@ export function formatDateLabel(date: string | null | undefined): string {
   });
 }
 
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return '—';
+  const parsed = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(parsed.getTime())) return String(date);
+  return parsed.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+

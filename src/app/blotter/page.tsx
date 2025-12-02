@@ -3,7 +3,7 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { ExportCsvButton } from "@/components/blotter/ExportCsvButton";
 import { getPrimaryAccount } from "@/db/queries/accounts";
 import { getBlotterEntries } from "@/db/queries/blotter";
-import { formatCurrency, formatDateLabel } from "@/lib/formatters";
+import { formatCurrency, formatDateLabel, formatDateTime } from "@/lib/formatters";
 
 interface BlotterPageProps {
   searchParams?: {
@@ -160,7 +160,7 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
                 entries.map((entry) => (
                   <tr key={entry.id} className="hover:bg-slate-50">
                     <td className="px-6 py-3 text-xs text-slate-500">
-                      {formatDateLabel(entry.actionDate)}
+                      {entry.createdAt ? formatDateTime(entry.createdAt) : formatDateLabel(entry.actionDate)}
                     </td>
                     <td className="px-6 py-3">
                       {entry.strategyId ? (

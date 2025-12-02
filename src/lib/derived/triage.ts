@@ -5,9 +5,10 @@ import {
   strategies,
   underlyingsIvHistory,
   triageRecords,
+  blotterActions,
   NewTriageRecord,
 } from '@/db/schema';
-import { and, eq, sql, isNotNull, lte, gte, inArray } from 'drizzle-orm';
+import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc } from 'drizzle-orm';
 
 // Triage rule configuration
 export const TRIAGE_RULES_V1 = {
@@ -84,6 +85,63 @@ function computeSigmaToStrike(
   if (denominator === 0) return null;
 
   return Math.abs(logRatio) / denominator;
+}
+
+/**
+ * Checks for active severity override from blotter actions
+ * Returns override severity if found, null otherwise
+ * 
+ * Override matches if:
+ * - actionDetail is DISMISS or MONITOR
+ * - severityOverride is not null
+ * - triageFlagAtAction matches recommendedAction (rule-specific)
+ * - overrideExpiresDate is null or >= snapshotDate (not expired)
+ * - positionId matches (for position-level) OR strategyId matches (for strategy-level)
+ */
+async function checkSeverityOverride(
+  positionId: string | null,
+  strategyId: string | null,
+  recommendedAction: string,
+  snapshotDate: string
+): Promise<string | null> {
+  if (!positionId && !strategyId) return null;
+
+  // Build conditions for position/strategy matching
+  const entityConditions = [];
+  if (positionId) {
+    entityConditions.push(eq(blotterActions.positionId, positionId));
+  }
+  if (strategyId) {
+    entityConditions.push(eq(blotterActions.strategyId, strategyId));
+  }
+  
+  // If both exist, match either (for position-level triggers where position belongs to strategy)
+  const entityMatch = entityConditions.length > 1 
+    ? or(...entityConditions)
+    : entityConditions[0];
+
+  const overrideConditions = [
+    or(
+      eq(blotterActions.actionDetail, 'DISMISS'),
+      eq(blotterActions.actionDetail, 'MONITOR')
+    ),
+    isNotNull(blotterActions.severityOverride),
+    eq(blotterActions.triageFlagAtAction, recommendedAction),
+    or(
+      isNull(blotterActions.overrideExpiresDate),
+      gte(blotterActions.overrideExpiresDate, snapshotDate)
+    ),
+    entityMatch,
+  ];
+
+  const override = await db
+    .select({ severityOverride: blotterActions.severityOverride })
+    .from(blotterActions)
+    .where(and(...overrideConditions))
+    .orderBy(desc(blotterActions.createdAt))
+    .limit(1);
+
+  return override[0]?.severityOverride ?? null;
 }
 
 /**
@@ -175,7 +233,7 @@ export async function computePositionTriageForDate(
     if (!shouldCreate) continue;
 
     // Determine severity based on priority (most severe first)
-    let severity: 'info' | 'watch' | 'attention' | 'urgent' | null = null;
+    let severity: 'info' | 'attention' | 'urgent' | null = null;
     let recommendedAction: string | null = null;
 
     // 1. Assignment risk (highest priority)
@@ -187,7 +245,7 @@ export async function computePositionTriageForDate(
       recommendedAction = 'CLOSE_OR_ROLL';
     } else if (isItm === true) {
       // ITM but not short assignment risk
-      severity = 'watch';
+      severity = 'info';
       recommendedAction = 'MONITOR';
     }
     // 2. Sigma flags (check after assignment risk)
@@ -198,7 +256,7 @@ export async function computePositionTriageForDate(
       severity = 'attention';
       recommendedAction = 'WATCH_CLOSELY';
     } else if (flagSigma10) {
-      severity = 'watch';
+      severity = 'info';
       recommendedAction = 'MONITOR';
     }
     // 3. DTE flags (check after sigma flags)
@@ -209,9 +267,23 @@ export async function computePositionTriageForDate(
       severity = 'attention';
       recommendedAction = 'REVIEW_DTE';
     } else if (dte !== null && dte <= 30) {
-      severity = 'watch';
+      severity = 'info';
       recommendedAction = 'REVIEW_DTE';
     }
+
+    // Check for active severity override from previous actions
+    let overrideSeverity: string | null = null;
+    if (recommendedAction) {
+      overrideSeverity = await checkSeverityOverride(
+        position.id,
+        position.strategyId,
+        recommendedAction,
+        snapshotDate
+      );
+    }
+
+    // Apply override if found, otherwise use computed severity
+    const finalSeverity = overrideSeverity || severity;
 
     records.push({
       snapshotDate,
@@ -233,7 +305,7 @@ export async function computePositionTriageForDate(
       flagAssignment: flagAssignmentUrgent || flagAssignmentAttention,
       unrealizedPnl: position.unrealizedPnl,
       absNotional: position.absNotional,
-      severity,
+      severity: finalSeverity,
       recommendedAction,
       ruleSet: TRIAGE_RULES_V1.ruleSet,
     });
@@ -316,13 +388,24 @@ export async function computeStrategyTriageForDate(
 
     // 1. CONFIRM_STRATEGIES - Unconfirmed auto-derived strategies
     if (strategyRow?.isAuto && !strategyRow.confirmedAt) {
+      const computedSeverity = 'urgent';
+      const recommendedAction = 'CONFIRM_STRATEGIES';
+      
+      // Check for active override
+      const overrideSeverity = await checkSeverityOverride(
+        null,
+        metric.strategyId,
+        recommendedAction,
+        snapshotDate
+      );
+      
       records.push({
         snapshotDate,
         accountId: metric.accountId,
         contextLevel: 'strategy',
         strategyId: metric.strategyId,
-        severity: 'urgent',
-        recommendedAction: 'CONFIRM_STRATEGIES',
+        severity: overrideSeverity || computedSeverity,
+        recommendedAction,
         notes: 'Strategy needs confirmation: review and confirm strategy metadata',
         ruleSet: 'strategy_workflow',
         symbol: strategyKey,
@@ -338,13 +421,24 @@ export async function computeStrategyTriageForDate(
       if (!strategyRow.timeRules) missingFields.push('time_rules');
 
       if (missingFields.length > 0) {
+        const computedSeverity = 'attention';
+        const recommendedAction = 'PROVIDE_STRATEGY_METADATA';
+        
+        // Check for active override
+        const overrideSeverity = await checkSeverityOverride(
+          null,
+          metric.strategyId,
+          recommendedAction,
+          snapshotDate
+        );
+        
         records.push({
           snapshotDate,
           accountId: metric.accountId,
           contextLevel: 'strategy',
           strategyId: metric.strategyId,
-          severity: 'attention',
-          recommendedAction: 'PROVIDE_STRATEGY_METADATA',
+          severity: overrideSeverity || computedSeverity,
+          recommendedAction,
           notes: `Strategy confirmed but missing: ${missingFields.join(', ')}`,
           ruleSet: 'strategy_workflow',
           symbol: strategyKey,
@@ -356,57 +450,65 @@ export async function computeStrategyTriageForDate(
     if (metric.pctNavAbsNotional) {
       const pctNav = parseFloat(metric.pctNavAbsNotional) / 100; // Convert from percentage
 
+      const recommendedAction = 'REVIEW_SIZE';
+      let computedSeverity: 'urgent' | 'attention' | 'info' | null = null;
+      let notes = '';
+      
       if (pctNav >= 0.5) {
-        records.push({
-          snapshotDate,
-          accountId: metric.accountId,
-          contextLevel: 'strategy',
-          strategyId: metric.strategyId,
-          pctNavAbsNotional: metric.pctNavAbsNotional,
-          severity: 'urgent',
-          recommendedAction: 'REVIEW_SIZE',
-          notes: `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (>= 50%)`,
-          ruleSet: TRIAGE_RULES_V1.strategySizeRuleSet,
-          symbol: strategyKey,
-        });
+        computedSeverity = 'urgent';
+        notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (>= 50%)`;
       } else if (pctNav >= 0.25) {
-      records.push({
-        snapshotDate,
-        accountId: metric.accountId,
-        contextLevel: 'strategy',
-        strategyId: metric.strategyId,
-        pctNavAbsNotional: metric.pctNavAbsNotional,
-        severity: 'attention',
-        recommendedAction: 'REVIEW_SIZE',
-          notes: `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (25-50%)`,
-          ruleSet: TRIAGE_RULES_V1.strategySizeRuleSet,
-          symbol: strategyKey,
-        });
+        computedSeverity = 'attention';
+        notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (25-50%)`;
       } else if (pctNav >= 0.1) {
+        computedSeverity = 'info';
+        notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (10-25%)`;
+      }
+      
+      if (computedSeverity) {
+        // Check for active override
+        const overrideSeverity = await checkSeverityOverride(
+          null,
+          metric.strategyId,
+          recommendedAction,
+          snapshotDate
+        );
+        
         records.push({
           snapshotDate,
           accountId: metric.accountId,
           contextLevel: 'strategy',
           strategyId: metric.strategyId,
           pctNavAbsNotional: metric.pctNavAbsNotional,
-          severity: 'watch',
-          recommendedAction: 'REVIEW_SIZE',
-          notes: `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (10-25%)`,
-        ruleSet: TRIAGE_RULES_V1.strategySizeRuleSet,
+          severity: overrideSeverity || computedSeverity,
+          recommendedAction,
+          notes,
+          ruleSet: TRIAGE_RULES_V1.strategySizeRuleSet,
           symbol: strategyKey,
-      });
+        });
       }
     }
 
     // 4. Complexity check
     if (metric.numOpenPositions && metric.numOpenPositions > TRIAGE_RULES_V1.complexityThreshold) {
+      const computedSeverity = 'info';
+      const recommendedAction = 'REVIEW_COMPLEXITY';
+      
+      // Check for active override
+      const overrideSeverity = await checkSeverityOverride(
+        null,
+        metric.strategyId,
+        recommendedAction,
+        snapshotDate
+      );
+      
       records.push({
         snapshotDate,
         accountId: metric.accountId,
         contextLevel: 'strategy',
         strategyId: metric.strategyId,
-        severity: 'info',
-        recommendedAction: 'REVIEW_COMPLEXITY',
+        severity: overrideSeverity || computedSeverity,
+        recommendedAction,
         notes: `Strategy has ${metric.numOpenPositions} open positions`,
         ruleSet: TRIAGE_RULES_V1.strategyComplexityRuleSet,
         symbol: strategyKey,

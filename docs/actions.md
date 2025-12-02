@@ -5,10 +5,34 @@ Author: Nick
 This document defines all triggers, rules, and actions in the Trade Journal system. Each trigger specifies:
 - **Context**: Where the trigger applies (position, strategy, underlying, account)
 - **Rule**: The name/identifier of the trigger
-- **Rule Criteria**: The logic that determines when the trigger fires
-- **Severity**: The priority level (urgent, attention, watch, info)
+- **Rule Criteria**: The logic that determines when the trigger fires, and the severity value that applies. After computing severity from rule criteria, check `blotter_actions` for active severity override from previous actions (Monitor/Dismiss).
+- **Severity**: The priority level (urgent, attention, monitor, info, pending, complete)
+  - **urgent**: needs immediate action (unlikely a Dismiss action)
+  - **attention**: needs careful consideration (unlikely to be a Dismiss action)
+  - **monitor**: trigger that has received a Monitor action.
+  - **info**: trigger that has received a Dismiss action.
+  - **pending**: trigger that has received a Trade action but has not yet been validated and reconciled by ingestion of trades records in trades schema.
+  - **complete**: trigger will no longer fire due to Trade or Update action.
 - **Actions**: Available options to act on the triggered item
-- **Completion Criteria**: How the action is marked as complete
+  - 4 types of action:
+    - **Trade** (close, adjust, hedge, roll, reduce, add, etc.)
+      - Record trade decision i.e. change in quantity of positions and other metadata. Set severity to 'pending'.
+      - Auto-validate and reconcile trade decision by ingestion of trades records in trades schema. Set severity to 'complete'.
+      - If a discrepancy is detected between recorded decision and record in trades schema, generate new trigger to confirm update in favour of record in trades schema.
+      - If Trade decision is to close, strategy status is set to 'pending closed' until validated and reconciled by ingestion of trades records in trades schema, then set to 'closed'.
+    - **Monitor** (No immediate action. Set trigger severity to 'monitor' and specify the monitor period in days (or 'until date'). At end of monitor period, change severity to 'attention' assuming rule criteria still applies.)
+    - **Dismiss** (No action required. Set trigger severity to 'info'.)
+    - **Update** (Enter metadata or complete forms as required. Set trigger severity to 'complete' on completion.)
+- **Completion Criteria**: How the trigger is resolved (in all cases)
+  - Either no action is taken, or an action is taken which creates a blotter entry.
+  - On future snapshot dates, the trigger is re-evaluated:
+    - **If Rule Criteria no longer applies**: No triage record created (trigger resolved naturally)
+    - **If Rule Criteria still applies**: 
+      1. Compute severity from Rule Criteria
+      2. Check for active severity override in `blotter_actions` (see "Severity Override Mechanism" section)
+      3. If override exists and not expired: use override severity
+      4. If override expired or doesn't exist: use computed severity
+      5. Create triage record with final severity
 
 ---
 
@@ -17,57 +41,28 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 ### 1. DTE Flags - Days to Expiry
 
 **Context**: `position`  
-**Rule**: DTE-based flags  
+**Rule**: `DTE<=21_SHORT`, `DTE<=7_LONG`, `DTE<=30`
 **Rule Criteria**: 
 - Option position (`asset_class = 'OPT'`)
 - `quantity != 0`
 
 **Severity Logic** (evaluated in priority order):
-1. If `side = 'SHORT'` AND `DTE <= 21` → `attention`
-2. Else if `side = 'LONG'` AND `DTE <= 7` → `attention`
-3. Else if `DTE <= 30` → `watch`
+1. `DTE<=21 SHORT`: If `side = 'SHORT'` AND `DTE <= 21` → `attention`
+2. `DTE<=7 LONG`: Else if `side = 'LONG'` AND `DTE <= 7` → `attention`
+3. `DTE<=30`: Else if `DTE <= 30` → `info`
 
 **Actions**:
-- `ROLL` - Roll the position to a later expiry
-- `CLOSE` - Close the position entirely
-- `REVIEW_DTE` - Review DTE and decide on action
-- `MARK_REVIEWED` - Mark as reviewed (no action needed)
-
-**Completion Criteria**: 
-- Action taken creates a blotter entry with `action_class` set
-- Triage record remains but can be filtered out if `MARK_REVIEWED` is used
-- Future: Mark triage record as `resolved = true` when action is taken
+- `TRADE:ROLL` - Roll the position to a later expiry. Select the position and quantity change. Specify the replacemenet position and quantity.
+- `TRADE:CLOSE` - Close the position entirely. Confirm the position and quantity change (auto-calculated).
+- `MONITOR` - Specify the monitor period in days/until date.
+- `DISMISS`
 
 **Implementation**: `src/lib/derived/triage.ts:178-190` (DTE severity logic)
 
----
-
-### 2. `flag_dte_long` - Long DTE Flag
+### 2. Sigma Flags - Distance to Strike
 
 **Context**: `position`  
-**Rule**: `flag_dte_long`  
-**Rule Criteria**: 
-- Option position (`asset_class = 'OPT'`)
-- `DTE > 30` days
-- `quantity != 0`
-
-**Severity**: `info` (informational only)
-
-**Actions**:
-- `REVIEW` - Review the position
-- `MARK_REVIEWED` - Mark as reviewed
-
-**Completion Criteria**: 
-- Similar to `flag_dte_short`
-
-**Implementation**: `src/lib/derived/triage.ts:198` (flagDteLong)
-
----
-
-### 3. Sigma Flags - Distance to Strike
-
-**Context**: `position`  
-**Rule**: `flag_sigma_0_5`, `flag_sigma_1_0`  
+**Rule**: `SIGMA_0.5_SHORT`, `SIGMA_0.5_LONG`, `SIGMA_1.0`  
 **Rule Criteria**: 
 - Option position (`asset_class = 'OPT'`)
 - `sigma_to_strike = |ln(S/K)| / (σ * sqrt(T))`
@@ -75,75 +70,58 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 - Requires `underlyings_iv_history.iv30` for the underlying on snapshot date
 
 **Severity Logic** (evaluated in priority order):
-1. If `0.5 < sigma_to_strike <= 1.0` → `watch`
-2. Else if `sigma_to_strike <= 0.5` AND `side = 'SHORT'` → `urgent`
-3. Else if `sigma_to_strike <= 0.5` → `attention`
+1. `SIGMA_0.5_SHORT`: If `sigma_to_strike <= 0.5` AND `side = 'SHORT'` → `urgent`
+2. `SIGMA_0.5_LONG`: Else if `sigma_to_strike <= 0.5` → `attention`
+3. `SIGMA_1.0`: Else if `0.5 < sigma_to_strike <= 1.0` → `info`
 
 **Actions**:
-- `WATCH_CLOSELY` - Monitor closely (creates blotter note)
-- `MONITOR` - Monitor the position
-- `ROLL` - Roll to different strike
-- `CLOSE` - Close position
-- `MARK_REVIEWED` - Mark as reviewed
-
-**Completion Criteria**: 
-- Action creates blotter entry
-- Short positions very close to ATM (≤0.5σ) are highest priority
-- Position is very close to ATM, requires active monitoring
+- `TRADE:ROLL` - Roll the position to a later expiry. Select the position and quantity change. Specify the replacemenet position and quantity.
+- `TRADE:CLOSE` - Close the position entirely. Confirm the position and quantity change (auto-calculated).
+- `MONITOR` - Specify the monitor period in days/until date.
+- `DISMISS` - Only an option if severity <> `info`
 
 **Implementation**: `src/lib/derived/triage.ts:147-148` (flagSigma05, flagSigma10), `src/lib/derived/triage.ts:172-180` (severity logic)
 
 ---
 
-### 4. Assignment Risk Flags
+### 3. Assignment Risk Flags
 
 **Context**: `position`  
-**Rule**: `flag_assignment`  
+**Rule**: `ASSIGNMENT_RISK`  
 **Rule Criteria**: 
-- Option position (`asset_class = 'OPT'`)
+- `asset_class = 'OPT'` (Option position)
 - `is_itm = true` (spot > strike for calls, spot < strike for puts)
+- `side = 'SHORT'` (Short option)
 
 **Severity Logic** (evaluated in priority order):
-1. If `side = 'SHORT'` AND `is_itm = true` AND `DTE <= 14` → `urgent`
-2. Else if `side = 'SHORT'` AND `is_itm = true` AND `DTE <= 30` → `attention`
-3. Else if `is_itm = true` → `watch`
+1. If `DTE <= 14` → `urgent`
+2. Else if `DTE <= 30` → `attention`
+3. Else → `info`
 
 **Actions**:
-- `CLOSE_OR_ROLL` - Close or roll the short position to avoid assignment
-- `MANAGE_ASSIGNMENT` - Manage assignment risk (creates blotter note)
-- `MONITOR` - Monitor ITM position
-- `MARK_REVIEWED` - Mark as reviewed (if assignment is acceptable)
-
-**Completion Criteria**: 
-- Action creates blotter entry with `action_class = 'DEFENSE'` or `'ROLL'`
-- Critical for short ITM options near expiry (DTE ≤ 14 is urgent)
-- Short ITM options with DTE ≤ 30 require attention
+- `TRADE:ROLL` - Roll the position to a later expiry. Select the position and quantity change. Specify the replacemenet position and quantity.
+- `TRADE:CLOSE` - Close the position entirely. Confirm the position and quantity change (auto-calculated).
+- `MONITOR` - Specify the monitor period in days/until date.
+- `DISMISS`
 
 **Implementation**: `src/lib/derived/triage.ts:151-161` (flagAssignmentUrgent, flagAssignmentAttention), `src/lib/derived/triage.ts:165-171` (severity logic)
 
 ---
 
-### 5. `is_itm` - In The Money Flag
+### 4. ITM Flag
 
 **Context**: `position`  
-**Rule**: `is_itm`  
+**Rule**: `LONG_ITM`  
 **Rule Criteria**: 
-- Option position (`asset_class = 'OPT'`)
-- For calls: `spot > strike`
-- For puts: `spot < strike`
+- `asset_class = 'OPT'` (Option position)
+- `is_itm = true` (spot > strike for calls, spot < strike for puts)
+- `side = 'LONG'` (Long option)
 
-**Severity**: 
-- `watch` if ITM (used as fallback when not part of assignment risk)
-- Higher severity when combined with SHORT side and low DTE (see Assignment Risk Flags)
+**Severity Logic**: 
+- `info`
 
 **Actions**: 
-- `MONITOR` - Monitor ITM position
-- Used as input for other triggers (assignment risk, state code computation)
-- Not typically a standalone action trigger unless no other flags apply
-
-**Completion Criteria**: 
-- Informational flag, typically handled via assignment risk flags
-- If standalone, creates blotter entry with `action_class = 'NOTE_ONLY'`
+- None
 
 **Implementation**: `src/lib/derived/triage.ts:49-63` (computeIsItm), `src/lib/derived/triage.ts:122` (usage), `src/lib/derived/triage.ts:167-170` (severity)
 
@@ -163,17 +141,12 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 **Severity**: `urgent`
 
 **Actions**:
-- `CONFIRM_STRATEGIES` - Navigate to admin/strategies to confirm strategy
+- `UPDATE` - Navigate to admin/strategies to confirm strategy.
   - Review auto-derived strategy and confirm it should be tracked
   - Sets `confirmed_at` timestamp
-  - Requires selecting `strategy_type` during confirmation
-- `MARK_REVIEWED` - Mark as reviewed (defer confirmation)
-
-**Completion Criteria**: 
-- Strategy `confirmed_at` is set (via admin/strategies page)
-- `is_auto` is set to `false`
-- `strategy_type` is selected (links to playbook items)
-- Triage record should disappear on next recompute
+  - Requires selecting `strategy_type` during confirmation (links to playbook items)
+  - `is_auto` is set to `false`
+  - Severity set to `complete`
 
 **Implementation**: `src/lib/derived/triage.ts:317-329`
 
@@ -196,9 +169,8 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 **Severity**: `urgent`
 
 **Actions**:
-- `PROVIDE_STRATEGY_METADATA` - Navigate to admin/strategies to complete metadata
+- `UPDATE` - Navigate to admin/strategies to complete metadata
   - Fill in missing fields: `strategy_type`, `thesis`, `profit_rules`, `defense_rules`, `time_rules`
-- `MARK_REVIEWED` - Mark as reviewed (if fields are intentionally empty)
 
 **Completion Criteria**: 
 - All required fields are set (not NULL):
@@ -207,7 +179,7 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
   - `profit_rules`
   - `defense_rules`
   - `time_rules`
-- Triage record should disappear on next recompute
+- Severity set to `complete`
 
 **Implementation**: `src/lib/derived/triage.ts:331-352`
 
@@ -224,17 +196,12 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 **Severity Logic**:
 - If `pct_nav_abs_notional >= 0.5` (50% of NAV) → `urgent`
 - Else if `pct_nav_abs_notional >= 0.25` (25% of NAV) → `attention`
-- Else if `pct_nav_abs_notional >= 0.1` (10% of NAV) → `watch`
+- Else if `pct_nav_abs_notional >= 0.1` (10% of NAV) → `info`
 
 **Actions**:
-- `REVIEW_SIZE` - Review strategy size (creates blotter entry)
-- `REDUCE_SIZE` - Reduce strategy size (for urgent/attention cases)
-- `MARK_REVIEWED` - Mark as reviewed (if size is intentional)
-
-**Completion Criteria**: 
-- Action creates blotter entry with `action_class = 'SIZE_DOWN'` or `'NOTE_ONLY'`
-- Strategy size should be reviewed and potentially reduced via position adjustments
-- Triage record persists until `pct_nav_abs_notional < 0.1` or action is taken
+- `TRADE` - Confirm the position and quantity change.
+- `MONITOR` - Specify the monitor period in days/until date.
+- `DISMISS` - Only an option if severity <> `info`
 
 **Implementation**: `src/lib/derived/triage.ts:355-398`
 
@@ -250,22 +217,17 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 
 **Severity**: `info`
 
-**Actions**:
-- `REVIEW_COMPLEXITY` - Review strategy complexity (creates blotter note)
-- `MARK_REVIEWED` - Mark as reviewed
-
-**Completion Criteria**: 
-- Action creates blotter entry with `action_class = 'NOTE_ONLY'`
-- Informational trigger, not critical
+**Actions**: 
+- None
 
 **Implementation**: `src/lib/derived/triage.ts:401-413`
 
 ---
 
-### 10. `REVIEW_STATE_CODE_CHANGE` - State Code Transition
+### 10. `STATE_CODE_CHANGE` - State Code Transition
 
 **Context**: `strategy`  
-**Rule**: `REVIEW_STATE_CODE_CHANGE`  
+**Rule**: `STATE_CODE_CHANGE`  
 **Rule Criteria**: 
 - Strategy has `strategy_type` set
 - State code changed between previous and current snapshot dates
@@ -279,14 +241,9 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 **Severity**: `urgent`
 
 **Actions**:
-- `REVIEW_STATE_CODE` - Review state code change and playbook recommendations
-- Navigate to strategy detail page to see playbook items for new state code
-- `MARK_REVIEWED` - Mark as reviewed
-
-**Completion Criteria**: 
-- Action creates blotter entry
-- User reviews playbook items for new state code
-- Triage record persists until next state code change or manual dismissal
+- `TRADE` - Confirm the position and quantity change.
+- `MONITOR` - Specify the monitor period in days/until date.
+- `DISMISS` - Only an option if severity <> `info`
 
 **Implementation**: `src/lib/derived/stateCode.ts` (framework exists, integration pending in `src/lib/derived/triage.ts:416-420`)
 
@@ -296,7 +253,7 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 
 ## State Code Computation (Playbook-Based)
 
-State codes are computed based on playbook criteria defined in `playbook_items` table. Each strategy type has multiple state codes (e.g., LC1, LC2, LC3, LC4 for "LEAPS long call").
+State codes are computed based on playbook criteria defined in `playbook_items` table. Each strategy type has multiple state codes (e.g., LC1, LC2, LC3, LC4 for "LEAPS long call") and one state code which is always the initial state code when the strategy is opened. `STATE_CODE_CHANGE` occurs whenever there is a change of state code after this initial state code.
 
 ### State Code Criteria Evaluation
 
@@ -314,20 +271,8 @@ Evaluated in order of `playbook_items.code` (ascending). First matching criteria
 6. **Exclusion conditions**: `not LC2/LC3/LC4` (excludes specific state codes)
 
 **Severity**: 
+- Severity set to urgent only if state code changes. 
 - Determined by `playbook_items.default_severity` (if set)
-- Otherwise defaults based on state code category
-
-**Actions**:
-- Actions defined in `playbook_items.checklist_items` (PrimaryAction, SecondaryAction, RiskNotes)
-- Typically includes:
-  - Review playbook recommendations
-  - Execute primary/secondary actions
-  - Update strategy notes
-
-**Completion Criteria**: 
-- State code change is detected and logged
-- User reviews and acts on playbook recommendations
-- Blotter entry created with state code transition
 
 **Implementation**: `src/lib/derived/stateCode.ts:185-348`
 
@@ -335,29 +280,46 @@ Evaluated in order of `playbook_items.code` (ascending). First matching criteria
 
 ## Configuration Thresholds
 
-All thresholds are configurable via `/admin/triage`:
+### Position-Level Rule Configuration
 
-- **`dteThreshold`**: Default 30 days (create triage records for options with DTE <= this)
-  - **Note**: Position-level DTE severity thresholds are now hardcoded:
-    - SHORT positions: DTE <= 21 → `attention`
-    - LONG positions: DTE <= 7 → `attention`
-    - Any position: DTE <= 30 → `watch`
-- **`assignmentDteThreshold`**: Default 10 days
-  - **Note**: Assignment risk thresholds are hardcoded:
-    - SHORT ITM, DTE <= 14 → `urgent`
-    - SHORT ITM, 14 < DTE <= 30 → `attention`
-- **`sizeAttentionThreshold`**: Default 0.15 (15% of NAV)
-  - **Note**: Not currently used. REVIEW_SIZE uses fixed thresholds:
-    - >= 0.5 (50% NAV) → `urgent`
-    - >= 0.25 (25% NAV) → `attention`
-    - >= 0.1 (10% NAV) → `watch`
-- **`sizeUrgentThreshold`**: Default 0.25 (25% of NAV)
-  - **Note**: Not currently used (see REVIEW_SIZE thresholds above)
-- **`complexityThreshold`**: Default 10 positions (triggers complexity review)
+**Location**: `/admin/triage` (`src/app/admin/triage/page.tsx`)
 
-**Implementation**: `src/lib/derived/triage.ts:13-22` (TRIAGE_RULES_V1)
+**Configurable Thresholds** (stable, rarely changed):
+- `dteThreshold` (default: 30 days) - DTE threshold for creating triage records
+- `assignmentDteThreshold` (default: 10 days) - DTE threshold for assignment risk
+- `sizeAttentionThreshold` (default: 0.15 = 15% of NAV) - Strategy size attention threshold
+- `sizeUrgentThreshold` (default: 0.25 = 25% of NAV) - Strategy size urgent threshold
+- `complexityThreshold` (default: 10 positions) - Strategy complexity threshold
 
-**Future Enhancement**: Make position-level DTE and assignment risk thresholds configurable via admin UI.
+**Current Implementation**: 
+- UI exists at `/admin/triage` for viewing/editing thresholds (admin use only)
+- API endpoint: `/api/admin/triage-rules` (validates but doesn't persist yet)
+- Rules currently read from `TRIAGE_RULES_V1` constant in `src/lib/derived/triage.ts:13-22`
+- **Note**: These thresholds are stable and don't require regular configuration like state code criteria
+
+**Future Enhancement**: 
+- Store thresholds in database table (e.g., `triage_rules` or `triage_rule_config`) for persistence
+- Load from database during triage computation instead of hardcoded constants
+- Support multiple rule sets (currently only `options_v1`)
+
+### State Code Criteria Configuration
+
+**Location**: `/admin/playbook` (`src/app/admin/playbook/page.tsx`)
+
+**Configuration Method**: 
+- Uses `CriteriaBuilder` component (`src/components/playbook/CriteriaBuilder.tsx`)
+- Criteria stored in `playbook_items.criteria` as text
+- Supports complex criteria patterns (see "State Code Criteria Evaluation" section above)
+
+**Configurable Elements**:
+- State code criteria (e.g., `MaxDTE > 90`, `PnlPctOfCost ≤ 0.3`)
+- Default severity per state code (`playbook_items.default_severity`)
+- Checklist items (PrimaryAction, SecondaryAction, RiskNotes)
+- Category and context applicability
+
+**Implementation**: 
+- Fully implemented with database persistence
+- Criteria parsed and evaluated in `src/lib/derived/stateCode.ts`
 
 ---
 
@@ -366,29 +328,11 @@ All thresholds are configurable via `/admin/triage`:
 ### Action Button Component
 - **Location**: `src/components/triage/TriageActionButtons.tsx`
 - **Behavior**: 
-  - Renders context-appropriate action buttons based on `contextLevel` and `recommendedAction`
+  - Actions should be confirmed by a single button, with the nature of the action (Trade/Monitor/Dismiss/Update) and relevant metadata selected in UI options in `src/app/strategies/[strategyId]/page.tsx`.
+  - Actions should be implemented at the `src/app/strategies/[strategyId]/page.tsx` level.
+  - Context-awareness should present decision workflow and metadata input/selection.
   - Calls `/api/triage/action` to record action
   - Creates blotter entry automatically
-
-### Action API Endpoint
-- **Location**: `src/app/api/triage/action/route.ts`
-- **Behavior**:
-  - Accepts `triageId`, `actionType`, `notes`, `strategyId`, `positionId`
-  - Creates blotter entry with appropriate `action_class`
-  - Maps action types to blotter action classes:
-    - `ROLL` → `'ROLL'`
-    - `CLOSE` → `'CLOSE'`
-    - `REDUCE_SIZE` → `'SIZE_DOWN'`
-    - `REVIEW` / `MARK_REVIEWED` → `'NOTE_ONLY'`
-    - `CONFIRM_STRATEGIES` → `'OPEN'`
-    - `PROVIDE_STRATEGY_METADATA` → `'NOTE_ONLY'`
-    - `REVIEW_STATE_CODE` → `'NOTE_ONLY'`
-    - `MANAGE_ASSIGNMENT` → `'DEFENSE'`
-
-### Completion Tracking
-- **Current**: Actions create blotter entries, but triage records remain in queue
-- **Future Enhancement**: Add `resolved` or `completed` flag to `triage_records` table
-- **Future Enhancement**: Auto-dismiss triage records when underlying condition no longer applies (e.g., DTE > threshold, size reduced)
 
 ---
 
@@ -418,16 +362,71 @@ All thresholds are configurable via `/admin/triage`:
    - Or computed on-demand when viewing strategy detail
    - Or cached in `strategy_metrics_snapshots` table
 
-2. **Action Persistence**: Currently actions create blotter entries but don't mark triage records as resolved. Consider:
-   - Adding `resolved_at` timestamp to `triage_records`
-   - Auto-resolving when underlying condition changes
-   - Manual resolve via "Mark Reviewed" action
-
-3. **Severity Escalation**: Some triggers could escalate severity over time (e.g., assignment risk getting closer to expiry). Consider:
-   - Time-based severity adjustment
-   - Recurring triage record updates
-
 4. **Playbook Integration**: State code changes should link to specific playbook items, showing:
-   - Checklist items (PrimaryAction, SecondaryAction, RiskNotes)
+   - Checklist items / notes for context in decision workflow (PrimaryAction, SecondaryAction, RiskNotes)
    - Recommended actions from playbook
    - Historical state code transitions
+
+5. **Severity Override Mechanism**
+   
+   **Purpose**: Persist user decisions (Monitor/Dismiss) across snapshot dates so that manual severity adjustments survive daily recomputation.
+   
+   **Schema Changes Required** (to `blotter_actions` table):
+   - `positionId: uuid('position_id')` - Reference to position (for position-level triggers)
+   - `severityOverride: text('severity_override')` - Override severity value ('info' | 'monitor' | 'attention' | 'urgent')
+   - `overrideExpiresDate: date('override_expires_date')` - When override expires (null = permanent)
+   - `monitorDays: integer('monitor_days')` - For Monitor actions: days before reverting to 'attention'
+   
+   **Override Application Flow** (during triage computation):
+   1. Rule Criteria evaluated → determines if trigger should fire and computed severity
+   2. If trigger fires (`shouldCreate = true`):
+      - Query `blotter_actions` for active override matching:
+        - `positionId` (for position-level) OR `strategyId` (for strategy-level)
+        - `actionDetail IN ('MONITOR', 'DISMISS')`
+        - `severityOverride IS NOT NULL`
+        - `overrideExpiresDate IS NULL OR overrideExpiresDate >= snapshotDate`
+      - If active override found: use `severityOverride` instead of computed severity
+      - If override expired: ignore override, use computed severity
+   3. If trigger doesn't fire (`shouldCreate = false`): No record created, override irrelevant
+   
+   **Action Behavior**:
+   - **DISMISS**: Creates blotter entry with `severityOverride = 'info'`, `overrideExpiresDate = null` (permanent)
+   - **MONITOR**: Creates blotter entry with `severityOverride = 'monitor'`, `overrideExpiresDate = actionDate + monitorDays`, `monitorDays = user_specified_days`
+     - After `overrideExpiresDate`, if condition still applies, severity reverts to computed value (typically 'attention')
+   - **TRADE**: Creates blotter entry with `severityOverride = 'pending'` initially, then `'complete'` after validation
+   - **UPDATE**: Creates blotter entry with `severityOverride = 'complete'` on completion
+   
+   **Override Matching Logic**:
+   - Override matches triage record if ALL of the following are true:
+     - `blotter_actions.positionId = triage_records.positionId` (for position-level triggers)
+       - OR `blotter_actions.strategyId = triage_records.strategyId` (for strategy-level triggers)
+     - AND `blotter_actions.actionDetail IN ('MONITOR', 'DISMISS')`
+     - AND `blotter_actions.severityOverride IS NOT NULL`
+     - AND (`blotter_actions.overrideExpiresDate IS NULL` OR `blotter_actions.overrideExpiresDate >= snapshotDate`)
+     - AND `blotter_actions.triageFlagAtAction = triage_records.recommendedAction`
+       - **Critical**: `triageFlagAtAction` stores the `recommendedAction` from the original triage record
+       - `recommendedAction` values identify specific rules (e.g., 'REVIEW_DTE', 'WATCH_CLOSELY', 'REVIEW_SIZE', 'CONFIRM_STRATEGIES')
+       - Override applies only to the specific rule identified by `recommendedAction`
+       - Example: Dismissing 'REVIEW_DTE' only affects DTE flags, not sigma flags ('WATCH_CLOSELY') for the same position
+   
+   **Understanding `recommendedAction` and `ruleSet`**:
+   - **`recommendedAction`**: Identifies the specific rule/trigger (e.g., 'REVIEW_DTE', 'WATCH_CLOSELY', 'REVIEW_SIZE')
+     - Used for override matching to ensure rule-specific overrides
+     - Each trigger type has a unique `recommendedAction` value
+   - **`ruleSet`**: Groups related rules together (e.g., 'options_v1', 'options_v1:size', 'strategy_workflow')
+     - Used for organizing rules and preventing conflicts during triage record upserts
+     - Not used for override matching (override matching uses `recommendedAction` for specificity)
+   
+   **Edge Cases**:
+   - **Condition no longer applies**: If Rule Criteria no longer met on future snapshot, no triage record created, override ignored (no record to override)
+   - **Multiple overrides for same rule**: If multiple overrides exist for same position/strategy + `recommendedAction`, use most recent (ORDER BY createdAt DESC LIMIT 1)
+   - **Monitor expiration**: When `overrideExpiresDate` passes, override is ignored. Rule Criteria runs normally and computed severity applies (no override to check)
+   - **New action replaces old**: If user takes new action (e.g., Monitor after Dismiss), new override replaces old one for that specific rule (most recent wins)
+   - **Different rules, same position**: Overrides are rule-specific. User can dismiss DTE flag ('REVIEW_DTE') while still monitoring sigma flag ('WATCH_CLOSELY') for the same position
+   
+   **Implementation**: 
+   - Modify `computePositionTriageForDate()` and `computeStrategyTriageForDate()` in `src/lib/derived/triage.ts`
+   - Add override check after severity computation, before creating triage record
+   - Update `/api/triage/action` to store override fields in blotter entry
+   
+   **Reference**: See Agent thread `Walkthrough of idealised user flow` for discussion of override mechanism design.

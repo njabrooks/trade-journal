@@ -75,9 +75,17 @@
 
 ## Phase 5: Automation & Monitoring
 
-1. Post-ingestion triggers / notifications
-2. Data quality reports (consistency checks, error dashboards)
-3. Automated tests (unit + ingestion→recompute integration)
+1. **Auto-trigger recompute after data changes** (See detailed plan: `trade-journal-user-flow-analysis.plan.md`)
+
+- Performance validated: All events scoped to specific strategies, fast enough to automate
+- After manual linking: Recompute affected strategies for affected dates (~150ms-1s)
+- After strategy merge: Recompute target strategy for all dates (~2.5-5s)
+- After Flex ingestion: Recompute all strategies for ingested date (~2.5-10s)
+- Strategy confirmation: Already optimal (recomputes automatically)
+
+2. Post-ingestion triggers / notifications
+3. Data quality reports (consistency checks, error dashboards)
+4. Automated tests (unit + ingestion→recompute integration)
 
 ## Phase 6: Optional Excel Backfill
 
@@ -85,13 +93,14 @@
 
 ## Next Steps
 
-1. Implement automated Flex ingestion + IV history scraper
-2. Build manual linking tools & merged-strategy archive view
-3. Hook dashboards into auto refresh/notifications post ingestion (trigger recompute + monitoring)
-4. Complete state code change detection integration (currently framework exists but disabled in triage computation)
-5. Add state code change threshold editing to admin/playbook page
-6. Reference playbook codes from triage/blotter (integrate playbook items into triage recommendations and blotter actions)
-7. (Optional) expand strategy detail with blotter write actions + follow-up workflows
+1. **Auto-trigger recompute after data changes** (See: `trade-journal-user-flow-analysis.plan.md` for detailed implementation plan)
+2. Implement automated Flex ingestion + IV history scraper
+3. Build manual linking tools & merged-strategy archive view
+4. Hook dashboards into auto refresh/notifications post ingestion (trigger recompute + monitoring)
+5. Complete state code change detection integration (currently framework exists but disabled in triage computation)
+6. Add state code change threshold editing to admin/playbook page
+7. Reference playbook codes from triage/blotter (integrate playbook items into triage recommendations and blotter actions)
+8. (Optional) expand strategy detail with blotter write actions + follow-up workflows
 
 ### Task Tracking
 
@@ -106,6 +115,9 @@
 - [x] Implement strategy linking & auto-derivation
 - [x] Create batch recompute endpoint/UI
 - [x] End-to-end data test on historical dataset
+- [ ] Auto-trigger recompute after manual linking (see `trade-journal-user-flow-analysis.plan.md`)
+- [ ] Auto-trigger recompute after strategy merge (see `trade-journal-user-flow-analysis.plan.md`)
+- [ ] Auto-trigger recompute after Flex ingestion (see `trade-journal-user-flow-analysis.plan.md`)
 - [ ] Build automated Flex ingestion (Edge function/cron) and hook into recompute
 - [ ] Implement underlyings IV history ingestion
 - [x] Add `playbook_items` table + admin management

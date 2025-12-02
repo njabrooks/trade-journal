@@ -11,6 +11,7 @@ export interface BlotterFilters {
 export interface BlotterEntry {
   id: string;
   actionDate: string;
+  createdAt: Date | null;
   strategyId: string | null;
   strategyKey: string | null;
   actionClass: string | null;
@@ -53,6 +54,7 @@ export async function getBlotterEntries(
     .select({
       id: blotterActions.id,
       actionDate: blotterActions.actionDate,
+      createdAt: blotterActions.createdAt,
       strategyId: blotterActions.strategyId,
       strategyKey: strategies.strategyKey,
       actionClass: blotterActions.actionClass,
@@ -73,12 +75,13 @@ export async function getBlotterEntries(
     conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
   const rows = await filteredQuery
-    .orderBy(desc(blotterActions.actionDate))
+    .orderBy(desc(blotterActions.createdAt))
     .limit(limit);
 
   return rows.map((row) => ({
     id: row.id,
     actionDate: row.actionDate,
+    createdAt: row.createdAt,
     strategyId: row.strategyId,
     strategyKey: row.strategyKey,
     actionClass: row.actionClass,

@@ -329,7 +329,7 @@ export const triageRecords = pgTable(
     unrealizedPnl: numeric('unrealized_pnl'),
     absNotional: numeric('abs_notional'),
     pctNavAbsNotional: numeric('pct_nav_abs_notional'),
-    severity: text('severity'), // 'info' | 'watch' | 'attention' | 'urgent'
+    severity: text('severity'), // 'info' | 'monitor' | 'attention' | 'urgent' | 'pending' | 'complete'
     recommendedAction: text('recommended_action'),
     notes: text('notes'),
     ruleSet: text('rule_set'), // e.g. 'options_v1'
@@ -372,7 +372,7 @@ export const playbookItems = pgTable(
     }),
     checklistItems: jsonb('checklist_items'), // JSON array with PrimaryAction, SecondaryAction, RiskNotes
     linkedTriageRuleSet: text('linked_triage_rule_set'), // e.g. 'options_v1'
-    defaultSeverity: text('default_severity'), // 'info' | 'watch' | 'attention' | 'urgent'
+    defaultSeverity: text('default_severity'), // 'info' | 'attention' | 'urgent' (computed severities only, 'monitor' set via override)
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
@@ -398,6 +398,9 @@ export const blotterActions = pgTable(
     strategyId: uuid('strategy_id').references(() => strategies.id, {
       onDelete: 'set null',
     }),
+    positionId: uuid('position_id').references(() => positions.id, {
+      onDelete: 'set null',
+    }),
     strategyKey: text('strategy_key'),
     strategyLabel: text('strategy_label'),
     ticker: text('ticker'),
@@ -419,6 +422,9 @@ export const blotterActions = pgTable(
     followUpRequired: boolean('follow_up_required'),
     followUpDate: date('follow_up_date'),
     completed: boolean('completed'),
+    severityOverride: text('severity_override'), // 'info' | 'monitor' | 'attention' | 'urgent' | 'pending' | 'complete'
+    overrideExpiresDate: date('override_expires_date'), // null = permanent override
+    monitorDays: integer('monitor_days'), // For MONITOR actions: days before reverting
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({
@@ -429,6 +435,12 @@ export const blotterActions = pgTable(
     followUpIdx: index('idx_blotter_follow_up').on(
       table.followUpRequired,
       table.followUpDate
+    ),
+    overrideIdx: index('idx_blotter_override').on(
+      table.positionId,
+      table.strategyId,
+      table.triageFlagAtAction,
+      table.overrideExpiresDate
     ),
   })
 );
@@ -532,7 +544,6 @@ export type NewStrategy = typeof strategies.$inferInsert;
 
 export type PlaybookItem = typeof playbookItems.$inferSelect;
 export type NewPlaybookItem = typeof playbookItems.$inferInsert;
-export type NewStrategy = typeof strategies.$inferInsert;
 
 export type Trade = typeof trades.$inferSelect;
 export type NewTrade = typeof trades.$inferInsert;

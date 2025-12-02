@@ -13,7 +13,7 @@ interface TriagePageProps {
   }>;
 }
 
-const SEVERITY_FILTERS = ["all", "urgent", "attention", "watch", "info"] as const;
+const SEVERITY_FILTERS = ["all", "urgent", "attention", "monitor", "info", "pending", "complete"] as const;
 const CONTEXT_FILTERS = ["all", "strategy", "position", "underlying", "account"] as const;
 
 export default async function TriagePage({ searchParams }: TriagePageProps) {
@@ -46,7 +46,10 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   const severityCounts = {
     urgent: queue.records.filter((r) => r.severity === "urgent").length,
     attention: queue.records.filter((r) => r.severity === "attention").length,
-    watch: queue.records.filter((r) => r.severity === "watch").length,
+    monitor: queue.records.filter((r) => r.severity === "monitor").length,
+    info: queue.records.filter((r) => r.severity === "info").length,
+    pending: queue.records.filter((r) => r.severity === "pending").length,
+    complete: queue.records.filter((r) => r.severity === "complete").length,
     info: queue.records.filter((r) => r.severity === "info").length,
   };
 
@@ -156,6 +159,7 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
                 recommendedAction={record.recommendedAction}
                 strategyId={record.strategyId}
                 positionId={record.positionId}
+                severity={record.severity}
               />
             </article>
           ))
