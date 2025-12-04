@@ -6,10 +6,10 @@ import { getBlotterEntries } from "@/db/queries/blotter";
 import { formatCurrency, formatDateLabel, formatDateTime } from "@/lib/formatters";
 
 interface BlotterPageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     actionClass?: string;
     followUp?: string;
-  };
+  }>;
 }
 
 const FOLLOW_UP_FILTERS = ["all", "pending", "completed"] as const;
@@ -31,8 +31,9 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
     );
   }
 
-  const actionClassFilter = (searchParams?.actionClass ?? "all").toLowerCase();
-  const followUpFilter = (searchParams?.followUp ?? "all").toLowerCase() as
+  const resolvedSearchParams = await searchParams;
+  const actionClassFilter = (resolvedSearchParams?.actionClass ?? "all").toLowerCase();
+  const followUpFilter = (resolvedSearchParams?.followUp ?? "all").toLowerCase() as
     | "all"
     | "pending"
     | "completed";

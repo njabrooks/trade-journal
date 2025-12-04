@@ -1,0 +1,281 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { DashboardShell } from '@/components/layout/DashboardShell';
+import { IngestionTabs } from '@/components/layout/IngestionTabs';
+
+interface IngestionResult {
+  success: boolean;
+  message?: string;
+  summary?: {
+    tickersProcessed: number;
+    tickersFound: number;
+    inserted: number;
+    updated: number;
+    skipped: number;
+    errors?: Array<{ ticker: string; error: string }>;
+  };
+  error?: string;
+}
+
+export default function UnderlyingsIvIngestionPage() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<IngestionResult | null>(null);
+  const [availableTickers, setAvailableTickers] = useState<string[]>([]);
+  const [loadingTickers, setLoadingTickers] = useState(false);
+  const [onlyRecent, setOnlyRecent] = useState(true);
+  const [recentDays, setRecentDays] = useState(90);
+  const [customTickers, setCustomTickers] = useState('');
+  const [useCustomTickers, setUseCustomTickers] = useState(false);
+
+  useEffect(() => {
+    loadAvailableTickers();
+  }, [onlyRecent, recentDays]);
+
+  const loadAvailableTickers = async () => {
+    setLoadingTickers(true);
+    try {
+      const response = await fetch(
+        `/api/admin/backfill-underlyings?onlyRecent=${onlyRecent}&recentDays=${recentDays}`
+      );
+      const data = await response.json();
+      if (data.success) {
+        setAvailableTickers(data.tickers || []);
+      }
+    } catch (error) {
+      console.error('Error loading tickers:', error);
+    } finally {
+      setLoadingTickers(false);
+    }
+  };
+
+  const handleIngest = async () => {
+    setLoading(true);
+    setResult(null);
+
+    try {
+      let tickers: string[] = [];
+
+      if (useCustomTickers && customTickers.trim()) {
+        // Use custom tickers
+        tickers = customTickers
+          .split(/[,\n]/)
+          .map((t) => t.trim().toUpperCase())
+          .filter(Boolean);
+      } else {
+        // Use tickers from database
+        tickers = availableTickers;
+      }
+
+      if (tickers.length === 0) {
+        setResult({
+          success: false,
+          error: 'No tickers to process',
+        });
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/backfill-underlyings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tickers: useCustomTickers ? tickers : undefined,
+          onlyRecent: !useCustomTickers ? onlyRecent : undefined,
+          recentDays: !useCustomTickers ? recentDays : undefined,
+        }),
+      });
+
+      const data = await response.json();
+      setResult(data);
+    } catch (error) {
+      setResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'Ingestion failed',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <DashboardShell
+      activeNav="admin-ingestion"
+      title="Underlyings IV History Ingestion"
+      subtitle="Scrape and ingest implied volatility data from Option Strategist"
+      tabs={<IngestionTabs />}
+    >
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">IV History Ingestion</h2>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={useCustomTickers}
+                onChange={(e) => setUseCustomTickers(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm font-medium">Use custom tickers</span>
+            </label>
+          </div>
+
+          {useCustomTickers ? (
+            <div>
+              <label htmlFor="customTickers" className="block text-sm font-medium mb-2">
+                Tickers (comma or newline separated)
+              </label>
+              <textarea
+                id="customTickers"
+                value={customTickers}
+                onChange={(e) => setCustomTickers(e.target.value)}
+                placeholder="AAPL, MSFT, TSLA"
+                className="w-full border border-gray-300 rounded-md p-2 text-sm font-mono"
+                rows={4}
+              />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={onlyRecent}
+                    onChange={(e) => setOnlyRecent(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium">Only recent tickers</span>
+                </label>
+                {onlyRecent && (
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm">Last</label>
+                    <input
+                      type="number"
+                      value={recentDays}
+                      onChange={(e) => setRecentDays(parseInt(e.target.value) || 90)}
+                      min={1}
+                      max={365}
+                      className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
+                    />
+                    <label className="text-sm">days</label>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Available Tickers ({loadingTickers ? 'Loading...' : availableTickers.length})
+                </label>
+                {loadingTickers ? (
+                  <div className="text-sm text-gray-500">Loading tickers...</div>
+                ) : availableTickers.length > 0 ? (
+                  <div className="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 text-sm font-mono">
+                    {availableTickers.join(', ')}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No tickers found</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
+            <p className="font-semibold mb-2">Data Source:</p>
+            <p>
+              This tool scrapes Option Strategist&apos;s free volatility data page. Data is
+              typically updated weekly. The scraper extracts:
+            </p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>Spot price (underlying close)</li>
+              <li>IV30 (30-day implied volatility, converted to decimal)</li>
+              <li>Snapshot date (from Option Strategist date code)</li>
+            </ul>
+            <p className="mt-2 text-xs">
+              Note: This is a weekly data source. For daily data, consider integrating with IBKR
+              API (see Future Enhancements).
+            </p>
+          </div>
+
+          <button
+            onClick={handleIngest}
+            disabled={loading || (useCustomTickers && !customTickers.trim()) || (!useCustomTickers && availableTickers.length === 0)}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Ingesting...' : 'Ingest IV History'}
+          </button>
+        </div>
+      </div>
+
+      {result && (
+        <div
+          className={`rounded-lg shadow p-6 ${
+            result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+          }`}
+        >
+          <h2
+            className={`text-xl font-semibold mb-4 ${
+              result.success ? 'text-green-800' : 'text-red-800'
+            }`}
+          >
+            {result.success ? 'Ingestion Successful' : 'Ingestion Failed'}
+          </h2>
+
+          {result.error && (
+            <div className="mb-4 text-red-700">
+              <p className="font-semibold">Error:</p>
+              <p>{result.error}</p>
+              {result.message && <p className="mt-1 text-sm">{result.message}</p>}
+            </div>
+          )}
+
+          {result.message && result.success && (
+            <div className="mb-4 text-green-700">
+              <p>{result.message}</p>
+            </div>
+          )}
+
+          {result.summary && (
+            <div className="space-y-2 mb-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-semibold">Tickers Processed:</span>{' '}
+                  {result.summary.tickersProcessed}
+                </div>
+                <div>
+                  <span className="font-semibold">Tickers Found:</span>{' '}
+                  {result.summary.tickersFound}
+                </div>
+                <div>
+                  <span className="font-semibold">Inserted:</span> {result.summary.inserted}
+                </div>
+                <div>
+                  <span className="font-semibold">Updated:</span> {result.summary.updated}
+                </div>
+                <div>
+                  <span className="font-semibold">Skipped:</span> {result.summary.skipped}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {result.summary?.errors && result.summary.errors.length > 0 && (
+            <div className="mt-4">
+              <p className="font-semibold text-sm mb-2">Errors:</p>
+              <div className="max-h-48 overflow-y-auto text-xs">
+                {result.summary.errors.map((err, idx) => (
+                  <div key={idx} className="mb-1 text-red-700">
+                    {err.ticker}: {err.error}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </DashboardShell>
+  );
+}
+

@@ -10,6 +10,10 @@ import {
 } from '@/lib/ingestion/flex/positions';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { and, eq } from 'drizzle-orm';
+import { computeTriageForDate } from '@/lib/derived/triage';
+import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
+import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
+import { strategies } from '@/db/schema';
 
 const SECTION_CODE = 'POST';
 
@@ -137,7 +141,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const normalized = normalizeFlexPositionRow(record, accountId);
+        const normalized = await normalizeFlexPositionRow(record, accountId);
         if (!normalized.snapshotDate) {
           normalizationErrors.push({ row: rowNumber, errors: ['Snapshot date missing'] });
           continue;
@@ -175,6 +179,65 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Auto-trigger recompute for all affected snapshot dates
+    const recomputeResults: any = {};
+    const uniqueSnapshotDates = Array.from(snapshotKeys)
+      .map((key) => {
+        const parts = key.split('::');
+        return parts.length === 2 ? parts[1] : null;
+      })
+      .filter(Boolean) as string[];
+    
+    if (uniqueSnapshotDates.length > 0 && inserted > 0) {
+      // Get unique snapshot dates
+      const snapshotDates = Array.from(new Set(uniqueSnapshotDates));
+      
+      for (const snapshotDate of snapshotDates) {
+        if (!snapshotDate) continue;
+        
+        try {
+          // Portfolio snapshots
+          await computePortfolioSnapshotsForDateRange(
+            accountId,
+            snapshotDate,
+            snapshotDate,
+            false, // includeUnderlyings
+            false // onlyLatestForUnderlyings
+          );
+          
+          // Strategy metrics (for all strategies in account)
+          const accountStrategies = await db
+            .select({ id: strategies.id })
+            .from(strategies)
+            .where(eq(strategies.accountId, accountId));
+          
+          let strategyMetricsCount = 0;
+          for (const strategy of accountStrategies) {
+            const count = await computeStrategyMetricsForDateRange(
+              accountId,
+              strategy.id,
+              snapshotDate,
+              snapshotDate
+            );
+            strategyMetricsCount += count;
+          }
+          
+          // Triage
+          await computeTriageForDate(snapshotDate, accountId);
+          
+          recomputeResults[snapshotDate] = {
+            strategyMetrics: strategyMetricsCount,
+            success: true,
+          };
+        } catch (error) {
+          console.error(`Failed to auto-recompute after positions ingestion for ${snapshotDate}:`, error);
+          recomputeResults[snapshotDate] = {
+            error: error instanceof Error ? error.message : 'Recompute failed',
+          };
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       summary: {
@@ -189,6 +252,7 @@ export async function POST(request: NextRequest) {
       validationErrors: validationErrors.length ? validationErrors : undefined,
       normalizationErrors: normalizationErrors.length ? normalizationErrors : undefined,
       insertErrors: insertErrors.length ? insertErrors : undefined,
+      autoRecompute: Object.keys(recomputeResults).length > 0 ? recomputeResults : undefined,
     });
   } catch (error) {
     console.error('Flex positions ingestion error:', error);

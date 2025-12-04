@@ -17,9 +17,16 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
   - 4 types of action:
     - **Trade** (close, adjust, hedge, roll, reduce, add, etc.)
       - Record trade decision i.e. change in quantity of positions and other metadata. Set severity to 'pending'.
-      - Auto-validate and reconcile trade decision by ingestion of trades records in trades schema. Set severity to 'complete'.
-      - If a discrepancy is detected between recorded decision and record in trades schema, generate new trigger to confirm update in favour of record in trades schema.
-      - If Trade decision is to close, strategy status is set to 'pending closed' until validated and reconciled by ingestion of trades records in trades schema, then set to 'closed'.
+      - Auto-validate and reconcile trade decision by detecting quantity changes in subsequent position snapshots. Set severity to 'complete'.
+      - **Reconciliation Process**: When `QUANTITY_CHANGE` trigger detects a quantity change for a position/strategy that has a pending TRADE action:
+        1. Match pending TRADE blotter actions by `positionId` or `strategyId`
+        2. Update blotter action `severityOverride` from 'pending' to 'complete'
+        3. Update associated triage record `severity` from 'pending' to 'complete'
+        4. Mark blotter action as `completed = true`
+        5. **No new QUANTITY_CHANGE triage record is created** - prevents duplicate blotter entries
+      - **If no pending TRADE action exists**: A QUANTITY_CHANGE triage record is created, allowing user to capture trade metadata via UPDATE action
+      - If a discrepancy is detected between recorded decision and actual quantity change, the `QUANTITY_CHANGE` trigger will still fire (allowing user to capture the actual trade metadata)
+      - If Trade decision is to close, strategy status is set to 'pending closed' until validated and reconciled by quantity change detection, then set to 'closed'.
     - **Monitor** (No immediate action. Set trigger severity to 'monitor' and specify the monitor period in days (or 'until date'). At end of monitor period, change severity to 'attention' assuming rule criteria still applies.)
     - **Dismiss** (No action required. Set trigger severity to 'info'.)
     - **Update** (Enter metadata or complete forms as required. Set trigger severity to 'complete' on completion.)
@@ -245,9 +252,90 @@ This document defines all triggers, rules, and actions in the Trade Journal syst
 - `MONITOR` - Specify the monitor period in days/until date.
 - `DISMISS` - Only an option if severity <> `info`
 
-**Implementation**: `src/lib/derived/stateCode.ts` (framework exists, integration pending in `src/lib/derived/triage.ts:416-420`)
+**Implementation**: 
+- `src/lib/derived/stateCode.ts` - State code computation framework
+- `src/lib/derived/triage.ts:518-545` - State code change detection in triage computation
+- Uses optimized `detectStateCodeChangeFromStored()` which reads stored state codes from `strategy_metrics_snapshots` instead of recomputing (fast performance)
 
-**Note**: Currently disabled in triage computation due to performance concerns. Should be implemented as background job or on-demand computation. **When implemented, any state code change should trigger with `urgent` severity** (as noted in code comment at line 420).
+**Performance Note**: State codes are already computed and stored during strategy metrics computation. Change detection simply compares stored values, making it fast enough to run during triage computation without performance concerns.
+
+---
+
+### 11. `QUANTITY_CHANGE` - Position/Strategy Quantity Change Detected
+
+**Context**: `position` (initially), `strategy` (once positions are linked)  
+**Rule**: `QUANTITY_CHANGE`  
+**Rule Criteria**: 
+- Quantity change detected by comparing positions between consecutive snapshot dates
+- For position-level: Compare position by `conid` (broker's unique instrument identifier) across snapshot dates
+- For strategy-level: Aggregate quantity changes across all positions in a strategy
+- Change detected if:
+  - Position exists on current snapshot but not on previous snapshot (new position) → `tradeStage = 'open'`
+  - Position exists on previous snapshot but not on current snapshot, or quantity went to zero → `tradeStage = 'close'`
+  - Position quantity increased (positive change) → `tradeStage = 'add'`
+  - Position quantity decreased but not to zero (negative change) → `tradeStage = 'reduce'`
+  - Position closed and new position opened with same underlying but different expiry/strike → `tradeStage = 'roll'` (requires pattern matching)
+  - New position opened with different characteristics while existing positions remain → `tradeStage = 'hedge'` (requires pattern matching)
+
+**Severity**: `urgent`
+
+**Actions**:
+- `UPDATE` only - Capture trade metadata and justification
+  - **Required fields**:
+    - `tradeReason` (text) - Explanation for the trade action taken
+    - `tradeStage` (select: 'open', 'close', 'hedge', 'roll', 'reduce', 'add') - Auto-detected but editable
+  - **Optional fields** (for opening trades):
+    - `thesis` (text) - Entry thesis and reasoning
+    - `profitRules` (text) - When to take profits
+    - `defenseRules` (text) - How to defend the position
+    - `timeRules` (text) - Time-based exit criteria
+  - On completion, creates two blotter entries:
+    1. Trade entry: Records the actual trade/quantity change
+    2. Metadata entry: Records the captured metadata (trade reason, stage, thesis, rules)
+
+**Completion Criteria**: 
+- All required fields (`tradeReason`, `tradeStage`) are filled
+- Severity set to `complete`
+- Blotter entries created
+
+**Implementation Notes**:
+- **Position-level detection**: Initially detect at position level by comparing `conid` across snapshot dates
+- **Strategy-level aggregation**: Once positions are linked to strategies, optionally create strategy-level records if multiple positions in a strategy changed
+- **Auto-detection logic**:
+  - `open`: Position with `conid` exists on current snapshot but not on previous snapshot
+  - `close`: Position with `conid` existed on previous snapshot with non-zero quantity, now has zero quantity or doesn't exist
+  - `add`: Quantity increased (positive delta)
+  - `reduce`: Quantity decreased but not to zero (negative delta)
+  - `roll`: Position closed and new position opened with same underlying but different expiry/strike (requires matching logic)
+  - `hedge`: New position opened while existing positions remain (requires pattern matching)
+- **Matching positions across snapshots**: Use `conid` as the primary matching key (broker's unique instrument identifier)
+- **Reconciliation with pending TRADE actions**:
+  - When a quantity change is detected, automatically check for pending TRADE actions for the same position/strategy
+  - **If pending TRADE action found**:
+    - Update the pending TRADE action's `severityOverride` to 'complete' and mark as `completed = true`
+    - Update the associated triage record's `severity` to 'complete'
+    - **Do NOT create a new QUANTITY_CHANGE triage record** (prevents duplicate blotter entries)
+    - Result: Single blotter entry transitions from 'pending' to 'complete'
+  - **If no pending TRADE action found**:
+    - Create QUANTITY_CHANGE triage record (user can capture metadata via UPDATE action)
+    - Result: New blotter entry created when user updates QUANTITY_CHANGE trigger
+  - This completes the reconciliation flow: TRADE action (pending) → Quantity change detected → TRADE action (complete) - **no duplicate entries**
+- **Edge cases**:
+  - First snapshot date: No previous snapshot to compare → skip (no change to detect)
+  - Strategy not yet confirmed: Position-level record created, moves to strategy-level once strategy is confirmed
+  - Multiple positions in strategy change: Strategy-level record aggregates all changes
+  - Pending TRADE action exists: Automatically reconciled when quantity change is detected
+  - **Trade decision recorded but never executed**: TRADE action remains 'pending' indefinitely. Consider manual resolution or timeout mechanism in future.
+  - **Roll trades**: When closing one position and opening another (different `conid`), detected as separate 'close' and 'open' events. User must manually set `tradeStage = 'roll'` to link them. Future enhancement: pattern matching to auto-detect rolls.
+  - **Discrepancy between recorded and actual trade**: If recorded TRADE action doesn't match actual quantity change (e.g., recorded "close" but quantity increased), both records exist:
+    - Pending TRADE action gets reconciled to 'complete' (indicates intent was recorded)
+    - QUANTITY_CHANGE trigger still fires (allows user to capture what actually happened)
+    - User can review both records to understand the discrepancy
+  - **Multiple pending TRADE actions**: If multiple TRADE actions are recorded before execution, all are reconciled when quantity change is detected. This is intentional - all pending actions for the position/strategy are marked complete.
+  - **Partial fills**: If a trade is partially filled across multiple days, each quantity change reconciles the pending TRADE action. The first reconciliation marks it complete; subsequent changes create new QUANTITY_CHANGE records.
+  - **Strategy-level TRADE with position-level changes**: Reconciliation works via `strategyId` matching, so strategy-level TRADE actions are reconciled when any position in the strategy changes.
+
+**Implementation**: `src/lib/derived/triage.ts` (functions: `computeQuantityChangeTriageForDate`, `reconcilePendingTradeActions`)
 
 ---
 
@@ -333,6 +421,21 @@ Evaluated in order of `playbook_items.code` (ascending). First matching criteria
   - Context-awareness should present decision workflow and metadata input/selection.
   - Calls `/api/triage/action` to record action
   - Creates blotter entry automatically
+
+### QUANTITY_CHANGE Action Form
+- **Location**: `src/components/triage/TriageActionButtons.tsx` (UPDATE action for `QUANTITY_CHANGE` trigger)
+- **Form Fields**:
+  - **Trade Reason** (text, required) - Explanation for the trade action taken
+  - **Trade Stage** (select, required) - Auto-detected but editable:
+    - Options: 'open', 'close', 'hedge', 'roll', 'reduce', 'add'
+    - Default: Auto-detected based on quantity change pattern
+  - **Thesis** (text, optional) - Entry thesis and reasoning (relevant for opening trades)
+  - **Profit Rules** (text, optional) - When to take profits (relevant for opening trades)
+  - **Defense Rules** (text, optional) - How to defend the position (relevant for opening trades)
+  - **Time Rules** (text, optional) - Time-based exit criteria (relevant for opening trades)
+- **Blotter Entries Created**:
+  1. Trade entry: Records the actual trade/quantity change with `actionType = 'TRADE'`
+  2. Metadata entry: Records the captured metadata with `actionType = 'UPDATE'` and `notes` containing trade reason, stage, thesis, rules
 
 ---
 

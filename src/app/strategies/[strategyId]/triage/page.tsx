@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { StrategyTabs } from "@/components/layout/StrategyTabs";
 import { PlaybookSidebar } from "@/components/strategies/PlaybookSidebar";
 import { TriageActionButtons } from "@/components/triage/TriageActionButtons";
+import { PositionList } from "@/components/triage/PositionList";
+import { Badge } from "@/components/ui/badge";
 import { getStrategyDetail } from "@/db/queries/strategies";
 import { getTriageQueueForStrategy } from "@/db/queries/triage";
 import { formatCurrency, formatDateLabel, formatPercent } from "@/lib/formatters";
@@ -60,6 +63,7 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
       activeNav="strategies"
       title={strategy.label ?? strategy.strategyKey}
       subtitle={`${strategy.strategyKey} · ${strategy.accountLabel ?? strategy.accountBrokerId ?? "Unassigned"}`}
+      tabs={<StrategyTabs strategyId={strategyId} />}
     >
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
@@ -99,27 +103,40 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
                 key={record.id}
                 className="rounded-2xl border bg-white p-6 shadow-sm transition hover:shadow-md"
               >
-                <div className="flex flex-wrap items-center gap-3 text-xs">
-                  <SeverityTag severity={record.severity} />
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-                    {record.contextLevel}
-                  </span>
-                  <span className="text-slate-400">
-                    {formatDateLabel(record.snapshotDate)} · {record.dte ?? "—"} DTE
-                  </span>
+                {/* Title and Header Row */}
+                <div className="flex items-baseline justify-between gap-4">
+                  <div className="flex flex-wrap items-baseline gap-3">
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      {record.symbol}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      {record.recommendedAction || "Review"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                    <SeverityTag severity={record.severity} />
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                      {record.contextLevel}
+                    </span>
+                    <span className="text-slate-400">
+                      {formatDateLabel(record.snapshotDate)} · {record.dte ?? "—"} DTE
+                    </span>
+                  </div>
                 </div>
-                <div className="mt-2 flex flex-wrap items-baseline gap-3">
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {record.symbol}
-                  </h3>
-                  <p className="text-sm text-slate-500">
-                    {record.recommendedAction || "Review"}
-                  </p>
-                </div>
+
+                {/* Positions List */}
+                <PositionList
+                  positionId={record.positionId}
+                  strategyId={record.strategyId}
+                />
+
+                {/* Notes */}
                 {record.notes && (
-                  <p className="mt-2 text-sm text-slate-600">{record.notes}</p>
+                  <p className="mt-3 text-sm text-slate-600">{record.notes}</p>
                 )}
-                <dl className="mt-3 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
+
+                {/* Metrics Grid */}
+                <dl className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
                   <div>
                     <dt className="text-xs uppercase tracking-wide text-slate-400">Abs notional</dt>
                     <dd className="font-medium">{formatCurrency(record.absNotional)}</dd>
@@ -141,6 +158,8 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
                     <dd className="font-medium">{formatPercent(record.pctNavAbsNotional)}</dd>
                   </div>
                 </dl>
+
+                {/* Action Buttons */}
                 <TriageActionButtons
                   triageId={record.id}
                   contextLevel={record.contextLevel}
@@ -254,21 +273,30 @@ function buildFilterHref({
 
 function SeverityTag({ severity }: { severity: string | null }) {
   const normalized = severity ?? "info";
-  const palette: Record<string, string> = {
-    urgent: "bg-rose-100 text-rose-700",
-    attention: "bg-amber-100 text-amber-700",
-    monitor: "bg-blue-100 text-blue-700",
-    info: "bg-slate-200 text-slate-700",
-    pending: "bg-yellow-100 text-yellow-700",
-    complete: "bg-emerald-100 text-emerald-700",
+  const variantMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+    urgent: "destructive",
+    attention: "secondary",
+    monitor: "secondary",
+    info: "outline",
+    pending: "secondary",
+    complete: "secondary",
   };
+  
+  const classNameMap: Record<string, string> = {
+    urgent: "bg-rose-100 text-rose-700 border-rose-200",
+    attention: "bg-amber-100 text-amber-700 border-amber-200",
+    monitor: "bg-blue-100 text-blue-700 border-blue-200",
+    info: "bg-slate-200 text-slate-700 border-slate-300",
+    pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    complete: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  };
+  
   return (
-    <span
-      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-        palette[normalized] ?? palette.info
-      }`}
+    <Badge
+      variant={variantMap[normalized] ?? "outline"}
+      className={`text-[11px] font-medium ${classNameMap[normalized] ?? classNameMap.info}`}
     >
       {normalized}
-    </span>
+    </Badge>
   );
 }

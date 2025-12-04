@@ -11,7 +11,9 @@ import {
   NewStrategy,
   NewStrategyTemplate,
 } from '@/db/schema';
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { eq, and, sql, inArray, isNotNull } from 'drizzle-orm';
+import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
+import { computeTriageForDate } from '@/lib/derived/triage';
 
 export interface CreateStrategyInput {
   strategyKey: string;
@@ -346,6 +348,62 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
       updatedAt: now,
     })
     .where(inArray(strategies.id, sourceIds));
+
+  // Auto-trigger recompute: Find all snapshot dates where target strategy has positions
+  const targetStrategy = rows.find((row) => row.id === targetId);
+  if (targetStrategy?.accountId) {
+    const snapshotDates = await db
+      .selectDistinct({ snapshotDate: positions.snapshotDate })
+      .from(positions)
+      .where(
+        and(
+          eq(positions.strategyId, targetId),
+          eq(positions.accountId, targetStrategy.accountId),
+          isNotNull(positions.snapshotDate),
+          sql`${positions.quantity} != 0`
+        )
+      )
+      .orderBy(positions.snapshotDate);
+
+    if (snapshotDates.length > 0) {
+      const dates = snapshotDates.map((d) => d.snapshotDate).filter(Boolean) as string[];
+      const minDate = dates[0];
+      const maxDate = dates[dates.length - 1];
+
+      if (minDate && maxDate) {
+        try {
+          // Recompute strategy metrics for all dates where target strategy has positions
+          await computeStrategyMetricsForDateRange(
+            targetStrategy.accountId,
+            targetId,
+            minDate,
+            maxDate
+          );
+
+          // Optionally trigger triage recompute for affected dates
+          for (const date of dates) {
+            if (date) {
+              try {
+                await computeTriageForDate(date, targetStrategy.accountId);
+              } catch (error) {
+                console.error(
+                  `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,
+                  error
+                );
+                // Continue with other dates
+              }
+            }
+          }
+        } catch (error) {
+          console.error(
+            `Failed to auto-recompute after merging strategies into ${targetId}:`,
+            error
+          );
+          // Don't fail the merge if recompute fails
+        }
+      }
+    }
+  }
 
   return {
     positionsUpdated: updatedPositions.length,

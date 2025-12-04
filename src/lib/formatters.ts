@@ -54,3 +54,42 @@ export function formatDateTime(date: string | Date | null | undefined): string {
   });
 }
 
+export function formatPosition(
+  assetClass: string | null,
+  quantity: number,
+  underlyingTicker: string | null,
+  expiry: string | null,
+  strike: number | null,
+  optionRight: string | null
+): string {
+  const parts: string[] = [];
+  
+  // Asset Class
+  if (assetClass) {
+    parts.push(assetClass);
+  }
+  
+  // Quantity (signed - positive for long, negative for short)
+  parts.push(quantity > 0 ? `+${quantity}` : String(quantity));
+  
+  // Underlying Ticker (fallback to empty if not available)
+  if (underlyingTicker) {
+    parts.push(underlyingTicker);
+  }
+  
+  // For options: Expiry, Strike, Put/Call
+  if (assetClass === 'OPT') {
+    if (expiry) {
+      parts.push(expiry);
+    }
+    if (strike !== null) {
+      parts.push(String(strike));
+    }
+    if (optionRight) {
+      parts.push(optionRight);
+    }
+  }
+  
+  return parts.join(' ');
+}
+

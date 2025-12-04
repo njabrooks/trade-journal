@@ -179,12 +179,14 @@ export async function POST(request: NextRequest) {
       try {
         let totalPosition = 0;
         let totalStrategy = 0;
+        let totalQuantityChange = 0;
         for (const date of dates) {
           const counts = await computeTriageForDate(date, accountId);
           totalPosition += counts.position;
           totalStrategy += counts.strategy;
+          totalQuantityChange += counts.quantityChange;
         }
-        results.triage = { position: totalPosition, strategy: totalStrategy };
+        results.triage = { position: totalPosition, strategy: totalStrategy, quantityChange: totalQuantityChange };
       } catch (error) {
         results.triage = { error: error instanceof Error ? error.message : 'Failed' };
       }

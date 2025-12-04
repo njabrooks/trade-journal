@@ -242,7 +242,16 @@ export async function computeStateCode(
 
   // Evaluate each playbook item's criteria
   for (const item of playbookItemsList) {
-    if (!item.criteria) continue;
+    // Empty or null criteria = catch-all/default state code (always matches)
+    // This ensures every strategy always has a state code
+    if (!item.criteria || item.criteria.trim() === '') {
+      return {
+        stateCode: item.code,
+        strategyType: item.strategyType,
+        criteria: item.criteria || '',
+        label: item.label,
+      };
+    }
 
     const criteria = item.criteria;
     let matches = true;
@@ -344,11 +353,64 @@ export async function computeStateCode(
   }
 
   // No matching state code found
+  // Log warning for debugging - this should not happen if playbook has catch-all state code
+  console.warn(
+    `No state code matched for strategy ${strategyId} (type: ${strategyType}) on ${snapshotDate}. ` +
+    `Consider adding a catch-all state code with empty criteria for this strategy type.`
+  );
   return null;
 }
 
 /**
+ * Fast state code change detection by reading from stored metrics
+ * This is much faster than recomputing state codes since they're already stored
+ * in strategy_metrics_snapshots.state_code during metrics computation
+ */
+export async function detectStateCodeChangeFromStored(
+  strategyId: string,
+  previousDate: string,
+  currentDate: string
+): Promise<{ previous: string | null; current: string | null; changed: boolean }> {
+  // Read state codes from stored metrics (fast - just a query)
+  const [previousMetric, currentMetric] = await Promise.all([
+    db
+      .select({ stateCode: strategyMetricsSnapshots.stateCode })
+      .from(strategyMetricsSnapshots)
+      .where(
+        and(
+          eq(strategyMetricsSnapshots.strategyId, strategyId),
+          eq(strategyMetricsSnapshots.snapshotDate, previousDate)
+        )
+      )
+      .limit(1),
+    db
+      .select({ stateCode: strategyMetricsSnapshots.stateCode })
+      .from(strategyMetricsSnapshots)
+      .where(
+        and(
+          eq(strategyMetricsSnapshots.strategyId, strategyId),
+          eq(strategyMetricsSnapshots.snapshotDate, currentDate)
+        )
+      )
+      .limit(1),
+  ]);
+
+  const previous = previousMetric[0]?.stateCode ?? null;
+  const current = currentMetric[0]?.stateCode ?? null;
+
+  return {
+    previous,
+    current,
+    changed: previous !== current,
+  };
+}
+
+/**
  * Detects state code changes between two snapshot dates
+ * 
+ * @deprecated Use detectStateCodeChangeFromStored() for better performance.
+ * This function recomputes state codes which is expensive.
+ * Only use this if state codes haven't been computed/stored yet.
  */
 export async function detectStateCodeChange(
   strategyId: string,

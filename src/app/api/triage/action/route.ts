@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { triageId, actionType, notes, strategyId, positionId, monitorDays } = body;
+    const { triageId, actionType, notes, strategyId, positionId, monitorDays, tradeReason, tradeStage } = body;
 
     if (!triageId || !actionType) {
       return NextResponse.json(
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       overrideExpiresDate = expiresDate.toISOString().split("T")[0];
     } else if (actionType === "TRADE") {
       severityOverride = "pending";
-      // Will be updated to 'complete' after trade validation
+      // Will be updated to 'complete' after trade validation via quantity change detection
     } else if (actionType === "UPDATE") {
       // For PROVIDE_STRATEGY_METADATA, only set to 'complete' if all required fields are filled
       if (triage.recommendedAction === "PROVIDE_STRATEGY_METADATA" && triage.strategyId) {
@@ -112,6 +112,14 @@ export async function POST(request: NextRequest) {
           // Strategy not found, keep current severity (don't override)
           severityOverride = null;
         }
+      } else if (triage.recommendedAction === "QUANTITY_CHANGE") {
+        // For QUANTITY_CHANGE, set to 'complete' when trade reason and stage are provided
+        if (tradeReason && tradeStage) {
+          severityOverride = "complete";
+        } else {
+          // Don't set override if required fields are missing
+          severityOverride = null;
+        }
       } else {
         // For other UPDATE actions (like CONFIRM_STRATEGIES), set to 'complete'
         severityOverride = "complete";
@@ -135,6 +143,8 @@ export async function POST(request: NextRequest) {
       severityOverride,
       overrideExpiresDate,
       monitorDays: monitorDaysValue,
+      tradeReason: tradeReason || null, // Store trade reason for QUANTITY_CHANGE triggers
+      tradeStage: tradeStage || null, // Store trade stage for QUANTITY_CHANGE triggers
       createdAt: new Date(),
     });
 

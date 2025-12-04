@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { StrategyTabs } from "@/components/layout/StrategyTabs";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { getStrategyDetail } from "@/db/queries/strategies";
 import {
@@ -40,6 +41,7 @@ export default async function PerformancePage({ params }: PerformancePageProps) 
       activeNav="strategies"
       title={strategy.label ?? strategy.strategyKey}
       subtitle={`${strategy.strategyKey} · ${strategy.accountLabel ?? strategy.accountBrokerId ?? "Unassigned"}`}
+      tabs={<StrategyTabs strategyId={strategyId} />}
     >
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="Abs Notional" value={formatCurrency(latestMetrics?.totalAbsNotional ?? null)} />
@@ -129,6 +131,53 @@ export default async function PerformancePage({ params }: PerformancePageProps) 
                           {formatCurrency(position.unrealizedPnl ?? null)}
                         </span>
                       </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Recent Trades</p>
+              <p className="text-xs text-slate-400">{detail.recentTrades.length} fills</p>
+            </div>
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
+                  <th className="py-2 pr-4">Date</th>
+                  <th className="py-2 pr-4">Side</th>
+                  <th className="py-2 pr-4">Qty</th>
+                  <th className="py-2 pr-4">Price</th>
+                  <th className="py-2 pr-4">Symbol</th>
+                  <th className="py-2">Gross</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-600">
+                {detail.recentTrades.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-6 text-center text-slate-400">
+                      No trades linked to this strategy.
+                    </td>
+                  </tr>
+                ) : (
+                  detail.recentTrades.map((trade) => (
+                    <tr key={trade.id}>
+                      <td className="py-2 pr-4 text-xs text-slate-500">
+                        {trade.tradeDate ? new Date(trade.tradeDate).toLocaleDateString() : "—"}
+                      </td>
+                      <td className="py-2 pr-4 font-medium">{trade.side}</td>
+                      <td className="py-2 pr-4">{trade.quantity}</td>
+                      <td className="py-2 pr-4">{trade.price.toFixed(2)}</td>
+                      <td className="py-2 pr-4">{trade.symbol}</td>
+                      <td className="py-2">{formatCurrency(trade.grossAmount ?? null)}</td>
                     </tr>
                   ))
                 )}

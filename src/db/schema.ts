@@ -61,17 +61,19 @@ export const underlyingsIvHistory = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     underlyingId: uuid('underlying_id')
-      .notNull()
-      .references(() => underlyings.id, { onDelete: 'cascade' }),
+      .references(() => underlyings.id, { onDelete: 'cascade' }), // NULLABLE in actual DB
+    ticker: text('ticker').notNull(), // Denormalized for easier querying and historical preservation
     asOfDate: date('as_of_date').notNull(),
     spot: numeric('spot'),
     iv30: numeric('iv30'),
     atr20: numeric('atr20'),
     rv20: numeric('rv20'),
+    source: text('source').notNull().default('manual'), // Data source: 'opt_strat', 'ibkr', 'manual', etc.
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
-    uniqueUnderlyingDate: unique().on(table.underlyingId, table.asOfDate),
+    uniqueTickerDateSource: unique().on(table.ticker, table.asOfDate, table.source),
   })
 );
 
@@ -425,6 +427,8 @@ export const blotterActions = pgTable(
     severityOverride: text('severity_override'), // 'info' | 'monitor' | 'attention' | 'urgent' | 'pending' | 'complete'
     overrideExpiresDate: date('override_expires_date'), // null = permanent override
     monitorDays: integer('monitor_days'), // For MONITOR actions: days before reverting
+    tradeReason: text('trade_reason'), // Explanation for the trade action taken (for QUANTITY_CHANGE triggers)
+    tradeStage: text('trade_stage'), // 'open' | 'close' | 'hedge' | 'roll' | 'reduce' | 'add' (for QUANTITY_CHANGE triggers)
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({

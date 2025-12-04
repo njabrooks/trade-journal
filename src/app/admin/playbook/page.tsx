@@ -27,6 +27,80 @@ const SEVERITIES = ['info', 'attention', 'urgent'] as const;
 const CONTEXTS = ['strategy', 'position', 'portfolio', 'underlying'] as const;
 const CHECKLIST_TYPES = ['primary', 'secondary', 'risk'] as const;
 
+/**
+ * Component to check and display playbook completeness for a strategy type
+ */
+function PlaybookCompletenessChecker({
+  strategyType,
+  items,
+}: {
+  strategyType: string;
+  items: PlaybookItem[];
+}) {
+  const strategyItems = items.filter((item) => item.strategyType === strategyType);
+  const hasCatchAll = strategyItems.some((item) => !item.criteria || item.criteria.trim() === '');
+  const catchAllItems = strategyItems.filter((item) => !item.criteria || item.criteria.trim() === '');
+  const specificItems = strategyItems.filter((item) => item.criteria && item.criteria.trim() !== '');
+
+  if (strategyItems.length === 0) {
+    return (
+      <div className="text-sm text-blue-800">
+        <p>No playbook items found for this strategy type. Create state codes to get started.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 text-sm text-blue-800">
+      <div className="flex items-center gap-2">
+        {hasCatchAll ? (
+          <span className="text-green-600">✅</span>
+        ) : (
+          <span className="text-yellow-600">⚠️</span>
+        )}
+        <span>
+          <strong>{strategyItems.length}</strong> state code{strategyItems.length !== 1 ? 's' : ''} defined
+        </span>
+      </div>
+
+      {hasCatchAll ? (
+        <div className="ml-6 text-blue-700">
+          <p className="font-medium">✓ Catch-all state code present</p>
+          <p className="text-xs mt-1">
+            {catchAllItems.map((item) => item.code).join(', ')} will match when no other criteria apply
+          </p>
+        </div>
+      ) : (
+        <div className="ml-6 bg-yellow-50 border border-yellow-200 rounded p-3">
+          <p className="font-medium text-yellow-900">⚠️ Missing catch-all state code</p>
+          <p className="text-xs mt-1 text-yellow-800">
+            Add a state code with <strong>empty criteria</strong> to ensure every strategy always has a state code.
+            This prevents null state codes when no specific criteria match.
+          </p>
+        </div>
+      )}
+
+      {specificItems.length > 0 && (
+        <div className="ml-6 text-blue-700">
+          <p className="font-medium">
+            {specificItems.length} specific state code{specificItems.length !== 1 ? 's' : ''} with criteria
+          </p>
+          <p className="text-xs mt-1">
+            These will be evaluated in order ({specificItems.map((item) => item.code).join(', ')})
+          </p>
+        </div>
+      )}
+
+      <div className="mt-3 pt-3 border-t border-blue-200">
+        <p className="text-xs text-blue-700">
+          <strong>Tip:</strong> State codes are evaluated in order. The first matching criteria wins. 
+          A catch-all state code (empty criteria) should be placed last to handle edge cases.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function PlaybookPage() {
   const [items, setItems] = useState<PlaybookItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -312,6 +386,14 @@ export default function PlaybookPage() {
         <div className="bg-green-50 border border-green-200 rounded p-4 mb-4 text-green-800">{success}</div>
       )}
 
+      {/* Playbook Completeness Guidance */}
+      {filterStrategyType && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h3 className="text-sm font-semibold text-blue-900 mb-2">📋 Playbook Completeness Check</h3>
+          <PlaybookCompletenessChecker strategyType={filterStrategyType} items={items} />
+        </div>
+      )}
+
       {/* Filters */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="grid grid-cols-2 gap-4">
@@ -423,9 +505,25 @@ export default function PlaybookPage() {
             {/* State Codes Sections */}
             {formData.stateCodes.length > 0 && (
               <div className="space-y-8">
-                <h3 className="text-lg font-medium text-gray-700">
-                  State Codes ({formData.stateCodes.length})
-                </h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium text-gray-700">
+                    State Codes ({formData.stateCodes.length})
+                  </h3>
+                  {!editingId && (
+                    <div className="text-sm text-gray-600">
+                      {formData.stateCodes.filter((sc) => !sc.criteria || sc.criteria.trim() === '').length === 0 && (
+                        <span className="text-yellow-600 font-medium">
+                          ⚠️ No catch-all state code (recommend adding one with empty criteria)
+                        </span>
+                      )}
+                      {formData.stateCodes.filter((sc) => !sc.criteria || sc.criteria.trim() === '').length > 0 && (
+                        <span className="text-green-600 font-medium">
+                          ✓ Catch-all state code present
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {formData.stateCodes.map((stateCode, stateCodeIndex) => (
                   <div
                     key={stateCodeIndex}
@@ -561,14 +659,31 @@ export default function PlaybookPage() {
                           className="block text-sm font-medium mb-1"
                         >
                           Criteria
+                          {stateCodeIndex === formData.stateCodes.length - 1 && (
+                            <span className="ml-2 text-xs text-blue-600">
+                              (Recommended: Leave empty for catch-all/default state code)
+                            </span>
+                          )}
                         </label>
                         <CriteriaBuilder
                           value={stateCode.criteria || ''}
                           onChange={(criteriaText) => updateStateCode(stateCodeIndex, 'criteria', criteriaText)}
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Build criteria using patterns, operators, and values. Multiple criteria can be combined with AND/OR.
-                        </p>
+                        <div className="mt-1 space-y-1">
+                          <p className="text-xs text-gray-500">
+                            Build criteria using patterns, operators, and values. Multiple criteria can be combined with AND/OR.
+                          </p>
+                          {(!stateCode.criteria || stateCode.criteria.trim() === '') && (
+                            <p className="text-xs text-blue-600 font-medium">
+                              ⓘ Empty criteria = catch-all state code (always matches when no other criteria match)
+                            </p>
+                          )}
+                          {stateCode.criteria && stateCode.criteria.trim() !== '' && stateCodeIndex === formData.stateCodes.length - 1 && (
+                            <p className="text-xs text-yellow-600">
+                              💡 Consider making the last state code a catch-all (empty criteria) to ensure completeness
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       {/* Checklist Items for this state code */}

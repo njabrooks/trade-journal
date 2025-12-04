@@ -237,38 +237,39 @@ export interface StrategyDetail {
 }
 
 export async function getStrategyDetail(strategyId: string): Promise<StrategyDetail | null> {
-  const strategyRows = await db
-    .select({
-      id: strategies.id,
-      strategyKey: strategies.strategyKey,
-      label: strategies.autoDerivedLabel,
-      status: strategies.status,
-      openedAt: strategies.openedAt,
-      closedAt: strategies.closedAt,
-      thesis: strategies.thesis,
-      profitRules: strategies.profitRules,
-      defenseRules: strategies.defenseRules,
-      timeRules: strategies.timeRules,
-      exitCriteria: strategies.exitCriteria,
-      accountLabel: accounts.label,
-      accountBrokerId: accounts.brokerAccountId,
-      templateLabel: strategyTemplates.label,
-      underlyingTicker: underlyings.ticker,
-      strategyType: strategies.strategyType,
-    })
-    .from(strategies)
-    .leftJoin(accounts, eq(strategies.accountId, accounts.id))
-    .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
-    .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
-    .where(eq(strategies.id, strategyId))
-    .limit(1);
+  try {
+    const strategyRows = await db
+      .select({
+        id: strategies.id,
+        strategyKey: strategies.strategyKey,
+        label: strategies.autoDerivedLabel,
+        status: strategies.status,
+        openedAt: strategies.openedAt,
+        closedAt: strategies.closedAt,
+        thesis: strategies.thesis,
+        profitRules: strategies.profitRules,
+        defenseRules: strategies.defenseRules,
+        timeRules: strategies.timeRules,
+        exitCriteria: strategies.exitCriteria,
+        accountLabel: accounts.label,
+        accountBrokerId: accounts.brokerAccountId,
+        templateLabel: strategyTemplates.label,
+        underlyingTicker: underlyings.ticker,
+        strategyType: strategies.strategyType,
+      })
+      .from(strategies)
+      .leftJoin(accounts, eq(strategies.accountId, accounts.id))
+      .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
+      .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
+      .where(eq(strategies.id, strategyId))
+      .limit(1);
 
-  const strategyRow = strategyRows[0];
-  if (!strategyRow) {
-    return null;
-  }
+    const strategyRow = strategyRows[0];
+    if (!strategyRow) {
+      return null;
+    }
 
-  const metricsTimelineRows = await db
+    const metricsTimelineRows = await db
     .select({
       snapshotDate: strategyMetricsSnapshots.snapshotDate,
       totalAbsNotional: strategyMetricsSnapshots.totalAbsNotional,
@@ -283,7 +284,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     .where(eq(strategyMetricsSnapshots.strategyId, strategyId))
     .orderBy(asc(strategyMetricsSnapshots.snapshotDate));
 
-  const metricsTimeline = metricsTimelineRows.map((row) => ({
+    const metricsTimeline = metricsTimelineRows.map((row) => ({
     snapshotDate: row.snapshotDate,
     totalAbsNotional: toNumber(row.totalAbsNotional),
     totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
@@ -294,27 +295,27 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     stateCode: row.stateCode,
   }));
 
-  // Get current state code from latest metrics
-  const latestMetrics = metricsTimelineRows[metricsTimelineRows.length - 1];
-  const currentStateCode = latestMetrics?.stateCode ?? null;
+    // Get current state code from latest metrics
+    const latestMetrics = metricsTimelineRows[metricsTimelineRows.length - 1];
+    const currentStateCode = latestMetrics?.stateCode ?? null;
 
-  // Get playbook item for current state code
-  let currentPlaybookItem = null;
-  if (currentStateCode) {
-    const playbookItem = await getPlaybookItemByCode(currentStateCode);
-    if (playbookItem) {
-      currentPlaybookItem = {
-        code: playbookItem.code,
-        label: playbookItem.label,
-        description: playbookItem.description,
-        category: playbookItem.category,
-        checklistItems: playbookItem.checklistItems,
-      };
+    // Get playbook item for current state code
+    let currentPlaybookItem = null;
+    if (currentStateCode) {
+      const playbookItem = await getPlaybookItemByCode(currentStateCode);
+      if (playbookItem) {
+        currentPlaybookItem = {
+          code: playbookItem.code,
+          label: playbookItem.label,
+          description: playbookItem.description,
+          category: playbookItem.category,
+          checklistItems: playbookItem.checklistItems,
+        };
+      }
     }
-  }
 
-  // Get latest snapshot date for this strategy
-  const latestSnapshotResult = await db
+    // Get latest snapshot date for this strategy
+    const latestSnapshotResult = await db
     .select({
       snapshotDate: positions.snapshotDate,
     })
@@ -328,9 +329,9 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     .orderBy(desc(positions.snapshotDate))
     .limit(1);
 
-  const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
+    const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
 
-  const openPositionsRows = latestSnapshotDate
+    const openPositionsRows = latestSnapshotDate
     ? await db
         .select({
           id: positions.id,
@@ -355,7 +356,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         .orderBy(desc(positions.symbol))
     : [];
 
-  const openPositions = openPositionsRows.map((row) => ({
+    const openPositions = openPositionsRows.map((row) => ({
     id: row.id,
     symbol: row.symbol,
     assetClass: row.assetClass,
@@ -368,7 +369,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     snapshotDate: row.snapshotDate,
   }));
 
-  const triageRows = await db
+    const triageRows = await db
     .select({
       id: triageRecords.id,
       severity: triageRecords.severity,
@@ -383,7 +384,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     .orderBy(desc(triageRecords.snapshotDate))
     .limit(25);
 
-  const triageFlags = triageRows.map((row) => ({
+    const triageFlags = triageRows.map((row) => ({
     id: row.id,
     severity: row.severity,
     recommendedAction: row.recommendedAction,
@@ -393,7 +394,8 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
   }));
 
-  const tradesRows = await db
+    // Fetch recent trades for performance page display
+    const tradesRows = await db
     .select({
       id: trades.id,
       tradeDate: trades.tradeDate,
@@ -408,7 +410,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     .orderBy(desc(trades.tradeDate))
     .limit(25);
 
-  const recentTrades = tradesRows.map((row) => ({
+    const recentTrades = tradesRows.map((row) => ({
     id: row.id,
     tradeDate: row.tradeDate,
     side: row.side,
@@ -418,7 +420,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     grossAmount: toNumber(row.grossAmount),
   }));
 
-  const blotterRows = await db
+    const blotterRows = await db
     .select({
       id: blotterActions.id,
       actionDate: blotterActions.actionDate,
@@ -433,7 +435,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     .orderBy(desc(blotterActions.actionDate))
     .limit(20);
 
-  const blotter = blotterRows.map((row) => ({
+    const blotter = blotterRows.map((row) => ({
     id: row.id,
     actionDate: row.actionDate,
     reasonCode: row.reasonCode,
@@ -443,32 +445,51 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     realizedPnl: toNumber(row.realizedPnl),
   }));
 
-  return {
-    strategy: {
-      id: strategyRow.id,
-      strategyKey: strategyRow.strategyKey,
-      label: strategyRow.label,
-      status: strategyRow.status,
-      openedAt: strategyRow.openedAt,
-      closedAt: strategyRow.closedAt,
-      thesis: strategyRow.thesis,
-      profitRules: strategyRow.profitRules,
-      defenseRules: strategyRow.defenseRules,
-      timeRules: strategyRow.timeRules,
-      exitCriteria: strategyRow.exitCriteria,
-      accountLabel: strategyRow.accountLabel,
-      accountBrokerId: strategyRow.accountBrokerId,
-      underlyingTicker: strategyRow.underlyingTicker,
-      templateLabel: strategyRow.templateLabel,
-      strategyType: strategyRow.strategyType,
-    },
-    currentStateCode,
-    currentPlaybookItem,
-    metricsTimeline,
-    openPositions,
-    triageFlags,
-    recentTrades,
-    blotter,
-  };
+    return {
+      strategy: {
+        id: strategyRow.id,
+        strategyKey: strategyRow.strategyKey,
+        label: strategyRow.label,
+        status: strategyRow.status,
+        openedAt: strategyRow.openedAt,
+        closedAt: strategyRow.closedAt,
+        thesis: strategyRow.thesis,
+        profitRules: strategyRow.profitRules,
+        defenseRules: strategyRow.defenseRules,
+        timeRules: strategyRow.timeRules,
+        exitCriteria: strategyRow.exitCriteria,
+        accountLabel: strategyRow.accountLabel,
+        accountBrokerId: strategyRow.accountBrokerId,
+        underlyingTicker: strategyRow.underlyingTicker,
+        templateLabel: strategyRow.templateLabel,
+        strategyType: strategyRow.strategyType,
+      },
+      currentStateCode,
+      currentPlaybookItem,
+      metricsTimeline,
+      openPositions,
+      triageFlags,
+      recentTrades,
+      blotter,
+    };
+  } catch (error) {
+    // Extract detailed error information for better debugging
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      // Include postgres error details if available
+      const pgError = error as any;
+      const details: string[] = [];
+      if (pgError.code) details.push(`code: ${pgError.code}`);
+      if (pgError.detail) details.push(`detail: ${pgError.detail}`);
+      if (pgError.hint) details.push(`hint: ${pgError.hint}`);
+      if (details.length > 0) {
+        errorMessage = `${errorMessage} (${details.join(', ')})`;
+      }
+    }
+    
+    console.error(`Failed to fetch strategy detail for ${strategyId}:`, errorMessage);
+    throw new Error(`Failed to fetch strategy detail: ${errorMessage}`);
+  }
 }
 

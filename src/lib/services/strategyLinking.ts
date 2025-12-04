@@ -1,6 +1,8 @@
 import { db } from '@/db';
 import { positions, trades, strategies } from '@/db/schema';
-import { eq, and, isNull, sql } from 'drizzle-orm';
+import { eq, and, isNull, sql, isNotNull } from 'drizzle-orm';
+import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
+import { computeTriageForDate } from '@/lib/derived/triage';
 
 /**
  * Links positions to strategies by strategy_key
@@ -163,24 +165,127 @@ export async function linkTradesToStrategies(
 
 /**
  * Manually links a position to a strategy
+ * Auto-triggers recompute for affected strategy and snapshot dates
  */
 export async function linkPositionToStrategy(
   positionId: string,
   strategyId: string
 ): Promise<void> {
+  // Get position to find accountId and snapshot dates
+  const position = await db
+    .select({
+      accountId: positions.accountId,
+      snapshotDate: positions.snapshotDate,
+    })
+    .from(positions)
+    .where(eq(positions.id, positionId))
+    .limit(1);
+
+  if (position.length === 0) {
+    throw new Error('Position not found');
+  }
+
+  const accountId = position[0].accountId;
+  if (!accountId) {
+    throw new Error('Position missing accountId');
+  }
+
+  // Update position
   await db
     .update(positions)
     .set({ strategyId })
     .where(eq(positions.id, positionId));
+
+  // Auto-trigger recompute: Find all snapshot dates where this position exists
+  const snapshotDates = await db
+    .selectDistinct({ snapshotDate: positions.snapshotDate })
+    .from(positions)
+    .where(
+      and(
+        eq(positions.id, positionId),
+        isNotNull(positions.snapshotDate),
+        sql`${positions.quantity} != 0`
+      )
+    );
+
+  // Recompute strategy metrics for affected dates
+  for (const { snapshotDate } of snapshotDates) {
+    if (!snapshotDate) continue;
+    
+    try {
+      await computeStrategyMetricsForDateRange(
+        accountId,
+        strategyId,
+        snapshotDate,
+        snapshotDate
+      );
+      
+      // Optionally trigger triage recompute for this date
+      await computeTriageForDate(snapshotDate, accountId);
+    } catch (error) {
+      console.error(
+        `Failed to auto-recompute after linking position ${positionId} to strategy ${strategyId} on ${snapshotDate}:`,
+        error
+      );
+      // Continue with other dates even if one fails
+    }
+  }
 }
 
 /**
  * Manually links a trade to a strategy
+ * Auto-triggers recompute for affected strategy
+ * Note: Trades don't have snapshot dates, so we recompute for the trade date and nearby dates
  */
 export async function linkTradeToStrategy(tradeId: string, strategyId: string): Promise<void> {
+  // Get trade to find accountId and trade date
+  const trade = await db
+    .select({
+      accountId: trades.accountId,
+      tradeDate: trades.tradeDate,
+    })
+    .from(trades)
+    .where(eq(trades.id, tradeId))
+    .limit(1);
+
+  if (trade.length === 0) {
+    throw new Error('Trade not found');
+  }
+
+  const accountId = trade[0].accountId;
+  if (!accountId) {
+    throw new Error('Trade missing accountId');
+  }
+
+  // Update trade
   await db
     .update(trades)
     .set({ strategyId })
     .where(eq(trades.id, tradeId));
+
+  // Auto-trigger recompute: Find snapshot dates where strategy has positions around trade date
+  // Use trade date as snapshot date (trades typically align with position snapshots)
+  const tradeDate = trade[0].tradeDate;
+  if (tradeDate) {
+    const snapshotDate = new Date(tradeDate).toISOString().split('T')[0];
+    
+    try {
+      // Recompute strategy metrics for this date
+      await computeStrategyMetricsForDateRange(
+        accountId,
+        strategyId,
+        snapshotDate,
+        snapshotDate
+      );
+      
+      // Optionally trigger triage recompute for this date
+      await computeTriageForDate(snapshotDate, accountId);
+    } catch (error) {
+      console.error(
+        `Failed to auto-recompute after linking trade ${tradeId} to strategy ${strategyId} on ${snapshotDate}:`,
+        error
+      );
+    }
+  }
 }
 

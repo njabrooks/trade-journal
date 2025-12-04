@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Computed ${counts.position} position-level and ${counts.strategy} strategy-level triage records`,
+        message: `Computed ${counts.position} position-level, ${counts.strategy} strategy-level, and ${counts.quantityChange} quantity change triage records`,
         counts,
       });
     }
@@ -42,12 +42,14 @@ export async function POST(request: NextRequest) {
 
       let totalPosition = 0;
       let totalStrategy = 0;
+      let totalQuantityChange = 0;
 
       for (const { snapshotDate } of dateResults) {
         if (!snapshotDate) continue;
         const counts = await computeTriageForDate(snapshotDate, accountId);
         totalPosition += counts.position;
         totalStrategy += counts.strategy;
+        totalQuantityChange += counts.quantityChange;
       }
 
       return NextResponse.json({
@@ -56,6 +58,7 @@ export async function POST(request: NextRequest) {
         counts: {
           position: totalPosition,
           strategy: totalStrategy,
+          quantityChange: totalQuantityChange,
         },
         datesProcessed: dateResults.length,
       });

@@ -9,6 +9,7 @@ import {
   NewTriageRecord,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc } from 'drizzle-orm';
+import { detectStateCodeChangeFromStored } from '@/lib/derived/stateCode';
 
 // Triage rule configuration
 export const TRIAGE_RULES_V1 = {
@@ -515,11 +516,42 @@ export async function computeStrategyTriageForDate(
       });
     }
 
-    // 5. State code change detection (if strategy has a type and previous date exists)
-    // Note: State code computation is complex and may be slow, so we'll skip it for now
-    // and implement it as a separate background job or on-demand computation
-    // TODO: Implement state code change detection when stateCode.ts is fully tested
-    // When implemented, any state code change should trigger with severity = 'urgent'
+    // 5. STATE_CODE_CHANGE - State code change detection
+    // Only check if strategy has a strategyType and previous date exists
+    if (strategyRow?.strategyType && previousDate) {
+      // Fast detection: read stored state codes instead of recomputing
+      // State codes are already computed and stored in strategy_metrics_snapshots during metrics computation
+      const stateCodeChange = await detectStateCodeChangeFromStored(
+        metric.strategyId,
+        previousDate,
+        snapshotDate
+      );
+
+      if (stateCodeChange.changed) {
+        const computedSeverity = 'urgent';
+        const recommendedAction = 'STATE_CODE_CHANGE';
+        
+        // Check for active override
+        const overrideSeverity = await checkSeverityOverride(
+          null,
+          metric.strategyId,
+          recommendedAction,
+          snapshotDate
+        );
+        
+        records.push({
+          snapshotDate,
+          accountId: metric.accountId,
+          contextLevel: 'strategy',
+          strategyId: metric.strategyId,
+          severity: overrideSeverity || computedSeverity,
+          recommendedAction,
+          notes: `State code changed from ${stateCodeChange.previous ?? 'null'} to ${stateCodeChange.current ?? 'null'}`,
+          ruleSet: 'strategy_workflow',
+          symbol: strategyKey,
+        });
+      }
+    }
   }
 
   return records;
@@ -570,20 +602,306 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
 }
 
 /**
+ * Reconciles pending TRADE actions with detected quantity changes
+ * When a quantity change is detected, check if there's a pending TRADE action
+ * for the same position/strategy and mark it as complete
+ * 
+ * @returns true if a pending TRADE action was found and reconciled, false otherwise
+ */
+async function reconcilePendingTradeActions(
+  positionId: string | null,
+  strategyId: string | null,
+  snapshotDate: string
+): Promise<boolean> {
+  // Find pending TRADE actions for this position/strategy
+  const whereConditions = [
+    eq(blotterActions.actionDetail, 'TRADE'),
+    eq(blotterActions.severityOverride, 'pending'),
+  ];
+
+  if (positionId) {
+    whereConditions.push(eq(blotterActions.positionId, positionId));
+  } else if (strategyId) {
+    whereConditions.push(eq(blotterActions.strategyId, strategyId));
+  } else {
+    return false; // Need at least one identifier
+  }
+
+  const pendingActions = await db
+    .select()
+    .from(blotterActions)
+    .where(and(...whereConditions))
+    .orderBy(desc(blotterActions.createdAt))
+    .limit(10); // Get recent pending actions
+
+  // If no pending actions found, return false
+  if (pendingActions.length === 0) {
+    return false;
+  }
+
+  // Update each pending action to 'complete'
+  for (const action of pendingActions) {
+    // Update blotter action
+    await db
+      .update(blotterActions)
+      .set({
+        severityOverride: 'complete',
+        completed: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(blotterActions.id, action.id));
+
+      // Find and update associated triage record if it exists
+      // Match by positionId/strategyId and severity = 'pending'
+      const triageWhereConditions = [
+        eq(triageRecords.severity, 'pending'),
+      ];
+
+      if (positionId) {
+        triageWhereConditions.push(eq(triageRecords.positionId, positionId));
+      } else if (strategyId) {
+        triageWhereConditions.push(eq(triageRecords.strategyId, strategyId));
+      }
+
+      // Optionally match by recommendedAction if available
+      if (action.triageFlagAtAction) {
+        triageWhereConditions.push(eq(triageRecords.recommendedAction, action.triageFlagAtAction));
+      }
+
+      // Get the most recent pending triage record
+      const pendingTriage = await db
+        .select()
+        .from(triageRecords)
+        .where(and(...triageWhereConditions))
+        .orderBy(desc(triageRecords.createdAt))
+        .limit(1);
+
+      if (pendingTriage.length > 0) {
+        await db
+          .update(triageRecords)
+          .set({
+            severity: 'complete',
+            updatedAt: new Date(),
+          })
+          .where(eq(triageRecords.id, pendingTriage[0].id));
+      }
+  }
+
+  // Return true to indicate reconciliation occurred
+  return true;
+}
+
+/**
+ * Detects quantity changes by comparing positions across snapshot dates
+ * Returns triage records for positions/strategies with quantity changes
+ * Also reconciles any pending TRADE actions when quantity changes are detected
+ */
+export async function computeQuantityChangeTriageForDate(
+  snapshotDate: string,
+  accountId?: string
+): Promise<NewTriageRecord[]> {
+  // Get previous snapshot date
+  const previousDateResult = await db
+    .selectDistinct({ snapshotDate: positions.snapshotDate })
+    .from(positions)
+    .where(
+      accountId
+        ? and(
+            eq(positions.accountId, accountId),
+            sql`${positions.snapshotDate} < ${snapshotDate}`
+          )
+        : sql`${positions.snapshotDate} < ${snapshotDate}`
+    )
+    .orderBy(sql`${positions.snapshotDate} DESC`)
+    .limit(1);
+
+  const previousDate = previousDateResult[0]?.snapshotDate ?? null;
+
+  // If no previous snapshot, can't detect changes
+  if (!previousDate) {
+    return [];
+  }
+
+  // Get current positions
+  const currentWhereConditions = [eq(positions.snapshotDate, snapshotDate)];
+  if (accountId) {
+    currentWhereConditions.push(eq(positions.accountId, accountId));
+  }
+
+  const currentPositions = await db
+    .select()
+    .from(positions)
+    .where(and(...currentWhereConditions));
+
+  // Get previous positions (by conid for matching)
+  const previousWhereConditions = [eq(positions.snapshotDate, previousDate)];
+  if (accountId) {
+    previousWhereConditions.push(eq(positions.accountId, accountId));
+  }
+
+  const previousPositions = await db
+    .select()
+    .from(positions)
+    .where(and(...previousWhereConditions));
+
+  // Create maps for efficient lookup
+  const previousByConid = new Map<number, typeof previousPositions[0]>();
+  previousPositions.forEach((pos) => {
+    if (pos.conid) {
+      previousByConid.set(pos.conid, pos);
+    }
+  });
+
+  const records: NewTriageRecord[] = [];
+  const processedStrategyIds = new Set<string>();
+
+  for (const currentPos of currentPositions) {
+    if (!currentPos.conid || !currentPos.accountId) continue;
+
+    const previousPos = previousByConid.get(currentPos.conid);
+    const currentQty = Number(currentPos.quantity) || 0;
+    const previousQty = previousPos ? Number(previousPos.quantity) || 0 : 0;
+
+    // Detect quantity change
+    const qtyChanged = currentQty !== previousQty;
+    if (!qtyChanged && previousPos) {
+      continue; // No change, skip
+    }
+
+    // Auto-detect trade stage
+    let tradeStage: string | null = null;
+    if (!previousPos) {
+      // Position didn't exist before - new position
+      tradeStage = 'open';
+    } else if (currentQty === 0) {
+      // Position went to zero - closed
+      tradeStage = 'close';
+    } else if (currentQty > previousQty) {
+      // Quantity increased
+      tradeStage = 'add';
+    } else if (currentQty < previousQty && currentQty !== 0) {
+      // Quantity decreased but not to zero
+      tradeStage = 'reduce';
+    } else if (currentQty < previousQty && currentQty === 0) {
+      // Position closed
+      tradeStage = 'close';
+    }
+
+    // For position-level records
+    if (currentPos.id) {
+      // Reconcile any pending TRADE actions for this position
+      const wasReconciled = await reconcilePendingTradeActions(currentPos.id, currentPos.strategyId, snapshotDate);
+
+      // Only create QUANTITY_CHANGE triage record if no pending TRADE action was reconciled
+      // If reconciled, the existing TRADE blotter entry was updated to 'complete', so no need for new triage record
+      if (!wasReconciled) {
+        const recommendedAction = 'QUANTITY_CHANGE';
+        const computedSeverity = 'urgent';
+
+        // Check for active override
+        const overrideSeverity = await checkSeverityOverride(
+          currentPos.id,
+          currentPos.strategyId,
+          recommendedAction,
+          snapshotDate
+        );
+
+        records.push({
+          snapshotDate,
+          accountId: currentPos.accountId,
+          contextLevel: 'position',
+          positionId: currentPos.id,
+          strategyId: currentPos.strategyId,
+          underlyingId: currentPos.underlyingId,
+          symbol: currentPos.symbol,
+          assetClass: currentPos.assetClass,
+          severity: overrideSeverity || computedSeverity,
+          recommendedAction,
+          notes: `Quantity changed from ${previousQty} to ${currentQty}. Trade stage: ${tradeStage || 'unknown'}`,
+          ruleSet: 'quantity_change',
+        });
+      }
+    }
+
+    // For strategy-level records (if position is linked to strategy)
+    if (currentPos.strategyId && !processedStrategyIds.has(currentPos.strategyId)) {
+      processedStrategyIds.add(currentPos.strategyId);
+
+      // Check if strategy has other positions that also changed
+      const strategyPositions = currentPositions.filter(
+        (p) => p.strategyId === currentPos.strategyId
+      );
+      const hasMultipleChanges = strategyPositions.some((p) => {
+        if (!p.conid) return false;
+        const prev = previousByConid.get(p.conid);
+        const currQty = Number(p.quantity) || 0;
+        const prevQty = prev ? Number(prev.quantity) || 0 : 0;
+        return currQty !== prevQty;
+      });
+
+      if (hasMultipleChanges) {
+        // Reconcile any pending TRADE actions for this strategy
+        const wasReconciled = await reconcilePendingTradeActions(null, currentPos.strategyId, snapshotDate);
+
+        // Only create QUANTITY_CHANGE triage record if no pending TRADE action was reconciled
+        // If reconciled, the existing TRADE blotter entry was updated to 'complete', so no need for new triage record
+        if (!wasReconciled) {
+          const recommendedAction = 'QUANTITY_CHANGE';
+          const computedSeverity = 'urgent';
+
+          // Check for active override
+          const overrideSeverity = await checkSeverityOverride(
+            null,
+            currentPos.strategyId,
+            recommendedAction,
+            snapshotDate
+          );
+
+          // Get strategy key for symbol
+          const strategyResult = await db
+            .select({ strategyKey: strategies.strategyKey })
+            .from(strategies)
+            .where(eq(strategies.id, currentPos.strategyId))
+            .limit(1);
+
+          const strategyKey = strategyResult[0]?.strategyKey || `STRATEGY-${currentPos.strategyId}`;
+
+          records.push({
+            snapshotDate,
+            accountId: currentPos.accountId,
+            contextLevel: 'strategy',
+            strategyId: currentPos.strategyId,
+            symbol: strategyKey,
+            severity: overrideSeverity || computedSeverity,
+            recommendedAction,
+            notes: 'Multiple positions in strategy have quantity changes',
+            ruleSet: 'quantity_change',
+          });
+        }
+      }
+    }
+  }
+
+  return records;
+}
+
+/**
  * Computes all triage records for a snapshot date
  */
 export async function computeTriageForDate(
   snapshotDate: string,
   accountId?: string
-): Promise<{ position: number; strategy: number }> {
+): Promise<{ position: number; strategy: number; quantityChange: number }> {
   const positionRecords = await computePositionTriageForDate(snapshotDate, accountId);
   const strategyRecords = await computeStrategyTriageForDate(snapshotDate, accountId);
+  const quantityChangeRecords = await computeQuantityChangeTriageForDate(snapshotDate, accountId);
 
-  await upsertTriageRecords([...positionRecords, ...strategyRecords]);
+  await upsertTriageRecords([...positionRecords, ...strategyRecords, ...quantityChangeRecords]);
 
   return {
     position: positionRecords.length,
     strategy: strategyRecords.length,
+    quantityChange: quantityChangeRecords.length,
   };
 }
 

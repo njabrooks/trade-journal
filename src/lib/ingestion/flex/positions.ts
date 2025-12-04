@@ -1,4 +1,5 @@
 import { NewPosition } from '@/db/schema';
+import { ensureUnderlyingId } from './underlyings';
 
 export interface FlexPositionRow {
   [key: string]: string | undefined;
@@ -8,6 +9,7 @@ const FIELD_VARIANTS = {
   reportDate: ['ReportDate', 'reportDate', 'SnapshotDate'],
   clientAccountId: ['ClientAccountID', 'Client Account ID', 'clientAccountID'],
   symbol: ['Symbol', 'symbol'],
+  underlyingSymbol: ['UnderlyingSymbol', 'Underlying Symbol', 'underlyingSymbol'],
   assetClass: ['AssetClass', 'Asset Class', 'assetClass'],
   conid: ['Conid', 'conid'],
   expiry: ['Expiry', 'expiry'],
@@ -22,6 +24,8 @@ const FIELD_VARIANTS = {
   positionValue: ['PositionValue', 'Position Value', 'positionValue'],
   fifoUnrealized: ['FifoPnlUnrealized', 'FifoPnLUnrealized', 'fifoPnlUnrealized'],
   openDateTime: ['OpenDateTime', 'Open Date Time', 'openDateTime'],
+  currencyPrimary: ['CurrencyPrimary', 'Currency Primary', 'currencyPrimary'],
+  description: ['Description', 'description'],
 };
 
 const DATE_YYYYMMDD = /^\d{8}$/;
@@ -143,10 +147,10 @@ function derivePositionType(assetClass: string | null, side: 'LONG' | 'SHORT' | 
   return 'other';
 }
 
-export function normalizeFlexPositionRow(
+export async function normalizeFlexPositionRow(
   row: FlexPositionRow,
   accountId: string
-): Omit<NewPosition, 'id' | 'createdAt' | 'updatedAt'> {
+): Promise<Omit<NewPosition, 'id' | 'createdAt' | 'updatedAt'>> {
   const snapshotDate = parseReportDate(getValue(row, FIELD_VARIANTS.reportDate));
   const symbol = getValue(row, FIELD_VARIANTS.symbol);
   if (!symbol) {
@@ -178,10 +182,27 @@ export function normalizeFlexPositionRow(
   const positionValue = parseNumeric(getValue(row, FIELD_VARIANTS.positionValue));
   const unrealized = parseNumeric(getValue(row, FIELD_VARIANTS.fifoUnrealized));
 
+  // Resolve underlying ID from UnderlyingSymbol (or fallback to Symbol for stocks)
+  const underlyingSymbolRaw = getValue(row, FIELD_VARIANTS.underlyingSymbol);
+  const underlyingTicker = underlyingSymbolRaw && underlyingSymbolRaw.trim() !== '' 
+    ? underlyingSymbolRaw.trim() 
+    : (assetClass === 'STK' ? symbol : null);
+  
+  // Extract additional underlying metadata
+  const currencyPrimary = getValue(row, FIELD_VARIANTS.currencyPrimary) ?? null;
+  const description = getValue(row, FIELD_VARIANTS.description) ?? null;
+  
+  const underlyingId = await ensureUnderlyingId(
+    underlyingTicker,
+    assetClass,
+    currencyPrimary,
+    description
+  );
+
   return {
     accountId,
     strategyId: null,
-    underlyingId: null,
+    underlyingId,
     assetClass,
     symbol,
     conid: parseBigInt(getValue(row, FIELD_VARIANTS.conid)),

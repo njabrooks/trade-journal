@@ -9,8 +9,8 @@ import { computeStateCode } from '@/lib/derived/stateCode';
 import { computeStrategyMetrics, upsertStrategyMetrics } from '@/lib/derived/strategyMetrics';
 
 /**
- * Computes and updates state code for a strategy on the latest snapshot date
- * This is called after a strategy is confirmed with a strategyType
+ * Computes and updates state code for a strategy on all snapshot dates where it has positions
+ * This is called after a strategy is confirmed with a strategyType to backfill historical state codes
  */
 export async function recomputeStateCodeForStrategy(strategyId: string): Promise<void> {
   // Get strategy to check if it has a strategyType
@@ -28,9 +28,9 @@ export async function recomputeStateCodeForStrategy(strategyId: string): Promise
     return; // No strategyType, can't compute state code
   }
 
-  // Get the latest snapshot date for this strategy
-  const latestSnapshotResult = await db
-    .select({
+  // Get ALL snapshot dates for this strategy (not just latest) to backfill historical state codes
+  const snapshotDatesResult = await db
+    .selectDistinct({
       snapshotDate: positions.snapshotDate,
     })
     .from(positions)
@@ -38,26 +38,35 @@ export async function recomputeStateCodeForStrategy(strategyId: string): Promise
       and(
         eq(positions.strategyId, strategyId),
         eq(positions.accountId, strategyRow[0].accountId),
-        sql`${positions.quantity} != 0`
+        sql`${positions.quantity} != 0`,
+        sql`${positions.snapshotDate} IS NOT NULL`
       )
     )
-    .orderBy(desc(positions.snapshotDate))
-    .limit(1);
+    .orderBy(positions.snapshotDate);
 
-  const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate;
-  if (!latestSnapshotDate) {
+  if (snapshotDatesResult.length === 0) {
     return; // No positions yet, can't compute state code
   }
 
-  // Recompute strategy metrics (which includes state code computation)
-  const metrics = await computeStrategyMetrics({
-    accountId: strategyRow[0].accountId,
-    strategyId,
-    snapshotDate: latestSnapshotDate,
-  });
+  // Recompute strategy metrics (which includes state code computation) for all snapshot dates
+  // This ensures historical state codes are backfilled after confirmation
+  for (const { snapshotDate } of snapshotDatesResult) {
+    if (!snapshotDate) continue;
+    
+    try {
+      const metrics = await computeStrategyMetrics({
+        accountId: strategyRow[0].accountId,
+        strategyId,
+        snapshotDate,
+      });
 
-  // Upsert the metrics (which will update the state code)
-  await upsertStrategyMetrics(metrics);
+      // Upsert the metrics (which will update the state code)
+      await upsertStrategyMetrics(metrics);
+    } catch (error) {
+      console.error(`Failed to compute state code for strategy ${strategyId} on ${snapshotDate}:`, error);
+      // Continue with other dates even if one fails
+    }
+  }
 }
 
 /**

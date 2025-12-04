@@ -4,32 +4,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-interface StrategyTabsProps {
-  strategyId: string;
-}
-
 const TABS = [
-  { href: (id: string) => `/strategies/${id}/performance`, label: "Performance", id: "performance" },
-  { href: (id: string) => `/strategies/${id}/triage`, label: "Triage", id: "triage" },
-  { href: (id: string) => `/strategies/${id}/blotter`, label: "Blotter", id: "blotter" },
+  { href: "/admin/ingestion/flex", label: "Flex", id: "flex" },
+  { href: "/admin/ingestion/underlyings-iv", label: "IV History", id: "underlyings-iv" },
 ] as const;
 
-export function StrategyTabs({ strategyId }: StrategyTabsProps) {
+export function IngestionTabs() {
   const pathname = usePathname();
   
   // Determine active tab based on pathname
-  const activeTab = TABS.find(tab => pathname === tab.href(strategyId))?.id || 
-                   (pathname === `/strategies/${strategyId}` ? "triage" : null);
+  const activeTab = TABS.find(tab => pathname === tab.href || pathname.startsWith(tab.href + "/"))?.id || 
+                   (pathname.startsWith("/admin/ingestion/flex") ? "flex" : 
+                    pathname.startsWith("/admin/ingestion/underlyings-iv") ? "underlyings-iv" : null);
 
   return (
     <div className="flex items-center gap-1">
       {TABS.map((tab) => {
-        const href = tab.href(strategyId);
         const isActive = activeTab === tab.id;
         return (
           <Link
             key={tab.id}
-            href={href}
+            href={tab.href}
             className={cn(
               "rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
               isActive

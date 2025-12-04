@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Papa from 'papaparse';
 import { db } from '@/db';
-import { trades } from '@/db/schema';
+import { trades, strategies } from '@/db/schema';
 import { normalizeFlexTradeRow, validateFlexTradeRow, FlexTradeRow } from '@/lib/ingestion/flex/trades';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { eq } from 'drizzle-orm';
+import { computeTriageForDate } from '@/lib/derived/triage';
+import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 
 const SECTION_CODES = {
   TRADES: 'TRNT',
@@ -71,6 +73,7 @@ export async function POST(request: NextRequest) {
     );
 
     const accountCache = new Map<string, string>();
+    const tradeDates = new Set<string>(); // Track unique trade dates for recompute
 
     let inserted = 0;
     let skipped = 0;
@@ -133,8 +136,58 @@ export async function POST(request: NextRequest) {
           .values(normalized)
           .onConflictDoNothing({ target: trades.brokerTransactionId });
         inserted++;
+        
+        // Track trade date for recompute (use trade date as snapshot date)
+        if (normalized.tradeDate) {
+          const tradeDateStr = new Date(normalized.tradeDate).toISOString().split('T')[0];
+          tradeDates.add(tradeDateStr);
+        }
       } catch (error) {
         insertErrors++;
+      }
+    }
+
+    // Auto-trigger recompute for affected snapshot dates (using trade dates)
+    // Note: Trades don't directly affect strategy metrics, but we recompute to ensure consistency
+    // if trades are linked to strategies
+    const recomputeResults: any = {};
+    const uniqueAccountIds = Array.from(accountCache.values());
+    
+    if (tradeDates.size > 0 && inserted > 0 && uniqueAccountIds.length > 0) {
+      for (const accountId of uniqueAccountIds) {
+        for (const tradeDate of Array.from(tradeDates)) {
+          try {
+            // Strategy metrics (for all strategies in account)
+            const accountStrategies = await db
+              .select({ id: strategies.id })
+              .from(strategies)
+              .where(eq(strategies.accountId, accountId));
+            
+            let strategyMetricsCount = 0;
+            for (const strategy of accountStrategies) {
+              const count = await computeStrategyMetricsForDateRange(
+                accountId,
+                strategy.id,
+                tradeDate,
+                tradeDate
+              );
+              strategyMetricsCount += count;
+            }
+            
+            // Triage (optional - trades don't directly affect triage, but recompute for consistency)
+            await computeTriageForDate(tradeDate, accountId);
+            
+            recomputeResults[`${accountId}_${tradeDate}`] = {
+              strategyMetrics: strategyMetricsCount,
+              success: true,
+            };
+          } catch (error) {
+            console.error(`Failed to auto-recompute after trades ingestion for ${accountId} on ${tradeDate}:`, error);
+            recomputeResults[`${accountId}_${tradeDate}`] = {
+              error: error instanceof Error ? error.message : 'Recompute failed',
+            };
+          }
+        }
       }
     }
 
@@ -150,6 +203,7 @@ export async function POST(request: NextRequest) {
         normalizationErrors,
         insertErrors,
       },
+      autoRecompute: Object.keys(recomputeResults).length > 0 ? recomputeResults : undefined,
     });
   } catch (error) {
     console.error('Flex trades ingestion error:', error);

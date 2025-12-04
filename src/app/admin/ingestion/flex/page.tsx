@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { getFileType } from '@/lib/ingestion/flex/utils';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { IngestionTabs } from '@/components/layout/IngestionTabs';
 
 interface IngestionResult {
   success: boolean;
@@ -91,6 +92,7 @@ export default function FlexIngestionPage() {
       activeNav="admin-ingestion"
       title="Flex File Ingestion"
       subtitle="Upload and process IBKR Flex Query CSV files"
+      tabs={<IngestionTabs />}
     >
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Upload Flex Report</h2>
