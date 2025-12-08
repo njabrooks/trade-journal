@@ -1,4 +1,4 @@
-# Implementation Plan v5
+# Implementation Plan
 
 This is an implementation plan for this app project, labeled v5 to represent the most up-to-date version of the plan.
 
