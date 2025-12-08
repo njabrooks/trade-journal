@@ -249,49 +249,10 @@ export async function updateStrategy(
     updateData.isAuto = false;
     updateData.confirmedAt = new Date();
     
-    // When confirming, determine status based on positions:
-    // - "open" if strategy has positions with quantity != 0 on latest snapshot date
-    // - "closed" if strategy had positions before but none on latest snapshot (was active, now closed)
-    // - "draft" if strategy never had any positions (never been active)
-    
-    // First, get the latest snapshot date for this strategy
-    const latestSnapshotResult = await db
-      .select({
-        snapshotDate: positions.snapshotDate,
-      })
-      .from(positions)
-      .where(eq(positions.strategyId, strategyId))
-      .orderBy(desc(positions.snapshotDate))
-      .limit(1);
-    
-    const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
-    
-    if (latestSnapshotDate) {
-      // Check if strategy has positions with quantity != 0 on latest snapshot date
-      const hasOpenPositions = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(positions)
-        .where(
-          and(
-            eq(positions.strategyId, strategyId),
-            eq(positions.snapshotDate, latestSnapshotDate),
-            sql`${positions.quantity} != 0`
-          )
-        )
-        .limit(1);
-      
-      const openPositionCount = Number(hasOpenPositions[0]?.count ?? 0);
-      if (openPositionCount > 0) {
-        // Strategy has open positions on latest snapshot → "open"
-        updateData.status = 'open';
-      } else {
-        // Strategy had positions before but none on latest snapshot → "closed"
-        updateData.status = 'closed';
-      }
-    } else {
-      // Strategy never had any positions → "draft"
-      updateData.status = 'draft';
-    }
+    // When confirming, determine status based on positions using the global latest snapshot date
+    // Use the recomputeStrategyStatus function to ensure consistency
+    const computedStatus = await recomputeStrategyStatus(strategyId);
+    updateData.status = computedStatus;
   }
 
   if (updates.strategyType !== undefined) {
@@ -411,6 +372,16 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
     })
     .where(inArray(strategies.id, sourceIds));
 
+  // Recompute target strategy status based on positions (may have changed after merge)
+  const targetStatus = await recomputeStrategyStatus(targetId);
+  await db
+    .update(strategies)
+    .set({
+      status: targetStatus,
+      updatedAt: now,
+    })
+    .where(eq(strategies.id, targetId));
+
   // Auto-trigger recompute: Find all snapshot dates where target strategy has positions
   const targetStrategy = rows.find((row) => row.id === targetId);
   if (targetStrategy?.accountId) {
@@ -484,6 +455,218 @@ export async function getStrategyById(strategyId: string) {
     .where(eq(strategies.id, strategyId))
     .limit(1);
   return result[0] ?? null;
+}
+
+/**
+ * Recomputes the status for a strategy based on latest snapshot date positions
+ * - "open" if has positions with quantity != 0 on the GLOBAL latest snapshot date
+ * - "closed" if had positions before but none on the global latest snapshot
+ * - "draft" if never had any positions
+ * 
+ * Uses the global latest snapshot date (not strategy-specific) to determine if strategy is currently open
+ */
+export async function recomputeStrategyStatus(strategyId: string): Promise<'open' | 'closed' | 'draft'> {
+  // Get the GLOBAL latest snapshot date (where any strategy has positions with quantity != 0)
+  const globalLatestSnapshotResult = await db
+    .select({
+      snapshotDate: positions.snapshotDate,
+    })
+    .from(positions)
+    .where(sql`${positions.quantity} != 0`)
+    .orderBy(desc(positions.snapshotDate))
+    .limit(1);
+  
+  const globalLatestSnapshotDate = globalLatestSnapshotResult[0]?.snapshotDate ?? null;
+  
+  if (globalLatestSnapshotDate) {
+    // Check if THIS strategy has positions with quantity != 0 on the global latest snapshot date
+    const hasOpenPositions = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(positions)
+      .where(
+        and(
+          eq(positions.strategyId, strategyId),
+          eq(positions.snapshotDate, globalLatestSnapshotDate),
+          sql`${positions.quantity} != 0`
+        )
+      )
+      .limit(1);
+    
+    const openPositionCount = Number(hasOpenPositions[0]?.count ?? 0);
+    if (openPositionCount > 0) {
+      return 'open';
+    } else {
+      // Strategy doesn't have positions on latest snapshot, but check if it ever had positions
+      const everHadPositions = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(positions)
+        .where(eq(positions.strategyId, strategyId))
+        .limit(1);
+      
+      const hadPositionsCount = Number(everHadPositions[0]?.count ?? 0);
+      if (hadPositionsCount > 0) {
+        return 'closed'; // Had positions before but not on latest snapshot
+      } else {
+        return 'draft'; // Never had any positions
+      }
+    }
+  } else {
+    // No global latest snapshot date - check if strategy ever had positions
+    const everHadPositions = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(positions)
+      .where(eq(positions.strategyId, strategyId))
+      .limit(1);
+    
+    const hadPositionsCount = Number(everHadPositions[0]?.count ?? 0);
+    if (hadPositionsCount > 0) {
+      return 'closed';
+    } else {
+      return 'draft';
+    }
+  }
+}
+
+/**
+ * Restores merged strategies that may have been incorrectly changed
+ * A strategy should be 'merged' if it has no positions (they were moved to target during merge)
+ * and there are other strategies with the same strategyKey that have positions
+ */
+export async function restoreMergedStrategies(): Promise<{
+  restored: number;
+  results: Array<{ strategyId: string; strategyKey: string }>;
+}> {
+  const results: Array<{ strategyId: string; strategyKey: string }> = [];
+  let restored = 0;
+
+  // Find strategies that:
+  // 1. Don't have status 'merged' but should be (no positions, and other strategies with same key exist)
+  // 2. Or have positions but status is 'merged' (shouldn't happen, but fix it)
+  
+  // First, find all strategies that have no positions
+  const allStrategies = await db.select().from(strategies);
+  
+  for (const strategy of allStrategies) {
+    // Check if this strategy has any positions
+    const hasPositions = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(positions)
+      .where(eq(positions.strategyId, strategy.id))
+      .limit(1);
+    
+    const positionCount = Number(hasPositions[0]?.count ?? 0);
+    
+    if (positionCount === 0 && strategy.status !== 'merged') {
+      // Strategy has no positions - check if there are other strategies with same key that have positions
+      // If so, this one was likely merged
+      const otherStrategiesWithSameKey = await db
+        .select()
+        .from(strategies)
+        .where(
+          and(
+            eq(strategies.strategyKey, strategy.strategyKey),
+            sql`${strategies.id} != ${strategy.id}`
+          )
+        );
+      
+      // Check if any of these other strategies have positions
+      let shouldBeMerged = false;
+      for (const other of otherStrategiesWithSameKey) {
+        const otherHasPositions = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(positions)
+          .where(eq(positions.strategyId, other.id))
+          .limit(1);
+        
+        if (Number(otherHasPositions[0]?.count ?? 0) > 0) {
+          shouldBeMerged = true;
+          break;
+        }
+      }
+      
+      if (shouldBeMerged) {
+        await db
+          .update(strategies)
+          .set({
+            status: 'merged',
+            updatedAt: new Date(),
+          })
+          .where(eq(strategies.id, strategy.id));
+        
+        results.push({
+          strategyId: strategy.id,
+          strategyKey: strategy.strategyKey,
+        });
+        restored++;
+      }
+    } else if (positionCount > 0 && strategy.status === 'merged') {
+      // Strategy has positions but status is 'merged' - this shouldn't happen, restore it
+      const newStatus = await recomputeStrategyStatus(strategy.id);
+      await db
+        .update(strategies)
+        .set({
+          status: newStatus,
+          updatedAt: new Date(),
+        })
+        .where(eq(strategies.id, strategy.id));
+      
+      results.push({
+        strategyId: strategy.id,
+        strategyKey: strategy.strategyKey,
+      });
+      restored++;
+    }
+  }
+
+  return { restored, results };
+}
+
+/**
+ * Recomputes and updates status for all strategies (or optionally a specific strategy)
+ * Returns count of strategies updated
+ * 
+ * Note: Skips strategies with status 'merged' - merged strategies should always remain 'merged'
+ */
+export async function recomputeAllStrategyStatuses(strategyId?: string): Promise<{
+  updated: number;
+  results: Array<{ strategyId: string; oldStatus: string; newStatus: string }>;
+}> {
+  const results: Array<{ strategyId: string; oldStatus: string; newStatus: string }> = [];
+  let updated = 0;
+
+  // Get strategies to update (exclude merged strategies)
+  const strategiesToUpdate = strategyId
+    ? await db.select().from(strategies).where(eq(strategies.id, strategyId))
+    : await db.select().from(strategies).where(sql`${strategies.status} != 'merged'`);
+
+  for (const strategy of strategiesToUpdate) {
+    // Skip merged strategies - they should always remain 'merged'
+    if (strategy.status === 'merged') {
+      continue;
+    }
+
+    const newStatus = await recomputeStrategyStatus(strategy.id);
+    
+    // Only update if status changed
+    if (strategy.status !== newStatus) {
+      await db
+        .update(strategies)
+        .set({
+          status: newStatus,
+          updatedAt: new Date(),
+        })
+        .where(eq(strategies.id, strategy.id));
+      
+      results.push({
+        strategyId: strategy.id,
+        oldStatus: strategy.status,
+        newStatus,
+      });
+      updated++;
+    }
+  }
+
+  return { updated, results };
 }
 
 /**

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mergeStrategies } from '@/lib/services/strategies';
+import { mergeStrategies, getStrategyById } from '@/lib/services/strategies';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,10 +15,17 @@ export async function POST(request: NextRequest) {
 
     const stats = await mergeStrategies({ targetId, sourceIds });
 
+    // Fetch updated target strategy to return its new status
+    const updatedTarget = await getStrategyById(targetId);
+
     return NextResponse.json({
       success: true,
       message: 'Strategies merged successfully',
       stats,
+      targetStrategy: updatedTarget ? {
+        id: updatedTarget.id,
+        status: updatedTarget.status,
+      } : null,
     });
   } catch (error) {
     console.error('Merge strategies error:', error);

@@ -61,6 +61,7 @@ export default function StrategiesPage() {
   const [pendingConfirmIds, setPendingConfirmIds] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [merging, setMerging] = useState(false);
+  const [recomputingStatuses, setRecomputingStatuses] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -301,6 +302,30 @@ export default function StrategiesPage() {
     }
   };
 
+  const handleRecomputeStatuses = async () => {
+    setRecomputingStatuses(true);
+    setError(null);
+    setSuccess(null);
+    
+    try {
+      const response = await fetch('/api/strategies/recompute-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) throw new Error('Failed to recompute statuses');
+      
+      const data = await response.json();
+      await loadData();
+      setSuccess(`Fixed ${data.updated} strategy status(es)`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to recompute statuses');
+    } finally {
+      setRecomputingStatuses(false);
+    }
+  };
+
   const startEditing = (strategy: Strategy) => {
     setEditingId(strategy.id);
     setEditValues({
@@ -420,12 +445,22 @@ export default function StrategiesPage() {
       title="Strategy Management"
       subtitle="Manage strategies, confirm auto-derived suggestions, and edit metadata"
       actions={
+        <div className="flex gap-2">
+          <button
+            onClick={handleRecomputeStatuses}
+            disabled={recomputingStatuses}
+            className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:bg-gray-400 flex items-center gap-2"
+          >
+            {recomputingStatuses && <Spinner className="size-4" />}
+            {recomputingStatuses ? 'Recomputing...' : 'Fix Statuses'}
+          </button>
         <button
           onClick={() => setShowForm(!showForm)}
           className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
         >
           {showForm ? 'Cancel' : '+ Create Strategy'}
         </button>
+        </div>
       }
     >
 
