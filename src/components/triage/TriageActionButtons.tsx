@@ -32,18 +32,22 @@ type ActionType = "TRADE" | "MONITOR" | "DISMISS" | "UPDATE";
 // Mapping of trigger types to available actions
 const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   // Position-level triggers
-  REVIEW_DTE: ["TRADE", "MONITOR", "DISMISS"],
-  WATCH_CLOSELY: ["TRADE", "MONITOR", "DISMISS"],
-  MONITOR: ["TRADE", "MONITOR", "DISMISS"],
-  CLOSE_OR_ROLL: ["TRADE", "MONITOR", "DISMISS"],
+  "ASSIGNMENT_RISK≤14_DTE": ["TRADE", "MONITOR", "DISMISS"],
+  "ASSIGNMENT_RISK≤30_DTE": ["TRADE", "MONITOR", "DISMISS"],
+  "ITM_SHORT": ["TRADE", "MONITOR", "DISMISS"],
+  "ITM_LONG": ["TRADE", "MONITOR", "DISMISS"],
+  "SIGMA_0.5_SHORT": ["TRADE", "MONITOR", "DISMISS"],
+  "SIGMA_0.5_LONG": ["TRADE", "MONITOR", "DISMISS"],
+  "SIGMA_1.0": ["TRADE", "MONITOR", "DISMISS"],
+  "REVIEW_DTE": ["TRADE", "MONITOR", "DISMISS"],
   
   // Strategy-level triggers
-  CONFIRM_STRATEGIES: ["UPDATE"],
-  PROVIDE_STRATEGY_METADATA: ["UPDATE"],
-  REVIEW_SIZE: ["TRADE", "MONITOR", "DISMISS"],
-  REVIEW_COMPLEXITY: [], // No actions available
-  STATE_CODE_CHANGE: ["TRADE", "MONITOR", "DISMISS"],
-  QUANTITY_CHANGE: ["UPDATE"], // Only UPDATE action for quantity change triggers
+  "CONFIRM_STRATEGIES": ["UPDATE"],
+  "PROVIDE_STRATEGY_METADATA": ["UPDATE"],
+  "REVIEW_SIZE": ["TRADE", "MONITOR", "DISMISS"],
+  "REVIEW_COMPLEXITY": [], // No actions available
+  "STATE_CODE_CHANGE": ["TRADE", "MONITOR", "DISMISS"],
+  "QUANTITY_CHANGE": ["UPDATE"], // Only UPDATE action for quantity change triggers
 };
 
 // Helper to determine available actions for a trigger

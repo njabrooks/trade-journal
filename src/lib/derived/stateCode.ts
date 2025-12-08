@@ -101,11 +101,14 @@ async function computeWorstShortSigma(
   const sigmaValues: number[] = [];
 
   for (const pos of shortPositions) {
-    if (!pos.underlyingId || !pos.spot || !pos.strike || !pos.expiry) continue;
+    if (!pos.underlyingId || !pos.strike || !pos.expiry) continue;
 
-    // Get IV for underlying
+    // Get IV and spot for underlying (need underlying spot, not option mark price)
     const ivResult = await db
-      .select({ iv30: underlyingsIvHistory.iv30 })
+      .select({ 
+        iv30: underlyingsIvHistory.iv30,
+        spot: underlyingsIvHistory.spot,
+      })
       .from(underlyingsIvHistory)
       .where(
         and(
@@ -118,16 +121,20 @@ async function computeWorstShortSigma(
     const iv30 = ivResult[0]?.iv30 ? toNumber(ivResult[0].iv30) : null;
     if (!iv30 || iv30 <= 0) continue;
 
+    // Use underlying spot for sigma calculation (not option mark price)
+    const underlyingSpot = ivResult[0]?.spot ? toNumber(ivResult[0].spot) : null;
+    if (!underlyingSpot || underlyingSpot <= 0) continue;
+
     // Compute DTE
     const expiryDate = new Date(pos.expiry + 'T00:00:00Z');
     const diffTime = expiryDate.getTime() - snapshotDateObj.getTime();
     const dte = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     if (dte <= 0) continue;
 
-    // Compute sigma-to-strike
-    const S = toNumber(pos.spot);
+    // Compute sigma-to-strike using underlying spot
+    const S = underlyingSpot;
     const K = toNumber(pos.strike);
-    if (!S || !K || S <= 0 || K <= 0) continue;
+    if (!K || K <= 0) continue;
 
     const T = dte / 365;
     const logRatio = Math.log(S / K);

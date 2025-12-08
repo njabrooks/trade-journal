@@ -413,11 +413,11 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
             maxDate
           );
 
-          // Optionally trigger triage recompute for affected dates
+          // Trigger targeted triage recompute for target strategy on affected dates
           for (const date of dates) {
             if (date) {
               try {
-                await computeTriageForDate(date, targetStrategy.accountId);
+                await computeTriageForDate(date, targetStrategy.accountId, targetId);
               } catch (error) {
                 console.error(
                   `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,

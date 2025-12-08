@@ -9,11 +9,13 @@ interface IngestionResult {
   message?: string;
   summary?: {
     tickersProcessed: number;
-    tickersFound: number;
-    inserted: number;
-    updated: number;
-    skipped: number;
-    errors?: Array<{ ticker: string; error: string }>;
+    tickersFound?: number;
+    inserted?: number;
+    updated?: number;
+    skipped?: number;
+    processed?: number;
+    dateRange?: { start: string; end: string };
+    errors?: Array<{ ticker: string; error: string } | { ticker: string; date: string; error: string }>;
   };
   error?: string;
 }
@@ -27,6 +29,9 @@ export default function UnderlyingsIvIngestionPage() {
   const [recentDays, setRecentDays] = useState(90);
   const [customTickers, setCustomTickers] = useState('');
   const [useCustomTickers, setUseCustomTickers] = useState(false);
+  const [backfillSpot, setBackfillSpot] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     loadAvailableTickers();
@@ -85,6 +90,9 @@ export default function UnderlyingsIvIngestionPage() {
           tickers: useCustomTickers ? tickers : undefined,
           onlyRecent: !useCustomTickers ? onlyRecent : undefined,
           recentDays: !useCustomTickers ? recentDays : undefined,
+          backfillSpot: backfillSpot || undefined,
+          startDate: backfillSpot && startDate ? startDate : undefined,
+          endDate: backfillSpot && endDate ? endDate : undefined,
         }),
       });
 
@@ -115,11 +123,65 @@ export default function UnderlyingsIvIngestionPage() {
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
+                checked={backfillSpot}
+                onChange={(e) => setBackfillSpot(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm font-medium">Backfill Spot Prices (Yahoo Finance)</span>
+            </label>
+          </div>
+
+          {backfillSpot && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm text-yellow-800">
+              <p className="font-semibold mb-2">Spot Price Backfilling:</p>
+              <p className="mb-2">
+                Fetches historical spot prices from Yahoo Finance for the selected tickers and date range.
+                If no date range is provided, automatically finds dates from positions in the database.
+              </p>
+              <div className="grid grid-cols-2 gap-4 mt-3">
+                <div>
+                  <label htmlFor="startDate" className="block text-sm font-medium mb-1">
+                    Start Date (optional)
+                  </label>
+                  <input
+                    type="date"
+                    id="startDate"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="endDate" className="block text-sm font-medium mb-1">
+                    End Date (optional)
+                  </label>
+                  <input
+                    type="date"
+                    id="endDate"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                  />
+                </div>
+              </div>
+              <p className="mt-2 text-xs">
+                Leave dates empty to auto-detect from positions. Only updates records where spot is missing.
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
                 checked={useCustomTickers}
                 onChange={(e) => setUseCustomTickers(e.target.checked)}
                 className="rounded"
+                disabled={backfillSpot}
               />
-              <span className="text-sm font-medium">Use custom tickers</span>
+              <span className={`text-sm font-medium ${backfillSpot ? 'text-gray-400' : ''}`}>
+                Use custom tickers
+              </span>
             </label>
           </div>
 
@@ -182,29 +244,43 @@ export default function UnderlyingsIvIngestionPage() {
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
-            <p className="font-semibold mb-2">Data Source:</p>
-            <p>
-              This tool scrapes Option Strategist&apos;s free volatility data page. Data is
-              typically updated weekly. The scraper extracts:
-            </p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              <li>Spot price (underlying close)</li>
-              <li>IV30 (30-day implied volatility, converted to decimal)</li>
-              <li>Snapshot date (from Option Strategist date code)</li>
-            </ul>
-            <p className="mt-2 text-xs">
-              Note: This is a weekly data source. For daily data, consider integrating with IBKR
-              API (see Future Enhancements).
-            </p>
-          </div>
+          {!backfillSpot && (
+            <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
+              <p className="font-semibold mb-2">Data Source:</p>
+              <p>
+                This tool scrapes Option Strategist&apos;s free volatility data page. Data is
+                typically updated weekly. The scraper extracts:
+              </p>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Spot price (underlying close)</li>
+                <li>IV30 (30-day implied volatility, converted to decimal)</li>
+                <li>Snapshot date (from Option Strategist date code)</li>
+              </ul>
+              <p className="mt-2 text-xs">
+                Note: This is a weekly data source. For daily data, consider integrating with IBKR
+                API (see Future Enhancements).
+              </p>
+            </div>
+          )}
 
           <button
             onClick={handleIngest}
-            disabled={loading || (useCustomTickers && !customTickers.trim()) || (!useCustomTickers && availableTickers.length === 0)}
+            disabled={
+              loading ||
+              (backfillSpot && useCustomTickers && !customTickers.trim()) ||
+              (backfillSpot && !useCustomTickers && availableTickers.length === 0) ||
+              (!backfillSpot && useCustomTickers && !customTickers.trim()) ||
+              (!backfillSpot && !useCustomTickers && availableTickers.length === 0)
+            }
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {loading ? 'Ingesting...' : 'Ingest IV History'}
+            {loading
+              ? backfillSpot
+                ? 'Backfilling Spot Prices...'
+                : 'Ingesting...'
+              : backfillSpot
+                ? 'Backfill Spot Prices'
+                : 'Ingest IV History'}
           </button>
         </div>
       </div>
@@ -244,19 +320,45 @@ export default function UnderlyingsIvIngestionPage() {
                   <span className="font-semibold">Tickers Processed:</span>{' '}
                   {result.summary.tickersProcessed}
                 </div>
-                <div>
-                  <span className="font-semibold">Tickers Found:</span>{' '}
-                  {result.summary.tickersFound}
-                </div>
-                <div>
-                  <span className="font-semibold">Inserted:</span> {result.summary.inserted}
-                </div>
-                <div>
-                  <span className="font-semibold">Updated:</span> {result.summary.updated}
-                </div>
-                <div>
-                  <span className="font-semibold">Skipped:</span> {result.summary.skipped}
-                </div>
+                {result.summary.tickersFound !== undefined && (
+                  <div>
+                    <span className="font-semibold">Tickers Found:</span>{' '}
+                    {result.summary.tickersFound}
+                  </div>
+                )}
+                {result.summary.inserted !== undefined && (
+                  <div>
+                    <span className="font-semibold">Inserted:</span> {result.summary.inserted}
+                  </div>
+                )}
+                {result.summary.updated !== undefined && (
+                  <div>
+                    <span className="font-semibold">Updated:</span> {result.summary.updated}
+                  </div>
+                )}
+                {result.summary.processed !== undefined && (
+                  <div>
+                    <span className="font-semibold">Records Processed:</span>{' '}
+                    {result.summary.processed}
+                  </div>
+                )}
+                {result.summary.skipped !== undefined && (
+                  <div>
+                    <span className="font-semibold">Skipped:</span> {result.summary.skipped}
+                  </div>
+                )}
+                {result.summary.dateRange && (
+                  <>
+                    <div>
+                      <span className="font-semibold">Date Range Start:</span>{' '}
+                      {result.summary.dateRange.start}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Date Range End:</span>{' '}
+                      {result.summary.dateRange.end}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

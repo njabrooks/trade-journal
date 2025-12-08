@@ -126,24 +126,41 @@ This document captures all planned future enhancements mentioned throughout the 
   - **Current approach**: Forward-looking only - collect IV data weekly going forward
   - **Rationale**: Active triage triggers only need recent IV data (triage looks up IV by `asOfDate` matching position `snapshotDate`)
   - **Historical recompute**: If recomputing triage for past dates, IV data may be missing (triage handles this gracefully with fallback)
-  - **Future**: IBKR API (#10a) could provide historical IV data if needed for historical analysis
-**Status**: ✅ Manual ingestion implemented and working
+  - **Limitation**: Weekly data doesn't match daily snapshot dates, causing inaccurate ITM calculations
+  - **Future**: IBKR API (#10a) **CRITICAL** - needed for daily spot/IV data matching snapshot dates
+**Status**: ✅ Manual ingestion implemented and working (but limited by weekly data frequency)
 
-### 10a. IBKR API Integration for IV History (Future Upgrade)
+### 10a. IBKR API Integration for IV History & Spot Prices (Future Upgrade) ⚠️ CRITICAL FOR ACCURATE TRIAGE
 **Location**: Enhancement to #10  
 **Current State**: Using Option Strategist (weekly data, current week only)  
+**Problem**: 
+- Option Strategist provides weekly data that doesn't align with daily position snapshots
+- **Critical issue**: ITM calculations require underlying spot prices that match snapshot dates
+  - Current implementation uses `underlyings_iv_history.spot` for ITM calculations (see `src/lib/derived/triage.ts`)
+  - Weekly Option Strategist data means spot prices don't match daily snapshot dates
+  - This causes incorrect ITM flags (false positives/negatives)
+- IV data also needs daily granularity for accurate sigma-to-strike calculations
+- No historical backfilling capability from Option Strategist
+
 **Enhancement**: 
-- Connect to Interactive Brokers API gateway for real-time IV data
-- Query IV data on-demand or via scheduled job
-- Provides daily data (vs weekly from Option Strategist)
-- **Historical data capability**: Can query historical IV data for backfilling past dates
-- More accurate and timely data for triage metrics
-- Can replace or supplement Option Strategist scraping
+- Connect to Interactive Brokers API gateway for **daily** IV and spot price data
+- **Direct API connection** (different from Flex queries - requires IBKR API gateway setup)
+- Query IV30 and spot price data on-demand or via scheduled job
+- Provides **daily data** (vs weekly from Option Strategist) that matches position snapshot dates
+- **Historical data capability**: Can query historical IV and spot data for backfilling past dates
+- More accurate and timely data for triage metrics (ITM flags, sigma calculations)
+- Can replace Option Strategist scraping entirely
 - **Use cases**:
-  - Daily IV updates (vs weekly from Option Strategist)
-  - Historical backfilling for past dates (enables accurate historical triage recomputation)
-  - Real-time IV queries for active monitoring
-**Priority**: Medium (upgrade path from #10)
+  - **Daily spot price updates** - Critical for accurate ITM calculations matching snapshot dates
+  - **Daily IV30 updates** - More accurate sigma-to-strike calculations
+  - **Historical backfilling** - Enables accurate historical triage recomputation for past dates
+  - Real-time IV/spot queries for active monitoring
+- **Implementation approach**:
+  - Build IBKR API client (separate from Flex query infrastructure)
+  - Scheduled job to fetch daily IV/spot data for all active underlyings
+  - Store in `underlyings_iv_history` table (same schema, just better data source)
+  - Reuse existing triage computation logic (already uses `underlyings_iv_history.spot`)
+**Priority**: **High** (upgrade path from #10, now critical for accurate triage calculations)
 
 ### 11. Exercises/Assignments Ingestion
 **Location**: `docs/ingestion_v1.md` (lines 92, 127, 212, 235)  
@@ -262,11 +279,11 @@ This document captures all planned future enhancements mentioned throughout the 
 - ✅ State Code Change Performance Optimization (#4) - **COMPLETED**
 - ✅ Auto-Trigger Recompute After Data Changes (#21) - **COMPLETED**
 - ✅ Underlyings IV History Ingestion (#10) - **COMPLETED** (manual)
+- IBKR API Integration for IV History & Spot Prices (#10a) - **CRITICAL** for accurate ITM calculations
 - Automated Flex Ingestion (#9)
 - Automated Tests (#20)
 
 ### Medium Priority
-- IBKR API Integration for IV History (#10a) - Upgrade from Option Strategist
 - Roll Trade Auto-Detection (#1)
 - Trade Validation & Discrepancy Detection (#3)
 - Triage Rules Database Persistence (#5)

@@ -18,10 +18,16 @@ export const ALL_CONTEXTS = [
 
 // All available trigger types (recommendedAction values)
 export const ALL_TRIGGERS = [
+  // Position-level triggers
+  "ASSIGNMENT_RISK≤14_DTE",
+  "ASSIGNMENT_RISK≤30_DTE",
+  "ITM_SHORT",
+  "ITM_LONG",
+  "SIGMA_0.5_SHORT",
+  "SIGMA_0.5_LONG",
+  "SIGMA_1.0",
   "REVIEW_DTE",
-  "WATCH_CLOSELY",
-  "MONITOR",
-  "CLOSE_OR_ROLL",
+  // Strategy-level triggers
   "CONFIRM_STRATEGIES",
   "PROVIDE_STRATEGY_METADATA",
   "REVIEW_SIZE",

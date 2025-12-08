@@ -74,11 +74,16 @@ export async function upsertIvSnapshots(
 
       const source = snapshot.source || 'opt_strat'; // Required - default to 'opt_strat' for Option Strategist
 
+      // Round spot price to 2 decimal places
+      const roundedSpot = snapshot.spot !== null && snapshot.spot !== undefined
+        ? Math.round(snapshot.spot * 100) / 100
+        : null;
+
       const ivHistoryData: NewUnderlyingIvHistory = {
         underlyingId: underlyingId ?? undefined, // Can be null if underlying doesn't exist
         ticker, // Required - denormalized for easier querying
         asOfDate: dateStr,
-        spot: snapshot.spot?.toString() ?? null,
+        spot: roundedSpot?.toString() ?? null,
         iv30: snapshot.iv30?.toString() ?? null,
         rv20: snapshot.rv20?.toString() ?? null, // 20-day realized volatility (hv20 from source)
         source, // Required - part of unique constraint
@@ -107,6 +112,7 @@ export async function upsertIvSnapshots(
 
       if (existing.length > 0) {
         // Update existing record
+        // Note: spot is already rounded in ivHistoryData
         const updateSet: any = {
           spot: ivHistoryData.spot,
           iv30: ivHistoryData.iv30,
@@ -338,6 +344,236 @@ export async function scrapeOptionStrategist(
   }
 
   return snapshots;
+}
+
+/**
+ * Fetches historical spot price from Yahoo Finance
+ * Uses Yahoo Finance API (free, no API key required)
+ * Returns spot price for a specific date, or null if not found
+ * 
+ * Note: Yahoo Finance may have rate limits, so use with reasonable delays between requests
+ */
+export async function fetchYahooFinanceSpot(
+  ticker: string,
+  date: string
+): Promise<number | null> {
+  try {
+    // Yahoo Finance API endpoint for historical data
+    // Format: https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?period1={startTimestamp}&period2={endTimestamp}&interval=1d
+    const dateObj = new Date(date + 'T00:00:00Z');
+    const startTimestamp = Math.floor(dateObj.getTime() / 1000) - 86400; // Start 1 day before to ensure we get the date
+    const endTimestamp = Math.floor(dateObj.getTime() / 1000) + 86400; // End 1 day after
+    
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?period1=${startTimestamp}&period2=${endTimestamp}&interval=1d`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; TradeJournal/1.0)',
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Ticker not found
+        return null;
+      }
+      console.warn(`Yahoo Finance HTTP ${response.status} for ${ticker} on ${date}`);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    // Check for errors in response
+    if (data?.chart?.error) {
+      console.warn(`Yahoo Finance error for ${ticker}:`, data.chart.error);
+      return null;
+    }
+    
+    // Extract close price from Yahoo Finance response
+    if (data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close) {
+      const closes = data.chart.result[0].indicators.quote[0].close;
+      const timestamps = data.chart.result[0].timestamp;
+      
+      if (!timestamps || timestamps.length === 0) {
+        return null;
+      }
+      
+      // Find the timestamp that matches our date (or closest trading day)
+      const targetTimestamp = Math.floor(dateObj.getTime() / 1000);
+      let bestMatch: { index: number; diff: number } | null = null;
+      
+      for (let i = 0; i < timestamps.length; i++) {
+        const ts = timestamps[i];
+        const tsDate = new Date(ts * 1000).toISOString().split('T')[0];
+        const diff = Math.abs(ts - targetTimestamp);
+        
+        // Exact match
+        if (tsDate === date && closes[i] !== null && closes[i] !== undefined) {
+          return closes[i];
+        }
+        
+        // Track closest match (within 3 days)
+        if (diff < 3 * 86400 && closes[i] !== null && closes[i] !== undefined) {
+          if (!bestMatch || diff < bestMatch.diff) {
+            bestMatch = { index: i, diff };
+          }
+        }
+      }
+      
+      // Return closest match if found
+      if (bestMatch) {
+        return closes[bestMatch.index];
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error fetching Yahoo Finance spot for ${ticker} on ${date}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Backfills spot prices for tickers and date range using Yahoo Finance
+ * Only updates records where spot is null or missing
+ */
+export async function backfillSpotPrices(
+  tickers: string[],
+  startDate: string,
+  endDate: string
+): Promise<{
+  processed: number;
+  updated: number;
+  errors: Array<{ ticker: string; date: string; error: string }>;
+}> {
+  const errors: Array<{ ticker: string; date: string; error: string }> = [];
+  let processed = 0;
+  let updated = 0;
+
+  // Generate all dates in range
+  const dates: string[] = [];
+  const start = new Date(startDate + 'T00:00:00Z');
+  const end = new Date(endDate + 'T00:00:00Z');
+  const current = new Date(start);
+  
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0]!);
+    current.setDate(current.getDate() + 1);
+  }
+
+  // For each ticker and date, fetch spot price and update if missing
+  for (const ticker of tickers) {
+    const normalizedTicker = ticker.trim().toUpperCase();
+    
+    for (const date of dates) {
+      try {
+        // Check if record exists and already has spot price
+        const existing = await db
+          .select({ id: underlyingsIvHistory.id, spot: underlyingsIvHistory.spot })
+          .from(underlyingsIvHistory)
+          .where(
+            and(
+              eq(underlyingsIvHistory.ticker, normalizedTicker),
+              eq(underlyingsIvHistory.asOfDate, date)
+            )
+          )
+          .limit(1);
+
+        // Skip if already has spot price
+        if (existing.length > 0 && existing[0].spot) {
+          continue;
+        }
+
+        // Fetch spot price from Yahoo Finance
+        const spot = await fetchYahooFinanceSpot(normalizedTicker, date);
+        
+        if (spot === null) {
+          errors.push({
+            ticker: normalizedTicker,
+            date,
+            error: 'Spot price not found',
+          });
+          continue;
+        }
+
+        // Round spot price to 2 decimal places
+        const roundedSpot = Math.round(spot * 100) / 100;
+
+        // Ensure underlying exists
+        const underlyingId = await ensureUnderlyingId(normalizedTicker);
+
+        if (existing.length > 0) {
+          // Update existing record with spot price
+          await db
+            .update(underlyingsIvHistory)
+            .set({
+              spot: roundedSpot.toString(),
+              updatedAt: new Date(),
+            })
+            .where(eq(underlyingsIvHistory.id, existing[0].id));
+          updated++;
+        } else {
+          // Create new record with spot price (no IV data)
+          const ivHistoryData: NewUnderlyingIvHistory = {
+            underlyingId: underlyingId ?? undefined,
+            ticker: normalizedTicker,
+            asOfDate: date,
+            spot: roundedSpot.toString(),
+            iv30: null,
+            rv20: null,
+            source: 'yahoo_finance',
+          };
+
+          try {
+            await db.insert(underlyingsIvHistory).values(ivHistoryData);
+            updated++;
+          } catch (insertError) {
+            // Handle race condition - record might have been created between check and insert
+            const existingAfter = await db
+              .select({ id: underlyingsIvHistory.id })
+              .from(underlyingsIvHistory)
+              .where(
+                and(
+                  eq(underlyingsIvHistory.ticker, normalizedTicker),
+                  eq(underlyingsIvHistory.asOfDate, date)
+                )
+              )
+              .limit(1);
+
+            if (existingAfter.length > 0) {
+              // Round spot price to 2 decimal places (spot variable is still in scope)
+              const roundedSpot = Math.round(spot * 100) / 100;
+              await db
+                .update(underlyingsIvHistory)
+                .set({
+                  spot: roundedSpot.toString(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(underlyingsIvHistory.id, existingAfter[0].id));
+              updated++;
+            } else {
+              throw insertError;
+            }
+          }
+        }
+
+        processed++;
+        
+        // Rate limiting: small delay between requests to avoid overwhelming Yahoo Finance
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        errors.push({
+          ticker: normalizedTicker,
+          date,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        console.error(`Error backfilling spot for ${normalizedTicker} on ${date}:`, error);
+      }
+    }
+  }
+
+  return { processed, updated, errors };
 }
 
 /**

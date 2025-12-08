@@ -147,21 +147,28 @@ async function checkSeverityOverride(
 
 /**
  * Computes position-level triage records for a snapshot date
+ * @param strategyId - Optional: filter to positions for a specific strategy (for targeted recompute)
  */
 export async function computePositionTriageForDate(
   snapshotDate: string,
-  accountId?: string
+  accountId?: string,
+  strategyId?: string
 ): Promise<NewTriageRecord[]> {
-  // Get all positions for this date (optionally filtered by account)
+  // Get all positions for this date (optionally filtered by account and strategy)
+  // Use SQL cast to handle string quantities properly
   const whereConditions = [
     eq(positions.snapshotDate, snapshotDate),
-    ne(positions.quantity, 0),
+    sql`CAST(${positions.quantity} AS DECIMAL) != 0`,
     eq(positions.assetClass, 'OPT'),
     isNotNull(positions.expiry),
   ];
 
   if (accountId) {
     whereConditions.push(eq(positions.accountId, accountId));
+  }
+
+  if (strategyId) {
+    whereConditions.push(eq(positions.strategyId, strategyId));
   }
 
   const optionPositions = await db
@@ -171,6 +178,40 @@ export async function computePositionTriageForDate(
 
   const records: NewTriageRecord[] = [];
 
+  // Batch fetch IV data for all underlyingIds to avoid N+1 queries
+  const underlyingIds = Array.from(
+    new Set(
+      optionPositions
+        .map((p) => p.underlyingId)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+
+  const ivDataMap = new Map<string, string | null>();
+  const underlyingSpotMap = new Map<string, string | null>();
+  if (underlyingIds.length > 0) {
+    const ivResults = await db
+      .select({
+        underlyingId: underlyingsIvHistory.underlyingId,
+        iv30: underlyingsIvHistory.iv30,
+        spot: underlyingsIvHistory.spot,
+      })
+      .from(underlyingsIvHistory)
+      .where(
+        and(
+          inArray(underlyingsIvHistory.underlyingId, underlyingIds),
+          eq(underlyingsIvHistory.asOfDate, snapshotDate)
+        )
+      );
+
+    for (const iv of ivResults) {
+      if (iv.underlyingId) {
+        ivDataMap.set(iv.underlyingId, iv.iv30 ?? null);
+        underlyingSpotMap.set(iv.underlyingId, iv.spot ?? null);
+      }
+    }
+  }
+
   for (const position of optionPositions) {
     if (!position.expiry || !position.accountId) continue;
 
@@ -179,26 +220,25 @@ export async function computePositionTriageForDate(
     // We'll check DTE in the severity logic instead
 
     const dteBucket = getDteBucket(dte);
-    const isItm = computeIsItm(position.optionRight, position.spot, position.strike);
+    
+    // Get underlying spot price for ITM calculation (not option mark price)
+    // For options, position.spot is the option's mark price, not the underlying's spot
+    const underlyingSpot = position.underlyingId 
+      ? underlyingSpotMap.get(position.underlyingId) ?? null 
+      : null;
+    
+    // Use underlying spot for ITM calculation, fallback to position.spot if unavailable
+    // (position.spot might be underlying spot for stocks, but for options it's option mark price)
+    const spotForItm = underlyingSpot ?? (position.assetClass === 'OPT' ? null : position.spot);
+    const isItm = computeIsItm(position.optionRight, spotForItm, position.strike);
 
-    // Get IV for underlying if available
-    let iv30: string | null = null;
-    if (position.underlyingId) {
-      const ivResult = await db
-        .select()
-        .from(underlyingsIvHistory)
-        .where(
-          and(
-            eq(underlyingsIvHistory.underlyingId, position.underlyingId),
-            eq(underlyingsIvHistory.asOfDate, snapshotDate)
-          )
-        )
-        .limit(1);
-      iv30 = ivResult[0]?.iv30 ?? null;
-    }
+    // Get IV for underlying from pre-fetched map
+    const iv30 = position.underlyingId ? ivDataMap.get(position.underlyingId) ?? null : null;
 
+    // Use underlying spot for sigma calculation (same as ITM - need underlying spot, not option mark price)
+    const spotForSigma = underlyingSpot ?? (position.assetClass === 'OPT' ? null : position.spot);
     const sigmaToStrike = computeSigmaToStrike(
-      position.spot,
+      spotForSigma,
       position.strike,
       iv30,
       dte
@@ -240,25 +280,29 @@ export async function computePositionTriageForDate(
     // 1. Assignment risk (highest priority)
     if (flagAssignmentUrgent) {
       severity = 'urgent';
-      recommendedAction = 'CLOSE_OR_ROLL';
+      recommendedAction = 'ASSIGNMENT_RISK≤14_DTE';
     } else if (flagAssignmentAttention) {
       severity = 'attention';
-      recommendedAction = 'CLOSE_OR_ROLL';
+      recommendedAction = 'ASSIGNMENT_RISK≤30_DTE';
     } else if (isItm === true) {
-      // ITM but not short assignment risk
+      // ITM but not short assignment risk - differentiate by long vs short
       severity = 'info';
-      recommendedAction = 'MONITOR';
+      if (position.side === 'SHORT') {
+        recommendedAction = 'ITM_SHORT';
+      } else {
+        recommendedAction = 'ITM_LONG';
+      }
     }
     // 2. Sigma flags (check after assignment risk)
     else if (flagSigma05 && position.side === 'SHORT') {
       severity = 'urgent';
-      recommendedAction = 'WATCH_CLOSELY';
+      recommendedAction = 'SIGMA_0.5_SHORT';
     } else if (flagSigma05) {
       severity = 'attention';
-      recommendedAction = 'WATCH_CLOSELY';
+      recommendedAction = 'SIGMA_0.5_LONG';
     } else if (flagSigma10) {
       severity = 'info';
-      recommendedAction = 'MONITOR';
+      recommendedAction = 'SIGMA_1.0';
     }
     // 3. DTE flags (check after sigma flags)
     else if (position.side === 'SHORT' && dte !== null && dte <= 21) {
@@ -318,15 +362,21 @@ export async function computePositionTriageForDate(
 /**
  * Computes strategy-level triage records for a snapshot date
  * Includes: size/complexity checks, opening strategies, state code changes, closing strategies
+ * @param strategyId - Optional: filter to a specific strategy (for targeted recompute)
  */
 export async function computeStrategyTriageForDate(
   snapshotDate: string,
-  accountId?: string
+  accountId?: string,
+  strategyId?: string
 ): Promise<NewTriageRecord[]> {
   const whereConditions = [eq(strategyMetricsSnapshots.snapshotDate, snapshotDate)];
 
   if (accountId) {
     whereConditions.push(eq(strategyMetricsSnapshots.accountId, accountId));
+  }
+
+  if (strategyId) {
+    whereConditions.push(eq(strategyMetricsSnapshots.strategyId, strategyId));
   }
 
   const strategyMetrics = await db
@@ -559,45 +609,72 @@ export async function computeStrategyTriageForDate(
 
 /**
  * Upserts triage records into the database
+ * Batches operations for better performance
  */
 export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<void> {
   if (records.length === 0) return;
 
+  // Separate strategy and position records for batch processing
+  const strategyRecords: NewTriageRecord[] = [];
+  const positionRecords: NewTriageRecord[] = [];
+
   for (const record of records) {
     if (record.contextLevel === 'strategy') {
-      const { strategyId, snapshotDate, ruleSet } = record;
+      const { strategyId, ruleSet } = record;
       if (!strategyId || !ruleSet) {
         throw new Error('Strategy triage record missing strategyId or ruleSet');
       }
-      await db
-        .delete(triageRecords)
-        .where(
-          and(
-            eq(triageRecords.contextLevel, 'strategy'),
-            eq(triageRecords.strategyId, strategyId),
-            eq(triageRecords.snapshotDate, snapshotDate),
-            eq(triageRecords.ruleSet, ruleSet)
-          )
-        );
+      strategyRecords.push(record);
     } else {
-      const { positionId, strategyId, snapshotDate, ruleSet } = record;
+      const { positionId, strategyId, ruleSet } = record;
       if (!positionId || !strategyId || !ruleSet) {
         throw new Error('Position triage record missing ids or ruleSet');
       }
+      positionRecords.push(record);
+    }
+  }
+
+  // Batch delete strategy records
+  if (strategyRecords.length > 0) {
+    const strategyDeleteConditions = strategyRecords.map((record) =>
+      and(
+        eq(triageRecords.contextLevel, 'strategy'),
+        eq(triageRecords.strategyId, record.strategyId!),
+        eq(triageRecords.snapshotDate, record.snapshotDate),
+        eq(triageRecords.ruleSet, record.ruleSet!)
+      )
+    );
+
+    if (strategyDeleteConditions.length > 0) {
       await db
         .delete(triageRecords)
-        .where(
-          and(
-            eq(triageRecords.contextLevel, 'position'),
-            eq(triageRecords.positionId, positionId),
-            eq(triageRecords.strategyId, strategyId),
-            eq(triageRecords.snapshotDate, snapshotDate),
-            eq(triageRecords.ruleSet, ruleSet)
-          )
-        );
+        .where(or(...strategyDeleteConditions));
     }
 
-    await db.insert(triageRecords).values(record);
+    // Batch insert strategy records
+    await db.insert(triageRecords).values(strategyRecords);
+  }
+
+  // Batch delete position records
+  if (positionRecords.length > 0) {
+    const positionDeleteConditions = positionRecords.map((record) =>
+          and(
+            eq(triageRecords.contextLevel, 'position'),
+        eq(triageRecords.positionId, record.positionId!),
+        eq(triageRecords.strategyId, record.strategyId!),
+        eq(triageRecords.snapshotDate, record.snapshotDate),
+        eq(triageRecords.ruleSet, record.ruleSet!)
+          )
+        );
+
+    if (positionDeleteConditions.length > 0) {
+      await db
+        .delete(triageRecords)
+        .where(or(...positionDeleteConditions));
+    }
+
+    // Batch insert position records
+    await db.insert(triageRecords).values(positionRecords);
   }
 }
 
@@ -647,7 +724,6 @@ async function reconcilePendingTradeActions(
       .set({
         severityOverride: 'complete',
         completed: true,
-        updatedAt: new Date(),
       })
       .where(eq(blotterActions.id, action.id));
 
@@ -695,23 +771,27 @@ async function reconcilePendingTradeActions(
  * Detects quantity changes by comparing positions across snapshot dates
  * Returns triage records for positions/strategies with quantity changes
  * Also reconciles any pending TRADE actions when quantity changes are detected
+ * @param strategyId - Optional: filter to a specific strategy (for targeted recompute)
  */
 export async function computeQuantityChangeTriageForDate(
   snapshotDate: string,
-  accountId?: string
+  accountId?: string,
+  strategyId?: string
 ): Promise<NewTriageRecord[]> {
+  // Build conditions for previous date query
+  const previousDateConditions = [sql`${positions.snapshotDate} < ${snapshotDate}`];
+  if (accountId) {
+    previousDateConditions.push(eq(positions.accountId, accountId));
+  }
+  if (strategyId) {
+    previousDateConditions.push(eq(positions.strategyId, strategyId));
+  }
+
   // Get previous snapshot date
   const previousDateResult = await db
     .selectDistinct({ snapshotDate: positions.snapshotDate })
     .from(positions)
-    .where(
-      accountId
-        ? and(
-            eq(positions.accountId, accountId),
-            sql`${positions.snapshotDate} < ${snapshotDate}`
-          )
-        : sql`${positions.snapshotDate} < ${snapshotDate}`
-    )
+    .where(and(...previousDateConditions))
     .orderBy(sql`${positions.snapshotDate} DESC`)
     .limit(1);
 
@@ -727,6 +807,9 @@ export async function computeQuantityChangeTriageForDate(
   if (accountId) {
     currentWhereConditions.push(eq(positions.accountId, accountId));
   }
+  if (strategyId) {
+    currentWhereConditions.push(eq(positions.strategyId, strategyId));
+  }
 
   const currentPositions = await db
     .select()
@@ -737,6 +820,9 @@ export async function computeQuantityChangeTriageForDate(
   const previousWhereConditions = [eq(positions.snapshotDate, previousDate)];
   if (accountId) {
     previousWhereConditions.push(eq(positions.accountId, accountId));
+  }
+  if (strategyId) {
+    previousWhereConditions.push(eq(positions.strategyId, strategyId));
   }
 
   const previousPositions = await db
@@ -789,6 +875,11 @@ export async function computeQuantityChangeTriageForDate(
       continue; // No change, skip
     }
 
+    // Skip new positions with quantity 0 (not a real position)
+    if (!previousPos && currentQty === 0) {
+      continue;
+    }
+
     // Auto-detect trade stage
     let tradeStage: string | null = null;
     if (!previousPos) {
@@ -797,10 +888,8 @@ export async function computeQuantityChangeTriageForDate(
       tradeStage = 'close';
     } else if (currentQty > previousQty) {
       tradeStage = 'add';
-    } else if (currentQty < previousQty && currentQty !== 0) {
+    } else if (currentQty < previousQty) {
       tradeStage = 'reduce';
-    } else if (currentQty < previousQty && currentQty === 0) {
-      tradeStage = 'close';
     }
 
     // Group by strategy (prefer strategy-level aggregation)
@@ -921,14 +1010,17 @@ export async function computeQuantityChangeTriageForDate(
 
 /**
  * Computes all triage records for a snapshot date
+ * @param strategyId - Optional: filter to a specific strategy (for targeted recompute)
+ *                     When provided, only recomputes triage for that strategy, significantly faster
  */
 export async function computeTriageForDate(
   snapshotDate: string,
-  accountId?: string
+  accountId?: string,
+  strategyId?: string
 ): Promise<{ position: number; strategy: number; quantityChange: number }> {
-  const positionRecords = await computePositionTriageForDate(snapshotDate, accountId);
-  const strategyRecords = await computeStrategyTriageForDate(snapshotDate, accountId);
-  const quantityChangeRecords = await computeQuantityChangeTriageForDate(snapshotDate, accountId);
+  const positionRecords = await computePositionTriageForDate(snapshotDate, accountId, strategyId);
+  const strategyRecords = await computeStrategyTriageForDate(snapshotDate, accountId, strategyId);
+  const quantityChangeRecords = await computeQuantityChangeTriageForDate(snapshotDate, accountId, strategyId);
 
   await upsertTriageRecords([...positionRecords, ...strategyRecords, ...quantityChangeRecords]);
 
