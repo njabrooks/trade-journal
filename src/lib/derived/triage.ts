@@ -8,7 +8,7 @@ import {
   blotterActions,
   NewTriageRecord,
 } from '@/db/schema';
-import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc } from 'drizzle-orm';
+import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc, ne } from 'drizzle-orm';
 import { detectStateCodeChangeFromStored } from '@/lib/derived/stateCode';
 
 // Triage rule configuration
@@ -155,7 +155,7 @@ export async function computePositionTriageForDate(
   // Get all positions for this date (optionally filtered by account)
   const whereConditions = [
     eq(positions.snapshotDate, snapshotDate),
-    sql`${positions.quantity} != 0`,
+    ne(positions.quantity, 0),
     eq(positions.assetClass, 'OPT'),
     isNotNull(positions.expiry),
   ];
@@ -753,7 +753,28 @@ export async function computeQuantityChangeTriageForDate(
   });
 
   const records: NewTriageRecord[] = [];
-  const processedStrategyIds = new Set<string>();
+  
+  // First pass: Collect all positions with quantity changes, grouped by strategy
+  // This allows us to aggregate at the strategy level per day
+  const changesByStrategy = new Map<string, {
+    accountId: string;
+    positions: Array<{
+      positionId: string | null;
+      symbol: string;
+      previousQty: number;
+      currentQty: number;
+      tradeStage: string | null;
+    }>;
+  }>();
+  
+  const unlinkedChanges: Array<{
+    accountId: string;
+    positionId: string;
+    symbol: string;
+    previousQty: number;
+    currentQty: number;
+    tradeStage: string | null;
+  }> = [];
 
   for (const currentPos of currentPositions) {
     if (!currentPos.conid || !currentPos.accountId) continue;
@@ -771,113 +792,126 @@ export async function computeQuantityChangeTriageForDate(
     // Auto-detect trade stage
     let tradeStage: string | null = null;
     if (!previousPos) {
-      // Position didn't exist before - new position
       tradeStage = 'open';
     } else if (currentQty === 0) {
-      // Position went to zero - closed
       tradeStage = 'close';
     } else if (currentQty > previousQty) {
-      // Quantity increased
       tradeStage = 'add';
     } else if (currentQty < previousQty && currentQty !== 0) {
-      // Quantity decreased but not to zero
       tradeStage = 'reduce';
     } else if (currentQty < previousQty && currentQty === 0) {
-      // Position closed
       tradeStage = 'close';
     }
 
-    // For position-level records
-    if (currentPos.id) {
-      // Reconcile any pending TRADE actions for this position
-      const wasReconciled = await reconcilePendingTradeActions(currentPos.id, currentPos.strategyId, snapshotDate);
-
-      // Only create QUANTITY_CHANGE triage record if no pending TRADE action was reconciled
-      // If reconciled, the existing TRADE blotter entry was updated to 'complete', so no need for new triage record
-      if (!wasReconciled) {
-        const recommendedAction = 'QUANTITY_CHANGE';
-        const computedSeverity = 'urgent';
-
-        // Check for active override
-        const overrideSeverity = await checkSeverityOverride(
-          currentPos.id,
-          currentPos.strategyId,
-          recommendedAction,
-          snapshotDate
-        );
-
-        records.push({
-          snapshotDate,
+    // Group by strategy (prefer strategy-level aggregation)
+    if (currentPos.strategyId) {
+      if (!changesByStrategy.has(currentPos.strategyId)) {
+        changesByStrategy.set(currentPos.strategyId, {
           accountId: currentPos.accountId,
-          contextLevel: 'position',
-          positionId: currentPos.id,
-          strategyId: currentPos.strategyId,
-          underlyingId: currentPos.underlyingId,
-          symbol: currentPos.symbol,
-          assetClass: currentPos.assetClass,
-          severity: overrideSeverity || computedSeverity,
-          recommendedAction,
-          notes: `Quantity changed from ${previousQty} to ${currentQty}. Trade stage: ${tradeStage || 'unknown'}`,
-          ruleSet: 'quantity_change',
+          positions: [],
         });
       }
-    }
-
-    // For strategy-level records (if position is linked to strategy)
-    if (currentPos.strategyId && !processedStrategyIds.has(currentPos.strategyId)) {
-      processedStrategyIds.add(currentPos.strategyId);
-
-      // Check if strategy has other positions that also changed
-      const strategyPositions = currentPositions.filter(
-        (p) => p.strategyId === currentPos.strategyId
-      );
-      const hasMultipleChanges = strategyPositions.some((p) => {
-        if (!p.conid) return false;
-        const prev = previousByConid.get(p.conid);
-        const currQty = Number(p.quantity) || 0;
-        const prevQty = prev ? Number(prev.quantity) || 0 : 0;
-        return currQty !== prevQty;
+      changesByStrategy.get(currentPos.strategyId)!.positions.push({
+        positionId: currentPos.id,
+        symbol: currentPos.symbol,
+        previousQty,
+        currentQty,
+        tradeStage,
       });
+    } else if (currentPos.id) {
+      // Position not linked to strategy - keep for position-level record
+      unlinkedChanges.push({
+        accountId: currentPos.accountId,
+        positionId: currentPos.id,
+        symbol: currentPos.symbol,
+        previousQty,
+        currentQty,
+        tradeStage,
+      });
+    }
+  }
 
-      if (hasMultipleChanges) {
-        // Reconcile any pending TRADE actions for this strategy
-        const wasReconciled = await reconcilePendingTradeActions(null, currentPos.strategyId, snapshotDate);
+  // Second pass: Create strategy-level records (one per strategy per day)
+  for (const [strategyId, changeData] of changesByStrategy.entries()) {
+    // Reconcile any pending TRADE actions for this strategy
+    const wasReconciled = await reconcilePendingTradeActions(null, strategyId, snapshotDate);
 
-        // Only create QUANTITY_CHANGE triage record if no pending TRADE action was reconciled
-        // If reconciled, the existing TRADE blotter entry was updated to 'complete', so no need for new triage record
-        if (!wasReconciled) {
-          const recommendedAction = 'QUANTITY_CHANGE';
-          const computedSeverity = 'urgent';
+    // Only create QUANTITY_CHANGE triage record if no pending TRADE action was reconciled
+    if (!wasReconciled) {
+      const recommendedAction = 'QUANTITY_CHANGE';
+      const computedSeverity = 'urgent';
 
-          // Check for active override
-          const overrideSeverity = await checkSeverityOverride(
-            null,
-            currentPos.strategyId,
-            recommendedAction,
-            snapshotDate
-          );
+      // Check for active override
+      const overrideSeverity = await checkSeverityOverride(
+        null,
+        strategyId,
+        recommendedAction,
+        snapshotDate
+      );
 
-          // Get strategy key for symbol
-          const strategyResult = await db
-            .select({ strategyKey: strategies.strategyKey })
-            .from(strategies)
-            .where(eq(strategies.id, currentPos.strategyId))
-            .limit(1);
+      // Get strategy key for symbol
+      const strategyResult = await db
+        .select({ strategyKey: strategies.strategyKey })
+        .from(strategies)
+        .where(eq(strategies.id, strategyId))
+        .limit(1);
 
-          const strategyKey = strategyResult[0]?.strategyKey || `STRATEGY-${currentPos.strategyId}`;
+      const strategyKey = strategyResult[0]?.strategyKey || `STRATEGY-${strategyId}`;
 
-          records.push({
-            snapshotDate,
-            accountId: currentPos.accountId,
-            contextLevel: 'strategy',
-            strategyId: currentPos.strategyId,
-            symbol: strategyKey,
-            severity: overrideSeverity || computedSeverity,
-            recommendedAction,
-            notes: 'Multiple positions in strategy have quantity changes',
-            ruleSet: 'quantity_change',
-          });
-        }
+      // Aggregate notes: summarize all changes in the strategy
+      const changeCount = changeData.positions.length;
+      const changeSummary = changeData.positions
+        .map((p) => `${p.symbol}: ${p.previousQty} → ${p.currentQty} (${p.tradeStage || 'unknown'})`)
+        .join('; ');
+
+      records.push({
+        snapshotDate,
+        accountId: changeData.accountId,
+        contextLevel: 'strategy',
+        strategyId,
+        symbol: strategyKey,
+        severity: overrideSeverity || computedSeverity,
+        recommendedAction,
+        notes: `${changeCount} position(s) changed: ${changeSummary}`,
+        ruleSet: 'quantity_change',
+      });
+    }
+  }
+
+  // Third pass: Create position-level records only for unlinked positions
+  for (const change of unlinkedChanges) {
+    // Reconcile any pending TRADE actions for this position
+    const wasReconciled = await reconcilePendingTradeActions(change.positionId, null, snapshotDate);
+
+    if (!wasReconciled) {
+      const recommendedAction = 'QUANTITY_CHANGE';
+      const computedSeverity = 'urgent';
+
+      // Check for active override
+      const overrideSeverity = await checkSeverityOverride(
+        change.positionId,
+        null,
+        recommendedAction,
+        snapshotDate
+      );
+
+      // Find the position to get full details
+      const position = currentPositions.find((p) => p.id === change.positionId);
+      if (position) {
+        records.push({
+          snapshotDate,
+          accountId: change.accountId,
+          contextLevel: 'position',
+          positionId: change.positionId,
+          strategyId: position.strategyId,
+          underlyingId: position.underlyingId,
+          symbol: change.symbol,
+          assetClass: position.assetClass,
+          severity: overrideSeverity || computedSeverity,
+          recommendedAction,
+          notes: `Quantity changed from ${change.previousQty} to ${change.currentQty}. Trade stage: ${change.tradeStage || 'unknown'}`,
+          ruleSet: 'quantity_change',
+        });
       }
     }
   }

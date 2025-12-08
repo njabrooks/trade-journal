@@ -75,9 +75,10 @@ This document captures all planned future enhancements mentioned throughout the 
 ### 8. Time-Based Triggers
 **Location**: `docs/actions.md` (lines 443-446)  
 **Triggers**:
-- Weekly review reminders
+- Weekly review reminders (narrative news for memory, risk analysis, technical analysis historical comparisons (what period does the current price action look similar to?), etc.)
+- Monthly review reminders (roll up based on weekly reviews)
 - Expiry date approaching (calendar-based)
-- Earnings date proximity  
+- Earnings date proximity
 **Priority**: Low
 
 ## Data Ingestion

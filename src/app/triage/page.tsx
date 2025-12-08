@@ -3,20 +3,25 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { RecomputeTriageButton } from "@/components/triage/RecomputeTriageButton";
 import { TriageActionButtons } from "@/components/triage/TriageActionButtons";
 import { PositionList } from "@/components/triage/PositionList";
+import { TriageFilters } from "@/components/triage/TriageFilters";
 import { Badge } from "@/components/ui/badge";
 import { getPrimaryAccount } from "@/db/queries/accounts";
 import { getTriageQueue } from "@/db/queries/triage";
 import { formatCurrency, formatDateLabel, formatPercent } from "@/lib/formatters";
+import { ALL_SEVERITIES, ALL_CONTEXTS, ALL_TRIGGERS } from "@/lib/constants/triage";
 
 interface TriagePageProps {
   searchParams?: Promise<{
-    severity?: string;
-    context?: string;
+    severity?: string | string[];
+    contextLevel?: string | string[];
+    context?: string | string[]; // Legacy support
+    recommendedAction?: string | string[];
+    strategyKey?: string | string[];
+    trigger?: string | string[]; // Legacy support
+    strategy?: string | string[]; // Legacy support
   }>;
 }
 
-const SEVERITY_FILTERS = ["all", "urgent", "attention", "monitor", "info", "pending", "complete"] as const;
-const CONTEXT_FILTERS = ["all", "strategy", "position", "underlying", "account"] as const;
 
 export default async function TriagePage({ searchParams }: TriagePageProps) {
   const account = await getPrimaryAccount();
@@ -36,32 +41,90 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   }
 
   const params = await searchParams;
-  const severityFilter = (params?.severity ?? "all").toLowerCase();
-  const contextFilter = (params?.context ?? "all").toLowerCase();
+  
+  // Parse multi-select filters (can be string or string[])
+  const severityParam = params?.severity;
+  const severityFilter = Array.isArray(severityParam)
+    ? severityParam
+    : severityParam && severityParam !== "all"
+    ? [severityParam]
+    : [];
+  
+  const contextParam = params?.contextLevel || params?.context;
+  const contextFilter = Array.isArray(contextParam)
+    ? contextParam
+    : contextParam && contextParam !== "all"
+    ? [contextParam]
+    : [];
+  
+  // URL uses "recommendedAction" and "strategyKey" to match query function
+  const triggerParam = params?.recommendedAction || params?.trigger;
+  const triggerFilter = Array.isArray(triggerParam) 
+    ? triggerParam 
+    : triggerParam 
+    ? [triggerParam] 
+    : [];
+  
+  const strategyParam = params?.strategyKey || params?.strategy;
+  const strategyFilter = Array.isArray(strategyParam)
+    ? strategyParam
+    : strategyParam
+    ? [strategyParam]
+    : [];
 
-  const queue = await getTriageQueue(account.id, {
-    severity: severityFilter,
-    contextLevel: contextFilter,
+  // Get all records first to extract unique values for dropdowns
+  const allRecords = await getTriageQueue(account.id, {});
+
+  // Use all available options (not just ones that exist in records)
+  const allSeverities = [...ALL_SEVERITIES];
+  const allContexts = [...ALL_CONTEXTS];
+  const allTriggers = [...ALL_TRIGGERS];
+  
+  // Strategies are dynamic - extract from records
+  const allStrategies = Array.from(
+    new Set(
+      allRecords.records
+        .map((r) => r.strategyKey)
+        .filter((r): r is string => r !== null)
+    )
+  ).sort();
+
+  // Calculate counts for all options
+  const severityCounts: Record<string, number> = {};
+  allSeverities.forEach((severity) => {
+    severityCounts[severity] = allRecords.records.filter(
+      (r) => r.severity === severity
+    ).length;
   });
 
-  // Count by severity
-  const severityCounts = {
-    urgent: queue.records.filter((r) => r.severity === "urgent").length,
-    attention: queue.records.filter((r) => r.severity === "attention").length,
-    monitor: queue.records.filter((r) => r.severity === "monitor").length,
-    info: queue.records.filter((r) => r.severity === "info").length,
-    pending: queue.records.filter((r) => r.severity === "pending").length,
-    complete: queue.records.filter((r) => r.severity === "complete").length,
-    info: queue.records.filter((r) => r.severity === "info").length,
-  };
+  const contextCounts: Record<string, number> = {};
+  allContexts.forEach((context) => {
+    contextCounts[context] = allRecords.records.filter(
+      (r) => r.contextLevel === context
+    ).length;
+  });
 
-  // Count by context
-  const contextCounts = {
-    strategy: queue.records.filter((r) => r.contextLevel === "strategy").length,
-    position: queue.records.filter((r) => r.contextLevel === "position").length,
-    underlying: queue.records.filter((r) => r.contextLevel === "underlying").length,
-    account: queue.records.filter((r) => r.contextLevel === "account").length,
-  };
+  const triggerCounts: Record<string, number> = {};
+  allTriggers.forEach((trigger) => {
+    triggerCounts[trigger] = allRecords.records.filter(
+      (r) => r.recommendedAction === trigger
+    ).length;
+  });
+
+  const strategyCounts: Record<string, number> = {};
+  allStrategies.forEach((strategy) => {
+    strategyCounts[strategy] = allRecords.records.filter(
+      (r) => r.strategyKey === strategy
+    ).length;
+  });
+
+  // Now get filtered records
+  const queue = await getTriageQueue(account.id, {
+    severity: severityFilter.length > 0 ? severityFilter : undefined,
+    contextLevel: contextFilter.length > 0 ? contextFilter : undefined,
+    recommendedAction: triggerFilter.length > 0 ? triggerFilter : undefined,
+    strategyKey: strategyFilter.length > 0 ? strategyFilter : undefined,
+  });
 
   return (
     <DashboardShell
@@ -71,27 +134,21 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
       actions={<RecomputeTriageButton accountId={account.id} snapshotDate={queue.snapshotDate} />}
     >
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          <FilterGroup
-            label="Severity"
-            options={SEVERITY_FILTERS}
-            active={severityFilter}
-            paramKey="severity"
-            params={{ severity: severityFilter, context: contextFilter }}
-            counts={severityCounts}
-          />
-          <FilterGroup
-            label="Context"
-            options={CONTEXT_FILTERS}
-            active={contextFilter}
-            paramKey="context"
-            params={{ severity: severityFilter, context: contextFilter }}
-            counts={contextCounts}
-          />
-          <span className="ml-auto text-xs text-slate-400">
-            {queue.records.length} flags
-          </span>
-        </div>
+        <TriageFilters
+          severityFilter={severityFilter}
+          contextFilter={contextFilter}
+          triggerFilter={triggerFilter}
+          strategyFilter={strategyFilter}
+          allSeverities={allSeverities}
+          allContexts={allContexts}
+          allTriggers={allTriggers}
+          allStrategies={allStrategies}
+          severityCounts={severityCounts}
+          contextCounts={contextCounts}
+          triggerCounts={triggerCounts}
+          strategyCounts={strategyCounts}
+          totalFlags={queue.records.length}
+        />
       </section>
 
       <section className="grid gap-4">
@@ -186,76 +243,6 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   );
 }
 
-function FilterGroup({
-  label,
-  options,
-  active,
-  paramKey,
-  params,
-  counts,
-}: {
-  label: string;
-  options: readonly string[];
-  active: string;
-  paramKey: "severity" | "context";
-  params: { severity: string; context: string };
-  counts?: Record<string, number>;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 text-xs">
-      <span className="uppercase tracking-wide text-slate-400">{label}</span>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => {
-          const count = counts?.[option];
-          return (
-            <Link
-              key={option}
-              href={buildFilterHref({
-                ...params,
-                [paramKey]: option,
-              })}
-              className={`rounded-full px-3 py-1 font-medium ${
-                active === option
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {option}
-              {count !== undefined && count > 0 && (
-                <span className="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
-                  {count}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function buildFilterHref({
-  severity,
-  context,
-}: {
-  severity: string;
-  context: string;
-}) {
-  const params = new URLSearchParams();
-  const resolvedSeverity = severity || "all";
-  const resolvedContext = context || "all";
-
-  if (resolvedSeverity !== "all") {
-    params.set("severity", resolvedSeverity);
-  }
-
-  if (resolvedContext !== "all") {
-    params.set("context", resolvedContext);
-  }
-
-  const query = params.toString();
-  return `/triage${query ? `?${query}` : ""}`;
-}
 
 function SeverityTag({ severity }: { severity: string | null }) {
   const normalized = severity ?? "info";

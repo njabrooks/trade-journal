@@ -233,10 +233,6 @@ export async function updateStrategy(
   if (updates.strategyKey !== undefined) updateData.strategyKey = updates.strategyKey;
   if (updates.label !== undefined) updateData.autoDerivedLabel = updates.label;
 
-  if (updates.confirm) {
-    updateData.isAuto = false;
-    updateData.confirmedAt = new Date();
-  }
   // Check if strategyType is being changed (for state code recomputation) - do this BEFORE update
   let strategyTypeChanged = false;
   if (updates.strategyType !== undefined) {
@@ -247,6 +243,31 @@ export async function updateStrategy(
       .limit(1);
     const previousStrategyType = strategyBefore[0]?.strategyType;
     strategyTypeChanged = previousStrategyType !== updates.strategyType;
+  }
+
+  if (updates.confirm) {
+    updateData.isAuto = false;
+    updateData.confirmedAt = new Date();
+    
+    // When confirming, set status to "open" if strategy has positions, otherwise keep current status
+    // Check if strategy has any positions
+    const hasPositions = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(positions)
+      .where(
+        and(
+          eq(positions.strategyId, strategyId),
+          sql`${positions.quantity} != 0`
+        )
+      )
+      .limit(1);
+    
+    const positionCount = Number(hasPositions[0]?.count ?? 0);
+    if (positionCount > 0) {
+      // Strategy has positions, set status to "open"
+      updateData.status = 'open';
+    }
+    // If no positions, keep current status (don't override)
   }
 
   if (updates.strategyType !== undefined) {
@@ -268,6 +289,23 @@ export async function updateStrategy(
   updateData.updatedAt = new Date();
 
   await db.update(strategies).set(updateData).where(eq(strategies.id, strategyId));
+
+  // If strategy was confirmed, resolve all CONFIRM_STRATEGIES triage records
+  if (updates.confirm) {
+    // Resolve all CONFIRM_STRATEGIES triage records for this strategy to "complete"
+    await db
+      .update(triageRecords)
+      .set({
+        severity: 'complete',
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(triageRecords.strategyId, strategyId),
+          eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGIES')
+        )
+      );
+  }
 
   // If strategy was confirmed with a strategyType, or strategyType was changed, compute state code
   if ((updates.confirm && updates.strategyType) || (strategyTypeChanged && updates.strategyType)) {

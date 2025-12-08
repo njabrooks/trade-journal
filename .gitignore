@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# data files (sensitive financial data)
+/data/*
+!/data/README.md
+*.csv
+*.xlsx
+!docs/WeeklyOptionsReview.xlsx

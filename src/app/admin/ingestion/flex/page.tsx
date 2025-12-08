@@ -26,6 +26,7 @@ export default function FlexIngestionPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<IngestionResult | null>(null);
+  const [processAllSections, setProcessAllSections] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -50,7 +51,10 @@ export default function FlexIngestionPage() {
           endpoint = '/api/ingest/flex/trades';
           break;
         case 'positions':
-          endpoint = '/api/ingest/flex/positions';
+          // If "process all sections" is checked, use unified endpoint
+          endpoint = processAllSections
+            ? '/api/ingest/flex/positions-all'
+            : '/api/ingest/flex/positions';
           break;
         case 'mtm':
           endpoint = '/api/ingest/flex/mtm';
@@ -117,6 +121,25 @@ export default function FlexIngestionPage() {
             )}
           </div>
 
+          {selectedFile && getFileType(selectedFile.name) === 'positions' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-4">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={processAllSections}
+                  onChange={(e) => setProcessAllSections(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm font-medium text-yellow-900">
+                  Process all sections (POST, EQUT, MTMP) from this file
+                </span>
+              </label>
+              <p className="text-xs text-yellow-700 mt-2 ml-6">
+                When checked, processes all three sections in one upload. Otherwise, only processes POST section.
+              </p>
+            </div>
+          )}
+
           <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
             <p className="font-semibold mb-2">File naming:</p>
             <ul className="list-disc list-inside space-y-1">
@@ -164,40 +187,74 @@ export default function FlexIngestionPage() {
 
           {result.summary && (
             <div className="space-y-2 mb-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-semibold">Total Rows:</span>{' '}
-                  {result.summary.totalRows}
-                </div>
-                <div>
-                  <span className="font-semibold">Valid Rows:</span>{' '}
-                  {result.summary.validRows}
-                </div>
-                <div>
-                  <span className="font-semibold">Inserted:</span>{' '}
-                  {result.summary.inserted}
-                </div>
-                {result.summary.skipped !== undefined && (
-                  <div>
-                    <span className="font-semibold">Skipped (duplicates):</span>{' '}
-                    {result.summary.skipped}
+              {/* Unified positions-all response format */}
+              {result.summary.post !== undefined ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-semibold">Total Inserted:</span>{' '}
+                      {result.summary.totalInserted || 0}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Total Errors:</span>{' '}
+                      {result.summary.totalErrors || 0}
+                    </div>
                   </div>
-                )}
-                {result.summary.updated !== undefined && (
-                  <div>
-                    <span className="font-semibold">Updated:</span>{' '}
-                    {result.summary.updated}
+                  <div className="border-t pt-3">
+                    <p className="font-semibold text-sm mb-2">By Section:</p>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="font-semibold">POST:</span>{' '}
+                        {result.summary.post.inserted} inserted, {result.summary.post.errors} errors
+                      </div>
+                      <div>
+                        <span className="font-semibold">EQUT:</span>{' '}
+                        {result.summary.equt.inserted} inserted, {result.summary.equt.errors} errors
+                      </div>
+                      <div>
+                        <span className="font-semibold">MTMP:</span>{' '}
+                        {result.summary.mtmp.inserted} inserted, {result.summary.mtmp.errors} errors
+                      </div>
+                    </div>
                   </div>
-                )}
-                <div>
-                  <span className="font-semibold">Validation Errors:</span>{' '}
-                  {result.summary.validationErrors}
                 </div>
-                <div>
-                  <span className="font-semibold">Insert Errors:</span>{' '}
-                  {result.summary.insertErrors}
+              ) : (
+                /* Standard single-section response format */
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-semibold">Total Rows:</span>{' '}
+                    {result.summary.totalRows}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Valid Rows:</span>{' '}
+                    {result.summary.validRows}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Inserted:</span>{' '}
+                    {result.summary.inserted}
+                  </div>
+                  {result.summary.skipped !== undefined && (
+                    <div>
+                      <span className="font-semibold">Skipped (duplicates):</span>{' '}
+                      {result.summary.skipped}
+                    </div>
+                  )}
+                  {result.summary.updated !== undefined && (
+                    <div>
+                      <span className="font-semibold">Updated:</span>{' '}
+                      {result.summary.updated}
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-semibold">Validation Errors:</span>{' '}
+                    {result.summary.validationErrors}
+                  </div>
+                  <div>
+                    <span className="font-semibold">Insert Errors:</span>{' '}
+                    {result.summary.insertErrors}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

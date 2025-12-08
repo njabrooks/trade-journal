@@ -7,6 +7,7 @@ import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { eq } from 'drizzle-orm';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
+import { autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 
 const SECTION_CODES = {
   TRADES: 'TRNT',
@@ -157,7 +158,10 @@ export async function POST(request: NextRequest) {
       for (const accountId of uniqueAccountIds) {
         for (const tradeDate of Array.from(tradeDates)) {
           try {
-            // Strategy metrics (for all strategies in account)
+            // Auto-link trades to strategies (creates strategies if needed)
+            const autoLinkResult = await autoLinkTradesToStrategies(accountId, { snapshotDate: tradeDate });
+            
+            // Strategy metrics (for all strategies in account, including newly created ones)
             const accountStrategies = await db
               .select({ id: strategies.id })
               .from(strategies)
@@ -178,6 +182,10 @@ export async function POST(request: NextRequest) {
             await computeTriageForDate(tradeDate, accountId);
             
             recomputeResults[`${accountId}_${tradeDate}`] = {
+              autoStrategies: {
+                strategiesCreated: autoLinkResult.strategiesCreated,
+                tradesLinked: autoLinkResult.tradesLinked,
+              },
               strategyMetrics: strategyMetricsCount,
               success: true,
             };

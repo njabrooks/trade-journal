@@ -1,11 +1,13 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql, ne, or, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { strategies, triageRecords } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
 
 export interface TriageQueueFilters {
-  severity?: string;
-  contextLevel?: string;
+  severity?: string | string[]; // Array for multi-select
+  contextLevel?: string | string[]; // Array for multi-select
+  recommendedAction?: string[]; // Array for multi-select
+  strategyKey?: string[]; // Array for multi-select
 }
 
 export interface TriageQueueRecord {
@@ -34,6 +36,7 @@ export async function getTriageQueue(
   accountId: string,
   filters: TriageQueueFilters = {}
 ): Promise<TriageQueueResult> {
+  // Get latest snapshot date for display purposes
   const latestDateRow = await db
     .select({ snapshotDate: triageRecords.snapshotDate })
     .from(triageRecords)
@@ -47,17 +50,55 @@ export async function getTriageQueue(
     return { snapshotDate: null, records: [] };
   }
 
+  // Categorize triggers:
+  // - Historical record-keeping: Should persist until resolved (QUANTITY_CHANGE, CONFIRM_STRATEGIES)
+  //   These are created once on a specific date and represent events that need documentation
+  // - Time-bound: Should only show for latest date (everything else, including PROVIDE_STRATEGY_METADATA)
+  //   These are recalculated daily and would create duplicates if persisted across dates
+  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
+  
   const conditions = [
     eq(triageRecords.accountId, accountId),
-    eq(triageRecords.snapshotDate, snapshotDate),
+    // Exclude 'complete' records - only show unresolved items
+    or(
+      ne(triageRecords.severity, 'complete'),
+      isNull(triageRecords.severity)
+    ),
+    // For historical triggers, show across all dates. For time-bound triggers, only show latest date
+    or(
+      inArray(triageRecords.recommendedAction, historicalTriggers),
+      eq(triageRecords.snapshotDate, snapshotDate)
+    ),
   ];
 
-  if (filters.severity && filters.severity !== "all") {
-    conditions.push(eq(triageRecords.severity, filters.severity));
+  if (filters.severity) {
+    const severityArray = Array.isArray(filters.severity) 
+      ? filters.severity 
+      : filters.severity !== "all" 
+      ? [filters.severity] 
+      : [];
+    if (severityArray.length > 0) {
+      conditions.push(inArray(triageRecords.severity, severityArray));
+    }
   }
 
-  if (filters.contextLevel && filters.contextLevel !== "all") {
-    conditions.push(eq(triageRecords.contextLevel, filters.contextLevel));
+  if (filters.contextLevel) {
+    const contextArray = Array.isArray(filters.contextLevel)
+      ? filters.contextLevel
+      : filters.contextLevel !== "all"
+      ? [filters.contextLevel]
+      : [];
+    if (contextArray.length > 0) {
+      conditions.push(inArray(triageRecords.contextLevel, contextArray));
+    }
+  }
+
+  if (filters.recommendedAction && filters.recommendedAction.length > 0) {
+    conditions.push(inArray(triageRecords.recommendedAction, filters.recommendedAction));
+  }
+
+  if (filters.strategyKey && filters.strategyKey.length > 0) {
+    conditions.push(inArray(strategies.strategyKey, filters.strategyKey));
   }
 
   const severityOrder = sql<number>`CASE
@@ -90,7 +131,7 @@ export async function getTriageQueue(
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
     .where(and(...conditions))
-    .orderBy(desc(severityOrder), desc(triageRecords.pctNavAbsNotional))
+    .orderBy(desc(severityOrder), desc(triageRecords.snapshotDate), desc(triageRecords.pctNavAbsNotional))
     .limit(100);
 
   const records: TriageQueueRecord[] = rows.map((row) => ({
@@ -133,17 +174,52 @@ export async function getTriageQueueForStrategy(
     return { snapshotDate: null, records: [] };
   }
 
+  // Categorize triggers: Historical vs time-bound (same as account-level queue)
+  // Historical: Created once, persist until resolved. Time-bound: Recalculated daily, only show latest.
+  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
+  
   const conditions = [
     eq(triageRecords.strategyId, strategyId),
-    eq(triageRecords.snapshotDate, snapshotDate),
+    // Exclude 'complete' records - only show unresolved items
+    or(
+      ne(triageRecords.severity, 'complete'),
+      isNull(triageRecords.severity)
+    ),
+    // For historical triggers, show across all dates. For time-bound triggers, only show latest date
+    or(
+      inArray(triageRecords.recommendedAction, historicalTriggers),
+      eq(triageRecords.snapshotDate, snapshotDate)
+    ),
   ];
 
-  if (filters.severity && filters.severity !== "all") {
-    conditions.push(eq(triageRecords.severity, filters.severity));
+  if (filters.severity) {
+    const severityArray = Array.isArray(filters.severity) 
+      ? filters.severity 
+      : filters.severity !== "all" 
+      ? [filters.severity] 
+      : [];
+    if (severityArray.length > 0) {
+      conditions.push(inArray(triageRecords.severity, severityArray));
+    }
   }
 
-  if (filters.contextLevel && filters.contextLevel !== "all") {
-    conditions.push(eq(triageRecords.contextLevel, filters.contextLevel));
+  if (filters.contextLevel) {
+    const contextArray = Array.isArray(filters.contextLevel)
+      ? filters.contextLevel
+      : filters.contextLevel !== "all"
+      ? [filters.contextLevel]
+      : [];
+    if (contextArray.length > 0) {
+      conditions.push(inArray(triageRecords.contextLevel, contextArray));
+    }
+  }
+
+  if (filters.recommendedAction && filters.recommendedAction.length > 0) {
+    conditions.push(inArray(triageRecords.recommendedAction, filters.recommendedAction));
+  }
+
+  if (filters.strategyKey && filters.strategyKey.length > 0) {
+    conditions.push(inArray(strategies.strategyKey, filters.strategyKey));
   }
 
   const severityOrder = sql<number>`CASE
@@ -176,7 +252,7 @@ export async function getTriageQueueForStrategy(
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
     .where(and(...conditions))
-    .orderBy(desc(severityOrder), desc(triageRecords.pctNavAbsNotional))
+    .orderBy(desc(severityOrder), desc(triageRecords.snapshotDate), desc(triageRecords.pctNavAbsNotional))
     .limit(100);
 
   const records: TriageQueueRecord[] = rows.map((row) => ({

@@ -13,6 +13,7 @@ import { and, eq } from 'drizzle-orm';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
+import { autoLinkPositionsToStrategies } from '@/lib/derived/strategyAuto';
 import { strategies } from '@/db/schema';
 
 const SECTION_CODE = 'POST';
@@ -196,6 +197,9 @@ export async function POST(request: NextRequest) {
         if (!snapshotDate) continue;
         
         try {
+          // Auto-link positions to strategies (creates strategies if needed)
+          const autoLinkResult = await autoLinkPositionsToStrategies(accountId, { snapshotDate });
+          
           // Portfolio snapshots
           await computePortfolioSnapshotsForDateRange(
             accountId,
@@ -205,7 +209,7 @@ export async function POST(request: NextRequest) {
             false // onlyLatestForUnderlyings
           );
           
-          // Strategy metrics (for all strategies in account)
+          // Strategy metrics (for all strategies in account, including newly created ones)
           const accountStrategies = await db
             .select({ id: strategies.id })
             .from(strategies)
@@ -226,9 +230,14 @@ export async function POST(request: NextRequest) {
           await computeTriageForDate(snapshotDate, accountId);
           
           recomputeResults[snapshotDate] = {
+            autoStrategies: {
+              strategiesCreated: autoLinkResult.strategiesCreated,
+              positionsLinked: autoLinkResult.positionsLinked,
+            },
             strategyMetrics: strategyMetricsCount,
             success: true,
           };
+          
         } catch (error) {
           console.error(`Failed to auto-recompute after positions ingestion for ${snapshotDate}:`, error);
           recomputeResults[snapshotDate] = {
