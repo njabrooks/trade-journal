@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Strategy, Account } from '@/db/schema';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { Spinner } from '@/components/ui/spinner';
 
 interface StrategyFormData {
   strategyKey: string;
@@ -58,6 +59,8 @@ export default function StrategiesPage() {
   const [selectedStrategyType, setSelectedStrategyType] = useState<string>('');
   const [showStrategyTypeModal, setShowStrategyTypeModal] = useState(false);
   const [pendingConfirmIds, setPendingConfirmIds] = useState<string[]>([]);
+  const [confirming, setConfirming] = useState(false);
+  const [merging, setMerging] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -203,6 +206,10 @@ export default function StrategiesPage() {
       return;
     }
 
+    setConfirming(true);
+    setError(null);
+    setSuccess(null);
+
     try {
       for (const strategyId of pendingConfirmIds) {
       const response = await fetch('/api/strategies', {
@@ -226,6 +233,8 @@ export default function StrategiesPage() {
       setSuccess(`Confirmed ${pendingConfirmIds.length} strategy(ies)`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to confirm strategy');
+    } finally {
+      setConfirming(false);
     }
   };
 
@@ -268,6 +277,10 @@ export default function StrategiesPage() {
 
   const handleMerge = async () => {
     if (mergeSelection.size < 2 || !mergeTargetId) return;
+    setMerging(true);
+    setError(null);
+    setSuccess(null);
+    
     try {
       const sourceIds = Array.from(mergeSelection).filter((id) => id !== mergeTargetId);
       const response = await fetch('/api/strategies/merge', {
@@ -280,8 +293,11 @@ export default function StrategiesPage() {
       await loadData();
       setMergeSelection(new Set());
       setMergeTargetId('');
+      setSuccess(`Successfully merged ${sourceIds.length} strategy(ies)`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to merge strategies');
+    } finally {
+      setMerging(false);
     }
   };
 
@@ -793,10 +809,11 @@ export default function StrategiesPage() {
               </div>
               <button
                 onClick={handleMerge}
-                disabled={!mergeTargetId}
-                className="bg-purple-600 text-white px-4 py-1 rounded-md hover:bg-purple-700 disabled:bg-gray-400"
+                disabled={!mergeTargetId || merging}
+                className="bg-purple-600 text-white px-4 py-1 rounded-md hover:bg-purple-700 disabled:bg-gray-400 flex items-center gap-2"
               >
-                Merge {mergeSelection.size} strategies
+                {merging && <Spinner className="size-4" />}
+                {merging ? 'Merging...' : `Merge ${mergeSelection.size} strategies`}
               </button>
             </div>
           )}
@@ -1102,10 +1119,11 @@ export default function StrategiesPage() {
               </button>
               <button
                 onClick={handleConfirmWithStrategyType}
-                disabled={!selectedStrategyType}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                disabled={!selectedStrategyType || confirming}
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
               >
-                Confirm
+                {confirming && <Spinner className="size-4" />}
+                {confirming ? 'Confirming...' : 'Confirm'}
               </button>
             </div>
           </div>

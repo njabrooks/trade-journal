@@ -11,7 +11,7 @@ import {
   NewStrategy,
   NewStrategyTemplate,
 } from '@/db/schema';
-import { eq, and, sql, inArray, isNotNull } from 'drizzle-orm';
+import { eq, and, sql, inArray, isNotNull, desc } from 'drizzle-orm';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTriageForDate } from '@/lib/derived/triage';
 
@@ -249,25 +249,49 @@ export async function updateStrategy(
     updateData.isAuto = false;
     updateData.confirmedAt = new Date();
     
-    // When confirming, set status to "open" if strategy has positions, otherwise keep current status
-    // Check if strategy has any positions
-    const hasPositions = await db
-      .select({ count: sql<number>`count(*)` })
+    // When confirming, determine status based on positions:
+    // - "open" if strategy has positions with quantity != 0 on latest snapshot date
+    // - "closed" if strategy had positions before but none on latest snapshot (was active, now closed)
+    // - "draft" if strategy never had any positions (never been active)
+    
+    // First, get the latest snapshot date for this strategy
+    const latestSnapshotResult = await db
+      .select({
+        snapshotDate: positions.snapshotDate,
+      })
       .from(positions)
-      .where(
-        and(
-          eq(positions.strategyId, strategyId),
-          sql`${positions.quantity} != 0`
-        )
-      )
+      .where(eq(positions.strategyId, strategyId))
+      .orderBy(desc(positions.snapshotDate))
       .limit(1);
     
-    const positionCount = Number(hasPositions[0]?.count ?? 0);
-    if (positionCount > 0) {
-      // Strategy has positions, set status to "open"
-      updateData.status = 'open';
+    const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
+    
+    if (latestSnapshotDate) {
+      // Check if strategy has positions with quantity != 0 on latest snapshot date
+      const hasOpenPositions = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(positions)
+        .where(
+          and(
+            eq(positions.strategyId, strategyId),
+            eq(positions.snapshotDate, latestSnapshotDate),
+            sql`${positions.quantity} != 0`
+          )
+        )
+        .limit(1);
+      
+      const openPositionCount = Number(hasOpenPositions[0]?.count ?? 0);
+      if (openPositionCount > 0) {
+        // Strategy has open positions on latest snapshot → "open"
+        updateData.status = 'open';
+      } else {
+        // Strategy had positions before but none on latest snapshot → "closed"
+        updateData.status = 'closed';
+      }
+    } else {
+      // Strategy never had any positions → "draft"
+      updateData.status = 'draft';
     }
-    // If no positions, keep current status (don't override)
   }
 
   if (updates.strategyType !== undefined) {
