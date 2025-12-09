@@ -9,7 +9,7 @@ import {
   validateFlexPositionRow,
 } from '@/lib/ingestion/flex/positions';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
@@ -210,10 +210,16 @@ export async function POST(request: NextRequest) {
           );
           
           // Strategy metrics (for all strategies in account, including newly created ones)
+          // Exclude merged strategies - they're no longer active
           const accountStrategies = await db
             .select({ id: strategies.id })
             .from(strategies)
-            .where(eq(strategies.accountId, accountId));
+            .where(
+              and(
+                eq(strategies.accountId, accountId),
+                ne(strategies.status, 'merged')
+              )
+            );
           
           let strategyMetricsCount = 0;
           for (const strategy of accountStrategies) {

@@ -148,6 +148,14 @@ export async function getTriageQueue(
     orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
   }
 
+  // Exclude triage records for merged strategies
+  conditions.push(
+    or(
+      isNull(strategies.status),
+      ne(strategies.status, 'merged')
+    )
+  );
+
   const rows = await db
     .select({
       id: triageRecords.id,
@@ -300,6 +308,14 @@ export async function getTriageQueueForStrategy(
     // Default sort
     orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
   }
+
+  // Exclude triage records for merged strategies
+  conditions.push(
+    or(
+      isNull(strategies.status),
+      ne(strategies.status, 'merged')
+    )
+  );
 
   const rows = await db
     .select({

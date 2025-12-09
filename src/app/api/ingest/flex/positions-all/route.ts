@@ -26,7 +26,7 @@ import {
   validateFlexMtmRow,
 } from '@/lib/ingestion/flex/mtm';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
@@ -362,16 +362,22 @@ export async function POST(request: NextRequest) {
         // Compute portfolio snapshots
         await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate);
 
-        // Get all strategies for this account (including newly created ones)
-        const accountStrategies = await db
-          .select({ id: strategies.id })
-          .from(strategies)
-          .where(eq(strategies.accountId, accountId));
+          // Get all strategies for this account (including newly created ones)
+          // Exclude merged strategies - they're no longer active
+          const accountStrategies = await db
+            .select({ id: strategies.id })
+            .from(strategies)
+            .where(
+              and(
+                eq(strategies.accountId, accountId),
+                ne(strategies.status, 'merged')
+              )
+            );
 
-        // Compute strategy metrics for all strategies
-        for (const strategy of accountStrategies) {
-          await computeStrategyMetricsForDateRange(accountId, strategy.id, minDate, maxDate);
-        }
+          // Compute strategy metrics for all strategies
+          for (const strategy of accountStrategies) {
+            await computeStrategyMetricsForDateRange(accountId, strategy.id, minDate, maxDate);
+          }
 
         // Compute triage for each snapshot date
         // Process each date individually to avoid stopping on errors

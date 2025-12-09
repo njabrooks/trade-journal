@@ -5,7 +5,7 @@ import { computeTriageForDate, deleteTriageRecordsForDateRange } from '@/lib/der
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 import { db } from '@/db';
 import { positions } from '@/db/schema';
-import { and, eq, isNotNull, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, ne, isNotNull, gte, lte, sql } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -155,11 +155,17 @@ export async function POST(request: NextRequest) {
       // Strategy metrics
       try {
         const { strategies } = await import('@/db/schema');
-        const { eq } = await import('drizzle-orm');
+        const { eq, ne } = await import('drizzle-orm');
+        // Exclude merged strategies - they're no longer active
         const accountStrategies = await db
           .select({ id: strategies.id })
           .from(strategies)
-          .where(eq(strategies.accountId, accountId));
+          .where(
+            and(
+              eq(strategies.accountId, accountId),
+              ne(strategies.status, 'merged')
+            )
+          );
 
         let totalCount = 0;
         for (const strategy of accountStrategies) {
