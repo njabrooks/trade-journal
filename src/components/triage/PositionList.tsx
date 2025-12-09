@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { formatPosition } from "@/lib/formatters";
 
 interface Position {
@@ -22,16 +22,41 @@ export function PositionList({ positionId, strategyId }: PositionListProps) {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const fetchingRef = useRef(false);
+  const lastFetchKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!positionId && !strategyId) {
       setLoading(false);
+      lastFetchKeyRef.current = null;
       return;
     }
 
+    // Create a unique key for this fetch
+    const fetchKey = positionId ? `position-${positionId}` : `strategy-${strategyId}`;
+    
+    // Skip if we're already fetching or have already fetched the same data
+    if (lastFetchKeyRef.current === fetchKey) {
+      if (fetchingRef.current) {
+        return; // Already fetching, skip
+      }
+      // Already fetched this key, no need to refetch (positions are historical snapshot data)
+      setLoading(false);
+      return;
+    }
+
+    // Reset if the key changed (new position/strategy)
+    if (lastFetchKeyRef.current !== null && lastFetchKeyRef.current !== fetchKey) {
+      setPositions([]);
+      setError(null);
+    }
+
     const fetchPositions = async () => {
+      fetchingRef.current = true;
+      lastFetchKeyRef.current = fetchKey;
       setLoading(true);
       setError(null);
+      
       try {
         let url = "";
         if (positionId) {
@@ -40,6 +65,7 @@ export function PositionList({ positionId, strategyId }: PositionListProps) {
           url = `/api/positions?strategyId=${strategyId}`;
         } else {
           setLoading(false);
+          fetchingRef.current = false;
           return;
         }
 
@@ -57,8 +83,10 @@ export function PositionList({ positionId, strategyId }: PositionListProps) {
         setPositions(positionsList);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load positions");
+        lastFetchKeyRef.current = null; // Reset on error so we can retry
       } finally {
         setLoading(false);
+        fetchingRef.current = false;
       }
     };
 

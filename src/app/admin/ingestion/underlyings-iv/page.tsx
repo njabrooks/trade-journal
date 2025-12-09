@@ -245,22 +245,22 @@ export default function UnderlyingsIvIngestionPage() {
           )}
 
           {!backfillSpot && (
-            <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
-              <p className="font-semibold mb-2">Data Source:</p>
-              <p>
-                This tool scrapes Option Strategist&apos;s free volatility data page. Data is
-                typically updated weekly. The scraper extracts:
-              </p>
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Spot price (underlying close)</li>
-                <li>IV30 (30-day implied volatility, converted to decimal)</li>
-                <li>Snapshot date (from Option Strategist date code)</li>
-              </ul>
-              <p className="mt-2 text-xs">
-                Note: This is a weekly data source. For daily data, consider integrating with IBKR
-                API (see Future Enhancements).
-              </p>
-            </div>
+          <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
+            <p className="font-semibold mb-2">Data Source:</p>
+            <p>
+              This tool scrapes Option Strategist&apos;s free volatility data page. Data is
+              typically updated weekly. The scraper extracts:
+            </p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>Spot price (underlying close)</li>
+              <li>IV30 (30-day implied volatility, converted to decimal)</li>
+              <li>Snapshot date (from Option Strategist date code)</li>
+            </ul>
+            <p className="mt-2 text-xs">
+              Note: This is a weekly data source. For daily data, consider integrating with IBKR
+              API (see Future Enhancements).
+            </p>
+          </div>
           )}
 
           <button
@@ -321,20 +321,20 @@ export default function UnderlyingsIvIngestionPage() {
                   {result.summary.tickersProcessed}
                 </div>
                 {result.summary.tickersFound !== undefined && (
-                  <div>
-                    <span className="font-semibold">Tickers Found:</span>{' '}
-                    {result.summary.tickersFound}
-                  </div>
+                <div>
+                  <span className="font-semibold">Tickers Found:</span>{' '}
+                  {result.summary.tickersFound}
+                </div>
                 )}
                 {result.summary.inserted !== undefined && (
-                  <div>
-                    <span className="font-semibold">Inserted:</span> {result.summary.inserted}
-                  </div>
+                <div>
+                  <span className="font-semibold">Inserted:</span> {result.summary.inserted}
+                </div>
                 )}
                 {result.summary.updated !== undefined && (
-                  <div>
-                    <span className="font-semibold">Updated:</span> {result.summary.updated}
-                  </div>
+                <div>
+                  <span className="font-semibold">Updated:</span> {result.summary.updated}
+                </div>
                 )}
                 {result.summary.processed !== undefined && (
                   <div>
@@ -343,9 +343,9 @@ export default function UnderlyingsIvIngestionPage() {
                   </div>
                 )}
                 {result.summary.skipped !== undefined && (
-                  <div>
-                    <span className="font-semibold">Skipped:</span> {result.summary.skipped}
-                  </div>
+                <div>
+                  <span className="font-semibold">Skipped:</span> {result.summary.skipped}
+                </div>
                 )}
                 {result.summary.dateRange && (
                   <>
