@@ -105,10 +105,10 @@ export async function getTriageQueue(
     WHEN ${triageRecords.severity} = 'urgent' THEN 5
     WHEN ${triageRecords.severity} = 'attention' THEN 4
     WHEN ${triageRecords.severity} = 'monitor' THEN 3
-    WHEN ${triageRecords.severity} = 'pending' THEN 2
-    WHEN ${triageRecords.severity} = 'info' THEN 1
+    WHEN ${triageRecords.severity} = 'info' THEN 2
+    WHEN ${triageRecords.severity} = 'pending' THEN 1
     WHEN ${triageRecords.severity} = 'complete' THEN 0
-    ELSE 1
+    ELSE 0
   END`;
 
   const rows = await db
@@ -131,7 +131,7 @@ export async function getTriageQueue(
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
     .where(and(...conditions))
-    .orderBy(desc(severityOrder), desc(triageRecords.snapshotDate), desc(triageRecords.pctNavAbsNotional))
+    .orderBy(desc(triageRecords.snapshotDate), desc(severityOrder))
     .limit(100);
 
   const records: TriageQueueRecord[] = rows.map((row) => ({
@@ -226,10 +226,10 @@ export async function getTriageQueueForStrategy(
     WHEN ${triageRecords.severity} = 'urgent' THEN 5
     WHEN ${triageRecords.severity} = 'attention' THEN 4
     WHEN ${triageRecords.severity} = 'monitor' THEN 3
-    WHEN ${triageRecords.severity} = 'pending' THEN 2
-    WHEN ${triageRecords.severity} = 'info' THEN 1
+    WHEN ${triageRecords.severity} = 'info' THEN 2
+    WHEN ${triageRecords.severity} = 'pending' THEN 1
     WHEN ${triageRecords.severity} = 'complete' THEN 0
-    ELSE 1
+    ELSE 0
   END`;
 
   const rows = await db
@@ -252,7 +252,7 @@ export async function getTriageQueueForStrategy(
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
     .where(and(...conditions))
-    .orderBy(desc(severityOrder), desc(triageRecords.snapshotDate), desc(triageRecords.pctNavAbsNotional))
+    .orderBy(desc(triageRecords.snapshotDate), desc(severityOrder))
     .limit(100);
 
   const records: TriageQueueRecord[] = rows.map((row) => ({
