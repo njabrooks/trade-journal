@@ -1,4 +1,4 @@
-import { and, desc, eq, sql, ne, or, isNull, inArray } from "drizzle-orm";
+import { and, desc, asc, eq, sql, ne, or, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { strategies, triageRecords } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
@@ -8,6 +8,8 @@ export interface TriageQueueFilters {
   contextLevel?: string | string[]; // Array for multi-select
   recommendedAction?: string[]; // Array for multi-select
   strategyKey?: string[]; // Array for multi-select
+  sort?: string; // Column to sort by
+  direction?: "asc" | "desc"; // Sort direction
 }
 
 export interface TriageQueueRecord {
@@ -111,6 +113,41 @@ export async function getTriageQueue(
     ELSE 0
   END`;
 
+  // Build orderBy clause based on sort parameter
+  const orderByClauses = [];
+  if (filters.sort) {
+    const direction = filters.direction === "asc" ? asc : desc;
+    switch (filters.sort) {
+      case "symbol":
+        orderByClauses.push(direction(triageRecords.symbol));
+        break;
+      case "recommendedAction":
+        orderByClauses.push(direction(triageRecords.recommendedAction));
+        break;
+      case "severity":
+        orderByClauses.push(direction(severityOrder));
+        break;
+      case "contextLevel":
+        orderByClauses.push(direction(triageRecords.contextLevel));
+        break;
+      case "snapshotDate":
+        orderByClauses.push(direction(triageRecords.snapshotDate));
+        break;
+      case "dte":
+        orderByClauses.push(direction(triageRecords.dte));
+        break;
+      case "strategyKey":
+        orderByClauses.push(direction(strategies.strategyKey));
+        break;
+      default:
+        // Default sort
+        orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
+    }
+  } else {
+    // Default sort
+    orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
+  }
+
   const rows = await db
     .select({
       id: triageRecords.id,
@@ -131,7 +168,7 @@ export async function getTriageQueue(
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
     .where(and(...conditions))
-    .orderBy(desc(triageRecords.snapshotDate), desc(severityOrder))
+    .orderBy(...orderByClauses)
     .limit(100);
 
   const records: TriageQueueRecord[] = rows.map((row) => ({
@@ -232,6 +269,38 @@ export async function getTriageQueueForStrategy(
     ELSE 0
   END`;
 
+  // Build orderBy clause based on sort parameter
+  const orderByClauses = [];
+  if (filters.sort) {
+    const direction = filters.direction === "asc" ? asc : desc;
+    switch (filters.sort) {
+      case "symbol":
+        orderByClauses.push(direction(triageRecords.symbol));
+        break;
+      case "recommendedAction":
+        orderByClauses.push(direction(triageRecords.recommendedAction));
+        break;
+      case "severity":
+        orderByClauses.push(direction(severityOrder));
+        break;
+      case "contextLevel":
+        orderByClauses.push(direction(triageRecords.contextLevel));
+        break;
+      case "snapshotDate":
+        orderByClauses.push(direction(triageRecords.snapshotDate));
+        break;
+      case "dte":
+        orderByClauses.push(direction(triageRecords.dte));
+        break;
+      default:
+        // Default sort
+        orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
+    }
+  } else {
+    // Default sort
+    orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
+  }
+
   const rows = await db
     .select({
       id: triageRecords.id,
@@ -252,7 +321,7 @@ export async function getTriageQueueForStrategy(
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
     .where(and(...conditions))
-    .orderBy(desc(triageRecords.snapshotDate), desc(severityOrder))
+    .orderBy(...orderByClauses)
     .limit(100);
 
   const records: TriageQueueRecord[] = rows.map((row) => ({
