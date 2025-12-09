@@ -60,7 +60,7 @@ This document captures all planned future enhancements mentioned throughout the 
 **Location**: `docs/actions.md` (lines 431-436)  
 **Triggers**:
 - IV spike detection
-- Concentration risk (too much exposure to single underlying)
+- Concentration risk (too much exposure to single underlying) - **See #23 for allocation-based triggers**
 - Correlation risk  
 **Priority**: Low
 
@@ -202,6 +202,29 @@ This document captures all planned future enhancements mentioned throughout the 
 - Optional undo functionality  
 **Priority**: Low
 
+### 23. Underlyings Allocation Management & Triggers
+**Location**: New enhancement  
+**Enhancement**: 
+- **Allocation Planning Page**: UI to specify target percentage allocations of portfolio NAV for each underlying
+  - Can be set at account-level or across all accounts
+  - Generates target exposure values (in notional terms) for each underlying
+  - Displays current vs. target allocation for all underlyings
+- **Target-Based Triggers**: Generate underlying-level triage records when:
+  - Current allocation exceeds target allocation (over-allocated)
+  - Current allocation approaches target allocation (scaling in - e.g., 80%, 90% of target)
+  - Helps track scaling progress and identify when to reduce size
+- **Integration with Strategies/Positions**: 
+  - Shows aggregated exposure across all strategies and positions for each underlying
+  - Compares aggregated notional to target allocation
+  - Triggers encourage analysis of strategies/positions associated with over-allocated underlyings
+- **Use Cases**:
+  - Portfolio allocation planning tool
+  - Risk management (prevent over-concentration)
+  - Scaling guidance (track progress toward target allocations)
+  - Rebalancing of successful positions (reduce size when allocation exceeds target)
+  - Triage workflow integration (underlying-level analysis prompts)
+**Priority**: Medium
+
 ## Schema & Data Model
 
 ### 16. Position Lifecycle Modeling
@@ -289,6 +312,7 @@ This document captures all planned future enhancements mentioned throughout the 
 - Triage Rules Database Persistence (#5)
 - Decision-Making Assistant (AI Integration) (#13)
 - Manual Linking UI (#14)
+- Underlyings Allocation Management & Triggers (#23)
 - Endpoint Regression Tests (#18)
 - Data Quality Reports (#19)
 
