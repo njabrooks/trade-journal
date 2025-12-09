@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { RecomputeTriageButton } from "@/components/triage/RecomputeTriageButton";
 import { TriageActionButtons } from "@/components/triage/TriageActionButtons";
 import { PositionList } from "@/components/triage/PositionList";
 import { TriageFilters } from "@/components/triage/TriageFilters";
 import { Badge } from "@/components/ui/badge";
 import { getPrimaryAccount } from "@/db/queries/accounts";
 import { getTriageQueue } from "@/db/queries/triage";
-import { formatCurrency, formatDateLabel, formatPercent } from "@/lib/formatters";
+import { formatCurrency, formatDateShort, formatDateFull, formatPercent } from "@/lib/formatters";
 import { ALL_SEVERITIES, ALL_CONTEXTS, ALL_TRIGGERS } from "@/lib/constants/triage";
 
 interface TriagePageProps {
@@ -129,9 +128,16 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   return (
     <DashboardShell
       activeNav="triage"
-      title="Triage Queue"
-      subtitle={queue.snapshotDate ? `Latest snapshot ${formatDateLabel(queue.snapshotDate)}` : "No snapshot yet"}
-      actions={<RecomputeTriageButton accountId={account.id} snapshotDate={queue.snapshotDate} />}
+      title={
+        <div className="flex items-center gap-4">
+          <span>Triage Queue</span>
+          {queue.snapshotDate && (
+            <span className="text-sm font-normal text-muted-foreground">
+              Latest snapshot: {formatDateFull(queue.snapshotDate)}
+            </span>
+          )}
+        </div>
+      }
     >
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <TriageFilters
@@ -177,9 +183,9 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
                     {record.contextLevel}
                   </span>
-                  <span className="text-slate-400">
-                    {formatDateLabel(record.snapshotDate)} · {record.dte ?? "—"} DTE
-                  </span>
+                    <span className="text-slate-400">
+                      {formatDateShort(record.snapshotDate)} · {record.dte ?? "—"} DTE
+                    </span>
                   {record.strategyId ? (
                     <Link
                       href={`/strategies/${record.strategyId}`}

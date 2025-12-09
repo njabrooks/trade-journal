@@ -8,7 +8,7 @@ import { PositionList } from "@/components/triage/PositionList";
 import { Badge } from "@/components/ui/badge";
 import { getStrategyDetail } from "@/db/queries/strategies";
 import { getTriageQueueForStrategy } from "@/db/queries/triage";
-import { formatCurrency, formatDateLabel, formatPercent } from "@/lib/formatters";
+import { formatCurrency, formatDateShort, formatPercent } from "@/lib/formatters";
 
 interface TriagePageProps {
   params: Promise<{ strategyId: string }>;
@@ -61,8 +61,14 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
   return (
     <DashboardShell
       activeNav="strategies"
-      title={strategy.label ?? strategy.strategyKey}
-      subtitle={`${strategy.strategyKey} · ${strategy.accountLabel ?? strategy.accountBrokerId ?? "Unassigned"}`}
+      title={
+        <div className="flex items-center gap-4">
+          <span>{strategy.label ?? strategy.strategyKey}</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            {strategy.strategyKey} · {strategy.accountLabel ?? strategy.accountBrokerId ?? "Unassigned"}
+          </span>
+        </div>
+      }
       tabs={<StrategyTabs strategyId={strategyId} />}
     >
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -119,7 +125,7 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
                       {record.contextLevel}
                     </span>
                     <span className="text-slate-400">
-                      {formatDateLabel(record.snapshotDate)} · {record.dte ?? "—"} DTE
+                      {formatDateShort(record.snapshotDate)} · {record.dte ?? "—"} DTE
                     </span>
                   </div>
                 </div>

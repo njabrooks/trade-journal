@@ -22,7 +22,7 @@ export function StrategyTabs({ strategyId }: StrategyTabsProps) {
                    (pathname === `/strategies/${strategyId}` ? "triage" : null);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]">
       {TABS.map((tab) => {
         const href = tab.href(strategyId);
         const isActive = activeTab === tab.id;
@@ -31,11 +31,12 @@ export function StrategyTabs({ strategyId }: StrategyTabsProps) {
             key={tab.id}
             href={href}
             className={cn(
-              "rounded-lg px-3 py-1.5 text-sm font-medium transition-all",
+              "inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1",
               isActive
-                ? "bg-slate-900 text-white"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
+            data-state={isActive ? "active" : "inactive"}
           >
             {tab.label}
           </Link>

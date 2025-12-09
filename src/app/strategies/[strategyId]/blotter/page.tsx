@@ -22,8 +22,14 @@ export default async function BlotterPage({ params }: BlotterPageProps) {
   return (
     <DashboardShell
       activeNav="strategies"
-      title={strategy.label ?? strategy.strategyKey}
-      subtitle={`${strategy.strategyKey} · ${strategy.accountLabel ?? strategy.accountBrokerId ?? "Unassigned"}`}
+      title={
+        <div className="flex items-center gap-4">
+          <span>{strategy.label ?? strategy.strategyKey}</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            {strategy.strategyKey} · {strategy.accountLabel ?? strategy.accountBrokerId ?? "Unassigned"}
+          </span>
+        </div>
+      }
       tabs={<StrategyTabs strategyId={strategyId} />}
     >
       <section className="rounded-2xl border bg-white p-6 shadow-sm">

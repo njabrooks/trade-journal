@@ -39,8 +39,14 @@ export default async function PerformancePage({ params }: PerformancePageProps) 
   return (
     <DashboardShell
       activeNav="strategies"
-      title={strategy.label ?? strategy.strategyKey}
-      subtitle={`${strategy.strategyKey} · ${strategy.accountLabel ?? strategy.accountBrokerId ?? "Unassigned"}`}
+      title={
+        <div className="flex items-center gap-4">
+          <span>{strategy.label ?? strategy.strategyKey}</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            {strategy.strategyKey} · {strategy.accountLabel ?? strategy.accountBrokerId ?? "Unassigned"}
+          </span>
+        </div>
+      }
       tabs={<StrategyTabs strategyId={strategyId} />}
     >
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
