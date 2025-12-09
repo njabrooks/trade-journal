@@ -193,6 +193,7 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
 
               {/* Positions List */}
               <PositionList
+                key={`${record.id}-${record.positionId}-${record.strategyId}`}
                 positionId={record.positionId}
                 strategyId={record.strategyId}
               />

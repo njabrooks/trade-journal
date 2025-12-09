@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPosition } from "@/lib/formatters";
 
@@ -76,6 +77,7 @@ export function TriageActionButtons({
   severity,
   onActionComplete,
 }: TriageActionButtonsProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showActionForm, setShowActionForm] = useState(false);
@@ -435,6 +437,9 @@ export function TriageActionButtons({
         timeRules: "",
       });
       setStrategyData(null);
+
+      // Refresh the page to show updated state (severity override, etc.)
+      router.refresh();
 
       if (onActionComplete) {
         onActionComplete();

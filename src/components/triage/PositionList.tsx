@@ -22,13 +22,22 @@ export function PositionList({ positionId, strategyId }: PositionListProps) {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const fetchingRef = useRef(false);
   const lastFetchKeyRef = useRef<string | null>(null);
+
+  // Track mount state to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!positionId && !strategyId) {
       setLoading(false);
+      setPositions([]);
+      setError(null);
       lastFetchKeyRef.current = null;
+      fetchingRef.current = false;
       return;
     }
 
@@ -45,10 +54,11 @@ export function PositionList({ positionId, strategyId }: PositionListProps) {
       return;
     }
 
-    // Reset if the key changed (new position/strategy)
-    if (lastFetchKeyRef.current !== null && lastFetchKeyRef.current !== fetchKey) {
+    // Reset if the key changed (new position/strategy) or on initial mount
+    if (lastFetchKeyRef.current !== fetchKey) {
       setPositions([]);
       setError(null);
+      setLoading(true); // Show loading state when switching to new position/strategy
     }
 
     const fetchPositions = async () => {
@@ -92,6 +102,11 @@ export function PositionList({ positionId, strategyId }: PositionListProps) {
 
     fetchPositions();
   }, [positionId, strategyId]);
+
+  // During SSR and initial hydration, render nothing to prevent mismatch
+  if (!mounted) {
+    return null;
+  }
 
   if (loading) {
     return (
