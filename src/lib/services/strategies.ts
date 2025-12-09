@@ -414,10 +414,11 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
           );
 
           // Trigger targeted triage recompute for target strategy on affected dates
+          // Clean first to ensure stale records are removed (e.g., if underlying data changed)
           for (const date of dates) {
             if (date) {
               try {
-                await computeTriageForDate(date, targetStrategy.accountId, targetId);
+                await computeTriageForDate(date, targetStrategy.accountId, targetId, true);
               } catch (error) {
                 console.error(
                   `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,

@@ -221,7 +221,8 @@ export async function linkPositionToStrategy(
       );
       
       // Trigger targeted triage recompute for this strategy and date
-      await computeTriageForDate(snapshotDate, accountId, strategyId);
+      // Clean first to ensure stale records are removed (e.g., if underlying data changed)
+      await computeTriageForDate(snapshotDate, accountId, strategyId, true);
     } catch (error) {
       console.error(
         `Failed to auto-recompute after linking position ${positionId} to strategy ${strategyId} on ${snapshotDate}:`,
@@ -279,7 +280,8 @@ export async function linkTradeToStrategy(tradeId: string, strategyId: string): 
       );
       
       // Trigger targeted triage recompute for this strategy and date
-      await computeTriageForDate(snapshotDate, accountId, strategyId);
+      // Clean first to ensure stale records are removed (e.g., if underlying data changed)
+      await computeTriageForDate(snapshotDate, accountId, strategyId, true);
     } catch (error) {
       console.error(
         `Failed to auto-recompute after linking trade ${tradeId} to strategy ${strategyId} on ${snapshotDate}:`,

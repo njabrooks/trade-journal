@@ -226,17 +226,30 @@ export async function computePositionTriageForDate(
     const underlyingSpot = position.underlyingId 
       ? underlyingSpotMap.get(position.underlyingId) ?? null 
       : null;
-    
+
     // Use underlying spot for ITM calculation, fallback to position.spot if unavailable
     // (position.spot might be underlying spot for stocks, but for options it's option mark price)
-    const spotForItm = underlyingSpot ?? (position.assetClass === 'OPT' ? null : position.spot);
+    // For options, we MUST have underlying spot data - cannot use position.spot (which is option mark price)
+    const spotForItm = position.assetClass === 'OPT' 
+      ? underlyingSpot  // For options, only use underlying spot, never position.spot
+      : (underlyingSpot ?? position.spot);  // For stocks, prefer underlying spot but fallback to position.spot
     const isItm = computeIsItm(position.optionRight, spotForItm, position.strike);
+    
+    // Safety check: Don't create ITM flags for options without underlying spot data
+    // This prevents false positives when underlying data is missing
+    if (position.assetClass === 'OPT' && !underlyingSpot && isItm !== null) {
+      // This shouldn't happen, but log a warning if it does
+      console.warn(`ITM calculation attempted for option ${position.symbol} without underlying spot data on ${snapshotDate}`);
+    }
 
     // Get IV for underlying from pre-fetched map
     const iv30 = position.underlyingId ? ivDataMap.get(position.underlyingId) ?? null : null;
 
     // Use underlying spot for sigma calculation (same as ITM - need underlying spot, not option mark price)
-    const spotForSigma = underlyingSpot ?? (position.assetClass === 'OPT' ? null : position.spot);
+    // For options, we MUST have underlying spot data - cannot use position.spot (which is option mark price)
+    const spotForSigma = position.assetClass === 'OPT'
+      ? underlyingSpot  // For options, only use underlying spot, never position.spot
+      : (underlyingSpot ?? position.spot);  // For stocks, prefer underlying spot but fallback to position.spot
     const sigmaToStrike = computeSigmaToStrike(
       spotForSigma,
       position.strike,
@@ -247,14 +260,24 @@ export async function computePositionTriageForDate(
     const flagSigma05 = sigmaToStrike !== null && sigmaToStrike <= 0.5;
     const flagSigma10 = sigmaToStrike !== null && sigmaToStrike > 0.5 && sigmaToStrike <= 1.0;
 
+    // For options, all triggers that depend on spot/ITM/sigma require underlying spot data
+    // This prevents false positives when underlying data is missing
+    // For stocks, we can use position.spot as fallback
+    const hasRequiredSpotData = position.assetClass === 'OPT' 
+      ? underlyingSpot !== null  // Options require underlying spot
+      : true;  // Stocks can use position.spot as fallback
+
     // Assignment risk: short, ITM, DTE thresholds
+    // Only evaluate if we have required underlying spot data (assignment risk depends on ITM)
     const flagAssignmentUrgent =
+      hasRequiredSpotData &&
       position.side === 'SHORT' &&
       isItm === true &&
       dte !== null &&
       dte <= 14;
     
     const flagAssignmentAttention =
+      hasRequiredSpotData &&
       position.side === 'SHORT' &&
       isItm === true &&
       dte !== null &&
@@ -263,13 +286,15 @@ export async function computePositionTriageForDate(
 
     // Determine if we should create a triage record
     // Create record if: DTE <= 30, or sigma flags, or ITM (any DTE), or assignment risk
+    // For options, all spot-dependent triggers require underlying spot data to prevent false positives
+    
     const shouldCreate =
       (dte !== null && dte <= TRIAGE_RULES_V1.dteThreshold) ||
-      flagSigma10 ||
-      flagSigma05 ||
-      (isItm === true) ||
-      flagAssignmentUrgent ||
-      flagAssignmentAttention;
+      (hasRequiredSpotData && flagSigma10) ||
+      (hasRequiredSpotData && flagSigma05) ||
+      (hasRequiredSpotData && isItm === true) || // Only create ITM flags if we have underlying spot data
+      (hasRequiredSpotData && flagAssignmentUrgent) ||
+      (hasRequiredSpotData && flagAssignmentAttention);
 
     if (!shouldCreate) continue;
 
@@ -278,14 +303,16 @@ export async function computePositionTriageForDate(
     let recommendedAction: string | null = null;
 
     // 1. Assignment risk (highest priority)
-    if (flagAssignmentUrgent) {
+    // Only evaluate if we have required underlying spot data
+    if (hasRequiredSpotData && flagAssignmentUrgent) {
       severity = 'urgent';
       recommendedAction = 'ASSIGNMENT_RISK≤14_DTE';
-    } else if (flagAssignmentAttention) {
+    } else if (hasRequiredSpotData && flagAssignmentAttention) {
       severity = 'attention';
       recommendedAction = 'ASSIGNMENT_RISK≤30_DTE';
-    } else if (isItm === true) {
+    } else if (hasRequiredSpotData && isItm === true) {
       // ITM but not short assignment risk - differentiate by long vs short
+      // Only create ITM flags if we have underlying spot data (required for accurate ITM calculation)
       severity = 'info';
       if (position.side === 'SHORT') {
         recommendedAction = 'ITM_SHORT';
@@ -294,13 +321,14 @@ export async function computePositionTriageForDate(
       }
     }
     // 2. Sigma flags (check after assignment risk)
-    else if (flagSigma05 && position.side === 'SHORT') {
+    // Only evaluate if we have required underlying spot data
+    else if (hasRequiredSpotData && flagSigma05 && position.side === 'SHORT') {
       severity = 'urgent';
       recommendedAction = 'SIGMA_0.5_SHORT';
-    } else if (flagSigma05) {
+    } else if (hasRequiredSpotData && flagSigma05) {
       severity = 'attention';
       recommendedAction = 'SIGMA_0.5_LONG';
-    } else if (flagSigma10) {
+    } else if (hasRequiredSpotData && flagSigma10) {
       severity = 'info';
       recommendedAction = 'SIGMA_1.0';
     }
@@ -1009,15 +1037,68 @@ export async function computeQuantityChangeTriageForDate(
 }
 
 /**
+ * Deletes all triage records for a snapshot date (or date range)
+ * Useful for clean recomputation when logic changes
+ * @param accountId - Optional: filter to specific account
+ * @param strategyId - Optional: filter to specific strategy
+ */
+export async function deleteTriageRecordsForDate(
+  snapshotDate: string,
+  accountId?: string,
+  strategyId?: string
+): Promise<void> {
+  const conditions = [eq(triageRecords.snapshotDate, snapshotDate)];
+
+  if (accountId) {
+    conditions.push(eq(triageRecords.accountId, accountId));
+  }
+
+  if (strategyId) {
+    conditions.push(eq(triageRecords.strategyId, strategyId));
+  }
+
+  await db.delete(triageRecords).where(and(...conditions));
+}
+
+/**
+ * Deletes all triage records for a date range
+ * Useful for clean recomputation when logic changes
+ */
+export async function deleteTriageRecordsForDateRange(
+  startDate: string,
+  endDate: string,
+  accountId?: string
+): Promise<void> {
+  const conditions = [
+    gte(triageRecords.snapshotDate, startDate),
+    lte(triageRecords.snapshotDate, endDate),
+  ];
+
+  if (accountId) {
+    conditions.push(eq(triageRecords.accountId, accountId));
+  }
+
+  await db.delete(triageRecords).where(and(...conditions));
+}
+
+/**
  * Computes all triage records for a snapshot date
  * @param strategyId - Optional: filter to a specific strategy (for targeted recompute)
  *                     When provided, only recomputes triage for that strategy, significantly faster
+ * @param cleanFirst - If true, deletes all existing triage records for this date before recomputing
+ *                     Useful when logic changes to ensure stale records are removed
  */
 export async function computeTriageForDate(
   snapshotDate: string,
   accountId?: string,
-  strategyId?: string
+  strategyId?: string,
+  cleanFirst: boolean = false
 ): Promise<{ position: number; strategy: number; quantityChange: number }> {
+  // Clean existing records first if requested (ensures stale records are removed)
+  if (cleanFirst) {
+    await deleteTriageRecordsForDate(snapshotDate, accountId, strategyId);
+  }
+
   const positionRecords = await computePositionTriageForDate(snapshotDate, accountId, strategyId);
   const strategyRecords = await computeStrategyTriageForDate(snapshotDate, accountId, strategyId);
   const quantityChangeRecords = await computeQuantityChangeTriageForDate(snapshotDate, accountId, strategyId);
