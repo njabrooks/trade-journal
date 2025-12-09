@@ -16,6 +16,7 @@ interface TriageFiltersProps {
   triggerCounts: Record<string, number>;
   strategyCounts: Record<string, number>;
   totalFlags: number;
+  basePath?: string;
 }
 
 export function TriageFilters({
@@ -32,6 +33,7 @@ export function TriageFilters({
   triggerCounts,
   strategyCounts,
   totalFlags,
+  basePath = "/triage",
 }: TriageFiltersProps) {
   const allParams = {
     severity: severityFilter,
@@ -49,6 +51,7 @@ export function TriageFilters({
         paramKey="severity"
         allParams={allParams}
         counts={severityCounts}
+        basePath={basePath}
       />
       <MultiSelectFilter
         label="Context"
@@ -57,6 +60,7 @@ export function TriageFilters({
         paramKey="contextLevel"
         allParams={allParams}
         counts={contextCounts}
+        basePath={basePath}
       />
       <MultiSelectFilter
         label="Trigger"
@@ -65,6 +69,7 @@ export function TriageFilters({
         paramKey="recommendedAction"
         allParams={allParams}
         counts={triggerCounts}
+        basePath={basePath}
       />
       {allStrategies.length > 0 && (
         <MultiSelectFilter
@@ -74,6 +79,7 @@ export function TriageFilters({
           paramKey="strategyKey"
           allParams={allParams}
           counts={strategyCounts}
+          basePath={basePath}
         />
       )}
       <span className="ml-auto text-xs text-slate-400">

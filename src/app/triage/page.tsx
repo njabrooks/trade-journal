@@ -139,7 +139,7 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
         </div>
       }
     >
-      <section className="rounded-2xl border bg-white p-6 shadow-sm">
+      <div className="border-b bg-white px-6 py-4 -mx-4 -mt-4">
         <TriageFilters
           severityFilter={severityFilter}
           contextFilter={contextFilter}
@@ -155,7 +155,7 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
           strategyCounts={strategyCounts}
           totalFlags={queue.records.length}
         />
-      </section>
+      </div>
 
       <section className="grid gap-4">
         {queue.records.length === 0 ? (

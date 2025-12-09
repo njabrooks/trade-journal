@@ -39,7 +39,7 @@ export function PlaybookSidebar({
   return (
     <div className="sticky top-6 h-fit w-[28rem] self-start">
       <div className="rounded-lg border bg-white shadow-sm">
-        <Accordion type="single" collapsible className="w-full" defaultValue="strategy-info">
+        <Accordion type="multiple" className="w-full" defaultValue={["strategy-info"]}>
           <AccordionItem value="strategy-info" className="border-b">
             <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:no-underline">
               Strategy Info

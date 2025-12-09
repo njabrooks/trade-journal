@@ -10,6 +10,7 @@ interface MultiSelectFilterProps {
   paramKey: string;
   allParams: Record<string, string | string[]>;
   counts?: Record<string, number>;
+  basePath?: string;
 }
 
 export function MultiSelectFilter({
@@ -19,6 +20,7 @@ export function MultiSelectFilter({
   paramKey,
   allParams,
   counts,
+  basePath = "/triage",
 }: MultiSelectFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -72,7 +74,7 @@ export function MultiSelectFilter({
     }
 
     const query = params.toString();
-    router.push(`/triage${query ? `?${query}` : ""}`, { scroll: false });
+    router.push(`${basePath}${query ? `?${query}` : ""}`, { scroll: false });
   };
 
   const displayText =
