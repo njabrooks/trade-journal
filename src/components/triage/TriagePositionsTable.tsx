@@ -109,13 +109,24 @@ export function TriagePositionsTable({
 
   if (loading) {
     return (
-      <div className="text-sm text-slate-400 py-4">Loading positions...</div>
+      <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
+        <div className="px-4 py-6 text-center">
+          <div className="text-sm text-slate-400">Loading positions...</div>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-sm text-rose-600 py-4">Error: {error}</div>
+      <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
+        <div className="border-b border-slate-300 bg-slate-50 px-4 py-2">
+          <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">Error</p>
+        </div>
+        <div className="px-4 py-3">
+          <div className="text-sm text-rose-600">{error}</div>
+        </div>
+      </div>
     );
   }
 

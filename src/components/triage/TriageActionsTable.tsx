@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TriageActionButtons } from "./TriageActionButtons";
 import { cn } from "@/lib/utils";
 
@@ -80,10 +80,19 @@ export function TriageActionsTable({
   const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
   const availableActions = getAvailableActions(recommendedAction, severity ?? null);
 
+  // Auto-select if only one action is available
+  useEffect(() => {
+    if (availableActions.length === 1 && !selectedAction) {
+      setSelectedAction(availableActions[0]);
+    }
+  }, [availableActions, selectedAction]);
+
   if (availableActions.length === 0) {
     return (
-      <div className="p-4 text-sm text-slate-500 text-center">
-        No actions available for this trigger type.
+      <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
+        <div className="px-4 py-6 text-center">
+          <div className="text-sm text-slate-500">No actions available for this trigger type.</div>
+        </div>
       </div>
     );
   }
@@ -91,68 +100,75 @@ export function TriageActionsTable({
   // If action is selected, show the form
   if (selectedAction) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between border-b pb-3">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">
-              {ACTION_LABELS[selectedAction]} Action
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              {ACTION_DESCRIPTIONS[selectedAction]}
-            </p>
+      <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
+        <div className="border-b border-slate-300 bg-slate-50 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">
+                {ACTION_LABELS[selectedAction]} Action
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {ACTION_DESCRIPTIONS[selectedAction]}
+              </p>
+            </div>
+            <button
+              onClick={() => setSelectedAction(null)}
+              className="text-xs font-medium text-slate-600 hover:text-slate-900 underline"
+            >
+              ← Back to actions
+            </button>
           </div>
-          <button
-            onClick={() => setSelectedAction(null)}
-            className="text-xs text-slate-500 hover:text-slate-700 underline"
-          >
-            ← Back to actions
-          </button>
         </div>
-        <TriageActionButtons
-          triageId={triageId}
-          contextLevel={contextLevel}
-          recommendedAction={recommendedAction}
-          strategyId={strategyId}
-          positionId={positionId}
-          severity={severity}
-          onActionComplete={() => {
-            setSelectedAction(null);
-            onActionComplete?.();
-          }}
-          initialAction={selectedAction}
-        />
+        <div className="p-4 bg-white">
+          <TriageActionButtons
+            triageId={triageId}
+            contextLevel={contextLevel}
+            recommendedAction={recommendedAction}
+            strategyId={strategyId}
+            positionId={positionId}
+            severity={severity}
+            onActionComplete={() => {
+              setSelectedAction(null);
+              onActionComplete?.();
+            }}
+            initialAction={selectedAction}
+          />
+        </div>
       </div>
     );
   }
 
   // Show action selection
   return (
-    <div className="space-y-4">
-      <div className="border-b pb-3">
-        <h3 className="text-sm font-semibold text-slate-900 mb-1">Select Action</h3>
+    <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
+      <div className="border-b border-slate-300 bg-slate-50 px-4 py-3">
+        <h3 className="text-sm font-semibold text-slate-900 mb-0.5">Select Action</h3>
         <p className="text-xs text-slate-500">
           Choose an action to take on this triage flag
         </p>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {availableActions.map((action) => (
-          <button
-            key={action}
-            onClick={() => setSelectedAction(action)}
-            className={cn(
-              "p-4 rounded-lg border-2 text-left transition-all",
-              "hover:border-blue-300 hover:bg-blue-50",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-            )}
-          >
-            <div className="font-semibold text-slate-900 mb-1">
-              {ACTION_LABELS[action]}
-            </div>
-            <div className="text-xs text-slate-600">
-              {ACTION_DESCRIPTIONS[action]}
-            </div>
-          </button>
-        ))}
+      <div className="p-4 bg-white">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {availableActions.map((action) => (
+            <button
+              key={action}
+              onClick={() => setSelectedAction(action)}
+              className={cn(
+                "p-4 rounded-lg border-2 border-slate-200 bg-white text-left transition-all",
+                "hover:border-blue-400 hover:bg-blue-50 hover:shadow-sm",
+                "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
+                "active:scale-[0.98]"
+              )}
+            >
+              <div className="font-semibold text-slate-900 mb-1.5 text-sm">
+                {ACTION_LABELS[action]}
+              </div>
+              <div className="text-xs text-slate-600 leading-relaxed">
+                {ACTION_DESCRIPTIONS[action]}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

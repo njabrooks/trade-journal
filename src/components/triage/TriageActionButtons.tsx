@@ -549,18 +549,18 @@ export function TriageActionButtons({
   // Render strategy metadata form (for PROVIDE_STRATEGY_METADATA)
   if (showActionForm && selectedAction === "UPDATE" && recommendedAction === "PROVIDE_STRATEGY_METADATA") {
     return (
-      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-slate-900">Complete Strategy Metadata</h4>
-          <p className="mt-1 text-xs text-slate-600">{getActionDescription("UPDATE")}</p>
+      <div className="space-y-4">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 -mx-4 -mt-4 mb-4">
+          <h4 className="text-sm font-semibold text-slate-900">Complete Strategy Metadata</h4>
+          <p className="mt-0.5 text-xs text-slate-500">{getActionDescription("UPDATE")}</p>
         </div>
 
         {loadingStrategy ? (
-          <div className="text-sm text-slate-500">Loading strategy data...</div>
+          <div className="text-sm text-slate-500 py-4">Loading strategy data...</div>
         ) : (
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Strategy Type *
               </label>
               <select
@@ -568,7 +568,7 @@ export function TriageActionButtons({
                 onChange={(e) =>
                   setStrategyFormData({ ...strategyFormData, strategyType: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">Select strategy type...</option>
@@ -578,7 +578,7 @@ export function TriageActionButtons({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1.5 text-xs text-slate-500">
                 Links the strategy to playbook items and enables state code computation
               </p>
             </div>
@@ -645,20 +645,24 @@ export function TriageActionButtons({
               />
             </div>
 
-            {error && <div className="text-xs text-rose-600">{error}</div>}
+            {error && (
+              <div className="bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+                <div className="text-xs text-rose-600 font-medium">{error}</div>
+              </div>
+            )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-2 border-t border-slate-200">
               <button
                 onClick={handleConfirm}
                 disabled={loading || !strategyFormData.strategyType}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? "Updating..." : "Update Metadata"}
               </button>
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -672,37 +676,37 @@ export function TriageActionButtons({
   // Render quantity change form (for QUANTITY_CHANGE)
   if (showActionForm && selectedAction === "UPDATE" && recommendedAction === "QUANTITY_CHANGE") {
     return (
-      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-slate-900">Record Trade Metadata</h4>
-          <p className="mt-1 text-xs text-slate-600">
+      <div className="space-y-4">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 -mx-4 -mt-4 mb-4">
+          <h4 className="text-sm font-semibold text-slate-900">Record Trade Metadata</h4>
+          <p className="mt-0.5 text-xs text-slate-500">
             Capture the reason and details for the quantity change detected. This will create a blotter entry.
           </p>
         </div>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+          <div className="bg-white rounded-md border border-slate-200 p-3">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Trade Reason *
             </label>
             <textarea
               value={tradeReason}
               onChange={(e) => setTradeReason(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               rows={3}
               placeholder="Explain why this trade was made..."
               required
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+          <div className="bg-white rounded-md border border-slate-200 p-3">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Trade Stage *
             </label>
             <select
               value={tradeStage}
               onChange={(e) => setTradeStage(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="">Select trade stage...</option>
@@ -713,7 +717,7 @@ export function TriageActionButtons({
               <option value="reduce">Reduce</option>
               <option value="add">Add</option>
             </select>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1.5 text-xs text-slate-500">
               Auto-detected from quantity change pattern (editable)
             </p>
           </div>
@@ -721,8 +725,8 @@ export function TriageActionButtons({
           {/* Optional metadata fields for opening trades */}
           {tradeStage === "open" && (
             <>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+              <div className="bg-white rounded-md border border-slate-200 p-3">
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
                   Thesis (Optional)
                 </label>
                 <textarea
@@ -730,15 +734,15 @@ export function TriageActionButtons({
                   onChange={(e) =>
                     setQuantityChangeMetadata({ ...quantityChangeMetadata, thesis: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={2}
                   placeholder="Entry thesis and reasoning..."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                <div className="bg-white rounded-md border border-slate-200 p-3">
+                  <label className="block text-xs font-medium text-slate-700 mb-1.5">
                     Profit Rules (Optional)
                   </label>
                   <textarea
@@ -749,14 +753,14 @@ export function TriageActionButtons({
                         profitRules: e.target.value,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     rows={2}
                     placeholder="When to take profits..."
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                <div className="bg-white rounded-md border border-slate-200 p-3">
+                  <label className="block text-xs font-medium text-slate-700 mb-1.5">
                     Defense Rules (Optional)
                   </label>
                   <textarea
@@ -767,15 +771,15 @@ export function TriageActionButtons({
                         defenseRules: e.target.value,
                       })
                     }
-                    className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                    className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     rows={2}
                     placeholder="How to defend the position..."
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+              <div className="bg-white rounded-md border border-slate-200 p-3">
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
                   Time Rules (Optional)
                 </label>
                 <textarea
@@ -786,7 +790,7 @@ export function TriageActionButtons({
                       timeRules: e.target.value,
                     })
                   }
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={2}
                   placeholder="Time-based exit criteria..."
                 />
@@ -794,20 +798,24 @@ export function TriageActionButtons({
             </>
           )}
 
-          {error && <div className="text-xs text-rose-600">{error}</div>}
+          {error && (
+            <div className="bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+              <div className="text-xs text-rose-600 font-medium">{error}</div>
+            </div>
+          )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-2 border-t border-slate-200">
             <button
               onClick={handleConfirm}
               disabled={loading || !tradeReason || !tradeStage}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? "Recording..." : "Record Trade"}
             </button>
             <button
               onClick={handleCancel}
               disabled={loading}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
             >
               Cancel
             </button>
@@ -820,18 +828,18 @@ export function TriageActionButtons({
   // Render strategy confirmation form
   if (showActionForm && selectedAction === "UPDATE" && recommendedAction === "CONFIRM_STRATEGIES") {
     return (
-      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-slate-900">Confirm Strategy</h4>
-          <p className="mt-1 text-xs text-slate-600">{getActionDescription("UPDATE")}</p>
+      <div className="space-y-4">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 -mx-4 -mt-4 mb-4">
+          <h4 className="text-sm font-semibold text-slate-900">Confirm Strategy</h4>
+          <p className="mt-0.5 text-xs text-slate-500">{getActionDescription("UPDATE")}</p>
         </div>
 
         {loadingStrategy ? (
-          <div className="text-sm text-slate-500">Loading strategy data...</div>
+          <div className="text-sm text-slate-500 py-4">Loading strategy data...</div>
         ) : (
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Strategy Key *
               </label>
               <input
@@ -840,13 +848,13 @@ export function TriageActionButtons({
                 onChange={(e) =>
                   setStrategyFormData({ ...strategyFormData, strategyKey: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Label
               </label>
               <input
@@ -855,13 +863,13 @@ export function TriageActionButtons({
                 onChange={(e) =>
                   setStrategyFormData({ ...strategyFormData, label: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Optional display label"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Strategy Type *
               </label>
               <select
@@ -869,7 +877,7 @@ export function TriageActionButtons({
                 onChange={(e) =>
                   setStrategyFormData({ ...strategyFormData, strategyType: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">Select strategy type...</option>
@@ -879,13 +887,13 @@ export function TriageActionButtons({
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1.5 text-xs text-slate-500">
                 Links the strategy to playbook items and enables state code computation
               </p>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Thesis
               </label>
               <textarea
@@ -893,15 +901,15 @@ export function TriageActionButtons({
                 onChange={(e) =>
                   setStrategyFormData({ ...strategyFormData, thesis: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 rows={3}
                 placeholder="Entry thesis and reasoning..."
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+              <div className="bg-white rounded-md border border-slate-200 p-3">
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
                   Profit Rules
                 </label>
                 <textarea
@@ -909,14 +917,14 @@ export function TriageActionButtons({
                   onChange={(e) =>
                     setStrategyFormData({ ...strategyFormData, profitRules: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={2}
                   placeholder="When to take profits..."
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+              <div className="bg-white rounded-md border border-slate-200 p-3">
+                <label className="block text-xs font-medium text-slate-700 mb-1.5">
                   Defense Rules
                 </label>
                 <textarea
@@ -924,15 +932,15 @@ export function TriageActionButtons({
                   onChange={(e) =>
                     setStrategyFormData({ ...strategyFormData, defenseRules: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   rows={2}
                   placeholder="How to defend the position..."
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Time Rules
               </label>
               <textarea
@@ -940,26 +948,30 @@ export function TriageActionButtons({
                 onChange={(e) =>
                   setStrategyFormData({ ...strategyFormData, timeRules: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 rows={2}
                 placeholder="Time-based exit criteria..."
               />
             </div>
 
-            {error && <div className="text-xs text-rose-600">{error}</div>}
+            {error && (
+              <div className="bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+                <div className="text-xs text-rose-600 font-medium">{error}</div>
+              </div>
+            )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-2 border-t border-slate-200">
               <button
                 onClick={handleConfirm}
                 disabled={loading || !strategyFormData.strategyType}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? "Confirming..." : "Confirm Strategy"}
               </button>
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -973,22 +985,22 @@ export function TriageActionButtons({
   // Trade action form
   if (showActionForm && selectedAction === "TRADE") {
     return (
-      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-4">
-          <h4 className="text-sm font-medium text-slate-900">Record Trade Decision</h4>
-          <p className="mt-1 text-xs text-slate-600">
+      <div className="space-y-4">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 -mx-4 -mt-4 mb-4">
+          <h4 className="text-sm font-semibold text-slate-900">Record Trade Decision</h4>
+          <p className="mt-0.5 text-xs text-slate-500">
             Specify the details of the trade. Default is to close positions (negative quantities).
           </p>
         </div>
 
         {loadingPositions ? (
-          <div className="text-sm text-slate-500">Loading positions...</div>
+          <div className="text-sm text-slate-500 py-4">Loading positions...</div>
         ) : (
           <div className="space-y-4">
             {tradePositions.map((pos, index) => {
               const isOption = pos.assetClass === "OPT";
               return (
-                <div key={index} className="rounded-md border border-slate-200 bg-white p-3">
+                <div key={index} className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
                   <div className="mb-2 flex items-center justify-between">
                     <div className="text-xs font-mono text-slate-700">
                       {formatPosition(
@@ -1110,8 +1122,8 @@ export function TriageActionButtons({
               </button>
             )}
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Trade Reason *
               </label>
               <textarea
@@ -1119,19 +1131,19 @@ export function TriageActionButtons({
                 onChange={(e) => setTradeReason(e.target.value)}
                 placeholder="Explain why this trade is being made..."
                 rows={2}
-                className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs"
+                className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Trade Stage *
               </label>
               <select
                 value={tradeStage}
                 onChange={(e) => setTradeStage(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs"
+                className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">Select trade stage...</option>
@@ -1144,8 +1156,8 @@ export function TriageActionButtons({
               </select>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+            <div className="bg-white rounded-md border border-slate-200 p-3">
+              <label className="block text-xs font-medium text-slate-700 mb-1.5">
                 Notes (optional)
               </label>
               <textarea
@@ -1153,24 +1165,28 @@ export function TriageActionButtons({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Additional notes about the trade..."
                 rows={2}
-                className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs"
+                className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
-            {error && <div className="text-xs text-rose-600">{error}</div>}
+            {error && (
+              <div className="bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+                <div className="text-xs text-rose-600 font-medium">{error}</div>
+              </div>
+            )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-2 border-t border-slate-200">
               <button
                 onClick={handleConfirm}
                 disabled={loading || tradePositions.length === 0 || tradePositions.some(p => !p.underlyingTicker || p.quantity === 0) || !tradeReason || !tradeStage}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? "Confirming..." : "Confirm Trade"}
               </button>
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -1184,19 +1200,19 @@ export function TriageActionButtons({
   // Standard action form (MONITOR, DISMISS)
   if (showActionForm && selectedAction) {
     return (
-      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <div className="mb-3">
-          <h4 className="text-sm font-medium text-slate-900">
+      <div className="space-y-4">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 -mx-4 -mt-4 mb-4">
+          <h4 className="text-sm font-semibold text-slate-900">
             {getActionLabel(selectedAction)}
           </h4>
-          <p className="mt-1 text-xs text-slate-600">
+          <p className="mt-0.5 text-xs text-slate-500">
             {getActionDescription(selectedAction)}
           </p>
         </div>
 
         {selectedAction === "MONITOR" && (
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-slate-700">
+          <div className="bg-white rounded-md border border-slate-200 p-3">
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Monitor Period (days)
             </label>
             <input
@@ -1205,13 +1221,13 @@ export function TriageActionButtons({
               max="365"
               value={monitorDays}
               onChange={(e) => setMonitorDays(parseInt(e.target.value) || 7)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         )}
 
-        <div className="mb-3">
-          <label className="block text-xs font-medium text-slate-700">
+        <div className="bg-white rounded-md border border-slate-200 p-3">
+          <label className="block text-xs font-medium text-slate-700 mb-1.5">
             Notes
           </label>
           <textarea
@@ -1219,24 +1235,28 @@ export function TriageActionButtons({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Add any relevant notes..."
             rows={2}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+            className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
-        {error && <div className="mb-3 text-xs text-rose-600">{error}</div>}
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+            <div className="text-xs text-rose-600 font-medium">{error}</div>
+          </div>
+        )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-2 border-t border-slate-200">
           <button
             onClick={handleConfirm}
             disabled={loading}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
             {loading ? "Confirming..." : "Confirm"}
           </button>
           <button
             onClick={handleCancel}
             disabled={loading}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
             Cancel
           </button>
@@ -1246,7 +1266,7 @@ export function TriageActionButtons({
   }
 
   return (
-    <div className="mt-3">
+    <div>
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => handleAction("TRADE")}
@@ -1254,7 +1274,7 @@ export function TriageActionButtons({
           className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
             isActionDisabled("TRADE")
               ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
           }`}
           title={isActionDisabled("TRADE") ? "Not available for this trigger" : ""}
         >
@@ -1266,7 +1286,7 @@ export function TriageActionButtons({
           className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
             isActionDisabled("MONITOR")
               ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-              : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+              : "bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200"
           }`}
           title={isActionDisabled("MONITOR") ? "Not available for this trigger" : ""}
         >
@@ -1278,7 +1298,7 @@ export function TriageActionButtons({
           className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
             isActionDisabled("DISMISS")
               ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
           }`}
           title={isActionDisabled("DISMISS") ? "Not available for this trigger" : ""}
         >
@@ -1290,7 +1310,7 @@ export function TriageActionButtons({
           className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
             isActionDisabled("UPDATE")
               ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-              : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+              : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200"
           }`}
           title={isActionDisabled("UPDATE") ? "Not available for this trigger" : ""}
         >

@@ -7,7 +7,7 @@ import { TriagePositionsTable } from "./TriagePositionsTable";
 import { TriageActionsTable } from "./TriageActionsTable";
 import { TriageQuickActions } from "./TriageQuickActions";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDateShort, formatPercent } from "@/lib/formatters";
+import { formatDateShort } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 interface TriageTableRowProps {
@@ -135,9 +135,13 @@ export function TriageTableRow({ record, showStrategyColumn = true }: TriageTabl
 
               {/* Notes */}
               {record.notes && (
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Notes</p>
-                  <p className="text-sm text-slate-600">{record.notes}</p>
+                <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
+                  <div className="border-b border-slate-300 bg-slate-50 px-4 py-3">
+                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">Notes</p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-sm text-slate-700 leading-relaxed">{record.notes}</p>
+                  </div>
                 </div>
               )}
             </div>
