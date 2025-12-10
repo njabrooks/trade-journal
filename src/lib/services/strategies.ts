@@ -404,37 +404,56 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
       const maxDate = dates[dates.length - 1];
 
       if (minDate && maxDate) {
-        try {
-          // Recompute strategy metrics for all dates where target strategy has positions
-          await computeStrategyMetricsForDateRange(
-            targetStrategy.accountId,
-            targetId,
-            minDate,
-            maxDate
-          );
+        // Fire off recompute operations in the background (don't await)
+        // This allows the merge to complete immediately while recompute happens asynchronously
+        (async () => {
+          try {
+            // Recompute strategy metrics for all dates where target strategy has positions
+            await computeStrategyMetricsForDateRange(
+              targetStrategy.accountId,
+              targetId,
+              minDate,
+              maxDate
+            );
 
-          // Trigger targeted triage recompute for target strategy on affected dates
-          // Clean first to ensure stale records are removed (e.g., if underlying data changed)
-          for (const date of dates) {
-            if (date) {
-              try {
-                await computeTriageForDate(date, targetStrategy.accountId, targetId, true);
-              } catch (error) {
-                console.error(
-                  `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,
-                  error
-                );
-                // Continue with other dates
+            // Trigger targeted triage recompute for target strategy on affected dates
+            // Clean first to ensure stale records are removed (e.g., if underlying data changed)
+            for (const date of dates) {
+              if (date) {
+                try {
+                  await computeTriageForDate(date, targetStrategy.accountId, targetId, true);
+                } catch (error) {
+                  console.error(
+                    `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,
+                    error
+                  );
+                  // Continue with other dates
+                }
               }
             }
+            console.log(
+              `Background recompute completed for merged strategy ${targetId} (${dates.length} dates)`
+            );
+            
+            // Show browser notification when recompute completes
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              new Notification('Recompute Complete', {
+                body: `Strategy metrics and triage recomputed for ${dates.length} date(s)`,
+                icon: '/favicon.ico',
+                tag: `recompute-${targetId}`,
+              });
+            } else if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+              // Request permission for future notifications
+              Notification.requestPermission();
+            }
+          } catch (error) {
+            console.error(
+              `Failed to auto-recompute after merging strategies into ${targetId}:`,
+              error
+            );
+            // Don't fail the merge if recompute fails
           }
-        } catch (error) {
-          console.error(
-            `Failed to auto-recompute after merging strategies into ${targetId}:`,
-            error
-          );
-          // Don't fail the merge if recompute fails
-        }
+        })();
       }
     }
   }

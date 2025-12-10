@@ -6,7 +6,7 @@ import {
   strategyTemplates,
   underlyings,
 } from '@/db/schema';
-import { and, eq, isNull, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc, or } from 'drizzle-orm';
 
 type DateRangeOptions =
   | { snapshotDate: string; startDate?: never; endDate?: never }
@@ -48,9 +48,20 @@ export function deriveStrategyKeyFromPosition(pos: PositionMinimal): string | nu
   }
 
   if (pos.assetClass === 'OPT') {
+    // For options, extract ticker from symbol and use expiry from position
+    // Symbol format is like "IBIT  260918C00060000" where ticker is before the digits
+    // Extract ticker: letters only at the start, or up to first space+digit pattern
+    const trimmed = pos.symbol.trim();
+    // Try to match ticker (letters only) before any digits or spaces+digits
+    const tickerMatch = trimmed.match(/^([A-Z]+)(?:\s+\d|\d)/);
+    const ticker = tickerMatch ? tickerMatch[1] : trimmed.split(/\s+/)[0].replace(/\d.*$/, '');
+    
+    if (!ticker || ticker.length === 0) return null;
+    
     const expiryCode = formatExpiry(pos.expiry);
+    
     if (expiryCode) {
-      return `${pos.symbol} ${expiryCode}`;
+      return `${ticker} ${expiryCode}`;
     }
   }
 
@@ -178,10 +189,30 @@ async function findOrCreateStrategyFromPosition(
   const underlyingId = await ensureUnderlyingId(pos.symbol, pos.underlyingId, pos.assetClass);
   if (!underlyingId) return null;
 
+  // First, try to find existing non-merged strategies with this key
+  // Prioritize strategies that already have linked positions (likely the merged/confirmed strategy)
   const existing = await db
-    .select()
+    .select({
+      id: strategies.id,
+      status: strategies.status,
+      isAuto: strategies.isAuto,
+    })
     .from(strategies)
-    .where(and(eq(strategies.accountId, pos.accountId), eq(strategies.strategyKey, derivedKey)))
+    .where(
+      and(
+        eq(strategies.accountId, pos.accountId),
+        eq(strategies.strategyKey, derivedKey),
+        ne(strategies.status, 'merged')
+      )
+    )
+    .orderBy(
+      sql`(
+        SELECT COUNT(*) 
+        FROM ${positions} 
+        WHERE ${positions.strategyId} = ${strategies.id} 
+        AND ${positions.quantity} != 0
+      ) DESC`
+    ) // Prioritize strategies with existing positions
     .limit(1);
 
   if (existing.length > 0) {
@@ -308,6 +339,7 @@ export async function autoLinkPositionsToStrategies(
       snapshotDate: positions.snapshotDate,
       openDate: positions.openDate,
       underlyingId: positions.underlyingId,
+      conid: positions.conid,
     })
     .from(positions)
     .where(and(...whereClauses));
@@ -317,17 +349,132 @@ export async function autoLinkPositionsToStrategies(
   let skipped = 0;
 
   for (const pos of rows) {
-    const strategyResult = await findOrCreateStrategyFromPosition(pos);
-    if (!strategyResult) {
-      skipped++;
-      continue;
+    let strategyId: string | null = null;
+    let strategyCreated = false;
+
+    // PRIMARY METHOD: Match by conid (unique contract identifier)
+    // This is the most reliable way - same conid = same strategy across all snapshot dates
+    // This preserves strategy linkage when re-ingesting data
+    if (pos.conid) {
+      const existingPosition = await db
+        .select({
+          strategyId: positions.strategyId,
+        })
+        .from(positions)
+        .where(
+          and(
+            eq(positions.conid, pos.conid),
+            eq(positions.accountId, pos.accountId),
+            isNotNull(positions.strategyId),
+            sql`${positions.quantity} != 0`
+          )
+        )
+        .orderBy(desc(positions.snapshotDate)) // Prefer more recent positions
+        .limit(1);
+
+      if (existingPosition.length > 0 && existingPosition[0].strategyId) {
+        // Verify the strategy still exists and is not merged
+        const strategy = await db
+          .select({ id: strategies.id, status: strategies.status })
+          .from(strategies)
+          .where(
+            and(
+              eq(strategies.id, existingPosition[0].strategyId),
+              ne(strategies.status, 'merged')
+            )
+          )
+          .limit(1);
+
+        if (strategy.length > 0) {
+          strategyId = strategy[0].id;
+        }
+      }
     }
 
-    if (strategyResult.created) {
+    // FALLBACK: Only for brand new positions (no conid match in history)
+    // Before creating a new strategy, try to find existing strategies by:
+    // 1. Matching by derived strategy key (e.g., "IBIT 260918")
+    // 2. Matching by underlying ticker + expiry (for merged strategies)
+    if (!strategyId) {
+      // First, try to find by derived key (this should match merged strategies)
+      const derivedKey = deriveStrategyKeyFromPosition(pos);
+      if (derivedKey) {
+        // Look for existing strategies with this key that have positions
+        // This will catch merged strategies that have other positions
+        const existingByKey = await db
+          .select({
+            id: strategies.id,
+            strategyKey: strategies.strategyKey,
+          })
+          .from(strategies)
+          .where(
+            and(
+              eq(strategies.accountId, pos.accountId),
+              eq(strategies.strategyKey, derivedKey),
+              ne(strategies.status, 'merged')
+            )
+          )
+          .limit(1);
+
+        if (existingByKey.length > 0) {
+          strategyId = existingByKey[0].id;
+        } else if (pos.underlyingId && pos.expiry && pos.assetClass === 'OPT') {
+          // If no exact key match, try to find strategies that have positions with same underlying + expiry
+          // This catches merged strategies where the key might have been edited
+          const strategiesWithSameUnderlying = await db
+            .selectDistinct({
+              strategyId: positions.strategyId,
+            })
+            .from(positions)
+            .where(
+              and(
+                eq(positions.accountId, pos.accountId),
+                eq(positions.underlyingId, pos.underlyingId),
+                eq(positions.expiry, pos.expiry),
+                eq(positions.assetClass, 'OPT'),
+                isNotNull(positions.strategyId),
+                sql`${positions.quantity} != 0`
+              )
+            )
+            .limit(1);
+
+          if (strategiesWithSameUnderlying.length > 0 && strategiesWithSameUnderlying[0].strategyId) {
+            // Verify the strategy still exists and is not merged
+            const strategy = await db
+              .select({ id: strategies.id, status: strategies.status })
+              .from(strategies)
+              .where(
+                and(
+                  eq(strategies.id, strategiesWithSameUnderlying[0].strategyId),
+                  ne(strategies.status, 'merged')
+                )
+              )
+              .limit(1);
+
+            if (strategy.length > 0) {
+              strategyId = strategy[0].id;
+            }
+          }
+        }
+      }
+
+      // If still no match, create new strategy (truly new position)
+      if (!strategyId) {
+        const strategyResult = await findOrCreateStrategyFromPosition(pos);
+        if (!strategyResult) {
+          skipped++;
+          continue;
+        }
+        strategyId = strategyResult.id;
+        strategyCreated = strategyResult.created;
+      }
+    }
+
+    if (strategyCreated) {
       strategiesCreated++;
     }
 
-    await db.update(positions).set({ strategyId: strategyResult.id }).where(eq(positions.id, pos.id));
+    await db.update(positions).set({ strategyId }).where(eq(positions.id, pos.id));
     positionsLinked++;
   }
 

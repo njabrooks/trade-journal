@@ -40,7 +40,6 @@ export default function StrategiesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [selectedSuggested, setSelectedSuggested] = useState<Set<string>>(new Set());
   const [mergeSelection, setMergeSelection] = useState<Set<string>>(new Set());
   const [mergeTargetId, setMergeTargetId] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -223,7 +222,8 @@ export default function StrategiesPage() {
       }
 
       await loadData();
-      setSelectedSuggested((prev) => {
+      // Clear merge selection for confirmed strategies
+      setMergeSelection((prev) => {
         const next = new Set(prev);
         pendingConfirmIds.forEach((id) => next.delete(id));
         return next;
@@ -240,22 +240,14 @@ export default function StrategiesPage() {
   };
 
   const handleBulkConfirm = async () => {
-    if (selectedSuggested.size === 0) return;
+    // Use mergeSelection for draft strategies only
+    const draftStrategies = Array.from(mergeSelection).filter(
+      (id) => allStrategies.find((s) => s.id === id)?.status === 'draft'
+    );
+    if (draftStrategies.length === 0) return;
     // Show strategy type selection modal
-    setPendingConfirmIds(Array.from(selectedSuggested));
+    setPendingConfirmIds(draftStrategies);
     setShowStrategyTypeModal(true);
-  };
-
-  const toggleSuggestedSelection = (id: string) => {
-    setSelectedSuggested((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
   };
 
   const toggleMergeSelection = (id: string) => {
@@ -291,10 +283,18 @@ export default function StrategiesPage() {
       });
 
       if (!response.ok) throw new Error('Failed to merge strategies');
+      
+      // Request notification permission if not already granted
+      if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+      
       await loadData();
       setMergeSelection(new Set());
       setMergeTargetId('');
-      setSuccess(`Successfully merged ${sourceIds.length} strategy(ies)`);
+      setSuccess(
+        `Successfully merged ${sourceIds.length} strategy(ies). Recompute is running in the background - you'll be notified when complete.`
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to merge strategies');
     } finally {
@@ -416,9 +416,10 @@ export default function StrategiesPage() {
     }
   };
 
-  const suggestedStrategies = strategies.filter((s) => s.isAuto);
-  const confirmedStrategies = strategies
-    .filter((s) => !s.isAuto && s.status !== 'merged')
+  // Combine all strategies (except merged) into one list, sorted by status
+  // Status indicates: 'draft' = auto-derived/suggested, 'open'/'closed' = confirmed
+  const allStrategies = strategies
+    .filter((s) => s.status !== 'merged')
     .sort((a, b) => {
       // Primary sort: status in descending order (open > closed > draft)
       const statusOrder: Record<string, number> = { open: 3, closed: 2, draft: 1 };
@@ -430,6 +431,9 @@ export default function StrategiesPage() {
       const dateB = b.openedAt ? new Date(b.openedAt).getTime() : 0;
       return dateB - dateA;
     });
+  
+  const suggestedStrategies = allStrategies.filter((s) => s.status === 'draft');
+  const confirmedStrategies = allStrategies.filter((s) => s.status !== 'draft');
 
   if (loading) {
     return (
@@ -660,169 +664,36 @@ export default function StrategiesPage() {
 
       <div className="space-y-10">
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Suggested Strategies</h2>
+          <h2 className="text-2xl font-semibold mb-4">All Strategies</h2>
           <div className="flex justify-between items-center mb-3">
             <p className="text-sm text-gray-600">
-              Automatically derived from positions/trades. Review, edit, and confirm to lock them in.
+              Status: <span className="font-medium">draft</span> = auto-derived (suggested), <span className="font-medium">open/closed</span> = confirmed
             </p>
-            <button
-              onClick={handleBulkConfirm}
-              disabled={selectedSuggested.size === 0}
-              className="bg-green-600 text-white py-1 px-3 rounded-md text-sm hover:bg-green-700 disabled:bg-gray-300"
-            >
-              Confirm Selected ({selectedSuggested.size})
-            </button>
+            <div className="flex gap-2">
+              {suggestedStrategies.length > 0 && (
+                <button
+                  onClick={handleBulkConfirm}
+                  disabled={
+                    mergeSelection.size === 0 ||
+                    !Array.from(mergeSelection).some(
+                      (id) => allStrategies.find((s) => s.id === id)?.status === 'draft'
+                    )
+                  }
+                  className="bg-green-600 text-white py-1 px-3 rounded-md text-sm hover:bg-green-700 disabled:bg-gray-300"
+                >
+                  Confirm Selected (
+                  {
+                    Array.from(mergeSelection).filter(
+                      (id) => allStrategies.find((s) => s.id === id)?.status === 'draft'
+                    ).length
+                  }
+                  )
+                </button>
+              )}
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mb-3">
-            Automatically derived from positions. Review and confirm to lock them in.
-          </p>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={
-                        suggestedStrategies.length > 0 &&
-                        selectedSuggested.size === suggestedStrategies.length
-                      }
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedSuggested(new Set(suggestedStrategies.map((s) => s.id)));
-                        } else {
-                          setSelectedSuggested(new Set());
-                        }
-                      }}
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Strategy Key
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Derived Label
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Opened
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {suggestedStrategies.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      No suggestions yet. Run a recompute to auto-generate strategies.
-                    </td>
-                  </tr>
-                ) : (
-                  suggestedStrategies.map((strategy) => (
-                    <tr key={strategy.id}>
-                      {(() => {
-                        const isEditing = editingId === strategy.id;
-                        return (
-                          <>
-                            <td className="px-4 py-4 text-center">
-                              <input
-                                type="checkbox"
-                                checked={selectedSuggested.has(strategy.id)}
-                                onChange={() => toggleSuggestedSelection(strategy.id)}
-                                disabled={isEditing}
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  value={editValues?.strategyKey ?? ''}
-                                  onChange={(e) =>
-                                    setEditValues((prev) =>
-                                      prev ? { ...prev, strategyKey: e.target.value } : prev
-                                    )
-                                  }
-                                  className="border rounded px-2 py-1 text-sm w-full"
-                                />
-                              ) : (
-                                strategy.strategyKey
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  value={editValues?.label ?? ''}
-                                  onChange={(e) =>
-                                    setEditValues((prev) =>
-                                      prev ? { ...prev, label: e.target.value } : prev
-                                    )
-                                  }
-                                  className="border rounded px-2 py-1 text-sm w-full"
-                                />
-                              ) : (
-                                strategy.autoDerivedLabel || strategy.strategyKey
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {strategy.openedAt
-                                ? new Date(strategy.openedAt).toLocaleDateString()
-                                : '-'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm flex items-center gap-3">
-                              {isEditing ? (
-                                <>
-                                  <button
-                                    onClick={saveEditing}
-                                    className="text-green-600 hover:text-green-800 text-xs"
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={cancelEditing}
-                                    className="text-gray-500 hover:text-gray-700 text-xs"
-                                  >
-                                    Cancel
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => startEditing(strategy)}
-                                    className="text-gray-600 hover:text-gray-900 text-xs"
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    onClick={() => handleConfirm(strategy.id)}
-                                    className="text-green-600 hover:text-green-800 text-xs"
-                                  >
-                                    Confirm
-                                  </button>
-                                  <a
-                                    href={`/admin/strategies/${strategy.id}/link`}
-                                    className="text-blue-600 hover:text-blue-800 text-xs"
-                                  >
-                                    Review Links
-                                  </a>
-                                </>
-                              )}
-                            </td>
-                          </>
-                        );
-                      })()}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-2xl font-semibold mb-4">Confirmed Strategies</h2>
           {mergeSelection.size >= 2 && (
-            <div className="flex items-center gap-3 mb-3 text-sm">
+            <div className="flex items-center gap-3 mb-3 text-sm bg-purple-50 p-3 rounded-lg border border-purple-200">
               <div>
                 <label className="mr-2 font-medium text-gray-700">Merge target:</label>
                 <select
@@ -832,11 +703,11 @@ export default function StrategiesPage() {
                 >
                   <option value="">Select target</option>
                   {Array.from(mergeSelection).map((id) => {
-                    const strategy = confirmedStrategies.find((s) => s.id === id);
+                    const strategy = allStrategies.find((s) => s.id === id);
                     if (!strategy) return null;
                     return (
                       <option key={strategy.id} value={strategy.id}>
-                        {strategy.strategyKey}
+                        {strategy.strategyKey} ({strategy.status})
                       </option>
                     );
                   })}
@@ -860,14 +731,14 @@ export default function StrategiesPage() {
                     <input
                       type="checkbox"
                       checked={
-                        confirmedStrategies.length > 0 &&
-                        mergeSelection.size === confirmedStrategies.length
+                        allStrategies.length > 0 &&
+                        mergeSelection.size === allStrategies.length
                       }
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setMergeSelection(new Set(confirmedStrategies.map((s) => s.id)));
-                          if (!mergeTargetId && confirmedStrategies.length > 0) {
-                            setMergeTargetId(confirmedStrategies[0].id);
+                          setMergeSelection(new Set(allStrategies.map((s) => s.id)));
+                          if (!mergeTargetId && allStrategies.length > 0) {
+                            setMergeTargetId(allStrategies[0].id);
                           }
                         } else {
                           setMergeSelection(new Set());
@@ -897,28 +768,32 @@ export default function StrategiesPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {confirmedStrategies.length === 0 ? (
+                {allStrategies.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                      No confirmed strategies yet. Confirm auto suggestions or create one manually.
+                      No strategies yet. Run a recompute to auto-generate strategies or create one manually.
                     </td>
                   </tr>
                 ) : (
-                  confirmedStrategies.map((strategy) => (
-                    <tr key={strategy.id}>
-                      {(() => {
-                        const isEditing = editingId === strategy.id;
-                        const isEditingMetadata = editingMetadataId === strategy.id;
-                        return (
-                          <>
-                            <td className="px-4 py-4 text-center">
-                              <input
-                                type="checkbox"
-                                checked={mergeSelection.has(strategy.id)}
-                                onChange={() => toggleMergeSelection(strategy.id)}
-                                disabled={isEditing || isEditingMetadata}
-                              />
-                            </td>
+                  allStrategies.map((strategy) => {
+                    const isDraft = strategy.status === 'draft';
+                    const isEditing = editingId === strategy.id;
+                    const isEditingMetadata = editingMetadataId === strategy.id;
+                    const isEditingStrategyType = editingStrategyTypeId === strategy.id;
+                    
+                    return (
+                      <tr 
+                        key={strategy.id}
+                        className={isDraft ? 'bg-amber-50/30' : ''}
+                      >
+                        <td className="px-4 py-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={mergeSelection.has(strategy.id)}
+                            onChange={() => toggleMergeSelection(strategy.id)}
+                            disabled={isEditing || isEditingMetadata}
+                          />
+                        </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                               {isEditing ? (
                                 <input
@@ -1032,12 +907,14 @@ export default function StrategiesPage() {
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              <span className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
                                 strategy.status === 'open'
                                   ? 'bg-emerald-100 text-emerald-700'
                                   : strategy.status === 'closed'
                                   ? 'bg-slate-200 text-slate-700'
-                                  : 'bg-amber-100 text-amber-700'
+                                  : strategy.status === 'draft'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-slate-100 text-slate-700'
                               }`}>
                                 {strategy.status}
                               </span>
@@ -1086,12 +963,21 @@ export default function StrategiesPage() {
                                   >
                                     Edit
                                   </button>
-                                  <button
-                                    onClick={() => startEditingMetadata(strategy)}
-                                    className="text-blue-600 hover:text-blue-800 text-xs"
-                                  >
-                                    Metadata
-                                  </button>
+                                  {strategy.status === 'draft' ? (
+                                    <button
+                                      onClick={() => handleConfirm(strategy.id)}
+                                      className="text-green-600 hover:text-green-800 text-xs"
+                                    >
+                                      Confirm
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => startEditingMetadata(strategy)}
+                                      className="text-blue-600 hover:text-blue-800 text-xs"
+                                    >
+                                      Metadata
+                                    </button>
+                                  )}
                                   <a
                                     href={`/admin/strategies/${strategy.id}/link`}
                                     className="text-blue-600 hover:text-blue-800 text-xs"
@@ -1101,11 +987,9 @@ export default function StrategiesPage() {
                                 </>
                               )}
                             </td>
-                          </>
-                        );
-                      })()}
-                    </tr>
-                  ))
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

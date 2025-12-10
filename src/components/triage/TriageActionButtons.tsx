@@ -712,13 +712,16 @@ export function TriageActionButtons({
               <option value="">Select trade stage...</option>
               <option value="open">Open</option>
               <option value="close">Close</option>
+              <option value="assignment">Assignment</option>
               <option value="hedge">Hedge</option>
               <option value="roll">Roll</option>
               <option value="reduce">Reduce</option>
               <option value="add">Add</option>
             </select>
             <p className="mt-1.5 text-xs text-slate-500">
-              Auto-detected from quantity change pattern (editable)
+              {tradeStage === "assignment" 
+                ? "For assignments, record both the option assignment and resulting stock purchase separately if needed."
+                : "Auto-detected from quantity change pattern (editable)"}
             </p>
           </div>
 
@@ -1149,11 +1152,17 @@ export function TriageActionButtons({
                 <option value="">Select trade stage...</option>
                 <option value="open">Open</option>
                 <option value="close">Close</option>
+                <option value="assignment">Assignment</option>
                 <option value="hedge">Hedge</option>
                 <option value="roll">Roll</option>
                 <option value="reduce">Reduce</option>
                 <option value="add">Add</option>
               </select>
+              {tradeStage === "assignment" && (
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Record both the option assignment and resulting stock purchase. Add both positions above.
+                </p>
+              )}
             </div>
 
             <div className="bg-white rounded-md border border-slate-200 p-3">

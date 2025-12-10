@@ -62,11 +62,6 @@ export async function getTriageQueue(
   
   const conditions = [
     eq(triageRecords.accountId, accountId),
-    // Exclude 'complete' records - only show unresolved items
-    or(
-      ne(triageRecords.severity, 'complete'),
-      isNull(triageRecords.severity)
-    ),
     // For historical triggers, show across all dates. For time-bound triggers, only show latest date
     or(
       inArray(triageRecords.recommendedAction, historicalTriggers),
@@ -228,11 +223,6 @@ export async function getTriageQueueForStrategy(
   
   const conditions = [
     eq(triageRecords.strategyId, strategyId),
-    // Exclude 'complete' records - only show unresolved items
-    or(
-      ne(triageRecords.severity, 'complete'),
-      isNull(triageRecords.severity)
-    ),
     // For historical triggers, show across all dates. For time-bound triggers, only show latest date
     or(
       inArray(triageRecords.recommendedAction, historicalTriggers),
