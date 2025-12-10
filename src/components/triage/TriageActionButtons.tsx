@@ -13,6 +13,7 @@ interface TriageActionButtonsProps {
   positionId?: string | null;
   severity?: string | null;
   onActionComplete?: () => void;
+  initialAction?: ActionType | null;
 }
 
 interface TradePosition {
@@ -76,12 +77,13 @@ export function TriageActionButtons({
   positionId,
   severity,
   onActionComplete,
+  initialAction,
 }: TriageActionButtonsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showActionForm, setShowActionForm] = useState(false);
-  const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
+  const [selectedAction, setSelectedAction] = useState<ActionType | null>(initialAction || null);
   const [notes, setNotes] = useState("");
   const [monitorDays, setMonitorDays] = useState(7);
   
@@ -254,6 +256,14 @@ export function TriageActionButtons({
       setTradeReason(""); // Reset trade reason
     }
   };
+
+  // Auto-select initial action if provided
+  useEffect(() => {
+    if (initialAction && availableActions.includes(initialAction)) {
+      handleAction(initialAction);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialAction]);
 
   const handleConfirm = async () => {
     if (!selectedAction) return;

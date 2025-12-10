@@ -487,6 +487,8 @@ export async function computeStrategyTriageForDate(
         accountId: metric.accountId,
         contextLevel: 'strategy',
         strategyId: metric.strategyId,
+        absNotional: metric.totalAbsNotional,
+        unrealizedPnl: metric.totalUnrealizedPnl,
         severity: overrideSeverity || computedSeverity,
         recommendedAction,
         notes: 'Strategy needs confirmation: review and confirm strategy metadata',
@@ -520,6 +522,8 @@ export async function computeStrategyTriageForDate(
           accountId: metric.accountId,
           contextLevel: 'strategy',
           strategyId: metric.strategyId,
+          absNotional: metric.totalAbsNotional,
+          unrealizedPnl: metric.totalUnrealizedPnl,
           severity: overrideSeverity || computedSeverity,
           recommendedAction,
           notes: `Strategy confirmed but missing: ${missingFields.join(', ')}`,
@@ -562,6 +566,8 @@ export async function computeStrategyTriageForDate(
           accountId: metric.accountId,
           contextLevel: 'strategy',
           strategyId: metric.strategyId,
+          absNotional: metric.totalAbsNotional,
+          unrealizedPnl: metric.totalUnrealizedPnl,
           pctNavAbsNotional: metric.pctNavAbsNotional,
           severity: overrideSeverity || computedSeverity,
           recommendedAction,
@@ -590,6 +596,8 @@ export async function computeStrategyTriageForDate(
         accountId: metric.accountId,
         contextLevel: 'strategy',
         strategyId: metric.strategyId,
+        absNotional: metric.totalAbsNotional,
+        unrealizedPnl: metric.totalUnrealizedPnl,
         severity: overrideSeverity || computedSeverity,
         recommendedAction,
         notes: `Strategy has ${metric.numOpenPositions} open positions`,
@@ -626,6 +634,8 @@ export async function computeStrategyTriageForDate(
           accountId: metric.accountId,
           contextLevel: 'strategy',
           strategyId: metric.strategyId,
+          absNotional: metric.totalAbsNotional,
+          unrealizedPnl: metric.totalUnrealizedPnl,
           severity: overrideSeverity || computedSeverity,
           recommendedAction,
           notes: `State code changed from ${stateCodeChange.previous ?? 'null'} to ${stateCodeChange.current ?? 'null'}`,
@@ -970,10 +980,21 @@ export async function computeQuantityChangeTriageForDate(
         snapshotDate
       );
 
-      // Get strategy key for symbol
+      // Get strategy key and metrics for symbol and financial data
       const strategyResult = await db
-        .select({ strategyKey: strategies.strategyKey })
+        .select({ 
+          strategyKey: strategies.strategyKey,
+          totalAbsNotional: strategyMetricsSnapshots.totalAbsNotional,
+          totalUnrealizedPnl: strategyMetricsSnapshots.totalUnrealizedPnl,
+        })
         .from(strategies)
+        .leftJoin(
+          strategyMetricsSnapshots,
+          and(
+            eq(strategyMetricsSnapshots.strategyId, strategies.id),
+            eq(strategyMetricsSnapshots.snapshotDate, snapshotDate)
+          )
+        )
         .where(eq(strategies.id, strategyId))
         .limit(1);
 
@@ -990,6 +1011,8 @@ export async function computeQuantityChangeTriageForDate(
         accountId: changeData.accountId,
         contextLevel: 'strategy',
         strategyId,
+        absNotional: strategyResult[0]?.totalAbsNotional ?? null,
+        unrealizedPnl: strategyResult[0]?.totalUnrealizedPnl ?? null,
         symbol: strategyKey,
         severity: overrideSeverity || computedSeverity,
         recommendedAction,

@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronDownIcon } from "lucide-react";
-import { TriageActionButtons } from "./TriageActionButtons";
-import { PositionList } from "./PositionList";
+import { TriagePositionsTable } from "./TriagePositionsTable";
+import { TriageActionsTable } from "./TriageActionsTable";
+import { TriageQuickActions } from "./TriageQuickActions";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDateShort, formatPercent } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ interface TriageTableRowProps {
     notes: string | null;
     positionId: string | null;
     strategyId: string | null;
+    accountId: string;
   };
   showStrategyColumn?: boolean;
 }
@@ -59,21 +61,24 @@ function SeverityTag({ severity }: { severity: string | null }) {
 }
 
 export function TriageTableRow({ record, showStrategyColumn = true }: TriageTableRowProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const columnCount = showStrategyColumn ? 7 : 6; // Reduced: removed Abs Notional, Unrealized, % NAV
+  const [isPositionsOpen, setIsPositionsOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const columnCount = showStrategyColumn ? 8 : 7; // Added Actions column
 
   return (
     <>
       <tr 
-        className="cursor-pointer border-b transition-colors hover:bg-slate-50"
-        onClick={() => setIsOpen(!isOpen)}
+        className="border-b transition-colors hover:bg-slate-50"
       >
-        <td className="px-4 py-3 text-left">
+        <td 
+          className="px-4 py-3 text-left cursor-pointer"
+          onClick={() => setIsPositionsOpen(!isPositionsOpen)}
+        >
           <div className="flex items-center gap-2">
             <ChevronDownIcon
               className={cn(
                 "h-4 w-4 text-slate-400 transition-transform shrink-0",
-                isOpen && "rotate-180"
+                isPositionsOpen && "rotate-180"
               )}
             />
             <span className="font-medium text-slate-900">{record.symbol}</span>
@@ -109,40 +114,23 @@ export function TriageTableRow({ record, showStrategyColumn = true }: TriageTabl
               )}
             </td>
           )}
+          <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+            <TriageQuickActions
+              onToggle={() => setIsActionsOpen(!isActionsOpen)}
+              isOpen={isActionsOpen}
+            />
+          </td>
       </tr>
-      {isOpen && (
+      {isPositionsOpen && (
         <tr>
           <td colSpan={columnCount} className="px-4 py-4 bg-slate-50">
             <div className="space-y-4">
-              {/* Metrics Grid */}
-              <dl className="grid gap-4 text-sm text-slate-600 sm:grid-cols-3">
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400 mb-1">Abs Notional</dt>
-                  <dd className="font-medium text-slate-900">{formatCurrency(record.absNotional)}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400 mb-1">Unrealized</dt>
-                  <dd
-                    className={
-                      record.unrealizedPnl && record.unrealizedPnl >= 0
-                        ? "font-medium text-emerald-600"
-                        : "font-medium text-rose-600"
-                    }
-                  >
-                    {formatCurrency(record.unrealizedPnl)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-400 mb-1">% NAV</dt>
-                  <dd className="font-medium text-slate-600">{formatPercent(record.pctNavAbsNotional)}</dd>
-                </div>
-              </dl>
-
-              {/* Positions List */}
-              <PositionList
-                key={`${record.id}-${record.positionId}-${record.strategyId}`}
+              {/* Positions Table - CENTERPIECE */}
+              <TriagePositionsTable
                 positionId={record.positionId}
                 strategyId={record.strategyId}
+                accountId={record.accountId}
+                snapshotDate={record.snapshotDate}
               />
 
               {/* Notes */}
@@ -152,19 +140,22 @@ export function TriageTableRow({ record, showStrategyColumn = true }: TriageTabl
                   <p className="text-sm text-slate-600">{record.notes}</p>
                 </div>
               )}
-
-              {/* Action Buttons */}
-              <div>
-                <TriageActionButtons
-                  triageId={record.id}
-                  contextLevel={record.contextLevel}
-                  recommendedAction={record.recommendedAction}
-                  strategyId={record.strategyId}
-                  positionId={record.positionId}
-                  severity={record.severity}
-                />
-              </div>
             </div>
+          </td>
+        </tr>
+      )}
+      {isActionsOpen && (
+        <tr>
+          <td colSpan={columnCount} className="px-4 py-4 bg-slate-50">
+            <TriageActionsTable
+              triageId={record.id}
+              contextLevel={record.contextLevel}
+              recommendedAction={record.recommendedAction}
+              strategyId={record.strategyId}
+              positionId={record.positionId}
+              severity={record.severity}
+              onActionComplete={() => setIsActionsOpen(false)}
+            />
           </td>
         </tr>
       )}

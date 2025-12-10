@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { positions, underlyings } from '@/db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { toNumber } from '@/lib/numbers';
+import { navSnapshots } from '@/db/schema';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     const strategyId = searchParams.get('strategyId');
 
     if (positionId) {
-      // Fetch single position with underlying ticker
+      // Fetch single position with underlying ticker and all required fields
       const positionRows = await db
         .select({
           id: positions.id,
@@ -25,6 +26,12 @@ export async function GET(request: NextRequest) {
           quantity: positions.quantity,
           snapshotDate: positions.snapshotDate,
           underlyingTicker: underlyings.ticker,
+          spot: positions.spot,
+          absNotional: positions.absNotional,
+          avgPrice: positions.avgPrice,
+          multiplier: positions.multiplier,
+          unrealizedPnl: positions.unrealizedPnl,
+          accountId: positions.accountId,
         })
         .from(positions)
         .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
@@ -36,6 +43,23 @@ export async function GET(request: NextRequest) {
       }
 
       const position = positionRows[0];
+      
+      // Fetch NAV for snapshot date
+      let nav = null;
+      if (position.accountId && position.snapshotDate) {
+        const navResult = await db
+          .select({ total: navSnapshots.total })
+          .from(navSnapshots)
+          .where(
+            and(
+              eq(navSnapshots.accountId, position.accountId),
+              eq(navSnapshots.reportDate, position.snapshotDate)
+            )
+          )
+          .limit(1);
+        nav = navResult[0]?.total ?? null;
+      }
+
       return NextResponse.json({
         id: position.id,
         symbol: position.symbol,
@@ -48,6 +72,12 @@ export async function GET(request: NextRequest) {
         quantity: Number(position.quantity),
         snapshotDate: position.snapshotDate,
         underlyingTicker: position.underlyingTicker,
+        spot: toNumber(position.spot),
+        absNotional: toNumber(position.absNotional),
+        avgPrice: toNumber(position.avgPrice),
+        multiplier: toNumber(position.multiplier),
+        unrealizedPnl: toNumber(position.unrealizedPnl),
+        nav: nav ? Number(nav) : null,
       });
     }
 
@@ -56,6 +86,7 @@ export async function GET(request: NextRequest) {
       const latestSnapshotResult = await db
         .select({
           snapshotDate: positions.snapshotDate,
+          accountId: positions.accountId,
         })
         .from(positions)
         .where(eq(positions.strategyId, strategyId))
@@ -63,12 +94,13 @@ export async function GET(request: NextRequest) {
         .limit(1);
 
       const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
+      const accountId = latestSnapshotResult[0]?.accountId ?? null;
 
       if (!latestSnapshotDate) {
         return NextResponse.json([]);
       }
 
-      // Fetch all open positions for strategy with underlying ticker
+      // Fetch all open positions for strategy with underlying ticker and all required fields
       const positionRows = await db
         .select({
           id: positions.id,
@@ -82,6 +114,11 @@ export async function GET(request: NextRequest) {
           quantity: positions.quantity,
           snapshotDate: positions.snapshotDate,
           underlyingTicker: underlyings.ticker,
+          spot: positions.spot,
+          absNotional: positions.absNotional,
+          avgPrice: positions.avgPrice,
+          multiplier: positions.multiplier,
+          unrealizedPnl: positions.unrealizedPnl,
         })
         .from(positions)
         .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
@@ -93,6 +130,22 @@ export async function GET(request: NextRequest) {
           )
         )
         .orderBy(desc(positions.symbol));
+
+      // Fetch NAV for snapshot date
+      let nav = null;
+      if (accountId && latestSnapshotDate) {
+        const navResult = await db
+          .select({ total: navSnapshots.total })
+          .from(navSnapshots)
+          .where(
+            and(
+              eq(navSnapshots.accountId, accountId),
+              eq(navSnapshots.reportDate, latestSnapshotDate)
+            )
+          )
+          .limit(1);
+        nav = navResult[0]?.total ?? null;
+      }
 
       const positionsList = positionRows.map((row) => ({
         id: row.id,
@@ -106,6 +159,12 @@ export async function GET(request: NextRequest) {
         quantity: Number(row.quantity),
         snapshotDate: row.snapshotDate,
         underlyingTicker: row.underlyingTicker,
+        spot: toNumber(row.spot),
+        absNotional: toNumber(row.absNotional),
+        avgPrice: toNumber(row.avgPrice),
+        multiplier: toNumber(row.multiplier),
+        unrealizedPnl: toNumber(row.unrealizedPnl),
+        nav: nav ? Number(nav) : null,
       }));
 
       return NextResponse.json(positionsList);

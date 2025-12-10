@@ -160,6 +160,9 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
                     <SortableHeader column="dte" className="text-center">
                       DTE
                     </SortableHeader>
+                    <th className="px-4 py-3 text-center text-xs uppercase tracking-wide text-slate-400">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

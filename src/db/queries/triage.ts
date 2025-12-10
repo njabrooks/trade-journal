@@ -27,6 +27,7 @@ export interface TriageQueueRecord {
   strategyId: string | null;
   strategyKey: string | null;
   positionId: string | null;
+  accountId: string;
 }
 
 export interface TriageQueueResult {
@@ -171,6 +172,7 @@ export async function getTriageQueue(
       dte: triageRecords.dte,
       strategyId: triageRecords.strategyId,
       positionId: triageRecords.positionId,
+      accountId: triageRecords.accountId,
       strategyKey: strategies.strategyKey,
     })
     .from(triageRecords)
@@ -193,6 +195,7 @@ export async function getTriageQueue(
     dte: row.dte,
     strategyId: row.strategyId,
     positionId: row.positionId,
+    accountId: row.accountId,
     strategyKey: row.strategyKey,
   }));
 
@@ -332,6 +335,7 @@ export async function getTriageQueueForStrategy(
       dte: triageRecords.dte,
       strategyId: triageRecords.strategyId,
       positionId: triageRecords.positionId,
+      accountId: triageRecords.accountId,
       strategyKey: strategies.strategyKey,
     })
     .from(triageRecords)
@@ -354,6 +358,7 @@ export async function getTriageQueueForStrategy(
     dte: row.dte,
     strategyId: row.strategyId,
     positionId: row.positionId,
+    accountId: row.accountId,
     strategyKey: row.strategyKey,
   }));
 
