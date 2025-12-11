@@ -1,11 +1,16 @@
-import { and, desc, eq, sql, inArray } from "drizzle-orm";
+import { and, desc, asc, eq, sql, inArray, isNull, isNotNull, or, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { blotterActions, strategies } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
 
 export interface BlotterFilters {
-  actionClass?: string;
-  followUp?: "all" | "pending" | "completed";
+  source?: string[];
+  actionClass?: string[];
+  status?: string[];
+  strategyKey?: string[];
+  followUp?: string[];
+  sort?: string;
+  direction?: "asc" | "desc";
 }
 
 export interface BlotterEntry {
@@ -47,6 +52,7 @@ export interface BlotterEntry {
   severityOverride: string | null;
   monitorDays: number | null;
   overrideExpiresDate: string | null;
+  ticker: string | null;
 }
 
 export async function getBlotterEntries(
@@ -60,16 +66,78 @@ export async function getBlotterEntries(
     conditions.push(eq(strategies.accountId, accountId));
   }
 
-  if (filters.actionClass && filters.actionClass !== "all") {
-    conditions.push(eq(blotterActions.actionClass, filters.actionClass));
+  // Source filter (array)
+  if (filters.source && filters.source.length > 0) {
+    conditions.push(inArray(blotterActions.source, filters.source));
   }
 
-  if (filters.followUp && filters.followUp !== "all") {
-    if (filters.followUp === "pending") {
-      conditions.push(eq(blotterActions.followUpRequired, true));
-      conditions.push(eq(blotterActions.completed, false));
-    } else if (filters.followUp === "completed") {
-      conditions.push(eq(blotterActions.completed, true));
+  // Action class filter (array)
+  if (filters.actionClass && filters.actionClass.length > 0) {
+    conditions.push(inArray(blotterActions.actionClass, filters.actionClass));
+  }
+
+  // Status filter: matched, unmatched, pending
+  if (filters.status && filters.status.length > 0) {
+    const statusConditions = [];
+    for (const status of filters.status) {
+      if (status === "matched") {
+        statusConditions.push(
+          or(
+            isNotNull(blotterActions.linkedBlotterActionId),
+            isNotNull(blotterActions.linkedTradeBlotterIds)
+          )
+        );
+      } else if (status === "unmatched") {
+        statusConditions.push(
+          and(
+            eq(blotterActions.source, 'trade_ingestion'),
+            isNull(blotterActions.linkedBlotterActionId),
+            isNull(blotterActions.linkedTradeBlotterIds)
+          )
+        );
+      } else if (status === "pending") {
+        statusConditions.push(
+          and(
+            eq(blotterActions.followUpRequired, true),
+            eq(blotterActions.completed, false)
+          )
+        );
+      }
+    }
+    if (statusConditions.length > 0) {
+      conditions.push(or(...statusConditions));
+    }
+  }
+
+  // Strategy filter (array)
+  if (filters.strategyKey && filters.strategyKey.length > 0) {
+    conditions.push(inArray(strategies.strategyKey, filters.strategyKey));
+  }
+
+  // Follow-up filter (array)
+  if (filters.followUp && filters.followUp.length > 0) {
+    const followUpConditions = [];
+    for (const followUp of filters.followUp) {
+      if (followUp === "pending") {
+        followUpConditions.push(
+          and(
+            eq(blotterActions.followUpRequired, true),
+            eq(blotterActions.completed, false)
+          )
+        );
+      } else if (followUp === "completed") {
+        followUpConditions.push(eq(blotterActions.completed, true));
+      } else if (followUp === "none") {
+        followUpConditions.push(
+          or(
+            isNull(blotterActions.followUpRequired),
+            eq(blotterActions.followUpRequired, false)
+          )
+        );
+      }
+    }
+    if (followUpConditions.length > 0) {
+      conditions.push(or(...followUpConditions));
     }
   }
 
@@ -100,6 +168,7 @@ export async function getBlotterEntries(
       severityOverride: blotterActions.severityOverride,
       monitorDays: blotterActions.monitorDays,
       overrideExpiresDate: blotterActions.overrideExpiresDate,
+      ticker: blotterActions.ticker,
     })
     .from(blotterActions)
     .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id));
@@ -107,7 +176,27 @@ export async function getBlotterEntries(
   const filteredQuery =
     conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-  let query = filteredQuery.orderBy(desc(blotterActions.createdAt));
+  // Sorting
+  let query = filteredQuery;
+  const sortColumn = filters.sort;
+  const sortDirection = filters.direction || "desc";
+  
+  if (sortColumn === "createdAt") {
+    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.createdAt) : desc(blotterActions.createdAt));
+  } else if (sortColumn === "actionDate") {
+    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.actionDate) : desc(blotterActions.actionDate));
+  } else if (sortColumn === "strategyKey") {
+    query = query.orderBy(sortDirection === "asc" ? asc(strategies.strategyKey) : desc(strategies.strategyKey));
+  } else if (sortColumn === "actionClass") {
+    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.actionClass) : desc(blotterActions.actionClass));
+  } else if (sortColumn === "premiumChange") {
+    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.premiumChange) : desc(blotterActions.premiumChange));
+  } else if (sortColumn === "qtyChange") {
+    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.qtyChange) : desc(blotterActions.qtyChange));
+  } else {
+    // Default: sort by createdAt desc
+    query = query.orderBy(desc(blotterActions.createdAt));
+  }
   
   // Only apply limit if specified
   if (limit !== undefined && limit > 0) {
@@ -225,6 +314,7 @@ export async function getBlotterEntries(
       severityOverride: row.severityOverride ?? null,
       monitorDays: row.monitorDays ?? null,
       overrideExpiresDate: row.overrideExpiresDate ?? null,
+      ticker: row.ticker ?? null,
     };
   });
 }

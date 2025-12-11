@@ -46,7 +46,7 @@ export function formatDateShort(date: string | null | undefined): string {
   if (Number.isNaN(parsed.getTime())) return date;
   const day = parsed.getDate();
   const month = parsed.toLocaleDateString('en-US', { month: 'short' });
-  const year = parsed.getFullYear().toString().slice(-2);
+  const year = parsed.getFullYear();
   return `${day} ${month} ${year}`;
 }
 
@@ -64,14 +64,12 @@ export function formatDateTime(date: string | Date | null | undefined): string {
   if (!date) return '—';
   const parsed = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(parsed.getTime())) return String(date);
-  return parsed.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+  const day = parsed.getDate();
+  const month = parsed.toLocaleDateString('en-US', { month: 'short' });
+  const year = parsed.getFullYear();
+  const hours = parsed.getHours();
+  const minutes = parsed.getMinutes().toString().padStart(2, '0');
+  return `${day} ${month} ${year}, ${hours}:${minutes}`;
 }
 
 export function formatPosition(

@@ -1,18 +1,22 @@
-import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { ExportCsvButton } from "@/components/blotter/ExportCsvButton";
+import { BlotterFilters } from "@/components/blotter/BlotterFilters";
+import { BlotterPageClient } from "./BlotterPageClient";
 import { getPrimaryAccount } from "@/db/queries/accounts";
 import { getBlotterEntries } from "@/db/queries/blotter";
-import { formatCurrency, formatDateLabel, formatDateTime } from "@/lib/formatters";
+import type { BlotterEntry } from "@/db/queries/blotter";
 
 interface BlotterPageProps {
   searchParams?: Promise<{
-    actionClass?: string;
-    followUp?: string;
+    source?: string | string[];
+    actionClass?: string | string[];
+    status?: string | string[];
+    strategyKey?: string | string[];
+    followUp?: string | string[];
+    sort?: string;
+    direction?: "asc" | "desc";
   }>;
 }
-
-const FOLLOW_UP_FILTERS = ["all", "pending", "completed"] as const;
 
 export default async function BlotterPage({ searchParams }: BlotterPageProps) {
   const account = await getPrimaryAccount();
@@ -31,28 +35,124 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
     );
   }
 
-  const resolvedSearchParams = await searchParams;
-  const actionClassFilter = (resolvedSearchParams?.actionClass ?? "all").toLowerCase();
-  const followUpFilter = (resolvedSearchParams?.followUp ?? "all").toLowerCase() as
-    | "all"
-    | "pending"
-    | "completed";
+  const params = await searchParams;
+  
+  // Parse multi-select filters (can be string or string[])
+  const sourceParam = params?.source;
+  const sourceFilter = Array.isArray(sourceParam)
+    ? sourceParam
+    : sourceParam && sourceParam !== "all"
+    ? [sourceParam]
+    : [];
+  
+  const actionClassParam = params?.actionClass;
+  const actionClassFilter = Array.isArray(actionClassParam)
+    ? actionClassParam
+    : actionClassParam && actionClassParam !== "all"
+    ? [actionClassParam]
+    : [];
+  
+  const statusParam = params?.status;
+  const statusFilter = Array.isArray(statusParam)
+    ? statusParam
+    : statusParam && statusParam !== "all"
+    ? [statusParam]
+    : [];
+  
+  const strategyParam = params?.strategyKey;
+  const strategyFilter = Array.isArray(strategyParam)
+    ? strategyParam
+    : strategyParam
+    ? [strategyParam]
+    : [];
+  
+  const followUpParam = params?.followUp;
+  const followUpFilter = Array.isArray(followUpParam)
+    ? followUpParam
+    : followUpParam && followUpParam !== "all"
+    ? [followUpParam]
+    : [];
 
-  const entries = await getBlotterEntries(account.id, {
-    actionClass: actionClassFilter,
-    followUp: followUpFilter,
+  const sortParam = params?.sort;
+  const directionParam = params?.direction as "asc" | "desc" | undefined;
+
+  // Get all records first to extract unique values for dropdowns
+  const allEntries = await getBlotterEntries(account.id, {});
+
+  // Extract unique values for filters
+  const allSources = Array.from(new Set(allEntries.map(e => e.source).filter(Boolean))) as string[];
+  const allActionClasses = Array.from(new Set(allEntries.map(e => e.actionClass).filter(Boolean))) as string[];
+  const allStatuses = ["matched", "unmatched", "pending"];
+  const allStrategies = Array.from(
+    new Set(
+      allEntries
+        .map((e) => e.strategyKey)
+        .filter((k): k is string => k !== null)
+    )
+  ).sort();
+  const allFollowUps = ["pending", "completed", "none"];
+
+  // Calculate counts for all options
+  const sourceCounts: Record<string, number> = {};
+  allSources.forEach((source) => {
+    sourceCounts[source] = allEntries.filter((e) => e.source === source).length;
   });
 
-  const uniqueActionClasses = Array.from(
-    new Set(entries.map((entry) => entry.actionClass).filter(Boolean))
-  ) as string[];
-  if (!uniqueActionClasses.includes(actionClassFilter) && actionClassFilter !== "all") {
-    uniqueActionClasses.push(actionClassFilter);
-  }
-  const actionClassOptions = ["all", ...uniqueActionClasses];
+  const actionClassCounts: Record<string, number> = {};
+  allActionClasses.forEach((actionClass) => {
+    actionClassCounts[actionClass] = allEntries.filter((e) => e.actionClass === actionClass).length;
+  });
+
+  const statusCounts: Record<string, number> = {};
+  allStatuses.forEach((status) => {
+    if (status === "matched") {
+      statusCounts[status] = allEntries.filter((e) => 
+        e.linkedBlotterActionId || (e.linkedTradeBlotterIds && e.linkedTradeBlotterIds.length > 0)
+      ).length;
+    } else if (status === "unmatched") {
+      statusCounts[status] = allEntries.filter((e) => 
+        e.source === 'trade_ingestion' && !e.linkedBlotterActionId && (!e.linkedTradeBlotterIds || e.linkedTradeBlotterIds.length === 0)
+      ).length;
+    } else if (status === "pending") {
+      statusCounts[status] = allEntries.filter((e) => 
+        e.followUpRequired && !e.completed
+      ).length;
+    }
+  });
+
+  const strategyCounts: Record<string, number> = {};
+  allStrategies.forEach((strategy) => {
+    strategyCounts[strategy] = allEntries.filter((e) => e.strategyKey === strategy).length;
+  });
+
+  const followUpCounts: Record<string, number> = {};
+  allFollowUps.forEach((followUp) => {
+    if (followUp === "pending") {
+      followUpCounts[followUp] = allEntries.filter((e) => e.followUpRequired && !e.completed).length;
+    } else if (followUp === "completed") {
+      followUpCounts[followUp] = allEntries.filter((e) => e.completed).length;
+    } else if (followUp === "none") {
+      followUpCounts[followUp] = allEntries.filter((e) => !e.followUpRequired || e.followUpRequired === false).length;
+    }
+  });
+
+  // Now get filtered records
+  const entries = await getBlotterEntries(account.id, {
+    source: sourceFilter.length > 0 ? sourceFilter : undefined,
+    actionClass: actionClassFilter.length > 0 ? actionClassFilter : undefined,
+    status: statusFilter.length > 0 ? statusFilter : undefined,
+    strategyKey: strategyFilter.length > 0 ? strategyFilter : undefined,
+    followUp: followUpFilter.length > 0 ? followUpFilter : undefined,
+    sort: sortParam,
+    direction: directionParam,
+  });
 
   const pendingFollowUps = entries.filter(
     (entry) => entry.followUpRequired && !entry.completed
+  );
+
+  const unmatchedTrades = entries.filter(
+    (e) => e.source === 'trade_ingestion' && !e.linkedBlotterActionId && (!e.linkedTradeBlotterIds || e.linkedTradeBlotterIds.length === 0)
   );
 
   return (
@@ -65,6 +165,7 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
           rows={entries}
           columns={[
             { key: "actionDate", label: "action_date" },
+            { key: "createdAt", label: "created_at" },
             { key: "strategyKey", label: "strategy_key" },
             { key: "actionClass", label: "action_class" },
             { key: "actionDetail", label: "action_detail" },
@@ -75,376 +176,59 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
             { key: "followUpRequired", label: "follow_up_required" },
             { key: "followUpDate", label: "follow_up_date" },
             { key: "completed", label: "completed" },
+            { key: "source", label: "source" },
           ]}
           filename="blotter_export.csv"
         />
       }
     >
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <SummaryCard label="Entries" value={entries.length.toString()} />
-        <SummaryCard label="Action class" value={actionClassFilter} />
-        <SummaryCard
-          label="Pending follow-ups"
+        <SummaryCard 
+          label="Pending follow-ups" 
           value={pendingFollowUps.length.toString()}
           valueClass={pendingFollowUps.length > 0 ? "text-amber-600" : "text-slate-900"}
         />
         <SummaryCard
           label="Unmatched trades"
-          value={entries.filter(
-            (e) => e.source === 'trade_ingestion' && !e.linkedBlotterActionId
-          ).length.toString()}
+          value={unmatchedTrades.length.toString()}
           valueClass={
-            entries.filter((e) => e.source === 'trade_ingestion' && !e.linkedBlotterActionId)
-              .length > 0
+            unmatchedTrades.length > 0
               ? "text-amber-600"
               : "text-slate-900"
           }
         />
+        <SummaryCard
+          label="Matched"
+          value={entries.filter((e) => 
+            e.linkedBlotterActionId || (e.linkedTradeBlotterIds && e.linkedTradeBlotterIds.length > 0)
+          ).length.toString()}
+          valueClass="text-emerald-600"
+        />
       </section>
 
-      <section className="rounded-2xl border bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <span className="uppercase tracking-wide text-slate-400">Action class</span>
-          <div className="flex flex-wrap gap-2">
-            {actionClassOptions.map((option) => (
-              <Link
-                key={option}
-                href={buildBlotterHref({
-                  actionClass: option,
-                  followUp: followUpFilter,
-                })}
-                className={`rounded-full px-3 py-1 font-medium ${
-                  actionClassFilter === option
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {option}
-              </Link>
-            ))}
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
-          <span className="uppercase tracking-wide text-slate-400">Follow-up</span>
-          <div className="flex flex-wrap gap-2">
-            {FOLLOW_UP_FILTERS.map((option) => (
-              <Link
-                key={option}
-                href={buildBlotterHref({
-                  actionClass: actionClassFilter,
-                  followUp: option,
-                })}
-                className={`rounded-full px-3 py-1 font-medium ${
-                  followUpFilter === option
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {option}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <div className="border-b bg-white px-6 py-4 -mx-4">
+        <BlotterFilters
+          sourceFilter={sourceFilter}
+          actionClassFilter={actionClassFilter}
+          statusFilter={statusFilter}
+          strategyFilter={strategyFilter}
+          followUpFilter={followUpFilter}
+          allSources={allSources}
+          allActionClasses={allActionClasses}
+          allStatuses={allStatuses}
+          allStrategies={allStrategies}
+          allFollowUps={allFollowUps}
+          sourceCounts={sourceCounts}
+          actionClassCounts={actionClassCounts}
+          statusCounts={statusCounts}
+          strategyCounts={strategyCounts}
+          followUpCounts={followUpCounts}
+          totalEntries={entries.length}
+        />
+      </div>
 
-      <section className="rounded-2xl border bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
-                <th className="px-6 py-3">Date</th>
-                <th className="px-6 py-3">Strategy</th>
-                <th className="px-6 py-3">Class</th>
-                <th className="px-6 py-3">Detail</th>
-                <th className="px-6 py-3 text-right">Qty Δ</th>
-                <th className="px-6 py-3 text-right">Premium Δ</th>
-                <th className="px-6 py-3 text-right">Realized</th>
-                <th className="px-6 py-3">Metadata</th>
-                <th className="px-6 py-3">Follow-up</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-600">
-              {entries.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-10 text-center text-slate-400">
-                    No blotter actions match the selected filters.
-                  </td>
-                </tr>
-              ) : (
-                entries.map((entry) => {
-                  const isTrade = entry.source === 'trade_ingestion';
-                  const isTradeAction = entry.actionClass === 'TRADE' && entry.source === 'triage_action';
-                  const isMatched = !!entry.linkedBlotterActionId;
-                  const needsMetadata = isTrade && !isMatched;
-                  const needsTrade = isTradeAction && !isMatched;
-
-                  return (
-                    <tr
-                      key={entry.id}
-                      className={`hover:bg-slate-50 ${
-                        needsMetadata || needsTrade ? 'bg-amber-50/50 border-l-4 border-l-amber-400' : ''
-                      }`}
-                    >
-                    <td className="px-6 py-3 text-xs text-slate-500">
-                      {entry.createdAt ? formatDateTime(entry.createdAt) : formatDateLabel(entry.actionDate)}
-                    </td>
-                    <td className="px-6 py-3">
-                      {entry.strategyId ? (
-                        <Link
-                          href={`/strategies/${entry.strategyId}`}
-                          className="font-medium text-slate-900 hover:text-blue-600"
-                        >
-                          {entry.strategyKey ?? "Strategy"}
-                        </Link>
-                      ) : (
-                        <span className="text-slate-400">Unlinked</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3 text-xs uppercase tracking-wide text-slate-500">
-                      {entry.actionClass || "—"}
-                    </td>
-                    <td className="px-6 py-3">
-                        <div className="flex flex-col gap-1">
-                        <span className="font-medium text-slate-900">
-                          {entry.actionDetail || entry.reasonCode || "—"}
-                        </span>
-                          {entry.reasonCode && entry.reasonCode !== entry.actionDetail ? (
-                          <span className="text-xs text-slate-400">{entry.reasonCode}</span>
-                        ) : null}
-                          {isTrade && entry.tradeCount && entry.tradeCount > 1 && (
-                            <span className="text-xs text-slate-400">
-                              {entry.tradeCount} trades aggregated
-                            </span>
-                          )}
-                          {/* Show notes for MONITOR/DISMISS actions */}
-                          {entry.notes && (entry.actionDetail === 'MONITOR' || entry.actionDetail === 'DISMISS') && (
-                            <span className="text-xs text-slate-600 italic mt-1">
-                              {entry.notes}
-                            </span>
-                          )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      {entry.qtyChange ?? "—"}
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      {formatCurrency(entry.premiumChange)}
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      {formatCurrency(entry.realizedPnl)}
-                    </td>
-                      <td className="px-6 py-3">
-                        {isTrade ? (
-                          isMatched ? (
-                            <div className="flex flex-col gap-1">
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                                <svg
-                                  className="h-3 w-3"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                                Matched
-                              </span>
-                              {entry.linkedTradeReason && (
-                                <span className="text-xs text-slate-600">
-                                  {entry.linkedTradeReason}
-                                  {entry.linkedTradeStage && (
-                                    <span className="text-slate-400"> · {entry.linkedTradeStage}</span>
-                                  )}
-                                </span>
-                              )}
-                              {entry.linkedNotes && (
-                                <span className="text-xs text-slate-500 italic">
-                                  {entry.linkedNotes}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                              <svg
-                                className="h-3 w-3"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                                />
-                              </svg>
-                              Needs metadata
-                            </span>
-                          )
-                        ) : entry.actionClass === 'TRADE' && entry.source === 'triage_action' ? (
-                          // TRADE action from triage (created before trade ingestion)
-                          isMatched ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                              <svg
-                                className="h-3 w-3"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                                />
-                              </svg>
-                              Linked to trade
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                              <svg
-                                className="h-3 w-3"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              </svg>
-                              Needs trade
-                            </span>
-                          )
-                        ) : entry.linkedBlotterActionId || entry.linkedTradeEntries ? (
-                          // Other triage actions (like QUANTITY_CHANGE) linked to trades
-                          <div className="flex flex-col gap-1">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                              <svg
-                                className="h-3 w-3"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                                />
-                              </svg>
-                              {entry.linkedTradeEntries && entry.linkedTradeEntries.length > 1
-                                ? `Linked to ${entry.linkedTradeEntries.length} trades`
-                                : 'Linked to trade'}
-                            </span>
-                            {entry.linkedTradeEntries && entry.linkedTradeEntries.length > 1 && (
-                              <div className="flex flex-col gap-0.5 text-xs text-slate-600">
-                                {entry.linkedTradeEntries.map((linkedTrade) => (
-                                  <span key={linkedTrade.id} className="text-xs">
-                                    {linkedTrade.ticker}: {linkedTrade.qtyChange && linkedTrade.qtyChange > 0 ? '+' : ''}{linkedTrade.qtyChange} @ {formatCurrency(linkedTrade.premiumChange)}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-400">—</span>
-                        )}
-                      </td>
-                    <td className="px-6 py-3">
-                      {entry.followUpRequired ? (
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-                            entry.completed
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          {entry.completed ? "Done" : "Pending"}
-                          {entry.followUpDate ? `· ${formatDateLabel(entry.followUpDate)}` : ""}
-                        </span>
-                        ) : (entry.actionDetail === 'MONITOR' || entry.actionDetail === 'DISMISS') ? (
-                          // MONITOR/DISMISS actions - show status and details
-                          <div className="flex flex-col gap-1">
-                            <span
-                              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-                                entry.actionDetail === 'MONITOR'
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-slate-100 text-slate-700'
-                              }`}
-                            >
-                              {entry.actionDetail === 'MONITOR' ? (
-                                <>
-                                  <svg
-                                    className="h-3 w-3"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                    />
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                    />
-                                  </svg>
-                                  Monitoring
-                                </>
-                              ) : (
-                                <>
-                                  <svg
-                                    className="h-3 w-3"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
-                                  Dismissed
-                                </>
-                              )}
-                            </span>
-                            {entry.actionDetail === 'MONITOR' && entry.overrideExpiresDate && (
-                              <span className="text-xs text-slate-500">
-                                Expires: {formatDateLabel(entry.overrideExpiresDate)}
-                                {entry.monitorDays && (
-                                  <span className="text-slate-400"> ({entry.monitorDays} days)</span>
-                                )}
-                              </span>
-                            )}
-                            {entry.actionDetail === 'DISMISS' && entry.severityOverride === 'info' && (
-                              <span className="text-xs text-slate-500">Permanent override</span>
-                            )}
-                          </div>
-                      ) : (
-                        <span className="text-xs text-slate-400">—</span>
-                      )}
-                    </td>
-                  </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <BlotterPageClient entries={entries} />
     </DashboardShell>
   );
 }
@@ -465,22 +249,3 @@ function SummaryCard({
     </div>
   );
 }
-
-function buildBlotterHref({
-  actionClass,
-  followUp,
-}: {
-  actionClass: string;
-  followUp: string;
-}) {
-  const params = new URLSearchParams();
-  if (actionClass && actionClass !== "all") {
-    params.set("actionClass", actionClass);
-  }
-  if (followUp && followUp !== "all") {
-    params.set("followUp", followUp);
-  }
-  const query = params.toString();
-  return `/blotter${query ? `?${query}` : ""}`;
-}
-
