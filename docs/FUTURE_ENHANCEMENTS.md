@@ -72,14 +72,213 @@ This document captures all planned future enhancements mentioned throughout the 
 - Margin requirements  
 **Priority**: Low
 
-### 8. Time-Based Triggers
-**Location**: `docs/actions.md` (lines 443-446)  
+### 8. Time-Based Workflow & Memory System
+**Location**: `docs/actions.md` (lines 443-446), New enhancement  
+**Problem**: 
+- Traders consume vast amounts of information but retain little context
+- Patterns across time are forgotten, making it impossible to recognize recurring market structures
+- No systematic way to connect past events to present decisions
+- Emotional states during trades are not tracked, losing valuable learning data
+- Weekly/monthly review workflows are manual and inconsistent
+
+**Enhancement**: Comprehensive time-based workflow system for attention, memory, and pattern recognition
+
+#### 8a. Event Logging & Tracking
+**Purpose**: Capture significant events systematically, not everything, just what matters
+
+**Features**:
+- **Market Event Log**: 
+  - Major market moves (significant price changes, volatility spikes)
+  - Policy changes (Fed decisions, regulatory changes, earnings announcements)
+  - Market structure changes (liquidity shifts, correlation breaks)
+- **Trade Context Log**:
+  - Trade decisions and reasoning (captured at decision time, not after the fact)
+  - Emotional state during trade entry/exit (anxiety, confidence, FOMO, etc.)
+  - Market conditions at time of trade (volatility regime, news backdrop)
+  - Patterns noticed during trade execution
+- **Pattern Recognition Log**:
+  - User-identified patterns ("This reminds me of [date/event]")
+  - Structural similarities ("These three events share a structure")
+  - Historical comparisons ("Last time X happened, Y followed")
+
+**Data Model**:
+- New table: `event_log` with fields:
+  - `event_type`: 'market_move', 'policy_change', 'trade_decision', 'pattern_observation', 'emotional_state'
+  - `event_date`: When the event occurred
+  - `logged_at`: When it was recorded (may differ from event_date for retrospective logging)
+  - `context`: JSONB field for flexible event-specific data
+  - `notes`: Free-form text for user observations
+  - `linked_strategy_id`: Optional link to relevant strategy
+  - `linked_trade_id`: Optional link to relevant trade
+  - `tags`: Array of tags for categorization and search
+  - `emotional_state`: For trade-related events (anxiety, confidence, FOMO, greed, fear, etc.)
+
+#### 8b. Time-Based Review Workflows
+**Purpose**: Systematic weekly/monthly reviews to surface patterns and maintain context
+
+**Weekly Review Trigger**:
+- **Automatic reminder**: Every week (configurable day/time)
+- **Review content**:
+  - Narrative summary of week's significant events (from event log)
+  - Risk analysis: Current portfolio state vs. previous week
+  - Technical analysis: Historical price action comparisons ("What period does current price action look similar to?")
+  - Trade performance review: All trades executed during week with context
+  - Emotional state patterns: Review emotional states logged during trades
+  - Pattern connections: System suggests potential connections to past events
+- **Workflow**:
+  1. System generates review template with pre-populated data
+  2. User adds narrative notes and observations
+  3. System prompts: "This reminds you of [past event]?" for pattern recognition
+  4. Review saved as `weekly_review` record with links to relevant events/trades
+
+**Monthly Review Trigger**:
+- **Automatic reminder**: End of month
+- **Review content**:
+  - Roll-up of weekly reviews
+  - Monthly performance summary
+  - Pattern synthesis: "These three events share a structure"
+  - Strategic adjustments: What worked, what didn't, what to change
+- **Workflow**:
+  1. System aggregates weekly reviews
+  2. User synthesizes patterns and insights
+  3. Monthly review saved with links to weekly reviews
+
+**Review Data Model**:
+- New table: `weekly_reviews`:
+  - `review_date`: Week being reviewed
+  - `narrative`: User's narrative summary
+  - `risk_analysis`: Risk observations
+  - `technical_analysis`: Price action comparisons
+  - `pattern_observations`: Connections to past events
+  - `emotional_patterns`: Emotional state patterns identified
+  - `linked_event_ids`: Array of event_log IDs referenced
+  - `linked_trade_ids`: Array of trades reviewed
+- New table: `monthly_reviews`:
+  - `review_date`: Month being reviewed
+  - `synthesis`: Pattern synthesis and insights
+  - `strategic_adjustments`: What to change going forward
+  - `linked_weekly_review_ids`: Array of weekly review IDs
+
+#### 8c. Pattern Recognition & Connection System
+**Purpose**: Systematically connect past to present, enabling "rational synthesis" not "seeing patterns in noise"
+
+**Features**:
+- **Automatic Pattern Suggestions**:
+  - When logging new event, system queries past events for similar structures
+  - Suggests: "This reminds you of [past event on date]?"
+  - User confirms or dismisses connection
+- **Pattern Templates**:
+  - User-defined pattern structures ("When X happens, Y usually follows")
+  - System tracks pattern accuracy over time
+  - Patterns can be linked to strategies or general market conditions
+- **Historical Comparison Engine**:
+  - For current market conditions, find similar historical periods
+  - Compare: price action, volatility, correlation structures, policy backdrop
+  - Display: "Current conditions similar to [date range]" with side-by-side comparison
+- **Connection Visualization**:
+  - Timeline view showing events and their connections
+  - Network graph of related events/patterns
+  - "This reminds me of..." chains showing how events connect
+
+**Data Model**:
+- New table: `pattern_connections`:
+  - `source_event_id`: Event that triggered the connection
+  - `target_event_id`: Past event being connected to
+  - `connection_type`: 'similar_structure', 'causal', 'correlation', 'user_observation'
+  - `confidence`: User-assigned or system-calculated confidence
+  - `notes`: Why these events are connected
+- New table: `pattern_templates`:
+  - `pattern_name`: User-defined pattern name
+  - `pattern_structure`: JSONB defining the pattern structure
+  - `historical_accuracy`: Track how often pattern holds true
+  - `linked_strategy_type`: Optional link to strategy types where pattern applies
+
+#### 8d. Emotional State Tracking During Trades
+**Purpose**: Capture emotional context at decision time, not in hindsight
+
+**Features**:
+- **Trade Entry/Exit Emotional Logging**:
+  - Quick emotional state capture when executing trades
+  - Pre-defined states: anxiety, confidence, FOMO, greed, fear, calm, uncertainty
+  - Optional intensity rating (1-5 scale)
+  - Optional notes: "Why I feel this way"
+- **Emotional Pattern Analysis**:
+  - Weekly review shows emotional patterns: "You felt anxious on 3 trades this week"
+  - Correlate emotional states with trade outcomes
+  - Identify: "Trades made with high anxiety tend to underperform"
+- **Integration with Blotter**:
+  - Emotional state stored in `blotter_actions` when trade action is taken
+  - Display emotional state in blotter timeline
+  - Filter blotter by emotional state for pattern analysis
+
+**Data Model**:
+- Extend `blotter_actions` table:
+  - `emotional_state_at_action`: Text field for emotional state
+  - `emotional_intensity`: Integer 1-5
+  - `emotional_notes`: Why this emotional state occurred
+
+#### 8e. Calendar-Based Triggers (Enhanced)
+**Purpose**: Proactive reminders for time-sensitive events
+
 **Triggers**:
-- Weekly review reminders (narrative news for memory, risk analysis, technical analysis historical comparisons (what period does the current price action look similar to?), etc.)
-- Monthly review reminders (roll up based on weekly reviews)
-- Expiry date approaching (calendar-based)
-- Earnings date proximity
-**Priority**: Low
+- **Expiry Date Approaching**: 
+  - 7 days before: "Review positions expiring soon"
+  - 3 days before: "Decide on expiry strategy"
+  - Day of: "Expiry today - confirm assignment decisions"
+- **Earnings Date Proximity**:
+  - 2 weeks before: "Earnings approaching for [underlying]"
+  - 1 week before: "Review positions ahead of earnings"
+  - Day before: "Earnings tomorrow - confirm risk management"
+- **Weekly Review Reminder**:
+  - Configurable day/time (e.g., Sunday evening)
+  - Generates review template with pre-populated data
+- **Monthly Review Reminder**:
+  - Last day of month
+  - Aggregates weekly reviews for synthesis
+
+**Implementation**:
+- New table: `calendar_events`:
+  - `event_type`: 'expiry', 'earnings', 'weekly_review', 'monthly_review', 'custom'
+  - `event_date`: When the event occurs
+  - `reminder_days_before`: Array of days to send reminders (e.g., [7, 3, 0])
+  - `linked_strategy_id`: Optional (for expiry reminders)
+  - `linked_underlying_id`: Optional (for earnings reminders)
+- Background job: Daily check for upcoming events and send reminders
+
+#### 8f. UI Components
+
+**Event Logging Interface**:
+- Quick capture form: "Log significant event"
+- Event type selector with context-specific fields
+- Tag system for categorization
+- Link to strategies/trades via autocomplete
+
+**Review Interface**:
+- Weekly/Monthly review pages with pre-populated data
+- Narrative editor with rich text
+- Pattern connection suggestions with one-click linking
+- Historical comparison side-by-side view
+- Emotional state pattern visualization
+
+**Timeline View**:
+- Chronological view of all events, trades, and reviews
+- Filter by type, tags, strategy, emotional state
+- Connection lines showing pattern relationships
+- Zoom to different time scales (day, week, month, year)
+
+**Pattern Dashboard**:
+- Active patterns and their accuracy
+- Pattern suggestions based on current market conditions
+- "This reminds me of..." connections
+- Historical comparison engine results
+
+**Priority**: Medium-High (addresses core workflow and learning needs)
+
+**Dependencies**:
+- Requires event logging infrastructure
+- Calendar/reminder system
+- Pattern matching algorithms
+- Historical data comparison engine
 
 ## Data Ingestion
 
@@ -307,6 +506,7 @@ This document captures all planned future enhancements mentioned throughout the 
 - Automated Tests (#20)
 
 ### Medium Priority
+- Time-Based Workflow & Memory System (#8) - **Addresses core workflow and learning needs**
 - Roll Trade Auto-Detection (#1)
 - Trade Validation & Discrepancy Detection (#3)
 - Triage Rules Database Persistence (#5)
@@ -318,7 +518,7 @@ This document captures all planned future enhancements mentioned throughout the 
 
 ### Low Priority
 - Trade Decision Timeout/Resolution (#2)
-- Future Triggers (Underlying/Account/Time-based) (#6, #7, #8)
+- Future Triggers (Underlying/Account-level) (#6, #7) - **Note: Time-based triggers now covered in #8**
 - Exercises/Assignments Ingestion (#11)
 - Cash Transactions Ingestion (#12)
 - Merged/Archive View (#15)
