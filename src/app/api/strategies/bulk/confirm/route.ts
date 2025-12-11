@@ -41,18 +41,18 @@ export async function POST(request: NextRequest) {
         strategyType,
       },
       async () => {
-        const now = new Date();
-        await db
-          .update(strategies)
-          .set({
-            isAuto: false,
-            confirmedAt: now,
-            strategyType,
-            updatedAt: now,
-          })
-          .where(inArray(strategies.id, ids));
+    const now = new Date();
+    await db
+      .update(strategies)
+      .set({
+        isAuto: false,
+        confirmedAt: now,
+        strategyType,
+        updatedAt: now,
+      })
+      .where(inArray(strategies.id, ids));
 
-        // Compute state codes for the confirmed strategies
+    // Compute state codes for the confirmed strategies
         await recomputeStateCodesForStrategies(ids);
 
         // Backfill trade blotter entries for confirmed strategies

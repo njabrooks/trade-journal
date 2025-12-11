@@ -27,19 +27,19 @@ export async function POST(request: NextRequest) {
         sourceIds,
       },
       async () => {
-        const stats = await mergeStrategies({ targetId, sourceIds });
+    const stats = await mergeStrategies({ targetId, sourceIds });
 
-        // Fetch updated target strategy to return its new status
-        const updatedTarget = await getStrategyById(targetId);
+    // Fetch updated target strategy to return its new status
+    const updatedTarget = await getStrategyById(targetId);
 
         return {
-          success: true,
-          message: 'Strategies merged successfully',
-          stats,
-          targetStrategy: updatedTarget ? {
-            id: updatedTarget.id,
-            status: updatedTarget.status,
-          } : null,
+      success: true,
+      message: 'Strategies merged successfully',
+      stats,
+      targetStrategy: updatedTarget ? {
+        id: updatedTarget.id,
+        status: updatedTarget.status,
+      } : null,
         };
       }
     ).then((result) => {

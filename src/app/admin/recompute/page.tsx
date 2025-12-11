@@ -44,6 +44,8 @@ export default function RecomputePage() {
   );
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]!);
   const [includeUnderlyings, setIncludeUnderlyings] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<any>(null);
 
   useEffect(() => {
     loadAccounts();
@@ -63,6 +65,40 @@ export default function RecomputePage() {
       setError(err instanceof Error ? err.message : 'Failed to load accounts');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBackfill = async () => {
+    if (!selectedAccountId) {
+      setError('Please select an account');
+      return;
+    }
+
+    setBackfilling(true);
+    setError(null);
+    setBackfillResult(null);
+
+    try {
+      const response = await fetch('/api/recompute/blotter-trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountId: selectedAccountId,
+          backfill: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Backfill failed');
+      }
+
+      const data = await response.json();
+      setBackfillResult(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Backfill failed');
+    } finally {
+      setBackfilling(false);
     }
   };
 
@@ -283,13 +319,69 @@ export default function RecomputePage() {
 
           <button
             onClick={handleRecompute}
-            disabled={recomputing || !selectedAccountId}
+            disabled={recomputing || backfilling || !selectedAccountId}
             className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
           >
             {recomputing ? 'Recomputing...' : 'Recompute All Derived Data'}
           </button>
         </div>
       </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Backfill Blotter Matching</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Fixes unmatched trade entries and triage actions. This will:
+        </p>
+        <ul className="list-disc list-inside text-sm text-gray-600 mb-4 space-y-1">
+          <li>Match unmatched trade blotter entries to QUANTITY_CHANGE records</li>
+          <li>Fix triage actions missing ticker/conid and link them to trades</li>
+          <li>Fix blotter entries pointing to merged strategies</li>
+        </ul>
+        <button
+          onClick={handleBackfill}
+          disabled={backfilling || recomputing || !selectedAccountId}
+          className="w-full bg-amber-600 text-white py-3 px-4 rounded-md hover:bg-amber-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
+        >
+          {backfilling ? 'Backfilling...' : 'Backfill Blotter Matching'}
+        </button>
+      </div>
+
+      {backfillResult && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-green-800">
+            Backfill Complete
+          </h2>
+          <p className="mb-4 text-gray-700">{backfillResult.message}</p>
+          <div className="space-y-2 text-sm">
+            <div>
+              <span className="font-semibold">Triage actions updated:</span>{' '}
+              {backfillResult.updated ?? 0}
+            </div>
+            <div>
+              <span className="font-semibold">Triage actions linked:</span>{' '}
+              {backfillResult.linked ?? 0}
+            </div>
+            {backfillResult.mergedStrategyFix && (
+              <div>
+                <span className="font-semibold">Merged strategy entries fixed:</span>{' '}
+                {backfillResult.mergedStrategyFix.updated ?? 0}
+              </div>
+            )}
+            {backfillResult.tradeBackfill && (
+              <div>
+                <span className="font-semibold">Trade entries checked:</span>{' '}
+                {backfillResult.tradeBackfill.checked ?? 0}
+              </div>
+            )}
+            {backfillResult.tradeBackfill && (
+              <div>
+                <span className="font-semibold">Trade entries linked:</span>{' '}
+                {backfillResult.tradeBackfill.linked ?? 0}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {result && (
         <div className="bg-white rounded-lg shadow p-6">
