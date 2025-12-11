@@ -184,8 +184,8 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
     >
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         <SummaryCard label="Entries" value={entries.length.toString()} />
-        <SummaryCard 
-          label="Pending follow-ups" 
+        <SummaryCard
+          label="Pending follow-ups"
           value={pendingFollowUps.length.toString()}
           valueClass={pendingFollowUps.length > 0 ? "text-amber-600" : "text-slate-900"}
         />
@@ -226,9 +226,13 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
           followUpCounts={followUpCounts}
           totalEntries={entries.length}
         />
-      </div>
+        </div>
 
-      <BlotterPageClient entries={entries} />
+      <BlotterPageClient 
+        entries={entries} 
+        sort={sortParam}
+        direction={directionParam}
+      />
     </DashboardShell>
   );
 }

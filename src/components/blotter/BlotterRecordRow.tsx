@@ -21,7 +21,9 @@ function ActionBadge({
   actionDetail: string | null;
   reasonCode: string | null;
 }) {
+  // For display, prefer actionDetail for clarity
   const displayText = actionDetail || reasonCode || actionClass || "—";
+  
   const variantMap: Record<
     string,
     "default" | "secondary" | "destructive" | "outline"
@@ -41,7 +43,8 @@ function ActionBadge({
     UPDATE: "bg-purple-100 text-purple-700 border-purple-200",
   };
 
-  const normalized = actionClass || actionDetail || "outline";
+  // Normalize for badge styling - use actionDetail first, then actionClass
+  const normalized = actionDetail || actionClass || "outline";
 
   return (
     <Badge
@@ -170,6 +173,19 @@ export function BlotterRecordRow({ entry }: BlotterRecordRowProps) {
           {formatDateShort(entry.actionDate)}
         </td>
         <td className="px-4 py-3 text-center">
+          {entry.strategyId ? (
+            <Link
+              href={`/strategies/${entry.strategyId}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs font-medium text-blue-600 hover:underline"
+            >
+              {entry.strategyKey ?? "Strategy"}
+            </Link>
+          ) : (
+            <span className="text-xs text-slate-400">Unlinked</span>
+          )}
+        </td>
+        <td className="px-4 py-3 text-center">
           <ActionBadge
             actionClass={entry.actionClass}
             actionDetail={entry.actionDetail}
@@ -205,7 +221,7 @@ export function BlotterRecordRow({ entry }: BlotterRecordRowProps) {
       </tr>
       {isDetailsOpen && (
         <tr>
-          <td colSpan={6} className="px-4 py-4 bg-slate-50">
+          <td colSpan={7} className="px-4 py-4 bg-slate-50">
             <div className="space-y-4">
               {/* Trade Details Section */}
               {isTrade && (

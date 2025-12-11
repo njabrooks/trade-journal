@@ -1,42 +1,42 @@
 "use client";
 
 import { useMemo } from "react";
-import { BlotterStrategyGroup } from "@/components/blotter/BlotterStrategyGroup";
+import { BlotterDateGroup } from "@/components/blotter/BlotterDateGroup";
+import { SortableHeader } from "@/components/triage/SortableHeader";
 import type { BlotterEntry } from "@/db/queries/blotter";
 
 interface BlotterPageClientProps {
   entries: BlotterEntry[];
+  sort?: string;
+  direction?: "asc" | "desc";
 }
 
-export function BlotterPageClient({ entries }: BlotterPageClientProps) {
-  // Group entries by strategy
-  const groupedByStrategy = useMemo(() => {
-    const groups = new Map<
-      string,
-      { strategyKey: string | null; strategyId: string | null; entries: BlotterEntry[] }
-    >();
+export function BlotterPageClient({ entries, sort, direction }: BlotterPageClientProps) {
+  // Group entries by date (actionDate)
+  const groupedByDate = useMemo(() => {
+    const groups = new Map<string, BlotterEntry[]>();
 
     for (const entry of entries) {
-      const key = entry.strategyKey || "unlinked";
-      if (!groups.has(key)) {
-        groups.set(key, {
-          strategyKey: entry.strategyKey,
-          strategyId: entry.strategyId,
-          entries: [],
-        });
+      const dateKey = entry.actionDate;
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, []);
       }
-      groups.get(key)!.entries.push(entry);
+      groups.get(dateKey)!.push(entry);
     }
 
-    // Sort groups: strategies first (alphabetically), then unlinked
-    const sortedGroups = Array.from(groups.entries()).sort(([keyA], [keyB]) => {
-      if (keyA === "unlinked") return 1;
-      if (keyB === "unlinked") return -1;
-      return keyA.localeCompare(keyB);
+    // Sort date groups based on sort parameter
+    const sortedGroups = Array.from(groups.entries()).sort(([dateA], [dateB]) => {
+      if (sort === "actionDate") {
+        return direction === "asc" 
+          ? dateA.localeCompare(dateB)
+          : dateB.localeCompare(dateA);
+      }
+      // Default: newest dates first
+      return dateB.localeCompare(dateA);
     });
 
-    return sortedGroups.map(([_, group]) => group);
-  }, [entries]);
+    return sortedGroups;
+  }, [entries, sort, direction]);
 
   return (
     <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
@@ -49,21 +49,37 @@ export function BlotterPageClient({ entries }: BlotterPageClientProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
-                <th className="px-4 py-3 text-left">Strategy / Processed</th>
-                <th className="px-4 py-3 text-center">Event Date</th>
-                <th className="px-4 py-3 text-center">Action</th>
-                <th className="px-4 py-3 text-center">Status</th>
-                <th className="px-4 py-3 text-center">Reason</th>
-                <th className="px-4 py-3 text-center">Financials</th>
+                <SortableHeader column="createdAt" className="text-left">
+                  Processed
+                </SortableHeader>
+                <SortableHeader column="actionDate" className="text-center">
+                  Event Date
+                </SortableHeader>
+                <SortableHeader column="strategyKey" className="text-center">
+                  Strategy
+                </SortableHeader>
+                <SortableHeader column="actionClass" className="text-center">
+                  Action
+                </SortableHeader>
+                <th className="px-4 py-3 text-center text-xs uppercase tracking-wide text-slate-400">
+                  Status
+                </th>
+                <SortableHeader column="reasonCode" className="text-center">
+                  Reason
+                </SortableHeader>
+                <SortableHeader column="premiumChange" className="text-right">
+                  Financials
+                </SortableHeader>
               </tr>
             </thead>
             <tbody>
-              {groupedByStrategy.map((group, idx) => (
-                <BlotterStrategyGroup
-                  key={group.strategyKey || `unlinked-${idx}`}
-                  strategyKey={group.strategyKey}
-                  strategyId={group.strategyId}
-                  entries={group.entries}
+              {groupedByDate.map(([date, dateEntries]) => (
+                <BlotterDateGroup
+                  key={date}
+                  date={date}
+                  entries={dateEntries}
+                  sort={sort}
+                  direction={direction}
                 />
               ))}
             </tbody>
