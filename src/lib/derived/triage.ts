@@ -904,6 +904,15 @@ export async function computeQuantityChangeTriageForDate(
     tradeStage: string | null;
   }> = [];
 
+  // Create a set of current conids for efficient lookup
+  const currentConids = new Set<number>();
+  for (const currentPos of currentPositions) {
+    if (currentPos.conid) {
+      currentConids.add(currentPos.conid);
+    }
+  }
+
+  // First pass: Process current positions (existing or changed)
   for (const currentPos of currentPositions) {
     if (!currentPos.conid || !currentPos.accountId) continue;
 
@@ -966,6 +975,36 @@ export async function computeQuantityChangeTriageForDate(
         previousQty,
         currentQty,
         tradeStage,
+      });
+    }
+  }
+
+  // Second pass: Detect positions that existed on previous date but don't exist on current date
+  // These are positions that closed/expired (no position record on current date)
+  for (const [conid, previousPos] of previousByConid.entries()) {
+    // Skip if this position exists in current positions (already processed above)
+    if (currentConids.has(conid)) {
+      continue;
+    }
+
+    // This position existed before but doesn't exist now - it closed/expired
+    const previousQty = Number(previousPos.quantity) || 0;
+    
+    // Only create QUANTITY_CHANGE if previous quantity was non-zero
+    if (previousQty !== 0 && previousPos.accountId && previousPos.strategyId) {
+      // Group by strategy
+      if (!changesByStrategy.has(previousPos.strategyId)) {
+        changesByStrategy.set(previousPos.strategyId, {
+          accountId: previousPos.accountId,
+          positions: [],
+        });
+      }
+      changesByStrategy.get(previousPos.strategyId)!.positions.push({
+        positionId: previousPos.id,
+        symbol: previousPos.symbol,
+        previousQty,
+        currentQty: 0, // Position no longer exists
+        tradeStage: 'close', // Position closed/expired
       });
     }
   }

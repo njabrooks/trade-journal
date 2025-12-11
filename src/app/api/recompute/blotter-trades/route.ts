@@ -48,19 +48,17 @@ export async function POST(request: NextRequest) {
 
     // Backfill mode: fix existing triage actions missing ticker/conid and link them
     if (backfill) {
-      if (!accountId) {
-        return NextResponse.json(
-          { error: 'accountId is required for backfill' },
-          { status: 400 }
-        );
-      }
+      const result = await backfillTriageActionMatching(accountId || undefined);
 
-      const result = await backfillTriageActionMatching(accountId);
+      // Also fix blotter entries pointing to merged strategies
+      const { fixMergedStrategyBlotterEntries } = await import('@/lib/derived/blotter');
+      const mergedFixResult = await fixMergedStrategyBlotterEntries(accountId || undefined);
 
       return NextResponse.json({
         success: true,
-        message: `Backfilled ${result.updated} triage actions, linked ${result.linked} to trade entries`,
+        message: `Backfilled ${result.updated} triage actions, linked ${result.linked} to trade entries. Fixed ${mergedFixResult.updated} blotter entries pointing to merged strategies.`,
         ...result,
+        mergedStrategyFix: mergedFixResult,
       });
     }
 

@@ -11,7 +11,7 @@ export interface BlotterFilters {
 export interface BlotterEntry {
   id: string;
   actionDate: string;
-  createdAt: Date | null;
+  createdAt: string | null;
   strategyId: string | null;
   strategyKey: string | null;
   actionClass: string | null;
@@ -29,11 +29,19 @@ export interface BlotterEntry {
   tradeIds: string[] | null;
   conid: number | null;
   linkedBlotterActionId: string | null;
+  linkedTradeBlotterIds: string[] | null; // Array of linked trade blotter entry IDs (for QUANTITY_CHANGE with multiple positions)
   // Linked metadata (from triage action when linked)
   linkedTradeReason: string | null;
   linkedTradeStage: string | null;
   linkedNotes: string | null;
-  linkedCreatedAt: Date | null;
+  linkedCreatedAt: string | null;
+  // Multiple linked trade entries (for QUANTITY_CHANGE with multiple positions)
+  linkedTradeEntries: Array<{
+    id: string;
+    ticker: string | null;
+    qtyChange: number | null;
+    premiumChange: number | null;
+  }> | null;
   // MONITOR/DISMISS fields
   notes: string | null;
   severityOverride: string | null;
@@ -44,7 +52,7 @@ export interface BlotterEntry {
 export async function getBlotterEntries(
   accountId: string | null,
   filters: BlotterFilters = {},
-  limit = 100
+  limit?: number
 ): Promise<BlotterEntry[]> {
   const conditions = [];
 
@@ -87,6 +95,7 @@ export async function getBlotterEntries(
       tradeIds: blotterActions.tradeIds,
       conid: sql<number | null>`${blotterActions.conid}::bigint`.as('conid'),
       linkedBlotterActionId: blotterActions.linkedBlotterActionId,
+      linkedTradeBlotterIds: blotterActions.linkedTradeBlotterIds,
       notes: blotterActions.notes,
       severityOverride: blotterActions.severityOverride,
       monitorDays: blotterActions.monitorDays,
@@ -98,23 +107,39 @@ export async function getBlotterEntries(
   const filteredQuery =
     conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-  const rows = await filteredQuery
-    .orderBy(desc(blotterActions.createdAt))
-    .limit(limit);
+  let query = filteredQuery.orderBy(desc(blotterActions.createdAt));
+  
+  // Only apply limit if specified
+  if (limit !== undefined && limit > 0) {
+    query = query.limit(limit);
+  }
+
+  const rows = await query;
 
   // Fetch linked entry metadata for entries that have linkedBlotterActionId
-  const linkedIds = rows
-    .map((r) => r.linkedBlotterActionId)
-    .filter((id): id is string => id !== null);
+  // Also collect all linkedTradeBlotterIds for QUANTITY_CHANGE records
+  const linkedIds = new Set<string>();
+  rows.forEach((r) => {
+    if (r.linkedBlotterActionId) {
+      linkedIds.add(r.linkedBlotterActionId);
+    }
+    // Also add all linked trade blotter IDs from the array
+    if (r.linkedTradeBlotterIds && Array.isArray(r.linkedTradeBlotterIds)) {
+      r.linkedTradeBlotterIds.forEach((id: string) => linkedIds.add(id));
+    }
+  });
   
   const linkedEntriesMap = new Map<string, {
     tradeReason: string | null;
     tradeStage: string | null;
     notes: string | null;
     createdAt: Date | null;
+    ticker: string | null;
+    qtyChange: number | null;
+    premiumChange: number | null;
   }>();
 
-  if (linkedIds.length > 0) {
+  if (linkedIds.size > 0) {
     const linkedRows = await db
       .select({
         id: blotterActions.id,
@@ -122,9 +147,12 @@ export async function getBlotterEntries(
         tradeStage: blotterActions.tradeStage,
         notes: blotterActions.notes,
         createdAt: blotterActions.createdAt,
+        ticker: blotterActions.ticker,
+        qtyChange: blotterActions.qtyChange,
+        premiumChange: blotterActions.premiumChange,
       })
       .from(blotterActions)
-      .where(inArray(blotterActions.id, linkedIds));
+      .where(inArray(blotterActions.id, Array.from(linkedIds)));
 
     for (const linkedRow of linkedRows) {
       linkedEntriesMap.set(linkedRow.id, {
@@ -132,6 +160,9 @@ export async function getBlotterEntries(
         tradeStage: linkedRow.tradeStage ?? null,
         notes: linkedRow.notes ?? null,
         createdAt: linkedRow.createdAt ?? null,
+        ticker: linkedRow.ticker ?? null,
+        qtyChange: toNumber(linkedRow.qtyChange),
+        premiumChange: toNumber(linkedRow.premiumChange),
       });
     }
   }
@@ -141,10 +172,32 @@ export async function getBlotterEntries(
       ? linkedEntriesMap.get(row.linkedBlotterActionId)
       : null;
 
+    // Build array of all linked trade entries (from linkedTradeBlotterIds)
+    const linkedTradeEntries: Array<{
+      id: string;
+      ticker: string | null;
+      qtyChange: number | null;
+      premiumChange: number | null;
+    }> | null = row.linkedTradeBlotterIds && Array.isArray(row.linkedTradeBlotterIds)
+      ? row.linkedTradeBlotterIds
+          .map((id: string) => {
+            const entry = linkedEntriesMap.get(id);
+            return entry
+              ? {
+                  id,
+                  ticker: entry.ticker,
+                  qtyChange: entry.qtyChange,
+                  premiumChange: entry.premiumChange,
+                }
+              : null;
+          })
+          .filter((e): e is NonNullable<typeof e> => e !== null)
+      : null;
+
     return {
       id: row.id,
       actionDate: row.actionDate,
-      createdAt: row.createdAt,
+      createdAt: row.createdAt ? row.createdAt.toISOString() : null,
       strategyId: row.strategyId,
       strategyKey: row.strategyKey,
       actionClass: row.actionClass,
@@ -162,10 +215,12 @@ export async function getBlotterEntries(
       tradeIds: (row.tradeIds as string[] | null) ?? null,
       conid: row.conid ?? null,
       linkedBlotterActionId: row.linkedBlotterActionId ?? null,
+      linkedTradeBlotterIds: (row.linkedTradeBlotterIds as string[] | null) ?? null,
       linkedTradeReason: linkedData?.tradeReason ?? null,
       linkedTradeStage: linkedData?.tradeStage ?? null,
       linkedNotes: linkedData?.notes ?? null,
-      linkedCreatedAt: linkedData?.createdAt ?? null,
+      linkedCreatedAt: linkedData?.createdAt ? linkedData.createdAt.toISOString() : null,
+      linkedTradeEntries,
       notes: row.notes ?? null,
       severityOverride: row.severityOverride ?? null,
       monitorDays: row.monitorDays ?? null,

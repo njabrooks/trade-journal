@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Papa from 'papaparse';
 import { db } from '@/db';
-import { positions, navSnapshots, mtmSnapshots } from '@/db/schema';
+import { positions, navSnapshots, mtmSnapshots, ingestionRuns } from '@/db/schema';
 import type { NewPosition, NewNavSnapshot, NewMtmSnapshot } from '@/db/schema';
 import {
   FlexPositionRow,
@@ -32,7 +32,7 @@ import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetric
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies } from '@/lib/derived/strategyAuto';
 import { strategies } from '@/db/schema';
-import { trackProcess } from '@/lib/services/processTracking';
+import { trackProcess, startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
 const SECTION_CODES = {
   POST: 'POST',
@@ -107,6 +107,9 @@ function isSummaryRow(row: FlexMtmRow): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  // Start tracking immediately - before any processing
+  let processRunId: string | null = null;
+  
   const results = {
     post: { inserted: 0, errors: [] as ErrorDetail[] },
     equt: { inserted: 0, errors: [] as ErrorDetail[] },
@@ -119,6 +122,12 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    
+    // Start process tracking immediately (before file processing)
+    processRunId = await startProcess('position_ingestion', 'api', {
+      fileName: file?.name,
+      fileSize: file?.size,
+    });
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -400,98 +409,101 @@ export async function POST(request: NextRequest) {
     const totalErrors =
       results.post.errors.length + results.equt.errors.length + results.mtmp.errors.length;
 
-    // Track process and run recompute operations
+    // Update process tracking with accountId and run recompute operations
+    if (processRunId && accountId) {
+      // Update payload with account info
+      await db
+        .update(ingestionRuns)
+        .set({
+          accountId,
+          payload: {
+            accountId,
+            startDate: allSnapshotDates.size > 0 ? Array.from(allSnapshotDates).sort()[0] : null,
+            endDate: allSnapshotDates.size > 0 ? Array.from(allSnapshotDates).sort().slice(-1)[0] : null,
+            inserted: totalInserted,
+            errors: totalErrors,
+            hasPositions: allSnapshotDates.size > 0,
+          },
+        })
+        .where(eq(ingestionRuns.id, processRunId));
+    }
+
+    // Run recompute operations if we have positions
     if (accountId && allSnapshotDates.size > 0) {
       const snapshotDates = Array.from(allSnapshotDates).sort();
       const minDate = snapshotDates[0];
       const maxDate = snapshotDates[snapshotDates.length - 1];
 
-      return await trackProcess(
-        'position_ingestion',
-        'api',
-        {
-          accountId,
+      try {
+        // Auto-link positions to strategies (creates strategies if needed)
+        const autoLinkResult = await autoLinkPositionsToStrategies(accountId, {
           startDate: minDate,
           endDate: maxDate,
-          inserted: totalInserted,
-          errors: totalErrors,
-        },
-        async () => {
-          try {
-            // Auto-link positions to strategies (creates strategies if needed)
-            const autoLinkResult = await autoLinkPositionsToStrategies(accountId, {
-              startDate: minDate,
-              endDate: maxDate,
-            });
+        });
 
-            // Compute portfolio snapshots
-            await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate);
+        // Compute portfolio snapshots
+        await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate);
 
-            // Get all strategies for this account (including newly created ones)
-            // Exclude merged strategies - they're no longer active
-            const accountStrategies = await db
-              .select({ id: strategies.id })
-              .from(strategies)
-              .where(
-                and(
-                  eq(strategies.accountId, accountId),
-                  ne(strategies.status, 'merged')
-                )
-              );
+        // Get all strategies for this account (including newly created ones)
+        // Exclude merged strategies - they're no longer active
+        const accountStrategies = await db
+          .select({ id: strategies.id })
+          .from(strategies)
+          .where(
+            and(
+              eq(strategies.accountId, accountId),
+              ne(strategies.status, 'merged')
+            )
+          );
 
-            // Compute strategy metrics for all strategies
-            for (const strategy of accountStrategies) {
-              await computeStrategyMetricsForDateRange(accountId, strategy.id, minDate, maxDate);
-            }
-
-            // Compute triage for each snapshot date
-            // Process each date individually to avoid stopping on errors
-            for (const date of snapshotDates) {
-              try {
-                await computeTriageForDate(date, accountId);
-              } catch (error) {
-                console.error(`Failed to compute triage for ${date}:`, error);
-                // Continue processing other dates even if one fails
-              }
-            }
-          } catch (error) {
-            console.error('Recompute error:', error);
-            // Don't fail the upload if recompute fails
-          }
-
-          return {
-            success: totalErrors === 0,
-            summary: {
-              post: {
-                inserted: results.post.inserted,
-                errors: results.post.errors.length,
-              },
-              equt: {
-                inserted: results.equt.inserted,
-                errors: results.equt.errors.length,
-              },
-              mtmp: {
-                inserted: results.mtmp.inserted,
-                errors: results.mtmp.errors.length,
-              },
-              totalInserted,
-              totalErrors,
-            },
-            errors: {
-              post: results.post.errors,
-              equt: results.equt.errors,
-              mtmp: results.mtmp.errors,
-            },
-          };
+        // Compute strategy metrics for all strategies
+        for (const strategy of accountStrategies) {
+          await computeStrategyMetricsForDateRange(accountId, strategy.id, minDate, maxDate);
         }
-      ).then((result) => {
-        return NextResponse.json(result);
+
+        // Compute triage for each snapshot date
+        // Process each date individually to avoid stopping on errors
+        for (const date of snapshotDates) {
+          try {
+            await computeTriageForDate(date, accountId);
+          } catch (error) {
+            console.error(`Failed to compute triage for ${date}:`, error);
+            // Continue processing other dates even if one fails
+          }
+        }
+      } catch (error) {
+        console.error('Recompute error:', error);
+        // Don't fail the upload if recompute fails
+      }
+    }
+
+    // Complete process tracking
+    if (processRunId) {
+      await completeProcess(processRunId, {
+        success: totalErrors === 0,
+        summary: {
+          post: {
+            inserted: results.post.inserted,
+            errors: results.post.errors.length,
+          },
+          equt: {
+            inserted: results.equt.inserted,
+            errors: results.equt.errors.length,
+          },
+          mtmp: {
+            inserted: results.mtmp.inserted,
+            errors: results.mtmp.errors.length,
+          },
+          totalInserted,
+          totalErrors,
+        },
       });
     }
 
-    // If no positions inserted, return summary without tracking
+    // Return response
     return NextResponse.json({
       success: totalErrors === 0,
+      processRunId,
       summary: {
         post: {
           inserted: results.post.inserted,
@@ -516,10 +528,20 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Positions-all ingestion error:', error);
+    
+    // Mark process as failed if tracking was started
+    if (processRunId) {
+      await failProcess(
+        processRunId,
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
+    
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
+        processRunId,
       },
       { status: 500 }
     );

@@ -173,8 +173,7 @@ export async function getTriageQueue(
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
     .where(and(...conditions))
-    .orderBy(...orderByClauses)
-    .limit(100);
+    .orderBy(...orderByClauses);
 
   const records: TriageQueueRecord[] = rows.map((row) => ({
     id: row.id,
@@ -331,8 +330,7 @@ export async function getTriageQueueForStrategy(
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
     .where(and(...conditions))
-    .orderBy(...orderByClauses)
-    .limit(100);
+    .orderBy(...orderByClauses);
 
   const records: TriageQueueRecord[] = rows.map((row) => ({
     id: row.id,

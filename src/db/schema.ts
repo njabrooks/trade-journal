@@ -434,7 +434,8 @@ export const blotterActions = pgTable(
     tradeIds: jsonb('trade_ids'), // Array of trade IDs for aggregated entries
     tradeCount: integer('trade_count'), // Number of trades in aggregation
     conid: bigint('conid', { mode: 'number' }), // Contract ID for matching trades to positions
-    linkedBlotterActionId: uuid('linked_blotter_action_id').references(() => blotterActions.id, { onDelete: 'set null' }), // Bidirectional link to matching entry
+    linkedBlotterActionId: uuid('linked_blotter_action_id').references(() => blotterActions.id, { onDelete: 'set null' }), // Bidirectional link to matching entry (primary/backward compatible)
+    linkedTradeBlotterIds: jsonb('linked_trade_blotter_ids'), // Array of linked trade blotter entry IDs (for QUANTITY_CHANGE linking to multiple TRADE_INGESTED entries)
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({

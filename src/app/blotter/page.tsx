@@ -322,24 +322,37 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
                               Needs trade
                             </span>
                           )
-                        ) : entry.linkedBlotterActionId ? (
+                        ) : entry.linkedBlotterActionId || entry.linkedTradeEntries ? (
                           // Other triage actions (like QUANTITY_CHANGE) linked to trades
-                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                            <svg
-                              className="h-3 w-3"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M13 10V3L4 14h7v7l9-11h-7z"
-                              />
-                            </svg>
-                            Linked to trade
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                              <svg
+                                className="h-3 w-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                                />
+                              </svg>
+                              {entry.linkedTradeEntries && entry.linkedTradeEntries.length > 1
+                                ? `Linked to ${entry.linkedTradeEntries.length} trades`
+                                : 'Linked to trade'}
+                            </span>
+                            {entry.linkedTradeEntries && entry.linkedTradeEntries.length > 1 && (
+                              <div className="flex flex-col gap-0.5 text-xs text-slate-600">
+                                {entry.linkedTradeEntries.map((linkedTrade) => (
+                                  <span key={linkedTrade.id} className="text-xs">
+                                    {linkedTrade.ticker}: {linkedTrade.qtyChange && linkedTrade.qtyChange > 0 ? '+' : ''}{linkedTrade.qtyChange} @ {formatCurrency(linkedTrade.premiumChange)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-xs text-slate-400">—</span>
                         )}

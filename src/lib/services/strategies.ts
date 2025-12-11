@@ -8,6 +8,7 @@ import {
   trades,
   strategyMetricsSnapshots,
   triageRecords,
+  blotterActions,
   NewStrategy,
   NewStrategyTemplate,
 } from '@/db/schema';
@@ -15,6 +16,7 @@ import { eq, and, sql, inArray, isNotNull, desc } from 'drizzle-orm';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { backfillTradeBlotterForStrategy } from '@/lib/derived/blotter';
+import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
 export interface CreateStrategyInput {
   strategyKey: string;
@@ -358,6 +360,13 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
     .where(inArray(trades.strategyId, sourceIds))
     .returning({ id: trades.id });
 
+  // Update blotter entries that point to merged strategies
+  // This ensures trade blotter entries are updated immediately (not just in background recompute)
+  await db
+    .update(blotterActions)
+    .set({ strategyId: targetId, updatedAt: now })
+    .where(inArray(blotterActions.strategyId, sourceIds));
+
   await db
     .delete(strategyMetricsSnapshots)
     .where(inArray(strategyMetricsSnapshots.strategyId, sourceIds));
@@ -407,8 +416,25 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
       if (minDate && maxDate) {
         // Fire off recompute operations in the background (don't await)
         // This allows the merge to complete immediately while recompute happens asynchronously
+        // Track this background process so it's visible in the Process Monitor
         (async () => {
+          let backgroundProcessId: string | null = null;
           try {
+            // Start tracking the background recompute
+            backgroundProcessId = await startProcess(
+              'recompute_strategy_metrics',
+              'auto',
+              {
+                accountId: targetStrategy.accountId,
+                targetId,
+                sourceIds,
+                startDate: minDate,
+                endDate: maxDate,
+                dates: dates.length,
+                reason: 'post_merge_recompute',
+              }
+            );
+
             // Backfill trade blotter entries for target strategy (includes trades from merged strategies)
             await backfillTradeBlotterForStrategy(targetId);
             
@@ -422,10 +448,12 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
 
             // Trigger targeted triage recompute for target strategy on affected dates
             // Clean first to ensure stale records are removed (e.g., if underlying data changed)
+            let triageCount = 0;
             for (const date of dates) {
               if (date) {
                 try {
                   await computeTriageForDate(date, targetStrategy.accountId, targetId, true);
+                  triageCount++;
                 } catch (error) {
                   console.error(
                     `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,
@@ -435,6 +463,17 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
                 }
               }
             }
+            
+            // Complete the background process tracking
+            if (backgroundProcessId) {
+              await completeProcess(backgroundProcessId, {
+                success: true,
+                datesProcessed: dates.length,
+                triageRecordsCreated: triageCount,
+                message: `Background recompute completed for merged strategy ${targetId}`,
+              });
+            }
+            
             console.log(
               `Background recompute completed for merged strategy ${targetId} (${dates.length} dates)`
             );
@@ -455,6 +494,13 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
               `Failed to auto-recompute after merging strategies into ${targetId}:`,
               error
             );
+            // Mark background process as failed
+            if (backgroundProcessId) {
+              await failProcess(
+                backgroundProcessId,
+                error instanceof Error ? error.message : 'Background recompute failed'
+              );
+            }
             // Don't fail the merge if recompute fails
           }
         })();
