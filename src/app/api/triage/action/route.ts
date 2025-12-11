@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { blotterActions, triageRecords, strategies } from "@/db/schema";
+import { blotterActions, triageRecords, strategies, positions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
+import { matchTriageActionToTradeBlotter } from "@/lib/derived/blotter";
 
 export async function POST(request: NextRequest) {
   try {
@@ -126,8 +127,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Get position conid if available (for matching with trade blotter entries)
+    let conid: number | null = null;
+    if (positionId || triage.positionId) {
+      const position = await db
+        .select({ conid: positions.conid })
+        .from(positions)
+        .where(eq(positions.id, positionId || triage.positionId!))
+        .limit(1);
+      if (position.length > 0) {
+        conid = position[0].conid;
+      }
+    }
+
     // Create blotter action
-    await db.insert(blotterActions).values({
+    const newBlotterAction = await db.insert(blotterActions).values({
       blotterId,
       actionDate: new Date().toISOString().split("T")[0],
       snapshotDate: triage.snapshotDate,
@@ -145,8 +159,26 @@ export async function POST(request: NextRequest) {
       monitorDays: monitorDaysValue,
       tradeReason: tradeReason || null, // Store trade reason for QUANTITY_CHANGE triggers
       tradeStage: tradeStage || null, // Store trade stage for QUANTITY_CHANGE triggers
+      source: 'triage_action', // Explicitly set source
+      conid: conid ? BigInt(conid) : null, // Store conid for matching
       createdAt: new Date(),
-    });
+    }).returning({ id: blotterActions.id });
+
+    // Attempt to match with existing trade blotter entry if this is a TRADE action
+    if (newBlotterAction.length > 0 && actionType === "TRADE") {
+      try {
+        await matchTriageActionToTradeBlotter(
+          newBlotterAction[0].id,
+          strategyId || triage.strategyId,
+          triage.symbol,
+          conid,
+          triage.snapshotDate
+        );
+      } catch (error) {
+        console.error('Failed to match triage action to trade blotter:', error);
+        // Continue - matching is optional, not critical
+      }
+    }
 
     // Update triage record severity immediately for actions with overrides
     // This provides immediate feedback to the user

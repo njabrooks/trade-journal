@@ -7,6 +7,7 @@ import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { and, eq, ne } from 'drizzle-orm';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
+import { computeTradeBlotterEntriesForDate } from '@/lib/derived/blotter';
 import { autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 
 const SECTION_CODES = {
@@ -184,6 +185,14 @@ export async function POST(request: NextRequest) {
               strategyMetricsCount += count;
             }
             
+            // Create trade blotter entries
+            try {
+              await computeTradeBlotterEntriesForDate(tradeDate, accountId);
+            } catch (error) {
+              console.error(`Failed to create trade blotter entries for ${accountId} on ${tradeDate}:`, error);
+              // Don't fail ingestion if blotter creation fails
+            }
+
             // Triage (optional - trades don't directly affect triage, but recompute for consistency)
             await computeTriageForDate(tradeDate, accountId);
             

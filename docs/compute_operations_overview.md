@@ -26,8 +26,6 @@ All compute operations use **upsert logic** (delete + insert) for idempotency - 
 
 ### When It Runs
 - ✅ **Auto**: After Flex positions ingestion (single date)
-- ✅ **Auto**: After manual linking (if positions affected)
-- ✅ **Auto**: After strategy merge (if positions affected)
 - ✅ **Manual**: `/api/recompute/portfolio` (single date or range)
 - ✅ **Manual**: `/api/recompute/all` (single date or range)
 
@@ -69,7 +67,7 @@ All compute operations use **upsert logic** (delete + insert) for idempotency - 
 - ✅ **Auto**: After Flex positions ingestion (single date, all strategies)
 - ✅ **Auto**: After manual linking (affected strategy, affected dates)
 - ✅ **Auto**: After strategy merge (target strategy, all dates)
-- ✅ **Auto**: After strategy confirmation (latest date only - **backfills all dates**)
+- ✅ **Auto**: After strategy confirmation (backfills all historical dates)
 - ✅ **Manual**: `/api/recompute/strategy-metrics` (single date or range)
 - ✅ **Manual**: `/api/recompute/all` (single date or range)
 
@@ -84,7 +82,6 @@ All compute operations use **upsert logic** (delete + insert) for idempotency - 
 - ✅ Consistent process across all triggers
 - ✅ State code computation is optional (doesn't fail if missing)
 - ✅ Error handling: state code failures logged but don't fail metrics computation
-- ⚠️ **Inconsistency**: Strategy confirmation only recomputes latest date initially, but now backfills all dates
 
 ---
 
@@ -215,7 +212,7 @@ All compute operations use **upsert logic** (delete + insert) for idempotency - 
 ### What It Triggers
 - Strategy metrics recompute
 - Triage recompute
-- Portfolio snapshots (for positions ingestion)
+- Portfolio snapshots (only for positions ingestion, not for linking/merge)
 
 ### When It Runs
 - ✅ **After manual linking**: `linkPositionToStrategy()`, `linkTradeToStrategy()`
@@ -262,7 +259,7 @@ All compute operations use **upsert logic** (delete + insert) for idempotency - 
 
 ### ⚠️ Areas for Improvement
 1. **IV dependency**: Triage sigma calculations need IV history (currently falls back gracefully)
-2. **State code on confirmation**: Now backfills all dates (was only latest) - ✅ Fixed
+2. **State code on confirmation**: Backfills all historical dates after confirmation - ✅ Implemented
 3. **Trades ingestion recompute**: Uses trade dates as snapshot dates (may not align perfectly)
 4. **Error visibility**: Recompute errors logged but not surfaced to user in UI
 
@@ -272,7 +269,7 @@ All compute operations use **upsert logic** (delete + insert) for idempotency - 
 
 | Operation | Auto-Trigger | Manual API | Performance | Robustness |
 |-----------|--------------|------------|-------------|------------|
-| Portfolio Snapshots | ✅ Ingestion, Linking, Merge | ✅ `/api/recompute/portfolio` | ✅ Fast | ✅ Very robust |
+| Portfolio Snapshots | ✅ Ingestion | ✅ `/api/recompute/portfolio` | ✅ Fast | ✅ Very robust |
 | Strategy Metrics | ✅ Ingestion, Linking, Merge, Confirmation | ✅ `/api/recompute/strategy-metrics` | ✅ Fast | ✅ Good |
 | Triage | ✅ Ingestion, Linking, Merge | ✅ `/api/recompute/triage` | ✅ Fast | ✅ Good |
 | State Codes | ✅ Metrics computation, Confirmation | ✅ Via strategy metrics | ✅ Fast | ✅ Good |

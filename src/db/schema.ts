@@ -429,6 +429,12 @@ export const blotterActions = pgTable(
     monitorDays: integer('monitor_days'), // For MONITOR actions: days before reverting
     tradeReason: text('trade_reason'), // Explanation for the trade action taken (for QUANTITY_CHANGE triggers)
     tradeStage: text('trade_stage'), // 'open' | 'close' | 'hedge' | 'roll' | 'reduce' | 'add' (for QUANTITY_CHANGE triggers)
+    source: text('source').default('triage_action'), // 'triage_action' | 'trade_ingestion'
+    tradeId: uuid('trade_id').references(() => trades.id, { onDelete: 'set null' }), // For single trade links
+    tradeIds: jsonb('trade_ids'), // Array of trade IDs for aggregated entries
+    tradeCount: integer('trade_count'), // Number of trades in aggregation
+    conid: bigint('conid', { mode: 'number' }), // Contract ID for matching trades to positions
+    linkedBlotterActionId: uuid('linked_blotter_action_id').references(() => blotterActions.id, { onDelete: 'set null' }), // Bidirectional link to matching entry
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({
@@ -446,6 +452,14 @@ export const blotterActions = pgTable(
       table.triageFlagAtAction,
       table.overrideExpiresDate
     ),
+    tradeSourceIdx: index('idx_blotter_trade_source').on(
+      table.strategyId,
+      table.ticker,
+      table.actionDate,
+      table.source
+    ),
+    conidIdx: index('idx_blotter_conid').on(table.conid),
+    linkedIdx: index('idx_blotter_linked').on(table.linkedBlotterActionId),
   })
 );
 

@@ -14,6 +14,7 @@ import {
 import { eq, and, sql, inArray, isNotNull, desc } from 'drizzle-orm';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTriageForDate } from '@/lib/derived/triage';
+import { backfillTradeBlotterForStrategy } from '@/lib/derived/blotter';
 
 export interface CreateStrategyInput {
   strategyKey: string;
@@ -408,6 +409,9 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
         // This allows the merge to complete immediately while recompute happens asynchronously
         (async () => {
           try {
+            // Backfill trade blotter entries for target strategy (includes trades from merged strategies)
+            await backfillTradeBlotterForStrategy(targetId);
+            
             // Recompute strategy metrics for all dates where target strategy has positions
             await computeStrategyMetricsForDateRange(
               targetStrategy.accountId,

@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { strategies } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
 import { recomputeStateCodesForStrategies } from '@/lib/services/strategyStateCode';
+import { backfillTradeBlotterForStrategy } from '@/lib/derived/blotter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,14 @@ export async function POST(request: NextRequest) {
     recomputeStateCodesForStrategies(ids).catch((error) => {
       console.error('Failed to recompute state codes after confirmation:', error);
     });
+
+    // Backfill trade blotter entries for confirmed strategies
+    // This runs asynchronously and won't block the response
+    for (const id of ids) {
+      backfillTradeBlotterForStrategy(id).catch((error) => {
+        console.error(`Failed to backfill trade blotter for strategy ${id}:`, error);
+      });
+    }
 
     return NextResponse.json({ success: true, confirmed: ids.length });
   } catch (error) {

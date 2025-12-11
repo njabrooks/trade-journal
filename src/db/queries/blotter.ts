@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { blotterActions, strategies } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
@@ -24,6 +24,11 @@ export interface BlotterEntry {
   followUpRequired: boolean | null;
   followUpDate: string | null;
   completed: boolean | null;
+  source: string | null;
+  tradeCount: number | null;
+  tradeIds: string[] | null;
+  conid: number | null;
+  linkedBlotterActionId: string | null;
 }
 
 export async function getBlotterEntries(
@@ -67,6 +72,11 @@ export async function getBlotterEntries(
       followUpRequired: blotterActions.followUpRequired,
       followUpDate: blotterActions.followUpDate,
       completed: blotterActions.completed,
+      source: blotterActions.source,
+      tradeCount: blotterActions.tradeCount,
+      tradeIds: blotterActions.tradeIds,
+      conid: sql<number | null>`${blotterActions.conid}::bigint`.as('conid'),
+      linkedBlotterActionId: blotterActions.linkedBlotterActionId,
     })
     .from(blotterActions)
     .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id));
@@ -94,6 +104,11 @@ export async function getBlotterEntries(
     followUpRequired: row.followUpRequired ?? null,
     followUpDate: row.followUpDate ?? null,
     completed: row.completed ?? null,
+    source: row.source ?? 'triage_action',
+    tradeCount: row.tradeCount ?? null,
+    tradeIds: (row.tradeIds as string[] | null) ?? null,
+    conid: row.conid ?? null,
+    linkedBlotterActionId: row.linkedBlotterActionId ?? null,
   }));
 }
 

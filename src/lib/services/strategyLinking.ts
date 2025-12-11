@@ -3,6 +3,7 @@ import { positions, trades, strategies } from '@/db/schema';
 import { eq, and, isNull, sql, isNotNull } from 'drizzle-orm';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTriageForDate } from '@/lib/derived/triage';
+import { computeTradeBlotterEntriesForDate, recomputeTradeBlotterForPositionLinking } from '@/lib/derived/blotter';
 
 /**
  * Links positions to strategies by strategy_key
@@ -208,6 +209,25 @@ export async function linkPositionToStrategy(
       )
     );
 
+  // Get position conid for matching trades
+  const position = await db
+    .select({ conid: positions.conid })
+    .from(positions)
+    .where(eq(positions.id, positionId))
+    .limit(1);
+
+  // Recompute trade blotter entries if position has conid
+  if (position.length > 0 && position[0].conid) {
+    try {
+      await recomputeTradeBlotterForPositionLinking(strategyId, [position[0].conid]);
+    } catch (error) {
+      console.error(
+        `Failed to recompute trade blotter after linking position ${positionId} to strategy ${strategyId}:`,
+        error
+      );
+    }
+  }
+
   // Recompute strategy metrics for affected dates
   for (const { snapshotDate } of snapshotDates) {
     if (!snapshotDate) continue;
@@ -271,6 +291,9 @@ export async function linkTradeToStrategy(tradeId: string, strategyId: string): 
     const snapshotDate = new Date(tradeDate).toISOString().split('T')[0];
     
     try {
+      // Recompute trade blotter entry for this date
+      await computeTradeBlotterEntriesForDate(snapshotDate, accountId, strategyId);
+      
       // Recompute strategy metrics for this date
       await computeStrategyMetricsForDateRange(
         accountId,
