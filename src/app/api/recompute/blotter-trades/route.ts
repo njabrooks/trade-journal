@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   computeTradeBlotterEntriesForDate,
   computeTradeBlotterEntriesForDateRange,
+  backfillTriageActionMatching,
 } from '@/lib/derived/blotter';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { accountId, startDate, endDate, snapshotDate } = body;
+    const { accountId, startDate, endDate, snapshotDate, backfill } = body;
 
     // Single date computation
     if (snapshotDate) {
@@ -45,9 +46,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Backfill mode: fix existing triage actions missing ticker/conid and link them
+    if (backfill) {
+      if (!accountId) {
+        return NextResponse.json(
+          { error: 'accountId is required for backfill' },
+          { status: 400 }
+        );
+      }
+
+      const result = await backfillTriageActionMatching(accountId);
+
+      return NextResponse.json({
+        success: true,
+        message: `Backfilled ${result.updated} triage actions, linked ${result.linked} to trade entries`,
+        ...result,
+      });
+    }
+
     return NextResponse.json(
       {
-        error: 'Invalid request. Provide either snapshotDate or (startDate and endDate)',
+        error: 'Invalid request. Provide either snapshotDate, (startDate and endDate), or backfill=true',
       },
       { status: 400 }
     );

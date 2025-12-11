@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { blotterActions, triageRecords, strategies, positions } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { v4 as uuidv4 } from "uuid";
 import { matchTriageActionToTradeBlotter } from "@/lib/derived/blotter";
 
 export async function POST(request: NextRequest) {
@@ -127,50 +126,84 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get position conid if available (for matching with trade blotter entries)
+    // Resolve identifiers for matching (prefer conid, fallback to ticker)
     let conid: number | null = null;
+    let ticker: string | null = triage.symbol ?? null;
+
+    // From explicit position (best)
     if (positionId || triage.positionId) {
       const position = await db
-        .select({ conid: positions.conid })
+        .select({
+          conid: positions.conid,
+          symbol: positions.symbol,
+          snapshotDate: positions.snapshotDate,
+        })
         .from(positions)
         .where(eq(positions.id, positionId || triage.positionId!))
         .limit(1);
       if (position.length > 0) {
-        conid = position[0].conid;
+        conid = position[0].conid ?? conid;
+        ticker = ticker ?? position[0].symbol ?? ticker;
+      }
+    }
+
+    // Fallback: latest position for the strategy (helps QUANTITY_CHANGE with null positionId)
+    if ((!conid || !ticker) && triage.strategyId) {
+      const latestPosition = await db
+        .select({
+          conid: positions.conid,
+          symbol: positions.symbol,
+        })
+        .from(positions)
+        .where(eq(positions.strategyId, triage.strategyId))
+        .limit(1);
+      if (latestPosition.length > 0) {
+        conid = conid ?? latestPosition[0].conid;
+        ticker = ticker ?? latestPosition[0].symbol ?? ticker;
       }
     }
 
     // Create blotter action
-    const newBlotterAction = await db.insert(blotterActions).values({
-      blotterId,
-      actionDate: new Date().toISOString().split("T")[0],
-      snapshotDate: triage.snapshotDate,
-      strategyId: strategyId || triage.strategyId,
-      positionId: positionId || triage.positionId,
-      strategyKey: triage.symbol,
-      triageFlagAtAction: triage.recommendedAction,
-      actionClass,
-      actionDetail: actionType,
-      reasonCode: triage.recommendedAction || null,
-      notes: notes || triage.notes || null,
-      completed: actionType === "UPDATE" || actionType === "MARK_REVIEWED",
-      severityOverride,
-      overrideExpiresDate,
-      monitorDays: monitorDaysValue,
-      tradeReason: tradeReason || null, // Store trade reason for QUANTITY_CHANGE triggers
-      tradeStage: tradeStage || null, // Store trade stage for QUANTITY_CHANGE triggers
-      source: 'triage_action', // Explicitly set source
-      conid: conid ? BigInt(conid) : null, // Store conid for matching
-      createdAt: new Date(),
-    }).returning({ id: blotterActions.id });
+    // Use snapshotDate as actionDate to match with trade blotter entries (which use trade date)
+    const [insertedBlotterAction] = await db
+      .insert(blotterActions)
+      .values({
+        blotterId,
+        actionDate: triage.snapshotDate, // Use snapshot date (trade date) instead of today for matching
+        snapshotDate: triage.snapshotDate,
+        strategyId: strategyId || triage.strategyId,
+        positionId: positionId || triage.positionId,
+        strategyKey: triage.symbol,
+        ticker: ticker,
+        triageFlagAtAction: triage.recommendedAction,
+        actionClass,
+        actionDetail: actionType,
+        reasonCode: triage.recommendedAction || null,
+        notes: notes || triage.notes || null,
+        completed: actionType === "UPDATE" || actionType === "MARK_REVIEWED",
+        severityOverride,
+        overrideExpiresDate,
+        monitorDays: monitorDaysValue,
+        tradeReason: tradeReason || null, // Store trade reason for QUANTITY_CHANGE triggers
+        tradeStage: tradeStage || null, // Store trade stage for QUANTITY_CHANGE triggers
+        source: 'triage_action', // Explicitly set source
+        conid: conid ?? null, // Store conid for matching
+        createdAt: new Date(),
+      })
+      .returning({ id: blotterActions.id });
 
-    // Attempt to match with existing trade blotter entry if this is a TRADE action
-    if (newBlotterAction.length > 0 && actionType === "TRADE") {
+    // Attempt to match with existing trade blotter entry
+    // - TRADE actionClass: existing behavior
+    // - QUANTITY_CHANGE: needs to link to aggregated trade blotter entries
+    if (
+      insertedBlotterAction &&
+      (actionType === "TRADE" || triage.recommendedAction === "QUANTITY_CHANGE")
+    ) {
       try {
         await matchTriageActionToTradeBlotter(
-          newBlotterAction[0].id,
+          insertedBlotterAction.id,
           strategyId || triage.strategyId,
-          triage.symbol,
+          ticker ?? triage.symbol,
           conid,
           triage.snapshotDate
         );

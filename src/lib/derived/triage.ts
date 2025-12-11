@@ -839,10 +839,9 @@ export async function computeQuantityChangeTriageForDate(
 
   const previousDate = previousDateResult[0]?.snapshotDate ?? null;
 
-  // If no previous snapshot, can't detect changes
-  if (!previousDate) {
-    return [];
-  }
+  // If no previous snapshot, check if there are trades for this date
+  // If so, we can still create QUANTITY_CHANGE records (treating as new positions)
+  const isFirstDay = !previousDate;
 
   // Get current positions
   const currentWhereConditions = [eq(positions.snapshotDate, snapshotDate)];
@@ -859,18 +858,19 @@ export async function computeQuantityChangeTriageForDate(
     .where(and(...currentWhereConditions));
 
   // Get previous positions (by conid for matching)
-  const previousWhereConditions = [eq(positions.snapshotDate, previousDate)];
-  if (accountId) {
-    previousWhereConditions.push(eq(positions.accountId, accountId));
-  }
-  if (strategyId) {
-    previousWhereConditions.push(eq(positions.strategyId, strategyId));
-  }
-
-  const previousPositions = await db
-    .select()
-    .from(positions)
-    .where(and(...previousWhereConditions));
+  // If first day, previousPositions will be empty (no previous snapshot)
+  const previousPositions = previousDate
+    ? await db
+        .select()
+        .from(positions)
+        .where(
+          and(
+            eq(positions.snapshotDate, previousDate),
+            ...(accountId ? [eq(positions.accountId, accountId)] : []),
+            ...(strategyId ? [eq(positions.strategyId, strategyId)] : [])
+          )
+        )
+    : [];
 
   // Create maps for efficient lookup
   const previousByConid = new Map<number, typeof previousPositions[0]>();
@@ -912,13 +912,21 @@ export async function computeQuantityChangeTriageForDate(
     const previousQty = previousPos ? Number(previousPos.quantity) || 0 : 0;
 
     // Detect quantity change
-    const qtyChanged = currentQty !== previousQty;
-    if (!qtyChanged && previousPos) {
-      continue; // No change, skip
+    // On first day (no previous snapshot), treat all positions with quantity > 0 as new positions
+    const qtyChanged = isFirstDay ? currentQty !== 0 : currentQty !== previousQty;
+    
+    if (!qtyChanged && !isFirstDay && previousPos) {
+      continue; // No change, skip (only if not first day)
     }
 
     // Skip new positions with quantity 0 (not a real position)
-    if (!previousPos && currentQty === 0) {
+    // On first day, we still want to process positions with quantity > 0
+    if (!isFirstDay && !previousPos && currentQty === 0) {
+      continue;
+    }
+    
+    // On first day, skip if quantity is 0 (no real position)
+    if (isFirstDay && currentQty === 0) {
       continue;
     }
 
@@ -1062,6 +1070,7 @@ export async function computeQuantityChangeTriageForDate(
 
   return records;
 }
+
 
 /**
  * Deletes all triage records for a snapshot date (or date range)

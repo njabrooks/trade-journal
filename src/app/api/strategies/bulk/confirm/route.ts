@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { strategies } from '@/db/schema';
-import { inArray } from 'drizzle-orm';
+import { inArray, eq } from 'drizzle-orm';
 import { recomputeStateCodesForStrategies } from '@/lib/services/strategyStateCode';
 import { backfillTradeBlotterForStrategy } from '@/lib/derived/blotter';
+import { trackProcess } from '@/lib/services/processTracking';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,32 +23,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const now = new Date();
-    await db
-      .update(strategies)
-      .set({
-        isAuto: false,
-        confirmedAt: now,
+    // Get account ID from first strategy for tracking
+    const firstStrategy = await db
+      .select({ accountId: strategies.accountId })
+      .from(strategies)
+      .where(eq(strategies.id, ids[0]))
+      .limit(1);
+
+    const accountId = firstStrategy[0]?.accountId ?? undefined;
+
+    return await trackProcess(
+      'recompute_strategy_metrics',
+      'api',
+      {
+        accountId,
+        strategyIds: ids,
         strategyType,
-        updatedAt: now,
-      })
-      .where(inArray(strategies.id, ids));
+      },
+      async () => {
+        const now = new Date();
+        await db
+          .update(strategies)
+          .set({
+            isAuto: false,
+            confirmedAt: now,
+            strategyType,
+            updatedAt: now,
+          })
+          .where(inArray(strategies.id, ids));
 
-    // Compute state codes for the confirmed strategies
-    // This runs asynchronously and won't block the response
-    recomputeStateCodesForStrategies(ids).catch((error) => {
-      console.error('Failed to recompute state codes after confirmation:', error);
+        // Compute state codes for the confirmed strategies
+        await recomputeStateCodesForStrategies(ids);
+
+        // Backfill trade blotter entries for confirmed strategies
+        for (const id of ids) {
+          await backfillTradeBlotterForStrategy(id);
+        }
+
+        return { success: true, confirmed: ids.length };
+      }
+    ).then((result) => {
+      return NextResponse.json(result);
     });
-
-    // Backfill trade blotter entries for confirmed strategies
-    // This runs asynchronously and won't block the response
-    for (const id of ids) {
-      backfillTradeBlotterForStrategy(id).catch((error) => {
-        console.error(`Failed to backfill trade blotter for strategy ${id}:`, error);
-      });
-    }
-
-    return NextResponse.json({ success: true, confirmed: ids.length });
   } catch (error) {
     console.error('Bulk confirm strategies error:', error);
     return NextResponse.json(

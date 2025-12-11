@@ -32,6 +32,7 @@ import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetric
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies } from '@/lib/derived/strategyAuto';
 import { strategies } from '@/db/schema';
+import { trackProcess } from '@/lib/services/processTracking';
 
 const SECTION_CODES = {
   POST: 'POST',
@@ -399,6 +400,96 @@ export async function POST(request: NextRequest) {
     const totalErrors =
       results.post.errors.length + results.equt.errors.length + results.mtmp.errors.length;
 
+    // Track process and run recompute operations
+    if (accountId && allSnapshotDates.size > 0) {
+      const snapshotDates = Array.from(allSnapshotDates).sort();
+      const minDate = snapshotDates[0];
+      const maxDate = snapshotDates[snapshotDates.length - 1];
+
+      return await trackProcess(
+        'position_ingestion',
+        'api',
+        {
+          accountId,
+          startDate: minDate,
+          endDate: maxDate,
+          inserted: totalInserted,
+          errors: totalErrors,
+        },
+        async () => {
+          try {
+            // Auto-link positions to strategies (creates strategies if needed)
+            const autoLinkResult = await autoLinkPositionsToStrategies(accountId, {
+              startDate: minDate,
+              endDate: maxDate,
+            });
+
+            // Compute portfolio snapshots
+            await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate);
+
+            // Get all strategies for this account (including newly created ones)
+            // Exclude merged strategies - they're no longer active
+            const accountStrategies = await db
+              .select({ id: strategies.id })
+              .from(strategies)
+              .where(
+                and(
+                  eq(strategies.accountId, accountId),
+                  ne(strategies.status, 'merged')
+                )
+              );
+
+            // Compute strategy metrics for all strategies
+            for (const strategy of accountStrategies) {
+              await computeStrategyMetricsForDateRange(accountId, strategy.id, minDate, maxDate);
+            }
+
+            // Compute triage for each snapshot date
+            // Process each date individually to avoid stopping on errors
+            for (const date of snapshotDates) {
+              try {
+                await computeTriageForDate(date, accountId);
+              } catch (error) {
+                console.error(`Failed to compute triage for ${date}:`, error);
+                // Continue processing other dates even if one fails
+              }
+            }
+          } catch (error) {
+            console.error('Recompute error:', error);
+            // Don't fail the upload if recompute fails
+          }
+
+          return {
+            success: totalErrors === 0,
+            summary: {
+              post: {
+                inserted: results.post.inserted,
+                errors: results.post.errors.length,
+              },
+              equt: {
+                inserted: results.equt.inserted,
+                errors: results.equt.errors.length,
+              },
+              mtmp: {
+                inserted: results.mtmp.inserted,
+                errors: results.mtmp.errors.length,
+              },
+              totalInserted,
+              totalErrors,
+            },
+            errors: {
+              post: results.post.errors,
+              equt: results.equt.errors,
+              mtmp: results.mtmp.errors,
+            },
+          };
+        }
+      ).then((result) => {
+        return NextResponse.json(result);
+      });
+    }
+
+    // If no positions inserted, return summary without tracking
     return NextResponse.json({
       success: totalErrors === 0,
       summary: {

@@ -18,7 +18,8 @@ interface RecomputeResult {
       | { error: string };
     portfolio?: { account: number; underlying: number } | { error: string };
     strategyMetrics?: { count: number } | { error: string };
-    triage?: { position: number; strategy: number } | { error: string };
+    triage?: { position: number; strategy: number; quantityChange?: number } | { error: string };
+    blotter?: { count: number } | { error: string };
     datesProcessed?: number;
   };
   dateRange?: { startDate: string; endDate: string };
@@ -147,12 +148,18 @@ export default function RecomputePage() {
           </li>
           <li>
             <strong>Triage Records:</strong> Position and strategy-level flags (DTE, ITM, sigma,
-            assignment risk, size warnings)
+            assignment risk, size warnings, quantity changes)
+          </li>
+          <li>
+            <strong>Trade Blotter Entries:</strong> Aggregated trade records from trade ingestion
           </li>
         </ul>
         <p className="mt-2">
           <strong>Note:</strong> Make sure you've uploaded all raw data files (trades, positions,
           NAV, MTM) for the date(s) before recomputing.
+        </p>
+        <p className="mt-2 text-xs">
+          <strong>What's recomputed:</strong> Auto-strategy linking, Portfolio snapshots, Strategy metrics, Triage records (including QUANTITY_CHANGE), and Trade blotter entries.
         </p>
       </div>
 
@@ -354,7 +361,21 @@ export default function RecomputePage() {
                   <div className="text-sm text-gray-600">
                     <p>Position-level: {result.results.triage?.position ?? 0} records</p>
                     <p>Strategy-level: {result.results.triage?.strategy ?? 0} records</p>
+                    {typeof result.results.triage?.quantityChange === 'number' && (
+                      <p>Quantity change: {result.results.triage.quantityChange} records</p>
+                    )}
                   </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Trade Blotter Entries</h3>
+                {result.results.blotter && 'error' in result.results.blotter ? (
+                  <p className="text-red-600 text-sm">{result.results.blotter.error}</p>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    {result.results.blotter?.count ?? 0} trade blotter entries
+                  </p>
                 )}
               </div>
 

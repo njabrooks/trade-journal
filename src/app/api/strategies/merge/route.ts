@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mergeStrategies, getStrategyById } from '@/lib/services/strategies';
+import { trackProcess } from '@/lib/services/processTracking';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,19 +14,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const stats = await mergeStrategies({ targetId, sourceIds });
+    // Get account ID from target strategy for tracking
+    const targetStrategy = await getStrategyById(targetId);
+    const accountId = targetStrategy?.accountId ?? undefined;
 
-    // Fetch updated target strategy to return its new status
-    const updatedTarget = await getStrategyById(targetId);
+    return await trackProcess(
+      'recompute_strategy_metrics',
+      'api',
+      {
+        accountId,
+        targetId,
+        sourceIds,
+      },
+      async () => {
+        const stats = await mergeStrategies({ targetId, sourceIds });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Strategies merged successfully',
-      stats,
-      targetStrategy: updatedTarget ? {
-        id: updatedTarget.id,
-        status: updatedTarget.status,
-      } : null,
+        // Fetch updated target strategy to return its new status
+        const updatedTarget = await getStrategyById(targetId);
+
+        return {
+          success: true,
+          message: 'Strategies merged successfully',
+          stats,
+          targetStrategy: updatedTarget ? {
+            id: updatedTarget.id,
+            status: updatedTarget.status,
+          } : null,
+        };
+      }
+    ).then((result) => {
+      return NextResponse.json(result);
     });
   } catch (error) {
     console.error('Merge strategies error:', error);

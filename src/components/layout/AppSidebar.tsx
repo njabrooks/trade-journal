@@ -11,6 +11,7 @@ import {
   Database,
   Users,
   FileText,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,7 @@ const ADMIN_NAV = [
   { href: "/admin/accounts", label: "Accounts", icon: Users, id: "admin-accounts" },
   { href: "/admin/ingestion/flex", label: "Ingestion", icon: Database, id: "admin-ingestion" },
   { href: "/admin/recompute", label: "Recompute", icon: Settings, id: "admin-recompute" },
+  { href: "/admin/processes", label: "Processes", icon: Activity, id: "admin-processes" },
 ] as const;
 
 export function AppSidebar() {

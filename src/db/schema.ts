@@ -586,3 +586,30 @@ export type NewPortfolioSnapshot = typeof portfolioSnapshots.$inferInsert;
 
 export type StrategyMetricsSnapshot = typeof strategyMetricsSnapshots.$inferSelect;
 export type NewStrategyMetricsSnapshot = typeof strategyMetricsSnapshots.$inferInsert;
+
+// ============================================================================
+// Ingestion Runs (Process Tracking)
+// ============================================================================
+
+export const ingestionRuns = pgTable('ingestion_runs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  jobType: text('job_type').notNull(), // 'trade_ingestion' | 'position_ingestion' | 'recompute_all' | 'recompute_portfolio' | 'recompute_strategy_metrics' | 'recompute_triage' | 'recompute_blotter' | 'recompute_blotter_trades'
+  status: text('status').notNull().default('pending'), // 'pending' | 'running' | 'completed' | 'failed'
+  trigger: text('trigger'), // 'manual' | 'auto' | 'scheduled' | 'api'
+  accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'set null' }), // Track per-account processes
+  startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  payload: jsonb('payload'), // Input parameters (date ranges, filters, etc.)
+  result: jsonb('result'), // Output results (counts, stats, etc.)
+  error: text('error'), // Error message if failed
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  statusIdx: index('idx_ingestion_runs_status').on(table.status),
+  jobTypeIdx: index('idx_ingestion_runs_job_type').on(table.jobType),
+  accountIdx: index('idx_ingestion_runs_account').on(table.accountId),
+  startedAtIdx: index('idx_ingestion_runs_started_at').on(table.startedAt),
+}));
+
+export type IngestionRun = typeof ingestionRuns.$inferSelect;
+export type NewIngestionRun = typeof ingestionRuns.$inferInsert;

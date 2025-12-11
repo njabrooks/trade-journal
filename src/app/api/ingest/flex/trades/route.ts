@@ -9,6 +9,7 @@ import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTradeBlotterEntriesForDate } from '@/lib/derived/blotter';
 import { autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
+import { trackProcess } from '@/lib/services/processTracking';
 
 const SECTION_CODES = {
   TRADES: 'TRNT',
@@ -82,6 +83,7 @@ export async function POST(request: NextRequest) {
     let validationErrors = 0;
     let normalizationErrors = 0;
     let insertErrors = 0;
+    let primaryAccountId: string | undefined;
 
     for (let i = 0; i < trntDataRows.length; i++) {
       const dataRow = trntDataRows[i];
@@ -106,6 +108,9 @@ export async function POST(request: NextRequest) {
       let accountId: string;
       try {
         accountId = await resolveAccountId(clientAccountId, 'IBKR', accountCache);
+        if (!primaryAccountId) {
+          primaryAccountId = accountId;
+        }
       } catch (error) {
         validationErrors++;
         continue;
@@ -149,71 +154,104 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Auto-trigger recompute for affected snapshot dates (using trade dates)
-    // Note: Trades don't directly affect strategy metrics, but we recompute to ensure consistency
-    // if trades are linked to strategies
-    const recomputeResults: any = {};
-    const uniqueAccountIds = Array.from(accountCache.values());
-    
-    if (tradeDates.size > 0 && inserted > 0 && uniqueAccountIds.length > 0) {
-      for (const accountId of uniqueAccountIds) {
-        for (const tradeDate of Array.from(tradeDates)) {
-          try {
-            // Auto-link trades to strategies (creates strategies if needed)
-            const autoLinkResult = await autoLinkTradesToStrategies(accountId, { snapshotDate: tradeDate });
-            
-            // Strategy metrics (for all strategies in account, including newly created ones)
-            // Exclude merged strategies - they're no longer active
-            const accountStrategies = await db
-              .select({ id: strategies.id })
-              .from(strategies)
-              .where(
-                and(
-                  eq(strategies.accountId, accountId),
-                  ne(strategies.status, 'merged')
-                )
-              );
-            
-            let strategyMetricsCount = 0;
-            for (const strategy of accountStrategies) {
-              const count = await computeStrategyMetricsForDateRange(
-                accountId,
-                strategy.id,
-                tradeDate,
-                tradeDate
-              );
-              strategyMetricsCount += count;
-            }
-            
-            // Create trade blotter entries
-            try {
-              await computeTradeBlotterEntriesForDate(tradeDate, accountId);
-            } catch (error) {
-              console.error(`Failed to create trade blotter entries for ${accountId} on ${tradeDate}:`, error);
-              // Don't fail ingestion if blotter creation fails
-            }
+    // Track process and run recompute operations
+    if (primaryAccountId && inserted > 0) {
+      return await trackProcess(
+        'trade_ingestion',
+        'api',
+        {
+          accountId: primaryAccountId,
+          tradeDates: Array.from(tradeDates),
+          inserted,
+          skipped,
+        },
+        async () => {
+          // Auto-trigger recompute for affected snapshot dates (using trade dates)
+          const recomputeResults: any = {};
+          const uniqueAccountIds = Array.from(accountCache.values());
+          
+          if (tradeDates.size > 0 && inserted > 0 && uniqueAccountIds.length > 0) {
+            for (const accountId of uniqueAccountIds) {
+              for (const tradeDate of Array.from(tradeDates)) {
+                try {
+                  // Auto-link trades to strategies (creates strategies if needed)
+                  const autoLinkResult = await autoLinkTradesToStrategies(accountId, { snapshotDate: tradeDate });
+                  
+                  // Strategy metrics (for all strategies in account, including newly created ones)
+                  // Exclude merged strategies - they're no longer active
+                  const accountStrategies = await db
+                    .select({ id: strategies.id })
+                    .from(strategies)
+                    .where(
+                      and(
+                        eq(strategies.accountId, accountId),
+                        ne(strategies.status, 'merged')
+                      )
+                    );
+                  
+                  let strategyMetricsCount = 0;
+                  for (const strategy of accountStrategies) {
+                    const count = await computeStrategyMetricsForDateRange(
+                      accountId,
+                      strategy.id,
+                      tradeDate,
+                      tradeDate
+                    );
+                    strategyMetricsCount += count;
+                  }
+                  
+                  // Create trade blotter entries
+                  try {
+                    await computeTradeBlotterEntriesForDate(tradeDate, accountId);
+                  } catch (error) {
+                    console.error(`Failed to create trade blotter entries for ${accountId} on ${tradeDate}:`, error);
+                    // Don't fail ingestion if blotter creation fails
+                  }
 
-            // Triage (optional - trades don't directly affect triage, but recompute for consistency)
-            await computeTriageForDate(tradeDate, accountId);
-            
-            recomputeResults[`${accountId}_${tradeDate}`] = {
-              autoStrategies: {
-                strategiesCreated: autoLinkResult.strategiesCreated,
-                tradesLinked: autoLinkResult.tradesLinked,
-              },
-              strategyMetrics: strategyMetricsCount,
-              success: true,
-            };
-          } catch (error) {
-            console.error(`Failed to auto-recompute after trades ingestion for ${accountId} on ${tradeDate}:`, error);
-            recomputeResults[`${accountId}_${tradeDate}`] = {
-              error: error instanceof Error ? error.message : 'Recompute failed',
-            };
+                  // Triage (includes QUANTITY_CHANGE detection, now handles first-day case)
+                  await computeTriageForDate(tradeDate, accountId);
+                  
+                  recomputeResults[`${accountId}_${tradeDate}`] = {
+                    autoStrategies: {
+                      strategiesCreated: autoLinkResult.strategiesCreated,
+                      tradesLinked: autoLinkResult.tradesLinked,
+                    },
+                    strategyMetrics: strategyMetricsCount,
+                    success: true,
+                  };
+                } catch (error) {
+                  console.error(`Failed to auto-recompute after trades ingestion for ${accountId} on ${tradeDate}:`, error);
+                  recomputeResults[`${accountId}_${tradeDate}`] = {
+                    error: error instanceof Error ? error.message : 'Recompute failed',
+                  };
+                }
+              }
+            }
           }
+
+          return {
+            summary: {
+              trntRows: trntDataRows.length,
+              opttRows: opttRows.length,
+              ctrnRows: ctrnRows.length,
+              inserted,
+              skipped,
+              validationErrors,
+              normalizationErrors,
+              insertErrors,
+            },
+            autoRecompute: Object.keys(recomputeResults).length > 0 ? recomputeResults : undefined,
+          };
         }
-      }
+      ).then((result) => {
+        return NextResponse.json({
+          success: true,
+          ...result,
+        });
+      });
     }
 
+    // If no trades inserted, return summary without tracking
     return NextResponse.json({
       success: true,
       summary: {
@@ -226,7 +264,6 @@ export async function POST(request: NextRequest) {
         normalizationErrors,
         insertErrors,
       },
-      autoRecompute: Object.keys(recomputeResults).length > 0 ? recomputeResults : undefined,
     });
   } catch (error) {
     console.error('Flex trades ingestion error:', error);
@@ -239,4 +276,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
