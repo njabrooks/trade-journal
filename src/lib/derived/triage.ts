@@ -861,8 +861,8 @@ export async function computeQuantityChangeTriageForDate(
   // If first day, previousPositions will be empty (no previous snapshot)
   const previousPositions = previousDate
     ? await db
-        .select()
-        .from(positions)
+    .select()
+    .from(positions)
         .where(
           and(
             eq(positions.snapshotDate, previousDate),

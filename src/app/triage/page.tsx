@@ -1,11 +1,13 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { TriageFilters } from "@/components/triage/TriageFilters";
 import { TriageTableRow } from "@/components/triage/TriageTableRow";
+import { TriageBulkActions } from "@/components/triage/TriageBulkActions";
 import { SortableHeader } from "@/components/triage/SortableHeader";
 import { getPrimaryAccount } from "@/db/queries/accounts";
 import { getTriageQueue } from "@/db/queries/triage";
 import { formatDateFull } from "@/lib/formatters";
 import { ALL_SEVERITIES, ALL_CONTEXTS, ALL_TRIGGERS } from "@/lib/constants/triage";
+import { TriagePageClient } from "./TriagePageClient";
 
 interface TriagePageProps {
   searchParams?: Promise<{
@@ -160,51 +162,7 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
         />
       </div>
 
-      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          {queue.records.length === 0 ? (
-            <div className="p-10 text-center text-slate-400">
-              No triage flags match the selected filters.
-            </div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
-                  <SortableHeader column="symbol" className="text-left">
-                    Symbol
-                  </SortableHeader>
-                  <SortableHeader column="recommendedAction" className="text-left">
-                    Trigger
-                  </SortableHeader>
-                  <SortableHeader column="severity" className="text-center">
-                    Severity
-                  </SortableHeader>
-                  <SortableHeader column="contextLevel" className="text-center">
-                    Context
-                  </SortableHeader>
-                  <SortableHeader column="snapshotDate" className="text-center">
-                    Date
-                  </SortableHeader>
-                  <SortableHeader column="dte" className="text-center">
-                    DTE
-                  </SortableHeader>
-                  <SortableHeader column="strategyKey" className="text-center">
-                    Strategy
-                  </SortableHeader>
-                  <th className="px-4 py-3 text-center text-xs uppercase tracking-wide text-slate-400">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {queue.records.map((record) => (
-                  <TriageTableRow key={record.id} record={record} />
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </section>
+      <TriagePageClient records={queue.records} />
     </DashboardShell>
   );
 }

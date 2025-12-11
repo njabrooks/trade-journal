@@ -28,6 +28,8 @@ interface TriageTableRowProps {
     accountId: string;
   };
   showStrategyColumn?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
 }
 
 function SeverityTag({ severity }: { severity: string | null }) {
@@ -60,16 +62,36 @@ function SeverityTag({ severity }: { severity: string | null }) {
   );
 }
 
-export function TriageTableRow({ record, showStrategyColumn = true }: TriageTableRowProps) {
+export function TriageTableRow({ 
+  record, 
+  showStrategyColumn = true,
+  isSelected = false,
+  onSelect,
+}: TriageTableRowProps) {
   const [isPositionsOpen, setIsPositionsOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const columnCount = showStrategyColumn ? 8 : 7; // Added Actions column
+  // Column count: checkbox + symbol + trigger + severity + context + date + dte + (strategy if shown) + actions
+  const columnCount = showStrategyColumn ? 9 : 8;
 
   return (
     <>
       <tr 
-        className="border-b transition-colors hover:bg-slate-50"
+        className={cn(
+          "border-b transition-colors hover:bg-slate-50",
+          isSelected && "bg-blue-50"
+        )}
       >
+        <td 
+          className="px-4 py-3 text-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => onSelect?.(record.id, e.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+        </td>
         <td 
           className="px-4 py-3 text-left cursor-pointer"
           onClick={() => setIsPositionsOpen(!isPositionsOpen)}
@@ -123,7 +145,7 @@ export function TriageTableRow({ record, showStrategyColumn = true }: TriageTabl
       </tr>
       {isPositionsOpen && (
         <tr>
-          <td colSpan={columnCount} className="px-4 py-4 bg-slate-50">
+          <td colSpan={columnCount + 1} className="px-4 py-4 bg-slate-50">
             <div className="space-y-4">
               {/* Positions Table - CENTERPIECE */}
               <TriagePositionsTable
@@ -150,7 +172,7 @@ export function TriageTableRow({ record, showStrategyColumn = true }: TriageTabl
       )}
       {isActionsOpen && (
         <tr>
-          <td colSpan={columnCount} className="px-4 py-4 bg-slate-50">
+          <td colSpan={columnCount + 1} className="px-4 py-4 bg-slate-50">
             <TriageActionsTable
               triageId={record.id}
               contextLevel={record.contextLevel}

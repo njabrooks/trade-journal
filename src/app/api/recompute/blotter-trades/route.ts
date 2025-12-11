@@ -3,6 +3,7 @@ import {
   computeTradeBlotterEntriesForDate,
   computeTradeBlotterEntriesForDateRange,
   backfillTriageActionMatching,
+  backfillUnmatchedTradeEntries,
 } from '@/lib/derived/blotter';
 
 export async function POST(request: NextRequest) {
@@ -54,11 +55,15 @@ export async function POST(request: NextRequest) {
       const { fixMergedStrategyBlotterEntries } = await import('@/lib/derived/blotter');
       const mergedFixResult = await fixMergedStrategyBlotterEntries(accountId || undefined);
 
+      // Also backfill unmatched trade entries (find trades that should link to QUANTITY_CHANGE records)
+      const tradeBackfillResult = await backfillUnmatchedTradeEntries(accountId || undefined);
+
       return NextResponse.json({
         success: true,
-        message: `Backfilled ${result.updated} triage actions, linked ${result.linked} to trade entries. Fixed ${mergedFixResult.updated} blotter entries pointing to merged strategies.`,
+        message: `Backfilled ${result.updated} triage actions, linked ${result.linked} to trade entries. Fixed ${mergedFixResult.updated} blotter entries pointing to merged strategies. Matched ${tradeBackfillResult.linked} unmatched trade entries.`,
         ...result,
         mergedStrategyFix: mergedFixResult,
+        tradeBackfill: tradeBackfillResult,
       });
     }
 

@@ -199,42 +199,45 @@ export async function computeTradeBlotterEntriesForDate(
 }
 
 /**
- * Matches a trade blotter entry to a triage TRADE action
+ * Matches a trade blotter entry to triage actions (TRADE or QUANTITY_CHANGE)
  * Uses conid as primary match, falls back to symbol/strategyId/date
+ * 
+ * This handles bidirectional matching:
+ * - TRADE actions: created before trade ingestion, matched when trades are ingested
+ * - QUANTITY_CHANGE actions: created after trades, but also matched here if trades are ingested later
  */
 async function matchTradeBlotterToTriageAction(
   tradeBlotterId: string,
   agg: TradeAggregation
 ): Promise<void> {
-  const whereClauses = [
+  // First, try to match to TRADE actions (created before ingestion)
+  const tradeActionWhereClauses = [
     eq(blotterActions.source, 'triage_action'),
-    // Only match TRADE actions (created before ingestion)
-    // QUANTITY_CHANGE actions are always created AFTER trades, so they're matched via matchTriageActionToTradeBlotter
     eq(blotterActions.actionDetail, 'TRADE'),
     eq(blotterActions.actionDate, agg.tradeDate),
   ];
 
   // Primary match: by conid
   if (agg.conid) {
-    whereClauses.push(eq(blotterActions.conid, agg.conid));
+    tradeActionWhereClauses.push(eq(blotterActions.conid, agg.conid));
   } else {
     // Fallback: by symbol and strategyId
-    whereClauses.push(eq(blotterActions.ticker, agg.symbol));
+    tradeActionWhereClauses.push(eq(blotterActions.ticker, agg.symbol));
     if (agg.strategyId) {
-      whereClauses.push(eq(blotterActions.strategyId, agg.strategyId));
+      tradeActionWhereClauses.push(eq(blotterActions.strategyId, agg.strategyId));
     } else {
-      whereClauses.push(isNull(blotterActions.strategyId));
+      tradeActionWhereClauses.push(isNull(blotterActions.strategyId));
     }
   }
 
-  const matchingTriageAction = await db
+  const matchingTradeAction = await db
     .select({ id: blotterActions.id })
     .from(blotterActions)
-    .where(and(...whereClauses))
+    .where(and(...tradeActionWhereClauses))
     .limit(1);
 
-  if (matchingTriageAction.length > 0) {
-    const triageActionId = matchingTriageAction[0].id;
+  if (matchingTradeAction.length > 0) {
+    const triageActionId = matchingTradeAction[0].id;
 
     // Bidirectional linking (use transaction for atomicity)
     await db.transaction(async (tx) => {
@@ -254,6 +257,44 @@ async function matchTradeBlotterToTriageAction(
         })
         .where(eq(blotterActions.id, triageActionId));
     });
+    return; // Matched to TRADE action, done
+  }
+
+  // If no TRADE action match, try to match to QUANTITY_CHANGE records
+  // This handles the case where trades are ingested after QUANTITY_CHANGE records are already processed
+  if (agg.strategyId && agg.conid) {
+    // Use the improved matching function which handles QUANTITY_CHANGE properly
+    // This will find QUANTITY_CHANGE records and link them (including multiple links for strategy-level records)
+    try {
+      // Find QUANTITY_CHANGE records for this strategy and date
+      const qcRecords = await db
+        .select({ id: blotterActions.id })
+        .from(blotterActions)
+        .where(
+          and(
+            eq(blotterActions.source, 'triage_action'),
+            eq(blotterActions.reasonCode, 'QUANTITY_CHANGE'),
+            eq(blotterActions.strategyId, agg.strategyId),
+            eq(blotterActions.actionDate, agg.tradeDate),
+            isNull(blotterActions.linkedBlotterActionId) // Only match unlinked ones
+          )
+        );
+
+      // For each QUANTITY_CHANGE record, use the improved matching function
+      // This will properly handle strategy-level records with multiple positions
+      for (const qcRecord of qcRecords) {
+        await matchTriageActionToTradeBlotter(
+          qcRecord.id,
+          agg.strategyId,
+          agg.symbol,
+          agg.conid,
+          agg.tradeDate
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to match trade ${tradeBlotterId} to QUANTITY_CHANGE records:`, error);
+      // Continue - matching is optional
+    }
   }
 }
 
@@ -396,6 +437,7 @@ export async function matchTriageActionToTradeBlotter(
         : [];
 
       const previousByConid = new Map(previousPositions.map(p => [p.conid, p]));
+      const currentConids = new Set(currentPositions.map(p => p.conid).filter((c): c is number => c !== null));
 
       // Find positions that changed (new positions or quantity changed)
       const changedConids: number[] = [];
@@ -407,6 +449,23 @@ export async function matchTriageActionToTradeBlotter(
         
         if (currentQty !== previousQty) {
           changedConids.push(currentPos.conid);
+        }
+      }
+
+      // Also check for positions that disappeared (closed/expired) - these also represent changes
+      // This handles cases where positions existed on previous date but don't exist on current date
+      for (const [conid, previousPos] of previousByConid.entries()) {
+        // Skip if this position exists in current positions (already processed above)
+        if (currentConids.has(conid)) {
+          continue;
+        }
+
+        // This position existed before but doesn't exist now - it closed/expired
+        const previousQty = Number(previousPos.quantity) || 0;
+        
+        // Only include if previous quantity was non-zero (it was a real position)
+        if (previousQty !== 0) {
+          changedConids.push(conid);
         }
       }
 
@@ -527,6 +586,218 @@ export async function matchTriageActionToTradeBlotter(
   if (matchingTradeEntry.length > 0) {
     await linkBlotterActions(triageBlotterId, matchingTradeEntry[0].id);
   }
+}
+
+/**
+ * Backfills matching for trade blotter entries to ensure all trades are linked to QUANTITY_CHANGE records
+ * This ensures the one-to-many relationship is complete (one QUANTITY_CHANGE links to all matching trades)
+ */
+export async function backfillUnmatchedTradeEntries(
+  accountId?: string
+): Promise<{ checked: number; linked: number }> {
+  // First, get all QUANTITY_CHANGE records (not just for unmatched trades)
+  // We want to ensure ALL matching trades are linked, even if some are already linked
+  const qcWhereClauses = [
+    eq(blotterActions.source, 'triage_action'),
+    eq(blotterActions.reasonCode, 'QUANTITY_CHANGE'),
+    isNotNull(blotterActions.strategyId),
+  ];
+
+  if (accountId) {
+    const strategyIds = await db
+      .select({ id: strategies.id })
+      .from(strategies)
+      .where(eq(strategies.accountId, accountId));
+    
+    if (strategyIds.length > 0) {
+      qcWhereClauses.push(
+        inArray(blotterActions.strategyId, strategyIds.map(s => s.id))
+      );
+    } else {
+      return { checked: 0, linked: 0 };
+    }
+  }
+
+  const allQuantityChangeRecords = await db
+    .select({
+      id: blotterActions.id,
+      strategyId: blotterActions.strategyId,
+      actionDate: blotterActions.actionDate,
+      positionId: blotterActions.positionId,
+      linkedTradeBlotterIds: blotterActions.linkedTradeBlotterIds,
+      linkedBlotterActionId: blotterActions.linkedBlotterActionId,
+    })
+    .from(blotterActions)
+    .where(and(...qcWhereClauses));
+
+  let linked = 0;
+  let checked = 0;
+
+  // Group QUANTITY_CHANGE records by (strategyId, actionDate)
+  const qcByStrategyDate = new Map<string, typeof allQuantityChangeRecords>();
+  for (const qcRecord of allQuantityChangeRecords) {
+    if (!qcRecord.strategyId || !qcRecord.actionDate) continue;
+    const key = `${qcRecord.strategyId}_${qcRecord.actionDate}`;
+    if (!qcByStrategyDate.has(key)) {
+      qcByStrategyDate.set(key, []);
+    }
+    qcByStrategyDate.get(key)!.push(qcRecord);
+  }
+
+  // Process each QUANTITY_CHANGE record group
+  for (const [key, qcRecords] of qcByStrategyDate) {
+    const [strategyId, actionDate] = key.split('_');
+    
+    // Get ALL trades for this strategy and date (not just unmatched)
+    const allTradesForDate = await db
+      .select({
+        id: blotterActions.id,
+        conid: blotterActions.conid,
+        ticker: blotterActions.ticker,
+        linkedBlotterActionId: blotterActions.linkedBlotterActionId,
+      })
+      .from(blotterActions)
+      .where(
+        and(
+          eq(blotterActions.source, 'trade_ingestion'),
+          eq(blotterActions.strategyId, strategyId),
+          eq(blotterActions.actionDate, actionDate),
+          isNotNull(blotterActions.conid)
+        )
+      );
+
+    checked += allTradesForDate.length;
+
+    for (const qcRecord of qcRecords) {
+      // If it's a position-level QUANTITY_CHANGE, match individual trades
+      if (qcRecord.positionId) {
+        const position = await db
+          .select({ conid: positions.conid })
+          .from(positions)
+          .where(eq(positions.id, qcRecord.positionId))
+          .limit(1);
+
+        if (position.length > 0 && position[0].conid) {
+          // Check all trades, not just unmatched ones
+          const matchingTrade = allTradesForDate.find(t => t.conid === position[0].conid);
+          if (matchingTrade && !qcRecord.linkedBlotterActionId) {
+            // Only link if not already linked
+            await linkBlotterActions(qcRecord.id, matchingTrade.id);
+            linked++;
+          }
+        }
+      } else {
+        // Strategy-level QUANTITY_CHANGE - check if any of the unmatched trades should be linked
+        // Get all positions that changed on this date for this strategy
+        const currentPositions = await db
+          .select({
+            conid: positions.conid,
+            quantity: positions.quantity,
+          })
+          .from(positions)
+          .where(
+            and(
+              eq(positions.strategyId, strategyId),
+              eq(positions.snapshotDate, actionDate),
+              sql`CAST(${positions.quantity} AS DECIMAL) != 0`
+            )
+          );
+
+        // Get previous date positions to find what changed
+        const previousDateResult = await db
+          .selectDistinct({ snapshotDate: positions.snapshotDate })
+          .from(positions)
+          .where(
+            and(
+              eq(positions.strategyId, strategyId),
+              sql`${positions.snapshotDate} < ${actionDate}`
+            )
+          )
+          .orderBy(desc(positions.snapshotDate))
+          .limit(1);
+
+        const previousDate = previousDateResult[0]?.snapshotDate;
+        const previousPositions = previousDate
+          ? await db
+              .select({
+                conid: positions.conid,
+                quantity: positions.quantity,
+              })
+              .from(positions)
+              .where(
+                and(
+                  eq(positions.strategyId, strategyId),
+                  eq(positions.snapshotDate, previousDate)
+                )
+              )
+          : [];
+
+        const previousByConid = new Map(previousPositions.map(p => [p.conid, p]));
+
+        // Find positions that changed (new positions or quantity changed)
+        const changedConids: number[] = [];
+        for (const currentPos of currentPositions) {
+          if (!currentPos.conid) continue;
+          const previousPos = previousByConid.get(currentPos.conid);
+          const currentQty = Number(currentPos.quantity) || 0;
+          const previousQty = previousPos ? Number(previousPos.quantity) || 0 : 0;
+          
+          if (currentQty !== previousQty) {
+            changedConids.push(currentPos.conid);
+          }
+        }
+
+        // Also check for positions that disappeared (expired) - these also represent changes
+        for (const prevPos of previousPositions) {
+          if (!prevPos.conid) continue;
+          const prevQty = Number(prevPos.quantity) || 0;
+          if (prevQty !== 0 && !currentPositions.find(p => p.conid === prevPos.conid)) {
+            changedConids.push(prevPos.conid);
+          }
+        }
+
+        // Find ALL trades (matched and unmatched) that match changed conids
+        // This ensures we capture all trades, even if some were already linked
+        const existingLinkedIds = (qcRecord.linkedTradeBlotterIds as string[] | null) || [];
+        const allMatchingTrades = allTradesForDate.filter(
+          t => t.conid && changedConids.includes(t.conid)
+        );
+        const tradesToLink = allMatchingTrades.filter(
+          t => !existingLinkedIds.includes(t.id)
+        );
+
+        if (tradesToLink.length > 0) {
+          // Update QUANTITY_CHANGE record with all linked trade entries
+          const allLinkedIds = [...existingLinkedIds, ...tradesToLink.map(t => t.id)];
+          
+          await db
+            .update(blotterActions)
+            .set({
+              linkedTradeBlotterIds: allLinkedIds,
+              // Update primary link if not set, or if we're adding the first trade
+              linkedBlotterActionId: qcRecord.linkedBlotterActionId || tradesToLink[0].id,
+              updatedAt: new Date(),
+            })
+            .where(eq(blotterActions.id, qcRecord.id));
+
+          // Also update each trade entry to link back to the QUANTITY_CHANGE
+          for (const trade of tradesToLink) {
+            await db
+              .update(blotterActions)
+              .set({
+                linkedBlotterActionId: qcRecord.id,
+                updatedAt: new Date(),
+              })
+              .where(eq(blotterActions.id, trade.id));
+          }
+
+          linked += tradesToLink.length;
+        }
+      }
+    }
+  }
+
+  return { checked, linked };
 }
 
 /**

@@ -168,27 +168,27 @@ export async function POST(request: NextRequest) {
     const [insertedBlotterAction] = await db
       .insert(blotterActions)
       .values({
-        blotterId,
+      blotterId,
         actionDate: triage.snapshotDate, // Use snapshot date (trade date) instead of today for matching
-        snapshotDate: triage.snapshotDate,
-        strategyId: strategyId || triage.strategyId,
-        positionId: positionId || triage.positionId,
-        strategyKey: triage.symbol,
+      snapshotDate: triage.snapshotDate,
+      strategyId: strategyId || triage.strategyId,
+      positionId: positionId || triage.positionId,
+      strategyKey: triage.symbol,
         ticker: ticker,
-        triageFlagAtAction: triage.recommendedAction,
-        actionClass,
-        actionDetail: actionType,
-        reasonCode: triage.recommendedAction || null,
-        notes: notes || triage.notes || null,
-        completed: actionType === "UPDATE" || actionType === "MARK_REVIEWED",
-        severityOverride,
-        overrideExpiresDate,
-        monitorDays: monitorDaysValue,
-        tradeReason: tradeReason || null, // Store trade reason for QUANTITY_CHANGE triggers
-        tradeStage: tradeStage || null, // Store trade stage for QUANTITY_CHANGE triggers
+      triageFlagAtAction: triage.recommendedAction,
+      actionClass,
+      actionDetail: actionType,
+      reasonCode: triage.recommendedAction || null,
+      notes: notes || triage.notes || null,
+      completed: actionType === "UPDATE" || actionType === "MARK_REVIEWED",
+      severityOverride,
+      overrideExpiresDate,
+      monitorDays: monitorDaysValue,
+      tradeReason: tradeReason || null, // Store trade reason for QUANTITY_CHANGE triggers
+      tradeStage: tradeStage || null, // Store trade stage for QUANTITY_CHANGE triggers
         source: 'triage_action', // Explicitly set source
         conid: conid ?? null, // Store conid for matching
-        createdAt: new Date(),
+      createdAt: new Date(),
       })
       .returning({ id: blotterActions.id });
 

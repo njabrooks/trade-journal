@@ -69,6 +69,7 @@ export async function getTriageQueue(
     ),
   ];
 
+  // Handle severity filtering
   if (filters.severity) {
     const severityArray = Array.isArray(filters.severity) 
       ? filters.severity 
@@ -78,6 +79,10 @@ export async function getTriageQueue(
     if (severityArray.length > 0) {
       conditions.push(inArray(triageRecords.severity, severityArray));
     }
+  } else {
+    // Exclude completed records by default (when no severity filter is set)
+    // This prevents showing historical CONFIRM_STRATEGIES records that are already complete
+    conditions.push(ne(triageRecords.severity, 'complete'));
   }
 
   if (filters.contextLevel) {
@@ -229,6 +234,7 @@ export async function getTriageQueueForStrategy(
     ),
   ];
 
+  // Handle severity filtering
   if (filters.severity) {
     const severityArray = Array.isArray(filters.severity) 
       ? filters.severity 
@@ -238,6 +244,10 @@ export async function getTriageQueueForStrategy(
     if (severityArray.length > 0) {
       conditions.push(inArray(triageRecords.severity, severityArray));
     }
+  } else {
+    // Exclude completed records by default (when no severity filter is set)
+    // This prevents showing historical CONFIRM_STRATEGIES records that are already complete
+    conditions.push(ne(triageRecords.severity, 'complete'));
   }
 
   if (filters.contextLevel) {

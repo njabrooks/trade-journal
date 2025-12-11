@@ -185,32 +185,32 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
                         needsMetadata || needsTrade ? 'bg-amber-50/50 border-l-4 border-l-amber-400' : ''
                       }`}
                     >
-                      <td className="px-6 py-3 text-xs text-slate-500">
-                        {entry.createdAt ? formatDateTime(entry.createdAt) : formatDateLabel(entry.actionDate)}
-                      </td>
-                      <td className="px-6 py-3">
-                        {entry.strategyId ? (
-                          <Link
-                            href={`/strategies/${entry.strategyId}`}
-                            className="font-medium text-slate-900 hover:text-blue-600"
-                          >
-                            {entry.strategyKey ?? "Strategy"}
-                          </Link>
-                        ) : (
-                          <span className="text-slate-400">Unlinked</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 text-xs uppercase tracking-wide text-slate-500">
-                        {entry.actionClass || "—"}
-                      </td>
-                      <td className="px-6 py-3">
+                    <td className="px-6 py-3 text-xs text-slate-500">
+                      {entry.createdAt ? formatDateTime(entry.createdAt) : formatDateLabel(entry.actionDate)}
+                    </td>
+                    <td className="px-6 py-3">
+                      {entry.strategyId ? (
+                        <Link
+                          href={`/strategies/${entry.strategyId}`}
+                          className="font-medium text-slate-900 hover:text-blue-600"
+                        >
+                          {entry.strategyKey ?? "Strategy"}
+                        </Link>
+                      ) : (
+                        <span className="text-slate-400">Unlinked</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-3 text-xs uppercase tracking-wide text-slate-500">
+                      {entry.actionClass || "—"}
+                    </td>
+                    <td className="px-6 py-3">
                         <div className="flex flex-col gap-1">
-                          <span className="font-medium text-slate-900">
-                            {entry.actionDetail || entry.reasonCode || "—"}
-                          </span>
+                        <span className="font-medium text-slate-900">
+                          {entry.actionDetail || entry.reasonCode || "—"}
+                        </span>
                           {entry.reasonCode && entry.reasonCode !== entry.actionDetail ? (
-                            <span className="text-xs text-slate-400">{entry.reasonCode}</span>
-                          ) : null}
+                          <span className="text-xs text-slate-400">{entry.reasonCode}</span>
+                        ) : null}
                           {isTrade && entry.tradeCount && entry.tradeCount > 1 && (
                             <span className="text-xs text-slate-400">
                               {entry.tradeCount} trades aggregated
@@ -222,17 +222,17 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
                               {entry.notes}
                             </span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        {entry.qtyChange ?? "—"}
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        {formatCurrency(entry.premiumChange)}
-                      </td>
-                      <td className="px-6 py-3 text-right">
-                        {formatCurrency(entry.realizedPnl)}
-                      </td>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      {entry.qtyChange ?? "—"}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      {formatCurrency(entry.premiumChange)}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      {formatCurrency(entry.realizedPnl)}
+                    </td>
                       <td className="px-6 py-3">
                         {isTrade ? (
                           isMatched ? (
@@ -357,18 +357,18 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
                           <span className="text-xs text-slate-400">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-3">
-                        {entry.followUpRequired ? (
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-                              entry.completed
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-amber-100 text-amber-700"
-                            }`}
-                          >
-                            {entry.completed ? "Done" : "Pending"}
-                            {entry.followUpDate ? `· ${formatDateLabel(entry.followUpDate)}` : ""}
-                          </span>
+                    <td className="px-6 py-3">
+                      {entry.followUpRequired ? (
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                            entry.completed
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          {entry.completed ? "Done" : "Pending"}
+                          {entry.followUpDate ? `· ${formatDateLabel(entry.followUpDate)}` : ""}
+                        </span>
                         ) : (entry.actionDetail === 'MONITOR' || entry.actionDetail === 'DISMISS') ? (
                           // MONITOR/DISMISS actions - show status and details
                           <div className="flex flex-col gap-1">
@@ -433,11 +433,11 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
                               <span className="text-xs text-slate-500">Permanent override</span>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-xs text-slate-400">—</span>
-                        )}
-                      </td>
-                    </tr>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
+                  </tr>
                   );
                 })
               )}
