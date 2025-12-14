@@ -7,7 +7,7 @@ import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { and, eq, ne } from 'drizzle-orm';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
-import { computeTradeBlotterEntriesForDate } from '@/lib/derived/blotter';
+import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
 import { autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 import { trackProcess, startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
               strategyMetricsCount += count;
             }
             
-            // Create trade blotter entries
+            // Create trade blotter entries (this also attempts matching to pending Trade Actions)
             try {
               await computeTradeBlotterEntriesForDate(tradeDate, accountId);
             } catch (error) {
@@ -224,8 +224,19 @@ export async function POST(request: NextRequest) {
               // Don't fail ingestion if blotter creation fails
             }
 
-            // Triage (includes QUANTITY_CHANGE detection, now handles first-day case)
+            // Triage (position-level and strategy-level flags, but NOT QUANTITY_CHANGE)
             await computeTriageForDate(tradeDate, accountId);
+
+            // Create QUANTITY_CHANGE triage records for unmatched trades (after matching completes)
+            try {
+              const qcCount = await createQuantityChangeTriageForUnmatchedTrades(tradeDate, accountId);
+              if (qcCount > 0) {
+                console.log(`Created ${qcCount} QUANTITY_CHANGE triage records for ${accountId} on ${tradeDate}`);
+              }
+            } catch (error) {
+              console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${tradeDate}:`, error);
+              // Don't fail ingestion if QUANTITY_CHANGE creation fails
+            }
             
             recomputeResults[`${accountId}_${tradeDate}`] = {
               autoStrategies: {

@@ -293,6 +293,12 @@ export async function updateStrategy(
           eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGIES')
         )
       );
+
+    // Backfill trade blotter entries and create QUANTITY_CHANGE records for unmatched trades
+    // This ensures that when a strategy is confirmed, any unmatched trades get QUANTITY_CHANGE triage records
+    backfillTradeBlotterForStrategy(strategyId).catch((error) => {
+      console.error(`Failed to backfill trade blotter for strategy ${strategyId} after confirmation:`, error);
+    });
   }
 
   // If strategy was confirmed with a strategyType, or strategyType was changed, compute state code

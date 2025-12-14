@@ -138,6 +138,20 @@ export function TriageActionButtons({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAction, showActionForm]);
 
+  // Load unmatched trade executions and positions when QUANTITY_CHANGE form is shown
+  useEffect(() => {
+    if (
+      selectedAction === "UPDATE" &&
+      recommendedAction === "QUANTITY_CHANGE" &&
+      showActionForm &&
+      tradePositions.length === 0 &&
+      strategyId
+    ) {
+      loadQuantityChangeTrades();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAction, recommendedAction, showActionForm]);
+
   // Extract auto-detected trade stage from notes when QUANTITY_CHANGE form is shown
   useEffect(() => {
     if (showActionForm && selectedAction === "UPDATE" && recommendedAction === "QUANTITY_CHANGE" && !tradeStage && notes) {
@@ -244,6 +258,83 @@ export function TriageActionButtons({
     }
   };
 
+  const loadQuantityChangeTrades = async () => {
+    if (!triageId || !strategyId) return;
+    setLoadingPositions(true);
+    try {
+      // Fetch triage record to get unmatched trade executions
+      const triageResponse = await fetch(`/api/triage?id=${triageId}`);
+      if (!triageResponse.ok) {
+        throw new Error("Failed to load triage record");
+      }
+      const triageData = await triageResponse.json();
+      
+      // Extract unmatched trade executions from triage record
+      const unmatchedExecutions = triageData.unmatchedTradeExecutions || [];
+      
+      if (unmatchedExecutions.length === 0) {
+        // Fallback: load all positions for strategy
+        await loadPositions();
+        return;
+      }
+
+      // Get conids from unmatched trade executions
+      const conids = unmatchedExecutions.map((exec: any) => exec.conid).filter((c: any) => c != null);
+      
+      if (conids.length === 0) {
+        // Fallback: load all positions for strategy
+        await loadPositions();
+        return;
+      }
+
+      // Fetch positions by conid
+      const positionsResponse = await fetch(`/api/positions?strategyId=${strategyId}`);
+      if (!positionsResponse.ok) {
+        throw new Error("Failed to load positions");
+      }
+      const positionsData = await positionsResponse.json();
+      const positionsList = Array.isArray(positionsData) ? positionsData : [positionsData];
+
+      // Match positions to trade executions by conid and create trade positions
+      const matchedPositions: TradePosition[] = [];
+      for (const exec of unmatchedExecutions) {
+        const position = positionsList.find((p: any) => p.conid === exec.conid);
+        if (position) {
+          // Use the quantity from the trade execution (signed, from trade ingestion)
+          matchedPositions.push({
+            id: position.id,
+            symbol: position.symbol || exec.ticker || "",
+            assetClass: position.assetClass,
+            conid: position.conid,
+            expiry: position.expiry || "",
+            strike: position.strike,
+            optionRight: position.optionRight,
+            side: position.side,
+            quantity: Number(exec.qtyChange) || 0, // Use trade execution quantity (signed)
+            underlyingTicker: position.underlyingTicker || null,
+          });
+        }
+      }
+
+      if (matchedPositions.length === 0) {
+        // Fallback: load all positions for strategy
+        await loadPositions();
+        return;
+      }
+
+      setTradePositions(matchedPositions);
+    } catch (err) {
+      setError("Failed to load trade executions");
+      console.error("Failed to load quantity change trades:", err);
+      // Fallback: try to load positions normally
+      if (strategyId) {
+        await loadPositions();
+      }
+    } finally {
+      setLoadingPositions(false);
+    }
+  };
+
   const handleAction = async (actionType: ActionType) => {
     if (!availableActions.includes(actionType)) return;
     setSelectedAction(actionType);
@@ -319,9 +410,24 @@ export function TriageActionButtons({
           return;
         }
 
+        if (!tradePositions || tradePositions.length === 0) {
+          setError("At least one position is required");
+          setLoading(false);
+          return;
+        }
+
         // Store trade reason and stage in body
         body.tradeReason = tradeReason;
         body.tradeStage = tradeStage;
+        
+        // Include trade positions in the action - only send positionId and quantity
+        // Backend will fetch other fields (assetClass, underlying, expiry, strike, optionRight) from positions table
+        body.tradePositions = tradePositions
+          .filter(pos => pos.id) // Only include positions with IDs (existing positions)
+          .map((pos) => ({
+            positionId: pos.id!,
+            quantity: pos.quantity, // User-edited quantity (signed)
+          }));
         
         // If opening trade, also update strategy metadata if strategyId exists
         if (tradeStage === "open" && strategyId) {
@@ -391,10 +497,16 @@ export function TriageActionButtons({
         body.tradeReason = tradeReason;
         body.tradeStage = tradeStage;
         
-        // Include trade positions in the action
-        body.tradePositions = tradePositions;
+        // Include trade positions in the action - only send positionId and quantity
+        // Backend will fetch other fields (assetClass, underlying, expiry, strike, optionRight) from positions table
+        body.tradePositions = tradePositions
+          .filter(pos => pos.id) // Only include positions with IDs (existing positions)
+          .map((pos) => ({
+            positionId: pos.id!,
+            quantity: pos.quantity, // User-edited quantity (signed)
+          }));
         
-        // Build notes from trade positions if notes not provided
+        // Build notes from trade positions if notes not provided (optional, for display)
         if (!notes.trim() && tradePositions.length > 0) {
           const tradeSummary = tradePositions
             .map((pos) => {
@@ -673,18 +785,138 @@ export function TriageActionButtons({
     );
   }
 
-  // Render quantity change form (for QUANTITY_CHANGE)
+  // Render quantity change form (for QUANTITY_CHANGE) - uses same UI as TRADE form
   if (showActionForm && selectedAction === "UPDATE" && recommendedAction === "QUANTITY_CHANGE") {
     return (
       <div className="space-y-4">
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 -mx-4 -mt-4 mb-4">
-          <h4 className="text-sm font-semibold text-slate-900">Record Trade Metadata</h4>
+          <h4 className="text-sm font-semibold text-slate-900">Reconcile Trade Executions</h4>
           <p className="mt-0.5 text-xs text-slate-500">
-            Capture the reason and details for the quantity change detected. This will create a blotter entry.
+            Review and confirm the trade executions that were detected. Quantities are pre-populated from the executed trades.
           </p>
         </div>
 
+        {loadingPositions ? (
+          <div className="text-sm text-slate-500 py-4">Loading trade executions...</div>
+        ) : (
         <div className="space-y-4">
+            {tradePositions.map((pos, index) => {
+              const isOption = pos.assetClass === "OPT";
+              return (
+                <div key={index} className="rounded-md border border-slate-200 bg-white p-3 shadow-sm">
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="text-xs font-mono text-slate-700">
+                      {formatPosition(
+                        pos.assetClass,
+                        pos.quantity,
+                        pos.underlyingTicker,
+                        pos.expiry,
+                        pos.strike,
+                        pos.optionRight
+                      )}
+                    </div>
+                    {tradePositions.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeTradePosition(index)}
+                        className="text-xs text-rose-600 hover:text-rose-700"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-6 gap-2 items-end">
+                    <div>
+                      <label className="block text-[10px] font-medium text-slate-600 mb-0.5">
+                        Asset Class
+                      </label>
+                      <select
+                        value={pos.assetClass || ""}
+                        onChange={(e) => updateTradePosition(index, "assetClass", e.target.value || null)}
+                        className="w-full rounded-md border border-slate-300 px-1.5 py-1 text-xs"
+                        disabled
+                      >
+                        <option value="">—</option>
+                        <option value="STK">STK</option>
+                        <option value="OPT">OPT</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-medium text-slate-600 mb-0.5">
+                        Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        value={pos.quantity}
+                        onChange={(e) => updateTradePosition(index, "quantity", parseFloat(e.target.value) || 0)}
+                        className="w-full rounded-md border border-slate-300 px-1.5 py-1 text-xs"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-medium text-slate-600 mb-0.5">
+                        Underlying *
+                      </label>
+                      <input
+                        type="text"
+                        value={pos.underlyingTicker || ""}
+                        onChange={(e) => updateTradePosition(index, "underlyingTicker", e.target.value || null)}
+                        className="w-full rounded-md border border-slate-300 px-1.5 py-1 text-xs"
+                        required
+                        disabled
+                      />
+                    </div>
+
+                    <div>
+                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-slate-600' : 'text-slate-400'}`}>
+                        Expiry
+                      </label>
+                      <input
+                        type="date"
+                        value={pos.expiry || ""}
+                        onChange={(e) => updateTradePosition(index, "expiry", e.target.value || null)}
+                        disabled={!isOption}
+                        className="w-full rounded-md border border-slate-300 px-1.5 py-1 text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-slate-600' : 'text-slate-400'}`}>
+                        Strike
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={pos.strike ?? ""}
+                        onChange={(e) => updateTradePosition(index, "strike", e.target.value ? parseFloat(e.target.value) : null)}
+                        disabled={!isOption}
+                        className="w-full rounded-md border border-slate-300 px-1.5 py-1 text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-slate-600' : 'text-slate-400'}`}>
+                        P/C
+                      </label>
+                      <select
+                        value={pos.optionRight || ""}
+                        onChange={(e) => updateTradePosition(index, "optionRight", e.target.value || null)}
+                        disabled={!isOption}
+                        className="w-full rounded-md border border-slate-300 px-1.5 py-1 text-xs disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                      >
+                        <option value="">—</option>
+                        <option value="C">C</option>
+                        <option value="P">P</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
           <div className="bg-white rounded-md border border-slate-200 p-3">
             <label className="block text-xs font-medium text-slate-700 mb-1.5">
               Trade Reason *
@@ -810,7 +1042,7 @@ export function TriageActionButtons({
           <div className="flex gap-2 pt-2 border-t border-slate-200">
             <button
               onClick={handleConfirm}
-              disabled={loading || !tradeReason || !tradeStage}
+                disabled={loading || tradePositions.length === 0 || tradePositions.some(p => !p.id || p.quantity === 0) || !tradeReason || !tradeStage}
               className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? "Recording..." : "Record Trade"}
@@ -824,6 +1056,7 @@ export function TriageActionButtons({
             </button>
           </div>
         </div>
+        )}
       </div>
     );
   }

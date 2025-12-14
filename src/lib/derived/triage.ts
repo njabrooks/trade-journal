@@ -819,7 +819,7 @@ export async function computeQuantityChangeTriageForDate(
   snapshotDate: string,
   accountId?: string,
   strategyId?: string
-): Promise<NewTriageRecord[]> {
+): Promise<void> {
   // Build conditions for previous date query
   const previousDateConditions = [sql`${positions.snapshotDate} < ${snapshotDate}`];
   if (accountId) {
@@ -879,8 +879,6 @@ export async function computeQuantityChangeTriageForDate(
       previousByConid.set(pos.conid, pos);
     }
   });
-
-  const records: NewTriageRecord[] = [];
   
   // First pass: Collect all positions with quantity changes, grouped by strategy
   // This allows us to aggregate at the strategy level per day
@@ -1009,105 +1007,21 @@ export async function computeQuantityChangeTriageForDate(
     }
   }
 
-  // Second pass: Create strategy-level records (one per strategy per day)
+  // NOTE: QUANTITY_CHANGE triage records are now created by createQuantityChangeTriageForUnmatchedTrades
+  // in blotter.ts, which runs after matching completes. This function no longer creates QUANTITY_CHANGE records.
+  // It only reconciles pending TRADE actions when quantity changes are detected.
+  
+  // Second pass: Reconcile pending TRADE actions for strategies with quantity changes
   for (const [strategyId, changeData] of changesByStrategy.entries()) {
     // Reconcile any pending TRADE actions for this strategy
-    const wasReconciled = await reconcilePendingTradeActions(null, strategyId, snapshotDate);
-
-    // Only create QUANTITY_CHANGE triage record if no pending TRADE action was reconciled
-    if (!wasReconciled) {
-      const recommendedAction = 'QUANTITY_CHANGE';
-      const computedSeverity = 'urgent';
-
-      // Check for active override
-      const overrideSeverity = await checkSeverityOverride(
-        null,
-        strategyId,
-        recommendedAction,
-        snapshotDate
-      );
-
-      // Get strategy key and metrics for symbol and financial data
-      const strategyResult = await db
-        .select({ 
-          strategyKey: strategies.strategyKey,
-          totalAbsNotional: strategyMetricsSnapshots.totalAbsNotional,
-          totalUnrealizedPnl: strategyMetricsSnapshots.totalUnrealizedPnl,
-        })
-        .from(strategies)
-        .leftJoin(
-          strategyMetricsSnapshots,
-          and(
-            eq(strategyMetricsSnapshots.strategyId, strategies.id),
-            eq(strategyMetricsSnapshots.snapshotDate, snapshotDate)
-          )
-        )
-        .where(eq(strategies.id, strategyId))
-        .limit(1);
-
-      const strategyKey = strategyResult[0]?.strategyKey || `STRATEGY-${strategyId}`;
-
-      // Aggregate notes: summarize all changes in the strategy
-      const changeCount = changeData.positions.length;
-      const changeSummary = changeData.positions
-        .map((p) => `${p.symbol}: ${p.previousQty} → ${p.currentQty} (${p.tradeStage || 'unknown'})`)
-        .join('; ');
-
-      records.push({
-        snapshotDate,
-        accountId: changeData.accountId,
-        contextLevel: 'strategy',
-        strategyId,
-        absNotional: strategyResult[0]?.totalAbsNotional ?? null,
-        unrealizedPnl: strategyResult[0]?.totalUnrealizedPnl ?? null,
-        symbol: strategyKey,
-        severity: overrideSeverity || computedSeverity,
-        recommendedAction,
-        notes: `${changeCount} position(s) changed: ${changeSummary}`,
-        ruleSet: 'quantity_change',
-      });
-    }
+    await reconcilePendingTradeActions(null, strategyId, snapshotDate);
   }
 
-  // Third pass: Create position-level records only for unlinked positions
+  // Third pass: Reconcile pending TRADE actions for unlinked positions
   for (const change of unlinkedChanges) {
     // Reconcile any pending TRADE actions for this position
-    const wasReconciled = await reconcilePendingTradeActions(change.positionId, null, snapshotDate);
-
-    if (!wasReconciled) {
-      const recommendedAction = 'QUANTITY_CHANGE';
-      const computedSeverity = 'urgent';
-
-      // Check for active override
-      const overrideSeverity = await checkSeverityOverride(
-        change.positionId,
-        null,
-        recommendedAction,
-        snapshotDate
-      );
-
-      // Find the position to get full details
-      const position = currentPositions.find((p) => p.id === change.positionId);
-      if (position) {
-        records.push({
-          snapshotDate,
-          accountId: change.accountId,
-          contextLevel: 'position',
-          positionId: change.positionId,
-          strategyId: position.strategyId,
-          underlyingId: position.underlyingId,
-          symbol: change.symbol,
-          assetClass: position.assetClass,
-          severity: overrideSeverity || computedSeverity,
-          recommendedAction,
-          notes: `Quantity changed from ${change.previousQty} to ${change.currentQty}. Trade stage: ${change.tradeStage || 'unknown'}`,
-          ruleSet: 'quantity_change',
-        });
-      }
-    }
+    await reconcilePendingTradeActions(change.positionId, null, snapshotDate);
   }
-
-  return records;
 }
 
 
@@ -1176,14 +1090,19 @@ export async function computeTriageForDate(
 
   const positionRecords = await computePositionTriageForDate(snapshotDate, accountId, strategyId);
   const strategyRecords = await computeStrategyTriageForDate(snapshotDate, accountId, strategyId);
-  const quantityChangeRecords = await computeQuantityChangeTriageForDate(snapshotDate, accountId, strategyId);
+  
+  // NOTE: computeQuantityChangeTriageForDate no longer creates QUANTITY_CHANGE records.
+  // It only reconciles pending TRADE actions. QUANTITY_CHANGE records are created by
+  // createQuantityChangeTriageForUnmatchedTrades in blotter.ts after matching completes.
+  // We still call it to reconcile pending TRADE actions when quantity changes are detected.
+  await computeQuantityChangeTriageForDate(snapshotDate, accountId, strategyId);
 
-  await upsertTriageRecords([...positionRecords, ...strategyRecords, ...quantityChangeRecords]);
+  await upsertTriageRecords([...positionRecords, ...strategyRecords]);
 
   return {
     position: positionRecords.length,
     strategy: strategyRecords.length,
-    quantityChange: quantityChangeRecords.length,
+    quantityChange: 0, // QUANTITY_CHANGE records are now created separately after matching
   };
 }
 

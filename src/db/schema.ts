@@ -335,6 +335,7 @@ export const triageRecords = pgTable(
     recommendedAction: text('recommended_action'),
     notes: text('notes'),
     ruleSet: text('rule_set'), // e.g. 'options_v1'
+    unmatchedTradeExecutions: jsonb('unmatched_trade_executions'), // JSONB array of unmatched trade blotter entry details (for QUANTITY_CHANGE)
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -437,6 +438,7 @@ export const blotterActions = pgTable(
     linkedBlotterActionId: uuid('linked_blotter_action_id').references(() => blotterActions.id, { onDelete: 'set null' }), // Bidirectional link to matching entry (primary/backward compatible)
     linkedTradeBlotterIds: jsonb('linked_trade_blotter_ids'), // Array of linked trade blotter entry IDs (for QUANTITY_CHANGE linking to multiple TRADE_INGESTED entries)
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({
     strategyActionDateIdx: index('idx_blotter_strategy_action_date').on(

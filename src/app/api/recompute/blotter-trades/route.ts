@@ -4,6 +4,7 @@ import {
   computeTradeBlotterEntriesForDateRange,
   backfillTriageActionMatching,
   backfillUnmatchedTradeEntries,
+  createQuantityChangeTriageForUnmatchedTrades,
 } from '@/lib/derived/blotter';
 
 export async function POST(request: NextRequest) {
@@ -22,10 +23,14 @@ export async function POST(request: NextRequest) {
 
       const count = await computeTradeBlotterEntriesForDate(snapshotDate, accountId);
 
+      // Create QUANTITY_CHANGE triage records for unmatched trades after matching completes
+      const qcCount = await createQuantityChangeTriageForUnmatchedTrades(snapshotDate, accountId);
+
       return NextResponse.json({
         success: true,
-        message: `Computed ${count} trade blotter entries for ${snapshotDate}`,
+        message: `Computed ${count} trade blotter entries and ${qcCount} QUANTITY_CHANGE triage records for ${snapshotDate}`,
         count,
+        quantityChangeRecords: qcCount,
       });
     }
 

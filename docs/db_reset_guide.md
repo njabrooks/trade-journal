@@ -16,7 +16,7 @@ These tables contain reference/configuration data and should **NOT** be wiped:
 1. **`accounts`** - Brokerage account configurations
 2. **`underlyings`** - Instrument reference data (tickers, asset classes, etc.)
 3. **`underlyings_iv_history`** - Historical IV/ATR/RV data for underlyings
-4. **`playbook_items`** - Strategy playbook rules and state codes
+4. **`playbook_items`** - Strategy playbook rules and state codes (CRITICAL: Must be preserved or reseeded)
 
 ## Tables to Wipe
 
@@ -71,8 +71,12 @@ All other tables should be truncated. Order matters due to foreign key constrain
      - `raw_flex_trades`
    - Reference data (optional):
      - `strategy_templates`
+   
+   **IMPORTANT**: Do NOT truncate `playbook_items` - it must be preserved.
 
 3. **Verify reset** using `mcp_supabase_execute_sql` with a verification query
+
+4. **Reseed playbook_items if needed**: After reset, check if `playbook_items` count is 17. If not, reseed using the seed script (see "Restoring Playbook Items" section below)
 
 ### Why Use Supabase MCP
 
@@ -90,13 +94,33 @@ Execute via Supabase MCP tools rather than direct SQL scripts. The MCP interface
 
 ## Restoring Playbook Items
 
-After a reset, `playbook_items` may be empty (if it had foreign keys to `strategy_templates`). Restore using Supabase MCP:
+**`playbook_items` should always be preserved during reset**, but if they're missing or corrupted, reseed them:
 
-1. Get the playbook_items backup data (stored separately, typically as JSON)
-2. Use `mcp_supabase_execute_sql` to execute INSERT statements with ON CONFLICT DO UPDATE
-3. Verify count: Should have 17 items
+### Method 1: Using the Seed Script (Recommended)
 
-**Execution**: Use `mcp_supabase_execute_sql` with the INSERT query containing all playbook items data. The MCP tool will execute the query and return results.
+Run the seed script which uses the source data from `scripts/seed_playbook_items.ts`:
+
+```bash
+npx tsx scripts/seed_playbook_items.ts
+```
+
+**Note**: This requires `DATABASE_URL_POOLER` to be set in `.env.local`. If not available, use Method 2.
+
+### Method 2: Using Supabase MCP
+
+If the seed script can't run, use Supabase MCP to execute the SQL directly:
+
+1. Use `mcp_supabase_execute_sql` with the INSERT query containing all 17 playbook items
+2. The query uses `ON CONFLICT (code) DO UPDATE` to handle reseeding safely
+3. Verify count: Should have exactly 17 items
+
+**Execution**: The playbook items data is defined in `scripts/seed_playbook_items.ts`. Extract the INSERT statement from that file or use the seed script directly.
+
+### Verification
+
+After reseeding, verify:
+- `playbook_items` count = 17
+- All state codes are present: LC1, LC2, LC3, LC4, RR1, RR2, RR3, BC1, BC2, BC3, SD1, SD2, SD3, STK0, STK1, STK2, STK3
 
 ## Verification Checklist
 
@@ -105,7 +129,7 @@ After reset, verify:
 - [ ] `accounts` count > 0 (usually 1)
 - [ ] `underlyings` count > 0 (usually 9)
 - [ ] `underlyings_iv_history` count > 0 (usually 3,000+)
-- [ ] `playbook_items` count = 17 (if restored)
+- [ ] `playbook_items` count = 17 (**CRITICAL**: Must be 17, reseed if not)
 - [ ] `strategies` count = 0
 - [ ] `trades` count = 0
 - [ ] `positions` count = 0
@@ -117,7 +141,7 @@ After reset, verify:
 
 1. **Foreign Key Constraints**: The `CASCADE` option ensures dependent records are also deleted. Order matters - wipe child tables before parent tables where possible.
 
-2. **Playbook Items**: These may be wiped if they reference `strategy_templates` (which we wipe). Always restore them after reset.
+2. **Playbook Items**: **MUST be preserved** - do NOT truncate `playbook_items`. If they're missing or corrupted after reset, reseed them using `scripts/seed_playbook_items.ts` or via Supabase MCP. The playbook items are essential for strategy state code detection and triage rules.
 
 3. **Accounts**: Must be preserved - they're referenced by many tables and are user configuration.
 
@@ -128,7 +152,7 @@ After reset, verify:
 ## Post-Reset Steps
 
 1. Verify reset completed successfully (use verification checklist)
-2. Restore `playbook_items` if needed
+2. **Check `playbook_items` count** - must be 17. If not, reseed using `scripts/seed_playbook_items.ts`
 3. Re-upload Flex data (trades, positions)
 4. Verify auto-linking and computation work correctly
 5. Test triage and blotter functionality
@@ -138,8 +162,11 @@ After reset, verify:
 ### Issue: Foreign key constraint errors
 **Solution**: When using Supabase MCP, ensure you're truncating tables in the correct order (child tables first). The MCP tool handles CASCADE automatically.
 
-### Issue: Playbook items count is 0
-**Solution**: This is expected if `strategy_templates` was wiped. Restore `playbook_items` using the backup data.
+### Issue: Playbook items count is 0 or not 17
+**Solution**: `playbook_items` should be preserved during reset. If they're missing:
+1. Run `npx tsx scripts/seed_playbook_items.ts` to reseed
+2. Or use Supabase MCP to execute the INSERT statement from the seed script
+3. Verify count = 17 after reseeding
 
 ### Issue: Accounts missing
 **Solution**: Never wipe `accounts` - they're essential for all operations. If accidentally wiped, recreate them via the accounts API.

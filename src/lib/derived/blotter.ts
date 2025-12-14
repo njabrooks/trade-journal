@@ -11,9 +11,13 @@ import {
   trades,
   strategies,
   positions,
+  triageRecords,
   NewBlotterAction,
+  NewTriageRecord,
 } from '@/db/schema';
 import { and, eq, sql, isNull, isNotNull, gte, lte, inArray, or, ne, desc, like } from 'drizzle-orm';
+import { upsertTriageRecords } from '@/lib/derived/triage';
+import { TRIAGE_RULES_V1 } from '@/lib/derived/triage';
 
 interface TradeAggregation {
   strategyId: string | null;
@@ -217,11 +221,16 @@ async function matchTradeBlotterToTriageAction(
     eq(blotterActions.actionDate, agg.tradeDate),
   ];
 
-  // Primary match: by conid
+  // Primary match: by conid + quantity (absolute values)
   if (agg.conid) {
     tradeActionWhereClauses.push(eq(blotterActions.conid, agg.conid));
+    // Quantity match: compare absolute values with 0.01 tolerance
+    const netQtyAbs = Math.abs(agg.netQuantity);
+    tradeActionWhereClauses.push(
+      sql`ABS(ABS(CAST(${blotterActions.qtyChange} AS DECIMAL)) - ${netQtyAbs}) <= 0.01`
+    );
   } else {
-    // Fallback: by symbol and strategyId
+    // Fallback: by symbol and strategyId (shouldn't happen if conid exists)
     tradeActionWhereClauses.push(eq(blotterActions.ticker, agg.symbol));
     if (agg.strategyId) {
       tradeActionWhereClauses.push(eq(blotterActions.strategyId, agg.strategyId));
@@ -245,7 +254,7 @@ async function matchTradeBlotterToTriageAction(
         .update(blotterActions)
         .set({
           linkedBlotterActionId: triageActionId,
-          updatedAt: new Date(),
+          updatedAt: sql`now()`,
         })
         .where(eq(blotterActions.id, tradeBlotterId));
 
@@ -253,7 +262,9 @@ async function matchTradeBlotterToTriageAction(
         .update(blotterActions)
         .set({
           linkedBlotterActionId: tradeBlotterId,
-          updatedAt: new Date(),
+          completed: true,
+          severityOverride: 'complete',
+          updatedAt: sql`now()`,
         })
         .where(eq(blotterActions.id, triageActionId));
     });
@@ -455,6 +466,7 @@ export async function matchTriageActionToTradeBlotter(
       // Also check for positions that disappeared (closed/expired) - these also represent changes
       // This handles cases where positions existed on previous date but don't exist on current date
       for (const [conid, previousPos] of previousByConid.entries()) {
+        if (!conid) continue; // Skip if conid is null
         // Skip if this position exists in current positions (already processed above)
         if (currentConids.has(conid)) {
           continue;
@@ -524,7 +536,7 @@ export async function matchTriageActionToTradeBlotter(
             .set({
               linkedBlotterActionId: primaryMatch.id, // Primary link (backward compatible)
               linkedTradeBlotterIds: allTradeEntryIds, // All linked trade entries
-              updatedAt: new Date(),
+              updatedAt: sql`now()`,
             })
             .where(eq(blotterActions.id, triageBlotterId));
           
@@ -534,7 +546,7 @@ export async function matchTriageActionToTradeBlotter(
               .update(blotterActions)
               .set({
                 linkedBlotterActionId: triageBlotterId,
-                updatedAt: new Date(),
+                updatedAt: sql`now()`,
               })
               .where(eq(blotterActions.id, tradeMatch.id));
           }
@@ -564,11 +576,27 @@ export async function matchTriageActionToTradeBlotter(
     }
   }
 
-  // Primary match: by conid (for TRADE actions and QUANTITY_CHANGE if conid matches)
+  // Get the Trade Action's qtyChange for quantity matching
+  const tradeActionQty = await db
+    .select({ qtyChange: blotterActions.qtyChange })
+    .from(blotterActions)
+    .where(eq(blotterActions.id, triageBlotterId))
+    .limit(1);
+
+  const actionQty = tradeActionQty[0]?.qtyChange ? Number(tradeActionQty[0].qtyChange) : null;
+
+  // Primary match: by conid + quantity (absolute values)
   if (conid) {
     whereClauses.push(eq(blotterActions.conid, conid));
+    // Quantity match: compare absolute values with 0.01 tolerance
+    if (actionQty !== null) {
+      const actionQtyAbs = Math.abs(actionQty);
+      whereClauses.push(
+        sql`ABS(ABS(CAST(${blotterActions.qtyChange} AS DECIMAL)) - ${actionQtyAbs}) <= 0.01`
+      );
+    }
   } else {
-    // Fallback: by symbol and strategyId
+    // Fallback: by symbol and strategyId (shouldn't happen if conid exists)
     whereClauses.push(eq(blotterActions.ticker, symbol));
     if (strategyId) {
       whereClauses.push(eq(blotterActions.strategyId, strategyId));
@@ -586,6 +614,184 @@ export async function matchTriageActionToTradeBlotter(
   if (matchingTradeEntry.length > 0) {
     await linkBlotterActions(triageBlotterId, matchingTradeEntry[0].id);
   }
+}
+
+/**
+ * Creates QUANTITY_CHANGE triage records for unmatched trades after matching completes
+ * Groups unmatched trades by strategy and aggregates by position (conid)
+ * Strategy-level only - one record per strategy per date
+ */
+export async function createQuantityChangeTriageForUnmatchedTrades(
+  tradeDate: string,
+  accountId?: string
+): Promise<number> {
+  // Find all unmatched trade blotter entries for this date
+  const unmatchedWhereClauses = [
+    eq(blotterActions.source, 'trade_ingestion'),
+    eq(blotterActions.actionDate, tradeDate),
+    isNull(blotterActions.linkedBlotterActionId),
+    isNotNull(blotterActions.strategyId),
+  ];
+
+  if (accountId) {
+    // Filter by account via strategies
+    const strategyIds = await db
+      .select({ id: strategies.id })
+      .from(strategies)
+      .where(eq(strategies.accountId, accountId));
+    
+    if (strategyIds.length > 0) {
+      unmatchedWhereClauses.push(
+        inArray(blotterActions.strategyId, strategyIds.map(s => s.id))
+      );
+    } else {
+      return 0; // No strategies for this account
+    }
+  }
+
+  const unmatchedTrades = await db
+    .select({
+      id: blotterActions.id,
+      blotterId: blotterActions.blotterId,
+      strategyId: blotterActions.strategyId,
+      conid: blotterActions.conid,
+      qtyChange: blotterActions.qtyChange,
+      premiumChange: blotterActions.premiumChange,
+      ticker: blotterActions.ticker,
+      actionDate: blotterActions.actionDate,
+      tradeIds: blotterActions.tradeIds,
+      tradeCount: blotterActions.tradeCount,
+    })
+    .from(blotterActions)
+    .where(and(...unmatchedWhereClauses));
+
+  if (unmatchedTrades.length === 0) {
+    return 0; // No unmatched trades
+  }
+
+  // Group by strategyId
+  const tradesByStrategy = new Map<string, typeof unmatchedTrades>();
+  for (const trade of unmatchedTrades) {
+    if (!trade.strategyId) continue;
+    if (!tradesByStrategy.has(trade.strategyId)) {
+      tradesByStrategy.set(trade.strategyId, []);
+    }
+    tradesByStrategy.get(trade.strategyId)!.push(trade);
+  }
+
+  let created = 0;
+
+  // Create one strategy-level QUANTITY_CHANGE triage record per strategy
+  for (const [strategyId, trades] of tradesByStrategy.entries()) {
+    // Check if QUANTITY_CHANGE triage record already exists for this strategy and date
+    // Only check for records from the new system (ruleSet='options_v1', severity='pending')
+    // Old records (ruleSet='quantity_change', severity='urgent') should be replaced
+    const existingQc = await db
+      .select({ id: triageRecords.id })
+      .from(triageRecords)
+      .where(
+        and(
+          eq(triageRecords.strategyId, strategyId),
+          eq(triageRecords.snapshotDate, tradeDate),
+          eq(triageRecords.recommendedAction, 'QUANTITY_CHANGE'),
+          eq(triageRecords.contextLevel, 'strategy'),
+          eq(triageRecords.ruleSet, TRIAGE_RULES_V1.ruleSet), // Only check for new-style records
+          eq(triageRecords.severity, 'pending') // Only check for new-style records
+        )
+      )
+      .limit(1);
+
+    if (existingQc.length > 0) {
+      // Already exists from new system, skip
+      continue;
+    }
+    
+    // Delete any old-style QUANTITY_CHANGE records (ruleSet='quantity_change') for this strategy/date
+    // These are from the old computeQuantityChangeTriageForDate function
+    await db
+      .delete(triageRecords)
+      .where(
+        and(
+          eq(triageRecords.strategyId, strategyId),
+          eq(triageRecords.snapshotDate, tradeDate),
+          eq(triageRecords.recommendedAction, 'QUANTITY_CHANGE'),
+          eq(triageRecords.contextLevel, 'strategy'),
+          eq(triageRecords.ruleSet, 'quantity_change') // Old-style records
+        )
+      );
+
+    // Get strategy info
+    const strategyResult = await db
+      .select({
+        strategyKey: strategies.strategyKey,
+        accountId: strategies.accountId,
+      })
+      .from(strategies)
+      .where(eq(strategies.id, strategyId))
+      .limit(1);
+
+    if (strategyResult.length === 0) continue;
+
+    const strategy = strategyResult[0];
+    
+    if (!strategy.accountId) continue; // Skip if accountId is missing
+
+    // Aggregate trades by conid (each position aggregated individually)
+    const tradesByConid = new Map<number, typeof trades>();
+    for (const trade of trades) {
+      if (!trade.conid) continue;
+      if (!tradesByConid.has(trade.conid)) {
+        tradesByConid.set(trade.conid, []);
+      }
+      tradesByConid.get(trade.conid)!.push(trade);
+    }
+
+    // Build unmatched trade executions array with full details for matching
+    const unmatchedTradeExecutions = Array.from(tradesByConid.entries()).map(([conid, conidTrades]) => {
+      const firstTrade = conidTrades[0];
+      return {
+        blotterId: firstTrade.blotterId,
+        blotterActionId: firstTrade.id,
+        conid: conid,
+        ticker: firstTrade.ticker,
+        actionDate: firstTrade.actionDate,
+        qtyChange: conidTrades.reduce((sum, t) => sum + (Number(t.qtyChange) || 0), 0), // Net quantity (signed)
+        premiumChange: conidTrades.reduce((sum, t) => sum + (Number(t.premiumChange) || 0), 0),
+        tradeIds: firstTrade.tradeIds,
+        tradeCount: firstTrade.tradeCount || conidTrades.length,
+      };
+    });
+
+    // Create strategy-level QUANTITY_CHANGE triage record
+    const triageRecord: NewTriageRecord = {
+      snapshotDate: tradeDate,
+      accountId: strategy.accountId,
+      contextLevel: 'strategy',
+      positionId: null,
+      strategyId: strategyId,
+      symbol: strategy.strategyKey ?? 'Strategy',
+      recommendedAction: 'QUANTITY_CHANGE',
+      severity: 'pending',
+      ruleSet: TRIAGE_RULES_V1.ruleSet,
+      // Store full trade execution details for matching
+      unmatchedTradeExecutions: unmatchedTradeExecutions as any,
+      // Store aggregated trade info in notes (optional, for display)
+      notes: JSON.stringify({
+        unmatchedTrades: Array.from(tradesByConid.entries()).map(([conid, conidTrades]) => ({
+          conid,
+          ticker: conidTrades[0]?.ticker,
+          totalQtyChange: conidTrades.reduce((sum, t) => sum + (Number(t.qtyChange) || 0), 0),
+          totalPremiumChange: conidTrades.reduce((sum, t) => sum + (Number(t.premiumChange) || 0), 0),
+          tradeCount: conidTrades.length,
+        })),
+      }),
+    };
+
+    await upsertTriageRecords([triageRecord]);
+    created++;
+  }
+
+  return created;
 }
 
 /**
@@ -776,7 +982,7 @@ export async function backfillUnmatchedTradeEntries(
               linkedTradeBlotterIds: allLinkedIds,
               // Update primary link if not set, or if we're adding the first trade
               linkedBlotterActionId: qcRecord.linkedBlotterActionId || tradesToLink[0].id,
-              updatedAt: new Date(),
+              updatedAt: sql`now()`,
             })
             .where(eq(blotterActions.id, qcRecord.id));
 
@@ -786,7 +992,7 @@ export async function backfillUnmatchedTradeEntries(
               .update(blotterActions)
               .set({
                 linkedBlotterActionId: qcRecord.id,
-                updatedAt: new Date(),
+                updatedAt: sql`now()`,
               })
               .where(eq(blotterActions.id, trade.id));
           }
@@ -807,12 +1013,31 @@ async function linkBlotterActions(
   action1Id: string,
   action2Id: string
 ): Promise<void> {
+  // Check which action is the Trade Action (triage_action) and which is trade ingestion
+  const actions = await db
+    .select({
+      id: blotterActions.id,
+      source: blotterActions.source,
+      actionDetail: blotterActions.actionDetail,
+    })
+    .from(blotterActions)
+    .where(
+      or(
+        eq(blotterActions.id, action1Id),
+        eq(blotterActions.id, action2Id)
+      )
+    );
+
+  const tradeAction = actions.find(a => a.source === 'triage_action' && a.actionDetail === 'TRADE');
+  const tradeEntry = actions.find(a => a.source === 'trade_ingestion');
+
   await db.transaction(async (tx) => {
+    // Link both actions
     await tx
       .update(blotterActions)
       .set({
         linkedBlotterActionId: action2Id,
-        updatedAt: new Date(),
+        updatedAt: sql`now()`,
       })
       .where(eq(blotterActions.id, action1Id));
 
@@ -820,9 +1045,21 @@ async function linkBlotterActions(
       .update(blotterActions)
       .set({
         linkedBlotterActionId: action1Id,
-        updatedAt: new Date(),
+        updatedAt: sql`now()`,
       })
       .where(eq(blotterActions.id, action2Id));
+
+    // Mark Trade Action as complete if it exists
+    if (tradeAction) {
+      await tx
+        .update(blotterActions)
+        .set({
+          completed: true,
+          severityOverride: 'complete',
+          updatedAt: sql`now()`,
+        })
+        .where(eq(blotterActions.id, tradeAction.id));
+    }
   });
 }
 
@@ -857,10 +1094,25 @@ export async function computeTradeBlotterEntriesForDateRange(
     .where(and(...whereClauses));
 
   let totalCreated = 0;
+  const processedDates = new Set<string>();
 
   for (const { tradeDate } of tradeDates) {
     const count = await computeTradeBlotterEntriesForDate(tradeDate, accountId, strategyId);
+    processedDates.add(tradeDate);
     totalCreated += count;
+  }
+
+  // Create QUANTITY_CHANGE triage records for unmatched trades after all matching is complete
+  // Process each date separately to ensure proper grouping by strategy
+  if (accountId) {
+    for (const tradeDate of processedDates) {
+      try {
+        await createQuantityChangeTriageForUnmatchedTrades(tradeDate, accountId);
+      } catch (error) {
+        console.error(`Failed to create QUANTITY_CHANGE triage records for ${tradeDate}:`, error);
+        // Continue with other dates even if one fails
+      }
+    }
   }
 
   return totalCreated;
@@ -910,7 +1162,7 @@ export async function backfillTradeBlotterForStrategy(strategyId: string): Promi
 
   // Recompute blotter entries for each date
   for (const date of tradeDates) {
-    const count = await computeTradeBlotterEntriesForDate(date, accountId, strategyId);
+    const count = await computeTradeBlotterEntriesForDate(date, accountId ?? undefined, strategyId);
     created += count;
   }
 
@@ -926,7 +1178,7 @@ export async function backfillTradeBlotterForStrategy(strategyId: string): Promi
       .update(blotterActions)
       .set({
         strategyId,
-        updatedAt: new Date(),
+        updatedAt: sql`now()`,
       })
       .where(
         and(
@@ -943,7 +1195,7 @@ export async function backfillTradeBlotterForStrategy(strategyId: string): Promi
       .update(blotterActions)
       .set({
         strategyId,
-        updatedAt: new Date(),
+        updatedAt: sql`now()`,
       })
       .where(
         and(
@@ -953,6 +1205,11 @@ export async function backfillTradeBlotterForStrategy(strategyId: string): Promi
         )
       );
   }
+
+  // Note: QUANTITY_CHANGE triage records are created by:
+  // - Trade ingestion (after matching attempts)
+  // - Recompute operations (computeTradeBlotterEntriesForDateRange)
+  // Not created here to avoid redundant processing of all strategies when backfilling one strategy
 
   return created;
 }
@@ -1122,7 +1379,7 @@ export async function backfillTriageActionMatching(
         .set({
           ticker: resolvedTicker,
           conid: resolvedConid,
-          updatedAt: new Date(),
+          updatedAt: sql`now()`,
         })
         .where(eq(blotterActions.id, action.id));
 
@@ -1236,11 +1493,10 @@ export async function fixMergedStrategyBlotterEntries(
     // Find the target strategy by looking for trades with the same conid and date
     // that belong to a non-merged strategy
     // Convert actionDate to string format (YYYY-MM-DD) for comparison
-    const actionDateStr = entry.actionDate instanceof Date 
-      ? entry.actionDate.toISOString().split('T')[0]
-      : typeof entry.actionDate === 'string'
+    // actionDate is a date field, which is stored as a string in the format YYYY-MM-DD
+    const actionDateStr = typeof entry.actionDate === 'string'
       ? entry.actionDate.split('T')[0]
-      : entry.actionDate;
+      : String(entry.actionDate).split('T')[0];
     
     const targetStrategy = await db
       .select({
@@ -1269,7 +1525,7 @@ export async function fixMergedStrategyBlotterEntries(
           .update(blotterActions)
           .set({
             strategyId: targetId,
-            updatedAt: new Date(),
+            updatedAt: sql`now()`,
           })
           .where(eq(blotterActions.id, entry.id));
         
