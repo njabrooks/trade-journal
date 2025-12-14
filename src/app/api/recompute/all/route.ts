@@ -3,7 +3,7 @@ import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetric
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { computeTriageForDate, deleteTriageRecordsForDateRange } from '@/lib/derived/triage';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
-import { computeTradeBlotterEntriesForDate, computeTradeBlotterEntriesForDateRange } from '@/lib/derived/blotter';
+import { computeTradeBlotterEntriesForDate, computeTradeBlotterEntriesForDateRange, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
 import { db } from '@/db';
 import { positions } from '@/db/schema';
 import { and, eq, ne, isNotNull, gte, lte, sql } from 'drizzle-orm';
@@ -93,7 +93,11 @@ export async function POST(request: NextRequest) {
           // Trade blotter entries
           try {
             const blotterCount = await computeTradeBlotterEntriesForDate(snapshotDate, accountId);
-            results.blotter = { count: blotterCount };
+            
+            // Create QUANTITY_CHANGE triage records for unmatched trades (after matching completes)
+            const qcCount = await createQuantityChangeTriageForUnmatchedTrades(snapshotDate, accountId);
+            
+            results.blotter = { count: blotterCount, quantityChangeRecords: qcCount };
           } catch (error) {
             results.blotter = { error: error instanceof Error ? error.message : 'Failed' };
           }

@@ -180,7 +180,7 @@ export async function getTriageQueue(
     .where(and(...conditions))
     .orderBy(...orderByClauses);
 
-  const records: TriageQueueRecord[] = rows.map((row) => ({
+  let records: TriageQueueRecord[] = rows.map((row) => ({
     id: row.id,
     severity: row.severity,
     contextLevel: row.contextLevel,
@@ -197,6 +197,31 @@ export async function getTriageQueue(
     accountId: row.accountId,
     strategyKey: row.strategyKey,
   }));
+
+  // Deduplicate CONFIRM_STRATEGIES records: keep only the most recent one per strategy
+  // This prevents showing hundreds of duplicate records for unconfirmed strategies
+  const confirmStrategiesRecords = records.filter(r => r.recommendedAction === 'CONFIRM_STRATEGIES');
+  const otherRecords = records.filter(r => r.recommendedAction !== 'CONFIRM_STRATEGIES');
+  
+  if (confirmStrategiesRecords.length > 0) {
+    // Group by strategyId and keep only the most recent (by snapshotDate)
+    const latestByStrategy = new Map<string, TriageQueueRecord>();
+    for (const record of confirmStrategiesRecords) {
+      if (!record.strategyId) {
+        // Keep records without strategyId (shouldn't happen, but handle gracefully)
+        latestByStrategy.set(record.id, record);
+        continue;
+      }
+      
+      const existing = latestByStrategy.get(record.strategyId);
+      if (!existing || record.snapshotDate > existing.snapshotDate) {
+        latestByStrategy.set(record.strategyId, record);
+      }
+    }
+    
+    // Combine deduplicated CONFIRM_STRATEGIES with other records
+    records = [...Array.from(latestByStrategy.values()), ...otherRecords];
+  }
 
   return {
     snapshotDate,
@@ -342,7 +367,7 @@ export async function getTriageQueueForStrategy(
     .where(and(...conditions))
     .orderBy(...orderByClauses);
 
-  const records: TriageQueueRecord[] = rows.map((row) => ({
+  let records: TriageQueueRecord[] = rows.map((row) => ({
     id: row.id,
     severity: row.severity,
     contextLevel: row.contextLevel,
@@ -359,6 +384,31 @@ export async function getTriageQueueForStrategy(
     accountId: row.accountId,
     strategyKey: row.strategyKey,
   }));
+
+  // Deduplicate CONFIRM_STRATEGIES records: keep only the most recent one per strategy
+  // This prevents showing hundreds of duplicate records for unconfirmed strategies
+  const confirmStrategiesRecords = records.filter(r => r.recommendedAction === 'CONFIRM_STRATEGIES');
+  const otherRecords = records.filter(r => r.recommendedAction !== 'CONFIRM_STRATEGIES');
+  
+  if (confirmStrategiesRecords.length > 0) {
+    // Group by strategyId and keep only the most recent (by snapshotDate)
+    const latestByStrategy = new Map<string, TriageQueueRecord>();
+    for (const record of confirmStrategiesRecords) {
+      if (!record.strategyId) {
+        // Keep records without strategyId (shouldn't happen, but handle gracefully)
+        latestByStrategy.set(record.id, record);
+        continue;
+      }
+      
+      const existing = latestByStrategy.get(record.strategyId);
+      if (!existing || record.snapshotDate > existing.snapshotDate) {
+        latestByStrategy.set(record.strategyId, record);
+      }
+    }
+    
+    // Combine deduplicated CONFIRM_STRATEGIES with other records
+    records = [...Array.from(latestByStrategy.values()), ...otherRecords];
+  }
 
   return {
     snapshotDate,

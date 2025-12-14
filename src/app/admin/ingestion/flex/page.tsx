@@ -8,13 +8,19 @@ import { IngestionTabs } from '@/components/layout/IngestionTabs';
 interface IngestionResult {
   success: boolean;
   summary?: {
-    totalRows: number;
-    validRows: number;
-    inserted: number;
+    totalRows?: number;
+    validRows?: number;
+    inserted?: number;
     skipped?: number;
     updated?: number;
-    validationErrors: number;
-    insertErrors: number;
+    validationErrors?: number;
+    insertErrors?: number;
+    // Multi-section format (positions-all endpoint)
+    totalInserted?: number;
+    totalErrors?: number;
+    post?: { inserted: number; errors: number };
+    equt?: { inserted: number; errors: number };
+    mtmp?: { inserted: number; errors: number };
   };
   errors?: Array<{ row: number; errors: string[] }>;
   insertErrors?: Array<{ row: number; error: string }>;
@@ -26,7 +32,7 @@ export default function FlexIngestionPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<IngestionResult | null>(null);
-  const [processAllSections, setProcessAllSections] = useState(false);
+  const [processAllSections, setProcessAllSections] = useState(true);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,16 +194,16 @@ export default function FlexIngestionPage() {
           {result.summary && (
             <div className="space-y-2 mb-4">
               {/* Unified positions-all response format */}
-              {result.summary.post !== undefined ? (
+              {result.summary.post ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="font-semibold">Total Inserted:</span>{' '}
-                      {result.summary.totalInserted || 0}
+                      {result.summary.totalInserted ?? 0}
                     </div>
                     <div>
                       <span className="font-semibold">Total Errors:</span>{' '}
-                      {result.summary.totalErrors || 0}
+                      {result.summary.totalErrors ?? 0}
                     </div>
                   </div>
                   <div className="border-t pt-3">
@@ -205,15 +211,15 @@ export default function FlexIngestionPage() {
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="font-semibold">POST:</span>{' '}
-                        {result.summary.post.inserted} inserted, {result.summary.post.errors} errors
+                        {result.summary.post?.inserted ?? 0} inserted, {result.summary.post?.errors ?? 0} errors
                       </div>
                       <div>
                         <span className="font-semibold">EQUT:</span>{' '}
-                        {result.summary.equt.inserted} inserted, {result.summary.equt.errors} errors
+                        {result.summary.equt?.inserted ?? 0} inserted, {result.summary.equt?.errors ?? 0} errors
                       </div>
                       <div>
                         <span className="font-semibold">MTMP:</span>{' '}
-                        {result.summary.mtmp.inserted} inserted, {result.summary.mtmp.errors} errors
+                        {result.summary.mtmp?.inserted ?? 0} inserted, {result.summary.mtmp?.errors ?? 0} errors
                       </div>
                     </div>
                   </div>

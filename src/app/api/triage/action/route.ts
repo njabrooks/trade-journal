@@ -152,14 +152,30 @@ export async function POST(request: NextRequest) {
       const finalActionDetail = isQuantityChange ? "TRADE" : actionType;
 
       // Determine actionDate based on triage type
-      const actionDate = triage.recommendedAction === 'QUANTITY_CHANGE'
-        ? triage.snapshotDate // Matches trade date
-        : (() => {
-            // snapshotDate + 1 day (intended for next day's trades)
+      let actionDate: string;
+      if (triage.recommendedAction === 'QUANTITY_CHANGE') {
+        // For QUANTITY_CHANGE, use snapshotDate directly (matches trade date)
+        if (!triage.snapshotDate) {
+          return NextResponse.json(
+            { error: "Triage record missing snapshotDate" },
+            { status: 400 }
+          );
+        }
+        actionDate = typeof triage.snapshotDate === 'string' 
+          ? triage.snapshotDate 
+          : triage.snapshotDate.toISOString().split('T')[0];
+      } else {
+        // For other actions, snapshotDate + 1 day (intended for next day's trades)
+        if (!triage.snapshotDate) {
+          return NextResponse.json(
+            { error: "Triage record missing snapshotDate" },
+            { status: 400 }
+          );
+        }
             const date = new Date(triage.snapshotDate);
             date.setDate(date.getDate() + 1);
-            return date.toISOString().split('T')[0];
-          })();
+        actionDate = date.toISOString().split('T')[0];
+      }
 
       const insertedBlotterActions = [];
 
@@ -183,25 +199,31 @@ export async function POST(request: NextRequest) {
 
         if (positionResult.length === 0) {
           console.error(`Position ${tradePosition.positionId} not found`);
-          continue;
+          return NextResponse.json(
+            { error: `Position ${tradePosition.positionId} not found` },
+            { status: 400 }
+          );
         }
 
         const position = positionResult[0];
 
         if (!position.conid) {
           console.error(`Position ${tradePosition.positionId} missing conid`);
-          continue;
+          return NextResponse.json(
+            { error: `Position ${tradePosition.positionId} missing conid` },
+            { status: 400 }
+          );
         }
 
         // Fetch underlying symbol if needed (for options)
         let underlyingSymbol: string | null = null;
         if (position.assetClass !== 'STK' && position.underlyingId) {
           const underlyingResult = await db
-            .select({ symbol: underlyings.symbol })
+            .select({ ticker: underlyings.ticker })
             .from(underlyings)
             .where(eq(underlyings.id, position.underlyingId))
             .limit(1);
-          underlyingSymbol = underlyingResult[0]?.symbol ?? null;
+          underlyingSymbol = underlyingResult[0]?.ticker ?? null;
         } else if (position.assetClass === 'STK') {
           // For stocks, symbol is the underlying
           underlyingSymbol = position.symbol;
@@ -268,6 +290,14 @@ export async function POST(request: NextRequest) {
             // Continue - matching is optional
           }
         }
+      }
+
+      // Ensure at least one blotter action was created
+      if (insertedBlotterActions.length === 0) {
+        return NextResponse.json(
+          { error: "No blotter actions were created. Check that positions exist and have conid values." },
+          { status: 400 }
+        );
       }
 
       // Update triage record severity
@@ -376,10 +406,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error recording triage action:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error("Error stack:", errorStack);
     return NextResponse.json(
       {
         error: "Failed to record action",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: errorMessage,
+        details: errorStack, // Include stack trace in development
       },
       { status: 500 }
     );

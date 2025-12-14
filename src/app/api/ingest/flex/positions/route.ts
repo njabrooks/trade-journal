@@ -13,7 +13,8 @@ import { and, eq, ne } from 'drizzle-orm';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
-import { autoLinkPositionsToStrategies } from '@/lib/derived/strategyAuto';
+import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
+import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
 import { strategies } from '@/db/schema';
 
 const SECTION_CODE = 'POST';
@@ -234,6 +235,37 @@ export async function POST(request: NextRequest) {
           
           // Triage
           await computeTriageForDate(snapshotDate, accountId);
+          
+          // If strategies were created or positions were linked, also link trades and create trade blotter entries
+          // This ensures that when positions are ingested first, trades get linked and QUANTITY_CHANGE records are created
+          if (autoLinkResult.strategiesCreated > 0 || autoLinkResult.positionsLinked > 0) {
+            try {
+              // Link any unlinked trades to strategies (may create more strategies)
+              const tradeLinkResult = await autoLinkTradesToStrategies(accountId, { snapshotDate });
+              
+              // Create trade blotter entries for this date (if any trades exist)
+              try {
+                await computeTradeBlotterEntriesForDate(snapshotDate, accountId);
+              } catch (error) {
+                console.error(`Failed to create trade blotter entries for ${accountId} on ${snapshotDate}:`, error);
+                // Don't fail ingestion if blotter creation fails
+              }
+              
+              // Create QUANTITY_CHANGE triage records for unmatched trades (after matching completes)
+              try {
+                const qcCount = await createQuantityChangeTriageForUnmatchedTrades(snapshotDate, accountId);
+                if (qcCount > 0) {
+                  console.log(`Created ${qcCount} QUANTITY_CHANGE triage records for ${accountId} on ${snapshotDate} after positions ingestion`);
+                }
+              } catch (error) {
+                console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${snapshotDate}:`, error);
+                // Don't fail ingestion if QUANTITY_CHANGE creation fails
+              }
+            } catch (error) {
+              console.error(`Failed to link trades and create blotter entries for ${accountId} on ${snapshotDate}:`, error);
+              // Don't fail ingestion if trade linking fails
+            }
+          }
           
           recomputeResults[snapshotDate] = {
             autoStrategies: {
