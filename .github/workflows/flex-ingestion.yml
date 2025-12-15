@@ -1,0 +1,41 @@
+name: Flex Ingestion
+
+on:
+  schedule:
+    # Daily at 2 AM UTC (adjust timezone as needed)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Flex ingestion
+        env:
+          # Database connection (use pooler for better compatibility)
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION || 'false' }}
+          
+          # IBKR Flex API credentials
+          IBKR_FLEX_TOKEN: ${{ secrets.IBKR_FLEX_TOKEN }}
+          IBKR_FLEX_POSITIONS_QUERY_ID: ${{ secrets.IBKR_FLEX_POSITIONS_QUERY_ID }}
+          IBKR_FLEX_TRADES_QUERY_ID: ${{ secrets.IBKR_FLEX_TRADES_QUERY_ID }}
+          IBKR_FLEX_BASE_URL: ${{ secrets.IBKR_FLEX_BASE_URL || 'https://www.interactivebrokers.com/Universal/servlet' }}
+          IBKR_FLEX_WAIT_MS: ${{ secrets.IBKR_FLEX_WAIT_MS || '3000' }}
+        run: |
+          npx tsx scripts/run-flex-ingestion.ts
+
