@@ -126,9 +126,16 @@ export async function computeTradeBlotterEntriesForDate(
       // Use conid in ID if available for better uniqueness
       const blotterId = `TRADE_${agg.strategyId || 'UNLINKED'}_${agg.conid || agg.symbol}_${tradeDate}`;
 
-      // Upsert pattern: Delete by unique key (blotterId), then insert
-      // This ensures idempotency - safe to run multiple times (matches existing codebase pattern)
-      await db.delete(blotterActions).where(eq(blotterActions.blotterId, blotterId));
+      // If an existing entry is already marked completed, treat it as immutable and skip
+      const existing = await db
+        .select({ id: blotterActions.id, completed: blotterActions.completed })
+        .from(blotterActions)
+        .where(eq(blotterActions.blotterId, blotterId))
+        .limit(1);
+
+      if (existing[0]?.completed) {
+        continue;
+      }
 
       // Get strategy metadata if linked
       let strategyKey: string | null = null;
@@ -155,7 +162,7 @@ export async function computeTradeBlotterEntriesForDate(
         }
       }
 
-      // Insert new entry (upsert pattern: delete + insert ensures idempotency)
+      // Atomic upsert; only update rows that aren't completed yet
       const newEntry = await db
         .insert(blotterActions)
         .values({
@@ -177,6 +184,30 @@ export async function computeTradeBlotterEntriesForDate(
           conid: agg.conid ?? null,
           completed: true, // Trades are already executed
           createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: blotterActions.blotterId,
+          set: {
+            source: 'trade_ingestion',
+            actionDate: tradeDate,
+            snapshotDate: tradeDate,
+            strategyId: agg.strategyId ?? null,
+            ticker: agg.symbol,
+            strategyKey: strategyKey ?? null,
+            strategyLabel: strategyLabel ?? null,
+            actionClass: 'TRADE',
+            actionDetail: 'TRADE_INGESTED',
+            reasonCode: 'TRADE_EXECUTION',
+            qtyChange: agg.netQuantity.toString(),
+            premiumChange: agg.netPremium.toString(),
+            tradeIds: agg.tradeIds && agg.tradeIds.length > 0 ? agg.tradeIds : null,
+            tradeCount: agg.tradeIds?.length ?? 0,
+            conid: agg.conid ?? null,
+            completed: true,
+            updatedAt: new Date(),
+          },
+          where: or(isNull(blotterActions.completed), eq(blotterActions.completed, false)),
         })
         .returning({ id: blotterActions.id });
 
