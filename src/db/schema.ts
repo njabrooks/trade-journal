@@ -616,3 +616,31 @@ export const ingestionRuns = pgTable('ingestion_runs', {
 
 export type IngestionRun = typeof ingestionRuns.$inferSelect;
 export type NewIngestionRun = typeof ingestionRuns.$inferInsert;
+
+// ============================================================================
+// Flex Query Configs
+// ============================================================================
+
+export const flexQueryConfigs = pgTable('flex_query_configs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  accountId: uuid('account_id')
+    .notNull()
+    .references(() => accounts.id, { onDelete: 'cascade' }),
+  queryName: text('query_name').notNull(),
+  queryType: text('query_type').notNull(), // 'positions' | 'trades'
+  flexToken: text('flex_token'), // Can be null if using env var
+  queryId: text('query_id'), // Can be null if using env var
+  isActive: boolean('is_active').notNull().default(true),
+  scheduleCron: text('schedule_cron'), // Cron expression for scheduling
+  lastRunAt: timestamp('last_run_at', { withTimezone: true }),
+  lastRunStatus: text('last_run_status'), // 'success' | 'failed' | 'pending'
+  lastRunError: text('last_run_error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  accountQueryNameIdx: unique().on(table.accountId, table.queryName),
+  isActiveIdx: index('idx_flex_query_configs_is_active').on(table.isActive),
+}));
+
+export type FlexQueryConfig = typeof flexQueryConfigs.$inferSelect;
+export type NewFlexQueryConfig = typeof flexQueryConfigs.$inferInsert;

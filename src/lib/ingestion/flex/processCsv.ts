@@ -1,0 +1,624 @@
+/**
+ * Shared CSV Processing Functions
+ * 
+ * These functions can be called directly from automated ingestion
+ * or from HTTP routes, avoiding the need for internal HTTP calls.
+ */
+
+import Papa from 'papaparse';
+import { db } from '@/db';
+import { positions, navSnapshots, mtmSnapshots, trades, ingestionRuns } from '@/db/schema';
+import type { NewPosition, NewNavSnapshot, NewMtmSnapshot } from '@/db/schema';
+import {
+  FlexPositionRow,
+  normalizeFlexPositionRow,
+  validateFlexPositionRow,
+} from '@/lib/ingestion/flex/positions';
+import {
+  FlexNavRow,
+  normalizeFlexNavRow,
+  validateFlexNavRow,
+} from '@/lib/ingestion/flex/nav';
+import {
+  FlexMtmRow,
+  normalizeFlexMtmRow,
+  validateFlexMtmRow,
+} from '@/lib/ingestion/flex/mtm';
+import {
+  FlexTradeRow,
+  normalizeFlexTradeRow,
+  validateFlexTradeRow,
+} from '@/lib/ingestion/flex/trades';
+import { resolveAccountId } from '@/lib/ingestion/flex/account';
+import { and, eq, ne } from 'drizzle-orm';
+import { computeTriageForDate } from '@/lib/derived/triage';
+import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
+import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
+import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
+import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
+import { strategies } from '@/db/schema';
+import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
+
+const SECTION_CODES = {
+  POST: 'POST',
+  EQUT: 'EQUT',
+  MTMP: 'MTMP',
+  TRADES: 'TRNT',
+  EXERCISES: 'OPTT',
+  CASH: 'CTRN',
+};
+
+const SUMMARY_MARKERS = new Set(['summary', 'total', 'aggregate']);
+
+type ErrorDetail = {
+  row: number;
+  errors: string[];
+};
+
+type RecordWithMeta<T> = {
+  record: T;
+  rowNumber: number;
+};
+
+function buildRecord<T extends Record<string, string>>(
+  fieldNames: string[],
+  row: string[]
+): T {
+  const record: Record<string, string> = {};
+  fieldNames.forEach((field, idx) => {
+    if (!field) return;
+    const value = row[idx + 2];
+    if (value === undefined) return;
+    const trimmed = value.trim();
+    if (trimmed !== '') {
+      record[field] = trimmed;
+    }
+  });
+  return record as T;
+}
+
+function extractClientAccountId(row: Record<string, string>): string | undefined {
+  return (
+    row['ClientAccountID'] ||
+    row['Client Account ID'] ||
+    row['clientAccountID']
+  );
+}
+
+function isSummaryRow(row: FlexMtmRow): boolean {
+  const conid =
+    row['Conid'] ||
+    row['conid'] ||
+    row['CONID'] ||
+    row['SecId'] ||
+    row['secId'];
+  if (conid && SUMMARY_MARKERS.has(conid.trim().toLowerCase())) {
+    return true;
+  }
+
+  const levelOfDetail = row['LevelOfDetail'] || row['Level Of Detail'];
+  if (levelOfDetail && SUMMARY_MARKERS.has(levelOfDetail.trim().toLowerCase())) {
+    return true;
+  }
+
+  const symbol = row['Symbol'] || row['symbol'];
+  if (!symbol) {
+    const quantity = row['Quantity'] || row['quantity'];
+    const markPrice = row['MarkPrice'] || row['markPrice'];
+    const marketValue = row['MarketValue'] || row['marketValue'];
+    if (!quantity && !markPrice && !marketValue) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export interface ProcessPositionsResult {
+  post: { inserted: number; errors: ErrorDetail[] };
+  equt: { inserted: number; errors: ErrorDetail[] };
+  mtmp: { inserted: number; errors: ErrorDetail[] };
+  totalInserted: number;
+  totalErrors: number;
+  snapshotDates: string[];
+  accountId: string | null;
+}
+
+/**
+ * Process positions CSV (POST, EQUT, MTMP sections)
+ */
+export async function processPositionsCsv(csvText: string, processRunId?: string | null): Promise<ProcessPositionsResult> {
+  const results = {
+    post: { inserted: 0, errors: [] as ErrorDetail[] },
+    equt: { inserted: 0, errors: [] as ErrorDetail[] },
+    mtmp: { inserted: 0, errors: [] as ErrorDetail[] },
+  };
+
+  const allSnapshotDates = new Set<string>();
+  let accountId: string | null = null;
+
+  const parsed = Papa.parse<string[]>(csvText, {
+    header: false,
+    skipEmptyLines: true,
+  });
+
+  if (parsed.errors.length > 0) {
+    throw new Error(`CSV parsing errors: ${JSON.stringify(parsed.errors)}`);
+  }
+
+  const rows = parsed.data;
+
+  // Process POST section
+  const postHeader = rows.find(
+    (row) => row[0] === 'HEADER' && row[1] === SECTION_CODES.POST
+  );
+
+  if (postHeader) {
+    const fieldNames = postHeader.slice(2);
+    const postDataRows: RecordWithMeta<FlexPositionRow>[] = rows
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row }) => row[0] === 'DATA' && row[1] === SECTION_CODES.POST)
+      .map(({ row }, dataIdx) => ({
+        record: buildRecord<FlexPositionRow>(fieldNames, row),
+        rowNumber: dataIdx + 1,
+      }));
+
+    if (postDataRows.length > 0) {
+      const firstAccountValue = extractClientAccountId(postDataRows[0].record);
+      if (firstAccountValue) {
+        accountId = await resolveAccountId(firstAccountValue);
+
+        const normalizedRows: Array<{
+          data: Omit<NewPosition, 'id' | 'createdAt' | 'updatedAt'>;
+          rowNumber: number;
+        }> = [];
+        const snapshotKeys = new Set<string>();
+
+        for (const { record, rowNumber } of postDataRows) {
+          const validation = validateFlexPositionRow(record);
+          if (!validation.valid) {
+            results.post.errors.push({ row: rowNumber, errors: validation.errors });
+            continue;
+          }
+
+          try {
+            const normalized = await normalizeFlexPositionRow(record, accountId);
+            if (normalized.snapshotDate) {
+              allSnapshotDates.add(normalized.snapshotDate);
+              snapshotKeys.add(`${accountId}::${normalized.snapshotDate}`);
+              normalizedRows.push({ data: normalized, rowNumber });
+            }
+          } catch (error) {
+            results.post.errors.push({
+              row: rowNumber,
+              errors: [error instanceof Error ? error.message : 'Normalization failed'],
+            });
+          }
+        }
+
+        // Delete existing positions for these snapshot dates (idempotency)
+        for (const key of snapshotKeys) {
+          const [acc, snapshotDate] = key.split('::');
+          if (!snapshotDate) continue;
+          await db
+            .delete(positions)
+            .where(and(eq(positions.accountId, acc), eq(positions.snapshotDate, snapshotDate)));
+        }
+
+        // Insert positions
+        for (const { data } of normalizedRows) {
+          try {
+            await db.insert(positions).values(data);
+            results.post.inserted++;
+          } catch (error) {
+            results.post.errors.push({
+              row: 0,
+              errors: [error instanceof Error ? error.message : 'Insert failed'],
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Process EQUT section
+  const equtHeader = rows.find(
+    (row) => row[0] === 'HEADER' && row[1] === SECTION_CODES.EQUT
+  );
+
+  if (equtHeader) {
+    const fieldNames = equtHeader.slice(2);
+    const equtDataRows: RecordWithMeta<FlexNavRow>[] = rows
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row }) => row[0] === 'DATA' && row[1] === SECTION_CODES.EQUT)
+      .map(({ row }, dataIdx) => ({
+        record: buildRecord<FlexNavRow>(fieldNames, row),
+        rowNumber: dataIdx + 1,
+      }));
+
+    if (equtDataRows.length > 0) {
+      const firstAccountValue = extractClientAccountId(equtDataRows[0].record);
+      if (firstAccountValue) {
+        if (!accountId) {
+          accountId = await resolveAccountId(firstAccountValue);
+        }
+
+        const normalizedRows: Array<{
+          data: Omit<NewNavSnapshot, 'id' | 'createdAt'>;
+          rowNumber: number;
+        }> = [];
+
+        for (const { record, rowNumber } of equtDataRows) {
+          const validation = validateFlexNavRow(record);
+          if (!validation.valid) {
+            results.equt.errors.push({ row: rowNumber, errors: validation.errors });
+            continue;
+          }
+
+          try {
+            const normalized = normalizeFlexNavRow(record, accountId);
+            const dateStr = normalized.reportDate;
+            if (dateStr) {
+              allSnapshotDates.add(dateStr);
+              normalizedRows.push({ data: normalized, rowNumber });
+            }
+          } catch (error) {
+            results.equt.errors.push({
+              row: rowNumber,
+              errors: [error instanceof Error ? error.message : 'Normalization failed'],
+            });
+          }
+        }
+
+        // Delete existing snapshots and insert new ones
+        for (const { data } of normalizedRows) {
+          try {
+            await db
+              .delete(navSnapshots)
+              .where(
+                and(
+                  eq(navSnapshots.accountId, data.accountId),
+                  eq(navSnapshots.reportDate, data.reportDate)
+                )
+              );
+            await db.insert(navSnapshots).values(data);
+            results.equt.inserted++;
+          } catch (error) {
+            results.equt.errors.push({
+              row: 0,
+              errors: [error instanceof Error ? error.message : 'Insert failed'],
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Process MTMP section
+  const mtmpHeader = rows.find(
+    (row) => row[0] === 'HEADER' && row[1] === SECTION_CODES.MTMP
+  );
+
+  if (mtmpHeader) {
+    const fieldNames = mtmpHeader.slice(2);
+    const mtmpDataRows: RecordWithMeta<FlexMtmRow>[] = rows
+      .map((row, idx) => ({ row, idx }))
+      .filter(({ row }) => row[0] === 'DATA' && row[1] === SECTION_CODES.MTMP)
+      .map(({ row }, dataIdx) => ({
+        record: buildRecord<FlexMtmRow>(fieldNames, row),
+        rowNumber: dataIdx + 1,
+      }))
+      .filter(({ record }) => !isSummaryRow(record));
+
+    if (mtmpDataRows.length > 0) {
+      const firstAccountValue = extractClientAccountId(mtmpDataRows[0].record);
+      if (firstAccountValue) {
+        if (!accountId) {
+          accountId = await resolveAccountId(firstAccountValue);
+        }
+
+        const normalizedRows: Array<{
+          data: Omit<NewMtmSnapshot, 'id' | 'createdAt'>;
+          rowNumber: number;
+        }> = [];
+
+        for (const { record, rowNumber } of mtmpDataRows) {
+          const validation = validateFlexMtmRow(record);
+          if (!validation.valid) {
+            results.mtmp.errors.push({ row: rowNumber, errors: validation.errors });
+            continue;
+          }
+
+          try {
+            const normalized = await normalizeFlexMtmRow(record, accountId);
+            if (normalized.snapshotDate) {
+              allSnapshotDates.add(normalized.snapshotDate);
+              normalizedRows.push({ data: normalized, rowNumber });
+            }
+          } catch (error) {
+            results.mtmp.errors.push({
+              row: rowNumber,
+              errors: [error instanceof Error ? error.message : 'Normalization failed'],
+            });
+          }
+        }
+
+        // Insert MTM snapshots
+        for (const { data } of normalizedRows) {
+          try {
+            await db.insert(mtmSnapshots).values(data).onConflictDoNothing();
+            results.mtmp.inserted++;
+          } catch (error) {
+            // Ignore duplicate errors
+          }
+        }
+      }
+    }
+  }
+
+  // Trigger recompute for all affected snapshot dates
+  if (accountId && allSnapshotDates.size > 0) {
+    const snapshotDates = Array.from(allSnapshotDates).sort();
+    const minDate = snapshotDates[0];
+    const maxDate = snapshotDates[snapshotDates.length - 1];
+
+    try {
+      // Auto-link positions to strategies (creates strategies if needed)
+      const autoLinkResult = await autoLinkPositionsToStrategies(accountId, {
+        startDate: minDate,
+        endDate: maxDate,
+      });
+
+      // Compute portfolio snapshots
+      await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate);
+
+      // Get all strategies for this account (including newly created ones)
+      // Exclude merged strategies - they're no longer active
+      const accountStrategies = await db
+        .select({ id: strategies.id })
+        .from(strategies)
+        .where(
+          and(
+            eq(strategies.accountId, accountId),
+            ne(strategies.status, 'merged')
+          )
+        );
+
+      // Compute strategy metrics for all strategies
+      for (const strategy of accountStrategies) {
+        await computeStrategyMetricsForDateRange(accountId, strategy.id, minDate, maxDate);
+      }
+
+      // If strategies were created or positions were linked, also link trades
+      if (autoLinkResult.strategiesCreated > 0 || autoLinkResult.positionsLinked > 0) {
+        try {
+          await autoLinkTradesToStrategies(accountId, {
+            startDate: minDate,
+            endDate: maxDate,
+          });
+        } catch (error) {
+          console.error(`Failed to link trades after positions ingestion:`, error);
+        }
+      }
+
+      // Compute triage for each snapshot date
+      for (const date of snapshotDates) {
+        try {
+          await computeTriageForDate(date, accountId);
+          
+          // Create trade blotter entries
+          try {
+            await computeTradeBlotterEntriesForDate(date, accountId);
+          } catch (error) {
+            console.error(`Failed to create trade blotter entries for ${accountId} on ${date}:`, error);
+          }
+          
+          // Create QUANTITY_CHANGE triage records
+          try {
+            await createQuantityChangeTriageForUnmatchedTrades(date, accountId);
+          } catch (error) {
+            console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${date}:`, error);
+          }
+        } catch (error) {
+          console.error(`Failed to compute triage for ${date}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Recompute error:', error);
+      // Don't fail the upload if recompute fails
+    }
+  }
+
+  const totalInserted = results.post.inserted + results.equt.inserted + results.mtmp.inserted;
+  const totalErrors =
+    results.post.errors.length + results.equt.errors.length + results.mtmp.errors.length;
+
+  return {
+    ...results,
+    totalInserted,
+    totalErrors,
+    snapshotDates: Array.from(allSnapshotDates),
+    accountId,
+  };
+}
+
+export interface ProcessTradesResult {
+  inserted: number;
+  skipped: number;
+  validationErrors: number;
+  normalizationErrors: number;
+  insertErrors: number;
+  tradeDates: string[];
+  accountIds: string[];
+}
+
+/**
+ * Process trades CSV (TRNT section)
+ */
+export async function processTradesCsv(csvText: string, processRunId?: string | null): Promise<ProcessTradesResult> {
+  const parsed = Papa.parse<string[]>(csvText, {
+    header: false,
+    skipEmptyLines: true,
+  });
+
+  if (parsed.errors.length > 0) {
+    throw new Error(`CSV parsing errors: ${JSON.stringify(parsed.errors)}`);
+  }
+
+  const rows = parsed.data;
+  const trntHeader = rows.find(
+    (row) => row[0] === 'HEADER' && row[1] === SECTION_CODES.TRADES
+  );
+
+  if (!trntHeader) {
+    throw new Error('TRNT header not found in file');
+  }
+
+  const fieldNames = trntHeader.slice(2);
+  const trntDataRows = rows.filter(
+    (row) => row[0] === 'DATA' && row[1] === SECTION_CODES.TRADES
+  );
+
+  const accountCache = new Map<string, string>();
+  const tradeDates = new Set<string>();
+  const accountIds = new Set<string>();
+
+  let inserted = 0;
+  let skipped = 0;
+  let validationErrors = 0;
+  let normalizationErrors = 0;
+  let insertErrors = 0;
+  let primaryAccountId: string | undefined;
+
+  for (let i = 0; i < trntDataRows.length; i++) {
+    const dataRow = trntDataRows[i];
+    const record = buildRecord<FlexTradeRow>(fieldNames, dataRow);
+
+    const validation = validateFlexTradeRow(record);
+    if (!validation.valid) {
+      validationErrors++;
+      continue;
+    }
+
+    const clientAccountId =
+      record['ClientAccountID'] ||
+      record['Client Account ID'] ||
+      record['clientAccountID'];
+
+    if (!clientAccountId) {
+      validationErrors++;
+      continue;
+    }
+
+    let accountId: string;
+    try {
+      accountId = await resolveAccountId(clientAccountId, 'IBKR', accountCache);
+      accountIds.add(accountId);
+      if (!primaryAccountId) {
+        primaryAccountId = accountId;
+      }
+    } catch (error) {
+      validationErrors++;
+      continue;
+    }
+
+    let normalized;
+    try {
+      normalized = normalizeFlexTradeRow(record, accountId);
+    } catch (error) {
+      normalizationErrors++;
+      continue;
+    }
+
+    try {
+      if (normalized.brokerTransactionId) {
+        const existing = await db
+          .select({ id: trades.id })
+          .from(trades)
+          .where(eq(trades.brokerTransactionId, normalized.brokerTransactionId))
+          .limit(1);
+
+        if (existing.length > 0) {
+          skipped++;
+          continue;
+        }
+      }
+
+      await db
+        .insert(trades)
+        .values(normalized)
+        .onConflictDoNothing({ target: trades.brokerTransactionId });
+      inserted++;
+      
+      // Track trade date for recompute
+      if (normalized.tradeDate) {
+        const tradeDateStr = new Date(normalized.tradeDate).toISOString().split('T')[0];
+        tradeDates.add(tradeDateStr);
+      }
+    } catch (error) {
+      insertErrors++;
+    }
+  }
+
+  // Run recompute operations if we have trades
+  if (tradeDates.size > 0 && inserted > 0 && accountIds.size > 0) {
+    for (const accountId of Array.from(accountIds)) {
+      for (const tradeDate of Array.from(tradeDates)) {
+        try {
+          // Auto-link trades to strategies
+          await autoLinkTradesToStrategies(accountId, { snapshotDate: tradeDate });
+          
+          // Strategy metrics
+          const accountStrategies = await db
+            .select({ id: strategies.id })
+            .from(strategies)
+            .where(
+              and(
+                eq(strategies.accountId, accountId),
+                ne(strategies.status, 'merged')
+              )
+            );
+          
+          for (const strategy of accountStrategies) {
+            await computeStrategyMetricsForDateRange(
+              accountId,
+              strategy.id,
+              tradeDate,
+              tradeDate
+            );
+          }
+          
+          // Create trade blotter entries
+          try {
+            await computeTradeBlotterEntriesForDate(tradeDate, accountId);
+          } catch (error) {
+            console.error(`Failed to create trade blotter entries for ${accountId} on ${tradeDate}:`, error);
+          }
+
+          // Triage
+          await computeTriageForDate(tradeDate, accountId);
+
+          // Create QUANTITY_CHANGE triage records
+          try {
+            await createQuantityChangeTriageForUnmatchedTrades(tradeDate, accountId);
+          } catch (error) {
+            console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${tradeDate}:`, error);
+          }
+        } catch (error) {
+          console.error(`Failed to auto-recompute after trades ingestion for ${accountId} on ${tradeDate}:`, error);
+        }
+      }
+    }
+  }
+
+  return {
+    inserted,
+    skipped,
+    validationErrors,
+    normalizationErrors,
+    insertErrors,
+    tradeDates: Array.from(tradeDates),
+    accountIds: Array.from(accountIds),
+  };
+}
+
