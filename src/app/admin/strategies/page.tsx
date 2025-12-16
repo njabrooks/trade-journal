@@ -82,26 +82,46 @@ export default function StrategiesPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [strategiesRes, accountsRes] = await Promise.all([
-        fetch('/api/strategies'),
-        fetch('/api/accounts'),
-      ]);
+      setError(null);
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
+      try {
+        const [strategiesRes, accountsRes] = await Promise.all([
+          fetch('/api/strategies', { signal: controller.signal }),
+          fetch('/api/accounts', { signal: controller.signal }),
+        ]);
 
-      if (!strategiesRes.ok || !accountsRes.ok) {
-        throw new Error('Failed to load data');
+        clearTimeout(timeoutId);
+
+        if (!strategiesRes.ok || !accountsRes.ok) {
+          const errorText = !strategiesRes.ok 
+            ? await strategiesRes.text().catch(() => 'Unknown error')
+            : await accountsRes.text().catch(() => 'Unknown error');
+          throw new Error(`Failed to load data: ${errorText}`);
+        }
+
+        const [strategiesData, accountsData] = await Promise.all([
+          strategiesRes.json(),
+          accountsRes.json(),
+        ]);
+
+        setStrategies(strategiesData);
+        setAccounts(accountsData);
+        setEditingId(null);
+        setEditValues(null);
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
+          throw new Error('Request timed out. Please try again.');
+        }
+        throw fetchErr;
       }
-
-      const [strategiesData, accountsData] = await Promise.all([
-        strategiesRes.json(),
-        accountsRes.json(),
-      ]);
-
-      setStrategies(strategiesData);
-      setAccounts(accountsData);
-      setEditingId(null);
-      setEditValues(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
+      console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
@@ -212,13 +232,16 @@ export default function StrategiesPage() {
 
     try {
       for (const strategyId of pendingConfirmIds) {
-      const response = await fetch('/api/strategies', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        const response = await fetch('/api/strategies', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: strategyId, confirm: true, strategyType: selectedStrategyType }),
-      });
+        });
 
-      if (!response.ok) throw new Error('Failed to confirm strategy');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || `Failed to confirm strategy: ${response.statusText}`);
+        }
       }
 
       await loadData();
@@ -233,7 +256,15 @@ export default function StrategiesPage() {
       setPendingConfirmIds([]);
       setSuccess(`Confirmed ${pendingConfirmIds.length} strategy(ies)`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to confirm strategy');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to confirm strategy';
+      setError(errorMessage);
+      console.error('Error confirming strategy:', err);
+      // Still reload data even on error to show current state
+      try {
+        await loadData();
+      } catch (loadErr) {
+        console.error('Error reloading data after confirmation error:', loadErr);
+      }
     } finally {
       setConfirming(false);
     }
