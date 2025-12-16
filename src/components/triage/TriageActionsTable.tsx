@@ -24,7 +24,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_SIZE": ["TRADE", "MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "STATE_CODE_CHANGE": ["TRADE", "MONITOR", "DISMISS"],
-  "QUANTITY_CHANGE": ["UPDATE"], // Only UPDATE action for quantity change triggers
+  "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
 };
 
 // Helper to determine available actions for a trigger
@@ -89,10 +89,11 @@ export function TriageActionsTable({
 
   if (availableActions.length === 0) {
     return (
-      <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
-        <div className="px-4 py-6 text-center">
-          <div className="text-sm text-slate-500">No actions available for this trigger type.</div>
-        </div>
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+          Actions
+        </p>
+        <div className="text-sm text-slate-500">No actions available for this trigger type.</div>
       </div>
     );
   }
@@ -100,26 +101,19 @@ export function TriageActionsTable({
   // If action is selected, show the form
   if (selectedAction) {
     return (
-      <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
-        <div className="border-b border-slate-300 bg-slate-50 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                {ACTION_LABELS[selectedAction]} Action
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {ACTION_DESCRIPTIONS[selectedAction]}
-              </p>
-            </div>
-            <button
-              onClick={() => setSelectedAction(null)}
-              className="text-xs font-medium text-slate-600 hover:text-slate-900 underline"
-            >
-              ← Back to actions
-            </button>
-          </div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+            {ACTION_LABELS[selectedAction]} Action
+          </p>
+          <button
+            onClick={() => setSelectedAction(null)}
+            className="text-xs font-medium text-slate-600 hover:text-slate-900 underline"
+          >
+            ← Back
+          </button>
         </div>
-        <div className="p-4 bg-white">
+        <div>
           <TriageActionButtons
             triageId={triageId}
             contextLevel={contextLevel}
@@ -140,35 +134,25 @@ export function TriageActionsTable({
 
   // Show action selection
   return (
-    <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
-      <div className="border-b border-slate-300 bg-slate-50 px-4 py-3">
-        <h3 className="text-sm font-semibold text-slate-900 mb-0.5">Select Action</h3>
-        <p className="text-xs text-slate-500">
-          Choose an action to take on this triage flag
-        </p>
-      </div>
-      <div className="p-4 bg-white">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {availableActions.map((action) => (
-            <button
-              key={action}
-              onClick={() => setSelectedAction(action)}
-              className={cn(
-                "p-4 rounded-lg border-2 border-slate-200 bg-white text-left transition-all",
-                "hover:border-blue-400 hover:bg-blue-50 hover:shadow-sm",
-                "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
-                "active:scale-[0.98]"
-              )}
-            >
-              <div className="font-semibold text-slate-900 mb-1.5 text-sm">
-                {ACTION_LABELS[action]}
-              </div>
-              <div className="text-xs text-slate-600 leading-relaxed">
-                {ACTION_DESCRIPTIONS[action]}
-              </div>
-            </button>
-          ))}
-        </div>
+    <div className="space-y-3">
+      <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+        Actions
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {availableActions.map((action) => (
+          <button
+            key={action}
+            onClick={() => setSelectedAction(action)}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              "border border-slate-300 bg-white text-slate-700",
+              "hover:bg-slate-50 hover:border-slate-400",
+              "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+            )}
+          >
+            {ACTION_LABELS[action]}
+          </button>
+        ))}
       </div>
     </div>
   );

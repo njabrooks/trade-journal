@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get common trigger type (used for logic decisions)
+    const commonTrigger = Array.from(triggerTypes)[0];
+
     // Map action types to action classes
     const actionClassMap: Record<string, string> = {
       TRADE: "TRADE",
@@ -74,26 +77,20 @@ export async function POST(request: NextRequest) {
       overrideExpiresDate = expiresDate.toISOString().split("T")[0];
     } else if (actionType === "TRADE") {
       severityOverride = "pending";
+      // For QUANTITY_CHANGE with TRADE action, set to 'complete' when trade reason and stage are provided
+      if (commonTrigger === "QUANTITY_CHANGE" && tradeReason && tradeStage) {
+        severityOverride = "complete";
+      }
     } else if (actionType === "UPDATE") {
-      const commonTrigger = Array.from(triggerTypes)[0];
       if (commonTrigger === "CONFIRM_STRATEGIES") {
         severityOverride = "complete";
-      } else if (commonTrigger === "QUANTITY_CHANGE") {
-        // For QUANTITY_CHANGE, set to 'complete' when trade reason and stage are provided
-        if (tradeReason && tradeStage) {
-          severityOverride = "complete";
-        } else {
-          // Don't set override if required fields are missing
-          severityOverride = null;
-        }
       }
       // For PROVIDE_STRATEGY_METADATA, we'd need more data, so we'll leave severityOverride as null
     }
 
     // Handle TRADE action with multiple positions
-    // Also handle QUANTITY_CHANGE UPDATE action with tradePositions (creates Trade Actions)
-    // For bulk actions, we need to check if any QUANTITY_CHANGE records require Trade Actions
-    const needsTradeActions = actionType === "TRADE" || (actionType === "UPDATE" && commonTrigger === "QUANTITY_CHANGE" && tradePositions);
+    // QUANTITY_CHANGE now uses TRADE action type (not UPDATE), so check for TRADE action
+    const needsTradeActions = actionType === "TRADE" && tradePositions;
 
     if (needsTradeActions) {
       if (!tradePositions || !Array.isArray(tradePositions) || tradePositions.length === 0) {
@@ -110,8 +107,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // For QUANTITY_CHANGE, create Trade Actions (actionClass='TRADE', actionDetail='TRADE')
-      const isQuantityChange = actionType === "UPDATE" && commonTrigger === "QUANTITY_CHANGE";
+      // For QUANTITY_CHANGE with TRADE action, create Trade Actions (actionClass='TRADE', actionDetail='TRADE')
+      // For regular TRADE action, also create Trade Actions
+      const isQuantityChange = commonTrigger === "QUANTITY_CHANGE";
+      
+      // For QUANTITY_CHANGE, always use TRADE action class/detail
       const finalActionClass = isQuantityChange ? "TRADE" : actionClass;
       const finalActionDetail = isQuantityChange ? "TRADE" : actionType;
 
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
             }
             actionDate = typeof triage.snapshotDate === 'string' 
               ? triage.snapshotDate 
-              : triage.snapshotDate.toISOString().split('T')[0];
+              : (triage.snapshotDate as Date).toISOString().split('T')[0];
           } else {
             // For other actions, snapshotDate + 1 day (intended for next day's trades)
             if (!triage.snapshotDate) {
@@ -233,9 +233,9 @@ export async function POST(request: NextRequest) {
                 actionDetail: finalActionDetail,
                 reasonCode: triage.recommendedAction || null,
                 notes: notesJson,
-                qtyChange: Math.abs(tradePosition.quantity).toString(), // Absolute value for matching
+                qtyChange: tradePosition.quantity.toString(), // Signed quantity (negative for SELL, positive for BUY) - matching uses absolute values
                 completed: false,
-                severityOverride: isQuantityChange ? 'pending' : 'pending', // Will be updated to 'complete' after matching
+                severityOverride: 'pending', // Will be updated to 'complete' after matching
                 tradeReason: tradeReason,
                 tradeStage: tradeStage,
                 source: 'triage_action',
@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         processed: results.length,
-        errors: errors.length,
+        errorCount: errors.length,
         results,
         errors: errors.length > 0 ? errors : undefined,
       });
@@ -379,10 +379,7 @@ export async function POST(request: NextRequest) {
           .returning({ id: blotterActions.id });
 
         // Attempt to match with existing trade blotter entry
-        if (
-          insertedBlotterAction &&
-          (actionType === "TRADE" || triage.recommendedAction === "QUANTITY_CHANGE")
-        ) {
+        if (insertedBlotterAction && actionType === "TRADE") {
           try {
             await matchTriageActionToTradeBlotter(
               insertedBlotterAction.id,
@@ -424,7 +421,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       processed: results.length,
-      errors: errors.length,
+      errorCount: errors.length,
       results,
       errors: errors.length > 0 ? errors : undefined,
     });

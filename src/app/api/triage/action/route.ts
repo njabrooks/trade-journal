@@ -112,23 +112,23 @@ export async function POST(request: NextRequest) {
           // Strategy not found, keep current severity (don't override)
           severityOverride = null;
         }
-      } else if (triage.recommendedAction === "QUANTITY_CHANGE") {
-        // For QUANTITY_CHANGE, set to 'complete' when trade reason and stage are provided
+      } else if (triage.recommendedAction === "QUANTITY_CHANGE" && actionType === "TRADE") {
+        // For QUANTITY_CHANGE with TRADE action, set to 'complete' when trade reason and stage are provided
         if (tradeReason && tradeStage) {
           severityOverride = "complete";
         } else {
           // Don't set override if required fields are missing
           severityOverride = null;
         }
-      } else {
+      } else if (actionType === "UPDATE") {
         // For other UPDATE actions (like CONFIRM_STRATEGIES), set to 'complete'
         severityOverride = "complete";
       }
     }
 
     // Handle TRADE action with multiple positions
-    // Also handle QUANTITY_CHANGE UPDATE action with tradePositions (creates Trade Actions)
-    if (actionType === "TRADE" || (actionType === "UPDATE" && triage.recommendedAction === "QUANTITY_CHANGE" && tradePositions)) {
+    // Also handle QUANTITY_CHANGE TRADE action with tradePositions (creates Trade Actions)
+    if (actionType === "TRADE" && tradePositions) {
       if (!tradePositions || !Array.isArray(tradePositions) || tradePositions.length === 0) {
         return NextResponse.json(
           { error: "tradePositions array is required for TRADE action" },
@@ -143,11 +143,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // For QUANTITY_CHANGE, create Trade Actions (actionClass='TRADE', actionDetail='TRADE')
+      // For QUANTITY_CHANGE with TRADE action, create Trade Actions (actionClass='TRADE', actionDetail='TRADE')
       // For regular TRADE action, also create Trade Actions
-      const isQuantityChange = actionType === "UPDATE" && triage.recommendedAction === "QUANTITY_CHANGE";
+      const isQuantityChange = triage.recommendedAction === "QUANTITY_CHANGE";
       
-      // Override actionClass for QUANTITY_CHANGE with tradePositions to create Trade Actions
+      // For QUANTITY_CHANGE, always use TRADE action class/detail
       const finalActionClass = isQuantityChange ? "TRADE" : actionClass;
       const finalActionDetail = isQuantityChange ? "TRADE" : actionType;
 
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
             actionDetail: finalActionDetail,
             reasonCode: triage.recommendedAction || null,
             notes: notesJson,
-            qtyChange: Math.abs(tradePosition.quantity).toString(), // Absolute value for matching
+            qtyChange: tradePosition.quantity.toString(), // Signed quantity (negative for SELL, positive for BUY) - matching uses absolute values
             completed: false,
             severityOverride: 'pending',
             tradeReason: tradeReason,
