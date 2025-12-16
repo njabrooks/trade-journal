@@ -1,6 +1,6 @@
 import { and, desc, asc, eq, sql, inArray, isNull, isNotNull, or, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { blotterActions, strategies } from "@/db/schema";
+import { blotterActions, strategies, trades, positions } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
 
 export interface BlotterFilters {
@@ -53,6 +53,37 @@ export interface BlotterEntry {
   monitorDays: number | null;
   overrideExpiresDate: string | null;
   ticker: string | null;
+  // Trade action fields (stored directly on triage actions)
+  tradeStage: string | null;
+  tradeReason: string | null;
+  // Enhanced trade and position details
+  tradeDetails: Array<{
+    id: string;
+    symbol: string;
+    side: string;
+    quantity: number;
+    price: number;
+    grossAmount: number | null;
+    netAmount: number | null;
+    fees: number | null;
+    assetClass: string | null;
+    exchange: string | null;
+    orderType: string | null;
+    currency: string | null;
+    tradeDate: string;
+  }> | null;
+  positionDetails: {
+    symbol: string;
+    assetClass: string | null;
+    expiry: string | null;
+    strike: number | null;
+    optionRight: string | null;
+    quantity: number | null;
+  } | null;
+  parsedNotes: {
+    text?: string;
+    tradeDetails?: any;
+  } | null;
 }
 
 export async function getBlotterEntries(
@@ -141,6 +172,7 @@ export async function getBlotterEntries(
     }
   }
 
+  // Build base query
   const baseQuery = db
     .select({
       id: blotterActions.id,
@@ -169,46 +201,190 @@ export async function getBlotterEntries(
       monitorDays: blotterActions.monitorDays,
       overrideExpiresDate: blotterActions.overrideExpiresDate,
       ticker: blotterActions.ticker,
+      tradeStage: blotterActions.tradeStage,
+      tradeReason: blotterActions.tradeReason,
     })
     .from(blotterActions)
     .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id));
 
-  const filteredQuery =
-    conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
+  // Apply where conditions and build query
+  const queryWithWhere = conditions.length > 0 
+    ? baseQuery.where(and(...conditions))
+    : baseQuery;
 
   // Sorting
-  let query = filteredQuery;
   const sortColumn = filters.sort;
   const sortDirection = filters.direction || "desc";
   
+  let queryWithOrder: any;
   if (sortColumn === "createdAt") {
-    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.createdAt) : desc(blotterActions.createdAt));
+    queryWithOrder = queryWithWhere.orderBy(sortDirection === "asc" ? asc(blotterActions.createdAt) : desc(blotterActions.createdAt));
   } else if (sortColumn === "actionDate") {
-    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.actionDate) : desc(blotterActions.actionDate));
+    queryWithOrder = queryWithWhere.orderBy(sortDirection === "asc" ? asc(blotterActions.actionDate) : desc(blotterActions.actionDate));
   } else if (sortColumn === "strategyKey") {
-    query = query.orderBy(sortDirection === "asc" ? asc(strategies.strategyKey) : desc(strategies.strategyKey));
+    queryWithOrder = queryWithWhere.orderBy(sortDirection === "asc" ? asc(strategies.strategyKey) : desc(strategies.strategyKey));
   } else if (sortColumn === "actionClass") {
-    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.actionClass) : desc(blotterActions.actionClass));
+    queryWithOrder = queryWithWhere.orderBy(sortDirection === "asc" ? asc(blotterActions.actionClass) : desc(blotterActions.actionClass));
   } else if (sortColumn === "premiumChange") {
-    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.premiumChange) : desc(blotterActions.premiumChange));
+    queryWithOrder = queryWithWhere.orderBy(sortDirection === "asc" ? asc(blotterActions.premiumChange) : desc(blotterActions.premiumChange));
   } else if (sortColumn === "qtyChange") {
-    query = query.orderBy(sortDirection === "asc" ? asc(blotterActions.qtyChange) : desc(blotterActions.qtyChange));
+    queryWithOrder = queryWithWhere.orderBy(sortDirection === "asc" ? asc(blotterActions.qtyChange) : desc(blotterActions.qtyChange));
   } else {
     // Default: sort by createdAt desc
-    query = query.orderBy(desc(blotterActions.createdAt));
+    queryWithOrder = queryWithWhere.orderBy(desc(blotterActions.createdAt));
   }
   
-  // Only apply limit if specified
-  if (limit !== undefined && limit > 0) {
-    query = query.limit(limit);
+  // Apply limit if specified
+  const finalQuery = limit !== undefined && limit > 0
+    ? queryWithOrder.limit(limit)
+    : queryWithOrder;
+
+  const rows = await finalQuery;
+
+  // Collect all trade IDs and conids for batch fetching
+  const allTradeIds = new Set<string>();
+  const allConids = new Set<number>();
+  
+  rows.forEach((r: typeof rows[0]) => {
+    if (r.tradeIds && Array.isArray(r.tradeIds)) {
+      r.tradeIds.forEach((id: string) => allTradeIds.add(id));
+    }
+    if (r.conid) {
+      allConids.add(r.conid);
+    }
+  });
+
+  // Fetch trade details
+  const tradeDetailsMap = new Map<string, Array<{
+    id: string;
+    symbol: string;
+    side: string;
+    quantity: number;
+    price: number;
+    grossAmount: number | null;
+    netAmount: number | null;
+    fees: number | null;
+    assetClass: string | null;
+    exchange: string | null;
+    orderType: string | null;
+    currency: string | null;
+    tradeDate: string;
+  }>>();
+
+  if (allTradeIds.size > 0) {
+    const tradeRows = await db
+      .select({
+        id: trades.id,
+        symbol: trades.symbol,
+        side: trades.side,
+        quantity: trades.quantity,
+        price: trades.price,
+        grossAmount: trades.grossAmount,
+        netAmount: trades.netAmount,
+        fees: trades.fees,
+        assetClass: trades.assetClass,
+        exchange: trades.exchange,
+        orderType: trades.orderType,
+        currency: trades.currency,
+        tradeDate: trades.tradeDate,
+      })
+      .from(trades)
+      .where(inArray(trades.id, Array.from(allTradeIds)));
+
+    // Group trades by blotter entry (via tradeIds array)
+    rows.forEach((r: typeof rows[0]) => {
+      if (r.tradeIds && Array.isArray(r.tradeIds) && r.tradeIds.length > 0) {
+        const entryTrades = tradeRows
+          .filter((t) => (r.tradeIds as string[]).includes(t.id))
+          .map((t) => ({
+            id: t.id,
+            symbol: t.symbol,
+            side: t.side,
+            quantity: toNumber(t.quantity) || 0,
+            price: toNumber(t.price) || 0,
+            grossAmount: toNumber(t.grossAmount),
+            netAmount: toNumber(t.netAmount),
+            fees: toNumber(t.fees),
+            assetClass: t.assetClass ?? null,
+            exchange: t.exchange ?? null,
+            orderType: t.orderType ?? null,
+            currency: t.currency ?? null,
+            tradeDate: t.tradeDate.toISOString(),
+          }));
+        if (entryTrades.length > 0) {
+          tradeDetailsMap.set(r.id, entryTrades);
+        }
+      }
+    });
   }
 
-  const rows = await query;
+  // Fetch position details
+  const positionDetailsMap = new Map<number, {
+    symbol: string;
+    assetClass: string | null;
+    expiry: string | null;
+    strike: number | null;
+    optionRight: string | null;
+    quantity: number | null;
+  }>();
+
+  if (allConids.size > 0) {
+    // Get the most recent position for each conid
+    const positionRows = await db
+      .select({
+        conid: positions.conid,
+        symbol: positions.symbol,
+        assetClass: positions.assetClass,
+        expiry: positions.expiry,
+        strike: positions.strike,
+        optionRight: positions.optionRight,
+        quantity: positions.quantity,
+        snapshotDate: positions.snapshotDate,
+      })
+      .from(positions)
+      .where(inArray(positions.conid, Array.from(allConids)));
+
+    // Sort by snapshotDate descending to get most recent first, then group by conid
+    positionRows.sort((a, b) => {
+      if (!a.snapshotDate || !b.snapshotDate) return 0;
+      return new Date(b.snapshotDate).getTime() - new Date(a.snapshotDate).getTime();
+    });
+
+    // Group by conid and take the most recent (first after sorting)
+    const conidMap = new Map<number, typeof positionRows[0]>();
+    positionRows.forEach((p) => {
+      if (p.conid && !conidMap.has(p.conid)) {
+        conidMap.set(p.conid, p);
+      }
+    });
+
+    conidMap.forEach((pos, conid) => {
+      positionDetailsMap.set(conid, {
+        symbol: pos.symbol,
+        assetClass: pos.assetClass ?? null,
+        expiry: pos.expiry ?? null,
+        strike: pos.strike ? toNumber(pos.strike) : null,
+        optionRight: pos.optionRight ?? null,
+        quantity: pos.quantity ? toNumber(pos.quantity) : null,
+      });
+    });
+  }
+
+  // Helper to parse notes JSON
+  function parseNotes(notes: string | null): { text?: string; tradeDetails?: any } | null {
+    if (!notes) return null;
+    try {
+      const parsed = JSON.parse(notes);
+      return typeof parsed === 'object' ? parsed : { text: notes };
+    } catch {
+      return { text: notes };
+    }
+  }
 
   // Fetch linked entry metadata for entries that have linkedBlotterActionId
   // Also collect all linkedTradeBlotterIds for QUANTITY_CHANGE records
   const linkedIds = new Set<string>();
-  rows.forEach((r) => {
+  rows.forEach((r: typeof rows[0]) => {
     if (r.linkedBlotterActionId) {
       linkedIds.add(r.linkedBlotterActionId);
     }
@@ -256,7 +432,7 @@ export async function getBlotterEntries(
     }
   }
 
-  return rows.map((row) => {
+  return rows.map((row: typeof rows[0]) => {
     const linkedData = row.linkedBlotterActionId
       ? linkedEntriesMap.get(row.linkedBlotterActionId)
       : null;
@@ -280,7 +456,7 @@ export async function getBlotterEntries(
                 }
               : null;
           })
-          .filter((e): e is NonNullable<typeof e> => e !== null)
+          .filter((e: { id: string; ticker: string | null; qtyChange: number | null; premiumChange: number | null } | null): e is NonNullable<typeof e> => e !== null)
       : null;
 
     return {
@@ -315,6 +491,11 @@ export async function getBlotterEntries(
       monitorDays: row.monitorDays ?? null,
       overrideExpiresDate: row.overrideExpiresDate ?? null,
       ticker: row.ticker ?? null,
+      tradeStage: row.tradeStage ?? null,
+      tradeReason: row.tradeReason ?? null,
+      tradeDetails: tradeDetailsMap.get(row.id) ?? null,
+      positionDetails: row.conid ? positionDetailsMap.get(row.conid) ?? null : null,
+      parsedNotes: parseNotes(row.notes),
     };
   });
 }

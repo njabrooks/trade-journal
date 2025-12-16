@@ -101,15 +101,15 @@ export async function computeTradeBlotterEntriesForDate(
     }
 
     const agg = aggregations.get(groupingKey)!;
-    const qty = Number(trade.quantity) || 0;
+    // Quantity from trades table: use absolute value and apply sign based on side
+    // This handles both cases: signed quantities (negative for SELL) and absolute quantities
+    const qtyAbs = Math.abs(Number(trade.quantity) || 0);
     const netAmt = Number(trade.netAmount) || 0;
 
     // Net quantity: BUY is positive, SELL is negative
-    if (trade.side === 'BUY') {
-      agg.netQuantity += qty;
-    } else {
-      agg.netQuantity -= qty;
-    }
+    // Always use side field as source of truth for direction
+    const qty = trade.side === 'BUY' ? qtyAbs : -qtyAbs;
+    agg.netQuantity += qty;
 
     agg.netPremium += netAmt;
     agg.tradeIds.push(trade.id);
@@ -833,7 +833,7 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
   let created = 0;
 
   // Create one strategy-level QUANTITY_CHANGE triage record per strategy
-  for (const [strategyId, trades] of tradesByStrategy.entries()) {
+  for (const [strategyId, unmatchedBlotterTrades] of tradesByStrategy.entries()) {
     // Check if QUANTITY_CHANGE triage record already exists for this strategy and date
     // Only check for records from the new system (ruleSet='options_v1', severity='pending')
     // Old records (ruleSet='quantity_change', severity='urgent') should be replaced
@@ -887,8 +887,8 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
     if (!strategy.accountId) continue; // Skip if accountId is missing
 
     // Aggregate trades by conid (each position aggregated individually)
-    const tradesByConid = new Map<number, typeof trades>();
-    for (const trade of trades) {
+    const tradesByConid = new Map<number, typeof unmatchedBlotterTrades>();
+    for (const trade of unmatchedBlotterTrades) {
       if (!trade.conid) continue;
       if (!tradesByConid.has(trade.conid)) {
         tradesByConid.set(trade.conid, []);
@@ -897,20 +897,60 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
     }
 
     // Build unmatched trade executions array with full details for matching
-    const unmatchedTradeExecutions = Array.from(tradesByConid.entries()).map(([conid, conidTrades]) => {
-      const firstTrade = conidTrades[0];
-      return {
-        blotterId: firstTrade.blotterId,
-        blotterActionId: firstTrade.id,
-        conid: conid,
-        ticker: firstTrade.ticker,
-        actionDate: firstTrade.actionDate,
-        qtyChange: conidTrades.reduce((sum, t) => sum + (Number(t.qtyChange) || 0), 0), // Net quantity (signed)
-        premiumChange: conidTrades.reduce((sum, t) => sum + (Number(t.premiumChange) || 0), 0),
-        tradeIds: firstTrade.tradeIds,
-        tradeCount: firstTrade.tradeCount || conidTrades.length,
-      };
-    });
+    // Fetch actual trade data from trades table using tradeIds for accurate side and quantity
+    const unmatchedTradeExecutions = await Promise.all(
+      Array.from(tradesByConid.entries()).map(async ([conid, conidTrades]) => {
+        const firstTrade = conidTrades[0];
+        
+        // Collect all tradeIds from all conidTrades
+        const allTradeIds = new Set<string>();
+        for (const ct of conidTrades) {
+          if (ct.tradeIds && Array.isArray(ct.tradeIds)) {
+            ct.tradeIds.forEach((id: string) => allTradeIds.add(id));
+          }
+        }
+        
+        // Fetch actual trades from trades table to get correct side and quantity
+        let netQuantity = 0;
+        let netPremium = 0;
+        
+        if (allTradeIds.size > 0) {
+          const actualTrades = await db
+            .select({
+              quantity: trades.quantity,
+              netAmount: trades.netAmount,
+              side: trades.side,
+            })
+            .from(trades)
+            .where(inArray(trades.id, Array.from(allTradeIds) as string[]));
+          
+          // Calculate net quantity and premium from actual trades
+          // Use side field as source of truth for direction
+          for (const trade of actualTrades) {
+            const qtyAbs = Math.abs(Number(trade.quantity) || 0);
+            const qty = trade.side === 'BUY' ? qtyAbs : -qtyAbs;
+            netQuantity += qty;
+            netPremium += Number(trade.netAmount) || 0;
+          }
+        } else {
+          // Fallback to blotterActions data if no tradeIds
+          netQuantity = conidTrades.reduce((sum, t) => sum + (Number(t.qtyChange) || 0), 0);
+          netPremium = conidTrades.reduce((sum, t) => sum + (Number(t.premiumChange) || 0), 0);
+        }
+        
+        return {
+          blotterId: firstTrade.blotterId,
+          blotterActionId: firstTrade.id,
+          conid: conid,
+          ticker: firstTrade.ticker,
+          actionDate: firstTrade.actionDate,
+          qtyChange: netQuantity, // Net quantity from trades table (signed: positive for BUY, negative for SELL)
+          premiumChange: netPremium, // Net premium from trades table
+          tradeIds: Array.from(allTradeIds),
+          tradeCount: allTradeIds.size || firstTrade.tradeCount || conidTrades.length,
+        };
+      })
+    );
 
     // Create strategy-level QUANTITY_CHANGE triage record
     const triageRecord: NewTriageRecord = {

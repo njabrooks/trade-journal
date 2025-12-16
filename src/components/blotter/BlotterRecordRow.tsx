@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatDateTime, formatCurrency } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { BlotterEntry } from "@/db/queries/blotter";
+import { TradeDetailsCard } from "./TradeDetailsCard";
+import { PositionDetailsCard } from "./PositionDetailsCard";
 
 interface BlotterRecordRowProps {
   entry: BlotterEntry;
@@ -225,52 +227,59 @@ export function BlotterRecordRow({ entry }: BlotterRecordRowProps) {
             <div className="space-y-4">
               {/* Trade Details Section */}
               {isTrade && (
-                <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
-                  <div className="border-b border-slate-300 bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                      Trade Details
-                    </p>
-                  </div>
-                  <div className="px-4 py-3 space-y-2">
-                    {entry.tradeCount && entry.tradeCount > 1 && (
-                      <div className="text-sm text-slate-700">
-                        <span className="font-medium">{entry.tradeCount}</span>{" "}
-                        trades aggregated
+                <>
+                  {entry.tradeDetails && entry.tradeDetails.length > 0 ? (
+                    <TradeDetailsCard entry={entry} />
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                        Trade Details
+                      </p>
+                      <div className="space-y-2">
+                        {entry.tradeCount && entry.tradeCount > 1 && (
+                          <div className="text-sm text-slate-700">
+                            <span className="font-medium">{entry.tradeCount}</span>{" "}
+                            trades aggregated
+                          </div>
+                        )}
+                        {entry.ticker && (
+                          <div className="text-sm text-slate-700">
+                            <span className="font-medium">Ticker:</span>{" "}
+                            {entry.ticker}
+                          </div>
+                        )}
+                        {entry.conid && (
+                          <div className="text-sm text-slate-700">
+                            <span className="font-medium">ConID:</span>{" "}
+                            {entry.conid}
+                          </div>
+                        )}
+                        {entry.qtyChange !== null && (
+                          <div className="text-sm text-slate-700">
+                            <span className="font-medium">Quantity Change:</span>{" "}
+                            {entry.qtyChange > 0 ? "+" : ""}
+                            {entry.qtyChange}
+                          </div>
+                        )}
+                        {entry.premiumChange !== null && (
+                          <div className="text-sm text-slate-700">
+                            <span className="font-medium">Premium Change:</span>{" "}
+                            {formatCurrency(entry.premiumChange)}
+                          </div>
+                        )}
+                        {entry.realizedPnl !== null && (
+                          <div className="text-sm text-slate-700">
+                            <span className="font-medium">Realized P&L:</span>{" "}
+                            {formatCurrency(entry.realizedPnl)}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {entry.ticker && (
-                      <div className="text-sm text-slate-700">
-                        <span className="font-medium">Ticker:</span>{" "}
-                        {entry.ticker}
-                      </div>
-                    )}
-                    {entry.conid && (
-                      <div className="text-sm text-slate-700">
-                        <span className="font-medium">ConID:</span>{" "}
-                        {entry.conid}
-                      </div>
-                    )}
-                    {entry.qtyChange !== null && (
-                      <div className="text-sm text-slate-700">
-                        <span className="font-medium">Quantity Change:</span>{" "}
-                        {entry.qtyChange > 0 ? "+" : ""}
-                        {entry.qtyChange}
-                      </div>
-                    )}
-                    {entry.premiumChange !== null && (
-                      <div className="text-sm text-slate-700">
-                        <span className="font-medium">Premium Change:</span>{" "}
-                        {formatCurrency(entry.premiumChange)}
-                      </div>
-                    )}
-                    {entry.realizedPnl !== null && (
-                      <div className="text-sm text-slate-700">
-                        <span className="font-medium">Realized P&L:</span>{" "}
-                        {formatCurrency(entry.realizedPnl)}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                    </div>
+                  )}
+                  {entry.positionDetails && (
+                    <PositionDetailsCard entry={entry} />
+                  )}
+                </>
               )}
 
               {/* Action Details Section */}
