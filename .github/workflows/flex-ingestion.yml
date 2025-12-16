@@ -31,7 +31,7 @@ jobs:
         env:
           DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
           DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
-          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION || 'false' }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
         run: |
           # Get current hour to determine if this is retry run
           CURRENT_HOUR=$(date -u +%H)
@@ -113,14 +113,14 @@ jobs:
           # Database connection (use pooler for better compatibility)
           DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
           DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
-          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION || 'false' }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
           
           # IBKR Flex API credentials
           IBKR_FLEX_TOKEN: ${{ secrets.IBKR_FLEX_TOKEN }}
           IBKR_FLEX_POSITIONS_QUERY_ID: ${{ secrets.IBKR_FLEX_POSITIONS_QUERY_ID }}
           IBKR_FLEX_TRADES_QUERY_ID: ${{ secrets.IBKR_FLEX_TRADES_QUERY_ID }}
-          IBKR_FLEX_BASE_URL: ${{ secrets.IBKR_FLEX_BASE_URL || 'https://www.interactivebrokers.com/Universal/servlet' }}
-          IBKR_FLEX_WAIT_MS: ${{ secrets.IBKR_FLEX_WAIT_MS || '3000' }}
+          IBKR_FLEX_BASE_URL: ${{ secrets.IBKR_FLEX_BASE_URL }}
+          IBKR_FLEX_WAIT_MS: ${{ secrets.IBKR_FLEX_WAIT_MS }}
         run: |
           npx tsx scripts/run-flex-ingestion.ts
 

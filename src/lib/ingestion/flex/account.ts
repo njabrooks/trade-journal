@@ -88,9 +88,16 @@ export async function upsertAccount(data: {
 
 /**
  * Gets all accounts
+ * Note: brokerAccountId is unique, so ordering by it should use the unique index
  */
 export async function getAllAccounts() {
-  return await db.select().from(accounts).orderBy(accounts.brokerAccountId);
+  // Use limit to prevent issues with very large result sets
+  // Accounts table should be small, but add safety limit
+  return await db
+    .select()
+    .from(accounts)
+    .orderBy(accounts.brokerAccountId)
+    .limit(1000); // Safety limit - should never hit this
 }
 
 /**

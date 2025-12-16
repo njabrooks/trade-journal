@@ -31,7 +31,7 @@ if (!connectionString) {
 // Connection pooling is handled by Supabase
 const client = postgres(connectionString, { 
   prepare: false,
-  max: 1, // Single connection for serverless
+  max: 10, // Allow multiple connections to prevent blocking (pooler handles pooling)
   connect_timeout: 10, // Connection timeout in seconds
   idle_timeout: 20, // Idle timeout in seconds
   max_lifetime: 60 * 30, // Max connection lifetime in seconds (30 minutes)
