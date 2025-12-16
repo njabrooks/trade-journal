@@ -109,23 +109,22 @@ export function TriagePositionsTable({
 
   if (loading) {
     return (
-      <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
-        <div className="px-4 py-6 text-center">
-          <div className="text-sm text-slate-400">Loading positions...</div>
-        </div>
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+          Positions
+        </p>
+        <div className="text-sm text-slate-400">Loading positions...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
-        <div className="border-b border-slate-300 bg-slate-50 px-4 py-2">
-          <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">Error</p>
-        </div>
-        <div className="px-4 py-3">
-          <div className="text-sm text-rose-600">{error}</div>
-        </div>
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+          Positions
+        </p>
+        <div className="text-sm text-rose-600">{error}</div>
       </div>
     );
   }
@@ -155,95 +154,97 @@ export function TriagePositionsTable({
   const showAggregation = positions.length > 1;
 
   return (
-    <div className="overflow-x-auto border border-slate-300 rounded-lg bg-white shadow-sm">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-300 bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
-            <th className="px-3 py-2 text-left border-r border-slate-200">Asset</th>
-            <th className="px-3 py-2 text-left border-r border-slate-200">Symbol</th>
-            <th className="px-3 py-2 text-right border-r border-slate-200">Quantity</th>
-            <th className="px-3 py-2 text-right border-r border-slate-200">Mark Price</th>
-            <th className="px-3 py-2 text-right border-r border-slate-200">Position Value</th>
-            <th className="px-3 py-2 text-right border-r border-slate-200">Cost Basis Price</th>
-            <th className="px-3 py-2 text-right border-r border-slate-200">Cost Basis Money</th>
-            <th className="px-3 py-2 text-right border-r border-slate-200">% NAV</th>
-            <th className="px-3 py-2 text-right">Unrealized P&L</th>
-          </tr>
-        </thead>
-        <tbody>
-          {positions.map((pos) => {
-            const costBasisMoney = calculateCostBasisMoney(pos);
-            const percentOfNAV = calculatePercentOfNAV(pos);
+    <div className="space-y-3">
+      <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+        Positions
+      </p>
+      <div className="space-y-2">
+        {/* Headers */}
+        <div className="flex items-center gap-4 text-xs font-medium text-slate-600 pb-1 border-b border-slate-300/50">
+          <div className="w-28">Symbol</div>
+          <div className="w-24 text-right">Quantity</div>
+          <div className="w-24 text-right">Mark Price</div>
+          <div className="w-28 text-right">Position Value</div>
+          <div className="w-24 text-right">Cost Basis</div>
+          <div className="w-24 text-right">% NAV</div>
+          <div className="w-28 text-right">Unrealized P&L</div>
+        </div>
+        {/* Position Rows */}
+        {positions.map((pos) => {
+          const costBasisMoney = calculateCostBasisMoney(pos);
+          const percentOfNAV = calculatePercentOfNAV(pos);
 
-            return (
-              <tr key={pos.id} className="border-b border-slate-200 hover:bg-slate-50">
-                <td className="px-3 py-2 text-left text-slate-700 border-r border-slate-100">
-                  {pos.assetClass || "—"}
-                </td>
-                <td className="px-3 py-2 text-left font-mono text-xs text-slate-900 border-r border-slate-100">
-                  {formatSymbol(pos)}
-                </td>
-                <td className="px-3 py-2 text-right text-slate-700 border-r border-slate-100">
+          return (
+            <div key={pos.id} className="flex items-center gap-4 text-sm">
+              <div className="w-28">
+                <span className="font-medium text-slate-900">{formatSymbol(pos)}</span>
+              </div>
+              <div className="w-24 text-right">
+                <span className="text-slate-900">
                   {pos.quantity.toLocaleString()}
-                </td>
-                <td className="px-3 py-2 text-right text-slate-700 border-r border-slate-100">
-                  {formatCurrency(pos.spot, 'USD', 2)}
-                </td>
-                <td className="px-3 py-2 text-right font-medium text-slate-900 border-r border-slate-100">
-                  {formatCurrency(Math.abs(pos.absNotional || 0))}
-                </td>
-                <td className="px-3 py-2 text-right text-slate-700 border-r border-slate-100">
-                  {formatCurrency(pos.avgPrice, 'USD', 2)}
-                </td>
-                <td className="px-3 py-2 text-right text-slate-700 border-r border-slate-100">
-                  {formatCurrency(costBasisMoney)}
-                </td>
-                <td className="px-3 py-2 text-right text-slate-700 border-r border-slate-100">
-                  {formatPercent(percentOfNAV)}
-                </td>
-                <td
-                  className={cn(
-                    "px-3 py-2 text-right font-medium",
-                    pos.unrealizedPnl && pos.unrealizedPnl >= 0
-                      ? "text-emerald-600"
-                      : "text-rose-600"
-                  )}
-                >
-                  {formatCurrency(pos.unrealizedPnl)}
-                </td>
-              </tr>
-            );
-          })}
-          {showAggregation && (
-            <tr className="border-t-2 border-slate-400 bg-slate-100 font-semibold">
-              <td className="px-3 py-2 text-left text-slate-700 border-r border-slate-200">—</td>
-              <td className="px-3 py-2 text-left text-slate-700 border-r border-slate-200">Total</td>
-              <td className="px-3 py-2 text-right text-slate-900 border-r border-slate-200">
-                {totals.quantity.toLocaleString()}
-              </td>
-              <td className="px-3 py-2 text-right text-slate-700 border-r border-slate-200">—</td>
-              <td className="px-3 py-2 text-right text-slate-900 border-r border-slate-200">
-                {formatCurrency(totals.absNotional)}
-              </td>
-              <td className="px-3 py-2 text-right text-slate-700 border-r border-slate-200">—</td>
-              <td className="px-3 py-2 text-right text-slate-900 border-r border-slate-200">
-                {formatCurrency(totals.costBasisMoney)}
-              </td>
-              <td className="px-3 py-2 text-right text-slate-900 border-r border-slate-200">
-                {formatPercent(totalPercentOfNAV)}
-              </td>
-              <td
+                </span>
+              </div>
+              <div className="w-24 text-right text-slate-600">
+                {pos.spot !== null && pos.spot !== undefined
+                  ? formatCurrency(pos.spot, 'USD', 2)
+                  : "—"}
+              </div>
+              <div className="w-28 text-right font-medium text-slate-900">
+                {formatCurrency(Math.abs(pos.absNotional || 0))}
+              </div>
+              <div className="w-24 text-right text-slate-600">
+                {costBasisMoney !== null ? formatCurrency(costBasisMoney) : "—"}
+              </div>
+              <div className="w-24 text-right text-slate-600">
+                {percentOfNAV !== null ? formatPercent(percentOfNAV) : "—"}
+              </div>
+              <div
                 className={cn(
-                  "px-3 py-2 text-right",
-                  totals.unrealizedPnl >= 0 ? "text-emerald-600" : "text-rose-600"
+                  "w-28 text-right font-medium",
+                  pos.unrealizedPnl && pos.unrealizedPnl >= 0
+                    ? "text-emerald-600"
+                    : "text-rose-600"
                 )}
               >
-                {formatCurrency(totals.unrealizedPnl)}
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                {pos.unrealizedPnl !== null && pos.unrealizedPnl !== undefined
+                  ? formatCurrency(pos.unrealizedPnl)
+                  : "—"}
+              </div>
+            </div>
+          );
+        })}
+        {/* Totals Row */}
+        {showAggregation && (
+          <div className="flex items-center gap-4 text-sm pt-2 border-t border-slate-300/50">
+            <div className="w-28">
+              <span className="font-semibold text-slate-700">Total</span>
+            </div>
+            <div className="w-24 text-right">
+              <span className="font-semibold text-slate-900">
+                {totals.quantity.toLocaleString()}
+              </span>
+            </div>
+            <div className="w-24"></div>
+            <div className="w-28 text-right font-semibold text-slate-900">
+              {formatCurrency(totals.absNotional)}
+            </div>
+            <div className="w-24 text-right font-semibold text-slate-900">
+              {formatCurrency(totals.costBasisMoney)}
+            </div>
+            <div className="w-24 text-right font-semibold text-slate-900">
+              {formatPercent(totalPercentOfNAV)}
+            </div>
+            <div
+              className={cn(
+                "w-28 text-right font-semibold",
+                totals.unrealizedPnl >= 0 ? "text-emerald-600" : "text-rose-600"
+              )}
+            >
+              {formatCurrency(totals.unrealizedPnl)}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

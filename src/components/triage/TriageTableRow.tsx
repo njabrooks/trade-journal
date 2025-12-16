@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronDownIcon } from "lucide-react";
 import { TriagePositionsTable } from "./TriagePositionsTable";
 import { TriageActionsTable } from "./TriageActionsTable";
-import { TriageQuickActions } from "./TriageQuickActions";
+import { UnmatchedTradesCard } from "./UnmatchedTradesCard";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,10 @@ interface TriageTableRowProps {
   showStrategyColumn?: boolean;
   isSelected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
+}
+
+interface TriageRecordWithUnmatched {
+  unmatchedTradeExecutions?: any;
 }
 
 function SeverityTag({ severity }: { severity: string | null }) {
@@ -68,10 +72,20 @@ export function TriageTableRow({
   isSelected = false,
   onSelect,
 }: TriageTableRowProps) {
-  const [isPositionsOpen, setIsPositionsOpen] = useState(false);
-  const [isActionsOpen, setIsActionsOpen] = useState(false);
-  // Column count: checkbox + symbol + trigger + severity + context + date + dte + (strategy if shown) + actions
-  const columnCount = showStrategyColumn ? 9 : 8;
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [triageRecord, setTriageRecord] = useState<TriageRecordWithUnmatched | null>(null);
+  // Column count: checkbox + symbol + trigger + severity + context + date + dte + (strategy if shown)
+  const columnCount = showStrategyColumn ? 8 : 7;
+
+  // Fetch full triage record when expanded to get unmatchedTradeExecutions
+  useEffect(() => {
+    if (isExpanded && record.recommendedAction === "QUANTITY_CHANGE" && !triageRecord) {
+      fetch(`/api/triage?id=${record.id}`)
+        .then((res) => res.json())
+        .then((data) => setTriageRecord(data))
+        .catch((err) => console.error("Failed to fetch triage record:", err));
+    }
+  }, [isExpanded, record.id, record.recommendedAction, triageRecord]);
 
   return (
     <>
@@ -94,13 +108,13 @@ export function TriageTableRow({
         </td>
         <td 
           className="px-4 py-3 text-left cursor-pointer"
-          onClick={() => setIsPositionsOpen(!isPositionsOpen)}
+          onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-2">
             <ChevronDownIcon
               className={cn(
                 "h-4 w-4 text-slate-400 transition-transform shrink-0",
-                isPositionsOpen && "rotate-180"
+                isExpanded && "rotate-180"
               )}
             />
             <span className="font-medium text-slate-900">{record.symbol}</span>
@@ -136,18 +150,12 @@ export function TriageTableRow({
               )}
             </td>
           )}
-          <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-            <TriageQuickActions
-              onToggle={() => setIsActionsOpen(!isActionsOpen)}
-              isOpen={isActionsOpen}
-            />
-          </td>
       </tr>
-      {isPositionsOpen && (
+      {isExpanded && (
         <tr>
           <td colSpan={columnCount + 1} className="px-4 py-4 bg-slate-50">
             <div className="space-y-4">
-              {/* Positions Table - CENTERPIECE */}
+              {/* Positions Table */}
               <TriagePositionsTable
                 positionId={record.positionId}
                 strategyId={record.strategyId}
@@ -155,33 +163,37 @@ export function TriageTableRow({
                 snapshotDate={record.snapshotDate}
               />
 
-              {/* Notes */}
-              {record.notes && (
-                <div className="overflow-hidden border border-slate-300 rounded-lg bg-white shadow-sm">
-                  <div className="border-b border-slate-300 bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-semibold text-slate-900 uppercase tracking-wide">Notes</p>
-                  </div>
-                  <div className="px-4 py-3">
+              {/* Unmatched Trade Executions (for QUANTITY_CHANGE) */}
+              {record.recommendedAction === "QUANTITY_CHANGE" && triageRecord?.unmatchedTradeExecutions && (
+                <UnmatchedTradesCard
+                  unmatchedTradeExecutions={triageRecord.unmatchedTradeExecutions}
+                />
+              )}
+
+              {/* Notes (only if not QUANTITY_CHANGE or if there are additional notes) */}
+              {record.notes && 
+               record.recommendedAction !== "QUANTITY_CHANGE" && (
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                    Notes
+                  </p>
+                  <div className="px-0">
                     <p className="text-sm text-slate-700 leading-relaxed">{record.notes}</p>
                   </div>
                 </div>
               )}
+
+              {/* Actions - automatically shown when expanded */}
+              <TriageActionsTable
+                triageId={record.id}
+                contextLevel={record.contextLevel}
+                recommendedAction={record.recommendedAction}
+                strategyId={record.strategyId}
+                positionId={record.positionId}
+                severity={record.severity}
+                onActionComplete={() => setIsExpanded(false)}
+              />
             </div>
-          </td>
-        </tr>
-      )}
-      {isActionsOpen && (
-        <tr>
-          <td colSpan={columnCount + 1} className="px-4 py-4 bg-slate-50">
-            <TriageActionsTable
-              triageId={record.id}
-              contextLevel={record.contextLevel}
-              recommendedAction={record.recommendedAction}
-              strategyId={record.strategyId}
-              positionId={record.positionId}
-              severity={record.severity}
-              onActionComplete={() => setIsActionsOpen(false)}
-            />
           </td>
         </tr>
       )}

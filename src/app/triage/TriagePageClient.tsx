@@ -103,9 +103,6 @@ export function TriagePageClient({ records }: TriagePageClientProps) {
                 <SortableHeader column="strategyKey" className="text-center">
                   Strategy
                 </SortableHeader>
-                <th className="px-4 py-3 text-center text-xs uppercase tracking-wide text-slate-400">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody>

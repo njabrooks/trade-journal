@@ -49,7 +49,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_SIZE": ["TRADE", "MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "STATE_CODE_CHANGE": ["TRADE", "MONITOR", "DISMISS"],
-  "QUANTITY_CHANGE": ["UPDATE"], // Only UPDATE action for quantity change triggers
+  "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
 };
 
 // Helper to determine available actions for a trigger
@@ -141,7 +141,7 @@ export function TriageActionButtons({
   // Load unmatched trade executions and positions when QUANTITY_CHANGE form is shown
   useEffect(() => {
     if (
-      selectedAction === "UPDATE" &&
+      selectedAction === "TRADE" &&
       recommendedAction === "QUANTITY_CHANGE" &&
       showActionForm &&
       tradePositions.length === 0 &&
@@ -154,7 +154,7 @@ export function TriageActionButtons({
 
   // Extract auto-detected trade stage from notes when QUANTITY_CHANGE form is shown
   useEffect(() => {
-    if (showActionForm && selectedAction === "UPDATE" && recommendedAction === "QUANTITY_CHANGE" && !tradeStage && notes) {
+    if (showActionForm && selectedAction === "TRADE" && recommendedAction === "QUANTITY_CHANGE" && !tradeStage && notes) {
       // Try to extract trade stage from notes if it contains "Trade stage:"
       // This would be set by the triage computation
       const stageMatch = notes.match(/Trade stage: (\w+)/i);
@@ -402,7 +402,7 @@ export function TriageActionButtons({
 
         // Then record the triage action
         body.notes = `Strategy confirmed: ${strategyFormData.strategyType}`;
-      } else if (selectedAction === "UPDATE" && recommendedAction === "QUANTITY_CHANGE") {
+      } else if (selectedAction === "TRADE" && recommendedAction === "QUANTITY_CHANGE") {
         // Validate required fields
         if (!tradeReason || !tradeStage) {
           setError("Trade reason and trade stage are required");
@@ -786,7 +786,7 @@ export function TriageActionButtons({
   }
 
   // Render quantity change form (for QUANTITY_CHANGE) - uses same UI as TRADE form
-  if (showActionForm && selectedAction === "UPDATE" && recommendedAction === "QUANTITY_CHANGE") {
+  if (showActionForm && selectedAction === "TRADE" && recommendedAction === "QUANTITY_CHANGE") {
     return (
       <div className="space-y-4">
         <div className="border-b border-slate-200 bg-slate-50 px-4 py-3 -mx-4 -mt-4 mb-4">
