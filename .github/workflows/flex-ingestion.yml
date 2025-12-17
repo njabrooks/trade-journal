@@ -2,10 +2,10 @@ name: Flex Ingestion
 
 on:
   schedule:
-    # Run every 2 hours to catch up when IBKR calculates fields
+    # Run every 4 hours to catch up when IBKR calculates fields
     # This ensures we update positions when IBKR data source record management
     # has calculated avg_price and unrealized_pnl (which default to 0 initially)
-    - cron: '0 */2 * * *'  # Every 2 hours at :00 minutes
+    - cron: '0 */6 * * *'  # Every 4 hours at :00 minutes
   workflow_dispatch: # Allow manual trigger from GitHub UI
 
 jobs:
