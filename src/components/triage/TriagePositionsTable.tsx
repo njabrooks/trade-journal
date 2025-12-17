@@ -19,6 +19,7 @@ interface Position {
   multiplier: number | null;
   unrealizedPnl: number | null; // FifoPnlUnrealized
   nav: number | null; // For PercentOfNAV calculation
+  snapshotDate: string; // For DTE calculation
 }
 
 interface TriagePositionsTableProps {
@@ -40,7 +41,7 @@ function formatSymbol(position: Position): string {
 }
 
 function calculateCostBasisMoney(position: Position): number | null {
-  if (position.quantity && position.avgPrice && position.multiplier) {
+  if (position.quantity != null && position.avgPrice != null && position.multiplier != null) {
     return Math.abs(position.quantity * position.avgPrice * position.multiplier);
   }
   return null;
@@ -51,6 +52,15 @@ function calculatePercentOfNAV(position: Position): number | null {
     return (Math.abs(position.absNotional) / position.nav) * 100;
   }
   return null;
+}
+
+function calculateDTE(expiry: string | null, snapshotDate: string): number | null {
+  if (!expiry) return null;
+  const expiryDate = new Date(expiry + 'T00:00:00Z');
+  const snapshotDateObj = new Date(snapshotDate + 'T00:00:00Z');
+  const diffTime = expiryDate.getTime() - snapshotDateObj.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays >= 0 ? diffDays : null;
 }
 
 export function TriagePositionsTable({
@@ -161,46 +171,51 @@ export function TriagePositionsTable({
       <div className="space-y-2">
         {/* Headers */}
         <div className="flex items-center gap-4 text-xs font-medium text-slate-600 pb-1 border-b border-slate-300/50">
-          <div className="w-28">Symbol</div>
-          <div className="w-24 text-right">Quantity</div>
-          <div className="w-24 text-right">Mark Price</div>
-          <div className="w-28 text-right">Position Value</div>
-          <div className="w-24 text-right">Cost Basis</div>
-          <div className="w-24 text-right">% NAV</div>
-          <div className="w-28 text-right">Unrealized P&L</div>
+          <div className="flex-[1.5] min-w-0">Symbol</div>
+          <div className="flex-1 text-right">Quantity</div>
+          <div className="flex-1 text-right">Mark Price</div>
+          <div className="flex-1 text-right">Position Value</div>
+          <div className="flex-1 text-right">Cost Basis</div>
+          <div className="flex-1 text-right">% NAV</div>
+          <div className="flex-1 text-right">DTE</div>
+          <div className="flex-1 text-right">Unrealized P&L</div>
         </div>
         {/* Position Rows */}
         {positions.map((pos) => {
           const costBasisMoney = calculateCostBasisMoney(pos);
           const percentOfNAV = calculatePercentOfNAV(pos);
+          const dte = calculateDTE(pos.expiry, pos.snapshotDate || snapshotDate);
 
           return (
             <div key={pos.id} className="flex items-center gap-4 text-sm">
-              <div className="w-28">
-                <span className="font-medium text-slate-900">{formatSymbol(pos)}</span>
+              <div className="flex-[1.5] min-w-0">
+                <span className="font-medium text-slate-900 font-mono text-xs">{formatSymbol(pos)}</span>
               </div>
-              <div className="w-24 text-right">
+              <div className="flex-1 text-right">
                 <span className="text-slate-900">
                   {pos.quantity.toLocaleString()}
                 </span>
               </div>
-              <div className="w-24 text-right text-slate-600">
+              <div className="flex-1 text-right text-slate-600">
                 {pos.spot !== null && pos.spot !== undefined
                   ? formatCurrency(pos.spot, 'USD', 2)
                   : "—"}
               </div>
-              <div className="w-28 text-right font-medium text-slate-900">
+              <div className="flex-1 text-right font-medium text-slate-900">
                 {formatCurrency(Math.abs(pos.absNotional || 0))}
               </div>
-              <div className="w-24 text-right text-slate-600">
+              <div className="flex-1 text-right text-slate-600">
                 {costBasisMoney !== null ? formatCurrency(costBasisMoney) : "—"}
               </div>
-              <div className="w-24 text-right text-slate-600">
+              <div className="flex-1 text-right text-slate-600">
                 {percentOfNAV !== null ? formatPercent(percentOfNAV) : "—"}
+              </div>
+              <div className="flex-1 text-right text-slate-600">
+                {dte !== null ? `${dte} DTE` : "—"}
               </div>
               <div
                 className={cn(
-                  "w-28 text-right font-medium",
+                  "flex-1 text-right font-medium",
                   pos.unrealizedPnl && pos.unrealizedPnl >= 0
                     ? "text-emerald-600"
                     : "text-rose-600"
@@ -216,27 +231,28 @@ export function TriagePositionsTable({
         {/* Totals Row */}
         {showAggregation && (
           <div className="flex items-center gap-4 text-sm pt-2 border-t border-slate-300/50">
-            <div className="w-28">
+            <div className="flex-[1.5] min-w-0">
               <span className="font-semibold text-slate-700">Total</span>
             </div>
-            <div className="w-24 text-right">
+            <div className="flex-1 text-right">
               <span className="font-semibold text-slate-900">
                 {totals.quantity.toLocaleString()}
               </span>
             </div>
-            <div className="w-24"></div>
-            <div className="w-28 text-right font-semibold text-slate-900">
+            <div className="flex-1"></div>
+            <div className="flex-1 text-right font-semibold text-slate-900">
               {formatCurrency(totals.absNotional)}
             </div>
-            <div className="w-24 text-right font-semibold text-slate-900">
+            <div className="flex-1 text-right font-semibold text-slate-900">
               {formatCurrency(totals.costBasisMoney)}
             </div>
-            <div className="w-24 text-right font-semibold text-slate-900">
+            <div className="flex-1 text-right font-semibold text-slate-900">
               {formatPercent(totalPercentOfNAV)}
             </div>
+            <div className="flex-1"></div>
             <div
               className={cn(
-                "w-28 text-right font-semibold",
+                "flex-1 text-right font-semibold",
                 totals.unrealizedPnl >= 0 ? "text-emerald-600" : "text-rose-600"
               )}
             >

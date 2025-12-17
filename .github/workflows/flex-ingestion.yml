@@ -2,97 +2,14 @@ name: Flex Ingestion
 
 on:
   schedule:
-    # Daily at 4 AM UTC (primary run)
-    - cron: '0 4 * * *'
-    # Retry at 5 AM UTC if first run failed (1 hour later)
-    - cron: '0 5 * * *'
+    # Run every 2 hours to catch up when IBKR calculates fields
+    # This ensures we update positions when IBKR data source record management
+    # has calculated avg_price and unrealized_pnl (which default to 0 initially)
+    - cron: '0 */2 * * *'  # Every 2 hours at :00 minutes
   workflow_dispatch: # Allow manual trigger from GitHub UI
 
 jobs:
-  check-previous-run:
-    runs-on: ubuntu-latest
-    outputs:
-      should-run: ${{ steps.check.outputs.should-run }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check if previous run failed
-        id: check
-        env:
-          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
-          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
-          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
-        run: |
-          # Get current hour to determine if this is retry run
-          CURRENT_HOUR=$(date -u +%H)
-          
-          if [ "$CURRENT_HOUR" != "06" ]; then
-            echo "Primary run (5 AM) - proceeding"
-            echo "should-run=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          
-          echo "Retry run (6 AM) - checking database for recent failures"
-          
-          # Check database for configs that failed in the last 2 hours
-          npx tsx -e "
-            import { drizzle } from 'drizzle-orm/postgres-js';
-            import postgres from 'postgres';
-            import { flexQueryConfigs } from './src/db/schema.js';
-            import { and, eq, gte } from 'drizzle-orm';
-            
-            const connectionString = process.env.DATABASE_URL_POOLER || process.env.DATABASE_URL_DIRECT;
-            if (!connectionString) {
-              console.error('DATABASE_URL_POOLER or DATABASE_URL_DIRECT must be set');
-              process.exit(1);
-            }
-            
-            const client = postgres(connectionString, { max: 1 });
-            const db = drizzle(client);
-            
-            const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-            
-            try {
-              const failedConfigs = await db
-                .select()
-                .from(flexQueryConfigs)
-                .where(
-                  and(
-                    eq(flexQueryConfigs.lastRunStatus, 'failed'),
-                    gte(flexQueryConfigs.lastRunAt, twoHoursAgo)
-                  )
-                );
-              
-              if (failedConfigs.length > 0) {
-                console.log(\`Found \${failedConfigs.length} failed config(s) - proceeding with retry\`);
-                process.exit(0);
-              } else {
-                console.log('No recent failures found - skipping retry');
-                process.exit(1);
-              }
-            } catch (error) {
-              console.error('Error checking database:', error);
-              // On error, proceed with retry to be safe
-              console.log('Proceeding with retry due to check error');
-              process.exit(0);
-            } finally {
-              await client.end();
-            }
-          " && echo "should-run=true" >> $GITHUB_OUTPUT || echo "should-run=false" >> $GITHUB_OUTPUT
-
   ingest:
-    needs: check-previous-run
-    if: needs.check-previous-run.outputs.should-run == 'true'
     runs-on: ubuntu-latest
     
     steps:

@@ -9,7 +9,7 @@ import {
   validateFlexPositionRow,
 } from '@/lib/ingestion/flex/positions';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq, ne, sql, lt, isNotNull } from 'drizzle-orm';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
@@ -155,6 +155,88 @@ export async function POST(request: NextRequest) {
           row: rowNumber,
           errors: [error instanceof Error ? error.message : 'Normalization failed'],
         });
+      }
+    }
+
+    // Backfill avg_price and calculate unrealized_pnl from previous snapshots before deleting
+    // This preserves values when IBKR hasn't calculated them yet (defaults to 0)
+    // We use previous day's avg_price and calculate unrealized_pnl as (spot - avg_price) * quantity * multiplier
+    const positionsToBackfill = normalizedRows.filter(
+      (entry) => 
+        !entry.data.avgPrice || entry.data.avgPrice === '0' || parseFloat(entry.data.avgPrice || '0') === 0 ||
+        !entry.data.unrealizedPnl || entry.data.unrealizedPnl === '0' || parseFloat(entry.data.unrealizedPnl || '0') === 0
+    );
+    
+    if (positionsToBackfill.length > 0) {
+      console.log(`Backfilling ${positionsToBackfill.length} positions with missing/zero values`);
+      
+      // For each position needing backfill, find most recent previous snapshot
+      for (const entry of positionsToBackfill) {
+        if (!entry.data.conid && !entry.data.symbol) continue;
+        
+        // Find previous snapshots for this position (by conid if available, otherwise by symbol+expiry+strike)
+        const whereConditions = [
+          eq(positions.accountId, accountId),
+          lt(positions.snapshotDate, entry.data.snapshotDate!),
+        ];
+        
+        if (entry.data.conid) {
+          whereConditions.push(eq(positions.conid, entry.data.conid));
+        } else {
+          whereConditions.push(eq(positions.symbol, entry.data.symbol));
+          if (entry.data.expiry) {
+            whereConditions.push(eq(positions.expiry, entry.data.expiry));
+          }
+          if (entry.data.strike) {
+            whereConditions.push(eq(positions.strike, entry.data.strike));
+          }
+          if (entry.data.optionRight) {
+            whereConditions.push(eq(positions.optionRight, entry.data.optionRight));
+          }
+        }
+        
+        const previousSnapshot = await db
+          .select({
+            avgPrice: positions.avgPrice,
+            unrealizedPnl: positions.unrealizedPnl,
+            snapshotDate: positions.snapshotDate,
+          })
+          .from(positions)
+          .where(and(...whereConditions))
+          .orderBy(sql`${positions.snapshotDate} DESC`)
+          .limit(1);
+        
+        if (previousSnapshot.length > 0) {
+          const prev = previousSnapshot[0];
+          const needsAvgPrice = !entry.data.avgPrice || entry.data.avgPrice === '0' || parseFloat(entry.data.avgPrice || '0') === 0;
+          const needsUnrealizedPnl = !entry.data.unrealizedPnl || entry.data.unrealizedPnl === '0' || parseFloat(entry.data.unrealizedPnl || '0') === 0;
+          
+          // Backfill avg_price from previous day if missing or zero
+          if (needsAvgPrice && prev.avgPrice && parseFloat(prev.avgPrice) !== 0) {
+            entry.data.avgPrice = prev.avgPrice;
+            console.log(`Backfilled avg_price for ${entry.data.symbol}: ${prev.avgPrice} from ${prev.snapshotDate}`);
+          }
+          
+          // Calculate unrealized_pnl if we have spot, avg_price, quantity, and multiplier
+          if (needsUnrealizedPnl && entry.data.spot && entry.data.avgPrice && entry.data.quantity) {
+            const spot = parseFloat(entry.data.spot);
+            const avgPrice = parseFloat(entry.data.avgPrice);
+            const quantity = parseFloat(entry.data.quantity);
+            const multiplier = entry.data.multiplier ? parseFloat(entry.data.multiplier) : 1;
+            
+            if (!isNaN(spot) && !isNaN(avgPrice) && !isNaN(quantity) && !isNaN(multiplier)) {
+              const calculatedPnl = (spot - avgPrice) * quantity * multiplier;
+              entry.data.unrealizedPnl = calculatedPnl.toString();
+              console.log(`Calculated unrealized_pnl for ${entry.data.symbol}: ${calculatedPnl} = (${spot} - ${avgPrice}) * ${quantity} * ${multiplier}`);
+            }
+          } else if (needsUnrealizedPnl && prev.unrealizedPnl && parseFloat(prev.unrealizedPnl) !== 0) {
+            // Fallback: use previous day's unrealized_pnl if we can't calculate
+            entry.data.unrealizedPnl = prev.unrealizedPnl;
+            console.log(`Backfilled unrealized_pnl for ${entry.data.symbol}: ${prev.unrealizedPnl} from ${prev.snapshotDate}`);
+          }
+        } else {
+          console.log(`No previous snapshot found for ${entry.data.symbol} (conid: ${entry.data.conid})`);
+        }
       }
     }
 
