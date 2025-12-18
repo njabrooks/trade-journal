@@ -7,34 +7,35 @@ import { cn } from "@/lib/utils";
 type ActionType = "TRADE" | "MONITOR" | "DISMISS" | "UPDATE";
 
 // Mapping of trigger types to available actions
+// Note: TRADE actions are handled via checkbox selection in positions table or quantity change triggers
 const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   // Position-level triggers
-  "ASSIGNMENT_RISK≤14_DTE": ["TRADE", "MONITOR", "DISMISS"],
-  "ASSIGNMENT_RISK≤30_DTE": ["TRADE", "MONITOR", "DISMISS"],
-  "ITM_SHORT": ["TRADE", "MONITOR", "DISMISS"],
-  "ITM_LONG": ["TRADE", "MONITOR", "DISMISS"],
-  "SIGMA_0.5_SHORT": ["TRADE", "MONITOR", "DISMISS"],
-  "SIGMA_0.5_LONG": ["TRADE", "MONITOR", "DISMISS"],
-  "SIGMA_1.0": ["TRADE", "MONITOR", "DISMISS"],
-  "REVIEW_DTE": ["TRADE", "MONITOR", "DISMISS"],
+  "ASSIGNMENT_RISK≤14_DTE": ["MONITOR", "DISMISS"],
+  "ASSIGNMENT_RISK≤30_DTE": ["MONITOR", "DISMISS"],
+  "ITM_SHORT": ["MONITOR", "DISMISS"],
+  "ITM_LONG": ["MONITOR", "DISMISS"],
+  "SIGMA_0.5_SHORT": ["MONITOR", "DISMISS"],
+  "SIGMA_0.5_LONG": ["MONITOR", "DISMISS"],
+  "SIGMA_1.0": ["MONITOR", "DISMISS"],
+  "REVIEW_DTE": ["MONITOR", "DISMISS"],
   
   // Strategy-level triggers
   "CONFIRM_STRATEGIES": ["UPDATE"],
   "PROVIDE_STRATEGY_METADATA": ["UPDATE"],
-  "REVIEW_SIZE": ["TRADE", "MONITOR", "DISMISS"],
+  "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
-  "STATE_CODE_CHANGE": ["TRADE", "MONITOR", "DISMISS"],
-  "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
+  "STATE_CODE_CHANGE": ["MONITOR", "DISMISS"],
+  "QUANTITY_CHANGE": [], // Handled directly through quantity change trigger flow
 };
 
 // Helper to determine available actions for a trigger
 function getAvailableActions(recommendedAction: string | null, severity: string | null): ActionType[] {
   if (!recommendedAction) {
-    // Default: all actions available
-    return ["TRADE", "MONITOR", "DISMISS", "UPDATE"];
+    // Default: monitor and dismiss available
+    return ["MONITOR", "DISMISS"];
   }
   
-  const actions = TRIGGER_ACTIONS[recommendedAction] || ["TRADE", "MONITOR", "DISMISS", "UPDATE"];
+  const actions = TRIGGER_ACTIONS[recommendedAction] || ["MONITOR", "DISMISS"];
   
   // Special case: DISMISS not available if severity is 'info'
   if (severity === "info" && actions.includes("DISMISS")) {

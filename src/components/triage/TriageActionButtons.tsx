@@ -46,34 +46,35 @@ interface TradePosition {
 type ActionType = "TRADE" | "MONITOR" | "DISMISS" | "UPDATE";
 
 // Mapping of trigger types to available actions
+// Note: TRADE actions are handled via checkbox selection in positions table or quantity change triggers
 const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   // Position-level triggers
-  "ASSIGNMENT_RISK≤14_DTE": ["TRADE", "MONITOR", "DISMISS"],
-  "ASSIGNMENT_RISK≤30_DTE": ["TRADE", "MONITOR", "DISMISS"],
-  "ITM_SHORT": ["TRADE", "MONITOR", "DISMISS"],
-  "ITM_LONG": ["TRADE", "MONITOR", "DISMISS"],
-  "SIGMA_0.5_SHORT": ["TRADE", "MONITOR", "DISMISS"],
-  "SIGMA_0.5_LONG": ["TRADE", "MONITOR", "DISMISS"],
-  "SIGMA_1.0": ["TRADE", "MONITOR", "DISMISS"],
-  "REVIEW_DTE": ["TRADE", "MONITOR", "DISMISS"],
+  "ASSIGNMENT_RISK≤14_DTE": ["MONITOR", "DISMISS"],
+  "ASSIGNMENT_RISK≤30_DTE": ["MONITOR", "DISMISS"],
+  "ITM_SHORT": ["MONITOR", "DISMISS"],
+  "ITM_LONG": ["MONITOR", "DISMISS"],
+  "SIGMA_0.5_SHORT": ["MONITOR", "DISMISS"],
+  "SIGMA_0.5_LONG": ["MONITOR", "DISMISS"],
+  "SIGMA_1.0": ["MONITOR", "DISMISS"],
+  "REVIEW_DTE": ["MONITOR", "DISMISS"],
   
   // Strategy-level triggers
   "CONFIRM_STRATEGIES": ["UPDATE"],
   "PROVIDE_STRATEGY_METADATA": ["UPDATE"],
-  "REVIEW_SIZE": ["TRADE", "MONITOR", "DISMISS"],
+  "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
-  "STATE_CODE_CHANGE": ["TRADE", "MONITOR", "DISMISS"],
-  "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
+  "STATE_CODE_CHANGE": ["MONITOR", "DISMISS"],
+  "QUANTITY_CHANGE": [], // Handled directly through quantity change trigger flow
 };
 
 // Helper to determine available actions for a trigger
 function getAvailableActions(recommendedAction: string | null, severity: string | null): ActionType[] {
   if (!recommendedAction) {
-    // Default: all actions available
-    return ["TRADE", "MONITOR", "DISMISS", "UPDATE"];
+    // Default: monitor and dismiss available
+    return ["MONITOR", "DISMISS"];
   }
   
-  const actions = TRIGGER_ACTIONS[recommendedAction] || ["TRADE", "MONITOR", "DISMISS", "UPDATE"];
+  const actions = TRIGGER_ACTIONS[recommendedAction] || ["MONITOR", "DISMISS"];
   
   // Special case: DISMISS not available if severity is 'info'
   if (severity === "info" && actions.includes("DISMISS")) {
@@ -557,7 +558,9 @@ export function TriageActionButtons({
   };
 
   const handleAction = async (actionType: ActionType) => {
-    if (!availableActions.includes(actionType)) return;
+    // Allow TRADE when positions are pre-selected (via checkbox), even if not in availableActions
+    const isTradeWithPreSelectedPositions = actionType === "TRADE" && externalSelectedPositionIds && externalSelectedPositionIds.size > 0;
+    if (!availableActions.includes(actionType) && !isTradeWithPreSelectedPositions) return;
     setSelectedAction(actionType);
     setShowActionForm(true);
     // Reset trade positions when opening trade form
@@ -574,9 +577,13 @@ export function TriageActionButtons({
   };
 
   // Auto-select initial action if provided
+  // Allow TRADE when positions are pre-selected, even if not in availableActions
   useEffect(() => {
-    if (initialAction && availableActions.includes(initialAction)) {
-      handleAction(initialAction);
+    if (initialAction) {
+      const isTradeWithPreSelectedPositions = initialAction === "TRADE" && externalSelectedPositionIds && externalSelectedPositionIds.size > 0;
+      if (availableActions.includes(initialAction) || isTradeWithPreSelectedPositions) {
+        handleAction(initialAction);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialAction]);
@@ -1878,18 +1885,6 @@ export function TriageActionButtons({
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => handleAction("TRADE")}
-          disabled={loading || isActionDisabled("TRADE")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
-            isActionDisabled("TRADE")
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                : "bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
-          }`}
-          title={isActionDisabled("TRADE") ? "Not available for this trigger" : ""}
-        >
-          Trade
-        </button>
         <button
           onClick={() => handleAction("MONITOR")}
           disabled={loading || isActionDisabled("MONITOR")}
