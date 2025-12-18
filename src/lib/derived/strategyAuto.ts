@@ -7,6 +7,7 @@ import {
   underlyings,
 } from '@/db/schema';
 import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc, or } from 'drizzle-orm';
+import { populateStrategyEntryContext } from '@/lib/services/strategies';
 
 type DateRangeOptions =
   | { snapshotDate: string; startDate?: never; endDate?: never }
@@ -248,6 +249,12 @@ async function findOrCreateStrategyFromPosition(
     })
     .returning();
 
+  // Populate entry context fields from positions (entrySpot, netPremium, entryNotional, entryIv30)
+  // This runs asynchronously - don't await to avoid blocking strategy creation
+  populateStrategyEntryContext(created.id).catch((err) => {
+    console.error(`Failed to populate entry context for strategy ${created.id}:`, err);
+  });
+
   return { id: created.id, created: true };
 }
 
@@ -308,6 +315,12 @@ async function findOrCreateStrategyFromTrade(
       autoDerivedLabel: derivedLabel ?? derivedKey,
     })
     .returning();
+
+  // Populate entry context fields from positions (entrySpot, netPremium, entryNotional, entryIv30)
+  // This runs asynchronously - don't await to avoid blocking strategy creation
+  populateStrategyEntryContext(created.id).catch((err) => {
+    console.error(`Failed to populate entry context for strategy ${created.id}:`, err);
+  });
 
   return { id: created.id, created: true };
 }

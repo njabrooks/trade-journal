@@ -9,10 +9,12 @@ import {
   strategyMetricsSnapshots,
   triageRecords,
   blotterActions,
+  underlyingsIvHistory,
   NewStrategy,
   NewStrategyTemplate,
 } from '@/db/schema';
-import { eq, and, sql, inArray, isNotNull, desc } from 'drizzle-orm';
+import { eq, and, sql, inArray, isNotNull, desc, gte, lte, or } from 'drizzle-orm';
+import { toNumber } from '@/lib/utils';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTriageForDate } from '@/lib/derived/triage';
 import { backfillTradeBlotterForStrategy } from '@/lib/derived/blotter';
@@ -299,6 +301,11 @@ export async function updateStrategy(
     backfillTradeBlotterForStrategy(strategyId).catch((error) => {
       console.error(`Failed to backfill trade blotter for strategy ${strategyId} after confirmation:`, error);
     });
+
+    // Populate entry context fields when strategy is confirmed
+    populateStrategyEntryContext(strategyId).catch((error) => {
+      console.error(`Failed to populate entry context for strategy ${strategyId} after confirmation:`, error);
+    });
   }
 
   // If strategy was confirmed with a strategyType, or strategyType was changed, compute state code
@@ -322,6 +329,184 @@ export async function updateStrategy(
       .update(strategyTemplates)
       .set(templateUpdates)
       .where(eq(strategyTemplates.id, strategyRow.strategyTemplateId));
+  }
+}
+
+/**
+ * Populates strategy entry context fields from positions and IV history
+ * - entrySpot: Most recent avg_price (CostBasisPrice) to reflect current average cost basis after adjustments
+ * - netPremium: Sum of cost_basis_money from earliest snapshot (signed, can be negative)
+ * - entryNotional: Sum of abs(cost_basis_money) from earliest snapshot (always positive)
+ * - entryIv30: IV30 from underlyings_iv_history at opened_at date (or closest)
+ */
+export async function populateStrategyEntryContext(strategyId: string): Promise<void> {
+  // Get strategy info
+  const strategy = await db
+    .select({
+      id: strategies.id,
+      openedAt: strategies.openedAt,
+      underlyingId: strategyTemplates.underlyingId,
+      accountId: strategies.accountId,
+    })
+    .from(strategies)
+    .innerJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
+    .where(eq(strategies.id, strategyId))
+    .limit(1);
+
+  if (strategy.length === 0) {
+    throw new Error(`Strategy ${strategyId} not found`);
+  }
+
+  const strategyData = strategy[0];
+  const openedAt = strategyData.openedAt;
+  const openedAtDate = openedAt.toISOString().split('T')[0]!; // YYYY-MM-DD
+
+  const updateData: {
+    entrySpot?: string | null;
+    netPremium?: string | null;
+    entryNotional?: string | null;
+    entryIv30?: string | null;
+  } = {};
+
+  // 1. Get entrySpot from most recent position (to reflect current average cost basis after adjustments)
+  const mostRecentPosition = await db
+    .select({
+      avgPrice: positions.avgPrice,
+      assetClass: positions.assetClass,
+      underlyingId: positions.underlyingId,
+    })
+    .from(positions)
+    .where(
+      and(
+        eq(positions.strategyId, strategyId),
+        isNotNull(positions.avgPrice),
+        sql`${positions.quantity} != 0`
+      )
+    )
+    .orderBy(desc(positions.snapshotDate))
+    .limit(1);
+
+  if (mostRecentPosition.length > 0 && mostRecentPosition[0].avgPrice) {
+    // For stocks, use avg_price directly (it's the entry price)
+    // For options, we could use underlying spot, but avg_price is also useful
+    // Using avg_price for both to keep it simple and reflect current cost basis
+    updateData.entrySpot = mostRecentPosition[0].avgPrice;
+  }
+
+  // 2. Get netPremium and entryNotional from most recent snapshot
+  // This reflects the current adjusted cost basis after all position adjustments
+  // Find most recent snapshot date for this strategy
+  const mostRecentSnapshot = await db
+    .select({
+      snapshotDate: positions.snapshotDate,
+    })
+    .from(positions)
+    .where(
+      and(
+        eq(positions.strategyId, strategyId),
+        isNotNull(positions.snapshotDate),
+        sql`${positions.quantity} != 0`
+      )
+    )
+    .orderBy(desc(positions.snapshotDate))
+    .limit(1);
+
+  if (mostRecentSnapshot.length > 0) {
+    const mostRecentDate = mostRecentSnapshot[0].snapshotDate;
+    
+    // Get all positions at most recent snapshot date
+    const mostRecentPositions = await db
+      .select({
+        costBasisMoney: positions.costBasisMoney,
+      })
+      .from(positions)
+      .where(
+        and(
+          eq(positions.strategyId, strategyId),
+          eq(positions.snapshotDate, mostRecentDate!),
+          sql`${positions.quantity} != 0`
+        )
+      );
+
+    // Calculate netPremium (signed sum) and entryNotional (absolute sum)
+    let netPremium = 0;
+    let entryNotional = 0;
+
+    for (const pos of mostRecentPositions) {
+      if (pos.costBasisMoney) {
+        const value = toNumber(pos.costBasisMoney);
+        if (value !== null) {
+          netPremium += value; // Signed sum (can be negative for credit spreads)
+          entryNotional += Math.abs(value); // Absolute sum (always positive)
+        }
+      }
+    }
+
+    if (netPremium !== 0) {
+      updateData.netPremium = netPremium.toString();
+    }
+    if (entryNotional !== 0) {
+      updateData.entryNotional = entryNotional.toString();
+    }
+  }
+
+  // 3. Get entryIv30 from underlyings_iv_history at opened_at date
+  if (strategyData.underlyingId) {
+    // Try exact date first
+    let ivData = await db
+      .select({
+        iv30: underlyingsIvHistory.iv30,
+      })
+      .from(underlyingsIvHistory)
+      .where(
+        and(
+          eq(underlyingsIvHistory.underlyingId, strategyData.underlyingId),
+          eq(underlyingsIvHistory.asOfDate, openedAtDate)
+        )
+      )
+      .limit(1);
+
+    // If not found, find closest date (within 7 days before or after)
+    if (ivData.length === 0) {
+      const dateObj = new Date(openedAtDate);
+      const beforeDate = new Date(dateObj);
+      beforeDate.setDate(beforeDate.getDate() - 7);
+      const afterDate = new Date(dateObj);
+      afterDate.setDate(afterDate.getDate() + 7);
+
+      ivData = await db
+        .select({
+          iv30: underlyingsIvHistory.iv30,
+        })
+        .from(underlyingsIvHistory)
+        .where(
+          and(
+            eq(underlyingsIvHistory.underlyingId, strategyData.underlyingId),
+            gte(underlyingsIvHistory.asOfDate, beforeDate.toISOString().split('T')[0]!),
+            lte(underlyingsIvHistory.asOfDate, afterDate.toISOString().split('T')[0]!)
+          )
+        )
+        .orderBy(sql`ABS(${underlyingsIvHistory.asOfDate}::date - ${openedAtDate}::date)`)
+        .limit(1);
+    }
+
+    if (ivData.length > 0 && ivData[0].iv30) {
+      const iv30 = toNumber(ivData[0].iv30);
+      if (iv30 !== null && iv30 > 0) {
+        updateData.entryIv30 = iv30.toString();
+      }
+    }
+  }
+
+  // Update strategy with populated fields (only if we have data)
+  if (Object.keys(updateData).length > 0) {
+    await db
+      .update(strategies)
+      .set({
+        ...updateData,
+        updatedAt: new Date(),
+      })
+      .where(eq(strategies.id, strategyId));
   }
 }
 
