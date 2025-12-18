@@ -645,13 +645,13 @@ async function ingestUnderlyingsFromMassive(date?: string, tickers?: string[]): 
   if (tickers && tickers.length > 0) {
     tickersToProcess = tickers.map(t => t.trim().toUpperCase());
   } else {
-    // Get all active underlyings
+    // Get all underlyings from database
+    // Note: underlyings table doesn't have isActive field, so we get all
     const underlyingsList = await db
       .select({
         ticker: underlyings.ticker,
       })
-      .from(underlyings)
-      .where(eq(underlyings.isActive, true));
+      .from(underlyings);
     
     tickersToProcess = underlyingsList.map(u => u.ticker);
   }
