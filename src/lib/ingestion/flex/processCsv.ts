@@ -236,6 +236,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
             const previousSnapshot = await db
               .select({
                 avgPrice: positions.avgPrice,
+                costBasisMoney: positions.costBasisMoney,
                 unrealizedPnl: positions.unrealizedPnl,
                 snapshotDate: positions.snapshotDate,
               })
@@ -247,12 +248,19 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
             if (previousSnapshot.length > 0) {
               const prev = previousSnapshot[0];
               const needsAvgPrice = !entry.data.avgPrice || entry.data.avgPrice === '0' || parseFloat(entry.data.avgPrice || '0') === 0;
+              const needsCostBasisMoney = !entry.data.costBasisMoney || entry.data.costBasisMoney === '0' || parseFloat(entry.data.costBasisMoney || '0') === 0;
               const needsUnrealizedPnl = !entry.data.unrealizedPnl || entry.data.unrealizedPnl === '0' || parseFloat(entry.data.unrealizedPnl || '0') === 0;
               
               // Backfill avg_price from previous day if missing or zero
               if (needsAvgPrice && prev.avgPrice && parseFloat(prev.avgPrice) !== 0) {
                 entry.data.avgPrice = prev.avgPrice;
                 console.log(`Backfilled avg_price for ${entry.data.symbol}: ${prev.avgPrice} from ${prev.snapshotDate}`);
+              }
+              
+              // Backfill cost_basis_money from previous day if missing or zero
+              if (needsCostBasisMoney && prev.costBasisMoney && parseFloat(prev.costBasisMoney) !== 0) {
+                entry.data.costBasisMoney = prev.costBasisMoney;
+                console.log(`Backfilled cost_basis_money for ${entry.data.symbol}: ${prev.costBasisMoney} from ${prev.snapshotDate}`);
               }
               
               // Calculate unrealized_pnl if we have spot, avg_price, quantity, and multiplier

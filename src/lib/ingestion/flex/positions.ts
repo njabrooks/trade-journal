@@ -19,6 +19,7 @@ const FIELD_VARIANTS = {
   quantity: ['Quantity', 'quantity', 'Position'],
   side: ['Side', 'side'],
   costBasisPrice: ['CostBasisPrice', 'Cost Basis Price', 'costBasisPrice'],
+  costBasisMoney: ['CostBasisMoney', 'Cost Basis Money', 'costBasisMoney'],
   openPrice: ['OpenPrice', 'Open Price', 'openPrice'],
   markPrice: ['MarkPrice', 'Mark Price', 'markPrice'],
   positionValue: ['PositionValue', 'Position Value', 'positionValue'],
@@ -173,6 +174,8 @@ export async function normalizeFlexPositionRow(
     parseNumeric(getValue(row, FIELD_VARIANTS.costBasisPrice)) ??
     parseNumeric(getValue(row, FIELD_VARIANTS.openPrice));
 
+  const costBasisMoney = parseNumeric(getValue(row, FIELD_VARIANTS.costBasisMoney));
+
   const optionRightRaw = getValue(row, FIELD_VARIANTS.optionRight);
   const optionRight = optionRightRaw ? optionRightRaw.trim().charAt(0).toUpperCase() : null;
   const normalizedOptionRight =
@@ -213,6 +216,7 @@ export async function normalizeFlexPositionRow(
     side,
     quantity: quantityNum.toString(),
     avgPrice,
+    costBasisMoney,
     openDate: parseTimestamp(getValue(row, FIELD_VARIANTS.openDateTime)),
     closeDate: null,
     positionType: derivePositionType(assetClass, side),
