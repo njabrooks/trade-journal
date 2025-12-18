@@ -78,6 +78,62 @@ export const underlyingsIvHistory = pgTable(
 );
 
 // ============================================================================
+// Options Chain Snapshots
+// ============================================================================
+
+/**
+ * Stores full options chain snapshots for historical IV analysis
+ * Enables calculation of IV Rank, IV Percentile, and other IV-based metrics
+ */
+export const optionsChainSnapshots = pgTable(
+  'options_chain_snapshots',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    underlyingId: uuid('underlying_id')
+      .references(() => underlyings.id, { onDelete: 'cascade' }),
+    ticker: text('ticker').notNull(), // Denormalized for easier querying
+    snapshotDate: date('snapshot_date').notNull(),
+    underlyingSpot: numeric('underlying_spot'), // Spot price at snapshot time
+    source: text('source').notNull().default('massive'), // 'massive', 'ibkr', 'manual', etc.
+    
+    // Option contract details
+    contractType: text('contract_type'), // 'call' | 'put'
+    strike: numeric('strike').notNull(),
+    expirationDate: date('expiration_date').notNull(),
+    dte: integer('dte'), // Days to expiry (calculated at snapshot time)
+    
+    // Pricing and volatility
+    impliedVolatility: numeric('implied_volatility'), // IV for this contract (decimal, e.g. 0.45 for 45%)
+    bid: numeric('bid'),
+    ask: numeric('ask'),
+    last: numeric('last'),
+    volume: integer('volume'),
+    openInterest: integer('open_interest'),
+    
+    // Additional metadata
+    rawData: jsonb('raw_data'), // Store full raw response for future use
+    
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Unique constraint: one record per contract per snapshot date
+    uniqueContractSnapshot: unique().on(
+      table.ticker,
+      table.snapshotDate,
+      table.contractType,
+      table.strike,
+      table.expirationDate,
+      table.source
+    ),
+    // Indexes for common queries
+    idxTickerDate: index('idx_options_chain_ticker_date').on(table.ticker, table.snapshotDate),
+    idxUnderlyingDate: index('idx_options_chain_underlying_date').on(table.underlyingId, table.snapshotDate),
+    idxExpiration: index('idx_options_chain_expiration').on(table.expirationDate),
+  })
+);
+
+// ============================================================================
 // Strategy Templates
 // ============================================================================
 
@@ -215,6 +271,7 @@ export const positions = pgTable('positions', {
   side: text('side'), // 'LONG' | 'SHORT'
   quantity: numeric('quantity').notNull(),
   avgPrice: numeric('avg_price'),
+  costBasisMoney: numeric('cost_basis_money'), // CostBasisMoney from Flex (net premium/entry notional)
   openDate: timestamp('open_date', { withTimezone: true }),
   closeDate: timestamp('close_date', { withTimezone: true }),
   positionType: text('position_type'),
@@ -556,6 +613,7 @@ export type NewUnderlying = typeof underlyings.$inferInsert;
 
 export type UnderlyingIvHistory = typeof underlyingsIvHistory.$inferSelect;
 export type NewUnderlyingIvHistory = typeof underlyingsIvHistory.$inferInsert;
+export type NewOptionsChainSnapshot = typeof optionsChainSnapshots.$inferInsert;
 
 export type StrategyTemplate = typeof strategyTemplates.$inferSelect;
 export type NewStrategyTemplate = typeof strategyTemplates.$inferInsert;
