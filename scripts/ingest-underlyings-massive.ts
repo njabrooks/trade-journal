@@ -31,7 +31,7 @@ config({ path: envPath, override: false }); // override: false means existing en
 import { db } from '../src/db';
 import { underlyings, optionsChainSnapshots } from '../src/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { upsertIvSnapshots } from '../src/lib/ingestion/underlyingsIvHistory';
+import { upsertIvSnapshots, fetchYahooFinanceSpot } from '../src/lib/ingestion/underlyingsIvHistory';
 import type { NewOptionsChainSnapshot } from '../src/db/schema';
 
 // Check environment
@@ -72,6 +72,40 @@ interface MassiveAggResponse {
     n?: number; // number of transactions
   }>;
   resultsCount?: number;
+}
+
+/**
+ * Get spot prices for multiple tickers from Yahoo Finance
+ * Uses Yahoo Finance API (free, no API key required)
+ * Data available by 11:00 AM ET the following day
+ * 
+ * Note: Yahoo Finance may have rate limits, so we add small delays between requests
+ */
+async function getSpotPricesFromYahooFinance(
+  date: string,
+  tickers: string[]
+): Promise<Map<string, number>> {
+  const spotMap = new Map<string, number>();
+  
+  console.log(`[Yahoo Finance] Fetching spot prices for ${tickers.length} tickers...`);
+  
+  for (const ticker of tickers) {
+    try {
+      const spot = await fetchYahooFinanceSpot(ticker, date);
+      if (spot !== null && spot > 0) {
+        spotMap.set(ticker.toUpperCase(), spot);
+      }
+      
+      // Rate limiting: small delay between requests
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error) {
+      // Continue with other tickers if one fails
+      console.warn(`[Yahoo Finance] Failed to get spot for ${ticker}:`, error instanceof Error ? error.message : String(error));
+    }
+  }
+  
+  console.log(`[Yahoo Finance] Retrieved ${spotMap.size} of ${tickers.length} spot prices`);
+  return spotMap;
 }
 
 /**
@@ -680,86 +714,95 @@ async function ingestUnderlyingsFromMassive(date?: string, tickers?: string[]): 
     underlyingMap.set(ticker.toUpperCase(), underlying[0]?.id ?? null);
   }
 
-  // Step 1: Get canonical spot prices from Daily Market Summary
-  // This is the authoritative EOD close price (4:00 PM ET normal close)
-  // Reference: https://massive.com/docs/rest/stocks/aggregates/daily-market-summary
-  // 
-  // Timing: Daily Market Summary becomes available ~4:05-4:15 PM ET
-  // We use this as the canonical spot for the entire EOD snapshot
-  // All other data (IV30, options chain) will be matched to this spot
-  console.log(`\n📊 Step 1: Fetching canonical spot prices from Daily Market Summary (EOD close)...`);
+  // Step 1: Get spot prices from Yahoo Finance (primary source)
+  // Yahoo Finance has EOD data available right after market close (4 PM ET)
+  // This is faster and more reliable than Massive for same-day data
+  console.log(`\n📊 Step 1: Fetching spot prices from Yahoo Finance (EOD close)...`);
   let spotPrices: Map<string, number>;
   try {
-    spotPrices = await getSpotPricesFromDailySummary(targetDate, tickersToProcess);
-    console.log(`✅ Retrieved ${spotPrices.size} spot prices for ${targetDate} (EOD close)`);
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    if (errorMsg.includes('before end of day')) {
-      console.log(`⚠️  Cannot fetch today's data before market close.`);
-      console.log(`    For same-day ingestion, run after 4:15 PM ET (when EOD data is finalized)`);
-      console.log(`    Or use previous date for testing/backfill`);
+    spotPrices = await getSpotPricesFromYahooFinance(targetDate, tickersToProcess);
+    if (spotPrices.size > 0) {
+      console.log(`✅ Retrieved ${spotPrices.size} spot prices from Yahoo Finance`);
     } else {
-      console.log(`⚠️  Daily Market Summary not available: ${errorMsg}`);
+      console.log(`⚠️  Yahoo Finance returned no spot prices`);
+      spotPrices = new Map();
     }
-    console.log(`    Note: Without Daily Market Summary, we cannot get reliable underlying spot prices`);
-    console.log(`    (IBKR positions for options have option prices, not underlying spot)`);
+  } catch (error) {
+    console.log(`⚠️  Yahoo Finance failed:`, error instanceof Error ? error.message : String(error));
     spotPrices = new Map();
   }
   
+  // Fallback to Massive Daily Market Summary if Yahoo Finance fails
+  // (Useful for historical backfill or if Yahoo Finance is down)
   if (spotPrices.size === 0) {
-    console.log(`\n⚠️  No spot prices available from Daily Market Summary`);
-    console.log(`    This is expected if running before market close (free tier limitation)`);
-    console.log(`    For testing, use a previous date: npx tsx scripts/ingest-underlyings-massive.ts 2025-12-17`);
-    console.log(`    For production, the scheduled run at 4:30 PM ET will work correctly`);
-    console.log(`\n    Attempting to proceed without spot prices (IV30 will be less accurate)...`);
-    // Continue without spot - IV30 can still be calculated from options, just less accurate
+    console.log(`\n    Attempting Massive Daily Market Summary as fallback...`);
+    try {
+      spotPrices = await getSpotPricesFromDailySummary(targetDate, tickersToProcess);
+      if (spotPrices.size > 0) {
+        console.log(`✅ Retrieved ${spotPrices.size} spot prices from Massive Daily Market Summary`);
+      } else {
+        console.log(`⚠️  Massive also returned no spot prices`);
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (errorMsg.includes('before end of day')) {
+        console.log(`⚠️  Massive cannot fetch today's data before market close (free tier limitation)`);
+      } else {
+        console.log(`⚠️  Massive Daily Market Summary failed: ${errorMsg}`);
+      }
+    }
   }
   
-  console.log(`\n📊 Step 2: Fetching options chain snapshots (will use canonical spot from Step 1)...`);
+  if (spotPrices.size === 0) {
+    console.log(`\n⚠️  No spot prices available from any source`);
+    console.log(`    Attempting to proceed without spot prices (IV30 will be less accurate)...`);
+  }
   
-  // Step 2: Fetch options chain and IV30 for each ticker
-  // IMPORTANT: Use Daily Market Summary spot as canonical spot price
-  // The Options Chain Snapshot may have its own underlying_asset.price, but we ignore it
+  console.log(`\n📊 Step 2: Fetching options chain snapshots from Massive (will use spot prices from Step 1)...`);
+  
+  // Step 2: Fetch options chain and IV30 for each ticker from Massive
+  // Use spot prices from Step 1 (Yahoo Finance or Massive fallback)
+  // The Options Chain Snapshot may have its own underlying_asset.price, but we use our spot instead
   // This ensures spot and IV30 are from the same valuation moment (EOD close)
   for (const ticker of tickersToProcess) {
     try {
       console.log(`\n[${ticker}] Fetching options chain snapshot...`);
       
       const underlyingId = underlyingMap.get(ticker.toUpperCase()) ?? null;
-      const canonicalSpot = spotPrices.get(ticker.toUpperCase()) ?? null; // From Daily Market Summary
+      const spot = spotPrices.get(ticker.toUpperCase()) ?? null; // From Yahoo Finance (or Massive fallback)
       
-      if (!canonicalSpot) {
-        console.log(`[${ticker}] ⚠️  No spot price from Daily Market Summary - proceeding without spot`);
+      if (!spot) {
+        console.log(`[${ticker}] ⚠️  No spot price available - proceeding without spot`);
         console.log(`    (IV30 will be calculated from all options near 30 DTE, not just ATM)`);
         // Continue without spot - we can still calculate IV30, just less accurately
       }
       
       // Get IV30 and full chain data from options chain snapshot
-      // Pass canonical spot to ensure IV30 is calculated using the same spot as stored
-      // The options chain may have underlying_asset.price, but we use canonicalSpot instead
-      const { iv30, fullChain } = await getSpotAndIv30FromMassive(ticker, targetDate, underlyingId, canonicalSpot);
+      // Pass spot to ensure IV30 is calculated using the same spot as stored
+      // The options chain may have underlying_asset.price, but we use our spot instead
+      const { iv30, fullChain } = await getSpotAndIv30FromMassive(ticker, targetDate, underlyingId, spot);
       
       // Store full options chain snapshot for historical analysis
-      // Use canonical spot (not underlying_asset.price from options chain)
+      // Use our spot (not underlying_asset.price from options chain)
       if (fullChain) {
         console.log(`[${ticker}] Storing options chain snapshot...`);
-        const chainResult = await storeOptionsChainSnapshot(ticker, targetDate, underlyingId, canonicalSpot, fullChain);
+        const chainResult = await storeOptionsChainSnapshot(ticker, targetDate, underlyingId, spot, fullChain);
         console.log(`[${ticker}] Stored ${chainResult.inserted} option contracts (${chainResult.errors} errors)`);
       }
 
-      // Save snapshot with canonical spot (from Daily Market Summary) and IV30 (from options chain)
+      // Save snapshot with spot (from Yahoo Finance/Massive) and IV30 (from Massive options chain)
       // Both are for the same asOfDate (targetDate), representing EOD close
-      if (iv30 !== null || canonicalSpot !== null) {
+      if (iv30 !== null || spot !== null) {
         snapshots.push({
           date: targetDate, // Same date for both spot and IV30
           ticker,
-          spot: canonicalSpot, // Canonical spot from Daily Market Summary
+          spot: spot, // Spot from Yahoo Finance (or Massive fallback)
           iv30,
-          source: 'massive',
+          source: 'massive', // IV30 source is still Massive
         });
-        console.log(`[${ticker}] ✅ Spot: ${canonicalSpot.toFixed(2)} (EOD close), IV30: ${iv30 ? (iv30 * 100).toFixed(2) + '%' : 'N/A'}`);
+        console.log(`[${ticker}] ✅ Spot: ${spot ? spot.toFixed(2) : 'N/A'} (EOD close), IV30: ${iv30 ? (iv30 * 100).toFixed(2) + '%' : 'N/A'}`);
       } else {
-        console.log(`[${ticker}] ⚠️  No IV30 data available (spot: ${canonicalSpot.toFixed(2)})`);
+        console.log(`[${ticker}] ⚠️  No IV30 data available (spot: ${spot ? spot.toFixed(2) : 'N/A'})`);
       }
 
       processed++;
