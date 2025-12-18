@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { ChevronDownIcon, Link2Icon } from "lucide-react";
 import { formatDateShort, formatDateTime, formatCurrency } from "@/lib/formatters";
@@ -205,9 +205,8 @@ export function BlotterMatchedGroup({
               null;
             
             return (
-              <>
+              <React.Fragment key={record.entry.id}>
                 <tr
-                  key={record.entry.id}
                   className={cn(
                     "border-b bg-slate-50 hover:bg-slate-100 transition-colors",
                     isExpandable && "cursor-pointer"
@@ -333,7 +332,7 @@ export function BlotterMatchedGroup({
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             );
           })}
         </>

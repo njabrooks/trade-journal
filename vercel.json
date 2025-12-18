@@ -1,9 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/ingest/flex/automated?all=true",
-      "schedule": "0 */2 * * *"
-    }
-  ]
-}
-

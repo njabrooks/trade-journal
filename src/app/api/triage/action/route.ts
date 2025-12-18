@@ -67,8 +67,14 @@ export async function POST(request: NextRequest) {
       expiresDate.setDate(expiresDate.getDate() + days);
       overrideExpiresDate = expiresDate.toISOString().split("T")[0];
     } else if (actionType === "TRADE") {
-      severityOverride = "pending";
-      // Will be updated to 'complete' after trade validation via quantity change detection
+      // For QUANTITY_CHANGE with TRADE action, set to 'complete' when trade reason and stage are provided
+      if (triage.recommendedAction === "QUANTITY_CHANGE" && tradeReason && tradeStage) {
+        severityOverride = "complete";
+      } else {
+        // For other TRADE actions, set to 'pending' initially
+        // Will be updated to 'complete' after trade validation via quantity change detection
+        severityOverride = "pending";
+      }
     } else if (actionType === "UPDATE") {
       // For PROVIDE_STRATEGY_METADATA, only set to 'complete' if all required fields are filled
       if (triage.recommendedAction === "PROVIDE_STRATEGY_METADATA" && triage.strategyId) {
@@ -112,15 +118,7 @@ export async function POST(request: NextRequest) {
           // Strategy not found, keep current severity (don't override)
           severityOverride = null;
         }
-      } else if (triage.recommendedAction === "QUANTITY_CHANGE" && actionType === "TRADE") {
-        // For QUANTITY_CHANGE with TRADE action, set to 'complete' when trade reason and stage are provided
-        if (tradeReason && tradeStage) {
-          severityOverride = "complete";
-        } else {
-          // Don't set override if required fields are missing
-          severityOverride = null;
-        }
-      } else if (actionType === "UPDATE") {
+      } else {
         // For other UPDATE actions (like CONFIRM_STRATEGIES), set to 'complete'
         severityOverride = "complete";
       }

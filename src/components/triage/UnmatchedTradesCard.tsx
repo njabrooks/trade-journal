@@ -18,9 +18,26 @@ interface UnmatchedTradeExecution {
 
 interface UnmatchedTradesCardProps {
   unmatchedTradeExecutions: UnmatchedTradeExecution[];
+  // Edit mode props (for QUANTITY_CHANGE reconciliation)
+  editMode?: boolean;
+  selectedTradeIds?: Set<string>;
+  onTradeSelect?: (tradeId: string, selected: boolean) => void;
+  tradeQuantities?: Map<string, number>;
+  onQuantityChange?: (tradeId: string, quantity: number) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
 }
 
-export function UnmatchedTradesCard({ unmatchedTradeExecutions }: UnmatchedTradesCardProps) {
+export function UnmatchedTradesCard({ 
+  unmatchedTradeExecutions,
+  editMode = false,
+  selectedTradeIds = new Set(),
+  onTradeSelect,
+  tradeQuantities,
+  onQuantityChange,
+  onSelectAll,
+  onDeselectAll,
+}: UnmatchedTradesCardProps) {
   const [tradeDetails, setTradeDetails] = useState<BlotterEntry["tradeDetails"]>(null);
   const [loading, setLoading] = useState(true);
 
@@ -214,6 +231,17 @@ export function UnmatchedTradesCard({ unmatchedTradeExecutions }: UnmatchedTrade
     parsedNotes: null,
   };
 
-  return <TradeDetailsCard entry={mockEntry} />;
+  return (
+    <TradeDetailsCard 
+      entry={mockEntry}
+      editMode={editMode}
+      selectedTradeIds={selectedTradeIds}
+      onTradeSelect={onTradeSelect}
+      tradeQuantities={tradeQuantities}
+      onQuantityChange={onQuantityChange}
+      onSelectAll={onSelectAll}
+      onDeselectAll={onDeselectAll}
+    />
+  );
 }
 

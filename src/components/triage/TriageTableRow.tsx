@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChevronDownIcon } from "lucide-react";
 import { TriagePositionsTable } from "./TriagePositionsTable";
 import { TriageActionsTable } from "./TriageActionsTable";
-import { UnmatchedTradesCard } from "./UnmatchedTradesCard";
+import { TriageActionButtons } from "./TriageActionButtons";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -30,10 +30,6 @@ interface TriageTableRowProps {
   showStrategyColumn?: boolean;
   isSelected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
-}
-
-interface TriageRecordWithUnmatched {
-  unmatchedTradeExecutions?: any;
 }
 
 function SeverityTag({ severity }: { severity: string | null }) {
@@ -73,19 +69,65 @@ export function TriageTableRow({
   onSelect,
 }: TriageTableRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [triageRecord, setTriageRecord] = useState<TriageRecordWithUnmatched | null>(null);
+  const [minDte, setMinDte] = useState<number | null>(record.dte);
+  // State for position selection (always enabled when expanded for non-QUANTITY_CHANGE)
+  const [selectedPositionIds, setSelectedPositionIds] = useState<Set<string>>(new Set());
+  const [positionQuantities, setPositionQuantities] = useState<Map<string, number>>(new Map());
   // Column count: checkbox + symbol + trigger + severity + context + date + dte + (strategy if shown)
   const columnCount = showStrategyColumn ? 8 : 7;
 
-  // Fetch full triage record when expanded to get unmatchedTradeExecutions
+  // Calculate min DTE from positions when expanded or when record changes
   useEffect(() => {
-    if (isExpanded && record.recommendedAction === "QUANTITY_CHANGE" && !triageRecord) {
-      fetch(`/api/triage?id=${record.id}`)
-        .then((res) => res.json())
-        .then((data) => setTriageRecord(data))
-        .catch((err) => console.error("Failed to fetch triage record:", err));
+    if (record.positionId || record.strategyId) {
+      const fetchMinDte = async () => {
+        try {
+          let url = "";
+          if (record.positionId) {
+            url = `/api/positions?positionId=${record.positionId}`;
+          } else if (record.strategyId) {
+            url = `/api/positions?strategyId=${record.strategyId}`;
+          }
+          
+          if (url) {
+            const response = await fetch(url);
+            if (response.ok) {
+              const data = await response.json();
+              const positionsList = Array.isArray(data) ? data : [data];
+              
+              // Calculate DTE for each option position
+              const dteValues: number[] = [];
+              positionsList.forEach((pos: any) => {
+                if (pos.assetClass === 'OPT' && pos.expiry) {
+                  const expiryDate = new Date(pos.expiry + 'T00:00:00Z');
+                  const snapshotDateObj = new Date(record.snapshotDate + 'T00:00:00Z');
+                  const diffTime = expiryDate.getTime() - snapshotDateObj.getTime();
+                  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                  if (diffDays >= 0) {
+                    dteValues.push(diffDays);
+                  }
+                }
+              });
+              
+              if (dteValues.length > 0) {
+                setMinDte(Math.min(...dteValues));
+              } else {
+                setMinDte(null);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch positions for DTE calculation:", err);
+        }
+      };
+      
+      fetchMinDte();
     }
-  }, [isExpanded, record.id, record.recommendedAction, triageRecord]);
+  }, [record.positionId, record.strategyId, record.snapshotDate]);
+
+  // Reset position selections when row is expanded/collapsed
+  useEffect(() => {
+    setSelectedPositionIds(new Set());
+  }, [isExpanded]);
 
   return (
     <>
@@ -133,7 +175,7 @@ export function TriageTableRow({
             {formatDateShort(record.snapshotDate)}
           </td>
           <td className="px-4 py-3 text-center text-xs text-slate-600">
-            {record.dte ?? "—"} DTE
+            {minDte !== null ? minDte : "—"}
           </td>
           {showStrategyColumn && (
             <td className="px-4 py-3 text-center">
@@ -161,14 +203,85 @@ export function TriageTableRow({
                 strategyId={record.strategyId}
                 accountId={record.accountId}
                 snapshotDate={record.snapshotDate}
+                editMode={record.recommendedAction !== "QUANTITY_CHANGE"}
+                selectedPositionIds={selectedPositionIds}
+                onPositionSelect={async (positionId, selected) => {
+                  const newSelected = new Set(selectedPositionIds);
+                  if (selected) {
+                    newSelected.add(positionId);
+                    // Initialize quantity when selected (fetch current position quantity)
+                    if (!positionQuantities.has(positionId)) {
+                      try {
+                        let url = "";
+                        if (record.positionId) {
+                          url = `/api/positions?positionId=${record.positionId}`;
+                        } else if (record.strategyId) {
+                          url = `/api/positions?strategyId=${record.strategyId}`;
+                        }
+                        if (url) {
+                          const response = await fetch(url);
+                          if (response.ok) {
+                            const data = await response.json();
+                            const positionsList = Array.isArray(data) ? data : [data];
+                            const position = positionsList.find((p: any) => p.id === positionId);
+                            if (position) {
+                              const newQuantities = new Map(positionQuantities);
+                              newQuantities.set(positionId, parseFloat(position.quantity) || 0);
+                              setPositionQuantities(newQuantities);
+                            }
+                          }
+                        }
+                      } catch (err) {
+                        console.error("Failed to fetch position quantity:", err);
+                      }
+                    }
+                  } else {
+                    newSelected.delete(positionId);
+                    // Remove quantity when deselected
+                    const newQuantities = new Map(positionQuantities);
+                    newQuantities.delete(positionId);
+                    setPositionQuantities(newQuantities);
+                  }
+                  setSelectedPositionIds(newSelected);
+                }}
+                onSelectAll={async () => {
+                  // Fetch positions to select all
+                  try {
+                    let url = "";
+                    if (record.positionId) {
+                      url = `/api/positions?positionId=${record.positionId}`;
+                    } else if (record.strategyId) {
+                      url = `/api/positions?strategyId=${record.strategyId}`;
+                    }
+                    if (url) {
+                      const response = await fetch(url);
+                      if (response.ok) {
+                        const data = await response.json();
+                        const positionsList = Array.isArray(data) ? data : [data];
+                        setSelectedPositionIds(new Set(positionsList.map((p: any) => p.id)));
+                        // Initialize quantities for all positions
+                        const newQuantities = new Map<string, number>();
+                        positionsList.forEach((p: any) => {
+                          newQuantities.set(p.id, parseFloat(p.quantity) || 0);
+                        });
+                        setPositionQuantities(newQuantities);
+                      }
+                    }
+                  } catch (err) {
+                    console.error("Failed to fetch positions for select all:", err);
+                  }
+                }}
+                onDeselectAll={() => {
+                  setSelectedPositionIds(new Set());
+                  setPositionQuantities(new Map());
+                }}
+                positionQuantities={positionQuantities}
+                onQuantityChange={(positionId, quantity) => {
+                  const newQuantities = new Map(positionQuantities);
+                  newQuantities.set(positionId, quantity);
+                  setPositionQuantities(newQuantities);
+                }}
               />
-
-              {/* Unmatched Trade Executions (for QUANTITY_CHANGE) */}
-              {record.recommendedAction === "QUANTITY_CHANGE" && triageRecord?.unmatchedTradeExecutions && (
-                <UnmatchedTradesCard
-                  unmatchedTradeExecutions={triageRecord.unmatchedTradeExecutions}
-                />
-              )}
 
               {/* Notes (only if not QUANTITY_CHANGE or if there are additional notes) */}
               {record.notes && 
@@ -183,16 +296,39 @@ export function TriageTableRow({
                 </div>
               )}
 
-              {/* Actions - automatically shown when expanded */}
-              <TriageActionsTable
-                triageId={record.id}
-                contextLevel={record.contextLevel}
-                recommendedAction={record.recommendedAction}
-                strategyId={record.strategyId}
-                positionId={record.positionId}
-                severity={record.severity}
-                onActionComplete={() => setIsExpanded(false)}
-              />
+              {/* Actions - show trade form when positions are selected, otherwise show action buttons */}
+              {selectedPositionIds.size > 0 && record.recommendedAction !== "QUANTITY_CHANGE" ? (
+                <TriageActionButtons
+                  triageId={record.id}
+                  contextLevel={record.contextLevel}
+                  recommendedAction={record.recommendedAction}
+                  strategyId={record.strategyId}
+                  positionId={record.positionId}
+                  severity={record.severity}
+                  initialAction="TRADE"
+                  onActionComplete={() => {
+                    setIsExpanded(false);
+                    setSelectedPositionIds(new Set());
+                    setPositionQuantities(new Map());
+                  }}
+                  selectedPositionIds={selectedPositionIds}
+                  onPositionSelectionChange={setSelectedPositionIds}
+                  positionQuantities={positionQuantities}
+                />
+              ) : (
+                <TriageActionsTable
+                  triageId={record.id}
+                  contextLevel={record.contextLevel}
+                  recommendedAction={record.recommendedAction}
+                  strategyId={record.strategyId}
+                  positionId={record.positionId}
+                  severity={record.severity}
+                  onActionComplete={() => {
+                    setIsExpanded(false);
+                    setSelectedPositionIds(new Set());
+                  }}
+                />
+              )}
             </div>
           </td>
         </tr>

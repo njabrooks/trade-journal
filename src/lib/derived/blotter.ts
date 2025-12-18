@@ -835,10 +835,10 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
   // Create one strategy-level QUANTITY_CHANGE triage record per strategy
   for (const [strategyId, unmatchedBlotterTrades] of tradesByStrategy.entries()) {
     // Check if QUANTITY_CHANGE triage record already exists for this strategy and date
-    // Only check for records from the new system (ruleSet='options_v1', severity='pending')
+    // Skip if record exists with severity='complete' (already processed)
     // Old records (ruleSet='quantity_change', severity='urgent') should be replaced
     const existingQc = await db
-      .select({ id: triageRecords.id })
+      .select({ id: triageRecords.id, severity: triageRecords.severity })
       .from(triageRecords)
       .where(
         and(
@@ -852,8 +852,12 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
       .limit(1);
 
     if (existingQc.length > 0) {
-      // Already exists from new system, skip
-      continue;
+      // If severity is 'complete', skip creating a new record (already processed)
+      if (existingQc[0].severity === 'complete') {
+        continue;
+      }
+      // If severity is 'pending', we'll update it with new trade data below
+      // (delete the old one and create a new one with updated unmatchedTradeExecutions)
     }
     
     // Delete any old-style QUANTITY_CHANGE records (ruleSet='quantity_change') for this strategy/date

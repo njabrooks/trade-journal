@@ -52,6 +52,12 @@ interface TriageActionsTableProps {
   positionId?: string | null;
   severity?: string | null;
   onActionComplete?: () => void;
+  onTradeActionSelected?: (isSelected: boolean) => void;
+  onPositionSelectionChange?: (selectedIds: Set<string>, handlers: {
+    onPositionSelect: (positionId: string, selected: boolean) => void;
+    onSelectAll: () => void;
+    onDeselectAll: () => void;
+  }) => void;
 }
 
 const ACTION_LABELS: Record<ActionType, string> = {
@@ -76,6 +82,8 @@ export function TriageActionsTable({
   positionId,
   severity,
   onActionComplete,
+  onTradeActionSelected,
+  onPositionSelectionChange,
 }: TriageActionsTableProps) {
   const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
   const availableActions = getAvailableActions(recommendedAction, severity ?? null);
@@ -126,6 +134,8 @@ export function TriageActionsTable({
               onActionComplete?.();
             }}
             initialAction={selectedAction}
+            onTradeActionSelected={onTradeActionSelected}
+            onPositionSelectionChangeLegacy={onPositionSelectionChange}
           />
         </div>
       </div>

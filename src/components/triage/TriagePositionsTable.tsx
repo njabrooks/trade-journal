@@ -27,6 +27,15 @@ interface TriagePositionsTableProps {
   strategyId?: string | null;
   accountId: string;
   snapshotDate: string;
+  // Edit mode props (for TRADE action selection)
+  editMode?: boolean;
+  selectedPositionIds?: Set<string>;
+  onPositionSelect?: (positionId: string, selected: boolean) => void;
+  onSelectAll?: () => void;
+  onDeselectAll?: () => void;
+  // Quantity editing props
+  positionQuantities?: Map<string, number>;
+  onQuantityChange?: (positionId: string, quantity: number) => void;
 }
 
 function formatSymbol(position: Position): string {
@@ -68,6 +77,13 @@ export function TriagePositionsTable({
   strategyId,
   accountId,
   snapshotDate,
+  editMode = false,
+  selectedPositionIds = new Set(),
+  onPositionSelect,
+  onSelectAll,
+  onDeselectAll,
+  positionQuantities,
+  onQuantityChange,
 }: TriagePositionsTableProps) {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,6 +178,8 @@ export function TriagePositionsTable({
     : null;
 
   const showAggregation = positions.length > 1;
+  const allSelected = editMode && positions.length > 0 && positions.every(pos => selectedPositionIds.has(pos.id));
+  const someSelected = editMode && positions.some(pos => selectedPositionIds.has(pos.id)) && !allSelected;
 
   return (
     <div className="space-y-3">
@@ -171,30 +189,78 @@ export function TriagePositionsTable({
       <div className="space-y-2">
         {/* Headers */}
         <div className="flex items-center gap-4 text-xs font-medium text-slate-600 pb-1 border-b border-slate-300/50">
+          {editMode ? (
+            <div className="w-8 flex items-center justify-center">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                ref={(input) => {
+                  if (input) {
+                    input.indeterminate = someSelected;
+                  }
+                }}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    onSelectAll?.();
+                  } else {
+                    onDeselectAll?.();
+                  }
+                }}
+                className="h-4 w-4 cursor-pointer"
+              />
+            </div>
+          ) : (
+            <div className="w-8">{/* Spacer for checkbox column alignment */}</div>
+          )}
           <div className="flex-[1.5] min-w-0">Symbol</div>
           <div className="flex-1 text-right">Quantity</div>
           <div className="flex-1 text-right">Mark Price</div>
           <div className="flex-1 text-right">Position Value</div>
           <div className="flex-1 text-right">Cost Basis</div>
-          <div className="flex-1 text-right">% NAV</div>
-          <div className="flex-1 text-right">DTE</div>
           <div className="flex-1 text-right">Unrealized P&L</div>
+          <div className="flex-1 text-right">% NAV</div>
+          <div className="flex-1 text-center">DTE</div>
         </div>
         {/* Position Rows */}
         {positions.map((pos) => {
           const costBasisMoney = calculateCostBasisMoney(pos);
           const percentOfNAV = calculatePercentOfNAV(pos);
           const dte = calculateDTE(pos.expiry, pos.snapshotDate || snapshotDate);
+          const isSelected = editMode ? selectedPositionIds.has(pos.id) : true;
+          const displayQuantity = editMode && positionQuantities?.has(pos.id)
+            ? positionQuantities.get(pos.id)!
+            : pos.quantity;
 
           return (
-            <div key={pos.id} className="flex items-center gap-4 text-sm">
+            <div key={pos.id} className={`flex items-center gap-4 text-sm ${editMode && !isSelected ? 'opacity-50' : ''}`}>
+              {editMode ? (
+                <div className="w-8 flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => onPositionSelect?.(pos.id, e.target.checked)}
+                    className="h-4 w-4 cursor-pointer"
+                  />
+                </div>
+              ) : (
+                <div className="w-8">{/* Spacer for checkbox column alignment */}</div>
+              )}
               <div className="flex-[1.5] min-w-0">
                 <span className="font-medium text-slate-900 font-mono text-xs">{formatSymbol(pos)}</span>
               </div>
               <div className="flex-1 text-right">
-                <span className="text-slate-900">
-                  {pos.quantity.toLocaleString()}
-                </span>
+                {editMode && isSelected && onQuantityChange ? (
+                  <input
+                    type="number"
+                    value={displayQuantity}
+                    onChange={(e) => onQuantityChange?.(pos.id, parseFloat(e.target.value) || 0)}
+                    className="w-full text-right text-slate-900 border border-slate-300 rounded px-1.5 py-0.5 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                ) : (
+                  <span className="text-slate-900">
+                    {displayQuantity.toLocaleString()}
+                  </span>
+                )}
               </div>
               <div className="flex-1 text-right text-slate-600">
                 {pos.spot !== null && pos.spot !== undefined
@@ -206,12 +272,6 @@ export function TriagePositionsTable({
               </div>
               <div className="flex-1 text-right text-slate-600">
                 {costBasisMoney !== null ? formatCurrency(costBasisMoney) : "—"}
-              </div>
-              <div className="flex-1 text-right text-slate-600">
-                {percentOfNAV !== null ? formatPercent(percentOfNAV) : "—"}
-              </div>
-              <div className="flex-1 text-right text-slate-600">
-                {dte !== null ? `${dte} DTE` : "—"}
               </div>
               <div
                 className={cn(
@@ -225,12 +285,19 @@ export function TriagePositionsTable({
                   ? formatCurrency(pos.unrealizedPnl)
                   : "—"}
               </div>
+              <div className="flex-1 text-right text-slate-600">
+                {percentOfNAV !== null ? formatPercent(percentOfNAV) : "—"}
+              </div>
+              <div className="flex-1 text-center text-slate-600">
+                {dte !== null ? dte : "—"}
+              </div>
             </div>
           );
         })}
         {/* Totals Row */}
         {showAggregation && (
           <div className="flex items-center gap-4 text-sm pt-2 border-t border-slate-300/50">
+            <div className="w-8">{/* Spacer for checkbox column alignment */}</div>
             <div className="flex-[1.5] min-w-0">
               <span className="font-semibold text-slate-700">Total</span>
             </div>
@@ -246,10 +313,6 @@ export function TriagePositionsTable({
             <div className="flex-1 text-right font-semibold text-slate-900">
               {formatCurrency(totals.costBasisMoney)}
             </div>
-            <div className="flex-1 text-right font-semibold text-slate-900">
-              {formatPercent(totalPercentOfNAV)}
-            </div>
-            <div className="flex-1"></div>
             <div
               className={cn(
                 "flex-1 text-right font-semibold",
@@ -258,6 +321,10 @@ export function TriagePositionsTable({
             >
               {formatCurrency(totals.unrealizedPnl)}
             </div>
+            <div className="flex-1 text-right font-semibold text-slate-900">
+              {formatPercent(totalPercentOfNAV)}
+            </div>
+            <div className="flex-1"></div>
           </div>
         )}
       </div>
