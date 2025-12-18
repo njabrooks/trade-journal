@@ -707,9 +707,12 @@ async function ingestUnderlyingsFromMassive(date?: string, tickers?: string[]): 
   }
   
   if (spotPrices.size === 0) {
-    console.log(`\n⚠️  No spot prices available - cannot proceed with options chain ingestion`);
-    console.log(`    (IV30 calculation requires spot for ATM filtering)`);
-    return;
+    console.log(`\n⚠️  No spot prices available from Daily Market Summary`);
+    console.log(`    This is expected if running before market close (free tier limitation)`);
+    console.log(`    For testing, use a previous date: npx tsx scripts/ingest-underlyings-massive.ts 2025-12-17`);
+    console.log(`    For production, the scheduled run at 4:30 PM ET will work correctly`);
+    console.log(`\n    Attempting to proceed without spot prices (IV30 will be less accurate)...`);
+    // Continue without spot - IV30 can still be calculated from options, just less accurate
   }
   
   console.log(`\n📊 Step 2: Fetching options chain snapshots (will use canonical spot from Step 1)...`);
@@ -726,9 +729,9 @@ async function ingestUnderlyingsFromMassive(date?: string, tickers?: string[]): 
       const canonicalSpot = spotPrices.get(ticker.toUpperCase()) ?? null; // From Daily Market Summary
       
       if (!canonicalSpot) {
-        console.log(`[${ticker}] ⚠️  No spot price from Daily Market Summary - skipping options chain fetch`);
-        console.log(`    (Cannot calculate IV30 without spot for ATM filtering)`);
-        continue;
+        console.log(`[${ticker}] ⚠️  No spot price from Daily Market Summary - proceeding without spot`);
+        console.log(`    (IV30 will be calculated from all options near 30 DTE, not just ATM)`);
+        // Continue without spot - we can still calculate IV30, just less accurately
       }
       
       // Get IV30 and full chain data from options chain snapshot
