@@ -60,11 +60,11 @@ type RecordWithMeta<T> = {
   rowNumber: number;
 };
 
-function buildRecord<T extends Record<string, string>>(
+function buildRecord<T extends Record<string, string | undefined>>(
   fieldNames: string[],
   row: string[]
 ): T {
-  const record: Record<string, string> = {};
+  const record: Record<string, string | undefined> = {};
   fieldNames.forEach((field, idx) => {
     if (!field) return;
     const value = row[idx + 2];
@@ -77,7 +77,7 @@ function buildRecord<T extends Record<string, string>>(
   return record as T;
 }
 
-function extractClientAccountId(row: Record<string, string>): string | undefined {
+function extractClientAccountId(row: Record<string, string | undefined>): string | undefined {
   return (
     row['ClientAccountID'] ||
     row['Client Account ID'] ||
@@ -158,9 +158,9 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     const postDataRows: RecordWithMeta<FlexPositionRow>[] = rows
       .map((row, idx) => ({ row, idx }))
       .filter(({ row }) => row[0] === 'DATA' && row[1] === SECTION_CODES.POST)
-      .map(({ row }, dataIdx) => ({
+      .map(({ row, idx }) => ({
         record: buildRecord<FlexPositionRow>(fieldNames, row),
-        rowNumber: dataIdx + 1,
+        rowNumber: idx + 1, // Use actual CSV row index (1-based)
       }));
 
     if (postDataRows.length > 0) {
@@ -296,13 +296,13 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
         }
 
         // Insert positions
-        for (const { data } of normalizedRows) {
+        for (const { data, rowNumber } of normalizedRows) {
           try {
             await db.insert(positions).values(data);
             results.post.inserted++;
           } catch (error) {
             results.post.errors.push({
-              row: 0,
+              row: rowNumber,
               errors: [error instanceof Error ? error.message : 'Insert failed'],
             });
           }
@@ -321,9 +321,9 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     const equtDataRows: RecordWithMeta<FlexNavRow>[] = rows
       .map((row, idx) => ({ row, idx }))
       .filter(({ row }) => row[0] === 'DATA' && row[1] === SECTION_CODES.EQUT)
-      .map(({ row }, dataIdx) => ({
+      .map(({ row, idx }) => ({
         record: buildRecord<FlexNavRow>(fieldNames, row),
-        rowNumber: dataIdx + 1,
+        rowNumber: idx + 1, // Use actual CSV row index (1-based)
       }));
 
     if (equtDataRows.length > 0) {
@@ -361,7 +361,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
         }
 
         // Delete existing snapshots and insert new ones
-        for (const { data } of normalizedRows) {
+        for (const { data, rowNumber } of normalizedRows) {
           try {
             await db
               .delete(navSnapshots)
@@ -375,7 +375,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
             results.equt.inserted++;
           } catch (error) {
             results.equt.errors.push({
-              row: 0,
+              row: rowNumber,
               errors: [error instanceof Error ? error.message : 'Insert failed'],
             });
           }
@@ -394,9 +394,9 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     const mtmpDataRows: RecordWithMeta<FlexMtmRow>[] = rows
       .map((row, idx) => ({ row, idx }))
       .filter(({ row }) => row[0] === 'DATA' && row[1] === SECTION_CODES.MTMP)
-      .map(({ row }, dataIdx) => ({
+      .map(({ row, idx }) => ({
         record: buildRecord<FlexMtmRow>(fieldNames, row),
-        rowNumber: dataIdx + 1,
+        rowNumber: idx + 1, // Use actual CSV row index (1-based)
       }))
       .filter(({ record }) => !isSummaryRow(record));
 
@@ -565,9 +565,9 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
   }
 
   const fieldNames = trntHeader.slice(2);
-  const trntDataRows = rows.filter(
-    (row) => row[0] === 'DATA' && row[1] === SECTION_CODES.TRADES
-  );
+  const trntDataRows = rows
+    .map((row, idx) => ({ row, idx }))
+    .filter(({ row }) => row[0] === 'DATA' && row[1] === SECTION_CODES.TRADES);
 
   const accountCache = new Map<string, string>();
   const tradeDates = new Set<string>();
@@ -580,8 +580,8 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
   let insertErrors = 0;
   let primaryAccountId: string | undefined;
 
-  for (let i = 0; i < trntDataRows.length; i++) {
-    const dataRow = trntDataRows[i];
+  for (const { row: dataRow, idx } of trntDataRows) {
+    const rowNumber = idx + 1; // Use actual CSV row index (1-based)
     const record = buildRecord<FlexTradeRow>(fieldNames, dataRow);
 
     const validation = validateFlexTradeRow(record);
@@ -642,7 +642,10 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
       
       // Track trade date for recompute
       if (normalized.tradeDate) {
-        const tradeDateStr = new Date(normalized.tradeDate).toISOString().split('T')[0];
+        // tradeDate is already a Date object, convert to YYYY-MM-DD string
+        const tradeDateStr = normalized.tradeDate instanceof Date
+          ? normalized.tradeDate.toISOString().split('T')[0]
+          : String(normalized.tradeDate).split('T')[0];
         tradeDates.add(tradeDateStr);
       }
     } catch (error) {
