@@ -6,6 +6,20 @@ This document captures all planned future enhancements mentioned throughout the 
 - `.cursor/plans/plan v5.md` - Main implementation plan (references this document)
 - `docs/actions.md` - Complete specification of triggers, rules, and actions
 
+## Recent Completions
+
+**Major enhancements completed since last update:**
+- ✅ **Automated Flex Ingestion (#9)**: Full implementation with GitHub Actions, Vercel cron, and admin UI
+- ✅ **State Code Change Performance (#4)**: Optimized using stored state codes
+- ✅ **Auto-Trigger Recompute (#21)**: Automatic recompute after linking, merging, and ingestion
+- ✅ **Underlyings IV History (#10)**: Manual ingestion from Option Strategist (weekly data)
+
+**Next Focus Areas** (see recommendations at end):
+1. **IBKR API Integration (#10a)** - Critical for accurate daily IV/spot data matching snapshot dates
+2. **Complete Manual Linking UI (#14)** - Add endpoints to list unlinked items
+3. **Triage Rules Database Persistence (#5)** - Move from hardcoded constants to database
+4. **Automated Tests (#20)** - Unit and integration tests for reliability
+
 ## Trade & Reconciliation Enhancements
 
 ### 1. Roll Trade Auto-Detection
@@ -45,13 +59,19 @@ This document captures all planned future enhancements mentioned throughout the 
 
 ## Configuration & Rules
 
-### 5. Triage Rules Database Persistence
+### 5. Triage Rules Database Persistence ⚠️ PARTIALLY IMPLEMENTED
 **Location**: `docs/actions.md` (line 377)  
-**Current State**: Rules currently read from `TRIAGE_RULES_V1` constant in `src/lib/derived/triage.ts:13-22`.  
+**Current State**: 
+- Rules currently read from `TRIAGE_RULES_V1` constant in `src/lib/derived/triage.ts:13-22`
+- ✅ **Admin UI**: `src/app/admin/triage/page.tsx` - UI exists for editing rules
+- ✅ **API Endpoint**: `/api/admin/triage-rules` POST - Validates rules but doesn't store them
+- ⚠️ **Missing**: Database table and persistence logic
 **Enhancement**: 
-- Store thresholds in database table (e.g., `triage_rules` or `triage_rule_config`) for persistence
-- Load from database during triage computation instead of hardcoded constants
-- Support multiple rule sets (currently only `options_v1`)  
+- Create `triage_rules` table with fields: `rule_set`, `dte_threshold`, `assignment_dte_threshold`, `size_attention_threshold`, `size_urgent_threshold`, `complexity_threshold`
+- Update API endpoint to actually save rules to database
+- Update `src/lib/derived/triage.ts` to load rules from database (with fallback to constants)
+- Support multiple rule sets (currently only `options_v1`)
+- Add migration to seed initial rules from current constants
 **Priority**: Medium
 
 ## Future Triggers (Not Yet Implemented)
@@ -282,18 +302,32 @@ This document captures all planned future enhancements mentioned throughout the 
 
 ## Data Ingestion
 
-### 9. Automated Flex Ingestion
+### 9. Automated Flex Ingestion ✅ COMPLETED
 **Location**: `.cursor/plans/plan v5.md` (line 6-9), `docs/ingestion_v1.md`  
-**Current State**: Manual upload via UI  
-**Enhancement**: 
-- Edge function/cron to call IBKR Flex APIs (FLEX token + query IDs)
-- Reuse existing normalizers; trigger recompute on success
-- Keep manual upload for backfills
-- **Automation approach**: Scheduled Edge function/cron job (e.g., daily or weekly)
-  - Calls Flex API endpoints with stored FLEX token and query IDs
-  - Processes response through existing ingestion routes
-  - Auto-triggers recompute (already implemented)
-**Priority**: High
+**Previous State**: Manual upload via UI  
+**Solution Implemented**: 
+- ✅ **API Endpoint**: `src/app/api/ingest/flex/automated/route.ts`
+  - POST: Run specific config or all active configs
+  - GET: List all Flex query configurations
+  - Supports authentication via `CRON_SECRET` environment variable
+- ✅ **Database Configuration**: `flex_query_configs` table stores:
+  - Query name, type (positions/trades), FLEX token, query ID
+  - Account association, active status, schedule cron expression
+  - Last run status and error tracking
+- ✅ **Admin UI**: `src/app/admin/ingestion/flex-configs/page.tsx`
+  - Create/edit/delete Flex query configurations
+  - View last run status and errors
+  - Manual trigger for testing
+- ✅ **Automation Options**:
+  - **GitHub Actions**: `.github/workflows/flex-ingestion.yml` - Runs 3x daily (4 AM, 6 AM, noon GMT)
+  - **Vercel Cron**: `vercel.json` configured for daily runs (can be customized)
+  - **External Cron**: Can call API endpoint directly with authentication
+- ✅ **Integration**: 
+  - Reuses existing ingestion routes (`processPositionsCsv`, `processTradesCsv`)
+  - Auto-triggers recompute after successful ingestion (already implemented in #21)
+  - Process tracking via `process_runs` table
+- ✅ **Documentation**: `docs/flex_automation_setup.md` - Complete setup guide
+**Status**: ✅ Fully implemented with multiple automation options
 
 ### 10. Underlyings IV History Ingestion ✅ COMPLETED
 **Location**: `.cursor/plans/plan v5.md` (line 10-13)  
@@ -387,11 +421,23 @@ This document captures all planned future enhancements mentioned throughout the 
 - Include feature to manually capture (copy/paste, csv export or screenshot) options data (greeks, IV at relevant strikes and expiries) to facilitate advice from AI  
 **Priority**: Medium
 
-### 14. Manual Linking UI
+### 14. Manual Linking UI ⚠️ PARTIALLY COMPLETED
 **Location**: `.cursor/plans/plan v5.md`, `.cursor/plans/plan.plan.md` (line 57)  
+**Current State**: 
+- ✅ **API Endpoints**: `/api/strategies/link` supports:
+  - Manual linking: `POST { type: 'position'|'trade', positionId|tradeId, strategyId }`
+  - Auto-linking: `POST { type: 'positions'|'trades', accountId, strategyId }`
+- ✅ **UI Page**: `src/app/admin/strategies/[id]/link/page.tsx`
+  - Auto-linking buttons (works)
+  - Manual linking section (placeholder - needs API endpoints to list unlinked items)
+- ⚠️ **Missing**: API endpoints to fetch unlinked positions/trades for display
+  - Need: `GET /api/positions?unlinked=true&accountId=...`
+  - Need: `GET /api/trades?unlinked=true&accountId=...`
+  - Or: Extend existing endpoints with `unlinked` query parameter
 **Enhancement**: 
-- List unlinked positions/trades
-- Bulk-assign to strategies  
+- Complete manual linking UI by adding endpoints to list unlinked positions/trades
+- Display unlinked items in table with bulk-select and assign functionality
+- Filter by account, date range, symbol, etc.
 **Priority**: Medium
 
 ### 15. Merged/Archive View
@@ -501,8 +547,8 @@ This document captures all planned future enhancements mentioned throughout the 
 - ✅ State Code Change Performance Optimization (#4) - **COMPLETED**
 - ✅ Auto-Trigger Recompute After Data Changes (#21) - **COMPLETED**
 - ✅ Underlyings IV History Ingestion (#10) - **COMPLETED** (manual)
+- ✅ Automated Flex Ingestion (#9) - **COMPLETED**
 - IBKR API Integration for IV History & Spot Prices (#10a) - **CRITICAL** for accurate ITM calculations
-- Automated Flex Ingestion (#9)
 - Automated Tests (#20)
 
 ### Medium Priority
@@ -525,4 +571,76 @@ This document captures all planned future enhancements mentioned throughout the 
 - Position Lifecycle Modeling (#16)
 - Additional Trade Fields (#17)
 - Complete Transform Documentation (#22)
+
+---
+
+## Recommendations: What to Focus On Next
+
+Based on current state and priorities, here are recommended focus areas:
+
+### Immediate Impact (High ROI)
+
+1. **IBKR API Integration for IV History (#10a)** - **CRITICAL**
+   - **Why**: Current weekly Option Strategist data causes inaccurate ITM calculations (spot prices don't match daily snapshot dates)
+   - **Impact**: Fixes triage accuracy issues, enables historical backfilling
+   - **Effort**: Medium (requires IBKR API gateway setup, new client implementation)
+   - **Dependencies**: IBKR API access and credentials
+
+2. **Complete Manual Linking UI (#14)** - **Quick Win**
+   - **Why**: UI exists but incomplete - just needs API endpoints to list unlinked items
+   - **Impact**: Better UX for managing unlinked positions/trades
+   - **Effort**: Low (add 2 API endpoints, update existing UI)
+   - **Dependencies**: None
+
+3. **Triage Rules Database Persistence (#5)** - **Configuration Management**
+   - **Why**: Rules UI exists but doesn't persist - users can't actually change thresholds
+   - **Impact**: Enables dynamic rule configuration without code changes
+   - **Effort**: Low-Medium (create table, update API, add migration)
+   - **Dependencies**: None
+
+### Foundation Building (Long-term Value)
+
+4. **Automated Tests (#20)** - **Quality & Reliability**
+   - **Why**: No automated test coverage - risky for refactoring and new features
+   - **Impact**: Prevents regressions, enables confident refactoring
+   - **Effort**: High (requires test infrastructure setup, writing comprehensive tests)
+   - **Dependencies**: Testing framework choice (Jest/Vitest recommended)
+
+5. **Roll Trade Auto-Detection (#1)** - **Workflow Improvement**
+   - **Why**: Manual roll detection is tedious - common operation
+   - **Impact**: Reduces manual work, improves data quality
+   - **Effort**: Medium (pattern matching logic, testing edge cases)
+   - **Dependencies**: None
+
+### Strategic Enhancements (Big Picture)
+
+6. **Time-Based Workflow & Memory System (#8)** - **Core Workflow**
+   - **Why**: Addresses fundamental workflow needs (memory, pattern recognition, reviews)
+   - **Impact**: Transforms how traders use the system - from reactive to proactive
+   - **Effort**: Very High (multiple new tables, UI components, algorithms)
+   - **Dependencies**: Event logging infrastructure, calendar system
+   - **Note**: Consider breaking into smaller phases (start with event logging, then reviews, then pattern recognition)
+
+7. **Underlyings Allocation Management (#23)** - **Portfolio Management**
+   - **Why**: Helps with risk management and scaling decisions
+   - **Impact**: Better portfolio-level visibility and control
+   - **Effort**: Medium-High (new UI, triage triggers, allocation tracking)
+   - **Dependencies**: None
+
+### Suggested Implementation Order
+
+**Phase 1 (Quick Wins - 1-2 weeks)**:
+1. Complete Manual Linking UI (#14) - 2-3 days
+2. Triage Rules Database Persistence (#5) - 3-4 days
+
+**Phase 2 (Critical Fix - 2-3 weeks)**:
+3. IBKR API Integration (#10a) - 1-2 weeks (depends on IBKR API setup)
+
+**Phase 3 (Foundation - 4-6 weeks)**:
+4. Automated Tests (#20) - 2-3 weeks (infrastructure + core tests)
+5. Roll Trade Auto-Detection (#1) - 1 week
+
+**Phase 4 (Strategic - Ongoing)**:
+6. Time-Based Workflow (#8) - Break into smaller phases
+7. Allocation Management (#23) - After Phase 3
 

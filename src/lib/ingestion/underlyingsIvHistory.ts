@@ -24,7 +24,7 @@ export interface RawIvSnapshot {
   spot?: number | null;
   iv30?: number | null; // decimal (0.45 for 45%)
   rv20?: number | null; // Realized Volatility (20-day), decimal (0.45 for 45%) - maps to hv20 from source
-  source?: string; // 'opt_strat', 'ibkr', 'manual', etc. (for tracking, not stored in DB)
+  source?: string; // 'opt_strat', 'ibkr', 'massive', 'yahoo_finance', 'manual', etc.
 }
 
 /**

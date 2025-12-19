@@ -42,6 +42,7 @@ export const underlyings = pgTable('underlyings', {
   name: text('name'),
   assetClass: text('asset_class'),
   baseCurrency: text('base_currency'),
+  conid: bigint('conid', { mode: 'number' }), // IBKR contract ID for faster API calls
   spot: numeric('spot'),
   iv30: numeric('iv30'),
   atr20: numeric('atr20'),
@@ -68,7 +69,7 @@ export const underlyingsIvHistory = pgTable(
     iv30: numeric('iv30'),
     atr20: numeric('atr20'),
     rv20: numeric('rv20'),
-    source: text('source').notNull().default('manual'), // Data source: 'opt_strat', 'ibkr', 'manual', etc.
+    source: text('source').notNull().default('manual'), // Data source: 'opt_strat', 'ibkr', 'massive', 'yahoo_finance', etc.
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

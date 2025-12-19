@@ -190,25 +190,13 @@ export async function computePositionTriageForDate(
   const ivDataMap = new Map<string, string | null>();
   const underlyingSpotMap = new Map<string, string | null>();
   if (underlyingIds.length > 0) {
-    const ivResults = await db
-      .select({
-        underlyingId: underlyingsIvHistory.underlyingId,
-        iv30: underlyingsIvHistory.iv30,
-        spot: underlyingsIvHistory.spot,
-      })
-      .from(underlyingsIvHistory)
-      .where(
-        and(
-          inArray(underlyingsIvHistory.underlyingId, underlyingIds),
-          eq(underlyingsIvHistory.asOfDate, snapshotDate)
-        )
-      );
+    // Use priority-based data fetching: IBKR > Massive > Option Strategist > Yahoo > Manual
+    const { getIvDataBatchWithPriority } = await import('@/lib/services/ibkr/data-priority');
+    const priorityData = await getIvDataBatchWithPriority(underlyingIds, snapshotDate);
 
-    for (const iv of ivResults) {
-      if (iv.underlyingId) {
-        ivDataMap.set(iv.underlyingId, iv.iv30 ?? null);
-        underlyingSpotMap.set(iv.underlyingId, iv.spot ?? null);
-      }
+    for (const [underlyingId, data] of priorityData.entries()) {
+      ivDataMap.set(underlyingId, data.iv30);
+      underlyingSpotMap.set(underlyingId, data.spot);
     }
   }
 

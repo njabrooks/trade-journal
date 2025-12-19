@@ -451,32 +451,26 @@ export async function populateStrategyEntryContext(strategyId: string): Promise<
   }
 
   // 3. Get entryIv30 from underlyings_iv_history at opened_at date
+  // Use priority-based fetching: IBKR > Massive > Option Strategist > Yahoo > Manual
   if (strategyData.underlyingId) {
-    // Try exact date first
-    let ivData = await db
-      .select({
-        iv30: underlyingsIvHistory.iv30,
-      })
-      .from(underlyingsIvHistory)
-      .where(
-        and(
-          eq(underlyingsIvHistory.underlyingId, strategyData.underlyingId),
-          eq(underlyingsIvHistory.asOfDate, openedAtDate)
-        )
-      )
-      .limit(1);
+    // Try exact date first with priority
+    const { getIvDataWithPriority } = await import('@/lib/services/ibkr/data-priority');
+    let ivData = await getIvDataWithPriority(strategyData.underlyingId, openedAtDate);
 
     // If not found, find closest date (within 7 days before or after)
-    if (ivData.length === 0) {
+    if (!ivData || !ivData.iv30) {
       const dateObj = new Date(openedAtDate);
       const beforeDate = new Date(dateObj);
       beforeDate.setDate(beforeDate.getDate() - 7);
       const afterDate = new Date(dateObj);
       afterDate.setDate(afterDate.getDate() + 7);
 
-      ivData = await db
+      // Get all records in date range and find closest
+      const allRecords = await db
         .select({
           iv30: underlyingsIvHistory.iv30,
+          asOfDate: underlyingsIvHistory.asOfDate,
+          source: underlyingsIvHistory.source,
         })
         .from(underlyingsIvHistory)
         .where(
@@ -485,13 +479,36 @@ export async function populateStrategyEntryContext(strategyId: string): Promise<
             gte(underlyingsIvHistory.asOfDate, beforeDate.toISOString().split('T')[0]!),
             lte(underlyingsIvHistory.asOfDate, afterDate.toISOString().split('T')[0]!)
           )
-        )
-        .orderBy(sql`ABS(${underlyingsIvHistory.asOfDate}::date - ${openedAtDate}::date)`)
-        .limit(1);
+        );
+
+      if (allRecords.length > 0) {
+        // Sort by date proximity, then by source priority
+        const SOURCE_PRIORITY = ['ibkr', 'massive', 'opt_strat', 'yahoo_finance', 'manual'];
+        const sorted = allRecords.sort((a, b) => {
+          const aDateDiff = Math.abs(new Date(a.asOfDate).getTime() - dateObj.getTime());
+          const bDateDiff = Math.abs(new Date(b.asOfDate).getTime() - dateObj.getTime());
+          if (aDateDiff !== bDateDiff) {
+            return aDateDiff - bDateDiff; // Closer date first
+          }
+          // If same date distance, prioritize by source
+          const aPriority = SOURCE_PRIORITY.indexOf(a.source || '') === -1 ? 999 : SOURCE_PRIORITY.indexOf(a.source || '');
+          const bPriority = SOURCE_PRIORITY.indexOf(b.source || '') === -1 ? 999 : SOURCE_PRIORITY.indexOf(b.source || '');
+          return aPriority - bPriority;
+        });
+
+        const bestRecord = sorted[0];
+        if (bestRecord && bestRecord.iv30) {
+          ivData = {
+            iv30: bestRecord.iv30,
+            spot: null,
+            source: bestRecord.source,
+          };
+        }
+      }
     }
 
-    if (ivData.length > 0 && ivData[0].iv30) {
-      const iv30 = toNumber(ivData[0].iv30);
+    if (ivData && ivData.iv30) {
+      const iv30 = toNumber(ivData.iv30);
       if (iv30 !== null && iv30 > 0) {
         updateData.entryIv30 = iv30.toString();
       }

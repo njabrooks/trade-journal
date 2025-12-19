@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { underlyings } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { underlyings, trades } from '@/db/schema';
+import { eq, and, isNotNull, sql } from 'drizzle-orm';
 
 /**
  * Ensures an underlying record exists for the given ticker.
@@ -50,7 +50,45 @@ export async function ensureUnderlyingId(
     return existingRecord.id;
   }
 
-  // Create new underlying
+  // Before creating, try to extract CONID from trades if available
+  // This ensures future underlying creation includes CONID
+  let conidFromTrades: number | null = null;
+  try {
+    const tradeWithConid = await db
+      .select({
+        rawRow: trades.rawRow,
+      })
+      .from(trades)
+      .where(
+        and(
+          isNotNull(trades.rawRow),
+          sql`${trades.rawRow}::jsonb->>'UnderlyingSymbol' = ${normalizedTicker}`
+        )
+      )
+      .limit(1);
+
+    if (tradeWithConid.length > 0 && tradeWithConid[0]!.rawRow) {
+      const rawRow = tradeWithConid[0]!.rawRow as Record<string, unknown>;
+      const underlyingConid = rawRow['UnderlyingConid'];
+      
+      if (underlyingConid) {
+        const conidNum = typeof underlyingConid === 'string' 
+          ? parseInt(underlyingConid, 10)
+          : typeof underlyingConid === 'number'
+          ? underlyingConid
+          : null;
+        
+        if (conidNum && !isNaN(conidNum)) {
+          conidFromTrades = conidNum;
+        }
+      }
+    }
+  } catch (error) {
+    // If CONID extraction fails, continue without it
+    console.warn(`Failed to extract CONID from trades for ${normalizedTicker}:`, error);
+  }
+
+  // Create new underlying with CONID if we found it
   try {
     const [created] = await db
       .insert(underlyings)
@@ -59,6 +97,7 @@ export async function ensureUnderlyingId(
         assetClass: assetClass ?? null,
         baseCurrency: baseCurrency ?? null,
         name: name ?? null,
+        conid: conidFromTrades,
       })
       .returning();
 
