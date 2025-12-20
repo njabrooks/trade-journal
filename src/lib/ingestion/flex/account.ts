@@ -112,4 +112,51 @@ export async function getAccountByBrokerId(brokerAccountId: string) {
   return result[0] ?? null;
 }
 
+/**
+ * Gets account by ID
+ */
+export async function getAccountById(accountId: string) {
+  const result = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.id, accountId))
+    .limit(1);
+  return result[0] ?? null;
+}
+
+/**
+ * Updates an account by ID
+ */
+export async function updateAccount(
+  accountId: string,
+  data: {
+    brokerName?: string;
+    baseCurrency?: string;
+    label?: string;
+  }
+) {
+  const [updated] = await db
+    .update(accounts)
+    .set({
+      ...data,
+      updatedAt: new Date(),
+    })
+    .where(eq(accounts.id, accountId))
+    .returning();
+  return updated;
+}
+
+/**
+ * Deletes an account by ID
+ * Note: This will cascade delete related records (trades, positions, etc.)
+ * Strategies will have accountId set to null
+ */
+export async function deleteAccount(accountId: string) {
+  const [deleted] = await db
+    .delete(accounts)
+    .where(eq(accounts.id, accountId))
+    .returning();
+  return deleted;
+}
+
 

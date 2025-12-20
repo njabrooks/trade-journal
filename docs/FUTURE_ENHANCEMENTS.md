@@ -447,6 +447,41 @@ This document captures all planned future enhancements mentioned throughout the 
 - Optional undo functionality  
 **Priority**: Low
 
+### 24. Account Management UI ✅ COMPLETED
+**Location**: New enhancement  
+**Current State**: 
+- ✅ **Automatic Creation**: Accounts are auto-created during Flex ingestion via `resolveAccountId()`
+- ✅ **Basic UI**: Admin page at `/admin/accounts` with view and create functionality
+- ✅ **Edit & Delete**: Full CRUD operations implemented
+**Enhancement**: 
+- ✅ **Edit Accounts**: Update label, brokerName, baseCurrency for existing accounts
+- ✅ **Delete Accounts**: Delete accounts with safety checks (warns if account has linked data)
+- ✅ **API Endpoints**: `PUT /api/accounts/[id]` and `DELETE /api/accounts/[id]`
+- ✅ **UI Improvements**: Inline editing, delete confirmation dialog, better error handling
+**Status**: ✅ Fully implemented
+
+### 25. Multi-Account Support in UI ⚠️ NEEDS IMPLEMENTATION
+**Location**: New enhancement  
+**Current State**: 
+- ⚠️ **Triage Page** (`/triage`): Hardcoded to use `getPrimaryAccount()` - only shows first account
+- ⚠️ **Blotter Page** (`/blotter`): Hardcoded to use `getPrimaryAccount()` - only shows first account
+- ⚠️ **Strategies Page** (`/admin/strategies`): Loads all accounts but doesn't filter - shows all strategies across all accounts
+- ✅ **Backend Support**: All query functions already accept `accountId` parameter
+- ✅ **Strategies API**: Already supports `accountId` query parameter
+**Problem**: 
+- Users with multiple accounts can only see data from the first account (by creation date)
+- No way to switch between accounts in triage/blotter views
+- Strategies page shows everything mixed together without account filtering
+**Enhancement**: 
+- **Account Selector Component**: Add account dropdown/selector to triage, blotter, and strategies pages
+- **Triage Page**: Replace `getPrimaryAccount()` with account selector, pass selected account to `getTriageQueue()`
+- **Blotter Page**: Replace `getPrimaryAccount()` with account selector, pass selected account to `getBlotterEntries()`
+- **Strategies Page**: Add account filter dropdown, pass `accountId` to `/api/strategies?accountId=...`
+- **URL State**: Store selected account in URL query params (e.g., `?accountId=...`) for bookmarking/sharing
+- **Default Behavior**: If no account selected, show all accounts (or primary account for triage/blotter)
+- **Account Display**: Show account label/brokerAccountId in page headers and table rows
+**Priority**: Medium-High (critical for multi-account users)
+
 ### 23. Underlyings Allocation Management & Triggers
 **Location**: New enhancement  
 **Enhancement**: 
