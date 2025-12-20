@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Strategy, Account } from '@/db/schema';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { AccountSelector } from '@/components/layout/AccountSelector';
 import { Spinner } from '@/components/ui/spinner';
 
 interface StrategyFormData {
@@ -20,6 +22,10 @@ interface StrategyFormData {
 }
 
 export default function StrategiesPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const selectedAccountId = searchParams.get('accountId');
+  
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,7 +71,7 @@ export default function StrategiesPage() {
   useEffect(() => {
     loadData();
     loadStrategyTypes();
-  }, []);
+  }, [selectedAccountId]);
 
   const loadStrategyTypes = async () => {
     try {
@@ -89,8 +95,13 @@ export default function StrategiesPage() {
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
       try {
+        // Build strategies URL with accountId filter if selected
+        const strategiesUrl = selectedAccountId
+          ? `/api/strategies?accountId=${selectedAccountId}`
+          : '/api/strategies';
+        
         const [strategiesRes, accountsRes] = await Promise.all([
-          fetch('/api/strategies', { signal: controller.signal }),
+          fetch(strategiesUrl, { signal: controller.signal }),
           fetch('/api/accounts', { signal: controller.signal }),
         ]);
 
@@ -508,6 +519,17 @@ export default function StrategiesPage() {
       {success && (
         <div className="bg-green-50 border border-green-200 rounded p-4 mb-4 text-green-800">
           {success}
+        </div>
+      )}
+
+      {accounts.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <AccountSelector
+            accounts={accounts}
+            selectedAccountId={selectedAccountId}
+            basePath="/admin/strategies"
+            showAllOption={true}
+          />
         </div>
       )}
 

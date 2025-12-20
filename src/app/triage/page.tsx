@@ -1,9 +1,10 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountSelector } from "@/components/layout/AccountSelector";
 import { TriageFilters } from "@/components/triage/TriageFilters";
 import { TriageTableRow } from "@/components/triage/TriageTableRow";
 import { TriageBulkActions } from "@/components/triage/TriageBulkActions";
 import { SortableHeader } from "@/components/triage/SortableHeader";
-import { getPrimaryAccount } from "@/db/queries/accounts";
+import { getPrimaryAccount, getAccounts } from "@/db/queries/accounts";
 import { getTriageQueue } from "@/db/queries/triage";
 import { formatDateFull } from "@/lib/formatters";
 import { ALL_SEVERITIES, ALL_CONTEXTS, ALL_TRIGGERS } from "@/lib/constants/triage";
@@ -11,6 +12,7 @@ import { TriagePageClient } from "./TriagePageClient";
 
 interface TriagePageProps {
   searchParams?: Promise<{
+    accountId?: string;
     severity?: string | string[];
     contextLevel?: string | string[];
     context?: string | string[]; // Legacy support
@@ -23,9 +25,10 @@ interface TriagePageProps {
 
 
 export default async function TriagePage({ searchParams }: TriagePageProps) {
-  const account = await getPrimaryAccount();
+  const accounts = await getAccounts();
+  const primaryAccount = await getPrimaryAccount();
 
-  if (!account) {
+  if (accounts.length === 0) {
     return (
       <DashboardShell
         activeNav="triage"
@@ -40,6 +43,26 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   }
 
   const params = await searchParams;
+  
+  // Get selected account from URL params, default to primary account
+  const selectedAccountId = params?.accountId || primaryAccount?.id || null;
+  const account = selectedAccountId
+    ? accounts.find((a) => a.id === selectedAccountId) || primaryAccount
+    : primaryAccount;
+
+  if (!account) {
+    return (
+      <DashboardShell
+        activeNav="triage"
+        title="Triage Queue"
+        subtitle="Create an account to populate triage records."
+      >
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
+          No accounts found. Head to <a href="/admin/accounts" className="text-blue-600 underline">Admin &gt; Accounts</a> to add one.
+        </div>
+      </DashboardShell>
+    );
+  }
   
   // Parse multi-select filters (can be string or string[])
   const severityParam = params?.severity;
@@ -145,6 +168,15 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
       }
     >
       <div className="border-b bg-white px-6 py-4 -mx-4 -mt-4">
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          {accounts.length > 1 && (
+            <AccountSelector
+              accounts={accounts}
+              selectedAccountId={selectedAccountId}
+              basePath="/triage"
+            />
+          )}
+        </div>
         <TriageFilters
           severityFilter={severityFilter}
           contextFilter={contextFilter}

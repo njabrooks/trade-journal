@@ -1,13 +1,15 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { AccountSelector } from "@/components/layout/AccountSelector";
 import { ExportCsvButton } from "@/components/blotter/ExportCsvButton";
 import { BlotterFilters } from "@/components/blotter/BlotterFilters";
 import { BlotterPageClient } from "./BlotterPageClient";
-import { getPrimaryAccount } from "@/db/queries/accounts";
+import { getPrimaryAccount, getAccounts } from "@/db/queries/accounts";
 import { getBlotterEntries } from "@/db/queries/blotter";
 import type { BlotterEntry } from "@/db/queries/blotter";
 
 interface BlotterPageProps {
   searchParams?: Promise<{
+    accountId?: string;
     source?: string | string[];
     actionClass?: string | string[];
     status?: string | string[];
@@ -19,9 +21,10 @@ interface BlotterPageProps {
 }
 
 export default async function BlotterPage({ searchParams }: BlotterPageProps) {
-  const account = await getPrimaryAccount();
+  const accounts = await getAccounts();
+  const primaryAccount = await getPrimaryAccount();
 
-  if (!account) {
+  if (accounts.length === 0) {
     return (
       <DashboardShell
         activeNav="blotter"
@@ -36,6 +39,26 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
   }
 
   const params = await searchParams;
+  
+  // Get selected account from URL params, default to primary account
+  const selectedAccountId = params?.accountId || primaryAccount?.id || null;
+  const account = selectedAccountId
+    ? accounts.find((a) => a.id === selectedAccountId) || primaryAccount
+    : primaryAccount;
+
+  if (!account) {
+    return (
+      <DashboardShell
+        activeNav="blotter"
+        title="Blotter"
+        subtitle="Create an account to start logging actions."
+      >
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
+          No accounts found. Head to <a href="/admin/accounts" className="text-blue-600 underline">Admin &gt; Accounts</a> to add one.
+        </div>
+      </DashboardShell>
+    );
+  }
   
   // Parse multi-select filters (can be string or string[])
   const sourceParam = params?.source;
@@ -208,6 +231,15 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
       </section>
 
       <div className="border-b bg-white px-6 py-4 -mx-4">
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          {accounts.length > 1 && (
+            <AccountSelector
+              accounts={accounts}
+              selectedAccountId={selectedAccountId}
+              basePath="/blotter"
+            />
+          )}
+        </div>
         <BlotterFilters
           sourceFilter={sourceFilter}
           actionClassFilter={actionClassFilter}

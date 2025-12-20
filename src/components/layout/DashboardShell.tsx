@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { PersistentHeader } from "./PersistentHeader";
-import { DataSyncBanner } from "@/components/ibkr/DataSyncBanner";
 
 export type NavKey =
   | "portfolio"
@@ -49,7 +48,6 @@ export function DashboardShell({
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
         <main className="flex flex-1 flex-col gap-4 p-4">
-          <DataSyncBanner />
           {children}
         </main>
         {footer && <footer className="border-t p-4">{footer}</footer>}

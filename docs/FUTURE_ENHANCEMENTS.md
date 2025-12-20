@@ -460,27 +460,39 @@ This document captures all planned future enhancements mentioned throughout the 
 - ✅ **UI Improvements**: Inline editing, delete confirmation dialog, better error handling
 **Status**: ✅ Fully implemented
 
-### 25. Multi-Account Support in UI ⚠️ NEEDS IMPLEMENTATION
+### 25. Multi-Account Support in UI ✅ COMPLETED
 **Location**: New enhancement  
-**Current State**: 
-- ⚠️ **Triage Page** (`/triage`): Hardcoded to use `getPrimaryAccount()` - only shows first account
-- ⚠️ **Blotter Page** (`/blotter`): Hardcoded to use `getPrimaryAccount()` - only shows first account
-- ⚠️ **Strategies Page** (`/admin/strategies`): Loads all accounts but doesn't filter - shows all strategies across all accounts
+**Previous State**: 
+- ⚠️ **Triage Page** (`/triage`): Hardcoded to use `getPrimaryAccount()` - only showed first account
+- ⚠️ **Blotter Page** (`/blotter`): Hardcoded to use `getPrimaryAccount()` - only showed first account
+- ⚠️ **Strategies Page** (`/admin/strategies`): Loaded all accounts but didn't filter - showed all strategies across all accounts
 - ✅ **Backend Support**: All query functions already accept `accountId` parameter
 - ✅ **Strategies API**: Already supports `accountId` query parameter
-**Problem**: 
-- Users with multiple accounts can only see data from the first account (by creation date)
-- No way to switch between accounts in triage/blotter views
-- Strategies page shows everything mixed together without account filtering
-**Enhancement**: 
-- **Account Selector Component**: Add account dropdown/selector to triage, blotter, and strategies pages
-- **Triage Page**: Replace `getPrimaryAccount()` with account selector, pass selected account to `getTriageQueue()`
-- **Blotter Page**: Replace `getPrimaryAccount()` with account selector, pass selected account to `getBlotterEntries()`
-- **Strategies Page**: Add account filter dropdown, pass `accountId` to `/api/strategies?accountId=...`
-- **URL State**: Store selected account in URL query params (e.g., `?accountId=...`) for bookmarking/sharing
-- **Default Behavior**: If no account selected, show all accounts (or primary account for triage/blotter)
-- **Account Display**: Show account label/brokerAccountId in page headers and table rows
-**Priority**: Medium-High (critical for multi-account users)
+**Solution Implemented**: 
+- ✅ **Account Selector Component**: Created reusable `AccountSelector` component (`src/components/layout/AccountSelector.tsx`)
+  - Single-select dropdown matching existing filter UI style
+  - Supports "All Accounts" option for strategies page
+  - Updates URL query params for bookmarking/sharing
+- ✅ **Triage Page**: 
+  - Replaced `getPrimaryAccount()` with account selector
+  - Reads `accountId` from URL params, defaults to primary account
+  - Passes selected account to `getTriageQueue()`
+  - Selector only shown when multiple accounts exist
+- ✅ **Blotter Page**: 
+  - Replaced `getPrimaryAccount()` with account selector
+  - Reads `accountId` from URL params, defaults to primary account
+  - Passes selected account to `getBlotterEntries()`
+  - Selector only shown when multiple accounts exist
+- ✅ **Strategies Page**: 
+  - Added account filter dropdown with "All Accounts" option
+  - Passes `accountId` to `/api/strategies?accountId=...` when selected
+  - Shows all strategies when "All Accounts" selected (default)
+  - Selector only shown when multiple accounts exist
+- ✅ **URL State**: Selected account stored in URL query params (`?accountId=...`) for bookmarking/sharing
+- ✅ **Default Behavior**: 
+  - Triage/Blotter: Defaults to primary account if no selection
+  - Strategies: Shows all accounts by default (can filter to specific account)
+**Status**: ✅ Fully implemented and working
 
 ### 23. Underlyings Allocation Management & Triggers
 **Location**: New enhancement  

@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { href: "/admin/ingestion/flex", label: "Flex", id: "flex" },
+  { href: "/admin/ingestion/flex", label: "IBKR - Flex", id: "flex" },
   { href: "/admin/ingestion/underlyings-iv", label: "IV History", id: "underlyings-iv" },
+  { href: "/admin/ingestion/ibkr", label: "IBKR - Gateway", id: "ibkr" },
 ] as const;
 
 export function IngestionTabs() {
@@ -15,7 +16,8 @@ export function IngestionTabs() {
   // Determine active tab based on pathname
   const activeTab = TABS.find(tab => pathname === tab.href || pathname.startsWith(tab.href + "/"))?.id || 
                    (pathname.startsWith("/admin/ingestion/flex") ? "flex" : 
-                    pathname.startsWith("/admin/ingestion/underlyings-iv") ? "underlyings-iv" : null);
+                    pathname.startsWith("/admin/ingestion/underlyings-iv") ? "underlyings-iv" :
+                    pathname.startsWith("/admin/ingestion/ibkr") ? "ibkr" : null);
 
   return (
     <div className="flex items-center gap-1">
