@@ -210,16 +210,16 @@ export async function linkPositionToStrategy(
     );
 
   // Get position conid for matching trades
-  const position = await db
+  const positionConid = await db
     .select({ conid: positions.conid })
     .from(positions)
     .where(eq(positions.id, positionId))
     .limit(1);
 
   // Recompute trade blotter entries if position has conid
-  if (position.length > 0 && position[0].conid) {
+  if (positionConid.length > 0 && positionConid[0].conid) {
     try {
-      await recomputeTradeBlotterForPositionLinking(strategyId, [position[0].conid]);
+      await recomputeTradeBlotterForPositionLinking(strategyId, [positionConid[0].conid]);
     } catch (error) {
       console.error(
         `Failed to recompute trade blotter after linking position ${positionId} to strategy ${strategyId}:`,

@@ -5,6 +5,8 @@ import { PersistentHeader } from "./PersistentHeader";
 
 export type NavKey =
   | "portfolio"
+  | "theses"
+  | "asset-views"
   | "strategies"
   | "triage"
   | "blotter"
@@ -13,7 +15,8 @@ export type NavKey =
   | "admin-triage"
   | "admin-accounts"
   | "admin-ingestion"
-  | "admin-recompute";
+  | "admin-recompute"
+  | "admin-processes";
 
 interface DashboardShellProps {
   title: string | ReactNode;

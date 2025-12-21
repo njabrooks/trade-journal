@@ -20,6 +20,8 @@ interface TriagePageProps {
     strategyKey?: string | string[];
     trigger?: string | string[]; // Legacy support
     strategy?: string | string[]; // Legacy support
+    sort?: string;
+    direction?: string;
   }>;
 }
 

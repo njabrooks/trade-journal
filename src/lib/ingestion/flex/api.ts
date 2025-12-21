@@ -462,7 +462,7 @@ export async function fetchFlexQuery(config: FlexQueryConfig): Promise<FlexQuery
 
     // Check if response is an error message (IBKR sometimes returns HTML error pages)
     if (csv.includes('<html>') || csv.toLowerCase().includes('error') || csv.toLowerCase().includes('invalid')) {
-      throw new FlexApiError('Flex API returned an error page instead of CSV data', csvResponse.status, csv);
+      throw new FlexApiError('Flex API returned an error page instead of CSV data', undefined, csv);
     }
 
     return { csv, contentType };

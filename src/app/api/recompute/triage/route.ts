@@ -79,8 +79,9 @@ export async function POST(request: NextRequest) {
       // Add next day after each max date (positions might expire on the next day)
       const expirationDates = new Set<string>();
       for (const row of positionMaxDatesQuery) {
-        if (row.maxDate) {
-          const maxDate = typeof row.maxDate === 'string' ? row.maxDate : row.maxDate.toISOString().split('T')[0];
+        const maxDateValue = row.maxDate;
+        if (maxDateValue && typeof maxDateValue === 'string') {
+          const maxDate = maxDateValue;
           const nextDay = new Date(maxDate);
           nextDay.setDate(nextDay.getDate() + 1);
           const nextDayStr = nextDay.toISOString().split('T')[0];

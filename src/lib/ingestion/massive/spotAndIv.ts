@@ -124,13 +124,12 @@ export async function ingestUnderlyingsFromMassive(
   if (tickers && tickers.length > 0) {
     tickersToProcess = tickers.map(t => t.trim().toUpperCase());
   } else {
-    // Get all active underlyings
+    // Get all underlyings
     const underlyingsList = await db
       .select({
         ticker: underlyings.ticker,
       })
-      .from(underlyings)
-      .where(eq(underlyings.isActive, true));
+      .from(underlyings);
     
     tickersToProcess = underlyingsList.map(u => u.ticker);
   }

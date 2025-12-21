@@ -32,6 +32,34 @@ export default async function BlotterPage({ params }: BlotterPageProps) {
       }
       tabs={<StrategyTabs strategyId={strategyId} />}
     >
+      {/* Hierarchy breadcrumb */}
+      {(strategy.macroThesisId || strategy.assetViewId) && (
+        <div className="mb-4 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-slate-600">
+            <span className="font-medium text-slate-500">Linked to:</span>
+            {strategy.macroThesisId && (
+              <>
+                <Link
+                  href={`/theses/${strategy.macroThesisId}`}
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {strategy.macroThesisTitle || 'Macro Thesis'}
+                </Link>
+                {strategy.assetViewId && <span className="text-slate-400">→</span>}
+              </>
+            )}
+            {strategy.assetViewId && (
+              <Link
+                href={`/asset-views/${strategy.assetViewId}`}
+                className="text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {strategy.assetViewTitle || 'Asset View'}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-slate-500">Blotter</p>

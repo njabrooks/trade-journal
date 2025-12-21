@@ -205,16 +205,16 @@ export default function FlexConfigsPage() {
 
   if (loading) {
     return (
-      <DashboardShell activeNav="admin-ingestion">
-        <IngestionTabs activeTab="flex-configs" />
+      <DashboardShell title="Flex Query Configurations" activeNav="admin-ingestion">
+        <IngestionTabs />
         <div className="p-6">Loading...</div>
       </DashboardShell>
     );
   }
 
   return (
-    <DashboardShell activeNav="admin-ingestion">
-      <IngestionTabs activeTab="flex-configs" />
+    <DashboardShell title="Flex Query Configurations" activeNav="admin-ingestion">
+      <IngestionTabs />
       <div className="p-6">
         <div className="mb-6 flex items-center justify-between">
           <div>

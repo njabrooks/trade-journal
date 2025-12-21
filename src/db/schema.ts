@@ -54,6 +54,76 @@ export const underlyings = pgTable('underlyings', {
 });
 
 // ============================================================================
+// Macro Theses
+// ============================================================================
+
+export const macroTheses = pgTable(
+  'macro_theses',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: text('title').notNull(),
+    description: text('description'),
+    thesisType: text('thesis_type').notNull(), // 'secular' | 'cyclical' | 'structural'
+    timeHorizon: text('time_horizon'), // 'long_term' | 'medium_term' | 'short_term'
+    confidenceLevel: text('confidence_level'), // 'high' | 'medium' | 'low' | 'exploratory'
+    status: text('status').notNull().default('active'), // 'active' | 'under_review' | 'retired' | 'superseded'
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
+    nextReviewDueAt: timestamp('next_review_due_at', { withTimezone: true }),
+    notes: jsonb('notes'),
+  },
+  (table) => ({
+    statusIdx: index('idx_macro_theses_status').on(table.status),
+    typeIdx: index('idx_macro_theses_type').on(table.thesisType),
+    nextReviewIdx: index('idx_macro_theses_next_review').on(table.nextReviewDueAt),
+  })
+);
+
+export type MacroThesis = typeof macroTheses.$inferSelect;
+export type NewMacroThesis = typeof macroTheses.$inferInsert;
+
+// ============================================================================
+// Asset Views
+// ============================================================================
+
+export const assetViews = pgTable(
+  'asset_views',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, {
+      onDelete: 'set null',
+    }),
+    underlyingId: uuid('underlying_id').references(() => underlyings.id, {
+      onDelete: 'set null',
+    }),
+    title: text('title').notNull(),
+    description: text('description'),
+    narrative: text('narrative'),
+    fundamentalContext: text('fundamental_context'),
+    positioningContext: text('positioning_context'),
+    regimeContext: text('regime_context'),
+    timeHorizon: text('time_horizon'),
+    confidenceLevel: text('confidence_level'),
+    status: text('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
+    nextReviewDueAt: timestamp('next_review_due_at', { withTimezone: true }),
+    notes: jsonb('notes'),
+  },
+  (table) => ({
+    macroThesisIdx: index('idx_asset_views_macro_thesis').on(table.macroThesisId),
+    underlyingIdx: index('idx_asset_views_underlying').on(table.underlyingId),
+    statusIdx: index('idx_asset_views_status').on(table.status),
+    nextReviewIdx: index('idx_asset_views_next_review').on(table.nextReviewDueAt),
+  })
+);
+
+export type AssetView = typeof assetViews.$inferSelect;
+export type NewAssetView = typeof assetViews.$inferInsert;
+
+// ============================================================================
 // Underlyings IV History
 // ============================================================================
 
@@ -193,12 +263,21 @@ export const strategies = pgTable(
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
     // Playbook linkage
     strategyType: text('strategy_type'), // Links to playbook_items.strategy_type
+    // Hierarchy linkage (Phase 1)
+    assetViewId: uuid('asset_view_id').references(() => assetViews.id, {
+      onDelete: 'set null',
+    }),
+    macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({
     accountStrategyIdx: index('idx_strategies_account').on(table.accountId),
     strategyKeyIdx: index('idx_strategies_key').on(table.strategyKey),
+    assetViewIdx: index('idx_strategies_asset_view').on(table.assetViewId),
+    macroThesisIdx: index('idx_strategies_macro_thesis').on(table.macroThesisId),
   })
 );
 
@@ -449,7 +528,7 @@ export const playbookItems = pgTable(
 // Blotter Actions
 // ============================================================================
 
-export const blotterActions = pgTable(
+export const blotterActions: any = pgTable(
   'blotter_actions',
   {
     id: uuid('id').defaultRandom().primaryKey(),
@@ -495,6 +574,14 @@ export const blotterActions = pgTable(
     conid: bigint('conid', { mode: 'number' }), // Contract ID for matching trades to positions
     linkedBlotterActionId: uuid('linked_blotter_action_id').references(() => blotterActions.id, { onDelete: 'set null' }), // Bidirectional link to matching entry (primary/backward compatible)
     linkedTradeBlotterIds: jsonb('linked_trade_blotter_ids'), // Array of linked trade blotter entry IDs (for QUANTITY_CHANGE linking to multiple TRADE_INGESTED entries)
+    // Enhanced decision capture (Phase 1)
+    decisionType: text('decision_type'), // 'trade' | 'update_thesis' | 'record_observation' | 'no_action'
+    decisionRationale: text('decision_rationale'),
+    confidenceLevel: text('confidence_level'), // 'high' | 'medium' | 'low'
+    convictionScore: integer('conviction_score'), // 1-10 scale
+    expectedOutcome: text('expected_outcome'),
+    actualOutcome: text('actual_outcome'),
+    outcomeEvaluatedAt: timestamp('outcome_evaluated_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -521,6 +608,7 @@ export const blotterActions = pgTable(
     ),
     conidIdx: index('idx_blotter_conid').on(table.conid),
     linkedIdx: index('idx_blotter_linked').on(table.linkedBlotterActionId),
+    decisionTypeIdx: index('idx_blotter_decision_type').on(table.decisionType),
   })
 );
 

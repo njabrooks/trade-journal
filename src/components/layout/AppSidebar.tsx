@@ -12,6 +12,8 @@ import {
   Users,
   FileText,
   Activity,
+  TrendingUp,
+  Target,
 } from "lucide-react";
 import {
   Sidebar,
@@ -26,6 +28,8 @@ import {
 
 const MAIN_NAV = [
   { href: "/dashboard/portfolio", label: "Portfolio", icon: LayoutDashboard, id: "portfolio" },
+  { href: "/theses", label: "Macro Theses", icon: TrendingUp, id: "theses" },
+  { href: "/asset-views", label: "Asset Views", icon: Target, id: "asset-views" },
   { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
   { href: "/blotter", label: "Blotter", icon: BookOpen, id: "blotter" },

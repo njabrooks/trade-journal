@@ -112,6 +112,34 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
       }
       tabs={<StrategyTabs strategyId={strategyId} />}
     >
+      {/* Hierarchy breadcrumb */}
+      {(strategy.macroThesisId || strategy.assetViewId) && (
+        <div className="mb-4 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-slate-600">
+            <span className="font-medium text-slate-500">Linked to:</span>
+            {strategy.macroThesisId && (
+              <>
+                <Link
+                  href={`/theses/${strategy.macroThesisId}`}
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {strategy.macroThesisTitle || 'Macro Thesis'}
+                </Link>
+                {strategy.assetViewId && <span className="text-slate-400">→</span>}
+              </>
+            )}
+            {strategy.assetViewId && (
+              <Link
+                href={`/asset-views/${strategy.assetViewId}`}
+                className="text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                {strategy.assetViewTitle || 'Asset View'}
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="border-b bg-white px-6 py-4 -mx-4 -mt-4">
         <TriageFilters
           severityFilter={severityFilter}

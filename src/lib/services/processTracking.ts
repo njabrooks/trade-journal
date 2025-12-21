@@ -12,6 +12,7 @@ import { eq, and, desc, isNull, or } from 'drizzle-orm';
 export type JobType =
   | 'trade_ingestion'
   | 'position_ingestion'
+  | 'flex_automated_ingestion'
   | 'recompute_all'
   | 'recompute_portfolio'
   | 'recompute_strategy_metrics'

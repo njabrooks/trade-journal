@@ -153,15 +153,14 @@ export async function POST(request: NextRequest) {
       let actionDate: string;
       if (triage.recommendedAction === 'QUANTITY_CHANGE') {
         // For QUANTITY_CHANGE, use snapshotDate directly (matches trade date)
-        if (!triage.snapshotDate) {
+        const snapshotDateValue = triage.snapshotDate;
+        if (!snapshotDateValue || typeof snapshotDateValue !== 'string') {
           return NextResponse.json(
-            { error: "Triage record missing snapshotDate" },
+            { error: "Triage record missing valid snapshotDate" },
             { status: 400 }
           );
         }
-        actionDate = typeof triage.snapshotDate === 'string' 
-          ? triage.snapshotDate 
-          : triage.snapshotDate.toISOString().split('T')[0];
+        actionDate = snapshotDateValue;
       } else {
         // For other actions, snapshotDate + 1 day (intended for next day's trades)
         if (!triage.snapshotDate) {

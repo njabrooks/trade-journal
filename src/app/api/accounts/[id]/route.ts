@@ -6,10 +6,11 @@ import { eq, and, count } from 'drizzle-orm';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const accountId = params.id;
+    const { id } = await params;
+    const accountId = id;
     const body = await request.json();
     const { brokerName, baseCurrency, label } = body;
 
@@ -44,10 +45,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const accountId = params.id;
+    const { id } = await params;
+    const accountId = id;
 
     // Verify account exists
     const account = await getAccountById(accountId);

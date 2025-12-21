@@ -291,7 +291,7 @@ export async function computeStateCode(
         // Handle nested OR: evaluate the whole criteria, but handle OR parts specially
         // For now, let evaluateCriteriaClause handle it via the "is blank OR" pattern
         // This works for patterns like "(WorstShortSigma is blank OR > 1.0σ)"
-        const matches = evaluateCriteriaClause(
+        const matches = await evaluateCriteriaClause(
           criteria,
           maxDte,
           pnlPctOfCost,
@@ -322,7 +322,7 @@ export async function computeStateCode(
           }
           
           // Evaluate this clause as if it were the full criteria
-          const clauseMatches = evaluateCriteriaClause(
+          const clauseMatches = await evaluateCriteriaClause(
             cleanClause,
             maxDte,
             pnlPctOfCost,
@@ -351,7 +351,7 @@ export async function computeStateCode(
     }
     
     // No OR conditions - evaluate normally with AND logic
-    const matches = evaluateCriteriaClause(
+    const matches = await evaluateCriteriaClause(
       criteria,
       maxDte,
       pnlPctOfCost,
@@ -360,7 +360,7 @@ export async function computeStateCode(
       hasItm,
       item.code
     );
-    
+
     if (matches) {
       return {
         stateCode: item.code,
@@ -401,7 +401,7 @@ export async function computeStateCode(
 /**
  * Evaluates a single criteria clause (handles AND logic, but not OR)
  */
-function evaluateCriteriaClause(
+async function evaluateCriteriaClause(
   criteria: string,
   maxDte: number | null,
   pnlPctOfCost: number | null,

@@ -251,7 +251,7 @@ export function CriteriaBuilder({ value, onChange }: CriteriaBuilderProps) {
               <input
                 type="number"
                 step={criterion.pattern === "PnlPctOfCost" ? "0.01" : "1"}
-                value={criterion.value}
+                value={criterion.value as number}
                 onChange={(e) => {
                   const numValue = criterion.pattern === "PnlPctOfCost" ? parseFloat(e.target.value) : parseInt(e.target.value);
                   updateCriterion(criterion.id, "value", isNaN(numValue) ? 0 : numValue);

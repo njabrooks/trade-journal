@@ -53,11 +53,11 @@ type RecordWithMeta<T> = {
   rowNumber: number;
 };
 
-function buildRecord<T extends Record<string, string>>(
+function buildRecord<T extends Record<string, string | undefined>>(
   fieldNames: string[],
   row: string[]
 ): T {
-  const record: Record<string, string> = {};
+  const record: Record<string, string | undefined> = {};
   fieldNames.forEach((field, idx) => {
     if (!field) return;
     const value = row[idx + 2];
@@ -70,7 +70,7 @@ function buildRecord<T extends Record<string, string>>(
   return record as T;
 }
 
-function extractClientAccountId(row: Record<string, string>): string | undefined {
+function extractClientAccountId(row: Record<string, string | undefined>): string | undefined {
   return (
     row['ClientAccountID'] ||
     row['Client Account ID'] ||

@@ -633,7 +633,7 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
               'recompute_strategy_metrics',
               'auto',
               {
-                accountId: targetStrategy.accountId,
+                accountId: targetStrategy.accountId ?? undefined,
                 targetId,
                 sourceIds,
                 startDate: minDate,
@@ -645,14 +645,16 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
 
             // Backfill trade blotter entries for target strategy (includes trades from merged strategies)
             await backfillTradeBlotterForStrategy(targetId);
-            
+
             // Recompute strategy metrics for all dates where target strategy has positions
-            await computeStrategyMetricsForDateRange(
-              targetStrategy.accountId,
-              targetId,
-              minDate,
-              maxDate
-            );
+            if (targetStrategy.accountId) {
+              await computeStrategyMetricsForDateRange(
+                targetStrategy.accountId,
+                targetId,
+                minDate,
+                maxDate
+              );
+            }
 
             // Trigger targeted triage recompute for target strategy on affected dates
             // Clean first to ensure stale records are removed (e.g., if underlying data changed)
@@ -660,7 +662,7 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
             for (const date of dates) {
               if (date) {
                 try {
-                  await computeTriageForDate(date, targetStrategy.accountId, targetId, true);
+                  await computeTriageForDate(date, targetStrategy.accountId ?? undefined, targetId, true);
                   triageCount++;
                 } catch (error) {
                   console.error(

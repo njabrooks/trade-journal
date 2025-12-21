@@ -9,7 +9,9 @@ import {
 import { db } from "@/db";
 import {
   accounts,
+  assetViews,
   blotterActions,
+  macroTheses,
   navSnapshots,
   positions,
   strategyMetricsSnapshots,
@@ -35,6 +37,10 @@ export interface StrategyListItem {
   latestPctNav: number | null;
   stateCode: string | null;
   strategyType: string | null;
+  macroThesisId: string | null;
+  macroThesisTitle: string | null;
+  assetViewId: string | null;
+  assetViewTitle: string | null;
 }
 
 export async function getStrategiesForList(limit = 40): Promise<StrategyListItem[]> {
@@ -62,9 +68,15 @@ export async function getStrategiesForList(limit = 40): Promise<StrategyListItem
       accountLabel: accounts.label,
       accountBrokerId: accounts.brokerAccountId,
       strategyType: strategies.strategyType,
+      macroThesisId: strategies.macroThesisId,
+      macroThesisTitle: macroTheses.title,
+      assetViewId: strategies.assetViewId,
+      assetViewTitle: assetViews.title,
     })
     .from(strategies)
     .leftJoin(accounts, eq(strategies.accountId, accounts.id))
+    .leftJoin(macroTheses, eq(strategies.macroThesisId, macroTheses.id))
+    .leftJoin(assetViews, eq(strategies.assetViewId, assetViews.id))
     .orderBy(desc(strategies.openedAt))
     .limit(limit * 2); // Get more to filter after determining status
 
@@ -150,6 +162,10 @@ export async function getStrategiesForList(limit = 40): Promise<StrategyListItem
         latestPctNav: metrics?.pctNavAbsNotional ?? null,
         stateCode: metrics?.stateCode ?? null,
         strategyType: row.strategyType,
+        macroThesisId: row.macroThesisId,
+        macroThesisTitle: row.macroThesisTitle,
+        assetViewId: row.assetViewId,
+        assetViewTitle: row.assetViewTitle,
       };
     })
     .filter((s) => s.status === "open")
@@ -176,6 +192,10 @@ export interface StrategyDetail {
     underlyingTicker: string | null;
     templateLabel: string | null;
     strategyType: string | null;
+    macroThesisId: string | null;
+    macroThesisTitle: string | null;
+    assetViewId: string | null;
+    assetViewTitle: string | null;
   };
   currentStateCode: string | null;
   currentPlaybookItem: {
@@ -256,11 +276,17 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         templateLabel: strategyTemplates.label,
         underlyingTicker: underlyings.ticker,
         strategyType: strategies.strategyType,
+        macroThesisId: strategies.macroThesisId,
+        macroThesisTitle: macroTheses.title,
+        assetViewId: strategies.assetViewId,
+        assetViewTitle: assetViews.title,
       })
       .from(strategies)
       .leftJoin(accounts, eq(strategies.accountId, accounts.id))
       .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
       .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
+      .leftJoin(macroTheses, eq(strategies.macroThesisId, macroTheses.id))
+      .leftJoin(assetViews, eq(strategies.assetViewId, assetViews.id))
       .where(eq(strategies.id, strategyId))
       .limit(1);
 

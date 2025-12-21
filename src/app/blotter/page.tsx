@@ -155,7 +155,7 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
     } else if (followUp === "completed") {
       followUpCounts[followUp] = allEntries.filter((e) => e.completed).length;
     } else if (followUp === "none") {
-      followUpCounts[followUp] = allEntries.filter((e) => !e.followUpRequired || e.followUpRequired === false).length;
+      followUpCounts[followUp] = allEntries.filter((e) => !e.followUpRequired).length;
     }
   });
 
@@ -185,7 +185,7 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
       subtitle="Journal of decisions and follow-ups"
       actions={
         <ExportCsvButton
-          rows={entries}
+          rows={entries as unknown as Record<string, unknown>[]}
           columns={[
             { key: "actionDate", label: "action_date" },
             { key: "createdAt", label: "created_at" },
