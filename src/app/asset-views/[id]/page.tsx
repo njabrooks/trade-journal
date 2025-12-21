@@ -1,4 +1,4 @@
-import { getAssetViewById } from '@/db/queries/assetViews';
+import { getAssetViewById, getLinkedStrategiesForAssetView } from '@/db/queries/assetViews';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -9,7 +9,10 @@ interface AssetViewDetailPageProps {
 
 export default async function AssetViewDetailPage({ params }: AssetViewDetailPageProps) {
   const { id } = await params;
-  const view = await getAssetViewById(id);
+  const [view, linkedStrategies] = await Promise.all([
+    getAssetViewById(id),
+    getLinkedStrategiesForAssetView(id),
+  ]);
 
   if (!view) {
     notFound();
@@ -115,10 +118,52 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
           )}
         </div>
 
-        {/* Linked Strategies - TODO: Implement in Phase 1.5 */}
+        {/* Linked Strategies */}
         <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Linked Strategies</h3>
-          <p className="text-sm text-slate-500">Coming soon...</p>
+          <h3 className="text-lg font-semibold mb-4">Linked Strategies ({linkedStrategies.length})</h3>
+          {linkedStrategies.length === 0 ? (
+            <p className="text-sm text-slate-500">No strategies linked to this asset view yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b">
+                    <th className="pb-2">Strategy</th>
+                    <th className="pb-2">Type</th>
+                    <th className="pb-2">Account</th>
+                    <th className="pb-2">Status</th>
+                    <th className="pb-2">Opened</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {linkedStrategies.map((strategy) => (
+                    <tr key={strategy.id} className="hover:bg-slate-50">
+                      <td className="py-2">
+                        <Link href={`/strategies/${strategy.id}/triage`} className="text-blue-600 hover:text-blue-800 font-medium">
+                          {strategy.label || strategy.strategyKey}
+                        </Link>
+                      </td>
+                      <td className="py-2 text-slate-600">{strategy.strategyType || '—'}</td>
+                      <td className="py-2 text-slate-600">{strategy.accountLabel || strategy.accountBrokerId || '—'}</td>
+                      <td className="py-2">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          strategy.status === 'open' ? 'bg-emerald-100 text-emerald-700' :
+                          strategy.status === 'closed' ? 'bg-slate-200 text-slate-700' :
+                          strategy.status === 'draft' ? 'bg-amber-100 text-amber-700' :
+                          'bg-slate-200 text-slate-700'
+                        }`}>
+                          {strategy.status}
+                        </span>
+                      </td>
+                      <td className="py-2 text-slate-600">
+                        {strategy.openedAt ? new Date(strategy.openedAt).toLocaleDateString() : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </DashboardShell>

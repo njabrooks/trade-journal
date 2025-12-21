@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Strategy, Account } from '@/db/schema';
 import { DashboardShell } from '@/components/layout/DashboardShell';
@@ -19,15 +19,19 @@ interface StrategyFormData {
   defenseRules?: string;
   timeRules?: string;
   exitCriteria?: string;
+  macroThesisId?: string;
+  assetViewId?: string;
 }
 
-export default function StrategiesPage() {
+function StrategiesPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const selectedAccountId = searchParams.get('accountId');
   
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [macroTheses, setMacroTheses] = useState<Array<{ id: string; title: string }>>([]);
+  const [assetViews, setAssetViews] = useState<Array<{ id: string; title: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<StrategyFormData>({
@@ -42,6 +46,8 @@ export default function StrategiesPage() {
     defenseRules: '',
     timeRules: '',
     exitCriteria: '',
+    macroThesisId: '',
+    assetViewId: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +77,7 @@ export default function StrategiesPage() {
   useEffect(() => {
     loadData();
     loadStrategyTypes();
+    loadThesesAndViews();
   }, [selectedAccountId]);
 
   const loadStrategyTypes = async () => {
@@ -82,6 +89,27 @@ export default function StrategiesPage() {
       }
     } catch (err) {
       console.error('Failed to load strategy types:', err);
+    }
+  };
+
+  const loadThesesAndViews = async () => {
+    try {
+      const [thesesRes, viewsRes] = await Promise.all([
+        fetch('/api/theses'),
+        fetch('/api/asset-views'),
+      ]);
+
+      if (thesesRes.ok) {
+        const thesesData = await thesesRes.json();
+        setMacroTheses(thesesData.map((t: any) => ({ id: t.id, title: t.title })));
+      }
+
+      if (viewsRes.ok) {
+        const viewsData = await viewsRes.json();
+        setAssetViews(viewsData.map((v: any) => ({ id: v.id, title: v.title })));
+      }
+    } catch (err) {
+      console.error('Failed to load theses and views:', err);
     }
   };
 
@@ -169,6 +197,8 @@ export default function StrategiesPage() {
         defenseRules: '',
         timeRules: '',
         exitCriteria: '',
+        macroThesisId: '',
+        assetViewId: '',
       });
       setShowForm(false);
       await loadData();
@@ -644,6 +674,50 @@ export default function StrategiesPage() {
                   className="w-full border rounded px-3 py-2"
                   placeholder="e.g., GLXY Covered Call Q1 2025"
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="macroThesisId" className="block text-sm font-medium mb-1">
+                  Macro Thesis (Optional)
+                </label>
+                <select
+                  id="macroThesisId"
+                  value={formData.macroThesisId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, macroThesisId: e.target.value })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="">None</option>
+                  {macroTheses.map((thesis) => (
+                    <option key={thesis.id} value={thesis.id}>
+                      {thesis.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="assetViewId" className="block text-sm font-medium mb-1">
+                  Asset View (Optional)
+                </label>
+                <select
+                  id="assetViewId"
+                  value={formData.assetViewId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, assetViewId: e.target.value })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                >
+                  <option value="">None</option>
+                  {assetViews.map((view) => (
+                    <option key={view.id} value={view.id}>
+                      {view.title}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -1236,3 +1310,17 @@ export default function StrategiesPage() {
   );
 }
 
+export default function StrategiesPage() {
+  return (
+    <Suspense fallback={
+      <DashboardShell activeNav="admin-strategies" title="Strategy Management" subtitle="Loading...">
+        <div className="flex items-center justify-center py-12">
+          <Spinner className="size-8" />
+          <span className="ml-3 text-slate-600">Loading strategies...</span>
+        </div>
+      </DashboardShell>
+    }>
+      <StrategiesPageContent />
+    </Suspense>
+  );
+}

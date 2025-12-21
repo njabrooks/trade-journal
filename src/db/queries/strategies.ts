@@ -43,7 +43,13 @@ export interface StrategyListItem {
   assetViewTitle: string | null;
 }
 
-export async function getStrategiesForList(limit = 40): Promise<StrategyListItem[]> {
+export async function getStrategiesForList(
+  limit = 40,
+  filters?: {
+    macroThesisId?: string;
+    assetViewId?: string;
+  }
+): Promise<StrategyListItem[]> {
   // Get the most recent snapshot date from positions
   const latestSnapshotResult = await db
     .select({
@@ -56,8 +62,17 @@ export async function getStrategiesForList(limit = 40): Promise<StrategyListItem
 
   const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
 
+  // Build where clause based on filters
+  const whereConditions = [];
+  if (filters?.macroThesisId) {
+    whereConditions.push(eq(strategies.macroThesisId, filters.macroThesisId));
+  }
+  if (filters?.assetViewId) {
+    whereConditions.push(eq(strategies.assetViewId, filters.assetViewId));
+  }
+
   // Get all strategies with account info
-  const rows = await db
+  let query = db
     .select({
       id: strategies.id,
       strategyKey: strategies.strategyKey,
@@ -77,6 +92,13 @@ export async function getStrategiesForList(limit = 40): Promise<StrategyListItem
     .leftJoin(accounts, eq(strategies.accountId, accounts.id))
     .leftJoin(macroTheses, eq(strategies.macroThesisId, macroTheses.id))
     .leftJoin(assetViews, eq(strategies.assetViewId, assetViews.id))
+    .$dynamic();
+
+  if (whereConditions.length > 0) {
+    query = query.where(and(...whereConditions));
+  }
+
+  const rows = await query
     .orderBy(desc(strategies.openedAt))
     .limit(limit * 2); // Get more to filter after determining status
 
@@ -489,6 +511,10 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         underlyingTicker: strategyRow.underlyingTicker,
         templateLabel: strategyRow.templateLabel,
         strategyType: strategyRow.strategyType,
+        macroThesisId: strategyRow.macroThesisId,
+        macroThesisTitle: strategyRow.macroThesisTitle,
+        assetViewId: strategyRow.assetViewId,
+        assetViewTitle: strategyRow.assetViewTitle,
       },
       currentStateCode,
       currentPlaybookItem,

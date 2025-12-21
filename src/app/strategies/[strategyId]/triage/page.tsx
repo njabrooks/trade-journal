@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { StrategyTabs } from "@/components/layout/StrategyTabs";
 import { PlaybookSidebar } from "@/components/strategies/PlaybookSidebar";

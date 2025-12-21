@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { assetViews, macroTheses, underlyings, strategies } from '@/db/schema';
+import { assetViews, macroTheses, underlyings, strategies, accounts } from '@/db/schema';
 import { eq, desc, inArray, count } from 'drizzle-orm';
 import type { NewAssetView } from '@/db/schema';
 
@@ -105,4 +105,24 @@ export async function updateAssetView(
 
 export async function deleteAssetView(id: string): Promise<void> {
   await db.delete(assetViews).where(eq(assetViews.id, id));
+}
+
+export async function getLinkedStrategiesForAssetView(assetViewId: string) {
+  const strats = await db
+    .select({
+      id: strategies.id,
+      strategyKey: strategies.strategyKey,
+      label: strategies.autoDerivedLabel,
+      status: strategies.status,
+      strategyType: strategies.strategyType,
+      accountLabel: accounts.label,
+      accountBrokerId: accounts.brokerAccountId,
+      openedAt: strategies.openedAt,
+    })
+    .from(strategies)
+    .leftJoin(accounts, eq(strategies.accountId, accounts.id))
+    .where(eq(strategies.assetViewId, assetViewId))
+    .orderBy(desc(strategies.openedAt));
+
+  return strats;
 }

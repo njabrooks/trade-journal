@@ -1,6 +1,6 @@
 import { db } from '@/db';
-import { macroTheses, assetViews, strategies } from '@/db/schema';
-import { eq, desc, inArray, count } from 'drizzle-orm';
+import { macroTheses, assetViews, strategies, accounts, underlyings } from '@/db/schema';
+import { eq, desc, inArray, count, sql } from 'drizzle-orm';
 import type { NewMacroThesis } from '@/db/schema';
 
 export interface MacroThesisListItem {
@@ -100,4 +100,42 @@ export async function updateMacroThesis(
 
 export async function deleteMacroThesis(id: string): Promise<void> {
   await db.delete(macroTheses).where(eq(macroTheses.id, id));
+}
+
+export async function getLinkedAssetViewsForThesis(thesisId: string) {
+  const views = await db
+    .select({
+      id: assetViews.id,
+      title: assetViews.title,
+      underlyingTicker: underlyings.ticker,
+      status: assetViews.status,
+      confidenceLevel: assetViews.confidenceLevel,
+      createdAt: assetViews.createdAt,
+    })
+    .from(assetViews)
+    .leftJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
+    .where(eq(assetViews.macroThesisId, thesisId))
+    .orderBy(desc(assetViews.createdAt));
+
+  return views;
+}
+
+export async function getLinkedStrategiesForThesis(thesisId: string) {
+  const strats = await db
+    .select({
+      id: strategies.id,
+      strategyKey: strategies.strategyKey,
+      label: strategies.autoDerivedLabel,
+      status: strategies.status,
+      strategyType: strategies.strategyType,
+      accountLabel: accounts.label,
+      accountBrokerId: accounts.brokerAccountId,
+      openedAt: strategies.openedAt,
+    })
+    .from(strategies)
+    .leftJoin(accounts, eq(strategies.accountId, accounts.id))
+    .where(eq(strategies.macroThesisId, thesisId))
+    .orderBy(desc(strategies.openedAt));
+
+  return strats;
 }

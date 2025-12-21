@@ -74,23 +74,23 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-## Phase 1.5: Hierarchy Linking UI ⏳
+## Phase 1.5: Hierarchy Linking UI ✅ (mostly complete)
 
 **Goal**: Enable users to link strategies to theses/views directly in the UI.
 
-**Status**: Planned
+**Status**: Mostly Complete (core functionality done, bulk operations pending)
 **Deliverables**:
 
-- ⏳ Strategy form enhancements
+- ✅ Strategy form enhancements
   - Add dropdowns for `macro_thesis_id` and `asset_view_id` in strategy create/edit forms
   - Display linked thesis/view on strategy detail pages
 
-- ⏳ Detail page enhancements
+- ✅ Detail page enhancements
   - Show linked strategies on macro thesis detail page
   - Show linked strategies on asset view detail page
   - Add counts and quick links
 
-- ⏳ Filtering capabilities
+- ✅ Filtering capabilities
   - Filter strategies by macro thesis on `/strategies` page
   - Filter strategies by asset view on `/strategies` page
 

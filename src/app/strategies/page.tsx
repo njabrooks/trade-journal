@@ -1,10 +1,28 @@
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
+import { FilterBar } from "@/components/strategies/FilterBar";
 import { getStrategiesForList } from "@/db/queries/strategies";
+import { getMacroThesesList } from "@/db/queries/macroTheses";
+import { getAssetViewsList } from "@/db/queries/assetViews";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 
-export default async function StrategiesPage() {
-  const strategies = await getStrategiesForList();
+interface StrategiesPageProps {
+  searchParams?: Promise<{
+    macroThesisId?: string;
+    assetViewId?: string;
+  }>;
+}
+
+export default async function StrategiesPage({ searchParams }: StrategiesPageProps) {
+  const params = await searchParams;
+  const macroThesisId = params?.macroThesisId;
+  const assetViewId = params?.assetViewId;
+
+  const [strategies, theses, views] = await Promise.all([
+    getStrategiesForList(40, { macroThesisId, assetViewId }),
+    getMacroThesesList(),
+    getAssetViewsList(),
+  ]);
 
   // Strategies are already filtered to open only, so use directly
   const totalAbs = strategies.reduce(
@@ -40,12 +58,18 @@ export default async function StrategiesPage() {
         />
       </section>
 
+      <FilterBar
+        theses={theses.map(t => ({ id: t.id, title: t.title }))}
+        views={views.map(v => ({ id: v.id, title: v.title }))}
+      />
+
       <div className="rounded-2xl border bg-white shadow-sm">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
             <p className="text-sm font-medium text-slate-500">Strategy List</p>
             <p className="text-xs text-slate-400">
               Showing {strategies.length} most recent
+              {(macroThesisId || assetViewId) && ' (filtered)'}
             </p>
           </div>
         </div>
