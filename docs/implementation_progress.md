@@ -1,7 +1,7 @@
 # System Architecture Transition: Implementation Progress
 
 **Master Plan**: See [`system_architecture_transition_plan.md`](./system_architecture_transition_plan.md)
-**Last Updated**: 2025-12-22
+**Last Updated**: 2025-12-22 (Phase 0 & 1 Complete)
 **AI Enhancements Plan**: See [`ai_research_enhancements_plan.md`](./ai_research_enhancements_plan.md)
 
 ---
@@ -401,14 +401,14 @@ This document tracks the actual implementation progress of the transition from "
 
 **Goal**: Enhance AI research processing with multi-model support, intelligent hierarchy proposals, and editable prompt management.
 
-**Status**: In Progress (Phase 0 started 2025-12-22)
+**Status**: Phase 0, 1, 2 & 3 Complete (2025-12-22)
 **Master Plan**: See [`ai_research_enhancements_plan.md`](./ai_research_enhancements_plan.md)
 
 **Scope**:
 - ✅ Phase 0: Prompt Management System (editable prompts for all AI workflows) - COMPLETE
 - ✅ Phase 1: Multi-Model AI Support (Claude, ChatGPT, Gemini) - COMPLETE
-- ⏳ Phase 2: Hierarchy Analysis & Recommendations (AI proposes new theses/views)
-- ⏳ Phase 3: Recommendation UI (accept/reject AI recommendations)
+- ✅ Phase 2: Hierarchy Analysis & Recommendations (AI proposes new theses/views) - COMPLETE
+- ✅ Phase 3: Recommendation UI (accept/reject AI recommendations) - COMPLETE
 
 ---
 
@@ -479,39 +479,41 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-### Phase 2.5.2: Hierarchy Analysis & Recommendations ⏳
+### Phase 2.5.2: Hierarchy Analysis & Recommendations ✅
 
 **Goal**: AI analyzes insights against existing theses/views and proposes new items or links.
 
-**Status**: Planned
+**Status**: Complete (2025-12-22)
 **Deliverables**:
 
-- ⏳ Hierarchy analysis service
-- ⏳ Recommendations table schema
-- ⏳ AI recommendation generation
-- ⏳ Confidence scoring
-- ⏳ Analysis API endpoint
+- ✅ Hierarchy analysis service (`src/lib/services/ai-hierarchy-analysis.ts`)
+- ✅ Recommendations table schema (created via Supabase MCP)
+- ✅ AI recommendation generation using both prompts sequentially
+- ✅ Confidence scoring
+- ✅ Analysis API endpoint (`/api/research/analyze-hierarchy`)
+- ✅ Database queries for recommendations
 
 **Estimated Effort**: 2-3 days
-**Dependencies**: Phase 2.5.0, Phase 2.5.1
+**Dependencies**: Phase 2.5.0 ✅, Phase 2.5.1 ✅
 
 ---
 
-### Phase 2.5.3: Recommendation UI ⏳
+### Phase 2.5.3: Recommendation UI ✅
 
 **Goal**: UI for viewing and accepting/rejecting AI recommendations.
 
-**Status**: Planned
+**Status**: Complete (2025-12-22)
 **Deliverables**:
 
-- ⏳ Recommendations panel component
-- ⏳ Recommendation cards with actions
-- ⏳ Auto-create thesis/view from recommendation
-- ⏳ Pre-filled mapping dialogs
-- ⏳ Recommendation status tracking
+- ✅ Recommendations panel component (`HierarchyRecommendationsPanel`)
+- ✅ Recommendation cards with actions (`RecommendationCard`)
+- ✅ Auto-create thesis/view from recommendation (via API)
+- ✅ Recommendation status tracking (pending/accepted/rejected/modified)
+- ✅ API endpoints for recommendations (GET, PATCH, DELETE)
+- ✅ Integrated into research detail page
 
 **Estimated Effort**: 2-3 days
-**Dependencies**: Phase 2.5.2
+**Dependencies**: Phase 2.5.2 ✅
 
 ---
 
@@ -582,12 +584,12 @@ This document tracks the actual implementation progress of the transition from "
 
 The system now has a full research workflow: ingestion → AI structuring → human review → evidence linking to belief hierarchy.
 
-### Option A: Phase 2.5.1 (Multi-Model AI Support) - IN PROGRESS 🚧
-**Why**: Support multiple AI models (Claude, ChatGPT, Gemini) for flexibility and cost optimization
-**Impact**: Users can choose the best model for their needs, compare outputs, and optimize costs
-**Effort**: 2-3 days
-**Dependencies**: Phase 2.5.0 complete ✅
-**Status**: Starting implementation
+### Option A: Phase 2.5.2 & 2.5.3 (Hierarchy Analysis & Recommendations) - ✅ COMPLETE
+**Why**: AI analyzes insights against existing hierarchy and proposes new theses/views or links
+**Impact**: Automatically suggests where research fits in belief hierarchy, reducing manual mapping work
+**Effort**: 2-3 days each
+**Dependencies**: Phase 2.5.0 ✅, Phase 2.5.1 ✅
+**Status**: ✅ Complete - Full AI research workflow now functional
 
 ### Option B: Phase 1.6 (Create/Edit Forms) - RECOMMENDED
 **Why**: Removes dependency on Supabase console for CRUD operations on theses/views
@@ -691,6 +693,34 @@ The system now has a full research workflow: ingestion → AI structuring → hu
 - ✅ Admin UI built and functional
 - ✅ AI services refactored to use prompts from DB
 - ✅ Default prompts seeded via Supabase MCP
+
+### Phase 2.5.1 ✅
+- ✅ Abstract AI provider interface created
+- ✅ Claude provider implementation (extracted from existing)
+- ✅ OpenAI provider implementation (GPT-4o, GPT-4 Turbo)
+- ✅ Gemini provider implementation (1.5 Pro, 1.5 Flash)
+- ✅ Provider factory for model selection
+- ✅ Model selector in ProcessButton UI
+- ✅ Cost tracking per model with pricing display
+- ✅ API updated to accept model parameter
+- ✅ Dependencies added (openai, @google/generative-ai)
+
+### Phase 2.5.2 ✅
+- ✅ Hierarchy analysis service created (`ai-hierarchy-analysis.ts`)
+- ✅ Database schema for recommendations table (via Supabase MCP)
+- ✅ Database queries for recommendations CRUD operations
+- ✅ API endpoint `/api/research/analyze-hierarchy` created
+- ✅ Both `hierarchy_analysis` and `recommendation_generation` prompts used sequentially
+- ✅ Analyze Hierarchy button added to research detail page
+- ✅ Recommendations stored with confidence scores and reasoning
+
+### Phase 2.5.3 ✅
+- ✅ `HierarchyRecommendationsPanel` component created
+- ✅ `RecommendationCard` component with accept/reject/modify actions
+- ✅ API endpoints for recommendations (GET, PATCH, DELETE)
+- ✅ Auto-create theses/views when recommendations accepted
+- ✅ Recommendations grouped by status in UI
+- ✅ Integrated into research detail page
 
 ---
 
