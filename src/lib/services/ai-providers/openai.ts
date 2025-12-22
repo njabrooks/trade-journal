@@ -11,7 +11,9 @@ const openai = new OpenAI({
 
 const MODEL_MAP: Record<string, string> = {
   'gpt-4o': 'gpt-4o',
+  'gpt-4o-mini': 'gpt-4o-mini',
   'gpt-4-turbo': 'gpt-4-turbo',
+  'gpt-4o-2024-11-20': 'gpt-4o-2024-11-20', // Latest GPT-4o snapshot
 };
 
 export class OpenAIProvider implements AIProvider {
@@ -21,8 +23,8 @@ export class OpenAIProvider implements AIProvider {
     this.model = model;
   }
 
-  getModel(): 'gpt-4o' | 'gpt-4-turbo' {
-    return this.model as 'gpt-4o' | 'gpt-4-turbo';
+  getModel(): 'gpt-4o' | 'gpt-4o-mini' | 'gpt-4-turbo' | 'gpt-4o-2024-11-20' {
+    return this.model as 'gpt-4o' | 'gpt-4o-mini' | 'gpt-4-turbo' | 'gpt-4o-2024-11-20';
   }
 
   getName(): string {
@@ -30,9 +32,17 @@ export class OpenAIProvider implements AIProvider {
   }
 
   getPricing(): { input: number; output: number } {
-    // OpenAI pricing (as of Dec 2024)
+    // OpenAI pricing (as of Dec 2024/2025)
     const pricing: Record<string, { input: number; output: number }> = {
       'gpt-4o': {
+        input: 2.5 / 1_000_000, // $2.50 per million input tokens
+        output: 10.0 / 1_000_000, // $10 per million output tokens
+      },
+      'gpt-4o-mini': {
+        input: 0.15 / 1_000_000, // $0.15 per million input tokens
+        output: 0.6 / 1_000_000, // $0.60 per million output tokens
+      },
+      'gpt-4o-2024-11-20': {
         input: 2.5 / 1_000_000, // $2.50 per million input tokens
         output: 10.0 / 1_000_000, // $10 per million output tokens
       },

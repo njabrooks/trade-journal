@@ -4,7 +4,18 @@
  * Abstract interface for AI model providers (Claude, ChatGPT, Gemini)
  */
 
-export type AIModel = 'claude-sonnet-4' | 'gpt-4o' | 'gpt-4-turbo' | 'gemini-1.5-pro' | 'gemini-1.5-flash';
+export type AIModel = 
+  | 'claude-sonnet-4' 
+  | 'claude-3-5-sonnet-20241022'
+  | 'claude-opus-4'
+  | 'gpt-4o' 
+  | 'gpt-4o-mini'
+  | 'gpt-4-turbo'
+  | 'gpt-4o-2024-11-20'
+  | 'gemini-1.5-pro' 
+  | 'gemini-1.5-flash'
+  | 'gemini-2.0-flash-exp'
+  | 'gemini-pro';
 
 export interface AIProviderConfig {
   model: AIModel;

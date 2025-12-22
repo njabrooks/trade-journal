@@ -28,14 +28,16 @@ export function ProcessButton({ artifactId }: ProcessButtonProps) {
   const [showModelSelector, setShowModelSelector] = useState(false);
 
   useEffect(() => {
-    // Load available models
+    // Load available models from API
     async function loadModels() {
       try {
-        const { getAvailableModels } = await import('@/lib/services/ai-providers');
-        const available = getAvailableModels();
-        setModels(available);
-        if (available.length > 0) {
-          setSelectedModel(available[0].value);
+        const response = await fetch('/api/ai-models');
+        const data = await response.json();
+        if (data.success && data.models) {
+          setModels(data.models);
+          if (data.models.length > 0) {
+            setSelectedModel(data.models[0].value);
+          }
         }
       } catch (error) {
         console.error('Error loading models:', error);

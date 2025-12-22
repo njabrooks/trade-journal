@@ -10,6 +10,8 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY || '');
 const MODEL_MAP: Record<string, string> = {
   'gemini-1.5-pro': 'gemini-1.5-pro',
   'gemini-1.5-flash': 'gemini-1.5-flash',
+  'gemini-2.0-flash-exp': 'gemini-2.0-flash-exp', // Experimental Gemini 2.0
+  'gemini-pro': 'gemini-pro', // Legacy model
 };
 
 export class GeminiProvider implements AIProvider {
@@ -19,8 +21,8 @@ export class GeminiProvider implements AIProvider {
     this.model = model;
   }
 
-  getModel(): 'gemini-1.5-pro' | 'gemini-1.5-flash' {
-    return this.model as 'gemini-1.5-pro' | 'gemini-1.5-flash';
+  getModel(): 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'gemini-2.0-flash-exp' | 'gemini-pro' {
+    return this.model as 'gemini-1.5-pro' | 'gemini-1.5-flash' | 'gemini-2.0-flash-exp' | 'gemini-pro';
   }
 
   getName(): string {
@@ -28,7 +30,7 @@ export class GeminiProvider implements AIProvider {
   }
 
   getPricing(): { input: number; output: number } {
-    // Gemini pricing (as of Dec 2024)
+    // Gemini pricing (as of Dec 2024/2025)
     const pricing: Record<string, { input: number; output: number }> = {
       'gemini-1.5-pro': {
         input: 1.25 / 1_000_000, // $1.25 per million input tokens
@@ -37,6 +39,14 @@ export class GeminiProvider implements AIProvider {
       'gemini-1.5-flash': {
         input: 0.075 / 1_000_000, // $0.075 per million input tokens
         output: 0.3 / 1_000_000, // $0.30 per million output tokens
+      },
+      'gemini-2.0-flash-exp': {
+        input: 0.075 / 1_000_000, // $0.075 per million input tokens (experimental pricing)
+        output: 0.3 / 1_000_000, // $0.30 per million output tokens
+      },
+      'gemini-pro': {
+        input: 0.5 / 1_000_000, // $0.50 per million input tokens
+        output: 1.5 / 1_000_000, // $1.50 per million output tokens
       },
     };
 

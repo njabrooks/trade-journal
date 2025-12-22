@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ProcessButton } from '@/components/research/ProcessButton';
 import { InsightReview } from '@/components/research/InsightReview';
 import { MappingsSection } from '@/components/research/MappingsSection';
+import { AnalyzeHierarchyButton } from '@/components/research/AnalyzeHierarchyButton';
+import { HierarchyRecommendationsPanel } from '@/components/research/HierarchyRecommendationsPanel';
 
 interface ResearchDetailPageProps {
   params: Promise<{ id: string }>;
@@ -112,7 +114,32 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
         </div>
 
         {/* AI-Generated Insight */}
-        {insight && <InsightReview insight={insight} artifactId={artifact.id} />}
+        {insight && (
+          <div className="space-y-4">
+            <InsightReview insight={insight} artifactId={artifact.id} />
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-semibold text-blue-900 mb-1">
+                    Hierarchy Analysis
+                  </h4>
+                  <p className="text-sm text-blue-700">
+                    Analyze this research against existing macro theses and asset views to get AI
+                    recommendations for creating new items or linking to existing ones.
+                  </p>
+                </div>
+                <AnalyzeHierarchyButton insightId={insight.id} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AI Recommendations */}
+        {insight && (
+          <div key={insight.id}>
+            <HierarchyRecommendationsPanel insightId={insight.id} />
+          </div>
+        )}
 
         {/* Research Mappings */}
         <MappingsSection insightId={insight?.id || null} artifactStatus={artifact.status} />

@@ -43,18 +43,22 @@ export function AddMappingDialog({ researchInsightId, onMappingCreated }: AddMap
         if (hierarchyLevel === 'macro_thesis') {
           const response = await fetch('/api/theses');
           const data = await response.json();
+          // API returns array directly, not wrapped in { theses: ... }
+          const thesesList = Array.isArray(data) ? data : data.theses || [];
           setTheses(
-            data.theses?.map((t: any) => ({ id: t.id, name: t.title })) || []
+            thesesList.map((t: any) => ({ id: t.id, name: t.title }))
           );
         } else if (hierarchyLevel === 'asset_view') {
           const response = await fetch('/api/asset-views');
           const data = await response.json();
+          // API returns array directly, not wrapped in { views: ... }
+          const viewsList = Array.isArray(data) ? data : data.views || [];
           setAssetViews(
-            data.views?.map((v: any) => ({
+            viewsList.map((v: any) => ({
               id: v.id,
               name: v.title,
-              ticker: v.underlying?.ticker,
-            })) || []
+              ticker: v.ticker, // ticker is directly on the view object from list query
+            }))
           );
         } else if (hierarchyLevel === 'strategy') {
           const response = await fetch('/api/strategies');
