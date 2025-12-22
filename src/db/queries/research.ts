@@ -4,6 +4,7 @@ import {
   researchInsights,
   researchMappings,
   researchProcessingRuns,
+  researchHierarchyRecommendations,
   macroTheses,
   assetViews,
   strategies,
@@ -16,6 +17,7 @@ import type {
   NewResearchInsight,
   NewResearchMapping,
   NewResearchProcessingRun,
+  NewResearchHierarchyRecommendation,
 } from '@/db/schema';
 
 // ============================================================================
@@ -355,4 +357,60 @@ export async function getTotalAiProcessingCosts() {
     totalCost: Number(result.totalCost ?? 0),
     processedCount: result.count ?? 0,
   };
+}
+
+// ============================================================================
+// Research Hierarchy Recommendations
+// ============================================================================
+
+export async function createResearchHierarchyRecommendation(
+  data: NewResearchHierarchyRecommendation
+): Promise<string> {
+  const [result] = await db.insert(researchHierarchyRecommendations).values(data).returning({ id: researchHierarchyRecommendations.id });
+  return result.id;
+}
+
+export async function getRecommendationsForInsight(insightId: string) {
+  return db
+    .select()
+    .from(researchHierarchyRecommendations)
+    .where(eq(researchHierarchyRecommendations.researchInsightId, insightId))
+    .orderBy(desc(researchHierarchyRecommendations.generatedAt));
+}
+
+export async function getRecommendationById(id: string) {
+  const [result] = await db
+    .select()
+    .from(researchHierarchyRecommendations)
+    .where(eq(researchHierarchyRecommendations.id, id))
+    .limit(1);
+  return result || null;
+}
+
+export async function updateRecommendationStatus(
+  id: string,
+  status: 'pending' | 'accepted' | 'rejected' | 'modified',
+  modifiedByUser: boolean = false
+) {
+  const updateData: any = {
+    status,
+    modifiedByUser,
+  };
+
+  if (status === 'accepted') {
+    updateData.acceptedAt = new Date();
+  } else if (status === 'rejected') {
+    updateData.rejectedAt = new Date();
+  }
+
+  await db
+    .update(researchHierarchyRecommendations)
+    .set(updateData)
+    .where(eq(researchHierarchyRecommendations.id, id));
+}
+
+export async function deleteRecommendation(id: string): Promise<void> {
+  await db
+    .delete(researchHierarchyRecommendations)
+    .where(eq(researchHierarchyRecommendations.id, id));
 }

@@ -935,6 +935,66 @@ export const researchMappings = pgTable(
 export type ResearchMapping = typeof researchMappings.$inferSelect;
 export type NewResearchMapping = typeof researchMappings.$inferInsert;
 
+// Research Hierarchy Recommendations - AI-generated recommendations for linking or creating hierarchy items
+export const researchHierarchyRecommendations = pgTable(
+  'research_hierarchy_recommendations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    researchInsightId: uuid('research_insight_id')
+      .notNull()
+      .references(() => researchInsights.id, { onDelete: 'cascade' }),
+
+    // Recommendation type
+    recommendationType: text('recommendation_type').notNull(), // 'new_macro_thesis' | 'new_asset_view' | 'link_existing' | 'refute_existing'
+
+    // Proposed new item data (JSONB for flexibility)
+    proposedData: jsonb('proposed_data'),
+
+    // Existing item reference
+    existingThesisId: uuid('existing_thesis_id').references(() => macroTheses.id, {
+      onDelete: 'cascade',
+    }),
+    existingViewId: uuid('existing_view_id').references(() => assetViews.id, {
+      onDelete: 'cascade',
+    }),
+
+    // Evidence relationship (if linking)
+    mappingType: text('mapping_type'), // 'supports' | 'refutes' | 'neutral' | 'exploratory'
+    confidenceScore: numeric('confidence_score', { precision: 3, scale: 2 }), // 0.00 to 1.00
+
+    // Reasoning
+    reasoning: text('reasoning').notNull(),
+
+    // Status
+    status: text('status').notNull().default('pending'), // 'pending' | 'accepted' | 'rejected' | 'modified'
+
+    // AI metadata
+    aiModel: text('ai_model').notNull(),
+    generatedAt: timestamp('generated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+
+    // User action
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    rejectedAt: timestamp('rejected_at', { withTimezone: true }),
+    modifiedByUser: boolean('modified_by_user').default(false),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    insightIdx: index('idx_recommendations_insight').on(table.researchInsightId),
+    statusIdx: index('idx_recommendations_status').on(table.status),
+    typeIdx: index('idx_recommendations_type').on(table.recommendationType),
+    thesisIdx: index('idx_recommendations_thesis').on(table.existingThesisId),
+    viewIdx: index('idx_recommendations_view').on(table.existingViewId),
+  })
+);
+
+export type ResearchHierarchyRecommendation =
+  typeof researchHierarchyRecommendations.$inferSelect;
+export type NewResearchHierarchyRecommendation =
+  typeof researchHierarchyRecommendations.$inferInsert;
+
 // Research Processing Runs - Track AI processing jobs
 export const researchProcessingRuns = pgTable(
   'research_processing_runs',
