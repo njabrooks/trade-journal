@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getResearchArtifactById } from '@/db/queries/research';
 import { processResearchArtifact, batchProcessArtifacts } from '@/lib/services/ai-research';
+import { getDefaultModel, type AIModel } from '@/lib/services/ai-providers';
 
 /**
  * POST /api/research/process
@@ -9,7 +10,8 @@ import { processResearchArtifact, batchProcessArtifacts } from '@/lib/services/a
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { artifactId, artifactIds } = body;
+    const { artifactId, artifactIds, model } = body;
+    const selectedModel: AIModel = model || getDefaultModel();
 
     // Batch processing
     if (artifactIds && Array.isArray(artifactIds)) {
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const result = await batchProcessArtifacts(artifactIds);
+      const result = await batchProcessArtifacts(artifactIds, selectedModel);
 
       return NextResponse.json({
         success: true,
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process the artifact
-    const insightId = await processResearchArtifact(artifact);
+    const insightId = await processResearchArtifact(artifact, selectedModel);
 
     return NextResponse.json({
       success: true,
@@ -72,16 +74,16 @@ export async function POST(request: NextRequest) {
 
     // Check if it's an API key error
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const isAuthError = errorMessage.includes('authentication') || errorMessage.includes('apiKey');
+    const isAuthError = errorMessage.includes('authentication') || errorMessage.includes('apiKey') || errorMessage.includes('API key');
 
     if (isAuthError) {
       const isDev = process.env.NODE_ENV === 'development';
       return NextResponse.json(
         {
-          error: 'Anthropic API key not configured',
+          error: 'AI API key not configured',
           message: isDev
-            ? 'Missing ANTHROPIC_API_KEY in .env.local. For free processing in dev mode, use: npx tsx scripts/process-research-with-claude.ts'
-            : 'ANTHROPIC_API_KEY environment variable is not set. Please configure your Anthropic API key.',
+            ? `Missing API key for selected model. Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_AI_API_KEY in .env.local`
+            : 'AI API key environment variable is not set. Please configure the API key for your selected model.',
           devAlternative: isDev
             ? 'Run "npx tsx scripts/process-research-with-claude.ts" to process research for free using Claude Code'
             : null,

@@ -1,10 +1,9 @@
 /**
  * AI Research Processing Service
  *
- * Uses Anthropic Claude to extract structured insights from research artifacts.
+ * Extracts structured insights from research artifacts using configurable AI providers.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { ResearchArtifact } from '@/db/schema';
 import {
   createResearchInsight,
@@ -12,68 +11,31 @@ import {
   updateResearchProcessingRun,
   updateResearchArtifactStatus,
 } from '@/db/queries/research';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-// Model configuration
-const MODEL = 'claude-sonnet-4-20250514';
-const MAX_TOKENS = 4096;
-
-// Pricing (as of Dec 2024 - update if pricing changes)
-const PRICING = {
-  'claude-sonnet-4-20250514': {
-    input: 3.0 / 1_000_000, // $3 per million input tokens
-    output: 15.0 / 1_000_000, // $15 per million output tokens
-  },
-};
-
-interface StructuredInsight {
-  summary: string;
-  keyThemes: string[];
-  keyClaims: Array<{
-    claim: string;
-    evidence: string;
-    confidence: 'high' | 'medium' | 'low';
-  }>;
-  supportingEvidence: Array<{
-    point: string;
-    source: string;
-  }>;
-  counterEvidence: Array<{
-    point: string;
-    source: string;
-  }>;
-  timeHorizon: 'long_term' | 'medium_term' | 'short_term' | 'unknown';
-  confidenceLevel: 'high' | 'medium' | 'low' | 'exploratory';
-  relevantTickers: string[];
-}
+import { createAIProvider, getDefaultModel, type AIModel, type StructuredInsight } from './ai-providers';
 
 /**
  * Process a research artifact and extract structured insights using AI
  */
 export async function processResearchArtifact(
-  artifact: ResearchArtifact
+  artifact: ResearchArtifact,
+  model: AIModel = getDefaultModel()
 ): Promise<string> {
+  const provider = createAIProvider(model);
+  const modelName = provider.getName();
+
   const processingRunId = await createResearchProcessingRun({
     researchArtifactId: artifact.id,
     jobType: 'full_process',
     status: 'running',
-    aiModel: MODEL,
+    aiModel: modelName,
   });
 
   try {
     // Update artifact status to processing
     await updateResearchArtifactStatus(artifact.id, 'processing');
 
-    // Extract structured insights using Claude
-    const insight = await extractInsights(artifact);
-
-    // Calculate cost
-    const inputTokens = estimateTokens(artifact.rawContent);
-    const outputTokens = estimateTokens(JSON.stringify(insight));
-    const cost = calculateCost(MODEL, inputTokens, outputTokens);
+    // Extract structured insights using AI provider
+    const { insight, inputTokens, outputTokens, cost } = await extractInsights(artifact, provider);
 
     // Create research insight record
     const insightId = await createResearchInsight({
@@ -87,7 +49,7 @@ export async function processResearchArtifact(
       confidenceLevel: insight.confidenceLevel,
       relevantTickers: insight.relevantTickers,
       structuredBy: 'ai',
-      aiModel: MODEL,
+      aiModel: modelName,
       aiProcessingCostUsd: cost.toString(),
     });
 
@@ -124,10 +86,27 @@ export async function processResearchArtifact(
 }
 
 /**
- * Extract structured insights from research content using Claude
+ * Extract structured insights from research content using AI provider
  */
-async function extractInsights(artifact: ResearchArtifact): Promise<StructuredInsight> {
-  const prompt = `You are an expert investment research analyst. Analyze the following research content and extract structured insights.
+async function extractInsights(
+  artifact: ResearchArtifact,
+  provider: ReturnType<typeof createAIProvider>
+): Promise<{
+  insight: StructuredInsight;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number;
+}> {
+  // Get prompt from database (with fallback to default if not found)
+  const { getRenderedPrompt } = await import('@/lib/services/prompt-manager');
+  
+  let prompt: string;
+  try {
+    prompt = await getRenderedPrompt('insight_extraction', { artifact });
+  } catch (error) {
+    // Fallback to hardcoded prompt if no prompt found in database
+    console.warn('No active prompt found, using fallback prompt:', error);
+    prompt = `You are an expert investment research analyst. Analyze the following research content and extract structured insights.
 
 Research Title: ${artifact.title}
 Source Type: ${artifact.sourceType}
@@ -156,20 +135,14 @@ Extract the following information in JSON format:
 8. **relevantTickers**: Array of stock tickers mentioned (e.g., ["NVDA", "MSFT", "GOOGL"]). Only include if explicitly mentioned or clearly implied.
 
 Return ONLY valid JSON matching this structure. Be thorough but concise.`;
+  }
 
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: MAX_TOKENS,
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-  });
-
-  // Extract JSON from response
-  const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+  // Process prompt using AI provider
+  const response = await provider.process(prompt, { maxTokens: 4096 });
+  const responseText = response.content;
+  const inputTokens = response.inputTokens;
+  const outputTokens = response.outputTokens;
+  const cost = provider.calculateCost(inputTokens, outputTokens);
 
   // Try to parse JSON from response (handle code blocks)
   let jsonText = responseText;
@@ -188,7 +161,7 @@ Return ONLY valid JSON matching this structure. Be thorough but concise.`;
     const parsed = JSON.parse(jsonText) as StructuredInsight;
 
     // Validate and sanitize
-    return {
+    const insight: StructuredInsight = {
       summary: parsed.summary || 'No summary generated',
       keyThemes: Array.isArray(parsed.keyThemes) ? parsed.keyThemes.slice(0, 10) : [],
       keyClaims: Array.isArray(parsed.keyClaims) ? parsed.keyClaims.slice(0, 20) : [],
@@ -215,6 +188,8 @@ Return ONLY valid JSON matching this structure. Be thorough but concise.`;
             .filter((t) => /^[A-Z]{1,5}$/.test(t))
         : [],
     };
+
+    return { insight, inputTokens, outputTokens, cost };
   } catch (error) {
     console.error('Failed to parse AI response as JSON:', error);
     console.error('Response text:', responseText);
@@ -222,31 +197,14 @@ Return ONLY valid JSON matching this structure. Be thorough but concise.`;
   }
 }
 
-/**
- * Estimate token count (rough approximation)
- * Claude typically uses ~4 characters per token
- */
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
-
-/**
- * Calculate processing cost based on model and token usage
- */
-function calculateCost(model: string, inputTokens: number, outputTokens: number): number {
-  const pricing = PRICING[model as keyof typeof PRICING];
-  if (!pricing) {
-    console.warn(`No pricing info for model ${model}, using default`);
-    return 0;
-  }
-
-  return inputTokens * pricing.input + outputTokens * pricing.output;
-}
 
 /**
  * Batch process multiple artifacts
  */
-export async function batchProcessArtifacts(artifactIds: string[]): Promise<{
+export async function batchProcessArtifacts(
+  artifactIds: string[],
+  model: AIModel = getDefaultModel()
+): Promise<{
   successful: string[];
   failed: Array<{ id: string; error: string }>;
 }> {
@@ -264,7 +222,7 @@ export async function batchProcessArtifacts(artifactIds: string[]): Promise<{
         continue;
       }
 
-      await processResearchArtifact(artifact);
+      await processResearchArtifact(artifact, model);
       successful.push(artifactId);
     } catch (error) {
       failed.push({

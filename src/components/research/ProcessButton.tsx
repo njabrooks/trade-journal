@@ -1,12 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { Label } from '@/components/ui/label';
+import type { AIModel } from '@/lib/services/ai-providers';
 
 interface ProcessButtonProps {
   artifactId: string;
+}
+
+interface ModelOption {
+  value: AIModel;
+  label: string;
+  provider: string;
+  pricing: { input: number; output: number };
 }
 
 export function ProcessButton({ artifactId }: ProcessButtonProps) {
@@ -14,6 +23,26 @@ export function ProcessButton({ artifactId }: ProcessButtonProps) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [devAlternative, setDevAlternative] = useState<string | null>(null);
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [selectedModel, setSelectedModel] = useState<AIModel>('claude-sonnet-4');
+  const [showModelSelector, setShowModelSelector] = useState(false);
+
+  useEffect(() => {
+    // Load available models
+    async function loadModels() {
+      try {
+        const { getAvailableModels } = await import('@/lib/services/ai-providers');
+        const available = getAvailableModels();
+        setModels(available);
+        if (available.length > 0) {
+          setSelectedModel(available[0].value);
+        }
+      } catch (error) {
+        console.error('Error loading models:', error);
+      }
+    }
+    loadModels();
+  }, []);
 
   const handleProcess = async () => {
     setProcessing(true);
@@ -24,7 +53,7 @@ export function ProcessButton({ artifactId }: ProcessButtonProps) {
       const response = await fetch('/api/research/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ artifactId }),
+        body: JSON.stringify({ artifactId, model: selectedModel }),
       });
 
       const data = await response.json();
@@ -46,16 +75,47 @@ export function ProcessButton({ artifactId }: ProcessButtonProps) {
     }
   };
 
+  const selectedModelInfo = models.find((m) => m.value === selectedModel);
+
   return (
-    <div>
+    <div className="space-y-3">
+      {models.length > 1 && (
+        <div>
+          <Label htmlFor="model-select" className="text-sm font-medium mb-1.5 block">
+            AI Model
+          </Label>
+          <div className="flex items-center gap-2">
+            <select
+              id="model-select"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value as AIModel)}
+              disabled={processing}
+              className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+            >
+              {models.map((model) => (
+                <option key={model.value} value={model.value}>
+                  {model.label}
+                </option>
+              ))}
+            </select>
+            {selectedModelInfo && (
+              <span className="text-xs text-muted-foreground">
+                ${(selectedModelInfo.pricing.input * 1_000_000).toFixed(2)}/${
+                  (selectedModelInfo.pricing.output * 1_000_000).toFixed(2)
+                } per M tokens
+              </span>
+            )}
+          </div>
+        </div>
+      )}
       <Button onClick={handleProcess} disabled={processing}>
         {processing ? (
           <>
             <Spinner className="size-4 mr-2" />
-            Processing with AI...
+            Processing with {selectedModelInfo?.label || 'AI'}...
           </>
         ) : (
-          'Process with AI'
+          `Process with ${selectedModelInfo?.label || 'AI'}`
         )}
       </Button>
       {error && (
