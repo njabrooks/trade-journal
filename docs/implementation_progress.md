@@ -159,21 +159,150 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-## Phase 2: Research & Intelligence Layer 💡
+## Phase 2: Research & Intelligence Layer 🚧
 
 **Goal**: Structure research workflow and add AI-assisted research tools.
 
-**Status**: Future (post-Phase 1.7)
+**Status**: In Progress (Started 2025-12-22)
 **Scope**:
 
-- 💡 Research objects (notes, articles, data snapshots)
-- 💡 Evidence linking (research → theses/views)
+- 🚧 Research objects (notes, articles, data snapshots)
+- 🚧 Evidence linking (research → theses/views)
 - 💡 AI research assistant (summarization, synthesis)
 - 💡 Review workflows and evidence tracking
 - 💡 Research timeline and provenance
 
 **Estimated Effort**: 2-3 weeks
-**Dependencies**: Phase 1 complete
+**Dependencies**: Phase 1 complete ✅
+
+---
+
+## Phase 2.1: Database & Core Infrastructure ✅
+
+**Goal**: Establish database schema and query layer for research system.
+
+**Status**: Complete (2025-12-22)
+**Deliverables**:
+
+- ✅ Database tables created (SQL migration)
+  - `research_artifacts` - Raw research content with source metadata
+  - `research_insights` - AI-extracted structured knowledge
+  - `research_mappings` - Links research to hierarchy as evidence
+  - `research_processing_runs` - AI job tracking for cost monitoring
+
+- ✅ Drizzle schema updated (`/src/db/schema.ts`)
+  - Full type definitions for all 4 research tables
+  - JSONB fields for flexible structured data (key_claims, supporting_evidence)
+  - Proper foreign key relationships to hierarchy tables
+  - GIN indexes for array columns (tags, relevant_tickers)
+  - Check constraints for enums and data integrity
+
+- ✅ Query functions implemented (`/src/db/queries/research.ts`)
+  - CRUD operations for artifacts, insights, mappings, processing runs
+  - Pre-investment research query (insights without mappings)
+  - Research-to-hierarchy queries (by thesis, view, strategy)
+  - Evidence summary functions (supports/refutes counts)
+  - AI cost tracking and statistics
+
+- ✅ TypeScript build passing
+  - All types compile successfully
+  - No errors in schema or query functions
+
+**Notes**:
+- SQL migration file created at `/migrations/phase_2_1_research_tables.sql`
+- User needs to run migration in Supabase SQL Editor
+- Ready to proceed with Phase 2.2 (Research Ingestion)
+
+---
+
+## Phase 2.2: Research Ingestion ⏳
+
+**Goal**: Build API endpoints and ingestion service for research content.
+
+**Status**: Planned
+**Deliverables**:
+
+- ⏳ API routes for research artifacts
+  - POST `/api/research/artifacts` - Upload new research
+  - GET `/api/research/artifacts` - List artifacts with filters
+  - GET `/api/research/artifacts/[id]` - Get artifact details
+  - PATCH `/api/research/artifacts/[id]` - Update artifact
+  - DELETE `/api/research/artifacts/[id]` - Delete artifact
+
+- ⏳ Ingestion service
+  - Text content ingestion
+  - URL content fetching (articles, transcripts)
+  - File upload support (PDFs, docs)
+  - Metadata extraction
+  - Tag management
+
+- ⏳ Basic UI for research upload
+  - Simple form for manual research entry
+  - Bulk import from URLs
+  - Status tracking
+
+**Estimated Effort**: 2-3 days
+**Dependencies**: Phase 2.1 complete ✅
+
+---
+
+## Phase 2.3: AI Integration ⏳
+
+**Goal**: Integrate AI processing for research structuring.
+
+**Status**: Planned
+**Deliverables**:
+
+- ⏳ AI processing service
+  - Anthropic SDK integration
+  - Summarization function
+  - Key claims extraction
+  - Evidence classification
+  - Ticker/theme extraction
+
+- ⏳ Processing workflow
+  - Async job queue
+  - Status tracking via research_processing_runs
+  - Cost tracking
+  - Error handling and retries
+
+- ⏳ Human review workflow
+  - Review UI for AI-generated insights
+  - Approval/rejection flow
+  - Manual editing capabilities
+
+**Estimated Effort**: 3-4 days
+**Dependencies**: Phase 2.2 complete
+
+---
+
+## Phase 2.4: Research Mapping UI ⏳
+
+**Goal**: Build UI for linking research to hierarchy as evidence.
+
+**Status**: Planned
+**Deliverables**:
+
+- ⏳ Mapping interface
+  - Drag-and-drop or selection UI
+  - Evidence type classification (supports/refutes/neutral/exploratory)
+  - Confidence scoring
+  - Notes and context
+
+- ⏳ AI-suggested mappings
+  - Automatic suggestion based on content analysis
+  - User approval workflow
+  - Confidence scores
+
+- ⏳ Evidence visualization
+  - Show evidence counts on thesis/view detail pages
+  - Evidence timeline
+  - Supports vs refutes summary
+
+**Estimated Effort**: 2-3 days
+**Dependencies**: Phase 2.3 complete
+
+---
 
 ---
 
@@ -240,23 +369,23 @@ This document tracks the actual implementation progress of the transition from "
 
 ## Next Implementation Targets
 
-### Option A: Phase 1.6 (Create/Edit Forms) - RECOMMENDED
+### Option A: Phase 2.2 (Research Ingestion) - RECOMMENDED
+**Why**: Core workflow for research content ingestion (primary path for creating theses/views)
+**Impact**: Enables research-driven belief formation
+**Effort**: 2-3 days
+**Dependencies**: Phase 2.1 complete ✅
+
+### Option B: Phase 1.6 (Create/Edit Forms)
 **Why**: Removes dependency on Supabase console for CRUD operations
 **Impact**: Full self-service UI for managing theses/views
 **Effort**: 2-3 days
 **Dependencies**: None (Phase 1.5 complete)
 
-### Option B: Phase 1.7 (Tree Navigator)
+### Option C: Phase 1.7 (Tree Navigator)
 **Why**: Best user experience for navigating hierarchy
 **Impact**: Visual representation of entire belief structure
 **Effort**: 3-4 days
 **Dependencies**: Phase 1.5 complete ✅
-
-### Option C: Phase 2 (Research Infrastructure)
-**Why**: Next major architectural component per PRD
-**Impact**: Enables evidence-based belief evolution
-**Effort**: 2-3 weeks
-**Dependencies**: Phase 1 complete
 
 ---
 
@@ -295,6 +424,33 @@ This document tracks the actual implementation progress of the transition from "
 - ⏳ Search within tree works
 - ⏳ Keyboard shortcuts functional
 
+### Phase 2.1 ✅
+- ✅ SQL migration file created
+- ✅ Drizzle schema compiles without errors
+- ✅ Query functions implement all CRUD operations
+- ✅ TypeScript build passes
+- ⏳ User runs SQL migration in Supabase
+- ⏳ Test basic CRUD operations with database
+
+### Phase 2.2 (Pending)
+- ⏳ API routes respond correctly
+- ⏳ File uploads work
+- ⏳ URL content fetching works
+- ⏳ Metadata extraction accurate
+- ⏳ Research list page renders
+
+### Phase 2.3 (Pending)
+- ⏳ AI processing completes successfully
+- ⏳ Cost tracking accurate
+- ⏳ Human review workflow functional
+- ⏳ Insights quality meets standards
+
+### Phase 2.4 (Pending)
+- ⏳ Mapping UI works correctly
+- ⏳ AI suggestions accurate
+- ⏳ Evidence visualization clear
+- ⏳ Evidence counts update correctly
+
 ---
 
 ## Metrics & Success Criteria
@@ -313,10 +469,20 @@ This document tracks the actual implementation progress of the transition from "
 - ✅ User can bulk-assign thesis/view to multiple strategies in admin
 - ✅ User can edit individual strategy thesis/view assignments inline
 
+### Phase 2.1 Success Metrics (✅ Achieved)
+- ✅ All 4 research tables defined in SQL migration
+- ✅ Drizzle schema updated with complete type definitions
+- ✅ Query functions cover all CRUD operations
+- ✅ TypeScript build passes without errors
+- ✅ Evidence summary functions implemented
+- ✅ AI cost tracking functions implemented
+
 ### Future Success Metrics
 - Phase 1.6: User can create/edit theses/views without Supabase console
 - Phase 1.7: User can navigate entire hierarchy via tree view
-- Phase 2: User can attach research to beliefs and track evidence
+- Phase 2.2: User can upload research content via UI
+- Phase 2.3: AI successfully structures research into insights
+- Phase 2.4: User can link research to theses/views as evidence
 
 ---
 

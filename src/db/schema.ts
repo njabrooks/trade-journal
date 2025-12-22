@@ -791,3 +791,183 @@ export const flexQueryConfigs = pgTable('flex_query_configs', {
 
 export type FlexQueryConfig = typeof flexQueryConfigs.$inferSelect;
 export type NewFlexQueryConfig = typeof flexQueryConfigs.$inferInsert;
+
+// ============================================================================
+// Research & Intelligence Layer (Phase 2)
+// ============================================================================
+
+// Research Artifacts - Raw research content from various sources
+export const researchArtifacts = pgTable(
+  'research_artifacts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    // Source metadata
+    sourceType: text('source_type').notNull(),
+    sourceUrl: text('source_url'),
+    title: text('title').notNull(),
+    author: text('author'),
+    publishedDate: date('published_date'),
+
+    // Content
+    rawContent: text('raw_content').notNull(),
+    contentFormat: text('content_format').default('text'),
+
+    // File storage (for future uploads)
+    fileStoragePath: text('file_storage_path'),
+    fileName: text('file_name'),
+    fileSizeBytes: bigint('file_size_bytes', { mode: 'number' }),
+
+    // Processing status
+    status: text('status').notNull().default('raw'),
+    processingError: text('processing_error'),
+
+    // Metadata
+    metadata: jsonb('metadata'),
+    tags: text('tags').array(),
+
+    // Tracking
+    ingestedAt: timestamp('ingested_at', { withTimezone: true }).notNull().defaultNow(),
+    ingestedBy: uuid('ingested_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    sourceTypeIdx: index('idx_research_artifacts_source_type').on(table.sourceType),
+    statusIdx: index('idx_research_artifacts_status').on(table.status),
+    ingestedAtIdx: index('idx_research_artifacts_ingested_at').on(table.ingestedAt),
+    publishedDateIdx: index('idx_research_artifacts_published_date').on(table.publishedDate),
+    tagsIdx: index('idx_research_artifacts_tags').on(table.tags),
+  })
+);
+
+export type ResearchArtifact = typeof researchArtifacts.$inferSelect;
+export type NewResearchArtifact = typeof researchArtifacts.$inferInsert;
+
+// Research Insights - Structured knowledge extracted from research artifacts
+export const researchInsights = pgTable(
+  'research_insights',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    researchArtifactId: uuid('research_artifact_id')
+      .notNull()
+      .references(() => researchArtifacts.id, { onDelete: 'cascade' }),
+
+    // AI-generated structured content
+    summary: text('summary').notNull(),
+    keyThemes: text('key_themes').array(),
+    keyClaims: jsonb('key_claims'),
+    supportingEvidence: jsonb('supporting_evidence'),
+    counterEvidence: jsonb('counter_evidence'),
+
+    // Extracted metadata
+    timeHorizon: text('time_horizon'),
+    confidenceLevel: text('confidence_level'),
+    relevantTickers: text('relevant_tickers').array(),
+
+    // Processing metadata
+    structuredAt: timestamp('structured_at', { withTimezone: true }).notNull().defaultNow(),
+    structuredBy: text('structured_by').notNull(),
+    aiModel: text('ai_model'),
+    aiProcessingCostUsd: numeric('ai_processing_cost_usd', { precision: 10, scale: 6 }),
+
+    // Human review
+    humanReviewed: boolean('human_reviewed').default(false),
+    humanReviewNotes: text('human_review_notes'),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    artifactIdx: index('idx_research_insights_artifact').on(table.researchArtifactId),
+    timeHorizonIdx: index('idx_research_insights_time_horizon').on(table.timeHorizon),
+    structuredByIdx: index('idx_research_insights_structured_by').on(table.structuredBy),
+    tickersIdx: index('idx_research_insights_tickers').on(table.relevantTickers),
+  })
+);
+
+export type ResearchInsight = typeof researchInsights.$inferSelect;
+export type NewResearchInsight = typeof researchInsights.$inferInsert;
+
+// Research Mappings - Links research insights to hierarchy (theses, views, strategies, positions)
+export const researchMappings = pgTable(
+  'research_mappings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    researchInsightId: uuid('research_insight_id')
+      .notNull()
+      .references(() => researchInsights.id, { onDelete: 'cascade' }),
+
+    // Hierarchy target (exactly one must be set)
+    hierarchyLevel: text('hierarchy_level').notNull(),
+    macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, { onDelete: 'cascade' }),
+    assetViewId: uuid('asset_view_id').references(() => assetViews.id, { onDelete: 'cascade' }),
+    strategyId: uuid('strategy_id').references(() => strategies.id, { onDelete: 'cascade' }),
+    positionId: uuid('position_id').references(() => positions.id, { onDelete: 'cascade' }),
+
+    // Evidence relationship
+    mappingType: text('mapping_type').notNull(),
+    confidence: text('confidence'),
+
+    // Context
+    mappedAt: timestamp('mapped_at', { withTimezone: true }).notNull().defaultNow(),
+    mappedBy: text('mapped_by').notNull(),
+    notes: text('notes'),
+
+    // AI suggestion tracking
+    suggestedByAi: boolean('suggested_by_ai').default(false),
+    aiSuggestionScore: numeric('ai_suggestion_score', { precision: 3, scale: 2 }),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    insightIdx: index('idx_research_mappings_insight').on(table.researchInsightId),
+    macroThesisIdx: index('idx_research_mappings_macro_thesis').on(table.macroThesisId),
+    assetViewIdx: index('idx_research_mappings_asset_view').on(table.assetViewId),
+    strategyIdx: index('idx_research_mappings_strategy').on(table.strategyId),
+    positionIdx: index('idx_research_mappings_position').on(table.positionId),
+    typeIdx: index('idx_research_mappings_type').on(table.mappingType),
+    hierarchyLevelIdx: index('idx_research_mappings_hierarchy_level').on(table.hierarchyLevel),
+  })
+);
+
+export type ResearchMapping = typeof researchMappings.$inferSelect;
+export type NewResearchMapping = typeof researchMappings.$inferInsert;
+
+// Research Processing Runs - Track AI processing jobs
+export const researchProcessingRuns = pgTable(
+  'research_processing_runs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    researchArtifactId: uuid('research_artifact_id')
+      .notNull()
+      .references(() => researchArtifacts.id, { onDelete: 'cascade' }),
+
+    // Processing metadata
+    jobType: text('job_type').notNull(),
+    status: text('status').notNull().default('pending'),
+
+    // Timing
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+
+    // Results
+    result: jsonb('result'),
+    errorMessage: text('error_message'),
+
+    // Cost tracking
+    aiModel: text('ai_model'),
+    tokensUsed: integer('tokens_used'),
+    processingCostUsd: numeric('processing_cost_usd', { precision: 10, scale: 6 }),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    artifactIdx: index('idx_research_processing_artifact').on(table.researchArtifactId),
+    statusIdx: index('idx_research_processing_status').on(table.status),
+    startedAtIdx: index('idx_research_processing_started_at').on(table.startedAt),
+  })
+);
+
+export type ResearchProcessingRun = typeof researchProcessingRuns.$inferSelect;
+export type NewResearchProcessingRun = typeof researchProcessingRuns.$inferInsert;
