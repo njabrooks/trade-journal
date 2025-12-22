@@ -2,6 +2,7 @@ import { getAssetViewById, getLinkedStrategiesForAssetView } from '@/db/queries/
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { EvidenceDisplay } from '@/components/research/EvidenceDisplay';
 
 interface AssetViewDetailPageProps {
   params: Promise<{ id: string }>;
@@ -117,6 +118,9 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
             </div>
           )}
         </div>
+
+        {/* Evidence & Research */}
+        <EvidenceDisplay hierarchyType="assetView" hierarchyId={id} />
 
         {/* Linked Strategies */}
         <div className="bg-white rounded-lg border border-slate-200 p-6">

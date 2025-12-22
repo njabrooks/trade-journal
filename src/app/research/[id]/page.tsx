@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ProcessButton } from '@/components/research/ProcessButton';
 import { InsightReview } from '@/components/research/InsightReview';
+import { MappingsSection } from '@/components/research/MappingsSection';
 
 interface ResearchDetailPageProps {
   params: Promise<{ id: string }>;
@@ -112,6 +113,9 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
 
         {/* AI-Generated Insight */}
         {insight && <InsightReview insight={insight} artifactId={artifact.id} />}
+
+        {/* Research Mappings */}
+        <MappingsSection insightId={insight?.id || null} artifactStatus={artifact.status} />
 
         {/* Error Display */}
         {artifact.status === 'error' && artifact.processingError && (

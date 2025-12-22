@@ -2,6 +2,7 @@ import { getMacroThesisById, getLinkedAssetViewsForThesis, getLinkedStrategiesFo
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { EvidenceDisplay } from '@/components/research/EvidenceDisplay';
 
 interface ThesisDetailPageProps {
   params: Promise<{ id: string }>;
@@ -71,6 +72,8 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
             </pre>
           </div>
         ) : null}
+
+        <EvidenceDisplay hierarchyType="thesis" hierarchyId={id} />
 
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <h3 className="text-lg font-semibold mb-4">Linked Asset Views ({linkedViews.length})</h3>
