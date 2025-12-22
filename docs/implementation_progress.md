@@ -2,6 +2,7 @@
 
 **Master Plan**: See [`system_architecture_transition_plan.md`](./system_architecture_transition_plan.md)
 **Last Updated**: 2025-12-22
+**AI Enhancements Plan**: See [`ai_research_enhancements_plan.md`](./ai_research_enhancements_plan.md)
 
 ---
 
@@ -396,6 +397,124 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
+## Phase 2.5: AI Research Enhancements 🚧
+
+**Goal**: Enhance AI research processing with multi-model support, intelligent hierarchy proposals, and editable prompt management.
+
+**Status**: In Progress (Phase 0 started 2025-12-22)
+**Master Plan**: See [`ai_research_enhancements_plan.md`](./ai_research_enhancements_plan.md)
+
+**Scope**:
+- ✅ Phase 0: Prompt Management System (editable prompts for all AI workflows) - COMPLETE
+- ✅ Phase 1: Multi-Model AI Support (Claude, ChatGPT, Gemini) - COMPLETE
+- ⏳ Phase 2: Hierarchy Analysis & Recommendations (AI proposes new theses/views)
+- ⏳ Phase 3: Recommendation UI (accept/reject AI recommendations)
+
+---
+
+### Phase 2.5.0: Prompt Management System ✅
+
+**Goal**: Make all AI prompts editable and versioned so users can iterate on prompt quality.
+
+**Status**: Complete (2025-12-22)
+**Deliverables**:
+
+- ✅ Database schema
+  - `ai_prompts` table with versioning support
+  - Track active/draft/archived status
+  - Template variable support
+  - SQL migration file created (`migrations/phase_2_5_0_ai_prompts_table.sql`)
+
+- ✅ Query functions
+  - `/src/db/queries/prompts.ts` - CRUD operations for prompts
+  - Get active prompt by type
+  - Version history queries
+  - Usage tracking
+
+- ✅ Prompt manager service
+  - `/src/lib/services/prompt-manager.ts` - Prompt resolution and rendering
+  - Template variable replacement
+  - Default prompt fallback
+
+- ✅ API routes
+  - `/api/prompts` - GET (list), POST (create)
+  - `/api/prompts/[id]` - GET (single), PATCH (update), DELETE
+  - `/api/prompts/[id]/test` - Test prompt against sample data
+  - `/api/prompts/[id]/activate` - Set as active prompt
+
+- ✅ Admin UI
+  - `/admin/prompts` - Prompt library page
+  - Prompt editor with template variable support
+  - Test functionality with sample data
+  - Create/edit/activate prompts
+  - View prompt details (variables, usage, version)
+
+- ✅ Integration
+  - Refactor `ai-research.ts` to use prompts from DB
+  - Fallback to hardcoded prompt if no active prompt found
+  - Default prompts seeded via Supabase MCP
+  - Database table created and populated
+
+**Estimated Effort**: 2-3 days
+**Dependencies**: None
+
+---
+
+### Phase 2.5.1: Multi-Model AI Support ✅
+
+**Goal**: Support multiple AI models (Claude, ChatGPT, Gemini) with model selection UI.
+
+**Status**: Complete (2025-12-22)
+**Deliverables**:
+
+- ✅ Abstract AI provider interface
+- ✅ OpenAI provider implementation
+- ✅ Google Gemini provider implementation
+- ✅ Model selector in processing UI
+- ✅ Cost tracking per model
+- ✅ Provider factory for model selection
+
+**Estimated Effort**: 2-3 days
+**Dependencies**: Phase 2.5.0 (prompt management) ✅
+
+---
+
+### Phase 2.5.2: Hierarchy Analysis & Recommendations ⏳
+
+**Goal**: AI analyzes insights against existing theses/views and proposes new items or links.
+
+**Status**: Planned
+**Deliverables**:
+
+- ⏳ Hierarchy analysis service
+- ⏳ Recommendations table schema
+- ⏳ AI recommendation generation
+- ⏳ Confidence scoring
+- ⏳ Analysis API endpoint
+
+**Estimated Effort**: 2-3 days
+**Dependencies**: Phase 2.5.0, Phase 2.5.1
+
+---
+
+### Phase 2.5.3: Recommendation UI ⏳
+
+**Goal**: UI for viewing and accepting/rejecting AI recommendations.
+
+**Status**: Planned
+**Deliverables**:
+
+- ⏳ Recommendations panel component
+- ⏳ Recommendation cards with actions
+- ⏳ Auto-create thesis/view from recommendation
+- ⏳ Pre-filled mapping dialogs
+- ⏳ Recommendation status tracking
+
+**Estimated Effort**: 2-3 days
+**Dependencies**: Phase 2.5.2
+
+---
+
 ## Phase 3: Enhanced Analytics & Metrics 💡
 
 **Goal**: Advanced performance attribution and regime analysis.
@@ -463,21 +582,28 @@ This document tracks the actual implementation progress of the transition from "
 
 The system now has a full research workflow: ingestion → AI structuring → human review → evidence linking to belief hierarchy.
 
-### Option A: Phase 1.6 (Create/Edit Forms) - RECOMMENDED
+### Option A: Phase 2.5.1 (Multi-Model AI Support) - IN PROGRESS 🚧
+**Why**: Support multiple AI models (Claude, ChatGPT, Gemini) for flexibility and cost optimization
+**Impact**: Users can choose the best model for their needs, compare outputs, and optimize costs
+**Effort**: 2-3 days
+**Dependencies**: Phase 2.5.0 complete ✅
+**Status**: Starting implementation
+
+### Option B: Phase 1.6 (Create/Edit Forms) - RECOMMENDED
 **Why**: Removes dependency on Supabase console for CRUD operations on theses/views
 **Impact**: Full self-service UI for managing theses/views without direct database access
 **Effort**: 2-3 days
 **Dependencies**: None (Phase 1.5 complete ✅)
 **Status**: High priority for user experience
 
-### Option B: Phase 1.7 (Tree Navigator)
+### Option C: Phase 1.7 (Tree Navigator)
 **Why**: Best user experience for navigating the entire belief hierarchy
 **Impact**: Visual representation of entire belief structure (theses → views → strategies)
 **Effort**: 3-4 days
 **Dependencies**: Phase 1.5 complete ✅
 **Status**: Nice-to-have UX enhancement
 
-### Option C: Phase 3 (Enhanced Analytics & Metrics)
+### Option D: Phase 3 (Enhanced Analytics & Metrics)
 **Why**: Performance attribution and regime analysis
 **Impact**: Understand which theses/views are driving performance
 **Effort**: 2-3 weeks
@@ -556,6 +682,15 @@ The system now has a full research workflow: ingestion → AI structuring → hu
 - ✅ Delete mapping functionality works
 - ✅ TypeScript build passes with no errors
 - ⏳ End-to-end testing with real research and hierarchy linking
+
+### Phase 2.5.0 ✅
+- ✅ Database schema for ai_prompts table (created via Supabase MCP)
+- ✅ Query functions implemented
+- ✅ Prompt manager service created
+- ✅ API routes functional
+- ✅ Admin UI built and functional
+- ✅ AI services refactored to use prompts from DB
+- ✅ Default prompts seeded via Supabase MCP
 
 ---
 

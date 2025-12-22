@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Target,
   Library,
+  Sparkles,
 } from "lucide-react";
 import {
   Sidebar,
@@ -43,6 +44,7 @@ const ADMIN_NAV = [
   { href: "/admin/triage", label: "Triage Rules", icon: AlertTriangle, id: "admin-triage" },
   { href: "/admin/accounts", label: "Accounts", icon: Users, id: "admin-accounts" },
   { href: "/admin/ingestion/flex", label: "Ingestion", icon: Database, id: "admin-ingestion" },
+  { href: "/admin/prompts", label: "AI Prompts", icon: Sparkles, id: "admin-prompts" },
   { href: "/admin/recompute", label: "Recompute", icon: Settings, id: "admin-recompute" },
   { href: "/admin/processes", label: "Processes", icon: Activity, id: "admin-processes" },
 ] as const;

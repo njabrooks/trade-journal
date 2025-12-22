@@ -16,6 +16,7 @@ import {
   unique,
   index,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
 
 // ============================================================================
@@ -971,3 +972,49 @@ export const researchProcessingRuns = pgTable(
 
 export type ResearchProcessingRun = typeof researchProcessingRuns.$inferSelect;
 export type NewResearchProcessingRun = typeof researchProcessingRuns.$inferInsert;
+
+// AI Prompts - Editable prompts for AI research processing
+export const aiPrompts = pgTable(
+  'ai_prompts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    // Prompt identification
+    promptType: text('prompt_type').notNull(), // 'insight_extraction' | 'hierarchy_analysis' | 'recommendation_generation'
+    name: text('name').notNull(), // User-friendly name
+    description: text('description'), // What this prompt does
+
+    // Prompt content
+    content: text('content').notNull(), // The actual prompt template
+    variables: text('variables').array(), // Available template variables
+
+    // Versioning
+    version: integer('version').notNull().default(1),
+    parentVersionId: uuid('parent_version_id'), // Previous version (self-reference handled in migration)
+
+    // Status
+    status: text('status').notNull().default('draft'), // 'active' | 'draft' | 'archived'
+    isDefault: boolean('is_default').notNull().default(false), // System default prompt
+
+    // Metadata
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: text('created_by'), // User ID (nullable for system prompts)
+
+    // Usage tracking
+    usageCount: integer('usage_count').default(0), // How many times this prompt has been used
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  },
+  (table) => ({
+    typeStatusIdx: index('idx_prompts_type_status').on(table.promptType, table.status),
+    defaultIdx: index('idx_prompts_default').on(table.promptType, table.isDefault).where(
+      sql`is_default = true`
+    ),
+    activeIdx: index('idx_prompts_active').on(table.promptType, table.status).where(
+      sql`status = 'active'`
+    ),
+  })
+);
+
+export type AIPrompt = typeof aiPrompts.$inferSelect;
+export type NewAIPrompt = typeof aiPrompts.$inferInsert;
