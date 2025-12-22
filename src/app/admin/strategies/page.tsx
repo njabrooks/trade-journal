@@ -73,6 +73,14 @@ function StrategiesPageContent() {
   const [confirming, setConfirming] = useState(false);
   const [merging, setMerging] = useState(false);
   const [recomputingStatuses, setRecomputingStatuses] = useState(false);
+  const [bulkAssignThesisId, setBulkAssignThesisId] = useState<string>('');
+  const [bulkAssignViewId, setBulkAssignViewId] = useState<string>('');
+  const [assigningBulk, setAssigningBulk] = useState(false);
+  const [editingHierarchyId, setEditingHierarchyId] = useState<string | null>(null);
+  const [hierarchyEditValues, setHierarchyEditValues] = useState<{
+    macroThesisId: string;
+    assetViewId: string;
+  } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -488,6 +496,80 @@ function StrategiesPageContent() {
     }
   };
 
+  const handleBulkAssignHierarchy = async () => {
+    if (mergeSelection.size === 0 || (!bulkAssignThesisId && !bulkAssignViewId)) return;
+
+    setAssigningBulk(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const strategyIds = Array.from(mergeSelection);
+      for (const strategyId of strategyIds) {
+        const response = await fetch('/api/strategies', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: strategyId,
+            macroThesisId: bulkAssignThesisId || null,
+            assetViewId: bulkAssignViewId || null,
+          }),
+        });
+
+        if (!response.ok) throw new Error('Failed to assign hierarchy');
+      }
+
+      await loadData();
+      setMergeSelection(new Set());
+      setBulkAssignThesisId('');
+      setBulkAssignViewId('');
+      setSuccess(`Assigned hierarchy to ${strategyIds.length} strategy(ies)`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to assign hierarchy');
+    } finally {
+      setAssigningBulk(false);
+    }
+  };
+
+  const startEditingHierarchy = (strategy: Strategy) => {
+    setEditingHierarchyId(strategy.id);
+    setHierarchyEditValues({
+      macroThesisId: strategy.macroThesisId || '',
+      assetViewId: strategy.assetViewId || '',
+    });
+  };
+
+  const cancelEditingHierarchy = () => {
+    setEditingHierarchyId(null);
+    setHierarchyEditValues(null);
+  };
+
+  const saveHierarchyEdit = async () => {
+    if (!editingHierarchyId || !hierarchyEditValues) return;
+
+    try {
+      const response = await fetch('/api/strategies', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingHierarchyId,
+          macroThesisId: hierarchyEditValues.macroThesisId || null,
+          assetViewId: hierarchyEditValues.assetViewId || null,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update hierarchy');
+
+      setSuccess('Hierarchy updated successfully');
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update hierarchy');
+    } finally {
+      setEditingHierarchyId(null);
+      setHierarchyEditValues(null);
+    }
+  };
+
   // Combine all strategies (except merged) into one list, sorted by status
   // Status indicates: 'draft' = auto-derived/suggested, 'open'/'closed' = confirmed
   const allStrategies = strategies
@@ -850,6 +932,51 @@ function StrategiesPageContent() {
               </button>
             </div>
           )}
+          {mergeSelection.size >= 1 && (
+            <div className="flex items-center gap-3 mb-3 text-sm bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <span className="font-medium text-gray-700">Assign to:</span>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-600">Thesis:</label>
+                <select
+                  value={bulkAssignThesisId}
+                  onChange={(e) => setBulkAssignThesisId(e.target.value)}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  <option value="">None</option>
+                  {macroTheses.map((thesis) => (
+                    <option key={thesis.id} value={thesis.id}>
+                      {thesis.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-600">View:</label>
+                <select
+                  value={bulkAssignViewId}
+                  onChange={(e) => setBulkAssignViewId(e.target.value)}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  <option value="">None</option>
+                  {assetViews.map((view) => (
+                    <option key={view.id} value={view.id}>
+                      {view.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={handleBulkAssignHierarchy}
+                disabled={(!bulkAssignThesisId && !bulkAssignViewId) || assigningBulk}
+                className="bg-blue-600 text-white px-4 py-1 rounded-md hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
+              >
+                {assigningBulk && <Spinner className="size-4" />}
+                {assigningBulk
+                  ? 'Assigning...'
+                  : `Assign to ${mergeSelection.size} ${mergeSelection.size === 1 ? 'strategy' : 'strategies'}`}
+              </button>
+            </div>
+          )}
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -884,6 +1011,12 @@ function StrategiesPageContent() {
                     Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thesis
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    View
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -897,7 +1030,7 @@ function StrategiesPageContent() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {allStrategies.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
                       No strategies yet. Run a recompute to auto-generate strategies or create one manually.
                     </td>
                   </tr>
@@ -1033,6 +1166,62 @@ function StrategiesPageContent() {
                                 </span>
                               )}
                             </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {editingHierarchyId === strategy.id ? (
+                                <select
+                                  value={hierarchyEditValues?.macroThesisId ?? ''}
+                                  onChange={(e) =>
+                                    setHierarchyEditValues((prev) =>
+                                      prev ? { ...prev, macroThesisId: e.target.value } : prev
+                                    )
+                                  }
+                                  className="border rounded px-2 py-1 text-xs w-full"
+                                >
+                                  <option value="">None</option>
+                                  {macroTheses.map((thesis) => (
+                                    <option key={thesis.id} value={thesis.id}>
+                                      {thesis.title}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span
+                                  className="cursor-pointer hover:text-blue-600"
+                                  onClick={() => startEditingHierarchy(strategy)}
+                                  title="Click to edit thesis/view"
+                                >
+                                  {macroTheses.find((t) => t.id === strategy.macroThesisId)?.title || '—'}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {editingHierarchyId === strategy.id ? (
+                                <select
+                                  value={hierarchyEditValues?.assetViewId ?? ''}
+                                  onChange={(e) =>
+                                    setHierarchyEditValues((prev) =>
+                                      prev ? { ...prev, assetViewId: e.target.value } : prev
+                                    )
+                                  }
+                                  className="border rounded px-2 py-1 text-xs w-full"
+                                >
+                                  <option value="">None</option>
+                                  {assetViews.map((view) => (
+                                    <option key={view.id} value={view.id}>
+                                      {view.title}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span
+                                  className="cursor-pointer hover:text-blue-600"
+                                  onClick={() => startEditingHierarchy(strategy)}
+                                  title="Click to edit thesis/view"
+                                >
+                                  {assetViews.find((v) => v.id === strategy.assetViewId)?.title || '—'}
+                                </span>
+                              )}
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
                                 strategy.status === 'open'
@@ -1052,7 +1241,22 @@ function StrategiesPageContent() {
                                 : '-'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm flex items-center gap-3">
-                              {isEditing ? (
+                              {editingHierarchyId === strategy.id ? (
+                                <>
+                                  <button
+                                    onClick={saveHierarchyEdit}
+                                    className="text-green-600 hover:text-green-800 text-xs"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={cancelEditingHierarchy}
+                                    className="text-gray-500 hover:text-gray-700 text-xs"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : isEditing ? (
                                 <>
                                   <button
                                     onClick={saveEditing}

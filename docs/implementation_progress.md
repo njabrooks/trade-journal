@@ -1,7 +1,7 @@
 # System Architecture Transition: Implementation Progress
 
 **Master Plan**: See [`system_architecture_transition_plan.md`](./system_architecture_transition_plan.md)
-**Last Updated**: 2025-12-21
+**Last Updated**: 2025-12-22
 
 ---
 
@@ -74,11 +74,11 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-## Phase 1.5: Hierarchy Linking UI ✅ (mostly complete)
+## Phase 1.5: Hierarchy Linking UI ✅
 
 **Goal**: Enable users to link strategies to theses/views directly in the UI.
 
-**Status**: Mostly Complete (core functionality done, bulk operations pending)
+**Status**: Complete (2025-12-22)
 **Deliverables**:
 
 - ✅ Strategy form enhancements
@@ -94,9 +94,9 @@ This document tracks the actual implementation progress of the transition from "
   - Filter strategies by macro thesis on `/strategies` page
   - Filter strategies by asset view on `/strategies` page
 
-- ⏳ Backfilling support
-  - Bulk-link existing strategies to newly created theses/views
-  - UI for reassigning strategies to different theses/views
+- ✅ Backfilling support
+  - Bulk-link existing strategies to newly created theses/views via checkbox selection in admin
+  - Inline editing UI for reassigning strategies to different theses/views (click thesis/view cells to edit)
 
 **Estimated Effort**: 1-2 days
 **Dependencies**: None (Phase 1.0 complete)
@@ -240,25 +240,23 @@ This document tracks the actual implementation progress of the transition from "
 
 ## Next Implementation Targets
 
-### Option A: Phase 1.5 (Hierarchy Linking UI)
-**Why**: Enables users to start building the hierarchy immediately
-**Impact**: Makes the belief system actionable
-**Effort**: 1-2 days
-
-### Option B: Phase 1.6 (Create/Edit Forms)
-**Why**: Removes dependency on Supabase console for CRUD
-**Impact**: Full UI for managing theses/views
+### Option A: Phase 1.6 (Create/Edit Forms) - RECOMMENDED
+**Why**: Removes dependency on Supabase console for CRUD operations
+**Impact**: Full self-service UI for managing theses/views
 **Effort**: 2-3 days
+**Dependencies**: None (Phase 1.5 complete)
 
-### Option C: Phase 1.7 (Tree Navigator)
+### Option B: Phase 1.7 (Tree Navigator)
 **Why**: Best user experience for navigating hierarchy
 **Impact**: Visual representation of entire belief structure
-**Effort**: 3-4 days (requires 1.5 first)
+**Effort**: 3-4 days
+**Dependencies**: Phase 1.5 complete ✅
 
-### Option D: Phase 2 (Research Infrastructure)
-**Why**: Next major architectural component
+### Option C: Phase 2 (Research Infrastructure)
+**Why**: Next major architectural component per PRD
 **Impact**: Enables evidence-based belief evolution
 **Effort**: 2-3 weeks
+**Dependencies**: Phase 1 complete
 
 ---
 
@@ -275,12 +273,13 @@ This document tracks the actual implementation progress of the transition from "
 - ✅ TypeScript build passes
 - ✅ Development mode works
 
-### Phase 1.5 (Pending)
-- ⏳ Strategy form shows thesis/view dropdowns
-- ⏳ Linking saves correctly to database
-- ⏳ Detail pages show linked items
-- ⏳ Filters work on strategies page
-- ⏳ Unlinking works correctly
+### Phase 1.5 ✅
+- ✅ Strategy form shows thesis/view dropdowns
+- ✅ Linking saves correctly to database
+- ✅ Detail pages show linked items
+- ✅ Filters work on strategies page
+- ✅ Bulk assignment UI functional in admin
+- ✅ Inline editing of thesis/view assignments works
 
 ### Phase 1.6 (Pending)
 - ⏳ Create forms validate correctly
@@ -308,8 +307,13 @@ This document tracks the actual implementation progress of the transition from "
 - ✅ Seed data successfully inserted
 - ✅ User can view theses and asset views in UI
 
+### Phase 1.5 Success Metrics (✅ Achieved)
+- ✅ User can link strategies to theses/views via strategy creation form
+- ✅ User can filter strategies by thesis/view on strategies list page
+- ✅ User can bulk-assign thesis/view to multiple strategies in admin
+- ✅ User can edit individual strategy thesis/view assignments inline
+
 ### Future Success Metrics
-- Phase 1.5: User can link strategies to theses/views via UI
 - Phase 1.6: User can create/edit theses/views without Supabase console
 - Phase 1.7: User can navigate entire hierarchy via tree view
 - Phase 2: User can attach research to beliefs and track evidence
