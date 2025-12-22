@@ -215,31 +215,47 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-## Phase 2.2: Research Ingestion ⏳
+## Phase 2.2: Research Ingestion ✅
 
 **Goal**: Build API endpoints and ingestion service for research content.
 
-**Status**: Planned
+**Status**: Complete (2025-12-22)
 **Deliverables**:
 
-- ⏳ API routes for research artifacts
-  - POST `/api/research/artifacts` - Upload new research
-  - GET `/api/research/artifacts` - List artifacts with filters
-  - GET `/api/research/artifacts/[id]` - Get artifact details
-  - PATCH `/api/research/artifacts/[id]` - Update artifact
+- ✅ API routes for research artifacts
+  - POST `/api/research/artifacts` - Upload new research with validation
+  - GET `/api/research/artifacts` - List artifacts with filters (status, sourceType, tags)
+  - GET `/api/research/artifacts?id=xyz` - Get artifact details
+  - PATCH `/api/research/artifacts` - Update artifact with validation
   - DELETE `/api/research/artifacts/[id]` - Delete artifact
 
-- ⏳ Ingestion service
-  - Text content ingestion
-  - URL content fetching (articles, transcripts)
-  - File upload support (PDFs, docs)
-  - Metadata extraction
-  - Tag management
+- ✅ Ingestion service (`/src/lib/ingestion/research.ts`)
+  - `ingestText()` - Manual text content ingestion
+  - `ingestFromUrl()` - URL content fetching with HTML parsing
+  - `extractMetadata()` - Word count, reading time, content analysis
+  - `validateResearchData()` - Input validation and error handling
+  - Title/author extraction from HTML metadata
+  - Content format detection (HTML vs plain text)
 
-- ⏳ Basic UI for research upload
-  - Simple form for manual research entry
-  - Bulk import from URLs
-  - Status tracking
+- ✅ UI for research upload
+  - Research library list page (`/research`)
+  - Upload form (`/research/upload`) with two modes:
+    - Manual text entry with rich metadata
+    - URL fetching with auto-extraction
+  - Tag management (comma-separated)
+  - Source type selection (article, transcript, note, report, video, manual)
+  - Status badges and filtering
+  - Navigation integration (Library icon in main sidebar)
+
+- ✅ Supporting infrastructure
+  - Label UI component created
+  - NavKey type updated for "research"
+  - TypeScript build passing
+
+**Notes**:
+- URL fetching performs basic HTML parsing and text extraction
+- File upload support (PDFs, docs) deferred to future enhancement
+- Ready to proceed with Phase 2.3 (AI Integration)
 
 **Estimated Effort**: 2-3 days
 **Dependencies**: Phase 2.1 complete ✅
@@ -369,11 +385,11 @@ This document tracks the actual implementation progress of the transition from "
 
 ## Next Implementation Targets
 
-### Option A: Phase 2.2 (Research Ingestion) - RECOMMENDED
-**Why**: Core workflow for research content ingestion (primary path for creating theses/views)
-**Impact**: Enables research-driven belief formation
-**Effort**: 2-3 days
-**Dependencies**: Phase 2.1 complete ✅
+### Option A: Phase 2.3 (AI Integration) - RECOMMENDED
+**Why**: Completes research workflow with AI-assisted structuring (primary value proposition)
+**Impact**: Transforms raw research into actionable insights automatically
+**Effort**: 3-4 days
+**Dependencies**: Phase 2.1 ✅, Phase 2.2 ✅
 
 ### Option B: Phase 1.6 (Create/Edit Forms)
 **Why**: Removes dependency on Supabase console for CRUD operations
@@ -432,12 +448,14 @@ This document tracks the actual implementation progress of the transition from "
 - ⏳ User runs SQL migration in Supabase
 - ⏳ Test basic CRUD operations with database
 
-### Phase 2.2 (Pending)
-- ⏳ API routes respond correctly
-- ⏳ File uploads work
-- ⏳ URL content fetching works
-- ⏳ Metadata extraction accurate
-- ⏳ Research list page renders
+### Phase 2.2 ✅
+- ✅ API routes respond correctly
+- ✅ URL content fetching works
+- ✅ Metadata extraction accurate
+- ✅ Research list page renders
+- ✅ Upload form validates inputs
+- ✅ Navigation integration works
+- ⏳ End-to-end testing with real research content
 
 ### Phase 2.3 (Pending)
 - ⏳ AI processing completes successfully
@@ -477,10 +495,17 @@ This document tracks the actual implementation progress of the transition from "
 - ✅ Evidence summary functions implemented
 - ✅ AI cost tracking functions implemented
 
+### Phase 2.2 Success Metrics (✅ Achieved)
+- ✅ User can upload text research via UI
+- ✅ User can fetch research from URLs
+- ✅ Research library page displays all artifacts
+- ✅ Metadata (tags, author, source type) can be managed
+- ✅ API routes functional with validation
+- ✅ TypeScript build passes
+
 ### Future Success Metrics
 - Phase 1.6: User can create/edit theses/views without Supabase console
 - Phase 1.7: User can navigate entire hierarchy via tree view
-- Phase 2.2: User can upload research content via UI
 - Phase 2.3: AI successfully structures research into insights
 - Phase 2.4: User can link research to theses/views as evidence
 

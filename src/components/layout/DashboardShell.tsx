@@ -10,6 +10,7 @@ export type NavKey =
   | "strategies"
   | "triage"
   | "blotter"
+  | "research"
   | "admin-strategies"
   | "admin-playbook"
   | "admin-triage"

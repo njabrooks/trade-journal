@@ -14,6 +14,7 @@ import {
   Activity,
   TrendingUp,
   Target,
+  Library,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,6 +34,7 @@ const MAIN_NAV = [
   { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
   { href: "/blotter", label: "Blotter", icon: BookOpen, id: "blotter" },
+  { href: "/research", label: "Research", icon: Library, id: "research" },
 ] as const;
 
 const ADMIN_NAV = [
