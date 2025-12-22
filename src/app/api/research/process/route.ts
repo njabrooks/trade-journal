@@ -69,10 +69,31 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error processing research artifact:', error);
+
+    // Check if it's an API key error
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const isAuthError = errorMessage.includes('authentication') || errorMessage.includes('apiKey');
+
+    if (isAuthError) {
+      const isDev = process.env.NODE_ENV === 'development';
+      return NextResponse.json(
+        {
+          error: 'Anthropic API key not configured',
+          message: isDev
+            ? 'Missing ANTHROPIC_API_KEY in .env.local. For free processing in dev mode, use: npx tsx scripts/process-research-with-claude.ts'
+            : 'ANTHROPIC_API_KEY environment variable is not set. Please configure your Anthropic API key.',
+          devAlternative: isDev
+            ? 'Run "npx tsx scripts/process-research-with-claude.ts" to process research for free using Claude Code'
+            : null,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: 'Failed to process research artifact',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: errorMessage,
       },
       { status: 500 }
     );
