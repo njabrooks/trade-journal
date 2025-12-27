@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPromptById, setPromptAsActive } from '@/db/queries/prompts';
+import { getPromptById, setPromptAsActive, type PromptType } from '@/db/queries/prompts';
 
 /**
  * POST /api/prompts/[id]/activate
@@ -17,7 +17,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Prompt not found' }, { status: 404 });
     }
 
-    await setPromptAsActive(id, prompt.promptType);
+    await setPromptAsActive(id, prompt.promptType as PromptType);
 
     return NextResponse.json({
       success: true,

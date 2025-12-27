@@ -857,6 +857,11 @@ export const researchInsights = pgTable(
     // AI-generated structured content
     summary: text('summary').notNull(),
     keyThemes: text('key_themes').array(),
+
+    // NEW: Hierarchical Toulmin claim structure (from local Claude workflow)
+    claimsStructure: jsonb('claims_structure'),
+
+    // DEPRECATED: Legacy flat claim structure (kept for migration compatibility)
     keyClaims: jsonb('key_claims'),
     supportingEvidence: jsonb('supporting_evidence'),
     counterEvidence: jsonb('counter_evidence'),
@@ -884,6 +889,8 @@ export const researchInsights = pgTable(
     timeHorizonIdx: index('idx_research_insights_time_horizon').on(table.timeHorizon),
     structuredByIdx: index('idx_research_insights_structured_by').on(table.structuredBy),
     tickersIdx: index('idx_research_insights_tickers').on(table.relevantTickers),
+    // GIN index for efficient JSONB queries on claims_structure
+    claimsStructureIdx: index('idx_research_insights_claims_structure').on(table.claimsStructure),
   })
 );
 

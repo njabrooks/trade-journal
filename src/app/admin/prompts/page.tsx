@@ -179,7 +179,7 @@ export default function PromptsPage() {
     <DashboardShell
       title="AI Prompts"
       subtitle="Manage prompts for AI research processing"
-      navKey="admin-prompts"
+      activeNav="research"
     >
       <div className="space-y-6">
         {/* Filters and Actions */}

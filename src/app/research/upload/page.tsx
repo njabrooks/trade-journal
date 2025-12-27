@@ -113,6 +113,72 @@ export default function ResearchUploadPage() {
       activeNav="research"
     >
       <div className="max-w-3xl">
+        {/* Workflow Notice */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+          <div className="flex gap-4">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-6 w-6 text-blue-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                For Raw Research Only
+              </h3>
+              <p className="text-sm text-blue-800 mb-3">
+                This page is for uploading <strong>raw, unprocessed research</strong> (transcripts,
+                articles, reports). For the full workflow with forensic claims extraction:
+              </p>
+              <ol className="text-sm text-blue-800 space-y-2 ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold">1.</span>
+                  <span>
+                    Upload raw content here OR save locally
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold">2.</span>
+                  <span>
+                    Process with{' '}
+                    <code className="px-1.5 py-0.5 bg-blue-100 rounded text-xs font-mono">
+                      /process-transcript
+                    </code>{' '}
+                    in local Claude Code
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold">3.</span>
+                  <span>
+                    Re-upload audit file with{' '}
+                    <code className="px-1.5 py-0.5 bg-blue-100 rounded text-xs font-mono">
+                      /finalize-for-upload
+                    </code>
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold">4.</span>
+                  <span>
+                    Browse claims and convert to theses/views in the app
+                  </span>
+                </li>
+              </ol>
+              <p className="text-xs text-blue-700 mt-3">
+                Claims extraction provides structured Toulmin arguments for better analysis.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Upload Method */}
           <div className="bg-white rounded-lg border border-slate-200 p-6">

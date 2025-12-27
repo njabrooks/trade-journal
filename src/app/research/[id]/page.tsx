@@ -3,11 +3,12 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ProcessButton } from '@/components/research/ProcessButton';
-import { InsightReview } from '@/components/research/InsightReview';
-import { MappingsSection } from '@/components/research/MappingsSection';
-import { AnalyzeHierarchyButton } from '@/components/research/AnalyzeHierarchyButton';
-import { HierarchyRecommendationsPanel } from '@/components/research/HierarchyRecommendationsPanel';
+import { WorkflowStatusCard } from '@/components/research/WorkflowStatusCard';
+import { EmptyClaimsState } from '@/components/research/EmptyClaimsState';
+import { ClaimsBrowser } from '@/components/research/ClaimsBrowser';
+import type { ClaimsStructure } from '@/types/claims';
+import { isValidClaimsStructure, getUnconvertedClaims, getConvertedClaims } from '@/types/claims';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ResearchDetailPageProps {
   params: Promise<{ id: string }>;
@@ -23,19 +24,27 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
 
   const insight = await getResearchInsightByArtifactId(id);
 
+  // Calculate claims statistics
+  const hasClaimsStructure: boolean = !!(insight?.claimsStructure && isValidClaimsStructure(insight.claimsStructure));
+  const claimsStructure = hasClaimsStructure ? (insight!.claimsStructure as ClaimsStructure) : null;
+
+  const mainClaimsCount = claimsStructure?.main_claims.length || 0;
+  const evidenceClaimsCount = claimsStructure?.evidence_claims.length || 0;
+  const unconvertedClaims = claimsStructure ? getUnconvertedClaims(claimsStructure) : [];
+  const convertedClaims = claimsStructure ? getConvertedClaims(claimsStructure) : [];
+  const unconvertedCount = unconvertedClaims.length;
+  const convertedCount = convertedClaims.length;
+
   return (
     <DashboardShell
       title={artifact.title}
-      subtitle="Research Artifact Detail"
+      subtitle="Research Artifact"
       activeNav="research"
     >
       <div className="space-y-6">
         {/* Metadata Card */}
         <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-lg font-semibold">Metadata</h3>
-            {!insight && artifact.status === 'raw' && <ProcessButton artifactId={artifact.id} />}
-          </div>
+          <h3 className="text-lg font-semibold mb-4">Metadata</h3>
 
           <dl className="grid grid-cols-2 gap-4">
             <div>
@@ -113,66 +122,64 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
           </dl>
         </div>
 
-        {/* AI-Generated Insight */}
+        {/* Workflow Status Card */}
         {insight && (
-          <div className="space-y-4">
-            <InsightReview insight={insight} artifactId={artifact.id} />
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold text-blue-900 mb-1">
-                    Hierarchy Analysis
-                  </h4>
-                  <p className="text-sm text-blue-700">
-                    Analyze this research against existing macro theses and asset views to get AI
-                    recommendations for creating new items or linking to existing ones.
-                  </p>
-                </div>
-                <AnalyzeHierarchyButton insightId={insight.id} />
-              </div>
-            </div>
-          </div>
+          <WorkflowStatusCard
+            hasClaimsStructure={hasClaimsStructure}
+            mainClaimsCount={mainClaimsCount}
+            evidenceClaimsCount={evidenceClaimsCount}
+            unconvertedCount={unconvertedCount}
+            convertedCount={convertedCount}
+          />
         )}
 
-        {/* AI Recommendations */}
-        {insight && (
-          <div key={insight.id}>
-            <HierarchyRecommendationsPanel insightId={insight.id} />
-          </div>
-        )}
-
-        {/* Research Mappings */}
-        <MappingsSection insightId={insight?.id || null} artifactStatus={artifact.status} />
+        {/* Claims Browser or Empty State */}
+        {hasClaimsStructure && claimsStructure ? (
+          <ClaimsBrowser
+            claimsStructure={claimsStructure}
+            insightId={insight!.id}
+          />
+        ) : insight ? (
+          <EmptyClaimsState
+            rawContent={artifact.rawContent}
+            artifactId={artifact.id}
+          />
+        ) : null}
 
         {/* Error Display */}
         {artifact.status === 'error' && artifact.processingError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-red-900 mb-2">Processing Error</h3>
             <p className="text-sm text-red-800">{artifact.processingError}</p>
-            <div className="mt-4">
-              <ProcessButton artifactId={artifact.id} />
-            </div>
           </div>
         )}
 
-        {/* Raw Content */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Raw Content</h3>
-          <div className="prose prose-sm max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans">
-              {artifact.rawContent}
-            </pre>
+        {/* Raw Content - Collapsible */}
+        <details className="bg-white rounded-lg border border-slate-200 group">
+          <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-slate-50 transition-colors">
+            <div>
+              <h3 className="text-lg font-semibold">Raw Content</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                {artifact.rawContent.split(/\s+/).filter(Boolean).length} words •{' '}
+                {Math.ceil(artifact.rawContent.split(/\s+/).filter(Boolean).length / 200)} min read
+              </p>
+            </div>
+            <ChevronDown className="h-5 w-5 text-slate-400 group-open:hidden" />
+            <ChevronUp className="h-5 w-5 text-slate-400 hidden group-open:block" />
+          </summary>
+          <div className="px-6 pb-6 pt-2 border-t border-slate-200">
+            <div className="prose prose-sm max-w-none">
+              <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans">
+                {artifact.rawContent}
+              </pre>
+            </div>
           </div>
-          <div className="mt-4 text-xs text-slate-500">
-            {artifact.rawContent.split(/\s+/).filter(Boolean).length} words •{' '}
-            {Math.ceil(artifact.rawContent.split(/\s+/).filter(Boolean).length / 200)} min read
-          </div>
-        </div>
+        </details>
 
         {/* Actions */}
         <div className="flex gap-4">
           <Link href="/research">
-            <Button variant="outline">Back to Library</Button>
+            <Button variant="outline">← Back to Library</Button>
           </Link>
         </div>
       </div>

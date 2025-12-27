@@ -4,6 +4,7 @@ import {
   updatePrompt,
   deletePrompt,
   getPromptVersions,
+  type PromptType,
 } from '@/db/queries/prompts';
 
 /**
@@ -77,7 +78,7 @@ export async function PATCH(
       // If setting as active, activate the new version
       if (body.status === 'active' || existingPrompt.status === 'active') {
         const { setPromptAsActive } = await import('@/db/queries/prompts');
-        await setPromptAsActive(newPromptId, existingPrompt.promptType);
+        await setPromptAsActive(newPromptId, existingPrompt.promptType as PromptType);
       }
 
       return NextResponse.json({
