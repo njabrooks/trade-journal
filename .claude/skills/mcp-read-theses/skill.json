@@ -1,0 +1,5 @@
+{
+  "name": "mcp-read-theses",
+  "description": "Query and display macro theses from Supabase database. Use when you need to read thesis data, filter by status/type/conviction, or examine thesis details for cross-referencing research.",
+  "instructions": "SKILL.md"
+}

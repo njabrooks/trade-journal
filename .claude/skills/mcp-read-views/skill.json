@@ -1,0 +1,5 @@
+{
+  "name": "mcp-read-views",
+  "description": "Query and display asset views from Supabase database. Use when you need to read asset-specific views, filter by ticker/underlying, or examine view-to-thesis relationships for research cross-referencing.",
+  "instructions": "SKILL.md"
+}

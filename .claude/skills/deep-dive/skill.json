@@ -1,0 +1,5 @@
+{
+  "name": "deep-dive",
+  "description": "Guide collaborative deep dive analysis on a specific theme or ticker. Use when developing a new thesis/view or expanding existing research with structured exploration, evidence gathering, and counter-argument analysis.",
+  "instructions": "SKILL.md"
+}

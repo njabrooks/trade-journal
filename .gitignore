@@ -47,3 +47,12 @@ next-env.d.ts
 *.csv
 *.xlsx
 !docs/WeeklyOptionsReview.xlsx
+# Vim swap files
+*.swp
+.*.swp
+
+# MCP configuration (project-specific)
+.mcp.json
+
+# Claude Code local settings
+.claude/settings.local.json

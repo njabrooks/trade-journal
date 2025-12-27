@@ -1,0 +1,5 @@
+{
+  "name": "mcp-upload-artifact",
+  "description": "Upload a research artifact (transcript, article, note) to Supabase database. Use when ingesting raw research content without structured insights. File should be markdown with frontmatter containing metadata.",
+  "instructions": "SKILL.md"
+}

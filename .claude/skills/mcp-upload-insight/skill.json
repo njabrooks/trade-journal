@@ -1,0 +1,5 @@
+{
+  "name": "mcp-upload-insight",
+  "description": "Upload structured research insight to Supabase database. Use when uploading processed/analyzed research with themes, claims, and evidence. Requires existing artifact_id from a previously uploaded artifact.",
+  "instructions": "SKILL.md"
+}
