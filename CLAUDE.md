@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Next.js full-stack application** for managing options trading strategies, tracking trades, and analyzing performance. The system integrates multiple data sources (IBKR, Massive.com) and implements a decision hierarchy from macro theses down to individual positions.
 
+The application features a **local-first research workflow** using Toulmin framework claim extraction to process research artifacts (transcripts, articles) into structured evidence that feeds macro theses and asset views. This research layer bridges external intelligence gathering with the tactical execution system.
+
 ## Technology Stack
 
 - **Frontend:** Next.js 16 (React 19), TypeScript 5, Tailwind CSS 4, Radix UI
@@ -29,6 +31,11 @@ npx tsx scripts/<script-name>.ts
 npx tsx scripts/run-flex-ingestion.ts           # IBKR Flex ingestion
 npx tsx scripts/ingest-underlyings-massive.ts   # Massive.com IV/spot ingestion
 npx tsx scripts/seed_playbook_items.ts          # Initialize playbook data
+
+# Research workflow scripts
+npx tsx scripts/test-claims-integration.ts      # Test claims parsing & DB integration
+npx tsx scripts/upload-audit-with-claims.ts     # Upload research artifact with claims
+npx tsx scripts/migrate-claims-structure.ts     # Migrate existing insights to claims structure
 ```
 
 ## Architecture Overview
@@ -46,6 +53,7 @@ The system implements a four-level decision hierarchy (see `docs/PRD_v1.1.md` an
 
 ### Data Flow Pattern
 
+**Trading Data Flow:**
 ```
 External Sources (IBKR Flex, Massive, IBKR Gateway)
   ↓
@@ -62,6 +70,25 @@ API Routes (/src/app/api/)
 React Frontend
 ```
 
+**Research Data Flow:**
+```
+Research Sources (Transcripts, Articles, Notes)
+  ↓
+Local AI Processing (Claude Code skills, Toulmin extraction)
+  ↓
+Markdown Audits with Claims Structure
+  ↓
+Research Upload (/src/app/api/research/)
+  ↓
+Research Tables (research_artifacts, research_insights with claims_structure)
+  ↓
+Claim Conversion (/src/app/api/research/convert-claim/)
+  ↓
+Decision Hierarchy (macro_theses, asset_views)
+  ↓
+React Frontend (ClaimsBrowser, ConvertClaimDialog)
+```
+
 ### Core Architectural Patterns
 
 1. **Async Computation** - Derived data is computed during ingestion and stored (not computed on-the-fly during queries)
@@ -69,12 +96,14 @@ React Frontend
 3. **Server Components** - Next.js 16 defaults to server components; client components are minimal
 4. **Process Tracking** - All ingestion runs logged to `ingestion_runs` table
 5. **Normalized + Denormalized** - Some denormalization (e.g., ticker in multiple tables) for query efficiency
+6. **Local-First AI Processing** - Research processing happens locally via Claude Code skills before database upload (no in-app AI endpoints)
+7. **Provenance Tracking** - Automatic tracking from claims → theses/views via conversion metadata
 
 ## Key Directories
 
 ### `/src/app` - Next.js App Router
-- **Pages:** `/strategies`, `/triage`, `/blotter`, `/dashboard`, `/admin/*`
-- **API Routes:** `/api/ingest/*`, `/api/ibkr/*`, `/api/strategies/*`, `/api/triage/*`, `/api/blotter/*`, `/api/recompute/*`
+- **Pages:** `/strategies`, `/triage`, `/blotter`, `/dashboard`, `/research/*`, `/theses/*`, `/asset-views/*`, `/admin/*`
+- **API Routes:** `/api/ingest/*`, `/api/ibkr/*`, `/api/strategies/*`, `/api/triage/*`, `/api/blotter/*`, `/api/recompute/*`, `/api/research/*`
 
 ### `/src/db` - Data Layer
 - **`schema.ts`** (705 lines) - Complete Drizzle ORM schema with relationships and indexes
@@ -113,16 +142,45 @@ Contains business logic for calculating derived insights from raw data:
 - **`strategyLinking.ts`** - Trade-to-strategy matching logic
 - **`processTracking.ts`** - Ingestion run tracking/logging
 
+### `/src/lib/research` - Research Processing
+- **`parseClaimsMarkdown.ts`** (257 lines) - Parser for Toulmin framework markdown audits → JSON
+  - Hierarchical claim structure (main_claims with nested evidence_claims)
+  - Extracts claim text, evidence, reasoning, backing, confidence, category
+  - Validates claim structure and metadata
+
 ### `/src/components` - React UI
 Feature-based component organization:
 - **`ui/`** - Reusable primitives (Radix UI wrappers)
 - **`layout/`** - Shell, navigation, tabs
 - **`blotter/`**, **`triage/`**, **`strategies/`**, **`ibkr/`** - Feature-specific components
+- **`research/`** - Research workflow components
+  - `ClaimsBrowser.tsx` (665 lines) - Browse hierarchical claims with filtering, search, conversion status
+  - `ConvertClaimDialog.tsx` (282 lines) - Convert claims to macro theses or asset views
+  - `WorkflowStatusCard.tsx` (130 lines) - Research workflow progress tracking UI
+  - `EmptyClaimsState.tsx` (98 lines) - Onboarding guidance for research workflow
+  - `archive/` - Deprecated in-app AI workflow components (11 components archived)
 
 ### `/scripts` - Standalone Utilities
 - **`run-flex-ingestion.ts`** - Flex ingestion runner (used by GitHub Actions)
 - **`ingest-underlyings-massive.ts`** - Massive.com daily ingestion
 - **`seed_playbook_items.ts`** - Playbook initialization
+- **`test-claims-integration.ts`** - Test claims parsing and database integration (48 tests)
+- **`upload-audit-with-claims.ts`** - Upload research artifact with claims structure
+- **`migrate-claims-structure.ts`** - Migrate existing insights to new claims structure
+- **`test-claim-conversion.ts`** - Test claim-to-thesis/view conversion logic
+
+### `/.cursor/skills` - Claude Code Skills
+Research workflow automation skills (managed skills, invoked via `/skill-name`):
+- **`process-transcript`** - Process research transcripts with forensic Toulmin claim extraction
+- **`synthesize-claims`** - Cross-reference audit claims against existing theses/views in database
+- **`deep-dive`** - Guide collaborative deep dive analysis on themes or tickers
+- **`finalize-for-upload`** - Upload finalized research (auto-detects artifact/insight/thesis/view)
+- **`mcp-create-thesis`** - Create macro thesis in Supabase from markdown
+- **`mcp-create-view`** - Create asset view in Supabase from markdown
+- **`mcp-read-theses`** - Query and display macro theses from database
+- **`mcp-read-views`** - Query and display asset views from database
+- **`mcp-upload-artifact`** - Upload raw research artifact to database
+- **`mcp-upload-insight`** - Upload structured insight to database
 
 ## Database Schema (Drizzle ORM)
 
@@ -131,6 +189,8 @@ Key tables (see `/src/db/schema.ts` for full schema):
 ### Core Entities
 - **`accounts`** - Broker accounts
 - **`underlyings`** - Ticker metadata (spot, IV30, ATR20, RV20, conid)
+- **`macro_theses`** - Cross-asset beliefs with conviction, status, and evidence linkage
+- **`asset_views`** - Asset-specific theses linked to underlyings and macro theses
 - **`strategies`** - User-defined trading strategies with entry context
 - **`trades`** - Individual trade executions
 - **`positions`** - Current/closed positions with MTM data
@@ -149,13 +209,24 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`triage_rules`** - Configurable triage logic
 - **`ingestion_runs`** - Process tracking for all data imports
 
+### Research Tables
+- **`research_artifacts`** - Raw research content (transcripts, articles, notes) with metadata
+- **`research_insights`** - Processed insights with `claims_structure` JSONB field
+  - `claims_structure` stores hierarchical Toulmin framework (main_claims + evidence_claims)
+  - Each claim has: text, evidence, reasoning, backing, confidence, category, conversion status
+- **`prompts`** - AI prompts for research processing (versioned, activatable)
+- **Provenance tracking** - `macro_theses` and `asset_views` include source claim metadata for traceability
+
 ## Terminology Reference
 
 See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 
 ### PRD-Aligned Terms (Use These)
-- **Macro Thesis / Macro Theses** - Cross-asset beliefs (new concept, not yet implemented)
-- **Asset View / Asset Views** - Asset-specific theses about underlyings (new concept, not yet implemented)
+- **Macro Thesis / Macro Theses** - Cross-asset beliefs ✅ (implemented with claims provenance)
+- **Asset View / Asset Views** - Asset-specific theses about underlyings ✅ (implemented with claims provenance)
+- **Research Artifact** - Raw research content (transcript, article, note) ✅
+- **Research Insight** - Processed artifact with Toulmin claims structure ✅
+- **Claim** - Individual assertion from research with evidence/reasoning/backing ✅
 - **Strategies** - Tactical implementations ✅ (existing, aligns with PRD)
 - **Positions** - Live exposures ✅ (existing, aligns with PRD)
 - **Triage** - Evaluation of urgency/severity ✅ (existing, aligns perfectly)
@@ -234,6 +305,30 @@ MASSIVE_API_BASE_URL=https://api.massive.com
 - Both are recomputed after ingestion via `/api/recompute/*` endpoints
 - State codes are managed via playbook system (`playbook_items` table)
 
+### When Working with Research Workflow
+The research workflow follows a local-first AI processing pattern:
+
+1. **Local Processing** (via Claude Code skills):
+   - Use `/process-transcript` skill to extract Toulmin claims from transcripts/articles
+   - Generates markdown audit with hierarchical claims structure
+   - Claims include: text, evidence, reasoning, backing, confidence, category
+
+2. **Upload to Database**:
+   - Use `/finalize-for-upload` skill to auto-detect content type and upload
+   - Or use specific MCP skills: `/mcp-upload-artifact` or `/mcp-upload-insight`
+   - Parser (`parseClaimsMarkdown.ts`) extracts claims structure into JSONB
+
+3. **Claim Browsing & Conversion**:
+   - `ClaimsBrowser.tsx` displays hierarchical claims with filtering/search
+   - `ConvertClaimDialog.tsx` converts claims → macro theses or asset views
+   - `/api/research/convert-claim` handles conversion with provenance tracking
+
+4. **Synthesis**:
+   - Use `/synthesize-claims` skill to cross-reference new claims against existing theses/views
+   - Identifies opportunities for new theses vs evidence for existing beliefs
+
+**CRITICAL:** No in-app AI processing - all AI work happens locally via Claude Code skills before upload. The web UI is for browsing and manual conversion only.
+
 ### When Adding API Routes
 - Use Next.js App Router conventions (`/src/app/api/*/route.ts`)
 - Return JSON responses with proper error handling
@@ -255,9 +350,18 @@ MASSIVE_API_BASE_URL=https://api.massive.com
 5. **Multi-source Data** - Yahoo Finance (spot) → IBKR Gateway → Massive (fallback priority)
 6. **CSV Error Handling** - Detailed row-by-row error reporting with line numbers
 7. **State Codes** - Playbook states like "LC1", "RR2" are tactical workflow concepts, not PRD concepts
+8. **Local-First Research** - All AI processing via Claude Code skills; no in-app AI endpoints (archived old workflow)
+9. **Toulmin Framework** - Claims use Toulmin argumentation model (claim, evidence, reasoning, backing)
+10. **Provenance Tracking** - Automatic tracking from research claims → theses/views with source metadata
+11. **JSONB Claims Structure** - `research_insights.claims_structure` stores hierarchical claim tree
 
 ## Quick Navigation for Specific Features
 
+- **Research Workflow** → `/src/lib/research/parseClaimsMarkdown.ts` + `/src/components/research/` + `/.cursor/skills/`
+- **Claims Browsing** → `/src/components/research/ClaimsBrowser.tsx` + `/src/app/research/[id]/page.tsx`
+- **Claim Conversion** → `/src/components/research/ConvertClaimDialog.tsx` + `/src/app/api/research/convert-claim/`
+- **Macro Theses** → `/src/app/theses/` + `/src/db/schema.ts` (macro_theses table)
+- **Asset Views** → `/src/app/asset-views/` + `/src/db/schema.ts` (asset_views table)
 - **Strategy Management** → `/src/lib/services/strategies.ts` + `/src/app/admin/strategies/`
 - **Triage Alerts** → `/src/lib/derived/triage.ts` + `/src/components/triage/`
 - **Trade Ingestion** → `/src/lib/ingestion/flex/trades.ts` + `/src/app/api/ingest/flex/trades/route.ts`
@@ -268,11 +372,18 @@ MASSIVE_API_BASE_URL=https://api.massive.com
 
 ## Future Development Context
 
-This codebase is transitioning from a tactical options trading tool to the "Universal Investment Operating System" described in `docs/PRD_v1.1.md`. Key future additions:
+This codebase is transitioning from a tactical options trading tool to the "Universal Investment Operating System" described in `docs/PRD_v1.1.md`.
 
-- **Macro Theses** and **Asset Views** - Not yet implemented (Phase 1)
-- **Research & Intelligence Layer** - AI-assisted research structuring (Phase 2)
-- **Journal / Decision Log** - Evolution of current "Blotter" concept
+### Implemented Features ✅
+- **Macro Theses** and **Asset Views** - Core entities with claims provenance tracking
+- **Research & Intelligence Layer** - Local-first Toulmin claim extraction workflow
+- **Claims Browsing & Conversion** - Web UI for exploring and converting research into theses/views
+- **Claude Code Skills** - Automated research processing and database integration
+
+### Remaining Future Additions
+- **Journal / Decision Log** - Evolution of current "Blotter" concept with narrative context
 - **Workflow Triggers** - First-class trigger entities beyond current triage rules (Phase 4)
+- **Enhanced Evidence Linking** - Direct linkage from positions/strategies back to supporting claims
+- **Research Synthesis Dashboard** - Portfolio-wide view of thesis → view → strategy → position chain
 
 When implementing new features, consult the PRD and terminology docs to ensure alignment with the long-term vision.
