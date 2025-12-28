@@ -356,8 +356,6 @@ Research processing integrates with an external Obsidian vault:
 # .env.local
 OBSIDIAN_VAULT_PATH=/Users/njb/Desktop/nick
 OBSIDIAN_SYNC_ENABLED=true
-OBSIDIAN_SYNC_MODE=polling
-OBSIDIAN_SYNC_INTERVAL_MINUTES=5
 
 # Content directories (relative to OBSIDIAN_VAULT_PATH)
 OBSIDIAN_TRANSCRIPTS_DIR=investing/research/transcripts
@@ -373,6 +371,48 @@ OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-views
 - All skills read these env vars to determine output paths
 - Fallback to `research-workspace/` if env vars not set
 - Skills write directly to Obsidian vault (not to project folder)
+
+## Bidirectional Sync
+
+**File Watch Sync** (Obsidian ↔ Supabase):
+
+The system implements real-time bidirectional sync using file watching (chokidar):
+
+**Obsidian → Database**:
+- File watcher monitors `main-claims/`, `macro-theses/`, `asset-views/` folders
+- Detects file create/update/delete events
+- Automatically syncs changes to Supabase database
+- Debounced to avoid redundant syncs (1 second)
+- **DELETE**: Deleting a file in Obsidian permanently removes the corresponding database record
+
+**Database → Obsidian**:
+- Triggered automatically after DB writes via API routes
+- Creates/updates markdown files in Obsidian vault
+- Maintains frontmatter with sync metadata
+- **DELETE**: Database deletions do NOT delete Obsidian files (one-way delete only)
+
+**Sync Dashboard**:
+- Visit `http://localhost:3000/admin/sync` to monitor sync status
+- View recent syncs, errors, and statistics
+- Start/stop/restart watcher manually
+- Clear statistics
+
+**What Syncs**:
+- ✅ Main Claims (`investing/main-claims/` ↔ `main_claims` table)
+- ✅ Macro Theses (`investing/macro-theses/` ↔ `macro_theses` table)
+- ✅ Asset Views (`investing/asset-views/` ↔ `asset_views` table)
+- ⚠️ Research Artifacts (transcripts, audits, etc.) - One-way only (skills write to Obsidian, upload via `/finalize-for-upload`)
+
+**Auto-Start**:
+- Watcher starts automatically when Next.js server starts (via `instrumentation.ts`)
+- Requires `OBSIDIAN_SYNC_ENABLED=true` in `.env.local`
+
+**Sync State Cache**:
+- File path → entity ID mappings stored in `.obsidian-sync-state.json`
+- Enables delete operations (when file is deleted, we can't read it to get the ID)
+- Automatically maintained on every sync
+- Safe to delete (will rebuild on next sync)
+- Excluded from git (see `.gitignore`)
 
 ---
 
@@ -555,7 +595,10 @@ mkdir -p /Users/njb/Desktop/nick/investing/{main-claims,macro-theses,asset-views
 - ✅ Directional stance fields added to theses/views
 - ✅ Promotion workflow via UI "Promote" button
 - ✅ Correct Toulmin terminology (evidence/reasoning) throughout codebase
-- ✅ Obsidian bidirectional sync with configurable paths
+- ✅ **Real-time bidirectional sync** (Obsidian ↔ Supabase) using file watching
+- ✅ **Auto-sync on DB writes** for main claims, macro theses, and asset views
+- ✅ **Sync dashboard** at `/admin/sync` for monitoring and control
+- ✅ **Conflict detection** and handling for concurrent edits
 
 **Future Enhancements** (see `docs/archive/research/FUTURE_ENHANCEMENTS.md`):
 - Main Claim Evolution View: Timeline of evidence accumulation over time

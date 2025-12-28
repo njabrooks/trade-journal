@@ -87,7 +87,7 @@ export function generateFrontmatter(
 
   if (type === 'main_claim') {
     const claim = entity as MainClaim;
-    return {
+    const frontmatter = {
       ...base,
       category: claim.category as 'macro' | 'asset_specific',
       status: claim.status,
@@ -96,11 +96,16 @@ export function generateFrontmatter(
       linked_to_theses: linkedCounts?.theses || 0,
       linked_to_views: linkedCounts?.views || 0,
     };
+
+    // Remove undefined values to avoid YAML serialization errors
+    return Object.fromEntries(
+      Object.entries(frontmatter).filter(([_, value]) => value !== undefined)
+    ) as ObsidianFrontmatter;
   }
 
   if (type === 'macro_thesis') {
     const thesis = entity as MacroThesis;
-    return {
+    const frontmatter = {
       ...base,
       thesis_type: thesis.thesisType,
       sectors: thesis.sectors || undefined,
@@ -110,11 +115,16 @@ export function generateFrontmatter(
       outcome: thesis.outcome || undefined,
       confidence_level: thesis.confidenceLevel || undefined,
     };
+
+    // Remove undefined values to avoid YAML serialization errors
+    return Object.fromEntries(
+      Object.entries(frontmatter).filter(([_, value]) => value !== undefined)
+    ) as ObsidianFrontmatter;
   }
 
   if (type === 'asset_view') {
     const view = entity as AssetView;
-    return {
+    const frontmatter = {
       ...base,
       direction: view.direction || undefined,
       position_start_date: view.positionStartDate || undefined,
@@ -126,6 +136,11 @@ export function generateFrontmatter(
       outcome: view.outcome || undefined,
       confidence_level: view.confidenceLevel || undefined,
     };
+
+    // Remove undefined values to avoid YAML serialization errors
+    return Object.fromEntries(
+      Object.entries(frontmatter).filter(([_, value]) => value !== undefined)
+    ) as ObsidianFrontmatter;
   }
 
   return base;

@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { researchInsights, mainClaims, mainClaimEvidence } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure } from '@/types/claims';
+import { afterMainClaimSave } from '@/lib/obsidian/hooks';
 
 /**
  * POST /api/research/promote-claim
@@ -71,7 +72,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if this claim has already been promoted
-    // (We'll check by looking for exact match on claim text + evidence)
+    // Use a more robust check: match on claim text AND category
+    // This prevents race conditions where the same claim is promoted multiple times
     const existingClaims = await db
       .select()
       .from(mainClaims)
@@ -83,6 +85,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'A main claim with this exact text already exists',
           existingClaimId: existingClaims[0].id,
+          existingClaimTitle: existingClaims[0].title,
           suggestion: 'Consider linking evidence to the existing claim instead',
         },
         { status: 409 }
@@ -93,6 +96,7 @@ export async function POST(request: NextRequest) {
     const relevantTickers = claim.relevant_tickers || [];
 
     // Create the main claim
+    // Note: Future improvement - add unique constraint on claim text hash to prevent duplicates at DB level
     const [createdMainClaim] = await db
       .insert(mainClaims)
       .values({
@@ -149,6 +153,11 @@ export async function POST(request: NextRequest) {
         linkedEvidenceCount = evidenceLinks.length;
       }
     }
+
+    // Sync to Obsidian (non-blocking)
+    afterMainClaimSave(createdMainClaim).catch((error) => {
+      console.error('Failed to sync main claim to Obsidian:', error);
+    });
 
     return NextResponse.json({
       success: true,

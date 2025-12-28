@@ -10,10 +10,11 @@ import {
   generateFilepath,
   type ObsidianFrontmatter,
 } from './markdown';
+import { syncStateCache } from './syncState';
 
 export interface SyncResult {
   success: boolean;
-  action: 'created' | 'updated' | 'skipped' | 'conflict';
+  action: 'created' | 'updated' | 'skipped' | 'conflict' | 'deleted';
   entityType: 'main_claim' | 'macro_thesis' | 'asset_view';
   entityId?: string;
   filePath?: string;
@@ -28,16 +29,55 @@ export async function syncFileToDatabase(
   operation: 'create' | 'update' | 'delete'
 ): Promise<SyncResult> {
   try {
-    // Handle deletions
+    // Handle deletions (Obsidian → DB only)
     if (operation === 'delete') {
-      // Extract ID from filename or content if possible
-      // For now, skip delete handling
+      // Look up entity info from sync state cache
+      const entityInfo = await syncStateCache.get(filePath);
+
+      if (!entityInfo) {
+        return {
+          success: false,
+          action: 'skipped',
+          entityType: 'main_claim',
+          filePath,
+          error: 'No sync state found for deleted file - entity may have already been deleted',
+        };
+      }
+
+      // Delete from database based on entity type
+      let deleted = false;
+      if (entityInfo.type === 'main_claim') {
+        await db.delete(mainClaims).where(eq(mainClaims.id, entityInfo.id));
+        deleted = true;
+      } else if (entityInfo.type === 'macro_thesis') {
+        await db.delete(macroTheses).where(eq(macroTheses.id, entityInfo.id));
+        deleted = true;
+      } else if (entityInfo.type === 'asset_view') {
+        await db.delete(assetViews).where(eq(assetViews.id, entityInfo.id));
+        deleted = true;
+      }
+
+      if (deleted) {
+        // Remove from sync state cache
+        await syncStateCache.untrack(filePath);
+
+        console.log(`[Obsidian→DB] Deleted ${entityInfo.type} ${entityInfo.id}`);
+
+        return {
+          success: true,
+          action: 'deleted',
+          entityType: entityInfo.type,
+          entityId: entityInfo.id,
+          filePath,
+        };
+      }
+
       return {
-        success: true,
+        success: false,
         action: 'skipped',
-        entityType: 'main_claim',
+        entityType: entityInfo.type,
         filePath,
-        error: 'Delete operations not yet implemented',
+        error: 'Unknown entity type',
       };
     }
 
@@ -131,6 +171,9 @@ async function syncMainClaimToDatabase(
       const newContent = require('gray-matter').stringify(content, newFrontmatter);
       await fs.writeFile(filePath, newContent, 'utf-8');
 
+      // Track in sync state cache
+      await syncStateCache.track(filePath, created.id, 'main_claim');
+
       return {
         success: true,
         action: 'created',
@@ -155,6 +198,9 @@ async function syncMainClaimToDatabase(
             ...claimData,
           })
           .returning();
+
+        // Track in sync state cache
+        await syncStateCache.track(filePath, created.id, 'main_claim');
 
         return {
           success: true,
@@ -187,6 +233,9 @@ async function syncMainClaimToDatabase(
         .update(mainClaims)
         .set(claimData)
         .where(eq(mainClaims.id, existingId));
+
+      // Track in sync state cache
+      await syncStateCache.track(filePath, existingId, 'main_claim');
 
       return {
         success: true,
@@ -247,6 +296,9 @@ async function syncMacroThesisToDatabase(
       const newContent = require('gray-matter').stringify(content, newFrontmatter);
       await fs.writeFile(filePath, newContent, 'utf-8');
 
+      // Track in sync state cache
+      await syncStateCache.track(filePath, created.id, 'macro_thesis');
+
       return {
         success: true,
         action: 'created',
@@ -270,6 +322,9 @@ async function syncMacroThesisToDatabase(
           })
           .returning();
 
+        // Track in sync state cache
+        await syncStateCache.track(filePath, created.id, 'macro_thesis');
+
         return {
           success: true,
           action: 'created',
@@ -283,6 +338,9 @@ async function syncMacroThesisToDatabase(
         .update(macroTheses)
         .set(thesisData)
         .where(eq(macroTheses.id, existingId));
+
+      // Track in sync state cache
+      await syncStateCache.track(filePath, existingId, 'macro_thesis');
 
       return {
         success: true,
@@ -379,6 +437,9 @@ async function syncAssetViewToDatabase(
       const newContent = require('gray-matter').stringify(content, newFrontmatter);
       await fs.writeFile(filePath, newContent, 'utf-8');
 
+      // Track in sync state cache
+      await syncStateCache.track(filePath, created.id, 'asset_view');
+
       return {
         success: true,
         action: 'created',
@@ -402,6 +463,9 @@ async function syncAssetViewToDatabase(
           })
           .returning();
 
+        // Track in sync state cache
+        await syncStateCache.track(filePath, created.id, 'asset_view');
+
         return {
           success: true,
           action: 'created',
@@ -415,6 +479,9 @@ async function syncAssetViewToDatabase(
         .update(assetViews)
         .set(viewData)
         .where(eq(assetViews.id, existingId));
+
+      // Track in sync state cache
+      await syncStateCache.track(filePath, existingId, 'asset_view');
 
       return {
         success: true,
@@ -504,6 +571,9 @@ export async function syncDatabaseToFile(
 
     // Write file
     await fs.writeFile(filePath, markdownContent, 'utf-8');
+
+    // Track in sync state cache
+    await syncStateCache.track(filePath, entity.id, type);
 
     return {
       success: true,

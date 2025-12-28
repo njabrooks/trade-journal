@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { researchInsights, macroTheses, assetViews, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure, MainClaim } from '@/types/claims';
+import { afterMacroThesisSave, afterAssetViewSave } from '@/lib/obsidian/hooks';
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,6 +70,11 @@ export async function POST(request: NextRequest) {
         .returning();
 
       createdId = thesis.id;
+
+      // Sync to Obsidian (non-blocking)
+      afterMacroThesisSave(thesis).catch((error) => {
+        console.error('Failed to sync macro thesis to Obsidian:', error);
+      });
     } else if (conversionType === 'asset_view') {
       // Resolve ticker to underlying_id
       let [underlying] = await db
@@ -106,6 +112,11 @@ export async function POST(request: NextRequest) {
         .returning();
 
       createdId = view.id;
+
+      // Sync to Obsidian (non-blocking)
+      afterAssetViewSave(view).catch((error) => {
+        console.error('Failed to sync asset view to Obsidian:', error);
+      });
     } else {
       return NextResponse.json({ error: 'Invalid conversion type' }, { status: 400 });
     }

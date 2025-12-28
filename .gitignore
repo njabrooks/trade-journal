@@ -56,3 +56,6 @@ next-env.d.ts
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Obsidian sync state (local cache)
+.obsidian-sync-state.json
