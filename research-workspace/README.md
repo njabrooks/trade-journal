@@ -3,6 +3,17 @@
 **Last Updated**: 2025-12-28
 **Status**: Production-ready with first-class main claims architecture
 
+> **⚠️ IMPORTANT**: This folder (`research-workspace/`) serves as a **local cache and staging area** for development.
+>
+> **The source of truth is the Obsidian vault** at `/Users/njb/Desktop/nick/investing/`.
+>
+> All Claude Code skills write directly to the Obsidian vault (configured via `.env.local`). This folder is used for:
+> - Local testing of research processing before vault upload
+> - Scratch work during development
+> - Template reference
+>
+> Do not commit large research files here - they belong in the external Obsidian vault.
+
 ---
 
 ## Overview
@@ -369,14 +380,18 @@ npx tsx --env-file=.env.local scripts/test-claim-conversion.ts
 
 ```
 research-workspace/
-├── README.md                       # This file (single source of truth)
-├── FUTURE_ENHANCEMENTS.md         # Phase 2+ plans (dedicated claims table)
+├── README.md                       # This file (workflow documentation)
+├── FUTURE_ENHANCEMENTS.md         # Phase 2+ plans
+├── .obsidian/                     # Local Obsidian settings (optional)
 │
-├── 1-raw/                         # Raw transcripts, articles
-├── 2-audits/                      # Processed audits with Toulmin claims
-├── 3-syntheses/                   # Cross-reference analyses (optional)
-└── 4-deep-dives/                  # Enhanced analyses (optional)
+├── 1-transcripts/                 # Local staging: Raw transcripts, articles
+├── 2-audits/                      # Local staging: Processed audits with Toulmin claims
+├── 3-syntheses/                   # Local staging: Cross-reference analyses
+├── 4-deep-dives/                  # Local staging: Enhanced analyses
+└── 5-finalized/                   # Local staging: Ready for upload
 ```
+
+**Note**: The Obsidian vault structure mirrors this but is the canonical source.
 
 ---
 
