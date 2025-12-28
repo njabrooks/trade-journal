@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { macroTheses, assetViews, strategies, accounts, underlyings } from '@/db/schema';
+import { macroTheses, assetViews, strategies, accounts, underlyings, mainClaims, claimThesisMappings } from '@/db/schema';
 import { eq, desc, inArray, count, sql } from 'drizzle-orm';
 import type { NewMacroThesis } from '@/db/schema';
 
@@ -138,4 +138,26 @@ export async function getLinkedStrategiesForThesis(thesisId: string) {
     .orderBy(desc(strategies.openedAt));
 
   return strats;
+}
+
+export async function getLinkedMainClaimsForThesis(thesisId: string) {
+  const claims = await db
+    .select({
+      id: mainClaims.id,
+      title: mainClaims.title,
+      category: mainClaims.category,
+      claim: mainClaims.claim,
+      qualifier: mainClaims.qualifier,
+      timeHorizon: mainClaims.timeHorizon,
+      relevantTickers: mainClaims.relevantTickers,
+      status: mainClaims.status,
+      mappingType: claimThesisMappings.mappingType,
+      createdAt: mainClaims.createdAt,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(mainClaims, eq(claimThesisMappings.mainClaimId, mainClaims.id))
+    .where(eq(claimThesisMappings.macroThesisId, thesisId))
+    .orderBy(desc(mainClaims.createdAt));
+
+  return claims;
 }

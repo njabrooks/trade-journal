@@ -1,5 +1,6 @@
 import { getAssetViewsList } from '@/db/queries/assetViews';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { CreateAssetViewButton } from '@/components/asset-views/CreateAssetViewButton';
 import Link from 'next/link';
 
 export default async function AssetViewsPage() {
@@ -16,7 +17,7 @@ export default async function AssetViewsPage() {
           <div className="text-sm text-slate-600">
             {views.length} {views.length === 1 ? 'view' : 'views'}
           </div>
-          {/* Create button deferred to Phase 1.6 - use API or Supabase console for now */}
+          <CreateAssetViewButton />
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">

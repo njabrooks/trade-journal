@@ -1,5 +1,6 @@
-import { getMacroThesisById, getLinkedAssetViewsForThesis, getLinkedStrategiesForThesis } from '@/db/queries/macroTheses';
+import { getMacroThesisById, getLinkedAssetViewsForThesis, getLinkedStrategiesForThesis, getLinkedMainClaimsForThesis } from '@/db/queries/macroTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { AddMainClaimButton } from '@/components/theses/AddMainClaimButton';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
@@ -9,10 +10,11 @@ interface ThesisDetailPageProps {
 
 export default async function ThesisDetailPage({ params }: ThesisDetailPageProps) {
   const { id } = await params;
-  const [thesis, linkedViews, linkedStrategies] = await Promise.all([
+  const [thesis, linkedViews, linkedStrategies, linkedClaims] = await Promise.all([
     getMacroThesisById(id),
     getLinkedAssetViewsForThesis(id),
     getLinkedStrategiesForThesis(id),
+    getLinkedMainClaimsForThesis(id),
   ]);
 
   if (!thesis) {
@@ -71,6 +73,77 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
             </pre>
           </div>
         ) : null}
+
+        <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Main Claims ({linkedClaims.length})</h3>
+            <AddMainClaimButton thesisId={thesis.id} thesisTitle={thesis.title} />
+          </div>
+          {linkedClaims.length === 0 ? (
+            <p className="text-sm text-slate-500">No main claims linked to this thesis yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {linkedClaims.map((claim) => (
+                <div key={claim.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      {claim.title && (
+                        <div className="font-medium text-slate-900 mb-1">{claim.title}</div>
+                      )}
+                      <p className="text-sm text-slate-700">{claim.claim}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span
+                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
+                            claim.qualifier === 'high'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : claim.qualifier === 'medium'
+                              ? 'bg-blue-100 text-blue-700'
+                              : claim.qualifier === 'low'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {claim.qualifier} confidence
+                        </span>
+                        <span className="text-xs text-slate-500">{claim.category}</span>
+                        {claim.timeHorizon && (
+                          <span className="text-xs text-slate-500">
+                            {claim.timeHorizon.replace('_', ' ')}
+                          </span>
+                        )}
+                        {claim.mappingType && (
+                          <span
+                            className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
+                              claim.mappingType === 'supports'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : claim.mappingType === 'refutes'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {claim.mappingType}
+                          </span>
+                        )}
+                        {claim.relevantTickers && claim.relevantTickers.length > 0 && (
+                          <div className="flex gap-1">
+                            {claim.relevantTickers.map((ticker) => (
+                              <span
+                                key={ticker}
+                                className="inline-flex px-1.5 py-0.5 text-xs font-mono bg-slate-100 text-slate-900 rounded"
+                              >
+                                {ticker}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <h3 className="text-lg font-semibold mb-4">Linked Asset Views ({linkedViews.length})</h3>

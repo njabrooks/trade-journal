@@ -1,0 +1,21 @@
+'use client';
+
+import { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CreateAssetViewDialog } from './CreateAssetViewDialog';
+
+export function CreateAssetViewButton() {
+  const [showDialog, setShowDialog] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setShowDialog(true)}>
+        <Plus className="h-4 w-4 mr-2" />
+        Create New View
+      </Button>
+
+      {showDialog && <CreateAssetViewDialog onClose={() => setShowDialog(false)} />}
+    </>
+  );
+}

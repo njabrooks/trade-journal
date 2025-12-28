@@ -1,5 +1,6 @@
 import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
+import { CreateThesisButton } from '@/components/theses/CreateThesisButton';
 import Link from 'next/link';
 
 export default async function MacroThesesPage() {
@@ -16,7 +17,7 @@ export default async function MacroThesesPage() {
           <div className="text-sm text-slate-600">
             {theses.length} {theses.length === 1 ? 'thesis' : 'theses'}
           </div>
-          {/* Create button deferred to Phase 1.6 - use API or Supabase console for now */}
+          <CreateThesisButton />
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">

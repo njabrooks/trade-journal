@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { assetViews, macroTheses, underlyings, strategies, accounts } from '@/db/schema';
+import { assetViews, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings } from '@/db/schema';
 import { eq, desc, inArray, count } from 'drizzle-orm';
 import type { NewAssetView } from '@/db/schema';
 
@@ -125,4 +125,26 @@ export async function getLinkedStrategiesForAssetView(assetViewId: string) {
     .orderBy(desc(strategies.openedAt));
 
   return strats;
+}
+
+export async function getLinkedMainClaimsForAssetView(assetViewId: string) {
+  const claims = await db
+    .select({
+      id: mainClaims.id,
+      title: mainClaims.title,
+      category: mainClaims.category,
+      claim: mainClaims.claim,
+      qualifier: mainClaims.qualifier,
+      timeHorizon: mainClaims.timeHorizon,
+      relevantTickers: mainClaims.relevantTickers,
+      status: mainClaims.status,
+      mappingType: claimThesisMappings.mappingType,
+      createdAt: mainClaims.createdAt,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(mainClaims, eq(claimThesisMappings.mainClaimId, mainClaims.id))
+    .where(eq(claimThesisMappings.assetViewId, assetViewId))
+    .orderBy(desc(mainClaims.createdAt));
+
+  return claims;
 }

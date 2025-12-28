@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { researchInsights, mainClaims } from '@/db/schema';
+import { researchInsights, mainClaims, mainClaimEvidence } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure } from '@/types/claims';
 
@@ -123,12 +123,40 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // Link supporting evidence claims to the main claim
+    const supportingClaimIds = claim.supporting_evidence_claims || [];
+    const rebuttingClaimIds = claim.rebutting_evidence_claims || [];
+    let linkedEvidenceCount = 0;
+
+    if (supportingClaimIds.length > 0 || rebuttingClaimIds.length > 0) {
+      const evidenceLinks = [
+        ...supportingClaimIds.map((evidenceClaimId: string) => ({
+          mainClaimId: createdMainClaim.id,
+          researchInsightId: insightId,
+          supportingClaimId: evidenceClaimId,
+          relationshipType: 'supports' as const,
+        })),
+        ...rebuttingClaimIds.map((evidenceClaimId: string) => ({
+          mainClaimId: createdMainClaim.id,
+          researchInsightId: insightId,
+          supportingClaimId: evidenceClaimId,
+          relationshipType: 'rebuts' as const,
+        })),
+      ];
+
+      if (evidenceLinks.length > 0) {
+        await db.insert(mainClaimEvidence).values(evidenceLinks);
+        linkedEvidenceCount = evidenceLinks.length;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       mainClaimId: createdMainClaim.id,
       title: createdMainClaim.title,
       category: createdMainClaim.category,
-      message: 'Main claim promoted successfully',
+      linkedEvidenceCount,
+      message: `Main claim promoted successfully with ${linkedEvidenceCount} evidence claims linked`,
     });
   } catch (error: any) {
     console.error('Error promoting claim:', error);

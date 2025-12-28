@@ -188,12 +188,29 @@ All core phases finished. Main claims architecture is production-ready:
 
 ## Workflow Summary
 
-| Stage | Tool | Database | Obsidian Location |
-|-------|------|----------|-------------------|
-| 1. Process Transcript | `/process-transcript` | `research_insights` | `research/audits/` |
-| 2. Promote Main Claims | UI "Promote" button | `main_claims` | `main-claims/` |
-| 3. Link Evidence | `/synthesize-claims` | `main_claim_evidence` | (updates main claim files) |
-| 4. Create Theses/Views | UI create form | `macro_theses`/`asset_views` | `macro-theses/`/`asset-views/` |
+### Research → Main Claims → Theses/Views
+
+| Stage | Tool | Database | Obsidian Location | Notes |
+|-------|------|----------|-------------------|-------|
+| 1. Process Transcript | `/process-transcript` | `research_insights` | `research/audits/` | Extract Toulmin claims |
+| 2. Promote Main Claim | UI "Promote" button | `main_claims` | `main-claims/` | **Auto-links evidence claims** |
+| 3. Create Thesis/View | API create endpoint | `macro_theses`/`asset_views` | `macro-theses/`/`asset-views/` | **Standalone creation** |
+| 4. Link Main Claim | UI link dialog | `claim_thesis_mappings` | (updates mappings) | **Link claim → thesis/view** |
+
+### Key Distinction: Link vs Convert
+
+- **Promote** = Create first-class main_claim entity (with evidence auto-linked)
+- **Link** = Associate existing main claim with existing thesis/view
+- **Convert** = Create thesis/view FROM a claim (provenance tracked)
+
+**Correct Flow**:
+1. Promote claim → Creates `main_claims` entry + links evidence
+2. Create thesis → Creates standalone `macro_theses` entry
+3. Link claim to thesis → Creates `claim_thesis_mappings` entry
+
+**OR**:
+1. Promote claim → Creates `main_claims` entry + links evidence
+2. Convert claim → Creates `macro_theses` FROM claim (with provenance)
 
 ---
 
@@ -232,6 +249,20 @@ targetPrice: frontmatter.target_price ? String(frontmatter.target_price) : null,
 **Fix**: Remove explicit timestamp setting (database handles via `.defaultNow()`):
 ```typescript
 const [created] = await db.insert(mainClaims).values(claimData).returning();
+```
+
+### Error: `column "evidence" does not exist` (or `column "reasoning" does not exist`)
+**Root Cause**: Database used original Toulmin terminology (`grounds`, `warrant`) but schema.ts was updated to use simplified terms (`evidence`, `reasoning`).
+
+**Fix**: Rename columns via psql (applied 2025-12-28):
+```bash
+npx tsx scripts/psql-query.ts "ALTER TABLE main_claims RENAME COLUMN grounds TO evidence" --format table
+npx tsx scripts/psql-query.ts "ALTER TABLE main_claims RENAME COLUMN warrant TO reasoning" --format table
+```
+
+**Verify**:
+```bash
+npx tsx scripts/psql-query.ts "SELECT column_name FROM information_schema.columns WHERE table_name = 'main_claims' AND column_name IN ('evidence', 'reasoning')" --format json
 ```
 
 ---
