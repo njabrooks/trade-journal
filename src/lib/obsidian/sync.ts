@@ -436,13 +436,13 @@ async function syncAssetViewToDatabase(
 
     // Resolve ticker to underlying_id
     const ticker = frontmatter.ticker || sections.ticker;
-    if (!ticker) {
+    if (!ticker || ticker === 'undefined' || typeof ticker !== 'string' || ticker.trim() === '') {
       return {
         success: false,
         action: 'skipped',
         entityType: 'asset_view',
         filePath,
-        error: 'Missing ticker in frontmatter',
+        error: 'Missing or invalid ticker in frontmatter',
       };
     }
 
@@ -614,7 +614,7 @@ export async function syncDatabaseToFile(
       };
     }
 
-    const filePath = generateFilepath(type, entity.title, vaultPath);
+    const filePath = generateFilepath(type, entity.title, vaultPath, entity.createdAt);
 
     // Check if file exists
     let existingContent: string | null = null;

@@ -126,6 +126,7 @@ export function generateFrontmatter(
     const view = entity as AssetView;
     const frontmatter = {
       ...base,
+      ticker: ticker || undefined, // IMPORTANT: Add ticker to frontmatter
       direction: view.direction || undefined,
       position_start_date: view.positionStartDate || undefined,
       position_end_date: view.positionEndDate || undefined,
@@ -218,7 +219,11 @@ export function generateMacroThesisMarkdown(
 
   if (thesis.notes) {
     sections.push(`## Notes`);
-    sections.push(thesis.notes + '\n');
+    // Handle JSONB notes field - convert to string if needed
+    const notesText = typeof thesis.notes === 'string'
+      ? thesis.notes
+      : JSON.stringify(thesis.notes, null, 2);
+    sections.push(notesText + '\n');
   }
 
   sections.push(`---\n`);
@@ -343,19 +348,27 @@ export function sanitizeFilename(title: string): string {
 }
 
 /**
- * Generate filepath for entity
+ * Generate filepath for entity (flat structure)
  */
 export function generateFilepath(
   type: 'main_claim' | 'macro_thesis' | 'asset_view',
   title: string,
-  vaultPath: string
+  vaultPath: string,
+  createdAt?: Date
 ): string {
-  const filename = sanitizeFilename(title) + '.md';
+  // Add YYYY-MM-DD prefix for consistent sorting
+  const datePrefix = createdAt
+    ? `${createdAt.toISOString().split('T')[0]}-`
+    : `${new Date().toISOString().split('T')[0]}-`;
 
-  const subfolder =
-    type === 'main_claim' ? 'main-claims' :
-    type === 'macro_thesis' ? 'macro-theses' :
-    'asset-views';
+  // Add type prefix for flat structure
+  const typePrefix =
+    type === 'main_claim' ? 'main-claim-' :
+    type === 'macro_thesis' ? 'macro-thesis-' :
+    'asset-view-';
 
-  return `${vaultPath}/investing/${subfolder}/${filename}`;
+  const filename = datePrefix + typePrefix + sanitizeFilename(title) + '.md';
+
+  // Flat structure: everything in investing/
+  return `${vaultPath}/investing/${filename}`;
 }

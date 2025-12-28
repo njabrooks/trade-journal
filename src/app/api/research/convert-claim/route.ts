@@ -76,6 +76,11 @@ export async function POST(request: NextRequest) {
         console.error('Failed to sync macro thesis to Obsidian:', error);
       });
     } else if (conversionType === 'asset_view') {
+      // Validate ticker
+      if (!data.ticker || data.ticker === 'undefined' || typeof data.ticker !== 'string' || data.ticker.trim() === '') {
+        return NextResponse.json({ error: 'Valid ticker is required for asset view' }, { status: 400 });
+      }
+
       // Resolve ticker to underlying_id
       let [underlying] = await db
         .select()
