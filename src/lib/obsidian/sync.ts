@@ -3,7 +3,7 @@ import path from 'path';
 import { db } from '@/db';
 import { mainClaims, macroTheses, assetViews, underlyings } from '@/db/schema';
 import type { MainClaim, MacroThesis, AssetView } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import {
   parseMarkdown,
   generateMarkdownFile,
@@ -160,6 +160,36 @@ async function syncMainClaimToDatabase(
     };
 
     if (operation === 'create' || !existingId) {
+      // Check for existing claim with same claim text (prevent duplicates)
+      const [existingByClaim] = await db
+        .select()
+        .from(mainClaims)
+        .where(eq(mainClaims.claim, claimData.claim))
+        .limit(1);
+
+      if (existingByClaim) {
+        // Update existing record instead of creating duplicate
+        await db
+          .update(mainClaims)
+          .set(claimData)
+          .where(eq(mainClaims.id, existingByClaim.id));
+
+        const newFrontmatter = { ...frontmatter, id: existingByClaim.id, last_synced_at: new Date().toISOString() };
+        const newContent = require('gray-matter').stringify(content, newFrontmatter);
+        await fs.writeFile(filePath, newContent, 'utf-8');
+
+        // Track in sync state cache
+        await syncStateCache.track(filePath, existingByClaim.id, 'main_claim');
+
+        return {
+          success: true,
+          action: 'updated',
+          entityType: 'main_claim',
+          entityId: existingByClaim.id,
+          filePath,
+        };
+      }
+
       // Create new main claim
       const [created] = await db
         .insert(mainClaims)
@@ -287,6 +317,36 @@ async function syncMacroThesisToDatabase(
     };
 
     if (operation === 'create' || !existingId) {
+      // Check for existing thesis with same title (prevent duplicates)
+      const [existingByTitle] = await db
+        .select()
+        .from(macroTheses)
+        .where(eq(macroTheses.title, thesisData.title))
+        .limit(1);
+
+      if (existingByTitle) {
+        // Update existing record instead of creating duplicate
+        await db
+          .update(macroTheses)
+          .set(thesisData)
+          .where(eq(macroTheses.id, existingByTitle.id));
+
+        const newFrontmatter = { ...frontmatter, id: existingByTitle.id, last_synced_at: new Date().toISOString() };
+        const newContent = require('gray-matter').stringify(content, newFrontmatter);
+        await fs.writeFile(filePath, newContent, 'utf-8');
+
+        // Track in sync state cache
+        await syncStateCache.track(filePath, existingByTitle.id, 'macro_thesis');
+
+        return {
+          success: true,
+          action: 'updated',
+          entityType: 'macro_thesis',
+          entityId: existingByTitle.id,
+          filePath,
+        };
+      }
+
       const [created] = await db
         .insert(macroTheses)
         .values(thesisData)
@@ -428,6 +488,39 @@ async function syncAssetViewToDatabase(
     };
 
     if (operation === 'create' || !existingId) {
+      // Check for existing view with same ticker + title (prevent duplicates)
+      const [existingByTitleAndTicker] = await db
+        .select()
+        .from(assetViews)
+        .where(and(
+          eq(assetViews.underlyingId, viewData.underlyingId),
+          eq(assetViews.title, viewData.title)
+        ))
+        .limit(1);
+
+      if (existingByTitleAndTicker) {
+        // Update existing record instead of creating duplicate
+        await db
+          .update(assetViews)
+          .set(viewData)
+          .where(eq(assetViews.id, existingByTitleAndTicker.id));
+
+        const newFrontmatter = { ...frontmatter, id: existingByTitleAndTicker.id, last_synced_at: new Date().toISOString() };
+        const newContent = require('gray-matter').stringify(content, newFrontmatter);
+        await fs.writeFile(filePath, newContent, 'utf-8');
+
+        // Track in sync state cache
+        await syncStateCache.track(filePath, existingByTitleAndTicker.id, 'asset_view');
+
+        return {
+          success: true,
+          action: 'updated',
+          entityType: 'asset_view',
+          entityId: existingByTitleAndTicker.id,
+          filePath,
+        };
+      }
+
       const [created] = await db
         .insert(assetViews)
         .values(viewData)
