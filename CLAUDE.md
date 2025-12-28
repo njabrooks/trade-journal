@@ -41,6 +41,21 @@ npx tsx scripts/migrate-claims-structure.ts     # Migrate existing insights to c
 npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psql
 ```
 
+## Documentation Map
+
+**For Developers** (quick reference and navigation):
+- **CLAUDE.md** (this file) - Quick reference, common commands, file navigation
+- **[Terminology Guide](docs/terminology.md)** - Authoritative term definitions (PRD-aligned)
+- **[Research Workflow](docs/features/research-workflow.md)** - Complete research workflow guide
+
+**For Architects** (system design and vision):
+- **[PRD v1.1](docs/PRD_v1.1.md)** - Product vision and requirements
+- **[System Architecture](docs/system_architecture_transition_plan.md)** - Implementation roadmap and transition plan
+- **[Implementation Progress](docs/implementation_progress.md)** - Phase completion tracking
+
+**Historical/Reference**:
+- **[docs/archive/](docs/archive/)** - Completed implementation notes and planning docs
+
 ## Architecture Overview
 
 ### Decision Hierarchy
@@ -311,28 +326,28 @@ MASSIVE_API_BASE_URL=https://api.massive.com
 - State codes are managed via playbook system (`playbook_items` table)
 
 ### When Working with Research Workflow
-The research workflow follows a local-first AI processing pattern:
+The research workflow follows a **local-first AI processing pattern** using Toulmin framework claim extraction.
 
-1. **Local Processing** (via Claude Code skills):
-   - Use `/process-transcript` skill to extract Toulmin claims from transcripts/articles
-   - Generates markdown audit with hierarchical claims structure
-   - Claims include: text, evidence, reasoning, backing, confidence, category
+**Quick Start**:
+```bash
+/process-transcript path/to/transcript    # Extract Toulmin claims
+/finalize-for-upload path/to/audit        # Upload to database
+```
 
-2. **Upload to Database**:
-   - Use `/finalize-for-upload` skill to auto-detect content type and upload
-   - Or use specific MCP skills: `/mcp-upload-artifact` or `/mcp-upload-insight`
-   - Parser (`parseClaimsMarkdown.ts`) extracts claims structure into JSONB
+**Full Guide**: See **[docs/features/research-workflow.md](docs/features/research-workflow.md)** for:
+- Detailed workflow stages and Toulmin framework explanation
+- Claims structure specification (main claims + evidence claims)
+- UI features (filtering, search, conversion)
+- Testing procedures and troubleshooting
+- Environment configuration (Obsidian vault integration)
 
-3. **Claim Browsing & Conversion**:
-   - `ClaimsBrowser.tsx` displays hierarchical claims with filtering/search
-   - `ConvertClaimDialog.tsx` converts claims → macro theses or asset views
-   - `/api/research/convert-claim` handles conversion with provenance tracking
+**Key Components**:
+- **Parser**: `src/lib/research/parseClaimsMarkdown.ts` - Audit markdown → JSON
+- **UI Components**: `src/components/research/` (ClaimsBrowser, ConvertClaimDialog, etc.)
+- **Skills**: `.claude/skills/` (process-transcript, synthesize-claims, deep-dive, finalize-for-upload)
+- **Database**: `research_artifacts`, `research_insights` (with `claims_structure` JSONB), `main_claims` tables
 
-4. **Synthesis**:
-   - Use `/synthesize-claims` skill to cross-reference new claims against existing theses/views
-   - Identifies opportunities for new theses vs evidence for existing beliefs
-
-**CRITICAL:** No in-app AI processing - all AI work happens locally via Claude Code skills before upload. The web UI is for browsing and manual conversion only.
+**CRITICAL**: No in-app AI processing - all AI work happens locally via Claude Code skills before upload. The web UI is for browsing and manual conversion only.
 
 ### When Adding API Routes
 - Use Next.js App Router conventions (`/src/app/api/*/route.ts`)
@@ -368,7 +383,7 @@ The research workflow follows a local-first AI processing pattern:
 
 ## Quick Navigation for Specific Features
 
-- **Research Workflow** → `/src/lib/research/parseClaimsMarkdown.ts` + `/src/components/research/` + `/.cursor/skills/`
+- **Research Workflow** → [docs/features/research-workflow.md](docs/features/research-workflow.md) (full guide) + `/src/lib/research/` + `/.claude/skills/`
 - **Claims Browsing** → `/src/components/research/ClaimsBrowser.tsx` + `/src/app/research/[id]/page.tsx`
 - **Claim Conversion** → `/src/components/research/ConvertClaimDialog.tsx` + `/src/app/api/research/convert-claim/`
 - **Macro Theses** → `/src/app/theses/` + `/src/db/schema.ts` (macro_theses table)
