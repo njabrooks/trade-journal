@@ -1,6 +1,6 @@
 ---
 title: "From Apps to Agents: Why 2026 Is the Real AI Inflection Point"
-author: "YouTube"
+author: "Jordi Visser"
 source_type: "transcript"
 published_date: "2025-12-21"
 source_url: "https://www.youtube.com/watch?v=0Hcw9toVRNg"

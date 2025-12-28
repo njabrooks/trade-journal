@@ -68,6 +68,18 @@ export const macroTheses = pgTable(
     timeHorizon: text('time_horizon'), // 'long_term' | 'medium_term' | 'short_term'
     confidenceLevel: text('confidence_level'), // 'high' | 'medium' | 'low' | 'exploratory'
     status: text('status').notNull().default('active'), // 'active' | 'under_review' | 'retired' | 'superseded'
+
+    // Position structure (NEW)
+    sectors: text('sectors').array().default(sql`'{}'`), // e.g., ['AI hyperscalers', 'crypto alts']
+    direction: text('direction'), // 'bullish' | 'bearish' | 'neutral'
+    positionStartDate: date('position_start_date'),
+    positionEndDate: date('position_end_date'),
+
+    // Outcome tracking (NEW)
+    outcome: text('outcome'), // 'validated' | 'invalidated' | 'partial' | 'ongoing'
+    outcomeNotes: text('outcome_notes'),
+    actualOutcomeDate: date('actual_outcome_date'),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
@@ -78,6 +90,8 @@ export const macroTheses = pgTable(
     statusIdx: index('idx_macro_theses_status').on(table.status),
     typeIdx: index('idx_macro_theses_type').on(table.thesisType),
     nextReviewIdx: index('idx_macro_theses_next_review').on(table.nextReviewDueAt),
+    directionIdx: index('idx_macro_theses_direction').on(table.direction),
+    positionDatesIdx: index('idx_macro_theses_position_dates').on(table.positionStartDate, table.positionEndDate),
   })
 );
 
@@ -107,6 +121,22 @@ export const assetViews = pgTable(
     timeHorizon: text('time_horizon'),
     confidenceLevel: text('confidence_level'),
     status: text('status').notNull().default('active'),
+
+    // Position structure (NEW)
+    direction: text('direction'), // 'bullish' | 'bearish' | 'neutral'
+    positionStartDate: date('position_start_date'),
+    positionEndDate: date('position_end_date'),
+
+    // Price targets (NEW)
+    targetPrice: numeric('target_price'),
+    entryReferencePrice: numeric('entry_reference_price'),
+
+    // Outcome tracking (NEW)
+    outcome: text('outcome'), // 'validated' | 'invalidated' | 'partial' | 'ongoing'
+    outcomeNotes: text('outcome_notes'),
+    actualOutcomeDate: date('actual_outcome_date'),
+    actualPrice: numeric('actual_price'),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
@@ -118,11 +148,133 @@ export const assetViews = pgTable(
     underlyingIdx: index('idx_asset_views_underlying').on(table.underlyingId),
     statusIdx: index('idx_asset_views_status').on(table.status),
     nextReviewIdx: index('idx_asset_views_next_review').on(table.nextReviewDueAt),
+    directionIdx: index('idx_asset_views_direction').on(table.direction),
+    positionDatesIdx: index('idx_asset_views_position_dates').on(table.positionStartDate, table.positionEndDate),
   })
 );
 
 export type AssetView = typeof assetViews.$inferSelect;
 export type NewAssetView = typeof assetViews.$inferInsert;
+
+// ============================================================================
+// Main Claims (First-Class Claim Entities)
+// ============================================================================
+
+export const mainClaims = pgTable(
+  'main_claims',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    // Claim identity
+    title: text('title').notNull(),
+    category: text('category').notNull(), // 'macro' | 'asset_specific'
+
+    // Toulmin Framework (full structure)
+    claim: text('claim').notNull(),
+    evidence: text('evidence'),
+    reasoning: text('reasoning'),
+    backing: text('backing'),
+    qualifier: text('qualifier'), // 'high' | 'medium' | 'low' | 'exploratory'
+    rebuttal: text('rebuttal'),
+
+    // Metadata
+    timeHorizon: text('time_horizon'), // 'long_term' | 'medium_term' | 'short_term'
+    relevantTickers: text('relevant_tickers').array(),
+
+    // Lifecycle
+    status: text('status').notNull().default('active'), // 'active' | 'invalidated' | 'merged'
+    confidenceEvolution: jsonb('confidence_evolution'),
+
+    // Timestamps
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    lastEvidenceAddedAt: timestamp('last_evidence_added_at', { withTimezone: true }),
+  },
+  (table) => ({
+    categoryIdx: index('idx_main_claims_category').on(table.category),
+    statusIdx: index('idx_main_claims_status').on(table.status),
+    tickersIdx: index('idx_main_claims_tickers').on(table.relevantTickers),
+  })
+);
+
+export type MainClaim = typeof mainClaims.$inferSelect;
+export type NewMainClaim = typeof mainClaims.$inferInsert;
+
+// ============================================================================
+// Main Claim Evidence (Links Supporting Claims to Main Claims)
+// ============================================================================
+
+export const mainClaimEvidence = pgTable(
+  'main_claim_evidence',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    mainClaimId: uuid('main_claim_id')
+      .notNull()
+      .references(() => mainClaims.id, { onDelete: 'cascade' }),
+    researchInsightId: uuid('research_insight_id')
+      .notNull()
+      .references(() => researchInsights.id, { onDelete: 'cascade' }),
+
+    // Path to supporting claim in claims_structure JSONB
+    supportingClaimId: text('supporting_claim_id').notNull(),
+
+    // Relationship type
+    relationshipType: text('relationship_type').notNull(), // 'supports' | 'refutes' | 'qualifies'
+
+    // Metadata
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+    addedBy: text('added_by'),
+    notes: text('notes'),
+  },
+  (table) => ({
+    mainClaimIdx: index('idx_main_claim_evidence_main_claim').on(table.mainClaimId),
+    insightIdx: index('idx_main_claim_evidence_insight').on(table.researchInsightId),
+  })
+);
+
+export type MainClaimEvidence = typeof mainClaimEvidence.$inferSelect;
+export type NewMainClaimEvidence = typeof mainClaimEvidence.$inferInsert;
+
+// ============================================================================
+// Claim Thesis Mappings (Many-to-Many: Claims ↔ Theses/Views)
+// ============================================================================
+
+export const claimThesisMappings = pgTable(
+  'claim_thesis_mappings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    mainClaimId: uuid('main_claim_id')
+      .notNull()
+      .references(() => mainClaims.id, { onDelete: 'cascade' }),
+
+    // Exactly one of these must be set
+    macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, {
+      onDelete: 'cascade',
+    }),
+    assetViewId: uuid('asset_view_id').references(() => assetViews.id, {
+      onDelete: 'cascade',
+    }),
+
+    // Relationship
+    mappingType: text('mapping_type').notNull(), // 'supports' | 'refutes' | 'foundation'
+    confidence: text('confidence'), // 'high' | 'medium' | 'low'
+
+    // Metadata
+    mappedAt: timestamp('mapped_at', { withTimezone: true }).notNull().defaultNow(),
+    mappedBy: text('mapped_by').notNull(),
+    notes: text('notes'),
+  },
+  (table) => ({
+    mainClaimIdx: index('idx_claim_thesis_main_claim').on(table.mainClaimId),
+    macroThesisIdx: index('idx_claim_thesis_macro').on(table.macroThesisId),
+    assetViewIdx: index('idx_claim_thesis_view').on(table.assetViewId),
+  })
+);
+
+export type ClaimThesisMapping = typeof claimThesisMappings.$inferSelect;
+export type NewClaimThesisMapping = typeof claimThesisMappings.$inferInsert;
 
 // ============================================================================
 // Underlyings IV History

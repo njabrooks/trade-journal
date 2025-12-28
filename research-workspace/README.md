@@ -1,7 +1,7 @@
 # Research Workflow - Complete Guide
 
-**Last Updated**: 2025-12-26
-**Status**: Production-ready with known issues under investigation
+**Last Updated**: 2025-12-28
+**Status**: Production-ready with first-class main claims architecture
 
 ---
 
@@ -13,9 +13,11 @@ The research workflow enables systematic conversion of research transcripts into
 
 - **Forensic Claim Extraction**: No information loss from source material
 - **Hierarchical Structure**: Main claims link to supporting/rebutting evidence
+- **First-Class Main Claims**: Promote high-quality claims to dedicated `main_claims` table
+- **Evidence Accumulation**: Link supporting claims from multiple audits to main claims
 - **Conversion Tracking**: Claims track when/what they're converted to
 - **Provenance Chain**: Full lineage from transcript → claim → thesis/view
-- **Interactive UI**: Browse, filter, search, and convert claims in app
+- **Interactive UI**: Browse, filter, search, promote, and convert claims in app
 
 ---
 
@@ -46,9 +48,10 @@ Visit `http://localhost:3000/research/[insight-id]`
 
 **Features**:
 - Expandable claim cards with full Toulmin structure
+- **Promote** high-quality claims to first-class `main_claims` table
+- **Convert** claims to macro theses or asset views
 - Filter by type (thesis/view candidates), confidence, conversion status
-- Search across claims, evidence, and tickers
-- Convert individual claims to theses/views with one click
+- Search across claims, evidence, reasoning, and tickers
 
 ---
 
@@ -69,10 +72,10 @@ The workflow uses a **hierarchical JSONB structure** stored in `research_insight
 
       // Toulmin Framework
       claim: "The main assertion",
-      evidence: ["Evidence point 1", "Evidence point 2"],
-      reasoning: "How evidence supports claim",
+      evidence: "Supporting data and observations",
+      reasoning: "Logic connecting evidence to claim",
       backing: "Additional support for reasoning",
-      rebuttal: ["Counter-argument 1", "Counter-argument 2"],
+      rebuttal: "Counter-arguments or exceptions",
       qualifier: "high" | "medium" | "low" | "exploratory",
 
       // Metadata
@@ -97,9 +100,9 @@ The workflow uses a **hierarchical JSONB structure** stored in `research_insight
       level: "evidence",
       type: "supporting" | "rebutting",
       claim: "Evidence claim text",
-      evidence: ["Data point 1", "Data point 2"],
-      qualifier: "high" | "medium" | "low",
-      supports: "Claim 1 (context)"
+      evidence: "Additional context or data",
+      confidence: "high" | "medium" | "low",
+      supports_main_claims: ["claim-1"]
     }
   ]
 }
@@ -125,7 +128,7 @@ The workflow uses a **hierarchical JSONB structure** stored in `research_insight
 -- Source material
 research_artifacts (id, title, source_type, raw_content, status, ...)
 
--- Structured analysis
+-- Structured analysis (JSONB storage)
 research_insights (
   id,
   research_artifact_id,
@@ -135,14 +138,62 @@ research_insights (
   ...
 )
 
+-- First-class main claims (NEW - Phase 1)
+main_claims (
+  id,
+  title,
+  category,
+  claim,
+  evidence,          -- Toulmin: supporting data
+  reasoning,         -- Toulmin: logic connecting evidence to claim
+  backing,
+  qualifier,
+  rebuttal,
+  status,            -- 'active' | 'invalidated' | 'merged'
+  ...
+)
+
+-- Evidence linking (NEW - Phase 1)
+main_claim_evidence (
+  id,
+  main_claim_id,
+  research_insight_id,
+  supporting_claim_id,      -- Path to claim in claims_structure JSONB
+  relationship_type,        -- 'supports' | 'refutes' | 'qualifies'
+  ...
+)
+
+-- Claim-to-thesis/view mappings (NEW - Phase 1)
+claim_thesis_mappings (
+  id,
+  main_claim_id,
+  macro_thesis_id,         -- One of these
+  asset_view_id,           -- is set
+  mapping_type,            -- 'supports' | 'refutes' | 'foundation'
+  ...
+)
+
 -- Hierarchy
-macro_theses (id, title, description, thesis_type, ...)
-asset_views (id, underlying_id, title, description, view_type, ...)
+macro_theses (id, title, description, thesis_type, direction, ...)
+asset_views (id, underlying_id, title, description, direction, target_price, ...)
 ```
 
 ---
 
 ## Workflows
+
+### Full Research → Main Claim (NEW)
+
+```
+1. Local: /process-transcript → audit with Toulmin claims
+2. Local: /finalize-for-upload → upload to database
+3. App: Browse claims at /research/{id}
+4. App: Click "Promote" on high-quality claim
+5. App: Confirm promotion
+6. Claim promoted to first-class main_claims table
+7. Can now accumulate evidence from multiple audits
+8. Can link to multiple theses/views
+```
 
 ### Full Research → Thesis
 
@@ -152,8 +203,9 @@ asset_views (id, underlying_id, title, description, view_type, ...)
 3. App: Browse claims at /research/{id}
 4. App: Click "Convert" on thesis candidate
 5. App: Select thesis type (secular/cyclical/structural/tactical)
-6. App: Submit → redirected to /theses/{id}
-7. Claim shows "✓ Converted to macro thesis" badge
+6. App: Add directional stance (bullish/bearish/neutral), dates, sectors
+7. App: Submit → redirected to /theses/{id}
+8. Claim shows "✓ Converted to macro thesis" badge
 ```
 
 ### Full Research → View
@@ -164,8 +216,9 @@ asset_views (id, underlying_id, title, description, view_type, ...)
 3. App: Browse claims at /research/{id}
 4. App: Click "Convert" on view candidate
 5. App: Enter ticker (e.g., "NVDA"), optionally link to parent thesis
-6. App: Submit → redirected to /asset-views/{id}
-7. Claim shows "✓ Converted to asset view" badge
+6. App: Add directional stance, target price, entry reference price
+7. App: Submit → redirected to /asset-views/{id}
+8. Claim shows "✓ Converted to asset view" badge
 ```
 
 ### Partial Conversion
@@ -214,8 +267,8 @@ Not all claims need to be converted:
 Each claim includes six components:
 
 1. **Claim**: The assertion being made
-2. **Evidence (Grounds)**: Data supporting the claim
-3. **Reasoning (Warrant)**: Logic connecting evidence to claim
+2. **Evidence**: Supporting data and observations
+3. **Reasoning**: Logic connecting evidence to claim
 4. **Backing**: Additional support for the reasoning
 5. **Qualifier**: Confidence level (high, medium, low, exploratory)
 6. **Rebuttal**: Counter-arguments or exceptions
@@ -253,11 +306,25 @@ macro_theses / asset_views (actionable beliefs)
 
 ---
 
-## Known Issues
+## Implementation Notes
 
-**Status**: Under investigation
+**Status**: Production-ready (2025-12-28)
 
-Recent testing has revealed issues that need resolution. These will be documented and addressed in a future update.
+### Recent Updates
+
+- ✅ First-class `main_claims` table with full Toulmin structure
+- ✅ Evidence linking via `main_claim_evidence` table
+- ✅ Claim-to-thesis/view mappings via `claim_thesis_mappings` table
+- ✅ Directional stance fields added to theses/views
+- ✅ Promotion workflow via UI "Promote" button
+- ✅ Correct Toulmin terminology (evidence/reasoning) throughout codebase
+- ✅ Obsidian bidirectional sync with configurable paths
+
+### Migration Notes
+
+Phase 5 (data migration) was skipped due to few existing records. Manual migration via UI is recommended:
+1. Use "Promote" button for high-quality claims
+2. Run SQL backfill for `direction` field if needed (see Troubleshooting)
 
 ---
 
@@ -315,9 +382,10 @@ research-workspace/
 
 ## Future Enhancements
 
-See `FUTURE_ENHANCEMENTS.md` for Phase 2+ plans:
+See `FUTURE_ENHANCEMENTS.md` for additional plans:
 
-- **Dedicated Claims Table**: Migrate from JSONB to normalized tables for better querying
+- ✅ **Dedicated Claims Table**: COMPLETE - `main_claims` table implemented
+- **Main Claim Evolution View**: Timeline of evidence accumulation over time
 - **Claim Graph Visualization**: Interactive claim hierarchy graphs
 - **AI-Assisted Extraction**: Auto-extraction of Toulmin components
 - **Claim Clustering**: Group similar claims across transcripts
@@ -338,6 +406,21 @@ FROM research_insights
 WHERE id = 'your-insight-id';
 ```
 If missing, re-upload audit file.
+
+### Issue: Need to backfill direction on existing theses/views
+
+**Solution** (manual SQL):
+```sql
+-- Backfill macro theses
+UPDATE macro_theses
+SET direction = 'neutral'
+WHERE direction IS NULL;
+
+-- Backfill asset views
+UPDATE asset_views
+SET direction = 'neutral'
+WHERE direction IS NULL;
+```
 
 ### Issue: Claim conversion fails with 400 error
 

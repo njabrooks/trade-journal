@@ -4,9 +4,9 @@
  *
  * Based on Toulmin's argumentation framework:
  * - Claim: The assertion being made
- * - Grounds: Evidence supporting the claim
- * - Warrant: Reasoning connecting evidence to claim
- * - Backing: Additional support for the warrant
+ * - Evidence: Supporting data and observations
+ * - Reasoning: Logic connecting evidence to claim
+ * - Backing: Additional support for the reasoning
  * - Qualifier: Confidence level in the claim
  * - Rebuttal: Counter-arguments or exceptions
  */
@@ -29,8 +29,8 @@ export interface MainClaim {
 
   // Toulmin Framework
   claim: string; // The main assertion
-  grounds: string; // Evidence (what we observe/measure)
-  warrant: string; // Reasoning (why evidence supports claim)
+  evidence: string; // Supporting data and observations
+  reasoning: string; // Logic connecting evidence to claim
   backing: string; // Additional support for the reasoning
   qualifier: ClaimConfidence; // Confidence level
   rebuttal: string; // Counter-arguments or exceptions
@@ -65,7 +65,7 @@ export interface EvidenceClaim {
 
   // Simplified Toulmin (evidence claims don't need full structure)
   claim: string; // The evidence assertion
-  grounds?: string; // Optional additional context
+  evidence?: string; // Optional additional context
   confidence: ClaimConfidence;
 
   // References
@@ -191,4 +191,196 @@ export function getClaimsByCategory(
   category: ClaimCategory
 ): MainClaim[] {
   return claimsStructure.main_claims.filter(c => c.category === category);
+}
+
+// ============================================================================
+// First-Class Database Entities (Phase 1)
+// ============================================================================
+
+/**
+ * Database-level Main Claim - First-class entity that can:
+ * - Accumulate evidence from multiple audits over time
+ * - Link to multiple theses/views (many-to-many)
+ * - Track confidence evolution
+ * - Have independent lifecycle
+ *
+ * Distinct from audit-level MainClaim (stored in JSONB)
+ */
+export interface DbMainClaim {
+  id: string; // UUID
+
+  // Claim identity
+  title: string;
+  category: 'macro' | 'asset_specific';
+
+  // Toulmin Framework (full structure)
+  claim: string;
+  evidence: string | null;
+  reasoning: string | null;
+  backing: string | null;
+  qualifier: 'high' | 'medium' | 'low' | 'exploratory' | null;
+  rebuttal: string | null;
+
+  // Metadata
+  timeHorizon: 'long_term' | 'medium_term' | 'short_term' | null;
+  relevantTickers: string[] | null;
+
+  // Lifecycle
+  status: 'active' | 'invalidated' | 'merged';
+  confidenceEvolution: any | null; // JSONB tracking confidence changes
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastEvidenceAddedAt: Date | null;
+}
+
+/**
+ * Database-level Main Claim Evidence - Links supporting claims from audits to main claims
+ */
+export interface DbMainClaimEvidence {
+  id: string; // UUID
+  mainClaimId: string;
+  researchInsightId: string;
+
+  // Path to supporting claim in claims_structure JSONB
+  supportingClaimId: string; // e.g., "claim-2"
+
+  // Relationship
+  relationshipType: 'supports' | 'refutes' | 'qualifies';
+
+  // Metadata
+  addedAt: Date;
+  addedBy: string | null;
+  notes: string | null;
+}
+
+/**
+ * Database-level Claim Thesis Mapping - Many-to-many relationships between claims and theses/views
+ */
+export interface DbClaimThesisMapping {
+  id: string; // UUID
+  mainClaimId: string;
+
+  // Exactly one of these
+  macroThesisId: string | null;
+  assetViewId: string | null;
+
+  // Relationship
+  mappingType: 'supports' | 'refutes' | 'foundation';
+  confidence: 'high' | 'medium' | 'low' | null;
+
+  // Metadata
+  mappedAt: Date;
+  mappedBy: string;
+  notes: string | null;
+}
+
+/**
+ * Enhanced Macro Thesis with position fields
+ */
+export interface DbMacroThesisEnhanced {
+  // Existing fields (from schema.ts MacroThesis type)
+  id: string;
+  title: string;
+  description: string | null;
+  thesisType: 'secular' | 'cyclical' | 'structural';
+  timeHorizon: string | null;
+  confidenceLevel: string | null;
+  status: string;
+
+  // NEW: Position structure
+  sectors: string[] | null;
+  direction: 'bullish' | 'bearish' | 'neutral' | null;
+  positionStartDate: string | null; // Date string
+  positionEndDate: string | null; // Date string
+
+  // NEW: Outcome tracking
+  outcome: 'validated' | 'invalidated' | 'partial' | 'ongoing' | null;
+  outcomeNotes: string | null;
+  actualOutcomeDate: string | null; // Date string
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastReviewedAt: Date | null;
+  nextReviewDueAt: Date | null;
+  notes: any | null;
+}
+
+/**
+ * Enhanced Asset View with position fields
+ */
+export interface DbAssetViewEnhanced {
+  // Existing fields
+  id: string;
+  macroThesisId: string | null;
+  underlyingId: string | null;
+  title: string;
+  description: string | null;
+  narrative: string | null;
+  fundamentalContext: string | null;
+  positioningContext: string | null;
+  regimeContext: string | null;
+  timeHorizon: string | null;
+  confidenceLevel: string | null;
+  status: string;
+
+  // NEW: Position structure
+  direction: 'bullish' | 'bearish' | 'neutral' | null;
+  positionStartDate: string | null; // Date string
+  positionEndDate: string | null; // Date string
+
+  // NEW: Price targets
+  targetPrice: string | null; // numeric as string
+  entryReferencePrice: string | null; // numeric as string
+
+  // NEW: Outcome tracking
+  outcome: 'validated' | 'invalidated' | 'partial' | 'ongoing' | null;
+  outcomeNotes: string | null;
+  actualOutcomeDate: string | null; // Date string
+  actualPrice: string | null; // numeric as string
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  lastReviewedAt: Date | null;
+  nextReviewDueAt: Date | null;
+  notes: any | null;
+}
+
+// ============================================================================
+// Type Guards for Database Entities
+// ============================================================================
+
+export function isDbMainClaim(data: any): data is DbMainClaim {
+  return (
+    data &&
+    typeof data.id === 'string' &&
+    typeof data.title === 'string' &&
+    typeof data.claim === 'string' &&
+    ['macro', 'asset_specific'].includes(data.category) &&
+    ['active', 'invalidated', 'merged'].includes(data.status)
+  );
+}
+
+export function isDbMainClaimEvidence(data: any): data is DbMainClaimEvidence {
+  return (
+    data &&
+    typeof data.id === 'string' &&
+    typeof data.mainClaimId === 'string' &&
+    typeof data.researchInsightId === 'string' &&
+    typeof data.supportingClaimId === 'string' &&
+    ['supports', 'refutes', 'qualifies'].includes(data.relationshipType)
+  );
+}
+
+export function isDbClaimThesisMapping(data: any): data is DbClaimThesisMapping {
+  return (
+    data &&
+    typeof data.id === 'string' &&
+    typeof data.mainClaimId === 'string' &&
+    (data.macroThesisId || data.assetViewId) &&
+    ['supports', 'refutes', 'foundation'].includes(data.mappingType)
+  );
 }

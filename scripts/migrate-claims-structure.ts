@@ -35,8 +35,8 @@ interface MainClaim {
   type: 'thesis_candidate' | 'view_candidate';
   category: 'macro' | 'asset_specific';
   claim: string;
-  grounds: string;
-  warrant: string;
+  evidence: string;
+  reasoning: string;
   backing: string;
   qualifier: 'high' | 'medium' | 'low' | 'exploratory';
   rebuttal: string;
@@ -56,7 +56,7 @@ interface EvidenceClaim {
   level: 'evidence';
   type: 'supporting' | 'rebutting';
   claim: string;
-  grounds?: string;
+  evidence?: string;
   confidence: 'high' | 'medium' | 'low';
   supports_main_claims: string[];
 }
@@ -96,8 +96,8 @@ function transformToClaimsStructure(
       type: inferClaimType(c, insight),
       category: inferCategory(c, insight),
       claim: c.claim || c.text || '',
-      grounds: c.evidence || c.grounds || '',
-      warrant: c.reasoning || c.warrant || '',
+      evidence: c.evidence || c.grounds || '',
+      reasoning: c.reasoning || c.warrant || '',
       backing: c.backing || '',
       qualifier: normalizeConfidence(c.confidence),
       rebuttal: c.rebuttal || '',
@@ -117,7 +117,7 @@ function transformToClaimsStructure(
       level: 'evidence',
       type: 'supporting',
       claim: e.evidence || e.claim || e.text || '',
-      grounds: e.details || e.grounds || undefined,
+      evidence: e.details || e.evidence || e.grounds || undefined,
       confidence: normalizeConfidence(e.confidence),
       supports_main_claims: [], // Cannot infer without explicit links
     });
@@ -131,7 +131,7 @@ function transformToClaimsStructure(
       level: 'evidence',
       type: 'rebutting',
       claim: e.evidence || e.claim || e.text || '',
-      grounds: e.details || e.grounds || undefined,
+      evidence: e.details || e.evidence || e.grounds || undefined,
       confidence: normalizeConfidence(e.confidence),
       supports_main_claims: [], // Cannot infer without explicit links
     });

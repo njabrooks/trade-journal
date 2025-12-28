@@ -31,7 +31,7 @@ Input: Theme or ticker to explore
 4. Iteratively refine with user
 5. Output to deep-dives/ directory
   ↓
-Output: research-workspace/deep-dives/[theme]-analysis.md
+Output: ${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_DEEP_DIVES_DIR}/[theme]-analysis.md
 ```
 
 ## Instructions
@@ -43,9 +43,49 @@ When the user asks for a deep dive:
 
 Follow these steps:
 
+### Step 0: Read Environment Variables and Construct Paths
+
+Before processing, read the Obsidian directory configuration from `.env.local`:
+
+```bash
+# Read environment variables
+cat /Users/njb/Desktop/trade-journal/.env.local | grep OBSIDIAN
+```
+
+Construct the full path:
+- **Deep dives directory**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_DEEP_DIVES_DIR}`
+
+For example, with defaults:
+- Deep dives: `/Users/njb/Desktop/nick/investing/research/deep-dives`
+
+Use this path for all deep dive outputs. If env vars are not set, fall back to project-local `research-workspace/deep-dives/` directory.
+
 ### Step 1: Check Existing Research
 
 Query the database to see what already exists on this topic:
+
+**Check existing main claims** (first-class claim entities):
+```sql
+SELECT
+  id,
+  title,
+  category,
+  claim,
+  qualifier,
+  time_horizon,
+  relevant_tickers,
+  status,
+  created_at,
+  last_evidence_added_at
+FROM main_claims
+WHERE status = 'active'
+  AND (
+    title ILIKE '%keyword%' OR
+    claim ILIKE '%keyword%' OR
+    '%ticker%' = ANY(relevant_tickers)
+  )
+ORDER BY created_at DESC;
+```
 
 **For themes** (potential macro thesis):
 ```sql
@@ -55,7 +95,9 @@ SELECT
   description,
   thesis_type,
   confidence_level,
-  time_horizon
+  time_horizon,
+  direction,
+  sectors
 FROM macro_theses
 WHERE status = 'active'
   AND (title ILIKE '%keyword%' OR description ILIKE '%keyword%')
@@ -70,6 +112,8 @@ SELECT
   av.description,
   av.confidence_level,
   av.time_horizon,
+  av.direction,
+  av.target_price,
   u.ticker,
   mt.title as parent_thesis
 FROM asset_views av
@@ -105,8 +149,15 @@ LIMIT 5;
 ```
 📚 Existing Research
 
+Main Claims: 1 found
+  - "AI Infrastructure Buildout Will Drive PMI Expansion 2025-2026" (macro, high confidence)
+    Created: 2025-01-15
+    Evidence count: 3 supporting, 1 rebutting
+    Last evidence: 2025-01-18
+
 Macro Theses: 1 found
   - "AI Infrastructure Build-Out" (secular, high confidence)
+    Direction: bullish
     Created: 2025-01-15
 
 Asset Views: 0 found for NVDA
@@ -117,9 +168,11 @@ Research Artifacts: 2 found
   - [Other artifact]
 
 How should we proceed?
-1. Create NEW macro thesis (distinct from existing)
-2. Create NEW asset view
-3. ENHANCE existing thesis with more evidence
+1. STRENGTHEN existing main claim with additional evidence
+2. Create NEW main claim (distinct perspective)
+3. Create NEW macro thesis (distinct from existing)
+4. Create NEW asset view
+5. ENHANCE existing thesis with more evidence
 4. Start fresh analysis (no existing research)
 
 [User chooses]
@@ -127,11 +180,21 @@ How should we proceed?
 
 ### Step 2: Frame the Analysis
 
-Based on user input and what exists, determine:
+Based on user input and what exists, determine the analysis path:
+
+**If user chooses "STRENGTHEN existing main claim"**:
+- Goal: Add additional evidence to existing first-class main claim
+- Query existing main claim details including current evidence
+- Develop new supporting/rebutting evidence with Toulmin structure
+- Output: Deep dive document with evidence to link via `/api/research/link-evidence`
+- Skip to Step 3B (Evidence Development)
+
+**If user chooses standard thesis/view creation**:
 
 **Type**:
 - Macro Thesis (cross-asset, thematic)
 - Asset View (ticker-specific)
+- Main Claim (reusable insight worth tracking independently)
 
 **For Macro Thesis**, determine:
 - **Thesis Type**: secular, cyclical, structural, tactical
@@ -376,10 +439,13 @@ notes:
   - Positioning Context (how you're positioned, if applicable)
   - Regime Context (how it performs in different market regimes)
 
-Save to:
+Save to the Obsidian deep dives directory (from env vars):
 ```
-research-workspace/deep-dives/[theme-or-ticker]-analysis.md
+${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_DEEP_DIVES_DIR}/[theme-or-ticker]-analysis.md
 ```
+
+For example (with default env vars):
+- Output: `/Users/njb/Desktop/nick/investing/research/deep-dives/nvda-monopoly-dynamics-analysis.md`
 
 ### Step 6: Wrap Up
 

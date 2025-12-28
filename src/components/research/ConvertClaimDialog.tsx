@@ -25,7 +25,7 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
   // Form state
   const [title, setTitle] = useState(claim.claim);
   const [description, setDescription] = useState(
-    `${claim.grounds}\n\n${claim.warrant}\n\n${claim.backing}`.trim()
+    `${claim.evidence}\n\n${claim.reasoning}\n\n${claim.backing}`.trim()
   );
   const [thesisType, setThesisType] = useState<'secular' | 'cyclical' | 'structural' | 'tactical'>(
     'secular'
@@ -34,6 +34,16 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
   const [timeHorizon, setTimeHorizon] = useState(claim.time_horizon || 'medium_term');
   const [confidenceLevel, setConfidenceLevel] = useState(claim.qualifier);
   const [notes, setNotes] = useState(claim.rebuttal ? `Counter-arguments: ${claim.rebuttal}` : '');
+
+  // NEW: Position structure fields
+  const [direction, setDirection] = useState<'bullish' | 'bearish' | 'neutral'>('neutral');
+  const [positionStartDate, setPositionStartDate] = useState('');
+  const [positionEndDate, setPositionEndDate] = useState('');
+  const [sectors, setSectors] = useState('');
+
+  // NEW: Asset view specific fields
+  const [targetPrice, setTargetPrice] = useState('');
+  const [entryReferencePrice, setEntryReferencePrice] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +66,16 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
             timeHorizon,
             confidenceLevel,
             notes,
+            // NEW: Position structure
+            direction: direction || null,
+            positionStartDate: positionStartDate || null,
+            positionEndDate: positionEndDate || null,
+            sectors: conversionType === 'macro_thesis' && sectors
+              ? sectors.split(',').map(s => s.trim()).filter(Boolean)
+              : undefined,
+            // NEW: Asset view specific
+            targetPrice: conversionType === 'asset_view' && targetPrice ? parseFloat(targetPrice) : null,
+            entryReferencePrice: conversionType === 'asset_view' && entryReferencePrice ? parseFloat(entryReferencePrice) : null,
           },
         }),
       });
@@ -243,6 +263,108 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
               <option value="exploratory">Exploratory</option>
             </select>
           </div>
+
+          {/* NEW: Direction */}
+          <div>
+            <label htmlFor="direction" className="block text-sm font-medium text-slate-700 mb-2">
+              Direction
+            </label>
+            <select
+              id="direction"
+              value={direction}
+              onChange={(e) => setDirection(e.target.value as typeof direction)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="neutral">Neutral (Observational)</option>
+              <option value="bullish">Bullish (Positive)</option>
+              <option value="bearish">Bearish (Negative)</option>
+            </select>
+            <p className="text-xs text-slate-500 mt-1">
+              Your directional stance on this {conversionType === 'macro_thesis' ? 'theme' : 'asset'}
+            </p>
+          </div>
+
+          {/* NEW: Position Dates */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="positionStartDate" className="block text-sm font-medium text-slate-700 mb-2">
+                Position Start Date
+              </label>
+              <input
+                id="positionStartDate"
+                type="date"
+                value={positionStartDate}
+                onChange={(e) => setPositionStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="positionEndDate" className="block text-sm font-medium text-slate-700 mb-2">
+                Position End Date
+              </label>
+              <input
+                id="positionEndDate"
+                type="date"
+                value={positionEndDate}
+                onChange={(e) => setPositionEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* NEW: Sectors (for macro thesis) */}
+          {conversionType === 'macro_thesis' && (
+            <div>
+              <label htmlFor="sectors" className="block text-sm font-medium text-slate-700 mb-2">
+                Sectors
+              </label>
+              <input
+                id="sectors"
+                type="text"
+                value={sectors}
+                onChange={(e) => setSectors(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., AI hyperscalers, crypto alts, energy infrastructure"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Comma-separated list of sectors this thesis applies to
+              </p>
+            </div>
+          )}
+
+          {/* NEW: Price Targets (for asset view) */}
+          {conversionType === 'asset_view' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="targetPrice" className="block text-sm font-medium text-slate-700 mb-2">
+                  Target Price
+                </label>
+                <input
+                  id="targetPrice"
+                  type="number"
+                  step="0.01"
+                  value={targetPrice}
+                  onChange={(e) => setTargetPrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label htmlFor="entryReferencePrice" className="block text-sm font-medium text-slate-700 mb-2">
+                  Entry Reference Price
+                </label>
+                <input
+                  id="entryReferencePrice"
+                  type="number"
+                  step="0.01"
+                  value={entryReferencePrice}
+                  onChange={(e) => setEntryReferencePrice(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Notes */}
           <div>

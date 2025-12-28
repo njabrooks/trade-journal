@@ -1,7 +1,7 @@
 ---
-name: mcp-upload-artifact
+name: upload-artifact
 description: Upload a research artifact (transcript, article, note) to Supabase database. Use when ingesting raw research content without structured insights. File should be markdown with frontmatter containing metadata.
-allowed-tools: mcp__supabase__execute_sql, Read, Bash
+allowed-tools: Read, Bash
 ---
 
 # Upload Research Artifact to Database
@@ -176,3 +176,23 @@ Check the file path and try again.
 - `created_at` and `updated_at` are automatically set by database defaults
 - Return the artifact ID so it can be used in subsequent insight uploads
 - File paths are relative to project root: `research-workspace/transcripts/file.md`
+
+## SQL Execution
+
+All SQL queries should be executed using the `psql-query.ts` helper script:
+
+```bash
+# For queries that return data (SELECT)
+npx tsx scripts/psql-query.ts "SELECT * FROM table_name WHERE condition" --format json
+
+# For queries that modify data (INSERT/UPDATE/DELETE)
+npx tsx scripts/psql-query.ts "INSERT INTO table_name (...) VALUES (...) RETURNING *" --format json
+```
+
+The helper script:
+- Loads DATABASE_URL_POOLER from .env.local automatically
+- Returns results as JSON by default (or use --format table, --format csv)
+- Handles errors and connection issues
+- Properly escapes quotes and special characters
+
+**Important**: Escape single quotes in SQL strings by doubling them: `'It''s working'`

@@ -1,5 +1,5 @@
 {
   "name": "process-transcript",
-  "description": "Process research transcripts with forensic claim extraction using Toulmin framework. Auto-formats YouTube transcripts, extracts all claims without information loss, structures with grounds/warrant/backing, categorizes as thesis/view candidates. Use for rigorous research ingestion.",
+  "description": "Process research transcripts with forensic claim extraction using Toulmin framework. Auto-formats YouTube transcripts, extracts all claims without information loss, structures with evidence/reasoning/backing, categorizes as thesis/view candidates. Use for rigorous research ingestion.",
   "instructions": "SKILL.md"
 }

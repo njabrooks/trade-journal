@@ -1,7 +1,7 @@
 ---
-name: mcp-read-views
+name: read-views
 description: Query and display asset views from Supabase database. Use when you need to read asset-specific views, filter by ticker/underlying, or examine view-to-thesis relationships for research cross-referencing.
-allowed-tools: mcp__supabase__execute_sql
+allowed-tools: Bash
 ---
 
 # Read Asset Views from Database
@@ -181,3 +181,23 @@ Show all context fields:
 - Order by `created_at DESC` for recent-first view
 - Truncate long text fields in list views, show full text for single-view queries
 - Ticker parameter should be case-insensitive (convert to uppercase)
+
+## SQL Execution
+
+All SQL queries should be executed using the `psql-query.ts` helper script:
+
+```bash
+# For queries that return data (SELECT)
+npx tsx scripts/psql-query.ts "SELECT * FROM table_name WHERE condition" --format json
+
+# For queries that modify data (INSERT/UPDATE/DELETE)
+npx tsx scripts/psql-query.ts "INSERT INTO table_name (...) VALUES (...) RETURNING *" --format json
+```
+
+The helper script:
+- Loads DATABASE_URL_POOLER from .env.local automatically
+- Returns results as JSON by default (or use --format table, --format csv)
+- Handles errors and connection issues
+- Properly escapes quotes and special characters
+
+**Important**: Escape single quotes in SQL strings by doubling them: `'It''s working'`

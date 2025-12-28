@@ -36,6 +36,9 @@ npx tsx scripts/seed_playbook_items.ts          # Initialize playbook data
 npx tsx scripts/test-claims-integration.ts      # Test claims parsing & DB integration
 npx tsx scripts/upload-audit-with-claims.ts     # Upload research artifact with claims
 npx tsx scripts/migrate-claims-structure.ts     # Migrate existing insights to claims structure
+
+# Database query helper (used by skills)
+npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psql
 ```
 
 ## Architecture Overview
@@ -175,12 +178,14 @@ Research workflow automation skills (managed skills, invoked via `/skill-name`):
 - **`synthesize-claims`** - Cross-reference audit claims against existing theses/views in database
 - **`deep-dive`** - Guide collaborative deep dive analysis on themes or tickers
 - **`finalize-for-upload`** - Upload finalized research (auto-detects artifact/insight/thesis/view)
-- **`mcp-create-thesis`** - Create macro thesis in Supabase from markdown
-- **`mcp-create-view`** - Create asset view in Supabase from markdown
-- **`mcp-read-theses`** - Query and display macro theses from database
-- **`mcp-read-views`** - Query and display asset views from database
-- **`mcp-upload-artifact`** - Upload raw research artifact to database
-- **`mcp-upload-insight`** - Upload structured insight to database
+- **`create-thesis`** - Create macro thesis in Supabase from markdown (via psql)
+- **`create-view`** - Create asset view in Supabase from markdown (via psql)
+- **`read-theses`** - Query and display macro theses from database (via psql)
+- **`read-views`** - Query and display asset views from database (via psql)
+- **`upload-artifact`** - Upload raw research artifact to database (via psql)
+- **`upload-insight`** - Upload structured insight to database (via psql)
+
+**Database Access**: All database skills use `scripts/psql-query.ts` helper instead of Supabase MCP due to reliability issues. The helper loads env vars and executes SQL via psql directly.
 
 ## Database Schema (Drizzle ORM)
 
@@ -337,9 +342,15 @@ The research workflow follows a local-first AI processing pattern:
 
 ### Database Migrations
 - Schema managed via Supabase (not local Drizzle migrations)
-- Update `/src/db/schema.ts` to match Supabase schema
-- Use Supabase MCP or console for schema changes
-- No `migrations/` directory - schema is source of truth for TypeScript types only
+- Update `/src/db/schema.ts` first as source of truth for TypeScript types
+- Apply schema changes via Supabase web console (SQL Editor)
+- No `migrations/` directory - avoid creating migration files
+- **Known Issue**: Supabase MCP tools (`apply_migration`, `execute_sql`, etc.) experience timeout errors - use web console instead
+- **Process**:
+  1. Update `src/db/schema.ts` with new table/column definitions
+  2. Generate SQL from schema changes (manually write DDL)
+  3. Apply via Supabase console → SQL Editor
+  4. Verify changes took effect
 
 ## Important Implementation Notes
 

@@ -58,7 +58,7 @@ async function testConversion() {
 
     const thesisData = {
       title: thesisCandidate.claim,
-      description: `${thesisCandidate.grounds}\n\n${thesisCandidate.warrant}\n\n${thesisCandidate.backing}`.trim(),
+      description: `${thesisCandidate.evidence}\n\n${thesisCandidate.reasoning}\n\n${thesisCandidate.backing}`.trim(),
       thesisType: 'secular' as const,
       timeHorizon: thesisCandidate.time_horizon || 'medium_term',
       confidenceLevel: thesisCandidate.qualifier,
@@ -147,7 +147,7 @@ async function testConversion() {
       const viewData = {
         underlyingId: underlying.id,
         title: viewCandidate.claim,
-        description: `${viewCandidate.grounds}\n\n${viewCandidate.warrant}\n\n${viewCandidate.backing}`.trim(),
+        description: `${viewCandidate.evidence}\n\n${viewCandidate.reasoning}\n\n${viewCandidate.backing}`.trim(),
         timeHorizon: viewCandidate.time_horizon || 'medium_term',
         confidenceLevel: viewCandidate.qualifier,
         notes: viewCandidate.rebuttal ? `Counter-arguments: ${viewCandidate.rebuttal}` : null,

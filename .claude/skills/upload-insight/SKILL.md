@@ -1,7 +1,7 @@
 ---
-name: mcp-upload-insight
+name: upload-insight
 description: Upload structured research insight to Supabase database. Use when uploading processed/analyzed research with themes, claims, and evidence. Requires existing artifact_id from a previously uploaded artifact.
-allowed-tools: mcp__supabase__execute_sql, Read, Bash
+allowed-tools: Read, Bash
 ---
 
 # Upload Research Insight to Database
@@ -244,3 +244,23 @@ Valid values: long_term, medium_term, short_term, unknown
 - `created_at` and `updated_at` are set by database defaults
 - Return the insight ID for potential use in hierarchy mapping
 - File paths are relative to project root: `research-workspace/deep-dives/file.md`
+
+## SQL Execution
+
+All SQL queries should be executed using the `psql-query.ts` helper script:
+
+```bash
+# For queries that return data (SELECT)
+npx tsx scripts/psql-query.ts "SELECT * FROM table_name WHERE condition" --format json
+
+# For queries that modify data (INSERT/UPDATE/DELETE)
+npx tsx scripts/psql-query.ts "INSERT INTO table_name (...) VALUES (...) RETURNING *" --format json
+```
+
+The helper script:
+- Loads DATABASE_URL_POOLER from .env.local automatically
+- Returns results as JSON by default (or use --format table, --format csv)
+- Handles errors and connection issues
+- Properly escapes quotes and special characters
+
+**Important**: Escape single quotes in SQL strings by doubling them: `'It''s working'`

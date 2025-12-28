@@ -43,6 +43,25 @@ When the user asks to process a transcript:
 
 Follow these steps:
 
+### Step 0: Read Environment Variables and Construct Paths
+
+Before processing, read the Obsidian directory configuration from `.env.local`:
+
+```bash
+# Read environment variables
+cat /Users/njb/Desktop/trade-journal/.env.local | grep OBSIDIAN
+```
+
+Construct the full paths:
+- **Transcripts directory**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}`
+- **Audits directory**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_AUDITS_DIR}`
+
+For example, with defaults:
+- Transcripts: `/Users/njb/Desktop/nick/investing/research/transcripts`
+- Audits: `/Users/njb/Desktop/nick/investing/research/audits`
+
+Use these paths throughout the skill execution. If env vars are not set, fall back to project-local `research-workspace/` directories.
+
 ### Step 1: Read and Format Transcript
 
 **If input is raw YouTube format**:
@@ -76,9 +95,9 @@ tags: []  # Will be populated during extraction
 (02:15) The key insight is that agents will replace apps...
 ```
 
-**Save formatted version** back to `transcripts/` with proper filename:
-- Input: `transcripts/raw-youtube-paste.md`
-- Output: `transcripts/2025-01-20-apps-to-agents.md`
+**Save formatted version** back to the Obsidian transcripts directory with proper filename:
+- Input: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}/raw-youtube-paste.md`
+- Output: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}/2025-01-20-apps-to-agents.md`
 
 **If already formatted**: Skip to Step 2
 
@@ -162,11 +181,11 @@ This creates a **claim hierarchy**:
 
 ### Step 4: Generate Audit Document
 
-Create a forensic audit document in `research-workspace/audits/` with this structure:
+Create a forensic audit document in the Obsidian audits directory (constructed from env vars in Step 0) with this structure:
 
 ```markdown
 ---
-source_transcript: "transcripts/2025-01-20-apps-to-agents.md"
+source_transcript: "${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}/2025-01-20-apps-to-agents.md"
 audit_date: "2025-01-20"
 total_claims: 23
 main_claims: 8
@@ -418,14 +437,14 @@ Use the Edit or Write tool to update the transcript file with the new frontmatte
 
 ## Output Format
 
-Save audit to:
+Save audit to the Obsidian audits directory (from env vars):
 ```
-research-workspace/audits/[date]-[slug]-audit.md
+${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_AUDITS_DIR}/[date]-[slug]-audit.md
 ```
 
-For example:
-- Input: `transcripts/2025-01-20-apps-to-agents.md`
-- Output: `audits/2025-01-20-apps-to-agents-audit.md`
+For example (with default env vars):
+- Input: `/Users/njb/Desktop/nick/investing/research/transcripts/2025-01-20-apps-to-agents.md`
+- Output: `/Users/njb/Desktop/nick/investing/research/audits/2025-01-20-apps-to-agents-audit.md`
 
 ## Key Principles
 

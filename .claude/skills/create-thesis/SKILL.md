@@ -1,7 +1,7 @@
 ---
-name: mcp-create-thesis
+name: create-thesis
 description: Create a new macro thesis in Supabase database from markdown file. Use when creating high-level cross-asset beliefs (secular, cyclical, structural) from finalized research. Creates thesis directly in hierarchy.
-allowed-tools: mcp__supabase__execute_sql, Read, Bash
+allowed-tools: Read, Bash
 ---
 
 # Create Macro Thesis in Database
@@ -85,6 +85,19 @@ notes:
 5. **Execute INSERT SQL** with parameterized query
 6. **Return thesis ID** for linking
 
+## SQL Execution via psql
+
+Execute SQL queries using the `psql-query.ts` helper script:
+
+```bash
+npx tsx scripts/psql-query.ts "INSERT INTO macro_theses (...) VALUES (...) RETURNING *" --format json
+```
+
+The helper script:
+- Loads DATABASE_URL_POOLER from .env.local automatically
+- Returns results as JSON by default
+- Handles errors and connection issues
+
 ## SQL Insert Template
 
 ```sql
@@ -100,18 +113,20 @@ INSERT INTO macro_theses (
   updated_at
 )
 VALUES (
-  $1,  -- title
-  $2,  -- description
-  $3,  -- thesis_type (nullable)
-  $4,  -- time_horizon (nullable)
-  $5,  -- confidence_level (nullable)
-  COALESCE($6, 'active'),  -- status (default 'active')
-  $7,  -- notes (jsonb, nullable)
+  'AI Infrastructure Buildout',  -- title (escape quotes with '')
+  'The rapid expansion of AI infrastructure...',  -- description
+  'secular',  -- thesis_type (nullable)
+  'long_term',  -- time_horizon (nullable)
+  'high',  -- confidence_level (nullable)
+  'active',  -- status (default 'active')
+  '{"key_drivers": ["scaling laws", "capex"]}',  -- notes (jsonb string, nullable)
   NOW(),
   NOW()
 )
 RETURNING id, title, thesis_type, confidence_level, created_at;
 ```
+
+**Important**: Escape single quotes in values by doubling them: `'It''s working'`
 
 ## Usage Instructions
 
@@ -178,7 +193,7 @@ After successful creation:
    Created: 2025-01-15 18:40:00
 
 → Next steps:
-   1. Create asset views linked to this thesis (use /mcp-create-view)
+   1. Create asset views linked to this thesis (use /create-view)
    2. Link supporting research in app UI (research_mappings)
    3. Connect to strategies in the decision hierarchy
 ```
@@ -216,15 +231,8 @@ Provide a clear, declarative thesis statement.
 
 Before creating a new thesis, consider checking for similar existing theses:
 
-```sql
-SELECT id, title, description, thesis_type, confidence_level
-FROM macro_theses
-WHERE status = 'active'
-  AND (
-    title ILIKE '%AI%' OR
-    description ILIKE '%infrastructure%'
-  )
-LIMIT 5;
+```bash
+npx tsx scripts/psql-query.ts "SELECT id, title, description, thesis_type, confidence_level FROM macro_theses WHERE status = 'active' AND (title ILIKE '%AI%' OR description ILIKE '%infrastructure%') LIMIT 5" --format json
 ```
 
 If similar theses exist, suggest to user:

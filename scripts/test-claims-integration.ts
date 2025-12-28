@@ -119,8 +119,8 @@ async function runTests() {
 
     // Toulmin framework fields
     test('3.5: Main claim has "claim" text', !!firstMainClaim.claim);
-    test('3.6: Main claim has "grounds" (evidence)', !!firstMainClaim.grounds);
-    test('3.7: Main claim has "warrant" (reasoning)', !!firstMainClaim.warrant);
+    test('3.6: Main claim has "evidence"', !!firstMainClaim.evidence);
+    test('3.7: Main claim has "reasoning"', !!firstMainClaim.reasoning);
     test('3.8: Main claim has "backing"', !!firstMainClaim.backing);
     test(
       '3.9: Main claim has valid "qualifier"',

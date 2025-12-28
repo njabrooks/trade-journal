@@ -20,7 +20,7 @@ Supports uploading:
 ## Workflow
 
 ```
-Input: research-workspace/finalized/[file].md
+Input: File path (from Obsidian vault or project workspace)
   ↓
 1. Read file
 2. Parse frontmatter to detect content type
@@ -34,11 +34,28 @@ Output: Confirmation with IDs for app UI linking
 ## Instructions
 
 When the user asks to finalize and upload:
-- "Finalize and upload finalized/nvda-view.md"
+- "Finalize and upload /Users/njb/Desktop/nick/investing/macro-theses/ai-agents-thesis.md"
 - "Upload this research to the database"
 - "Commit this thesis to Supabase"
 
 Follow these steps:
+
+### Step 0: Resolve File Path (If Needed)
+
+If the user provides a relative path, read the Obsidian directory configuration from `.env.local` to construct the full path:
+
+```bash
+# Read environment variables
+cat /Users/njb/Desktop/trade-journal/.env.local | grep OBSIDIAN
+```
+
+Construct paths based on likely entity type from path or user context:
+- **Audits**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_AUDITS_DIR}/[file]`
+- **Macro Theses**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_MACRO_THESES_DIR}/[file]`
+- **Asset Views**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_ASSET_VIEWS_DIR}/[file]`
+- **Transcripts**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}/[file]`
+
+If the user provides an absolute path, use it directly. If env vars are not set, fall back to project-local `research-workspace/` directories.
 
 ### Step 1: Read and Parse File
 
@@ -93,6 +110,12 @@ description: "Full description"
 thesis_type: secular|cyclical|structural|tactical
 time_horizon: long_term|medium_term|short_term
 confidence_level: high|medium|low|exploratory
+
+# NEW: Position structure (optional)
+direction: bullish|bearish|neutral  # Your directional stance
+position_start_date: "YYYY-MM-DD"  # When position taken
+position_end_date: "YYYY-MM-DD"    # Expected horizon
+sectors: [AI hyperscalers, crypto alts]  # Relevant sectors
 ---
 ```
 
@@ -106,6 +129,13 @@ macro_thesis_id: uuid-here  # optional
 narrative: "Overall narrative"
 time_horizon: long_term|medium_term|short_term
 confidence_level: high|medium|low|exploratory
+
+# NEW: Position structure (optional)
+direction: bullish|bearish|neutral  # Your directional stance
+position_start_date: "YYYY-MM-DD"  # When position taken
+position_end_date: "YYYY-MM-DD"    # Expected horizon
+target_price: 150.00               # Price target
+entry_reference_price: 120.00      # Entry reference
 ---
 ```
 
@@ -113,7 +143,7 @@ confidence_level: high|medium|low|exploratory
 
 #### For Artifacts
 
-Use `/mcp-upload-artifact` logic:
+Use `/upload-artifact` logic:
 
 ```sql
 INSERT INTO research_artifacts (
@@ -280,7 +310,7 @@ The parser automatically:
 
 #### For Insights
 
-Use `/mcp-upload-insight` logic:
+Use `/upload-insight` logic:
 
 ```sql
 -- First verify artifact exists
@@ -311,7 +341,7 @@ WHERE id = $1;
 
 #### For Macro Theses
 
-Use `/mcp-create-thesis` logic:
+Use `/create-thesis` logic:
 
 ```sql
 -- Optional: Check for similar theses
@@ -343,7 +373,7 @@ RETURNING id, title, thesis_type, confidence_level, created_at;
 
 #### For Asset Views
 
-Use `/mcp-create-view` logic:
+Use `/create-view` logic:
 
 ```sql
 -- Resolve ticker to underlying_id

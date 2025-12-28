@@ -24,7 +24,7 @@ This is **Stage 2** of the research workflow: mapping claims to hierarchy.
 ## Workflow
 
 ```
-Input: research-workspace/audits/[file]-audit.md
+Input: ${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_AUDITS_DIR}/[file]-audit.md
   ↓
 1. Read audit document (all claims)
 2. Query existing macro theses from database
@@ -37,7 +37,7 @@ Input: research-workspace/audits/[file]-audit.md
    - Map to existing theses/views (if applicable)
 6. Generate synthesis document with recommendations
   ↓
-Output: research-workspace/syntheses/[file]-synthesis.md
+Output: ${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_SYNTHESES_DIR}/[file]-synthesis.md
   (Recommendations for what to build next)
 ```
 
@@ -50,6 +50,25 @@ When the user asks to synthesize claims:
 
 Follow these steps:
 
+### Step 0: Read Environment Variables and Construct Paths
+
+Before processing, read the Obsidian directory configuration from `.env.local`:
+
+```bash
+# Read environment variables
+cat /Users/njb/Desktop/trade-journal/.env.local | grep OBSIDIAN
+```
+
+Construct the full paths:
+- **Audits directory**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_AUDITS_DIR}`
+- **Syntheses directory**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_SYNTHESES_DIR}`
+
+For example, with defaults:
+- Audits: `/Users/njb/Desktop/nick/investing/research/audits`
+- Syntheses: `/Users/njb/Desktop/nick/investing/research/syntheses`
+
+Use these paths throughout the skill execution. If env vars are not set, fall back to project-local `research-workspace/` directories.
+
 ### Step 1: Read Audit Document
 
 Load the audit file and extract:
@@ -61,6 +80,25 @@ Load the audit file and extract:
 
 ### Step 2: Query Existing Hierarchy
 
+**Get all active main claims** (first-class claim entities):
+```sql
+SELECT
+  id,
+  title,
+  category,
+  claim,
+  evidence,
+  qualifier,
+  time_horizon,
+  relevant_tickers,
+  status,
+  created_at,
+  last_evidence_added_at
+FROM main_claims
+WHERE status = 'active'
+ORDER BY created_at DESC;
+```
+
 **Get all active macro theses**:
 ```sql
 SELECT
@@ -70,6 +108,8 @@ SELECT
   thesis_type,
   confidence_level,
   time_horizon,
+  direction,
+  sectors,
   notes,
   created_at
 FROM macro_theses
@@ -86,6 +126,8 @@ SELECT
   av.narrative,
   av.confidence_level,
   av.time_horizon,
+  av.direction,
+  av.target_price,
   u.ticker,
   mt.title as parent_thesis_title,
   mt.id as parent_thesis_id,
@@ -97,9 +139,53 @@ WHERE av.status = 'active'
 ORDER BY av.created_at DESC;
 ```
 
-### Step 3: Cross-Reference Main Claims
+### Step 3: Cross-Reference Against Existing Main Claims
+
+Before checking theses/views, first check if audit claims should become first-class main claims or link to existing ones.
 
 For each **main claim** in the audit:
+
+#### Match Against Existing Main Claims
+
+**Text similarity**:
+- Compare claim text with existing main_claims.claim field
+- Look for: exact matches, high semantic similarity, conceptual overlap
+
+**Category + Ticker matching**:
+- Same category (macro vs asset_specific)
+- Overlapping tickers in relevant_tickers array
+
+**Classification**:
+1. **DUPLICATE/SIMILAR**: Audit claim is very similar to existing main claim
+   → Action: Link as evidence via `main_claim_evidence` table
+   → Call `/api/research/link-evidence` endpoint
+   → Update: `last_evidence_added_at` timestamp
+
+2. **DISTINCT**: Audit claim is sufficiently different from all main claims
+   → Action: Recommend promotion via `/api/research/promote-claim`
+   → Creates: New row in `main_claims` table
+   → Benefits: Can accumulate evidence over time, link to multiple theses/views
+
+3. **AMBIGUOUS**: Could go either way
+   → Action: Present to user with recommendation
+   → Consider: Confidence level, specificity, reusability potential
+
+**Promotion Criteria** (when to create new main claim):
+- High confidence (medium/high qualifier)
+- Reusable across multiple audits
+- Could support multiple theses/views
+- Represents a key insight worth tracking independently
+- Has robust Toulmin structure (evidence, reasoning, backing)
+
+**Evidence Linking Criteria** (when to link to existing):
+- Very similar to existing claim (>80% semantic similarity)
+- Same category and overlapping tickers
+- Adds incremental evidence but not a new perspective
+- Updates or reinforces existing claim
+
+### Step 4: Cross-Reference Against Theses/Views
+
+For audit claims that are **not promoted to main claims**, check against theses/views:
 
 #### A. Match Against Existing Theses (if thesis_candidate)
 
@@ -165,16 +251,22 @@ For each **evidence claim** in the audit:
 
 ### Step 5: Generate Synthesis Document
 
-Create synthesis in `research-workspace/syntheses/` with this structure:
+Create synthesis in the Obsidian syntheses directory (constructed from env vars in Step 0) with this structure:
+
+**IMPORTANT**: The synthesis should have three main sections:
+1. **Promotion Recommendations** - Which audit claims should become first-class main claims
+2. **Evidence Linking Recommendations** - Which claims should link to existing main claims
+3. **Thesis/View Recommendations** - Which claims should create/enhance theses/views
 
 ```markdown
 ---
 source_audit: "audits/2025-01-20-apps-to-agents-audit.md"
 synthesis_date: "2025-01-20"
 total_claims_analyzed: 23
-new_thesis_candidates: 3
-new_view_candidates: 2
-evidence_for_existing: 18
+claims_to_promote: 4
+claims_to_link: 3
+new_thesis_candidates: 2
+new_view_candidates: 1
 ---
 
 # Claim Synthesis: From Apps to Agents
@@ -186,11 +278,15 @@ evidence_for_existing: 18
 
 ## Executive Summary
 
-**Main Claims**: 8 total
-- New Thesis Candidates: 3
-- New View Candidates: 2
-- Evidence for Existing Theses: 2
-- Evidence for Existing Views: 1
+**Main Claims Analyzed**: 8 total
+
+**First-Class Main Claims**:
+- Promote to main_claims table: 4
+- Link to existing main claims: 3
+
+**Thesis/View Creation**:
+- New Macro Thesis Candidates: 2
+- New Asset View Candidates: 1
 
 **Evidence Claims**: 15 total
 - Supporting Existing Theses: 8
@@ -198,14 +294,143 @@ evidence_for_existing: 18
 - Supporting Main Claims Only: 5
 
 **Recommendation Priority**:
-1. **CREATE NEW**: "Application to Agent Shift" thesis (Claim 1)
-2. **ENHANCE EXISTING**: "AI Infrastructure Build-Out" with new evidence (Claims 2, 3, 5)
-3. **CREATE NEW**: NVDA view on margin pressure (Claim 2)
-4. **DEEP DIVE**: Energy infrastructure bottleneck (not in existing hierarchy)
+1. **PROMOTE**: Claims 1, 3, 5, 7 to main_claims table (reusable insights)
+2. **LINK EVIDENCE**: Claims 2, 4 to existing main claims (incremental support)
+3. **CREATE THESIS**: "Application to Agent Shift" (Claim 1)
+4. **CREATE VIEW**: NVDA margin pressure (Claim 2)
 
 ---
 
-## New Thesis Candidates
+## 1. Promotion Recommendations (Create First-Class Main Claims)
+
+These audit claims should be promoted to the `main_claims` table because they represent reusable insights that:
+- Could support multiple theses/views over time
+- Have strong Toulmin structure (evidence, reasoning, backing)
+- Are likely to accumulate additional evidence from future audits
+- Represent key insights worth tracking independently
+
+### ⭐ PROMOTE: Claim 1 - AI Agents Replacing Applications
+
+**Claim**: AI agents will replace traditional application interfaces by 2026
+
+**Why Promote?**:
+- HIGH reusability (applies to many tech theses)
+- Robust Toulmin structure (strong evidence, reasoning, backing)
+- Medium-high confidence
+- Will accumulate evidence over time as agent market evolves
+- Could support: App monetization thesis, Enterprise SaaS thesis, AI infrastructure thesis
+
+**Action**: Call `/api/research/promote-claim` with:
+```json
+{
+  "insightId": "<insight-uuid>",
+  "claimId": "claim-1"
+}
+```
+
+**Next Steps**:
+1. Promote to main_claims
+2. Link existing evidence claims (claim-2, claim-3, claim-5)
+3. Create macro thesis "Application to Agent Shift" that references this main claim
+4. Watch for evidence in future audits (automatically link via main_claim_evidence)
+
+---
+
+### PROMOTE: Claim 3 - Agent Framework Market Growth
+
+**Claim**: Agent framework adoption growing 300% YoY signals imminent production deployment
+
+**Why Promote?**:
+- MEDIUM reusability (developer adoption metrics useful for multiple theses)
+- Medium confidence
+- Likely to update with new data quarterly/annually
+- Could support: Developer tools thesis, AI infrastructure thesis, Platform shift thesis
+
+**Action**: Promote via `/api/research/promote-claim`
+
+---
+
+### PROMOTE: Claim 5 - Enterprise Agent Deployments Starting
+
+**Claim**: Early enterprise adopters deploying agent-first products validates commercial viability
+
+**Why Promote?**:
+- HIGH reusability (enterprise adoption is key metric for many theses)
+- Medium confidence
+- Will track over time (quarterly earnings, case studies)
+- Could support: Enterprise SaaS thesis, AI adoption thesis, Workflow automation thesis
+
+**Action**: Promote via `/api/research/promote-claim`
+
+---
+
+### PROMOTE: Claim 7 - Energy Infrastructure Bottleneck
+
+**Claim**: Power and cooling constraints will limit AI datacenter buildout 2026-2028
+
+**Why Promote?**:
+- VERY HIGH reusability (affects AI, crypto, cloud infrastructure theses)
+- Structural constraint worth tracking long-term
+- Medium-high confidence
+- Evidence will accumulate from utility earnings, datacenter announcements, policy changes
+- Could support: AI infrastructure thesis, Utilities thesis, Nuclear renaissance thesis, Real estate thesis
+
+**Action**: Promote via `/api/research/promote-claim`
+
+---
+
+## 2. Evidence Linking Recommendations
+
+These audit claims are very similar to existing main claims and should be linked as supporting/rebutting evidence instead of promoted:
+
+### LINK AS EVIDENCE: Claim 2 → Existing Main Claim "LLM Reasoning Capabilities"
+
+**Audit Claim**: GPT-4 achieves 85% accuracy on complex reasoning benchmarks
+
+**Existing Main Claim** (ID: `abc-123`):
+- Title: "Large Language Models Approaching Human-Level Reasoning"
+- Claim: "LLMs demonstrate near-human reasoning capabilities on complex benchmarks"
+- Status: active
+- Evidence count: 3 supporting, 1 rebutting
+- Created: 2025-11-15
+
+**Similarity**: VERY HIGH (95%)
+- Same topic (LLM reasoning)
+- Same category (macro)
+- Essentially provides updated datapoint for existing claim
+
+**Action**: Link as supporting evidence via `/api/research/link-evidence`:
+```json
+{
+  "mainClaimId": "abc-123",
+  "insightId": "<current-insight-uuid>",
+  "evidenceClaimId": "claim-2",
+  "relationshipType": "supports"
+}
+```
+
+**Impact**: Updates `last_evidence_added_at` on main claim, adds to evidence count
+
+---
+
+### LINK AS EVIDENCE: Claim 4 → Existing Main Claim "AI Reliability Limitations"
+
+**Audit Claim**: Current AI hallucination rate remains at 15%
+
+**Existing Main Claim** (ID: `def-456`):
+- Title: "LLM Reliability Remains Insufficient for Mission-Critical Applications"
+- Status: active
+- Evidence count: 2 supporting, 0 rebutting
+
+**Similarity**: HIGH (85%)
+- Provides updated metric for existing reliability claim
+- Same category and theme
+
+**Action**: Link as supporting evidence via `/api/research/link-evidence`
+
+---
+
+## 3. New Thesis Candidates
 
 ### ⭐ HIGH PRIORITY: Claim 1 - Application to Agent Shift
 
@@ -501,10 +726,14 @@ Use this mapping when uploading with `/finalize-for-upload`.
 
 ## Output Format
 
-Save synthesis to:
+Save synthesis to the Obsidian syntheses directory (from env vars):
 ```
-research-workspace/syntheses/[date]-[slug]-synthesis.md
+${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_SYNTHESES_DIR}/[date]-[slug]-synthesis.md
 ```
+
+For example (with default env vars):
+- Input: `/Users/njb/Desktop/nick/investing/research/audits/2025-01-20-apps-to-agents-audit.md`
+- Output: `/Users/njb/Desktop/nick/investing/research/syntheses/2025-01-20-apps-to-agents-synthesis.md`
 
 For example:
 - Input: `audits/2025-01-20-apps-to-agents-audit.md`
@@ -517,7 +746,7 @@ For example:
 ```javascript
 function calculateSimilarity(claim, thesis) {
   // Extract keywords from claim and thesis
-  const claimKeywords = extractKeywords(claim.claim + " " + claim.grounds);
+  const claimKeywords = extractKeywords(claim.claim + " " + claim.evidence);
   const thesisKeywords = extractKeywords(thesis.title + " " + thesis.description);
 
   // Calculate overlap

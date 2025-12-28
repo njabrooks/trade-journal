@@ -1,7 +1,7 @@
 ---
-name: mcp-read-theses
+name: read-theses
 description: Query and display macro theses from Supabase database. Use when you need to read thesis data, filter by status/type/conviction, or examine thesis details for cross-referencing research.
-allowed-tools: mcp__supabase__execute_sql
+allowed-tools: Bash
 ---
 
 # Read Macro Theses from Database
@@ -122,3 +122,23 @@ Found 3 macro theses:
 - Order by `created_at DESC` for recent-first view
 - Truncate long descriptions in list views
 - For single thesis details, show full description and notes
+
+## SQL Execution
+
+All SQL queries should be executed using the `psql-query.ts` helper script:
+
+```bash
+# For queries that return data (SELECT)
+npx tsx scripts/psql-query.ts "SELECT * FROM table_name WHERE condition" --format json
+
+# For queries that modify data (INSERT/UPDATE/DELETE)
+npx tsx scripts/psql-query.ts "INSERT INTO table_name (...) VALUES (...) RETURNING *" --format json
+```
+
+The helper script:
+- Loads DATABASE_URL_POOLER from .env.local automatically
+- Returns results as JSON by default (or use --format table, --format csv)
+- Handles errors and connection issues
+- Properly escapes quotes and special characters
+
+**Important**: Escape single quotes in SQL strings by doubling them: `'It''s working'`

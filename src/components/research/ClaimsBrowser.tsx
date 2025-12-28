@@ -5,7 +5,8 @@ import type { ClaimsStructure, MainClaim, EvidenceClaim, ClaimConfidence } from 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConvertClaimDialog } from './ConvertClaimDialog';
-import { Search, Filter, Info } from 'lucide-react';
+import { PromoteClaimDialog } from './PromoteClaimDialog';
+import { Search, Filter, Info, TrendingUp } from 'lucide-react';
 
 interface ClaimsBrowserProps {
   claimsStructure: ClaimsStructure;
@@ -21,6 +22,7 @@ type SortBy = 'original' | 'confidence' | 'time_horizon';
 export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps) {
   const [expandedClaims, setExpandedClaims] = useState<Set<string>>(new Set());
   const [convertingClaim, setConvertingClaim] = useState<MainClaim | null>(null);
+  const [promotingClaim, setPromotingClaim] = useState<MainClaim | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Filter states
@@ -103,8 +105,8 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
       claims = claims.filter(
         (c) =>
           c.claim.toLowerCase().includes(query) ||
-          c.grounds.toLowerCase().includes(query) ||
-          c.warrant.toLowerCase().includes(query) ||
+          c.evidence.toLowerCase().includes(query) ||
+          c.reasoning.toLowerCase().includes(query) ||
           c.relevant_tickers?.some((t) => t.toLowerCase().includes(query))
       );
     }
@@ -212,6 +214,15 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
             <Button variant="outline" size="sm" onClick={() => toggleClaim(claim.id)}>
               {isExpanded ? 'Collapse' : 'Expand'}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPromotingClaim(claim)}
+              className="flex items-center gap-1"
+            >
+              <TrendingUp className="h-3 w-3" />
+              Promote
+            </Button>
             {!claim.converted_to && (
               <Button size="sm" onClick={() => setConvertingClaim(claim)}>
                 Convert
@@ -223,11 +234,11 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
         {/* Expanded Toulmin Structure */}
         {isExpanded && (
           <div className="space-y-4 mt-4 pt-4 border-t border-slate-200">
-            {/* Grounds (Evidence) */}
-            {claim.grounds && (
+            {/* Evidence */}
+            {claim.evidence && (
               <div>
                 <h5 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  Evidence (Grounds)
+                  Evidence
                   <span
                     className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-slate-200 text-slate-600 cursor-help"
                     title="The factual data or observations supporting the claim"
@@ -235,15 +246,15 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
                     <Info className="h-2 w-2" />
                   </span>
                 </h5>
-                <p className="text-sm text-slate-700">{claim.grounds}</p>
+                <p className="text-sm text-slate-700">{claim.evidence}</p>
               </div>
             )}
 
-            {/* Warrant (Reasoning) */}
-            {claim.warrant && (
+            {/* Reasoning */}
+            {claim.reasoning && (
               <div>
                 <h5 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  Reasoning (Warrant)
+                  Reasoning
                   <span
                     className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-slate-200 text-slate-600 cursor-help"
                     title="The logical connection between evidence and claim"
@@ -251,7 +262,7 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
                     <Info className="h-2 w-2" />
                   </span>
                 </h5>
-                <p className="text-sm text-slate-700">{claim.warrant}</p>
+                <p className="text-sm text-slate-700">{claim.reasoning}</p>
               </div>
             )}
 
@@ -300,8 +311,8 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
                       className="border-l-3 border-emerald-500 pl-3 py-1 bg-emerald-50"
                     >
                       <p className="text-sm text-slate-900">{evidence.claim}</p>
-                      {evidence.grounds && (
-                        <p className="text-xs text-slate-600 mt-1">{evidence.grounds}</p>
+                      {evidence.evidence && (
+                        <p className="text-xs text-slate-600 mt-1">{evidence.evidence}</p>
                       )}
                       <span className="inline-flex mt-1 px-2 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded">
                         {evidence.confidence} confidence
@@ -325,8 +336,8 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
                       className="border-l-3 border-red-500 pl-3 py-1 bg-red-50"
                     >
                       <p className="text-sm text-slate-900">{evidence.claim}</p>
-                      {evidence.grounds && (
-                        <p className="text-xs text-slate-600 mt-1">{evidence.grounds}</p>
+                      {evidence.evidence && (
+                        <p className="text-xs text-slate-600 mt-1">{evidence.evidence}</p>
                       )}
                       <span className="inline-flex mt-1 px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded">
                         {evidence.confidence} confidence
@@ -658,6 +669,15 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
           claim={convertingClaim}
           insightId={insightId}
           onClose={() => setConvertingClaim(null)}
+        />
+      )}
+
+      {/* Promote Dialog */}
+      {promotingClaim && (
+        <PromoteClaimDialog
+          claim={promotingClaim}
+          insightId={insightId}
+          onClose={() => setPromotingClaim(null)}
         />
       )}
     </div>

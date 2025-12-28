@@ -1,7 +1,7 @@
 ---
-name: mcp-create-view
+name: create-view
 description: Create a new asset view in Supabase database from markdown file. Use when creating asset-specific theses about underlyings (stocks, commodities, etc.) from finalized research. Links to ticker and optionally to parent macro thesis.
-allowed-tools: mcp__supabase__execute_sql, Read, Bash
+allowed-tools: Read, Bash
 ---
 
 # Create Asset View in Database
@@ -329,3 +329,23 @@ If similar views exist, suggest to user:
 - Return the view ID for use in strategy linking
 - File paths are relative to project root: `research-workspace/finalized/file.md`
 - Multiple views per ticker are allowed (different time horizons, contexts)
+
+## SQL Execution
+
+All SQL queries should be executed using the `psql-query.ts` helper script:
+
+```bash
+# For queries that return data (SELECT)
+npx tsx scripts/psql-query.ts "SELECT * FROM table_name WHERE condition" --format json
+
+# For queries that modify data (INSERT/UPDATE/DELETE)
+npx tsx scripts/psql-query.ts "INSERT INTO table_name (...) VALUES (...) RETURNING *" --format json
+```
+
+The helper script:
+- Loads DATABASE_URL_POOLER from .env.local automatically
+- Returns results as JSON by default (or use --format table, --format csv)
+- Handles errors and connection issues
+- Properly escapes quotes and special characters
+
+**Important**: Escape single quotes in SQL strings by doubling them: `'It''s working'`
