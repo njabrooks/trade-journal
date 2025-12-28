@@ -367,6 +367,38 @@ The research workflow follows a **local-first AI processing pattern** using Toul
   3. Apply via Supabase console → SQL Editor
   4. Verify changes took effect
 
+### Git Commits
+**IMPORTANT**: Always use the commit message template at **[docs/archive/commit_message_template.md](docs/archive/commit_message_template.md)**
+
+**Template Structure**:
+```
+<type>(<scope>): <subject>
+
+## Problem
+- <issue description>
+
+## Solution
+- <what was changed>
+
+## Impact
+- <what this fixes/improves>
+
+## Files Changed
+- <file>: <change description>
+```
+
+**Types**: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `perf`, `style`
+
+**When to use full template**:
+- Feature additions (`feat`)
+- Bug fixes (`fix`)
+- Refactors that change behavior
+
+**Simplified format OK for**:
+- Dependency updates (`chore`)
+- Documentation (`docs`)
+- Formatting (`style`)
+
 ## Important Implementation Notes
 
 1. **React Compiler** - Project uses `babel-plugin-react-compiler` for automatic optimization
