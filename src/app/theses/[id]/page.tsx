@@ -30,18 +30,36 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
       <div className="space-y-6">
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <h3 className="text-lg font-semibold mb-4">Overview</h3>
-          <dl className="grid grid-cols-2 gap-4">
+          <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <dt className="text-sm font-medium text-slate-500">Thesis Type</dt>
-              <dd className="mt-1 text-sm text-slate-900">{thesis.thesisType}</dd>
+              <dd className="mt-1 text-sm text-slate-900 capitalize">{thesis.thesisType}</dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-slate-500">Direction</dt>
+              <dd className="mt-1">
+                {thesis.direction ? (
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    thesis.direction === 'bullish' ? 'bg-emerald-100 text-emerald-700' :
+                    thesis.direction === 'bearish' ? 'bg-red-100 text-red-700' :
+                    'bg-slate-200 text-slate-700'
+                  }`}>
+                    {thesis.direction}
+                  </span>
+                ) : '—'}
+              </dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-slate-500">Time Horizon</dt>
-              <dd className="mt-1 text-sm text-slate-900">{thesis.timeHorizon ?? '—'}</dd>
+              <dd className="mt-1 text-sm text-slate-900">
+                {thesis.timeHorizon?.replace('_', ' ') ?? '—'}
+              </dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-slate-500">Confidence Level</dt>
-              <dd className="mt-1 text-sm text-slate-900">{thesis.confidenceLevel ?? '—'}</dd>
+              <dd className="mt-1 text-sm text-slate-900 capitalize">
+                {thesis.confidenceLevel ?? '—'}
+              </dd>
             </div>
             <div>
               <dt className="text-sm font-medium text-slate-500">Status</dt>
@@ -53,6 +71,23 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
                 }`}>
                   {thesis.status}
                 </span>
+              </dd>
+            </div>
+            <div className="col-span-2 md:col-span-3">
+              <dt className="text-sm font-medium text-slate-500 mb-2">Sectors / Topics</dt>
+              <dd className="flex flex-wrap gap-2">
+                {thesis.sectors && thesis.sectors.length > 0 ? (
+                  thesis.sectors.map((sector) => (
+                    <span
+                      key={sector}
+                      className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-md"
+                    >
+                      {sector}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-slate-500">No sectors defined</span>
+                )}
               </dd>
             </div>
           </dl>

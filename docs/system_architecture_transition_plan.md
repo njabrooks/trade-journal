@@ -224,6 +224,33 @@ This loop operates at all hierarchy levels (macro thesis → asset view → stra
 
 ---
 
+### Phase 2.6: Research UX Enhancements (Post-Phase 2.5)
+**Goal:** Improve research workflow UX after completing core research infrastructure.
+
+**Deliverables:**
+1. Claims browser page (unified view of all claims)
+2. Auto-generated titles for Asset Views and Macro Theses
+3. Enhanced linking UX for hierarchy completeness
+4. Schema improvements (Asset Views → Underlyings linkage)
+5. Sector/topic taxonomy for Macro Theses
+6. Streamlined claim → thesis/view conversion workflow
+
+**Context:** After completing Phase 2 (Research Infrastructure) and Phase 2.5 (AI Enhancements), several UX improvements emerged from user feedback:
+- Need to browse all claims in one place (both promoted and unpromoted)
+- Asset Views and Macro Theses need consistent, auto-generated titles
+- Linking workflow (Position → Strategy → Asset View → Macro Thesis) needs to be more intuitive
+- Claim conversion should create new theses/views (not convert claims themselves)
+
+**Risk:** Low - All additive UX improvements, no breaking changes to data model.
+
+**Estimated Effort:** 2-3 weeks
+
+**Priority:** High - Critical for research workflow adoption
+
+**Enhancement IDs:** #ENH-001 through #ENH-012 (see `enhancement_tracking.md`)
+
+---
+
 ## 4. Phase 1: Foundation - Detailed Design
 
 ### 4.1 Data Model: Macro Theses & Asset Views

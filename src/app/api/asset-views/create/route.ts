@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { assetViews, claimThesisMappings, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { generateAssetViewTitle } from '@/lib/utils/title-generation';
 
 /**
  * POST /api/asset-views/create
@@ -70,9 +71,10 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!title || !ticker || !viewType) {
+    // Note: title is now optional and will be auto-generated if not provided
+    if (!ticker || !viewType) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, ticker, viewType' },
+        { error: 'Missing required fields: ticker, viewType' },
         { status: 400 }
       );
     }
@@ -99,14 +101,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Auto-generate title if not provided
+    const finalTitle = title || generateAssetViewTitle({
+      direction: direction || null,
+      ticker: underlying.ticker,
+      timeHorizon: timeHorizon || null,
+    });
+
     // Create the asset view
     const [createdView] = await db
       .insert(assetViews)
       .values({
-        title,
+        title: finalTitle,
         underlyingId: underlying.id,
         description: description || null,
-        viewType,
         timeHorizon: timeHorizon || null,
         confidenceLevel: confidenceLevel || null,
         status,

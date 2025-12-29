@@ -1,14 +1,14 @@
 ---
 name: finalize-for-upload
 description: Upload finalized research to Supabase database. Automatically detects content type (artifact, insight, thesis, or view) from frontmatter and uploads to appropriate tables. Use when ready to commit research to the hierarchy.
-allowed-tools: Read, mcp__supabase__execute_sql, Bash
+allowed-tools: Read, Bash
 ---
 
 # Finalize and Upload Research
 
 ## Purpose
 
-Take a finalized research file and upload it to the Supabase database. This skill intelligently detects what type of content you're uploading based on frontmatter and uses the appropriate MCP operations.
+Take a finalized research file and upload it to the Supabase database. This skill intelligently detects what type of content you're uploading based on frontmatter and uploads using **psql** (via `scripts/psql-query.ts` helper or direct psql execution).
 
 Supports uploading:
 1. **Audit Files** - Forensic Toulmin claim extraction (from `/process-transcript`)
@@ -228,6 +228,11 @@ VALUES (
   NOW()
 )
 RETURNING id;
+
+-- Step 4: Auto-promote claims to main_claims table
+-- After creating the insight with claims_structure, automatically promote all
+-- main claims to the main_claims table with status='unconfirmed' for user review
+npx tsx scripts/auto-promote-claims.ts $insight_id
 ```
 
 **Claims Structure Format**:
@@ -301,12 +306,16 @@ The parser automatically:
    Main Claims: 14 (thesis candidates)
    Evidence Claims: 23 (18 supporting, 5 rebutting)
 
+🔄 Auto-promoting claims to main_claims table...
+✅ Successfully auto-promoted 14 claims to main_claims table
+   Status: unconfirmed (ready for manual review and confirmation)
+
 → View in app: /research/xyz-789-ghi
-→ Convert claims to theses/views in the app UI
-→ Claims remain in draft state until manually converted
+→ Browse all claims: /research/claims
+→ Promote claims from unconfirmed → confirmed in Claims Browser
 ```
 
-**Then suggest**: "Open the app to browse claims and convert high-priority ones to theses/views"
+**Then suggest**: "Open the Claims Browser at /research/claims to review and promote high-priority claims"
 
 #### For Insights
 

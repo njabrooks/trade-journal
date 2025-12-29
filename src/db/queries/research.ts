@@ -10,6 +10,7 @@ import {
   strategies,
   positions,
   underlyings,
+  mainClaims,
 } from '@/db/schema';
 import { eq, desc, and, isNull, inArray, sql, count, or } from 'drizzle-orm';
 import type {
@@ -18,7 +19,10 @@ import type {
   NewResearchMapping,
   NewResearchProcessingRun,
   NewResearchHierarchyRecommendation,
+  NewMainClaim,
 } from '@/db/schema';
+import type { ClaimsStructure, MainClaim as AuditMainClaim } from '@/types/claims';
+import { isValidClaimsStructure } from '@/types/claims';
 
 // ============================================================================
 // Research Artifacts
@@ -135,6 +139,150 @@ export async function updateResearchInsight(
     .update(researchInsights)
     .set({ ...data, updatedAt: new Date() })
     .where(eq(researchInsights.id, id));
+}
+
+/**
+ * Auto-promote audit claims to first-class main_claims table
+ * Called when research insight is created/updated with claims_structure
+ *
+ * @param insightId - The research insight ID
+ * @returns Number of claims promoted
+ */
+export async function autoPromoteAuditClaims(insightId: string): Promise<number> {
+  // Get the insight with claims structure
+  const insight = await getResearchInsightById(insightId);
+  if (!insight?.claimsStructure) {
+    return 0;
+  }
+
+  const claimsStructure = insight.claimsStructure as ClaimsStructure;
+  if (!isValidClaimsStructure(claimsStructure)) {
+    return 0;
+  }
+
+  let promotedCount = 0;
+
+  // For each main claim in the audit, create or update a main_claims record
+  for (const auditClaim of claimsStructure.main_claims) {
+    // Check if this claim was already promoted (based on source_insight_id + source_claim_id)
+    const existing = await db
+      .select()
+      .from(mainClaims)
+      .where(
+        and(
+          eq(mainClaims.sourceInsightId, insightId),
+          eq(mainClaims.sourceClaimId, auditClaim.id)
+        )
+      )
+      .limit(1);
+
+    // Normalize time_horizon: convert "N/A" and empty/null to null
+    const normalizedTimeHorizon =
+      !auditClaim.time_horizon || auditClaim.time_horizon === 'N/A'
+        ? null
+        : auditClaim.time_horizon;
+
+    if (existing.length > 0) {
+      // Already promoted, update it in case the audit claim changed
+      await db
+        .update(mainClaims)
+        .set({
+          claim: auditClaim.claim,
+          evidence: auditClaim.evidence || null,
+          reasoning: auditClaim.reasoning || null,
+          backing: auditClaim.backing || null,
+          qualifier: auditClaim.qualifier || null,
+          rebuttal: auditClaim.rebuttal || null,
+          timeHorizon: normalizedTimeHorizon,
+          relevantTickers: auditClaim.relevant_tickers || [],
+          category: auditClaim.category,
+          updatedAt: new Date(),
+        })
+        .where(eq(mainClaims.id, existing[0].id));
+    } else {
+      // Not yet promoted, create new main_claims record
+      const newMainClaim: NewMainClaim = {
+        title: auditClaim.claim.substring(0, 200), // Use first 200 chars as title
+        category: auditClaim.category,
+        claim: auditClaim.claim,
+        evidence: auditClaim.evidence || null,
+        reasoning: auditClaim.reasoning || null,
+        backing: auditClaim.backing || null,
+        qualifier: auditClaim.qualifier || null,
+        rebuttal: auditClaim.rebuttal || null,
+        timeHorizon: normalizedTimeHorizon,
+        relevantTickers: auditClaim.relevant_tickers || [],
+        status: 'unconfirmed', // Default status for auto-promoted claims
+        sourceInsightId: insightId,
+        sourceClaimId: auditClaim.id,
+      };
+
+      await db.insert(mainClaims).values(newMainClaim);
+      promotedCount++;
+    }
+  }
+
+  return promotedCount;
+}
+
+/**
+ * Get all first-class main claims with source metadata
+ * Used for unified claims browser page
+ */
+export async function getAllMainClaimsWithSources() {
+  const claims = await db
+    .select({
+      claim: mainClaims,
+      insight: researchInsights,
+      artifact: researchArtifacts,
+    })
+    .from(mainClaims)
+    .leftJoin(
+      researchInsights,
+      eq(mainClaims.sourceInsightId, researchInsights.id)
+    )
+    .leftJoin(
+      researchArtifacts,
+      eq(researchInsights.researchArtifactId, researchArtifacts.id)
+    )
+    .orderBy(desc(mainClaims.createdAt));
+
+  return claims;
+}
+
+/**
+ * Promote a main claim from 'unconfirmed' to 'confirmed' status
+ */
+export async function promoteMainClaim(claimId: string): Promise<void> {
+  await db
+    .update(mainClaims)
+    .set({
+      status: 'confirmed',
+      updatedAt: new Date(),
+    })
+    .where(eq(mainClaims.id, claimId));
+}
+
+/**
+ * @deprecated Use getAllMainClaimsWithSources() instead
+ * Get all claims from all research insights with source metadata (JSONB)
+ * This is the old method that queries JSONB claims_structure
+ */
+export async function getAllClaimsWithSources() {
+  const insights = await db
+    .select({
+      insight: researchInsights,
+      artifact: researchArtifacts,
+    })
+    .from(researchInsights)
+    .innerJoin(
+      researchArtifacts,
+      eq(researchInsights.researchArtifactId, researchArtifacts.id)
+    )
+    .where(sql`${researchInsights.claimsStructure} IS NOT NULL`)
+    .orderBy(desc(researchArtifacts.publishedDate), desc(researchInsights.structuredAt));
+
+  return insights;
 }
 
 // Pre-investment research: insights with no mappings

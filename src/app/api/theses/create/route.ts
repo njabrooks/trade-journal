@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { macroTheses, claimThesisMappings } from '@/db/schema';
+import { generateMacroThesisTitle } from '@/lib/utils/title-generation';
 
 /**
  * POST /api/theses/create
@@ -64,9 +65,10 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!title || !thesisType) {
+    // Note: title is now optional and will be auto-generated if not provided
+    if (!thesisType) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, thesisType' },
+        { error: 'Missing required field: thesisType' },
         { status: 400 }
       );
     }
@@ -79,11 +81,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Auto-generate title if not provided
+    const finalTitle = title || generateMacroThesisTitle({
+      direction: direction || null,
+      sectors: sectors && sectors.length > 0 ? sectors : null,
+      timeHorizon: timeHorizon || null,
+    });
+
     // Create the macro thesis
     const [createdThesis] = await db
       .insert(macroTheses)
       .values({
-        title,
+        title: finalTitle,
         description: description || null,
         thesisType,
         timeHorizon: timeHorizon || null,

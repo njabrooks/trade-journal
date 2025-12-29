@@ -17,6 +17,7 @@ import {
   Library,
   Sparkles,
   RefreshCw,
+  Lightbulb,
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,13 +31,14 @@ import {
 } from "@/components/ui/sidebar";
 
 const MAIN_NAV = [
-  { href: "/dashboard/portfolio", label: "Portfolio", icon: LayoutDashboard, id: "portfolio" },
-  { href: "/theses", label: "Macro Theses", icon: TrendingUp, id: "theses" },
-  { href: "/asset-views", label: "Asset Views", icon: Target, id: "asset-views" },
-  { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
   { href: "/blotter", label: "Blotter", icon: BookOpen, id: "blotter" },
+  { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
+  { href: "/asset-views", label: "Asset Views", icon: Target, id: "asset-views" },
+  { href: "/theses", label: "Macro Theses", icon: TrendingUp, id: "theses" },
+  { href: "/research/claims", label: "Claims", icon: Lightbulb, id: "claims" },
   { href: "/research", label: "Research", icon: Library, id: "research" },
+  { href: "/dashboard/portfolio", label: "Portfolio", icon: LayoutDashboard, id: "portfolio" },
 ] as const;
 
 const ADMIN_NAV = [

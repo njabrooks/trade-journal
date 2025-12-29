@@ -30,11 +30,37 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
         {/* Overview Card */}
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <h3 className="text-lg font-semibold mb-4">Overview</h3>
-          <dl className="grid grid-cols-2 gap-4">
+          <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <dt className="text-sm font-medium text-slate-500">Underlying</dt>
               <dd className="mt-1 text-sm text-slate-900">
                 {view.underlying?.ticker ?? '—'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-slate-500">Direction</dt>
+              <dd className="mt-1">
+                {view.direction ? (
+                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                    view.direction === 'bullish' ? 'bg-emerald-100 text-emerald-700' :
+                    view.direction === 'bearish' ? 'bg-red-100 text-red-700' :
+                    'bg-slate-200 text-slate-700'
+                  }`}>
+                    {view.direction}
+                  </span>
+                ) : '—'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-slate-500">Time Horizon</dt>
+              <dd className="mt-1 text-sm text-slate-900">
+                {view.timeHorizon?.replace('_', ' ') ?? '—'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-slate-500">Confidence Level</dt>
+              <dd className="mt-1 text-sm text-slate-900">
+                {view.confidenceLevel ?? '—'}
               </dd>
             </div>
             <div>
@@ -51,14 +77,6 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Time Horizon</dt>
-              <dd className="mt-1 text-sm text-slate-900">{view.timeHorizon ?? '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-slate-500">Confidence Level</dt>
-              <dd className="mt-1 text-sm text-slate-900">{view.confidenceLevel ?? '—'}</dd>
-            </div>
-            <div>
               <dt className="text-sm font-medium text-slate-500">Status</dt>
               <dd className="mt-1">
                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
@@ -72,6 +90,79 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
             </div>
           </dl>
         </div>
+
+        {/* Underlying Market Data */}
+        {view.underlying && (
+          <div className="bg-white rounded-lg border border-slate-200 p-6">
+            <h3 className="text-lg font-semibold mb-4">Underlying Market Data</h3>
+            <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <dt className="text-sm font-medium text-slate-500">Ticker</dt>
+                <dd className="mt-1 text-sm font-mono text-slate-900">
+                  {view.underlying.ticker}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">Name</dt>
+                <dd className="mt-1 text-sm text-slate-900">
+                  {view.underlying.name ?? '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">Asset Class</dt>
+                <dd className="mt-1 text-sm text-slate-900">
+                  {view.underlying.assetClass ?? '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">Currency</dt>
+                <dd className="mt-1 text-sm text-slate-900">
+                  {view.underlying.baseCurrency ?? '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">Spot Price</dt>
+                <dd className="mt-1 text-sm font-mono text-slate-900">
+                  {view.underlying.spot ? `$${parseFloat(view.underlying.spot).toFixed(2)}` : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">IV30</dt>
+                <dd className="mt-1 text-sm font-mono text-slate-900">
+                  {view.underlying.iv30 ? `${(parseFloat(view.underlying.iv30) * 100).toFixed(1)}%` : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">ATR20</dt>
+                <dd className="mt-1 text-sm font-mono text-slate-900">
+                  {view.underlying.atr20 ? `$${parseFloat(view.underlying.atr20).toFixed(2)}` : '—'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-slate-500">RV20</dt>
+                <dd className="mt-1 text-sm font-mono text-slate-900">
+                  {view.underlying.rv20 ? `${(parseFloat(view.underlying.rv20) * 100).toFixed(1)}%` : '—'}
+                </dd>
+              </div>
+              {view.underlying.nextEarningsDate && (
+                <div>
+                  <dt className="text-sm font-medium text-slate-500">Next Earnings</dt>
+                  <dd className="mt-1 text-sm text-slate-900">
+                    {new Date(view.underlying.nextEarningsDate).toLocaleDateString()}
+                  </dd>
+                </div>
+              )}
+              {view.underlying.nextExDivDate && (
+                <div>
+                  <dt className="text-sm font-medium text-slate-500">Next Ex-Div</dt>
+                  <dd className="mt-1 text-sm text-slate-900">
+                    {new Date(view.underlying.nextExDivDate).toLocaleDateString()}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
 
         {/* Description & Narrative */}
         {(view.description || view.narrative) && (

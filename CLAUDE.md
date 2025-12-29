@@ -47,10 +47,12 @@ npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psq
 - **CLAUDE.md** (this file) - Quick reference, common commands, file navigation
 - **[Terminology Guide](docs/terminology.md)** - Authoritative term definitions (PRD-aligned)
 - **[Research Workflow](docs/features/research-workflow.md)** - Complete research workflow guide
+- **[Documentation Best Practices](docs/DOCUMENTATION_BEST_PRACTICES.md)** - How to document work and link to big picture
 
 **For Architects** (system design and vision):
-- **[PRD v1.1](docs/PRD_v1.1.md)** - Product vision and requirements
+- **[PRD v1.1](docs/PRD_v1.1.md)** - Product vision and requirements (locked)
 - **[System Architecture](docs/system_architecture_transition_plan.md)** - Implementation roadmap and transition plan
+- **[Future Enhancements](docs/FUTURE_ENHANCEMENTS.md)** - **Single source of truth** for all enhancements (past/present/future)
 - **[Implementation Progress](docs/implementation_progress.md)** - Phase completion tracking
 
 **Historical/Reference**:
@@ -356,16 +358,22 @@ The research workflow follows a **local-first AI processing pattern** using Toul
 - Follow existing patterns in `/api/ingest/*` or `/api/strategies/*`
 
 ### Database Migrations
-- Schema managed via Supabase (not local Drizzle migrations)
+- Schema managed via Supabase using **psql** (not Drizzle migrations or Supabase MCP)
+- Migration files stored in `/migrations/` directory for version control
 - Update `/src/db/schema.ts` first as source of truth for TypeScript types
-- Apply schema changes via Supabase web console (SQL Editor)
-- No `migrations/` directory - avoid creating migration files
-- **Known Issue**: Supabase MCP tools (`apply_migration`, `execute_sql`, etc.) experience timeout errors - use web console instead
 - **Process**:
   1. Update `src/db/schema.ts` with new table/column definitions
-  2. Generate SQL from schema changes (manually write DDL)
-  3. Apply via Supabase console → SQL Editor
+  2. Create migration SQL file in `/migrations/` directory
+  3. Run migration via psql:
+     ```bash
+     /opt/homebrew/opt/postgresql@16/bin/psql "$DATABASE_URL_POOLER" -f migrations/your-migration.sql
+     ```
   4. Verify changes took effect
+
+**Why psql?**
+- Supabase MCP tools (`apply_migration`, `execute_sql`) experience timeout errors
+- Direct psql execution is fast and reliable
+- Migration files provide version control and documentation
 
 ### Git Commits
 **IMPORTANT**: Always use the commit message template at **[docs/archive/commit_message_template.md](docs/archive/commit_message_template.md)**

@@ -182,8 +182,12 @@ export const mainClaims = pgTable(
     relevantTickers: text('relevant_tickers').array(),
 
     // Lifecycle
-    status: text('status').notNull().default('active'), // 'active' | 'invalidated' | 'merged'
+    status: text('status').notNull().default('unconfirmed'), // 'unconfirmed' | 'confirmed' | 'invalidated' | 'merged'
     confidenceEvolution: jsonb('confidence_evolution'),
+
+    // Source tracking (for auto-promoted audit claims)
+    sourceInsightId: uuid('source_insight_id').references(() => researchInsights.id, { onDelete: 'set null' }),
+    sourceClaimId: text('source_claim_id'), // The claim ID from the audit JSONB (e.g., "claim-1")
 
     // Timestamps
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -194,6 +198,7 @@ export const mainClaims = pgTable(
     categoryIdx: index('idx_main_claims_category').on(table.category),
     statusIdx: index('idx_main_claims_status').on(table.status),
     tickersIdx: index('idx_main_claims_tickers').on(table.relevantTickers),
+    sourceInsightIdx: index('idx_main_claims_source_insight').on(table.sourceInsightId),
   })
 );
 

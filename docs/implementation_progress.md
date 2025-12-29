@@ -1,7 +1,7 @@
 # System Architecture Transition: Implementation Progress
 
 **Master Plan**: See [`system_architecture_transition_plan.md`](./system_architecture_transition_plan.md)
-**Last Updated**: 2025-12-22 (Phase 0 & 1 Complete)
+**Last Updated**: 2025-12-29 (Phase 2.6.1, 2.6.2, 2.6.3 & 2.6.4 Complete)
 **AI Enhancements Plan**: See [`ai_research_enhancements_plan.md`](./ai_research_enhancements_plan.md)
 
 ---
@@ -517,6 +517,238 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
+## Phase 2.6: Research UX Enhancements 🚧
+
+**Goal**: Improve research workflow UX after completing core research infrastructure and AI enhancements.
+
+**Status**: 🚧 In Progress (Started 2025-12-28)
+**Scope**:
+
+- 🚧 Claims browser page (unified view of all main claims)
+- 🚧 Auto-generated titles for Asset Views (based on direction, underlying, time horizon)
+- 🚧 Auto-generated titles for Macro Theses (based on direction, sector/topic, time horizon)
+- 🚧 Link Asset Views to underlyings schema properly
+- 🚧 Define sector/topic taxonomy for Macro Theses
+- 🚧 Streamlined claim → thesis/view conversion (creates new, doesn't convert claim)
+- 🚧 Enhanced hierarchy linking UX (Position → Strategy → Asset View → Macro Thesis)
+- ⏳ Claims in triage page (deferred to Phase 4+)
+- ⏳ Mandatory link triage triggers (deferred to Phase 4+)
+
+**Estimated Effort**: 2-3 weeks
+**Dependencies**: Phase 2.5 ✅
+
+**Enhancement IDs**: #ENH-001 through #ENH-012 (see `docs/enhancement_tracking.md`)
+
+**Context**: After completing Phase 2 (Research Infrastructure) and Phase 2.5 (AI Enhancements), several UX improvements emerged:
+- Need unified claims browsing across all research
+- Asset Views and Macro Theses need auto-generated titles/descriptions
+- Linking workflow needs simplification
+- Asset Views should be properly linked to underlyings schema
+
+---
+
+### Phase 2.6.1: Sidebar Reordering ✅
+
+**Goal**: Reorder sidebar to reflect workflow priority.
+
+**Status**: ✅ Complete (2025-12-28)
+**Deliverables**:
+
+- ✅ Reordered main sidebar section: Triage > Blotter > Strategies > Asset Views > Macro Theses > Research > Portfolio
+
+**Notes**:
+- Reflects workflow priority: action items first, strategic context second
+- Improves UX by surfacing most-used pages first
+
+**Enhancement ID**: #ENH-001
+
+---
+
+### Phase 2.6.2: Claims Browser Page ✅
+
+**Goal**: Build unified page for browsing all main claims with auto-promotion from audits.
+
+**Status**: ✅ Complete (2025-12-29)
+**Deliverables**:
+
+- ✅ Unified claims browser at /research/claims with statistics dashboard
+- ✅ Filters: status (unconfirmed/confirmed/invalidated/merged), confidence, category
+- ✅ Search across claim text, evidence, tickers, reasoning, backing
+- ✅ Links to source research artifacts with external link icons
+- ✅ Status badges showing claim lifecycle state
+- ✅ Promote button (changes unconfirmed → confirmed)
+- ✅ Expandable rows showing full Toulmin framework (Evidence, Reasoning, Backing, Rebuttal)
+- ✅ Auto-promotion architecture: Audit claims automatically synced to main_claims table
+- ✅ Source tracking: Links back to originating research insight
+- ✅ Database migration via psql (source_insight_id, source_claim_id columns)
+- ✅ API route: /api/research/claims/promote
+- ✅ CLI script: scripts/auto-promote-claims.ts
+- ✅ Integrated into finalize-for-upload skill
+
+**Technical Details**:
+- **Schema Changes**: main_claims table now has source_insight_id (UUID FK), source_claim_id (TEXT), default status='unconfirmed'
+- **Query Functions**:
+  - `getAllMainClaimsWithSources()` - queries main_claims with joins to insights/artifacts
+  - `autoPromoteAuditClaims(insightId)` - syncs audit JSONB claims to first-class DB records
+  - `promoteMainClaim(claimId)` - changes status from unconfirmed → confirmed
+- **UI Component**: UnifiedClaimsBrowser.tsx (463 lines) - tabular layout matching blotter design
+- **Page Component**: /research/claims/page.tsx - server-side data fetching with statistics
+- **Migration File**: migrations/add_main_claims_source_tracking.sql ✅ Executed via psql
+
+**Workflow**:
+1. Process transcript → Extract Toulmin claims
+2. Upload audit → Create research_artifact + research_insight with claims_structure JSONB
+3. Auto-promote → Script runs: `npx tsx scripts/auto-promote-claims.ts <insight_id>`
+4. Browse → Visit /research/claims to see all claims (unconfirmed by default)
+5. Promote → Click "Promote" to change unconfirmed → confirmed
+
+**Estimated Effort**: 4 days (actual)
+**Dependencies**: Phase 2 ✅
+
+**Enhancement ID**: #ENH-002
+
+**Big Picture Impact**: Central hub for evaluating research claims before converting to theses/views. All audit claims now auto-promoted to first-class database records with full lifecycle management (unconfirmed → confirmed → invalidated/merged). Source provenance preserved for traceability.
+
+---
+
+### Phase 2.6.3: Auto-Generated Titles ✅
+
+**Goal**: Generate consistent titles for Asset Views and Macro Theses from structured fields.
+
+**Status**: ✅ Complete (2025-12-29)
+**Deliverables**:
+
+- ✅ Asset View titles: `{Direction} {Underlying} {Time Horizon}` (e.g., "Bullish TSLA Medium Term")
+- ✅ Macro Thesis titles: `{Direction} {Sector/Topic} {Time Horizon}` (e.g., "Bullish US Inflation Medium Term")
+- ✅ Title generation utility functions with validation and fallback handling
+- ✅ Updated API routes (`/api/asset-views/create`, `/api/theses/create`) to auto-generate titles
+- ✅ Backfill scripts for existing records (with dry-run mode)
+- ✅ Unit tests (17 tests, all passing)
+
+**Key Discovery**: Database schema already had all necessary fields (`direction`, `timeHorizon`, `sectors`) - no migration needed! ✅
+
+**Technical Implementation**:
+- `src/lib/utils/title-generation.ts` - Title generation functions
+- `scripts/backfill-asset-view-titles.ts` - Backfill existing Asset Views
+- `scripts/backfill-macro-thesis-titles.ts` - Backfill existing Macro Theses
+- `scripts/test-title-generation.ts` - Unit tests
+- API routes updated to make `title` optional (allows manual override)
+
+**Actual Effort**: ~2 hours (faster than estimated 4-5 days due to existing schema fields)
+**Dependencies**: Phase 2.6.2 ✅
+
+**Enhancement IDs**: #ENH-006, #ENH-009
+
+**Big Picture Impact**: Consistent naming convention, easier scanning and filtering. Foundation for Phase 2.6.5 claim conversion workflow.
+
+---
+
+### Phase 2.6.4: Schema & Taxonomy Improvements ✅
+
+**Goal**: Improve data model and taxonomy for better structure.
+
+**Status**: ✅ Complete (2025-12-29)
+**Deliverables**:
+
+- ✅ Verified Asset Views → Underlyings linking (confirmed `underlying_id` FK working)
+- ✅ Added "Underlying Market Data" section to Asset View detail pages (spot, IV30, ATR, RV, earnings dates)
+- ✅ Created comprehensive sector/topic taxonomy with **115 items across 6 categories**:
+  - Sectors: 12 items (Technology, Financials, Transport, Energy, etc.)
+  - Industries: 26 items (AI, Semiconductors, Banking, etc.)
+  - Regions: 25 items (US, Europe, Asia, Hong Kong, etc.)
+  - Asset Classes: 8 items (Equities, Bonds, Crypto, Commodities, etc.)
+  - Economic Factors: 29 items (Inflation, Employment, Growth, etc.)
+  - Common Combinations: 15 items ("US Inflation", "Chinese Tech Sector", etc.)
+- ✅ Taxonomy stored as TypeScript constants (type-safe, version-controlled)
+- ✅ Created `SectorSelector` UI component (multi-select dropdown with search and category tabs)
+- ✅ Enhanced Macro Thesis detail page to display direction and sectors
+
+**Technical Implementation**:
+- `src/lib/constants/sector-taxonomy.ts` - Comprehensive taxonomy with utility functions
+- `src/components/ui/SectorSelector.tsx` - Reusable multi-select component
+- `src/app/asset-views/[id]/page.tsx` - Enhanced with underlying market data
+- `src/app/theses/[id]/page.tsx` - Enhanced with direction and sectors display
+
+**Actual Effort**: ~1 hour (faster than estimated 3-4 days)
+**Dependencies**: Phase 2.6.3 ✅
+
+**Enhancement IDs**: #ENH-004, #ENH-010
+
+**Big Picture Impact**: Structured thesis categorization with rich 115-item taxonomy. Foundation for AI-powered claim conversion in Phase 2.6.5.
+
+---
+
+### Phase 2.6.5: Streamlined Claim Conversion ⏳
+
+**Goal**: Improve claim → thesis/view conversion workflow.
+
+**Status**: ⏳ Planned
+**Deliverables**:
+
+- ⏳ Convert button creates NEW macro thesis or asset view (doesn't convert claim itself)
+- ⏳ Claim is promoted and linked to newly created thesis/view
+- ⏳ AI suggests field values (direction, sector, time horizon) based on claim context
+- ⏳ User reviews and approves suggestions
+- ⏳ Automatic provenance tracking (claim → thesis/view)
+
+**Estimated Effort**: 3-4 days
+**Dependencies**: Phase 2.6.3 ✅ (requires structured fields), Phase 2.6.4 ✅ (requires taxonomy)
+
+**Enhancement ID**: #ENH-011
+
+**Big Picture Impact**: Streamlines claim → hierarchy workflow, maintains claim as evidence source
+
+---
+
+### Phase 2.6.6: Enhanced Hierarchy Linking UX ⏳
+
+**Goal**: Improve UX for end-to-end linking of hierarchy objects.
+
+**Status**: ⏳ Planned
+**Deliverables**:
+
+- ⏳ Visual indicators for missing links
+- ⏳ Inline linking workflows at obvious entry points
+- ⏳ Bulk linking tools
+- ⏳ Validation warnings for incomplete hierarchies
+- ⏳ Clear UX for linking chain:
+  - Position → Strategy (required)
+  - Strategy → Asset View (required)
+  - Asset View → Macro Thesis(es) (required, can be multiple)
+  - Asset Views and Macro Theses → Main Claims (evidence linking)
+
+**Estimated Effort**: 1 week
+**Dependencies**: Phase 2.6.5 ✅ (after conversion workflow)
+
+**Enhancement ID**: #ENH-008
+
+**Big Picture Impact**: Ensures complete hierarchy coverage, enables top-down analysis
+
+---
+
+### Phase 2.6.7: Asset View Terminology Review ⏳
+
+**Goal**: Decide whether to rename "Asset View" to "Asset Thesis".
+
+**Status**: ⏳ Under Consideration
+**Deliverables**:
+
+- ⏳ User decision: Keep "Asset View" or rename to "Asset Thesis"?
+- ⏳ If approved: Rename in schema, UI, docs
+- ⏳ Migration script if renaming
+
+**Estimated Effort**: 1 day (if approved)
+**Dependencies**: None (can be decided anytime)
+
+**Enhancement ID**: #ENH-005
+
+**Open Questions**:
+- Does this improve clarity or create confusion?
+- PRD uses "Asset Views" - would this deviate from PRD?
+- Need user feedback before proceeding
+
+---
+
 ## Phase 3: Enhanced Analytics & Metrics 💡
 
 **Goal**: Advanced performance attribution and regime analysis.
@@ -580,32 +812,46 @@ This document tracks the actual implementation progress of the transition from "
 
 ## Next Implementation Targets
 
-🎉 **Phase 2 (Research & Intelligence Layer) is COMPLETE!**
+🎉 **Phase 2 & 2.5 (Research & AI Enhancements) are COMPLETE!**
 
-The system now has a full research workflow: ingestion → AI structuring → human review → evidence linking to belief hierarchy.
+The system now has a full AI-powered research workflow: ingestion → AI structuring → human review → evidence linking to belief hierarchy.
 
-### Option A: Phase 2.5.2 & 2.5.3 (Hierarchy Analysis & Recommendations) - ✅ COMPLETE
-**Why**: AI analyzes insights against existing hierarchy and proposes new theses/views or links
-**Impact**: Automatically suggests where research fits in belief hierarchy, reducing manual mapping work
-**Effort**: 2-3 days each
-**Dependencies**: Phase 2.5.0 ✅, Phase 2.5.1 ✅
-**Status**: ✅ Complete - Full AI research workflow now functional
+### 🚧 CURRENT FOCUS: Phase 2.6 (Research UX Enhancements)
+**Status**: In Progress (Started 2025-12-28)
+**Why**: After completing research infrastructure, several critical UX improvements emerged from user feedback
+**Impact**: Makes research workflow more intuitive and productive
+**Effort**: 2-3 weeks
+**Enhancement IDs**: #ENH-001 through #ENH-012 (see `enhancement_tracking.md`)
 
-### Option B: Phase 1.6 (Create/Edit Forms) - RECOMMENDED
+**Implementation Order**:
+1. ✅ Sidebar reordering (#ENH-001) - Complete
+2. ✅ Claims browser page with auto-promotion (#ENH-002) - Complete
+3. ⏳ Auto-generated titles for Asset Views & Macro Theses (#ENH-006, #ENH-009) - Next
+4. ⏳ Schema improvements & taxonomy (#ENH-004, #ENH-010)
+5. ⏳ Streamlined claim conversion (#ENH-011)
+6. ⏳ Enhanced hierarchy linking UX (#ENH-008)
+
+**Deferred to Phase 4+**:
+- Claims in triage page (#ENH-003)
+- Mandatory link triage triggers (#ENH-012)
+
+### Alternative Future Options (After Phase 2.6)
+
+### Option A: Phase 1.6 (Create/Edit Forms)
 **Why**: Removes dependency on Supabase console for CRUD operations on theses/views
 **Impact**: Full self-service UI for managing theses/views without direct database access
 **Effort**: 2-3 days
 **Dependencies**: None (Phase 1.5 complete ✅)
 **Status**: High priority for user experience
 
-### Option C: Phase 1.7 (Tree Navigator)
+### Option B: Phase 1.7 (Tree Navigator)
 **Why**: Best user experience for navigating the entire belief hierarchy
 **Impact**: Visual representation of entire belief structure (theses → views → strategies)
 **Effort**: 3-4 days
 **Dependencies**: Phase 1.5 complete ✅
 **Status**: Nice-to-have UX enhancement
 
-### Option D: Phase 3 (Enhanced Analytics & Metrics)
+### Option C: Phase 3 (Enhanced Analytics & Metrics)
 **Why**: Performance attribution and regime analysis
 **Impact**: Understand which theses/views are driving performance
 **Effort**: 2-3 weeks
