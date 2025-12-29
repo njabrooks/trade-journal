@@ -1,20 +1,22 @@
 # System Architecture & Transition Plan
 ## Evolving Toward PRD v1.1
 
-**Version:** 1.0  
-**Status:** Draft  
-**Date:** 2025-12-20  
+**Version:** 1.1 (Living Document)
+**Status:** Active - Phases 1, 2, 2.5, 2.6 Complete
+**Last Updated:** 2025-12-29
 **Based on:** PRD v1.1, PRD Codebase Comparison
 
 ---
 
 ## Executive Summary
 
-This document defines how the existing Trade Journal system will evolve toward the Universal Investment Operating System vision (PRD v1.1) without disrupting current operations or losing momentum.
+This **living document** tracks the evolution of the Trade Journal system toward the Universal Investment Operating System vision (PRD v1.1). Updated regularly to reflect actual implementation progress and architectural decisions.
 
-**Current State:** A functional options trading journal with strategy/position tracking, triage workflow, and blotter actions. Strong foundation in execution data, snapshots, and rule-based triage.
+**Original State (2025-12-20):** A functional options trading journal with strategy/position tracking, triage workflow, and blotter actions. Strong foundation in execution data, snapshots, and rule-based triage.
 
-**Target State:** A complete investment operating system with hierarchical belief model (macro → asset → strategy → position), research layer, AI-assisted analysis, and institutional memory.
+**Current State (2025-12-29):** Complete hierarchical belief model (Macro Theses → Asset Theses → Strategies → Positions), full research & intelligence layer with AI integration, and enhanced UX workflows. Phase 1, 2, 2.5, and 2.6 complete.
+
+**Target State:** A complete investment operating system with institutional memory, advanced analytics, enhanced workflows, and first-class trigger entities.
 
 **Transition Strategy:** Phased evolution with backward compatibility, incremental value delivery, and minimal disruption to existing workflows.
 
@@ -28,7 +30,7 @@ The target system implements a **four-level decision hierarchy**:
 
 ```
 Macro Theses (Level 1)
-  └─> Asset Thesiss (Level 2)
+  └─> Asset Theses (Level 2)
       └─> Strategies (Level 3)
           └─> Positions (Level 4)
 ```
@@ -49,39 +51,47 @@ Macro Theses (Level 1)
 - Historical state reconstruction via snapshots
 
 #### Layer 2: Belief & Knowledge Hierarchy
-- **Status:** ❌ Missing (Levels 1-2), ✅ Partial (Level 3)
-- Macro theses (secular, cyclical, structural)
-- Asset views (asset-specific theses)
-- Strategies (tactical expression of views)
-- Positions (execution)
+- **Status:** ✅ Complete (Phase 1, 2.6)
+- ✅ Macro theses (secular, cyclical, structural)
+- ✅ Asset theses (asset-specific theses with underlyings linkage)
+- ✅ Strategies (tactical expression linked to theses)
+- ✅ Positions (execution)
+- ✅ Full hierarchy navigation and linking UX
 
 #### Layer 3: Research & Intelligence
-- **Status:** ❌ Missing
-- Research ingestion (articles, transcripts, notes)
-- AI-assisted structuring (summarization, claim extraction)
-- Contextual mapping to hierarchy
-- Pre-investment research state
+- **Status:** ✅ Complete (Phase 2, 2.5, 2.6)
+- ✅ Research ingestion (articles, transcripts, notes)
+- ✅ AI-assisted structuring (multi-model support: Claude, GPT, Gemini)
+- ✅ Contextual mapping to hierarchy with evidence classification
+- ✅ Pre-investment research state
+- ✅ Claims browser with auto-promotion and confirmation workflow
+- ✅ Hierarchy analysis and AI recommendations
 
 #### Layer 4: Workflow & Decision Loop
-- **Status:** ✅ Partial
-- Triggers (time, event, rule-based)
-- Triage (evaluation, severity, urgency)
-- Decision capture (explicit with rationale)
-- Action execution (trades, updates, observations)
+- **Status:** 🟡 Partial
+- ✅ Triggers (rule-based via triage)
+- ✅ Triage (evaluation, severity, urgency)
+- 🟡 Decision capture (blotter_actions, basic)
+- ✅ Action execution (trades, updates, observations)
+- ⏸️ First-class trigger entities (deferred to Phase 4)
+- ⏸️ Structured rationale/confidence (deferred to Phase 4)
 
 #### Layer 5: Decision Support & Analytics
 - **Status:** 🟡 Partial
-- Options/payoff analytics
-- Risk/exposure views
-- Research synthesis (missing)
-- Prior decision context (partial)
+- ✅ Options/payoff analytics (existing)
+- ✅ Risk/exposure views (existing)
+- ✅ Research synthesis (Phase 2.5 AI recommendations)
+- 🟡 Prior decision context (partial via blotter)
+- ⏸️ Performance attribution (Phase 3)
+- ⏸️ Regime detection (Phase 3)
 
 #### Layer 6: Institutional Memory
-- **Status:** ⚠️ Implicit
-- Chronological journal (blotter_actions)
-- Retrospective analysis (missing)
-- Pattern detection (missing)
-- Bias detection (missing)
+- **Status:** 🟡 Partial
+- ✅ Chronological journal (blotter_actions)
+- ✅ Research provenance tracking (claims → theses linkage)
+- ⏸️ Retrospective analysis (Phase 4)
+- ⏸️ Pattern detection (Phase 4)
+- ⏸️ Bias detection (Phase 4)
 
 ### 1.3 Decision Loop
 
@@ -143,74 +153,139 @@ This loop operates at all hierarchy levels (macro thesis → asset thesis → st
 - Blotter/journal view
 - Modular component architecture
 
-### 2.2 Critical Gaps
+### 2.2 Critical Gaps - Status Update (2025-12-29)
 
-**Missing Hierarchy Levels:**
-- No macro theses entity
-- No asset thesiss entity
-- Strategies exist but are tactical, not connected to higher-level beliefs
+**~~Missing Hierarchy Levels~~ ✅ ADDRESSED (Phase 1)**
+- ✅ Macro theses entity implemented
+- ✅ Asset theses entity implemented
+- ✅ Strategies linked to higher-level beliefs
+- ✅ Full 4-level hierarchy operational
 
-**No Research Layer:**
-- No research ingestion
-- No structured research insights
-- No AI capabilities
-- No research → thesis mapping
+**~~No Research Layer~~ ✅ ADDRESSED (Phase 2, 2.5, 2.6)**
+- ✅ Research ingestion complete
+- ✅ Structured research insights with AI processing
+- ✅ Multi-model AI capabilities (Claude, GPT, Gemini)
+- ✅ Research → thesis mapping with evidence classification
+- ✅ Claims browser and confirmation workflow
 
-**Implicit Decision Model:**
-- Decisions captured in `blotter_actions` but not explicitly modeled
-- No structured rationale or confidence fields
-- No explicit decision type classification
+**Decision Model - Partially Enhanced**
+- ✅ Decisions captured in `blotter_actions` (existing)
+- ⏸️ Structured rationale/confidence fields (deferred to Phase 4)
+- ⏸️ Explicit decision type classification (deferred to Phase 4)
 
-**Limited Trigger Model:**
-- Triggers are computed, not first-class entities
-- Time-based triggers limited to ingestion scheduling
-- Event-based triggers implicit in triage rules
+**Limited Trigger Model - Future Work**
+- ⏸️ First-class trigger entities (Phase 4)
+- ⏸️ Advanced time-based triggers (Phase 4)
+- ⏸️ Event-based triggers beyond triage (Phase 4)
+
+### 2.3 Remaining Gaps (Post-Phase 2.6)
+
+**Performance Attribution:**
+- No attribution by thesis/thesis/strategy
+- No regime detection
+- No cross-asset correlation analysis
+
+**Institutional Memory:**
+- Limited retrospective analysis
+- No pattern detection
+- No bias detection
+
+**Advanced Workflows:**
+- Trigger model still implicit in triage rules
+- No time-based review workflows
+- Limited event-based automation
 
 ---
 
 ## 3. Transition Phases
 
-### Phase 1: Foundation (Months 1-2)
+### Phase 1: Foundation ✅ COMPLETE
+**Timeline:** December 2025 (Phases 1.0, 1.5)
 **Goal:** Add hierarchy levels and enhance decision capture without breaking existing functionality.
 
 **Deliverables:**
-1. Macro theses and asset thesiss data model
-2. Enhanced decision capture in blotter
-3. Basic hierarchy navigation UI
-4. Backward-compatible strategy linking
+1. ✅ Macro theses and asset theses data model
+2. ✅ Enhanced decision capture in blotter
+3. ✅ Basic hierarchy navigation UI
+4. ✅ Backward-compatible strategy linking
+
+**Outcome:** Complete 4-level hierarchy (Macro Theses → Asset Theses → Strategies → Positions) with full UI support and linking workflows.
 
 **Risk:** Low - All changes are additive and optional.
 
 ---
 
-### Phase 2: Research Infrastructure (Months 3-4)
+### Phase 2: Research Infrastructure ✅ COMPLETE
+**Timeline:** December 2025 (Phases 2.1-2.4)
 **Goal:** Build research ingestion and storage foundation.
 
 **Deliverables:**
-1. Research artifacts and insights tables
-2. Research ingestion endpoints
-3. Research → hierarchy mapping
-4. Pre-investment research state
+1. ✅ Research artifacts and insights tables
+2. ✅ Research ingestion endpoints
+3. ✅ Research → hierarchy mapping
+4. ✅ Pre-investment research state
+
+**Outcome:** Complete research workflow with manual ingestion, AI processing, human review, and evidence linking to hierarchy.
 
 **Risk:** Low - New functionality, no impact on existing workflows.
 
 ---
 
-### Phase 3: AI Integration (Months 5-6)
-**Goal:** Add AI-assisted research structuring and decision support.
+### Phase 2.5: AI Research Enhancements ✅ COMPLETE
+**Timeline:** December 2025 (Phases 2.5.0-2.5.3)
+**Goal:** Add AI-assisted research structuring and hierarchy analysis.
 
 **Deliverables:**
-1. Research summarization
-2. Claim extraction
-3. Evidence classification
-4. Belief evaluation (support/refute)
-5. Decision support synthesis
+1. ✅ Prompt management system (editable prompts)
+2. ✅ Multi-model AI support (Claude, GPT, Gemini)
+3. ✅ Hierarchy analysis & recommendations
+4. ✅ Recommendation UI (accept/reject AI proposals)
 
-**Risk:** Medium - Requires AI infrastructure, but can be added incrementally.
+**Outcome:** AI-powered research processing with multi-model support and intelligent hierarchy proposals.
+
+**Risk:** Medium - AI infrastructure added incrementally with cost controls.
 
 ---
 
-### Phase 4: Enhanced Workflows (Months 7-8)
+### Phase 2.6: Research UX Enhancements ✅ COMPLETE
+**Timeline:** December 2025 (Phases 2.6.1-2.6.7)
+**Goal:** Improve research workflow UX after completing core research infrastructure.
+
+**Deliverables:**
+1. ✅ Claims browser page (unified view of all claims)
+2. ✅ Auto-generated titles for Asset Theses and Macro Theses
+3. ✅ Enhanced linking UX for hierarchy completeness
+4. ✅ Schema improvements (Asset Theses → Underlyings linkage)
+5. ✅ Sector/topic taxonomy for Macro Theses (115 items)
+6. ✅ Unified claim confirmation with linking workflow
+7. ✅ Terminology rename (Asset View → Asset Thesis)
+8. ⏸️ Auto-generate Asset Thesis descriptions (deferred)
+
+**Outcome:** Streamlined research workflow with flexible claim confirmation (link to existing entities or create new), consistent naming conventions, and visual hierarchy indicators.
+
+**Enhancement IDs:** #ENH-001 through #ENH-012 (see `FUTURE_ENHANCEMENTS.md`)
+
+**Risk:** Low - All additive UX improvements, no breaking changes to data model.
+
+---
+
+### Phase 3: Enhanced Analytics & Metrics 💡 FUTURE
+**Timeline:** TBD
+**Goal:** Advanced performance attribution and regime analysis.
+
+**Deliverables:**
+1. Performance attribution by thesis/thesis/strategy
+2. Regime detection and contextualization
+3. Cross-asset correlation analysis
+4. Multi-timeframe analysis
+5. Custom metric dashboards
+
+**Risk:** Medium - Requires advanced analytics infrastructure.
+
+---
+
+### Phase 4: Enhanced Workflows 💡 FUTURE
+**Timeline:** TBD
 **Goal:** Expand trigger model and retrospective analysis.
 
 **Deliverables:**
@@ -224,36 +299,9 @@ This loop operates at all hierarchy levels (macro thesis → asset thesis → st
 
 ---
 
-### Phase 2.6: Research UX Enhancements (Post-Phase 2.5)
-**Goal:** Improve research workflow UX after completing core research infrastructure.
-
-**Deliverables:**
-1. Claims browser page (unified view of all claims)
-2. Auto-generated titles for Asset Thesiss and Macro Theses
-3. Enhanced linking UX for hierarchy completeness
-4. Schema improvements (Asset Thesiss → Underlyings linkage)
-5. Sector/topic taxonomy for Macro Theses
-6. Streamlined claim → thesis/view conversion workflow
-
-**Context:** After completing Phase 2 (Research Infrastructure) and Phase 2.5 (AI Enhancements), several UX improvements emerged from user feedback:
-- Need to browse all claims in one place (both promoted and unpromoted)
-- Asset Thesiss and Macro Theses need consistent, auto-generated titles
-- Linking workflow (Position → Strategy → Asset Thesis → Macro Thesis) needs to be more intuitive
-- Claim conversion should create new theses/views (not convert claims themselves)
-
-**Risk:** Low - All additive UX improvements, no breaking changes to data model.
-
-**Estimated Effort:** 2-3 weeks
-
-**Priority:** High - Critical for research workflow adoption
-
-**Enhancement IDs:** #ENH-001 through #ENH-012 (see `enhancement_tracking.md`)
-
----
-
 ## 4. Phase 1: Foundation - Detailed Design
 
-### 4.1 Data Model: Macro Theses & Asset Thesiss
+### 4.1 Data Model: Macro Theses & Asset Theses
 
 #### 4.1.1 `macro_theses` Table
 
@@ -284,10 +332,10 @@ CREATE INDEX idx_macro_theses_type ON macro_theses(thesis_type);
 - `status` enables re-underwriting workflow
 - `next_review_due_at` supports time-based triggers
 
-#### 4.1.2 `asset_views` Table
+#### 4.1.2 `asset_theses` Table
 
 ```sql
-CREATE TABLE asset_views (
+CREATE TABLE asset_theses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   macro_thesis_id uuid REFERENCES macro_theses(id) ON DELETE SET NULL,
   underlying_id uuid REFERENCES underlyings(id) ON DELETE SET NULL,
@@ -307,13 +355,13 @@ CREATE TABLE asset_views (
   notes jsonb
 );
 
-CREATE INDEX idx_asset_views_macro_thesis ON asset_views(macro_thesis_id);
-CREATE INDEX idx_asset_views_underlying ON asset_views(underlying_id);
-CREATE INDEX idx_asset_views_status ON asset_views(status);
+CREATE INDEX idx_asset_theses_macro_thesis ON asset_theses(macro_thesis_id);
+CREATE INDEX idx_asset_theses_underlying ON asset_theses(underlying_id);
+CREATE INDEX idx_asset_theses_status ON asset_theses(status);
 ```
 
 **Design Decisions:**
-- `macro_thesis_id` is nullable - asset thesiss can exist independently
+- `macro_thesis_id` is nullable - asset theses can exist independently
 - `underlying_id` links to existing underlyings table
 - Multiple context fields support PRD requirement for "narrative, fundamental, positioning, and regime context"
 - Same status/review pattern as macro theses
@@ -322,22 +370,22 @@ CREATE INDEX idx_asset_views_status ON asset_views(status);
 
 ```sql
 ALTER TABLE strategies
-  ADD COLUMN asset_thesis_id uuid REFERENCES asset_views(id) ON DELETE SET NULL,
+  ADD COLUMN asset_thesis_id uuid REFERENCES asset_theses(id) ON DELETE SET NULL,
   ADD COLUMN macro_thesis_id uuid REFERENCES macro_theses(id) ON DELETE SET NULL;
 
-CREATE INDEX idx_strategies_asset_view ON strategies(asset_thesis_id);
+CREATE INDEX idx_strategies_asset_thesis ON strategies(asset_thesis_id);
 CREATE INDEX idx_strategies_macro_thesis ON strategies(macro_thesis_id);
 ```
 
 **Design Decisions:**
 - Both foreign keys are nullable for backward compatibility
 - Existing strategies continue to work without hierarchy links
-- Strategies can link to asset thesiss OR macro theses (or both)
+- Strategies can link to asset theses OR macro theses (or both)
 - Allows gradual migration of existing strategies
 
 **⚠️ Critical Clarification: Strategy vs Thesis**
 - **Strategies are tactical execution constructs**, not long-lived belief objects
-- **Macro Theses and Asset Thesiss are belief objects** that evolve with evidence
+- **Macro Theses and Asset Theses are belief objects** that evolve with evidence
 - **Strategies link to theses/views** but remain tactical - their linkage is **additive, not redefining**
 - A strategy can express an asset thesis, but the strategy itself is not the belief
 - Example: "Covered call on GLXY" (strategy) expresses "GLXY will trade sideways" (asset thesis), but the strategy is the tactical implementation, not the belief itself
@@ -373,7 +421,7 @@ CREATE INDEX idx_blotter_decision_type ON blotter_actions(decision_type);
 **New Page:** `/hierarchy` or integrated into existing navigation
 
 **Components:**
-- Tree view: Macro Theses → Asset Thesiss → Strategies → Positions
+- Tree view: Macro Theses → Asset Theses → Strategies → Positions
 - Breadcrumb navigation
 - Filter by status, type, confidence
 - Quick actions: Create thesis, link strategy, review due
@@ -389,7 +437,7 @@ CREATE INDEX idx_blotter_decision_type ON blotter_actions(decision_type);
 
 **Sections:**
 - Thesis overview (type, status, confidence, review schedule)
-- Linked asset thesiss
+- Linked asset theses
 - Linked strategies (with performance)
 - Research mappings (Phase 2)
 - Review history
@@ -408,7 +456,7 @@ CREATE INDEX idx_blotter_decision_type ON blotter_actions(decision_type);
 ### 4.4 Migration Strategy
 
 **Step 1: Create Tables**
-- Run migrations for `macro_theses`, `asset_views`
+- Run migrations for `macro_theses`, `asset_theses`
 - Add foreign keys to `strategies`
 - Extend `blotter_actions`
 
@@ -496,9 +544,9 @@ CREATE INDEX idx_research_insights_time_horizon ON research_insights(time_horizo
 CREATE TABLE research_mappings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   research_insight_id uuid NOT NULL REFERENCES research_insights(id) ON DELETE CASCADE,
-  hierarchy_level text NOT NULL, -- 'macro_thesis' | 'asset_view' | 'strategy' | 'position'
+  hierarchy_level text NOT NULL, -- 'macro_thesis' | 'asset_thesis' | 'strategy' | 'position'
   macro_thesis_id uuid REFERENCES macro_theses(id) ON DELETE CASCADE,
-  asset_thesis_id uuid REFERENCES asset_views(id) ON DELETE CASCADE,
+  asset_thesis_id uuid REFERENCES asset_theses(id) ON DELETE CASCADE,
   strategy_id uuid REFERENCES strategies(id) ON DELETE CASCADE,
   position_id uuid REFERENCES positions(id) ON DELETE CASCADE,
   mapping_type text NOT NULL, -- 'supports' | 'refutes' | 'neutral' | 'exploratory'
@@ -511,7 +559,7 @@ CREATE TABLE research_mappings (
 
 CREATE INDEX idx_research_mappings_insight ON research_mappings(research_insight_id);
 CREATE INDEX idx_research_mappings_macro_thesis ON research_mappings(macro_thesis_id);
-CREATE INDEX idx_research_mappings_asset_view ON research_mappings(asset_thesis_id);
+CREATE INDEX idx_research_mappings_asset_thesis ON research_mappings(asset_thesis_id);
 CREATE INDEX idx_research_mappings_strategy ON research_mappings(strategy_id);
 CREATE INDEX idx_research_mappings_type ON research_mappings(mapping_type);
 ```
@@ -665,14 +713,14 @@ async function summarizeResearch(content: string): Promise<string> {
 
 **Context Provided:**
 - Existing macro theses (titles, descriptions)
-- Existing asset thesiss (titles, narratives)
+- Existing asset theses (titles, narratives)
 - Existing strategies (if relevant)
 
 **Output:** Array of suggested mappings with confidence scores
 
 #### 6.1.5 Belief Evaluation
 
-**Input:** `research_insight` + existing `macro_thesis` or `asset_view`  
+**Input:** `research_insight` + existing `macro_thesis` or `asset_thesis`  
 **Output:** Mapping type (supports/refutes/neutral) + confidence  
 **Model:** GPT-4 with comparison logic
 
@@ -752,7 +800,7 @@ CREATE TABLE workflow_triggers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   trigger_type text NOT NULL, -- 'time_based' | 'event_based' | 'rule_based'
   trigger_name text NOT NULL,
-  hierarchy_level text NOT NULL, -- 'macro_thesis' | 'asset_view' | 'strategy' | 'position' | 'underlying' | 'account'
+  hierarchy_level text NOT NULL, -- 'macro_thesis' | 'asset_thesis' | 'strategy' | 'position' | 'underlying' | 'account'
   target_id uuid, -- FK to target (thesis/view/strategy/position/etc)
   schedule_cron text, -- For time-based triggers
   event_type text, -- For event-based triggers
@@ -961,7 +1009,7 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 ### 9.1 Phase 1 Metrics
 
 - Number of macro theses created
-- Number of asset thesiss created
+- Number of asset theses created
 - Percentage of strategies linked to hierarchy
 - User engagement with hierarchy navigator
 
@@ -998,7 +1046,7 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 
 ### 10.2 Asset Thesis Relationship
 
-**Question:** Can one strategy express multiple asset thesiss?
+**Question:** Can one strategy express multiple asset theses?
 
 **Recommendation:** Start with one-to-many (asset thesis → strategies). Add many-to-many later if needed.
 
@@ -1030,42 +1078,58 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 
 ## 11. Next Steps
 
-### Immediate (Week 1-2)
+### Completed (December 2025) ✅
 
-1. **Review and Approve Plan**
-   - Stakeholder review
-   - Design decision finalization
-   - Resource allocation
+1. **Phase 1: Foundation** ✅
+   - Complete 4-level hierarchy implementation
+   - Full UI support for macro theses and asset theses
+   - Hierarchy linking workflows
 
-2. **Phase 1 Kickoff**
-   - Create database migration for macro_theses/asset_views
-   - Design UI mockups for hierarchy navigator
-   - Set up development environment
+2. **Phase 2: Research Infrastructure** ✅
+   - Complete research ingestion and storage
+   - Evidence linking to hierarchy
+   - Pre-investment research state
 
-### Short-Term (Month 1)
+3. **Phase 2.5: AI Research Enhancements** ✅
+   - Prompt management system
+   - Multi-model AI support (Claude, GPT, Gemini)
+   - Hierarchy analysis and recommendations
 
-1. **Phase 1 Implementation**
-   - Complete data model
-   - Build basic UI
-   - Manual testing
-   - User feedback
+4. **Phase 2.6: Research UX Enhancements** ✅
+   - Claims browser with auto-promotion
+   - Auto-generated titles for theses
+   - Enhanced linking UX with visual indicators
+   - Unified claim confirmation workflow
+   - Terminology consistency (Asset View → Asset Thesis)
 
-2. **Phase 2 Planning**
-   - Research table design review
-   - Ingestion API design
-   - UI wireframes
+### Current Focus (Post-Phase 2.6)
 
-### Medium-Term (Months 2-4)
+**System Stabilization & User Adoption**
+- Monitor research workflow usage
+- Gather feedback on claim confirmation UX
+- Refine AI recommendations based on acceptance rates
+- Identify pain points in hierarchy navigation
 
-1. **Phase 2 Implementation**
-   - Research infrastructure
-   - Ingestion endpoints
-   - Manual mapping UI
+### Future Phases (TBD)
 
-2. **Phase 3 Planning**
-   - AI provider selection
-   - Cost analysis
-   - Prompt engineering
+**Option A: Phase 3 - Enhanced Analytics & Metrics**
+- Performance attribution by thesis/thesis/strategy
+- Regime detection and contextualization
+- Cross-asset correlation analysis
+- Multi-timeframe analysis
+- Custom metric dashboards
+
+**Option B: Phase 4 - Enhanced Workflows**
+- First-class trigger entities
+- Time-based review triggers
+- Event-based triggers (beyond triage)
+- Retrospective analysis views
+- Pattern detection
+
+**Option C: Incremental Enhancements**
+- See `FUTURE_ENHANCEMENTS.md` for prioritized backlog
+- Focus on high-impact, quick-win features
+- Address user feedback and pain points
 
 ---
 
@@ -1073,7 +1137,7 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 
 ### New Tables (Phase 1)
 - `macro_theses`
-- `asset_views`
+- `asset_theses`
 
 ### Extended Tables (Phase 1)
 - `strategies` (add `macro_thesis_id`, `asset_thesis_id`)
@@ -1097,7 +1161,7 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 - `GET /api/theses/[id]` - Get thesis detail
 - `POST /api/theses` - Create thesis
 - `PUT /api/theses/[id]` - Update thesis
-- `GET /api/asset-theses` - List asset thesiss
+- `GET /api/asset-theses` - List asset theses
 - `GET /api/asset-theses/[id]` - Get view detail
 - `POST /api/asset-theses` - Create view
 - `PUT /api/asset-theses/[id]` - Update view
