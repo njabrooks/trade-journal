@@ -19,11 +19,11 @@
 
 ## Active/In Progress Enhancements
 
-### Phase 2.6: Research UX Enhancements (Current Focus)
-**Status**: 🚧 In Progress (Started 2025-12-28)
+### Phase 2.6: Research UX Enhancements ✅
+**Status**: ✅ Complete (2025-12-29)
 **PRD Alignment**: Section 5 (Research & Intelligence Layer), Section 3 (Conceptual Model)
 **Source**: `docs/archive/20251228_enhancements.md`
-**Effort**: 2-3 weeks total
+**Actual Effort**: 2 days (8 of 9 enhancements complete, 1 deferred)
 
 #### #ENH-001: Sidebar Navigation Reordering ✅
 **Status**: ✅ Complete (2025-12-28)
@@ -176,22 +176,24 @@
 
 ---
 
-#### #ENH-005: Rename Asset Thesis to Asset Thesis?
-**Status**: ⏳ Under Consideration
+#### #ENH-005: Rename Asset View to Asset Thesis ✅
+**Status**: ✅ Complete (2025-12-29)
 **Priority**: Medium
-**Effort**: 1 day (if approved)
+**Effort**: 1 day (actual)
 **PRD**: Section 3 (Conceptual Model)
 **Phase**: Phase 2.6.7
 **Source**: docs/archive/20251228_enhancements.md (item 5)
 
-**Description**: Rename "Asset Thesis" to "Asset Thesis" for terminology consistency
+**Description**: Comprehensive rename from "Asset View" to "Asset Thesis" for terminology consistency
 
-**Open Questions**:
-- Does this improve clarity or create confusion?
-- PRD uses "Asset Thesiss" - would this deviate from PRD?
-- Need user feedback before proceeding
+**Completed**:
+- ✅ Database migration: 102 files changed, 451+ occurrences
+- ✅ Table renamed: asset_views → asset_theses
+- ✅ All schema, types, components, pages updated
+- ✅ Documentation updated across all files
+- ✅ Migration executed via psql and verified
 
-**Decision Required**: ⏳ Awaiting user decision (Yes/No)
+**Big Picture Impact**: Eliminates terminology confusion - "Macro Thesis" and "Asset Thesis" are now consistently named throughout the application
 
 ---
 
@@ -251,15 +253,15 @@
 ---
 
 #### #ENH-007: Auto-Generate Asset Thesis Descriptions
-**Status**: 🚧 Planned
+**Status**: ⏸️ Deferred
 **Priority**: Medium
 **Effort**: 2-3 days
-**PRD**: Section 3 (Asset Thesiss), Section 5.7 (AI Role)
-**Phase**: Phase 2.6.5
+**PRD**: Section 3 (Asset Theses), Section 5.7 (AI Role)
+**Phase**: Deferred from Phase 2.6
 **Source**: docs/archive/20251228_enhancements.md (item 7)
-**Dependencies**: #ENH-011 ✅ (requires claim linking)
+**Dependencies**: #ENH-011 ✅ (claim linking complete)
 
-**Description**: AI-generated descriptions for Asset Thesiss based on linked Macro Theses and Main Claims
+**Description**: AI-generated descriptions for Asset Theses based on linked Macro Theses and Main Claims
 
 **Implementation**:
 - When asset thesis created/updated, AI synthesizes description from:
@@ -267,37 +269,34 @@
   - Linked main claims (evidence)
   - Underlying context
 - User can review and edit AI-generated description
-- Description stored in asset_views.description field
+- Description stored in asset_theses.description field
+
+**Deferral Reason**: Medium priority feature - Phase 2.6 substantially complete (8/9 enhancements) without this. Can be implemented when AI synthesis capabilities are prioritized.
 
 **Big Picture Impact**: Auto-populated context, reduces manual documentation burden
 
 ---
 
-#### #ENH-008: Enhanced Hierarchy Linking UX
-**Status**: 🚧 Planned
+#### #ENH-008: Enhanced Hierarchy Linking UX ✅
+**Status**: ✅ Complete (2025-12-29)
 **Priority**: High
-**Effort**: 1 week
+**Effort**: 1 day (actual)
 **PRD**: Section 3 (Conceptual Model), Section 4 (Data Ingestion)
 **Phase**: Phase 2.6.6
 **Source**: docs/archive/20251228_enhancements.md (item 8)
-**Dependencies**: #ENH-011 ✅ (after conversion workflow)
+**Dependencies**: #ENH-011 ✅
 
 **Description**: Clearer and more intuitive UX for end-to-end linking of hierarchy objects
 
-**Required Links**:
-- Every Position → Strategy (required)
-- Every Strategy → Asset Thesis (required)
-- Every Asset Thesis → Macro Thesis(es) (required, can be multiple)
-- Asset Thesiss and Macro Theses → Main Claims (evidence linking)
+**Implemented**:
+- ✅ Visual hierarchy breadcrumb component with color-coded status indicators
+- ✅ Inline linking dialogs for macro theses and asset theses
+- ✅ Search/filter capabilities in linking workflows
+- ✅ Cascade linking (strategy→view also links parent thesis)
+- ✅ Immediate feedback with router.refresh()
+- ✅ Integration across all strategy and asset thesis pages
 
-**UX Improvements**:
-- Visual indicators for missing links
-- Inline linking workflows at obvious entry points
-- Bulk linking tools
-- Validation warnings for incomplete hierarchies
-- Guided workflow for new users
-
-**Big Picture Impact**: Ensures complete hierarchy coverage, enables top-down analysis
+**Big Picture Impact**: Complete hierarchy linking without page navigation. Visual warnings for missing required relationships. Foundation for Phase 1.7 interactive hierarchy tree.
 
 ---
 

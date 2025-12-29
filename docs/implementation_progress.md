@@ -517,20 +517,22 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-## Phase 2.6: Research UX Enhancements 🚧
+## Phase 2.6: Research UX Enhancements ✅
 
 **Goal**: Improve research workflow UX after completing core research infrastructure and AI enhancements.
 
-**Status**: 🚧 In Progress (Started 2025-12-28)
+**Status**: ✅ Complete (2025-12-29)
 **Scope**:
 
-- 🚧 Claims browser page (unified view of all main claims)
-- 🚧 Auto-generated titles for Asset Thesiss (based on direction, underlying, time horizon)
-- 🚧 Auto-generated titles for Macro Theses (based on direction, sector/topic, time horizon)
-- 🚧 Link Asset Thesiss to underlyings schema properly
-- 🚧 Define sector/topic taxonomy for Macro Theses
-- 🚧 Streamlined claim → thesis/view conversion (creates new, doesn't convert claim)
-- 🚧 Enhanced hierarchy linking UX (Position → Strategy → Asset Thesis → Macro Thesis)
+- ✅ Claims browser page (unified view of all main claims)
+- ✅ Auto-generated titles for Asset Theses (based on direction, underlying, time horizon)
+- ✅ Auto-generated titles for Macro Theses (based on direction, sector/topic, time horizon)
+- ✅ Link Asset Theses to underlyings schema properly
+- ✅ Define sector/topic taxonomy for Macro Theses
+- ✅ Streamlined claim → thesis/view conversion (creates new, doesn't convert claim)
+- ✅ Enhanced hierarchy linking UX (Position → Strategy → Asset Thesis → Macro Thesis)
+- ✅ Rename "Asset View" to "Asset Thesis" for terminology consistency
+- ⏳ Auto-generate Asset Thesis descriptions (deferred - medium priority)
 - ⏳ Claims in triage page (deferred to Phase 4+)
 - ⏳ Mandatory link triage triggers (deferred to Phase 4+)
 
@@ -778,26 +780,25 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-### Phase 2.6.7: Asset Thesis Terminology Review ⏳
+### Phase 2.6.7: Asset View → Asset Thesis Terminology Rename ✅
 
-**Goal**: Decide whether to rename "Asset Thesis" to "Asset Thesis".
+**Goal**: Rename "Asset View" to "Asset Thesis" for terminology consistency.
 
-**Status**: ⏳ Under Consideration
+**Status**: ✅ Complete (2025-12-29)
 **Deliverables**:
 
-- ⏳ User decision: Keep "Asset Thesis" or rename to "Asset Thesis"?
-- ⏳ If approved: Rename in schema, UI, docs
-- ⏳ Migration script if renaming
+- ✅ Database migration: asset_views → asset_theses (102 files changed)
+- ✅ Schema update: All tables, columns, indexes renamed
+- ✅ Codebase update: 451+ occurrences across all files
+- ✅ Documentation updated: All markdown files, scripts, tests
+- ✅ Migration executed and verified via psql
 
-**Estimated Effort**: 1 day (if approved)
-**Dependencies**: None (can be decided anytime)
+**Actual Effort**: 1 day
+**Dependencies**: None
 
 **Enhancement ID**: #ENH-005
 
-**Open Questions**:
-- Does this improve clarity or create confusion?
-- PRD uses "Asset Thesiss" - would this deviate from PRD?
-- Need user feedback before proceeding
+**Big Picture Impact**: Consistent terminology throughout application - "Macro Thesis" and "Asset Thesis" are now aligned. Eliminates confusion between "views" and "theses".
 
 ---
 
