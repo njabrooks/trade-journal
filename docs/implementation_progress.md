@@ -1,7 +1,7 @@
 # System Architecture Transition: Implementation Progress
 
 **Master Plan**: See [`system_architecture_transition_plan.md`](./system_architecture_transition_plan.md)
-**Last Updated**: 2025-12-29 (Phase 2.6.1, 2.6.2, 2.6.3, 2.6.4 & 2.6.5 Complete)
+**Last Updated**: 2025-12-29 (Phase 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5 & 2.6.6 Complete)
 **AI Enhancements Plan**: See [`ai_research_enhancements_plan.md`](./ai_research_enhancements_plan.md)
 
 ---
@@ -708,29 +708,45 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-### Phase 2.6.6: Enhanced Hierarchy Linking UX ⏳
+### Phase 2.6.6: Enhanced Hierarchy Linking UX ✅
 
 **Goal**: Improve UX for end-to-end linking of hierarchy objects.
 
-**Status**: ⏳ Planned
+**Status**: ✅ Complete (2025-12-29)
 **Deliverables**:
 
-- ⏳ Visual indicators for missing links
-- ⏳ Inline linking workflows at obvious entry points
-- ⏳ Bulk linking tools
-- ⏳ Validation warnings for incomplete hierarchies
-- ⏳ Clear UX for linking chain:
-  - Position → Strategy (required)
-  - Strategy → Asset View (required)
-  - Asset View → Macro Thesis(es) (required, can be multiple)
-  - Asset Views and Macro Theses → Main Claims (evidence linking)
+**Phase A: Visual Hierarchy Indicators** ✅
+- ✅ `HierarchyBreadcrumb.tsx` component (192 lines)
+- ✅ Visual flow diagram showing full hierarchy chain
+- ✅ Color-coded status indicators (green=linked, amber=missing required, gray=missing optional)
+- ✅ Always visible (shows missing links, not hidden)
+- ✅ Inline "+" buttons for missing links
+- ✅ Integration on Asset View and Strategy pages
 
-**Estimated Effort**: 1 week
-**Dependencies**: Phase 2.6.5 ✅ (after conversion workflow)
+**Phase B: Inline Linking Workflows** ✅
+- ✅ `LinkToThesisDialog.tsx` (332 lines) - Search/filter macro theses
+- ✅ `LinkToViewDialog.tsx` (342 lines) - Search/filter asset views
+- ✅ `ClientHierarchyBreadcrumb.tsx` (78 lines) - Client wrapper for server components
+- ✅ Search by title/ticker/sector with real-time filtering
+- ✅ Filter by thesis type, direction, status
+- ✅ Cascade linking (strategy→view also links parent thesis)
+- ✅ API integration with router.refresh() for immediate feedback
+- ✅ Updated all strategy pages (triage, performance, blotter)
+
+**Phase C: Deferred to Phase 1.7** ⏸️
+- ⏸️ Option 3 (Hierarchy Flow Card) - Deferred to Phase 1.7 (Connection Visualization)
+- Options documented in `docs/archive/phase_2_6_6_completion.md`
+
+**Actual Effort**: 1 day (Phase A: 2 hours, Phase B: 6 hours)
+**Dependencies**: Phase 2.6.5 ✅
 
 **Enhancement ID**: #ENH-008
 
-**Big Picture Impact**: Ensures complete hierarchy coverage, enables top-down analysis
+**Big Picture Impact**:
+- Complete hierarchy linking without page navigation
+- Visual warnings for missing required relationships
+- Automatic cascade linking maintains data integrity
+- Foundation for Phase 1.7 interactive hierarchy tree
 
 ---
 
