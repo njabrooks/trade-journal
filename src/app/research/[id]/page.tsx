@@ -1,11 +1,11 @@
-import { getResearchArtifactById, getResearchInsightByArtifactId } from '@/db/queries/research';
+import { getResearchArtifactById, getResearchInsightByArtifactId, getMainClaimsForArtifact } from '@/db/queries/research';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { WorkflowStatusCard } from '@/components/research/WorkflowStatusCard';
 import { EmptyClaimsState } from '@/components/research/EmptyClaimsState';
-import { ClaimsBrowser } from '@/components/research/ClaimsBrowser';
+import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
 import type { ClaimsStructure } from '@/types/claims';
 import { isValidClaimsStructure, getUnconvertedClaims, getConvertedClaims } from '@/types/claims';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -24,16 +24,23 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
 
   const insight = await getResearchInsightByArtifactId(id);
 
-  // Calculate claims statistics
+  // Fetch claims from main_claims table (normalized source of truth)
+  const claimsWithSources = await getMainClaimsForArtifact(id);
+
+  // Calculate claims statistics from main_claims table
+  const hasClaims = claimsWithSources.length > 0;
+  const mainClaimsCount = claimsWithSources.length;
+
+  // Get evidence claims count from JSONB if available (for display purposes)
   const hasClaimsStructure: boolean = !!(insight?.claimsStructure && isValidClaimsStructure(insight.claimsStructure));
   const claimsStructure = hasClaimsStructure ? (insight!.claimsStructure as ClaimsStructure) : null;
-
-  const mainClaimsCount = claimsStructure?.main_claims.length || 0;
   const evidenceClaimsCount = claimsStructure?.evidence_claims.length || 0;
-  const unconvertedClaims = claimsStructure ? getUnconvertedClaims(claimsStructure) : [];
-  const convertedClaims = claimsStructure ? getConvertedClaims(claimsStructure) : [];
-  const unconvertedCount = unconvertedClaims.length;
-  const convertedCount = convertedClaims.length;
+
+  // Count conversion status from claim status field
+  // Note: Conversion tracking is done via status field and separate join tables
+  // For now, showing all counts - conversion tracking via ClaimThesisMapping would require additional query
+  const unconvertedCount = claimsWithSources.filter(c => c.claim.status === 'unconfirmed').length;
+  const convertedCount = claimsWithSources.filter(c => c.claim.status === 'confirmed').length;
 
   return (
     <DashboardShell
@@ -134,10 +141,10 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
         )}
 
         {/* Claims Browser or Empty State */}
-        {hasClaimsStructure && claimsStructure ? (
-          <ClaimsBrowser
-            claimsStructure={claimsStructure}
-            insightId={insight!.id}
+        {hasClaims ? (
+          <UnifiedClaimsBrowser
+            claimsWithSources={claimsWithSources}
+            filterArtifactId={artifact.id}
           />
         ) : insight ? (
           <EmptyClaimsState

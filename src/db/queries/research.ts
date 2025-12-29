@@ -251,6 +251,32 @@ export async function getAllMainClaimsWithSources() {
 }
 
 /**
+ * Get main claims for a specific artifact with source metadata
+ * Used for research details page (filtered view of unified claims browser)
+ */
+export async function getMainClaimsForArtifact(artifactId: string) {
+  const claims = await db
+    .select({
+      claim: mainClaims,
+      insight: researchInsights,
+      artifact: researchArtifacts,
+    })
+    .from(mainClaims)
+    .leftJoin(
+      researchInsights,
+      eq(mainClaims.sourceInsightId, researchInsights.id)
+    )
+    .leftJoin(
+      researchArtifacts,
+      eq(researchInsights.researchArtifactId, researchArtifacts.id)
+    )
+    .where(eq(researchArtifacts.id, artifactId))
+    .orderBy(desc(mainClaims.createdAt));
+
+  return claims;
+}
+
+/**
  * Promote a main claim from 'unconfirmed' to 'confirmed' status
  */
 export async function promoteMainClaim(claimId: string): Promise<void> {

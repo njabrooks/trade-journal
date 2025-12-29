@@ -19,6 +19,7 @@ interface ClaimWithSource {
 
 interface UnifiedClaimsBrowserProps {
   claimsWithSources: ClaimWithSource[];
+  filterArtifactId?: string; // Optional: filter claims to a specific research source
 }
 
 type StatusFilter = 'all' | 'unconfirmed' | 'confirmed' | 'invalidated' | 'merged';
@@ -27,7 +28,7 @@ type CategoryFilter = 'all' | 'macro' | 'asset_specific';
 type SortColumn = 'claim' | 'source' | 'confidence' | 'category' | 'status' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
-export function UnifiedClaimsBrowser({ claimsWithSources }: UnifiedClaimsBrowserProps) {
+export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: UnifiedClaimsBrowserProps) {
   const router = useRouter();
   const [expandedClaim, setExpandedClaim] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +80,11 @@ export function UnifiedClaimsBrowser({ claimsWithSources }: UnifiedClaimsBrowser
   // Filter and sort claims
   const filteredAndSortedClaims = useMemo(() => {
     let claims = [...claimsWithSources];
+
+    // Filter by artifact ID if specified (for single-source view)
+    if (filterArtifactId) {
+      claims = claims.filter((c) => c.artifact?.id === filterArtifactId);
+    }
 
     // Filter
     if (statusFilter !== 'all') {
@@ -157,6 +163,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources }: UnifiedClaimsBrowser
     return claims;
   }, [
     claimsWithSources,
+    filterArtifactId,
     statusFilter,
     confidenceFilter,
     categoryFilter,

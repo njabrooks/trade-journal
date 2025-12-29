@@ -4,8 +4,10 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import type { ClaimsStructure, MainClaim, EvidenceClaim, ClaimConfidence } from '@/types/claims';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ConvertClaimDialog } from './ConvertClaimDialog';
-import { PromoteClaimDialog } from './PromoteClaimDialog';
+// NOTE: These components are in the parent directory since this is archived
+import { ConvertClaimDialog } from '../ConvertClaimDialog';
+// PromoteClaimDialog was removed, this import is kept for historical reference
+// import { PromoteClaimDialog } from './PromoteClaimDialog';
 import { Search, Filter, Info, TrendingUp } from 'lucide-react';
 
 interface ClaimsBrowserProps {
@@ -672,14 +674,14 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
         />
       )}
 
-      {/* Promote Dialog */}
-      {promotingClaim && (
+      {/* Promote Dialog - REMOVED, component no longer exists */}
+      {/* {promotingClaim && (
         <PromoteClaimDialog
           claim={promotingClaim}
           insightId={insightId}
           onClose={() => setPromotingClaim(null)}
         />
-      )}
+      )} */}
     </div>
   );
 }
