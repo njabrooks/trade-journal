@@ -1,7 +1,7 @@
 # System Architecture Transition: Implementation Progress
 
 **Master Plan**: See [`system_architecture_transition_plan.md`](./system_architecture_transition_plan.md)
-**Last Updated**: 2025-12-29 (Phase 2.6.1, 2.6.2, 2.6.3, 2.6.4, 2.6.5 & 2.6.6 Complete)
+**Last Updated**: 2025-12-29 (Phase 2.6.5 Enhanced with Link to Existing Entities + Data Quality Fixes)
 **AI Enhancements Plan**: See [`ai_research_enhancements_plan.md`](./ai_research_enhancements_plan.md)
 
 ---
@@ -678,33 +678,61 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-### Phase 2.6.5: Streamlined Claim Conversion ✅
+### Phase 2.6.5: Unified Claim Confirmation with Linking Workflow ✅
 
-**Goal**: Improve claim → thesis/view conversion workflow.
+**Goal**: Improve claim → thesis/view conversion workflow with flexible linking options.
 
 **Status**: ✅ Complete (2025-12-29)
 **Deliverables**:
 
+**Phase A: Core Linking Workflow** ✅ (Initial: 2025-12-29)
 - ✅ Convert button creates NEW macro thesis or asset view (doesn't convert claim itself)
 - ✅ Claim automatically linked to newly created thesis/view as evidence
 - ✅ Two-step conversion workflow: Choose entity type → Fill structured fields
 - ✅ Live title preview showing auto-generated title as user types
 - ✅ Automatic provenance tracking (claim → thesis/view with metadata)
-- ⏳ AI field suggestions (deferred to future enhancement - manual selection for now)
+
+**Phase B: Link to Existing Entities** ✅ (Enhanced: 2025-12-29)
+- ✅ Unified workflow - selecting 'confirmed' status triggers linking dialog
+- ✅ Removed separate "Convert" button - integrated with status confirmation
+- ✅ Two-mode dialog system:
+  - **Link to Existing**: Multi-select scrollable lists of available theses/views
+  - **Create New**: Original create thesis/view functionality (preserved)
+- ✅ Link mode features:
+  - Multi-select checkboxes with selection count display
+  - Visual badges (purple for thesis types, blue for view tickers)
+  - Search/filter by title, ticker, sector, type, status
+  - Button shows count: "Link & Confirm (3)"
+- ✅ New API endpoints:
+  - `GET /api/research/claims/available-entities` - Fetch available entities
+  - `POST /api/research/claims/link-to-entities` - Link claim to entities
+- ✅ Auto-confirm claims after linking/creation
+- ✅ Added 'rejected' status for claims that shouldn't be converted
+
+**Phase C: Data Quality Improvements** ✅
+- ✅ Fixed claim title generation to use `auditClaim.title` instead of truncated text
+- ✅ Retrospective scripts created and executed:
+  - `scripts/reset-orphaned-confirmed-claims.ts` (reset 5 orphaned claims)
+  - `scripts/regenerate-claim-titles.ts` (updated 30 claim titles)
+- ✅ Fixed duplicate "Energy Transition" in sector taxonomy
+- ✅ Enhanced UI - title in row, full claim in expanded section
+- ✅ Added "Linked To" section showing connected theses/views
 
 **Technical Implementation**:
-- `src/components/research/ConvertClaimToEntityDialog.tsx` (423 lines) - Conversion dialog component
-- `src/components/research/UnifiedClaimsBrowser.tsx` - Added "Convert" button in Actions column
-- Reuses existing API routes (`/api/theses/create`, `/api/asset-views/create`) with claim linking
-- Uses SectorSelector from Phase 2.6.4 for sector selection
-- Uses title generation from Phase 2.6.3 for live preview
+- Complete rewrite: `src/components/research/ConvertClaimToEntityDialog.tsx` (282 lines)
+- Enhanced: `src/components/research/UnifiedClaimsBrowser.tsx` - status change triggers dialog
+- Enhanced: `src/db/queries/research.ts` - fixed title generation, added linked entities queries
+- New endpoints: `/api/research/claims/available-entities`, `/api/research/claims/link-to-entities`
+- Updated: `/api/theses/create`, `/api/asset-views/create` - auto-confirm linked claims
+- Enhanced: `src/db/schema.ts` - added 'rejected' status
+- Fixed: `src/lib/constants/sector-taxonomy.ts` - removed duplicate
 
-**Actual Effort**: ~30 minutes (faster than estimated 3-4 days)
+**Actual Effort**: 1.5 days (Phase A: 30 mins, Phase B: 1 day, Phase C: 2 hours)
 **Dependencies**: Phase 2.6.3 ✅, Phase 2.6.4 ✅
 
 **Enhancement ID**: #ENH-011
 
-**Big Picture Impact**: Completes research workflow loop (Artifact → Insight → Claims → Thesis/View). One-click conversion with automatic provenance tracking.
+**Big Picture Impact**: Complete research workflow with flexible confirmation - link to existing entities (reduce duplication) or create new ones (capture novel insights). Ensures data consistency with automatic status management, provenance tracking, and data quality fixes.
 
 ---
 

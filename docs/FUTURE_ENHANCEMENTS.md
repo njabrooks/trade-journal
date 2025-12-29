@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for all enhancements (past, present, future) with clear traceability to PRD and original sources.
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2025-12-29 (#ENH-011 Enhanced: Link to Existing Entities + Data Quality Fixes)
 
 ---
 
@@ -195,36 +195,58 @@
 
 ---
 
-#### #ENH-011: Convert Claim Button Creates New Thesis/View ✅
+#### #ENH-011: Unified Claim Confirmation with Linking Workflow ✅
 **Status**: ✅ Complete (2025-12-29)
 **Priority**: High
-**Effort**: ~30 minutes actual (3-4 days estimated)
+**Effort**: 1.5 days actual (3-4 days estimated)
 **PRD**: Section 5.4 (Contextual Mapping)
 **Phase**: Phase 2.6.5
 **Source**: docs/archive/20251228_enhancements.md (item 11)
 **Dependencies**: #ENH-006 ✅, #ENH-009 ✅, #ENH-010 ✅
 
-**Description**: Convert button creates NEW macro thesis or asset view (doesn't convert claim itself)
+**Description**: Unified workflow for confirming claims by either creating new theses/views OR linking to existing ones
+
+**Evolution**: Originally implemented as "Convert" button creating new entities, later enhanced to support linking to existing entities and integrated with claim status confirmation.
 
 **Implemented Workflow**:
-1. User clicks "Convert" button on claim in claims browser
-2. Two-step dialog:
-   - Step 1: Choose entity type (Macro Thesis or Asset View)
-   - Step 2: Fill structured fields (direction, sector/ticker, time horizon)
-3. Live title preview shows auto-generated title as user types
-4. System creates new thesis/view via existing API routes
-5. Claim automatically linked to new entity as evidence
-6. Automatic provenance tracking in notes field
+1. User selects 'confirmed' status on unlinked claim
+2. Dialog opens with mode selection:
+   - **Link to Existing**: Multi-select scrollable lists of available theses/views
+   - **Create New**: Fill structured fields to create new thesis/view
+3. **Link Mode Features**:
+   - Search/filter available theses by title, sector, type, status
+   - Search/filter available views by title, ticker, status
+   - Multi-select checkboxes with selection count display
+   - Visual badges (purple for thesis types, blue for view tickers)
+   - Button shows count: "Link & Confirm (3)"
+4. **Create Mode Features**:
+   - Choose entity type (Macro Thesis or Asset View)
+   - Fill structured fields (direction, sector/ticker, time horizon)
+   - Live title preview shows auto-generated title
+5. Claim automatically linked to selected/created entities as evidence
+6. Status set to 'confirmed' after linking
+7. Automatic provenance tracking in notes field
 
 **Technical Implementation**:
-- ✅ `ConvertClaimToEntityDialog` component (423 lines)
-- ✅ "Convert" button in claims browser Actions column
+- ✅ Complete rewrite of `ConvertClaimToEntityDialog` component (282 lines)
+- ✅ Removed separate "Convert" button - integrated with status confirmation
+- ✅ Enhanced `UnifiedClaimsBrowser` - status change triggers dialog
+- ✅ New API endpoints:
+  - `/api/research/claims/available-entities` - Fetch available theses/views
+  - `/api/research/claims/link-to-entities` - Link claim to existing entities
+- ✅ Updated thesis/view creation APIs to auto-confirm linked claims
 - ✅ Uses SectorSelector for sector multi-select
 - ✅ Uses title generation for live preview
-- ✅ Reuses `/api/theses/create` and `/api/asset-views/create` routes
+- ✅ Added 'rejected' status for claims that shouldn't be converted
 - ⏳ AI field suggestions deferred to future enhancement
 
-**Big Picture Impact**: Completes research workflow loop. One-click conversion from claim to hierarchy entity with full provenance tracking.
+**Data Quality Improvements**:
+- ✅ Fixed claim title generation to use `auditClaim.title` instead of truncated text
+- ✅ Retrospective script: `reset-orphaned-confirmed-claims.ts` (reset 5 orphaned claims)
+- ✅ Retrospective script: `regenerate-claim-titles.ts` (updated 30 claim titles)
+- ✅ Fixed duplicate "Energy Transition" in sector taxonomy
+
+**Big Picture Impact**: Complete research workflow with flexible confirmation - link to existing entities (reduce duplication) or create new ones (capture novel insights). Ensures data consistency with automatic status management and provenance tracking.
 
 ---
 
