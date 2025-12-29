@@ -3,15 +3,19 @@
 /**
  * Convert Claim To Entity Dialog
  *
- * Allows converting a main claim into a new Macro Thesis or Asset View.
- * The claim is NOT converted itself - it remains as evidence linked to the new entity.
+ * Allows confirming a claim by either:
+ * 1. Creating a new Macro Thesis or Asset View
+ * 2. Linking to existing Theses/Views
+ *
+ * The claim is NOT converted itself - it remains as evidence linked to the entity/entities.
  *
  * Part of Phase 2.6.5: Streamlined Claim Conversion
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { SectorSelector } from '@/components/ui/SectorSelector';
 import type { MainClaim } from '@/db/schema';
 
@@ -21,10 +25,25 @@ interface ConvertClaimToEntityDialogProps {
   onClose: () => void;
 }
 
+type Mode = 'link_existing' | 'create_new';
 type EntityType = 'macro_thesis' | 'asset_view';
 type Direction = 'bullish' | 'bearish' | 'neutral';
 type TimeHorizon = 'long_term' | 'medium_term' | 'short_term';
 type ThesisType = 'secular' | 'cyclical' | 'structural';
+
+interface AvailableThesis {
+  id: string;
+  title: string;
+  status: string;
+  thesisType: string;
+}
+
+interface AvailableView {
+  id: string;
+  title: string;
+  ticker: string;
+  status: string;
+}
 
 export function ConvertClaimToEntityDialog({
   claim,
@@ -35,51 +54,95 @@ export function ConvertClaimToEntityDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Step 1: Choose entity type
-  const [entityType, setEntityType] = useState<EntityType | null>(null);
+  // Step 0: Choose mode
+  const [mode, setMode] = useState<Mode | null>(null);
 
-  // Common fields
+  // Link to Existing mode state
+  const [availableTheses, setAvailableTheses] = useState<AvailableThesis[]>([]);
+  const [availableViews, setAvailableViews] = useState<AvailableView[]>([]);
+  const [selectedThesisIds, setSelectedThesisIds] = useState<string[]>([]);
+  const [selectedViewIds, setSelectedViewIds] = useState<string[]>([]);
+  const [loadingEntities, setLoadingEntities] = useState(false);
+
+  // Create New mode state
+  const [entityType, setEntityType] = useState<EntityType | null>(null);
   const [direction, setDirection] = useState<Direction | ''>('');
   const [timeHorizon, setTimeHorizon] = useState<TimeHorizon | ''>('');
   const [confidenceLevel, setConfidenceLevel] = useState<string>('medium');
-
-  // Macro Thesis specific fields
   const [thesisType, setThesisType] = useState<ThesisType>('cyclical');
   const [sectors, setSectors] = useState<string[]>([]);
-
-  // Asset View specific fields
   const [ticker, setTicker] = useState('');
 
-  // Auto-generate title based on selections
-  const getGeneratedTitle = (): string => {
-    if (entityType === 'macro_thesis') {
-      const parts = [];
-      if (direction) parts.push(direction.charAt(0).toUpperCase() + direction.slice(1));
-      if (sectors.length > 0) parts.push(sectors[0]);
-      if (timeHorizon) parts.push(timeHorizon.replace('_', ' '));
-      return parts.length > 0 ? parts.join(' ') : 'Untitled Macro Thesis';
-    } else if (entityType === 'asset_view') {
-      const parts = [];
-      if (direction) parts.push(direction.charAt(0).toUpperCase() + direction.slice(1));
-      if (ticker) parts.push(ticker.toUpperCase());
-      if (timeHorizon) parts.push(timeHorizon.replace('_', ' '));
-      return parts.length > 0 ? parts.join(' ') : 'Untitled Asset View';
+  // Fetch available entities when switching to link mode
+  useEffect(() => {
+    if (mode === 'link_existing' && isOpen) {
+      fetchAvailableEntities();
     }
-    return '';
+  }, [mode, isOpen]);
+
+  const fetchAvailableEntities = async () => {
+    setLoadingEntities(true);
+    try {
+      const response = await fetch(`/api/research/claims/available-entities?claimId=${claim.id}`);
+      if (!response.ok) throw new Error('Failed to fetch entities');
+
+      const data = await response.json();
+      setAvailableTheses(data.theses || []);
+      setAvailableViews(data.views || []);
+    } catch (err) {
+      console.error('Error fetching entities:', err);
+      setError('Failed to load available theses and views');
+    } finally {
+      setLoadingEntities(false);
+    }
   };
 
-  const handleSubmit = async () => {
+  const handleLinkToExisting = async () => {
+    setError(null);
+    setIsSubmitting(true);
+
+    if (selectedThesisIds.length === 0 && selectedViewIds.length === 0) {
+      setError('Please select at least one thesis or view to link to');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/research/claims/link-to-entities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claimId: claim.id,
+          thesisIds: selectedThesisIds,
+          viewIds: selectedViewIds,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to link to entities');
+      }
+
+      // Success - refresh and close
+      router.refresh();
+      handleClose();
+    } catch (err) {
+      console.error('Error linking claim:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error occurred');
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateNew = async () => {
     setError(null);
     setIsSubmitting(true);
 
     try {
       if (entityType === 'macro_thesis') {
-        // Create Macro Thesis
         const response = await fetch('/api/theses/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            // Title will be auto-generated by API
             thesisType,
             direction: direction || null,
             sectors,
@@ -87,7 +150,7 @@ export function ConvertClaimToEntityDialog({
             confidenceLevel,
             status: 'active',
             description: `Created from claim: ${claim.claim}`,
-            linkedMainClaimIds: [claim.id], // Link the claim as evidence
+            linkedMainClaimIds: [claim.id],
             notes: {
               source_claim_id: claim.id,
               source_claim_title: claim.title,
@@ -104,29 +167,25 @@ export function ConvertClaimToEntityDialog({
         const data = await response.json();
         router.push(`/theses/${data.thesisId}`);
         router.refresh();
-        onClose();
+        handleClose();
       } else if (entityType === 'asset_view') {
-        // Validate ticker
         if (!ticker) {
           setError('Ticker is required for Asset Views');
           setIsSubmitting(false);
           return;
         }
 
-        // Create Asset View
         const response = await fetch('/api/asset-views/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            // Title will be auto-generated by API
             ticker,
-            viewType: direction || 'neutral', // Map direction to viewType
             direction: direction || null,
             timeHorizon: timeHorizon || null,
             confidenceLevel,
             status: 'active',
             description: `Created from claim: ${claim.claim}`,
-            linkedMainClaimIds: [claim.id], // Link the claim as evidence
+            linkedMainClaimIds: [claim.id],
             notes: {
               source_claim_id: claim.id,
               source_claim_title: claim.title,
@@ -143,16 +202,17 @@ export function ConvertClaimToEntityDialog({
         const data = await response.json();
         router.push(`/asset-views/${data.viewId}`);
         router.refresh();
-        onClose();
+        handleClose();
       }
     } catch (err) {
-      console.error('Error converting claim:', err);
+      console.error('Error creating entity:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
       setIsSubmitting(false);
     }
   };
 
   const resetForm = () => {
+    setMode(null);
     setEntityType(null);
     setDirection('');
     setTimeHorizon('');
@@ -160,6 +220,8 @@ export function ConvertClaimToEntityDialog({
     setThesisType('cyclical');
     setSectors([]);
     setTicker('');
+    setSelectedThesisIds([]);
+    setSelectedViewIds([]);
     setError(null);
   };
 
@@ -168,34 +230,178 @@ export function ConvertClaimToEntityDialog({
     onClose();
   };
 
+  const toggleThesisSelection = (thesisId: string) => {
+    setSelectedThesisIds(prev =>
+      prev.includes(thesisId)
+        ? prev.filter(id => id !== thesisId)
+        : [...prev, thesisId]
+    );
+  };
+
+  const toggleViewSelection = (viewId: string) => {
+    setSelectedViewIds(prev =>
+      prev.includes(viewId)
+        ? prev.filter(id => id !== viewId)
+        : [...prev, viewId]
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-200 p-6">
-          <h2 className="text-2xl font-semibold">Convert Claim to Thesis/View</h2>
+          <h2 className="text-2xl font-semibold">Confirm Claim</h2>
           <p className="text-sm text-slate-600 mt-1">
-            Create a new Macro Thesis or Asset View from this claim
+            Link this claim to theses/views to confirm it
           </p>
         </div>
 
         {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Show claim being converted */}
+          {/* Show claim being confirmed */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-blue-900 mb-2">Claim</h3>
-            <p className="text-sm text-blue-800">{claim.claim}</p>
+            <p className="text-sm font-medium text-blue-800 mb-1">{claim.title}</p>
+            <p className="text-xs text-blue-700">{claim.claim}</p>
             {claim.qualifier && (
-              <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded mt-2">
+              <Badge className="bg-blue-100 text-blue-800 text-xs mt-2">
                 {claim.qualifier} confidence
-              </span>
+              </Badge>
             )}
           </div>
 
-          {/* Step 1: Choose Entity Type */}
-          {!entityType && (
+          {/* Step 0: Choose Mode */}
+          {!mode && (
+            <div className="space-y-3">
+              <h3 className="font-medium">How would you like to confirm this claim?</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setMode('link_existing')}
+                  className="p-6 border-2 border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                >
+                  <div className="font-semibold text-lg mb-2">Link to Existing</div>
+                  <div className="text-sm text-slate-600">
+                    Select existing theses or views to link this claim to
+                  </div>
+                </button>
+                <button
+                  onClick={() => setMode('create_new')}
+                  className="p-6 border-2 border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                >
+                  <div className="font-semibold text-lg mb-2">Create New</div>
+                  <div className="text-sm text-slate-600">
+                    Create a new macro thesis or asset view
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Link to Existing Mode */}
+          {mode === 'link_existing' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">Select Theses/Views to Link</h3>
+                <div className="text-sm text-slate-600">
+                  {selectedThesisIds.length + selectedViewIds.length} selected
+                </div>
+              </div>
+
+              {loadingEntities ? (
+                <div className="text-center py-8 text-slate-500">Loading...</div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Macro Theses */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                      Macro Theses ({availableTheses.length})
+                    </h4>
+                    {availableTheses.length === 0 ? (
+                      <p className="text-sm text-slate-500 italic">No available theses</p>
+                    ) : (
+                      <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg">
+                        {availableTheses.map(thesis => (
+                          <label
+                            key={thesis.id}
+                            className={`flex items-start gap-3 p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 ${
+                              selectedThesisIds.includes(thesis.id) ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedThesisIds.includes(thesis.id)}
+                              onChange={() => toggleThesisSelection(thesis.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-slate-900">
+                                {thesis.title}
+                              </div>
+                              <div className="flex gap-2 mt-1">
+                                <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                  {thesis.thesisType}
+                                </Badge>
+                                <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                  {thesis.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Asset Views */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                      Asset Views ({availableViews.length})
+                    </h4>
+                    {availableViews.length === 0 ? (
+                      <p className="text-sm text-slate-500 italic">No available views</p>
+                    ) : (
+                      <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg">
+                        {availableViews.map(view => (
+                          <label
+                            key={view.id}
+                            className={`flex items-start gap-3 p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 ${
+                              selectedViewIds.includes(view.id) ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedViewIds.includes(view.id)}
+                              onChange={() => toggleViewSelection(view.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-slate-900">
+                                {view.title}
+                              </div>
+                              <div className="flex gap-2 mt-1">
+                                <Badge className="bg-blue-100 text-blue-700 text-xs">
+                                  {view.ticker}
+                                </Badge>
+                                <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                  {view.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Create New Mode */}
+          {mode === 'create_new' && !entityType && (
             <div className="space-y-3">
               <h3 className="font-medium">What would you like to create?</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -221,19 +427,9 @@ export function ConvertClaimToEntityDialog({
             </div>
           )}
 
-          {/* Step 2: Fill in fields */}
-          {entityType && (
+          {/* Create New - Fill in fields */}
+          {mode === 'create_new' && entityType && (
             <div className="space-y-6">
-              {/* Preview generated title */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-slate-700 mb-2">
-                  Generated Title (preview)
-                </h3>
-                <p className="text-lg font-medium text-slate-900">
-                  {getGeneratedTitle()}
-                </p>
-              </div>
-
               {/* Common Fields */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -283,7 +479,7 @@ export function ConvertClaimToEntityDialog({
                 </select>
               </div>
 
-              {/* Macro Thesis Specific Fields */}
+              {/* Macro Thesis Specific */}
               {entityType === 'macro_thesis' && (
                 <>
                   <div>
@@ -306,16 +502,11 @@ export function ConvertClaimToEntityDialog({
                       Sectors / Topics <span className="text-red-500">*</span>
                     </label>
                     <SectorSelector value={sectors} onChange={setSectors} />
-                    {sectors.length === 0 && (
-                      <p className="text-xs text-slate-500 mt-1">
-                        At least one sector is required for auto-generated titles
-                      </p>
-                    )}
                   </div>
                 </>
               )}
 
-              {/* Asset View Specific Fields */}
+              {/* Asset View Specific */}
               {entityType === 'asset_view' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -328,9 +519,6 @@ export function ConvertClaimToEntityDialog({
                     placeholder="e.g., TSLA"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono uppercase"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Ticker must exist in the underlyings table
-                  </p>
                 </div>
               )}
             </div>
@@ -347,8 +535,17 @@ export function ConvertClaimToEntityDialog({
         {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t border-slate-200 p-6 flex justify-between">
           <div>
-            {entityType && (
-              <Button variant="ghost" onClick={() => setEntityType(null)}>
+            {(mode || entityType) && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (mode === 'create_new' && entityType) {
+                    setEntityType(null);
+                  } else {
+                    setMode(null);
+                  }
+                }}
+              >
                 ← Back
               </Button>
             )}
@@ -357,8 +554,13 @@ export function ConvertClaimToEntityDialog({
             <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            {entityType && (
-              <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {mode === 'link_existing' && (
+              <Button onClick={handleLinkToExisting} disabled={isSubmitting || (selectedThesisIds.length === 0 && selectedViewIds.length === 0)}>
+                {isSubmitting ? 'Linking...' : `Link & Confirm (${selectedThesisIds.length + selectedViewIds.length})`}
+              </Button>
+            )}
+            {mode === 'create_new' && entityType && (
+              <Button onClick={handleCreateNew} disabled={isSubmitting}>
                 {isSubmitting ? 'Creating...' : `Create ${entityType === 'macro_thesis' ? 'Macro Thesis' : 'Asset View'}`}
               </Button>
             )}

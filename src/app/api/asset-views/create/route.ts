@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { assetViews, claimThesisMappings, underlyings } from '@/db/schema';
+import { assetViews, claimThesisMappings, underlyings, mainClaims } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateAssetViewTitle } from '@/lib/utils/title-generation';
 
@@ -17,13 +17,10 @@ import { generateAssetViewTitle } from '@/lib/utils/title-generation';
  *   title: string;
  *   ticker: string;                   // Will lookup underlying_id from ticker
  *   description?: string;
- *   viewType: 'long' | 'short' | 'neutral';
+ *   direction?: 'bullish' | 'bearish' | 'neutral';
  *   timeHorizon?: 'long_term' | 'medium_term' | 'short_term';
  *   confidenceLevel?: 'high' | 'medium' | 'low' | 'exploratory';
  *   status?: 'active' | 'under_review' | 'retired' | 'superseded';
- *
- *   // Position structure
- *   direction?: 'bullish' | 'bearish' | 'neutral';
  *   positionStartDate?: string;
  *   positionEndDate?: string;
  *   targetPrice?: string;            // Numeric string
@@ -55,11 +52,10 @@ export async function POST(request: NextRequest) {
       title,
       ticker,
       description,
-      viewType,
+      direction,
       timeHorizon,
       confidenceLevel,
       status = 'active',
-      direction,
       positionStartDate,
       positionEndDate,
       targetPrice,
@@ -72,33 +68,38 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     // Note: title is now optional and will be auto-generated if not provided
-    if (!ticker || !viewType) {
+    if (!ticker) {
       return NextResponse.json(
-        { error: 'Missing required fields: ticker, viewType' },
+        { error: 'Missing required field: ticker' },
         { status: 400 }
       );
     }
 
-    // Validate viewType
-    if (!['long', 'short', 'neutral'].includes(viewType)) {
+    // Validate direction if provided
+    if (direction && !['bullish', 'bearish', 'neutral'].includes(direction)) {
       return NextResponse.json(
-        { error: 'Invalid viewType. Must be: long, short, or neutral' },
+        { error: 'Invalid direction. Must be: bullish, bearish, or neutral' },
         { status: 400 }
       );
     }
 
-    // Look up underlying by ticker
-    const [underlying] = await db
+    // Look up underlying by ticker (create if doesn't exist)
+    let [underlying] = await db
       .select()
       .from(underlyings)
       .where(eq(underlyings.ticker, ticker.toUpperCase()))
       .limit(1);
 
+    // Create underlying if it doesn't exist
     if (!underlying) {
-      return NextResponse.json(
-        { error: `Underlying not found for ticker: ${ticker}. Please add it to the underlyings table first.` },
-        { status: 404 }
-      );
+      [underlying] = await db
+        .insert(underlyings)
+        .values({
+          ticker: ticker.toUpperCase(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
     }
 
     // Auto-generate title if not provided
@@ -154,6 +155,17 @@ export async function POST(request: NextRequest) {
 
       await db.insert(claimThesisMappings).values(claimLinks);
       linkedClaimsCount = claimLinks.length;
+
+      // Mark linked claims as 'confirmed' (claim has been converted to an asset view)
+      for (const mainClaimId of linkedMainClaimIds) {
+        await db
+          .update(mainClaims)
+          .set({
+            status: 'confirmed',
+            updatedAt: new Date()
+          })
+          .where(eq(mainClaims.id, mainClaimId));
+      }
     }
 
     // TODO: Link to parent theses (if provided)

@@ -205,7 +205,6 @@ export const COMMON_COMBINATIONS: TaxonomyItem[] = [
 
   // Theme-Based
   { value: 'AI Infrastructure Build-Out', label: 'AI Infrastructure Build-Out' },
-  { value: 'Energy Transition', label: 'Energy Transition' },
   { value: 'Deglobalization', label: 'Deglobalization' },
   { value: 'Reshoring', label: 'Reshoring' },
   { value: 'Crypto Adoption', label: 'Crypto Adoption' },

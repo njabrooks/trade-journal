@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { macroTheses, claimThesisMappings } from '@/db/schema';
+import { macroTheses, claimThesisMappings, mainClaims } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { generateMacroThesisTitle } from '@/lib/utils/title-generation';
 
 /**
@@ -134,6 +135,17 @@ export async function POST(request: NextRequest) {
 
       await db.insert(claimThesisMappings).values(claimLinks);
       linkedClaimsCount = claimLinks.length;
+
+      // Mark linked claims as 'confirmed' (claim has been converted to a thesis)
+      for (const mainClaimId of linkedMainClaimIds) {
+        await db
+          .update(mainClaims)
+          .set({
+            status: 'confirmed',
+            updatedAt: new Date()
+          })
+          .where(eq(mainClaims.id, mainClaimId));
+      }
     }
 
     return NextResponse.json({

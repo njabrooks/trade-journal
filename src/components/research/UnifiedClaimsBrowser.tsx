@@ -4,17 +4,30 @@ import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import type { MainClaim as DbMainClaim, ResearchInsight, ResearchArtifact } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
 import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } from '@/types/claims';
 import { ConvertClaimToEntityDialog } from './ConvertClaimToEntityDialog';
 
+interface LinkedThesis {
+  id: string;
+  title: string;
+}
+
+interface LinkedView {
+  id: string;
+  title: string;
+  ticker: string;
+}
+
 interface ClaimWithSource {
   claim: DbMainClaim;
   insight: ResearchInsight | null;
   artifact: ResearchArtifact | null;
+  linkedTheses?: LinkedThesis[];
+  linkedViews?: LinkedView[];
 }
 
 interface UnifiedClaimsBrowserProps {
@@ -22,7 +35,7 @@ interface UnifiedClaimsBrowserProps {
   filterArtifactId?: string; // Optional: filter claims to a specific research source
 }
 
-type StatusFilter = 'all' | 'unconfirmed' | 'confirmed' | 'invalidated' | 'merged';
+type StatusFilter = 'all' | 'unconfirmed' | 'confirmed' | 'rejected' | 'invalidated' | 'merged';
 type ConfidenceFilter = 'all' | 'high' | 'medium' | 'low' | 'exploratory';
 type CategoryFilter = 'all' | 'macro' | 'asset_specific';
 type SortColumn = 'claim' | 'source' | 'confidence' | 'category' | 'status' | 'createdAt';
@@ -126,8 +139,8 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
       switch (sortColumn) {
         case 'claim':
-          aVal = a.claim.claim.toLowerCase();
-          bVal = b.claim.claim.toLowerCase();
+          aVal = a.claim.title.toLowerCase();
+          bVal = b.claim.title.toLowerCase();
           break;
         case 'source':
           aVal = a.artifact?.title?.toLowerCase() || '';
@@ -143,7 +156,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
           bVal = b.claim.category;
           break;
         case 'status':
-          const statusOrder = { unconfirmed: 0, confirmed: 1, invalidated: 2, merged: 3 };
+          const statusOrder = { unconfirmed: 0, confirmed: 1, rejected: 2, invalidated: 3, merged: 4 };
           aVal = statusOrder[a.claim.status as keyof typeof statusOrder] ?? 0;
           bVal = statusOrder[b.claim.status as keyof typeof statusOrder] ?? 0;
           break;
@@ -213,6 +226,8 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
         return 'bg-emerald-100 text-emerald-700';
       case 'unconfirmed':
         return 'bg-amber-100 text-amber-700';
+      case 'rejected':
+        return 'bg-orange-100 text-orange-700';
       case 'invalidated':
         return 'bg-red-100 text-red-700';
       case 'merged':
@@ -223,7 +238,23 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
   };
 
   const handleStatusChange = async (claimId: string, newStatus: string, event: React.ChangeEvent<HTMLSelectElement>) => {
-    const previousStatus = claimsWithSources.find(c => c.claim.id === claimId)?.claim.status || '';
+    const claimData = claimsWithSources.find(c => c.claim.id === claimId);
+    const previousStatus = claimData?.claim.status || '';
+
+    // If setting to 'confirmed', show convert dialog to link/create thesis or view
+    if (newStatus === 'confirmed' && claimData) {
+      const hasLinks = (claimData.linkedTheses && claimData.linkedTheses.length > 0) ||
+                       (claimData.linkedViews && claimData.linkedViews.length > 0);
+
+      if (!hasLinks) {
+        // Show convert dialog instead of just alerting
+        event.target.value = previousStatus; // Revert dropdown
+        setClaimToConvert(claimData.claim);
+        setConvertDialogOpen(true);
+        return;
+      }
+      // If already has links, allow direct confirmation (fall through to API call)
+    }
 
     try {
       console.log('Updating status:', { claimId, newStatus, previousStatus });
@@ -336,6 +367,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                 <option value="all">All</option>
                 <option value="unconfirmed">Unconfirmed</option>
                 <option value="confirmed">Confirmed</option>
+                <option value="rejected">Rejected</option>
                 <option value="invalidated">Invalidated</option>
                 <option value="merged">Merged</option>
               </select>
@@ -450,7 +482,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedClaims.map(({ claim, insight, artifact }) => {
+                {filteredAndSortedClaims.map(({ claim, insight, artifact, linkedTheses = [], linkedViews = [] }) => {
                   const isExpanded = expandedClaim === claim.id;
                   const evidenceClaims = getEvidenceClaims({ claim, insight, artifact });
 
@@ -458,10 +490,10 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                     <Fragment key={claim.id}>
                       {/* Main Row */}
                       <tr className="border-b hover:bg-slate-50 transition-colors">
-                        {/* Claim */}
+                        {/* Claim Title (brief summary) */}
                         <td className="px-4 py-3">
                           <div className="space-y-1">
-                            <p className="text-slate-900 font-medium line-clamp-2">{claim.claim}</p>
+                            <p className="text-slate-900 font-medium line-clamp-2">{claim.title}</p>
                             {claim.relevantTickers && claim.relevantTickers.length > 0 && (
                               <div className="flex flex-wrap gap-1">
                                 {claim.relevantTickers.slice(0, 3).map((ticker) => (
@@ -532,6 +564,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                           >
                             <option value="unconfirmed">Unconfirmed</option>
                             <option value="confirmed">✓ Confirmed</option>
+                            <option value="rejected">✗ Rejected</option>
                             <option value="invalidated">Invalidated</option>
                             <option value="merged">Merged</option>
                           </select>
@@ -539,33 +572,18 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
                         {/* Actions */}
                         <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setClaimToConvert(claim);
-                                setConvertDialogOpen(true);
-                              }}
-                              className="h-7 px-2 text-xs"
-                              title="Convert to Thesis/View"
-                            >
-                              <ArrowRight className="h-3 w-3 mr-1" />
-                              Convert
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setExpandedClaim(isExpanded ? null : claim.id)}
-                              className="h-7 w-7 p-0"
-                            >
-                              {isExpanded ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setExpandedClaim(isExpanded ? null : claim.id)}
+                            className="h-7 w-7 p-0"
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
                         </td>
                       </tr>
 
@@ -574,6 +592,14 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                         <tr className="bg-slate-50 border-b">
                           <td colSpan={6} className="px-4 py-4">
                             <div className="space-y-4 max-w-4xl">
+                              {/* Full Claim Text */}
+                              <div>
+                                <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                                  Claim
+                                </h4>
+                                <p className="text-sm text-slate-900 font-medium">{claim.claim}</p>
+                              </div>
+
                               {/* Evidence */}
                               {claim.evidence && (
                                 <div>
@@ -611,6 +637,43 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                     Rebuttal
                                   </h4>
                                   <p className="text-sm text-slate-600">{claim.rebuttal}</p>
+                                </div>
+                              )}
+
+                              {/* Linked Theses and Views */}
+                              {(linkedTheses.length > 0 || linkedViews.length > 0) && (
+                                <div className="pt-2 border-t border-slate-200">
+                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+                                    Linked To
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {linkedTheses.map((thesis) => (
+                                      <Link
+                                        key={thesis.id}
+                                        href={`/theses/${thesis.id}`}
+                                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                      >
+                                        <span className="inline-flex items-center gap-1">
+                                          <Badge className="bg-purple-100 text-purple-700 text-xs">Macro Thesis</Badge>
+                                          {thesis.title}
+                                          <ExternalLink className="h-3 w-3" />
+                                        </span>
+                                      </Link>
+                                    ))}
+                                    {linkedViews.map((view) => (
+                                      <Link
+                                        key={view.id}
+                                        href={`/asset-views/${view.id}`}
+                                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                      >
+                                        <span className="inline-flex items-center gap-1">
+                                          <Badge className="bg-blue-100 text-blue-700 text-xs">Asset View</Badge>
+                                          {view.title} ({view.ticker})
+                                          <ExternalLink className="h-3 w-3" />
+                                        </span>
+                                      </Link>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
 

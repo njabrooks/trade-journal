@@ -11,6 +11,7 @@ import {
   positions,
   underlyings,
   mainClaims,
+  claimThesisMappings,
 } from '@/db/schema';
 import { eq, desc, and, isNull, inArray, sql, count, or } from 'drizzle-orm';
 import type {
@@ -202,7 +203,7 @@ export async function autoPromoteAuditClaims(insightId: string): Promise<number>
     } else {
       // Not yet promoted, create new main_claims record
       const newMainClaim: NewMainClaim = {
-        title: auditClaim.claim.substring(0, 200), // Use first 200 chars as title
+        title: auditClaim.title, // Use the concise title from audit heading
         category: auditClaim.category,
         claim: auditClaim.claim,
         evidence: auditClaim.evidence || null,
@@ -247,7 +248,65 @@ export async function getAllMainClaimsWithSources() {
     )
     .orderBy(desc(mainClaims.createdAt));
 
-  return claims;
+  // Fetch linked theses and views for all claims
+  const claimIds = claims.map(c => c.claim.id);
+
+  if (claimIds.length === 0) {
+    return claims.map(c => ({ ...c, linkedTheses: [], linkedViews: [] }));
+  }
+
+  const linkedThesesData = await db
+    .select({
+      claimId: claimThesisMappings.mainClaimId,
+      thesisId: macroTheses.id,
+      thesisTitle: macroTheses.title,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
+    .where(inArray(claimThesisMappings.mainClaimId, claimIds));
+
+  const linkedViewsData = await db
+    .select({
+      claimId: claimThesisMappings.mainClaimId,
+      viewId: assetViews.id,
+      viewTitle: assetViews.title,
+      ticker: underlyings.ticker,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(assetViews, eq(claimThesisMappings.assetViewId, assetViews.id))
+    .innerJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
+    .where(inArray(claimThesisMappings.mainClaimId, claimIds));
+
+  // Group linked entities by claim ID
+  const thesesByClaimId = new Map<string, Array<{ id: string; title: string }>>();
+  linkedThesesData.forEach(row => {
+    if (!thesesByClaimId.has(row.claimId)) {
+      thesesByClaimId.set(row.claimId, []);
+    }
+    thesesByClaimId.get(row.claimId)!.push({
+      id: row.thesisId,
+      title: row.thesisTitle,
+    });
+  });
+
+  const viewsByClaimId = new Map<string, Array<{ id: string; title: string; ticker: string }>>();
+  linkedViewsData.forEach(row => {
+    if (!viewsByClaimId.has(row.claimId)) {
+      viewsByClaimId.set(row.claimId, []);
+    }
+    viewsByClaimId.get(row.claimId)!.push({
+      id: row.viewId,
+      title: row.viewTitle,
+      ticker: row.ticker,
+    });
+  });
+
+  // Merge linked entities with claims
+  return claims.map(c => ({
+    ...c,
+    linkedTheses: thesesByClaimId.get(c.claim.id) || [],
+    linkedViews: viewsByClaimId.get(c.claim.id) || [],
+  }));
 }
 
 /**
@@ -273,7 +332,65 @@ export async function getMainClaimsForArtifact(artifactId: string) {
     .where(eq(researchArtifacts.id, artifactId))
     .orderBy(desc(mainClaims.createdAt));
 
-  return claims;
+  // Fetch linked theses and views for all claims
+  const claimIds = claims.map(c => c.claim.id);
+
+  if (claimIds.length === 0) {
+    return claims.map(c => ({ ...c, linkedTheses: [], linkedViews: [] }));
+  }
+
+  const linkedThesesData = await db
+    .select({
+      claimId: claimThesisMappings.mainClaimId,
+      thesisId: macroTheses.id,
+      thesisTitle: macroTheses.title,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
+    .where(inArray(claimThesisMappings.mainClaimId, claimIds));
+
+  const linkedViewsData = await db
+    .select({
+      claimId: claimThesisMappings.mainClaimId,
+      viewId: assetViews.id,
+      viewTitle: assetViews.title,
+      ticker: underlyings.ticker,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(assetViews, eq(claimThesisMappings.assetViewId, assetViews.id))
+    .innerJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
+    .where(inArray(claimThesisMappings.mainClaimId, claimIds));
+
+  // Group linked entities by claim ID
+  const thesesByClaimId = new Map<string, Array<{ id: string; title: string }>>();
+  linkedThesesData.forEach(row => {
+    if (!thesesByClaimId.has(row.claimId)) {
+      thesesByClaimId.set(row.claimId, []);
+    }
+    thesesByClaimId.get(row.claimId)!.push({
+      id: row.thesisId,
+      title: row.thesisTitle,
+    });
+  });
+
+  const viewsByClaimId = new Map<string, Array<{ id: string; title: string; ticker: string }>>();
+  linkedViewsData.forEach(row => {
+    if (!viewsByClaimId.has(row.claimId)) {
+      viewsByClaimId.set(row.claimId, []);
+    }
+    viewsByClaimId.get(row.claimId)!.push({
+      id: row.viewId,
+      title: row.viewTitle,
+      ticker: row.ticker,
+    });
+  });
+
+  // Merge linked entities with claims
+  return claims.map(c => ({
+    ...c,
+    linkedTheses: thesesByClaimId.get(c.claim.id) || [],
+    linkedViews: viewsByClaimId.get(c.claim.id) || [],
+  }));
 }
 
 /**

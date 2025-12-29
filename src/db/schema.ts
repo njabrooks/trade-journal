@@ -182,7 +182,7 @@ export const mainClaims = pgTable(
     relevantTickers: text('relevant_tickers').array(),
 
     // Lifecycle
-    status: text('status').notNull().default('unconfirmed'), // 'unconfirmed' | 'confirmed' | 'invalidated' | 'merged'
+    status: text('status').notNull().default('unconfirmed'), // 'unconfirmed' | 'confirmed' | 'rejected' | 'invalidated' | 'merged'
     confidenceEvolution: jsonb('confidence_evolution'),
 
     // Source tracking (for auto-promoted audit claims)
