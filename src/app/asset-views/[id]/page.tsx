@@ -1,6 +1,6 @@
 import { getAssetViewById, getLinkedStrategiesForAssetView, getLinkedMainClaimsForAssetView } from '@/db/queries/assetViews';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { HierarchyBreadcrumb } from '@/components/ui/HierarchyBreadcrumb';
+import { ClientHierarchyBreadcrumb } from '@/components/ui/ClientHierarchyBreadcrumb';
 import { AddMainClaimButtonForView } from '@/components/asset-views/AddMainClaimButtonForView';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -27,8 +27,8 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
       subtitle="Asset View Detail"
       activeNav="asset-views"
     >
-      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 */}
-      <HierarchyBreadcrumb
+      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 Phase B */}
+      <ClientHierarchyBreadcrumb
         macroThesis={
           view.macroThesis
             ? { id: view.macroThesis.id, title: view.macroThesis.title }
@@ -39,7 +39,6 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
           title: view.title,
         }}
         currentLevel="asset_view"
-        // Link callback will be added in Phase B (inline linking workflows)
       />
 
       <div className="space-y-6">

@@ -161,8 +161,9 @@ export function SectorSelector({
               <div className="space-y-1">
                 {filteredItems.map(item => {
                   const isSelected = value.includes(item.value);
-                  const isDisabled =
-                    !isSelected && maxSelections && value.length >= maxSelections;
+                  const isDisabled = Boolean(
+                    !isSelected && maxSelections && value.length >= maxSelections
+                  );
 
                   return (
                     <button

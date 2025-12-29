@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { StrategyTabs } from "@/components/layout/StrategyTabs";
-import { HierarchyBreadcrumb } from "@/components/ui/HierarchyBreadcrumb";
+import { ClientHierarchyBreadcrumb } from "@/components/ui/ClientHierarchyBreadcrumb";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { getStrategyDetail } from "@/db/queries/strategies";
 import {
@@ -51,8 +51,8 @@ export default async function PerformancePage({ params }: PerformancePageProps) 
       }
       tabs={<StrategyTabs strategyId={strategyId} />}
     >
-      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 */}
-      <HierarchyBreadcrumb
+      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 Phase B */}
+      <ClientHierarchyBreadcrumb
         macroThesis={
           strategy.macroThesisId
             ? { id: strategy.macroThesisId, title: strategy.macroThesisTitle || 'Macro Thesis' }

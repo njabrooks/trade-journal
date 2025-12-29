@@ -25,7 +25,7 @@ export default async function ClaimsBrowserPage() {
     <DashboardShell
       title="Claims Browser"
       subtitle="All claims across research sources"
-      activeNav="claims"
+      activeNav="research"
     >
       <div className="space-y-6">
         {/* Statistics Card */}

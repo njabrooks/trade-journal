@@ -178,7 +178,7 @@ export async function autoPromoteAuditClaims(insightId: string): Promise<number>
 
     // Normalize time_horizon: convert "N/A" and empty/null to null
     const normalizedTimeHorizon =
-      !auditClaim.time_horizon || auditClaim.time_horizon === 'N/A'
+      !auditClaim.time_horizon || (auditClaim.time_horizon as string) === 'N/A'
         ? null
         : auditClaim.time_horizon;
 

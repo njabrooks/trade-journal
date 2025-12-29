@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { StrategyTabs } from "@/components/layout/StrategyTabs";
-import { HierarchyBreadcrumb } from "@/components/ui/HierarchyBreadcrumb";
+import { ClientHierarchyBreadcrumb } from "@/components/ui/ClientHierarchyBreadcrumb";
 import { getStrategyDetail } from "@/db/queries/strategies";
 import { formatCurrency, formatDateLabel } from "@/lib/formatters";
 
@@ -33,8 +33,8 @@ export default async function BlotterPage({ params }: BlotterPageProps) {
       }
       tabs={<StrategyTabs strategyId={strategyId} />}
     >
-      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 */}
-      <HierarchyBreadcrumb
+      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 Phase B */}
+      <ClientHierarchyBreadcrumb
         macroThesis={
           strategy.macroThesisId
             ? { id: strategy.macroThesisId, title: strategy.macroThesisTitle || 'Macro Thesis' }

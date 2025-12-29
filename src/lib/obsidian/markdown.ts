@@ -100,7 +100,7 @@ export function generateFrontmatter(
     // Remove undefined values to avoid YAML serialization errors
     return Object.fromEntries(
       Object.entries(frontmatter).filter(([_, value]) => value !== undefined)
-    ) as ObsidianFrontmatter;
+    ) as unknown as ObsidianFrontmatter;
   }
 
   if (type === 'macro_thesis') {
@@ -119,14 +119,14 @@ export function generateFrontmatter(
     // Remove undefined values to avoid YAML serialization errors
     return Object.fromEntries(
       Object.entries(frontmatter).filter(([_, value]) => value !== undefined)
-    ) as ObsidianFrontmatter;
+    ) as unknown as ObsidianFrontmatter;
   }
 
   if (type === 'asset_view') {
     const view = entity as AssetView;
     const frontmatter = {
       ...base,
-      ticker: ticker || undefined, // IMPORTANT: Add ticker to frontmatter
+      // ticker would need to be passed separately or joined from underlyings table
       direction: view.direction || undefined,
       position_start_date: view.positionStartDate || undefined,
       position_end_date: view.positionEndDate || undefined,
@@ -141,7 +141,7 @@ export function generateFrontmatter(
     // Remove undefined values to avoid YAML serialization errors
     return Object.fromEntries(
       Object.entries(frontmatter).filter(([_, value]) => value !== undefined)
-    ) as ObsidianFrontmatter;
+    ) as unknown as ObsidianFrontmatter;
   }
 
   return base;

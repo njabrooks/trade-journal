@@ -6,7 +6,7 @@ import { PlaybookSidebar } from "@/components/strategies/PlaybookSidebar";
 import { TriageFilters } from "@/components/triage/TriageFilters";
 import { TriageTableRow } from "@/components/triage/TriageTableRow";
 import { SortableHeader } from "@/components/triage/SortableHeader";
-import { HierarchyBreadcrumb } from "@/components/ui/HierarchyBreadcrumb";
+import { ClientHierarchyBreadcrumb } from "@/components/ui/ClientHierarchyBreadcrumb";
 import { getStrategyDetail } from "@/db/queries/strategies";
 import { getTriageQueueForStrategy } from "@/db/queries/triage";
 import { ALL_SEVERITIES, ALL_CONTEXTS, ALL_TRIGGERS } from "@/lib/constants/triage";
@@ -114,8 +114,8 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
       }
       tabs={<StrategyTabs strategyId={strategyId} />}
     >
-      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 */}
-      <HierarchyBreadcrumb
+      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 Phase B */}
+      <ClientHierarchyBreadcrumb
         macroThesis={
           strategy.macroThesisId
             ? { id: strategy.macroThesisId, title: strategy.macroThesisTitle || 'Macro Thesis' }
@@ -131,7 +131,6 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
           title: strategy.label || strategy.strategyKey,
         }}
         currentLevel="strategy"
-        // Link callbacks will be added in Phase B (inline linking workflows)
       />
 
       <div className="border-b bg-white px-6 py-4 -mx-4 -mt-4">

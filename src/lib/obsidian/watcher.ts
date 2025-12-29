@@ -20,7 +20,7 @@ export interface WatcherStats {
   syncs: Array<{
     timestamp: Date;
     filePath: string;
-    action: 'created' | 'updated' | 'deleted';
+    action: 'created' | 'updated' | 'deleted' | 'skipped' | 'conflict';
     success: boolean;
   }>;
 }
@@ -86,7 +86,7 @@ class ObsidianWatcher {
         this.stats.errors.push({
           timestamp: new Date(),
           filePath: 'watcher',
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         });
       })
       .on('ready', () => {
