@@ -6,7 +6,7 @@ import { PersistentHeader } from "./PersistentHeader";
 export type NavKey =
   | "portfolio"
   | "theses"
-  | "asset-views"
+  | "asset-theses"
   | "strategies"
   | "triage"
   | "blotter"

@@ -99,11 +99,11 @@ export type MacroThesis = typeof macroTheses.$inferSelect;
 export type NewMacroThesis = typeof macroTheses.$inferInsert;
 
 // ============================================================================
-// Asset Views
+// Asset Theses
 // ============================================================================
 
-export const assetViews = pgTable(
-  'asset_views',
+export const assetTheses = pgTable(
+  'asset_theses',
   {
     id: uuid('id').defaultRandom().primaryKey(),
     macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, {
@@ -144,17 +144,17 @@ export const assetViews = pgTable(
     notes: jsonb('notes'),
   },
   (table) => ({
-    macroThesisIdx: index('idx_asset_views_macro_thesis').on(table.macroThesisId),
-    underlyingIdx: index('idx_asset_views_underlying').on(table.underlyingId),
-    statusIdx: index('idx_asset_views_status').on(table.status),
-    nextReviewIdx: index('idx_asset_views_next_review').on(table.nextReviewDueAt),
-    directionIdx: index('idx_asset_views_direction').on(table.direction),
-    positionDatesIdx: index('idx_asset_views_position_dates').on(table.positionStartDate, table.positionEndDate),
+    macroThesisIdx: index('idx_asset_theses_macro_thesis').on(table.macroThesisId),
+    underlyingIdx: index('idx_asset_theses_underlying').on(table.underlyingId),
+    statusIdx: index('idx_asset_theses_status').on(table.status),
+    nextReviewIdx: index('idx_asset_theses_next_review').on(table.nextReviewDueAt),
+    directionIdx: index('idx_asset_theses_direction').on(table.direction),
+    positionDatesIdx: index('idx_asset_theses_position_dates').on(table.positionStartDate, table.positionEndDate),
   })
 );
 
-export type AssetView = typeof assetViews.$inferSelect;
-export type NewAssetView = typeof assetViews.$inferInsert;
+export type AssetThesis = typeof assetTheses.$inferSelect;
+export type NewAssetThesis = typeof assetTheses.$inferInsert;
 
 // ============================================================================
 // Main Claims (First-Class Claim Entities)
@@ -258,7 +258,7 @@ export const claimThesisMappings = pgTable(
     macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, {
       onDelete: 'cascade',
     }),
-    assetViewId: uuid('asset_view_id').references(() => assetViews.id, {
+    assetThesisId: uuid('asset_thesis_id').references(() => assetTheses.id, {
       onDelete: 'cascade',
     }),
 
@@ -274,7 +274,7 @@ export const claimThesisMappings = pgTable(
   (table) => ({
     mainClaimIdx: index('idx_claim_thesis_main_claim').on(table.mainClaimId),
     macroThesisIdx: index('idx_claim_thesis_macro').on(table.macroThesisId),
-    assetViewIdx: index('idx_claim_thesis_view').on(table.assetViewId),
+    assetThesisIdx: index('idx_claim_thesis').on(table.assetThesisId),
   })
 );
 
@@ -422,7 +422,7 @@ export const strategies = pgTable(
     // Playbook linkage
     strategyType: text('strategy_type'), // Links to playbook_items.strategy_type
     // Hierarchy linkage (Phase 1)
-    assetViewId: uuid('asset_view_id').references(() => assetViews.id, {
+    assetThesisId: uuid('asset_thesis_id').references(() => assetTheses.id, {
       onDelete: 'set null',
     }),
     macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, {
@@ -434,7 +434,7 @@ export const strategies = pgTable(
   (table) => ({
     accountStrategyIdx: index('idx_strategies_account').on(table.accountId),
     strategyKeyIdx: index('idx_strategies_key').on(table.strategyKey),
-    assetViewIdx: index('idx_strategies_asset_view').on(table.assetViewId),
+    assetThesisIdx: index('idx_strategies_asset_thesis').on(table.assetThesisId),
     macroThesisIdx: index('idx_strategies_macro_thesis').on(table.macroThesisId),
   })
 );
@@ -1066,7 +1066,7 @@ export const researchMappings = pgTable(
     // Hierarchy target (exactly one must be set)
     hierarchyLevel: text('hierarchy_level').notNull(),
     macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, { onDelete: 'cascade' }),
-    assetViewId: uuid('asset_view_id').references(() => assetViews.id, { onDelete: 'cascade' }),
+    assetThesisId: uuid('asset_thesis_id').references(() => assetTheses.id, { onDelete: 'cascade' }),
     strategyId: uuid('strategy_id').references(() => strategies.id, { onDelete: 'cascade' }),
     positionId: uuid('position_id').references(() => positions.id, { onDelete: 'cascade' }),
 
@@ -1088,7 +1088,7 @@ export const researchMappings = pgTable(
   (table) => ({
     insightIdx: index('idx_research_mappings_insight').on(table.researchInsightId),
     macroThesisIdx: index('idx_research_mappings_macro_thesis').on(table.macroThesisId),
-    assetViewIdx: index('idx_research_mappings_asset_view').on(table.assetViewId),
+    assetThesisIdx: index('idx_research_mappings_asset_thesis').on(table.assetThesisId),
     strategyIdx: index('idx_research_mappings_strategy').on(table.strategyId),
     positionIdx: index('idx_research_mappings_position').on(table.positionId),
     typeIdx: index('idx_research_mappings_type').on(table.mappingType),
@@ -1118,7 +1118,7 @@ export const researchHierarchyRecommendations = pgTable(
     existingThesisId: uuid('existing_thesis_id').references(() => macroTheses.id, {
       onDelete: 'cascade',
     }),
-    existingViewId: uuid('existing_view_id').references(() => assetViews.id, {
+    existingAssetThesisId: uuid('existing_asset_thesis_id').references(() => assetTheses.id, {
       onDelete: 'cascade',
     }),
 
@@ -1150,7 +1150,7 @@ export const researchHierarchyRecommendations = pgTable(
     statusIdx: index('idx_recommendations_status').on(table.status),
     typeIdx: index('idx_recommendations_type').on(table.recommendationType),
     thesisIdx: index('idx_recommendations_thesis').on(table.existingThesisId),
-    viewIdx: index('idx_recommendations_view').on(table.existingViewId),
+    viewIdx: index('idx_recommendations_view').on(table.existingAssetThesisId),
   })
 );
 

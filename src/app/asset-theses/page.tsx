@@ -1,23 +1,23 @@
-import { getAssetViewsList } from '@/db/queries/assetViews';
+import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { CreateAssetViewButton } from '@/components/asset-views/CreateAssetViewButton';
+import { CreateAssetThesisButton } from '@/components/asset-theses/CreateAssetThesisButton';
 import Link from 'next/link';
 
-export default async function AssetViewsPage() {
-  const views = await getAssetViewsList();
+export default async function AssetThesesPage() {
+  const views = await getAssetThesesList();
 
   return (
     <DashboardShell
-      title="Asset Views"
+      title="Asset Theses"
       subtitle="Asset-specific theses and investment beliefs"
-      activeNav="asset-views"
+      activeNav="asset-theses"
     >
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <div className="text-sm text-slate-600">
-            {views.length} {views.length === 1 ? 'view' : 'views'}
+            {views.length} {views.length === 1 ? 'thesis' : 'theses'}
           </div>
-          <CreateAssetViewButton />
+          <CreateAssetThesisButton />
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
@@ -49,7 +49,7 @@ export default async function AssetViewsPage() {
                 <tr key={view.id} className="hover:bg-slate-50">
                   <td className="px-6 py-4">
                     <Link
-                      href={`/asset-views/${view.id}`}
+                      href={`/asset-theses/${view.id}`}
                       className="text-blue-600 hover:text-blue-800 font-medium"
                     >
                       {view.title}
@@ -90,7 +90,7 @@ export default async function AssetViewsPage() {
 
           {views.length === 0 && (
             <div className="text-center py-12 text-slate-500">
-              No asset views yet. Create your first view to get started.
+              No asset thesiss yet. Create your first view to get started.
             </div>
           )}
         </div>

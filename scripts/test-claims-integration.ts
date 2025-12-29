@@ -8,7 +8,7 @@ import * as path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 import { db } from '@/db';
-import { researchArtifacts, researchInsights, macroTheses, assetViews, underlyings } from '@/db/schema';
+import { researchArtifacts, researchInsights, macroTheses, assetTheses, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure, MainClaim } from '@/types/claims';
 import { isValidClaimsStructure, getUnconvertedClaims, getConvertedClaims } from '@/types/claims';
@@ -254,7 +254,7 @@ async function runTests() {
       console.log('1. Test claim conversion in UI at:');
       console.log(`   http://localhost:3000/research/${insight.id}`);
       console.log('2. Convert a claim to a macro thesis');
-      console.log('3. Convert a claim to an asset view');
+      console.log('3. Convert a claim to an asset thesis');
       console.log('4. Verify provenance chain\n');
     } else {
       console.log('❌ Some tests failed. Review and fix before proceeding.\n');

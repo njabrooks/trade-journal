@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { mainClaims, macroTheses, assetViews, underlyings } from '@/db/schema';
+import { mainClaims, macroTheses, assetTheses, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { syncDatabaseToFile, type SyncResult } from '@/lib/obsidian/sync';
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         const result = await syncDatabaseToFile(thesis as any, 'macro_thesis');
         results.push(result);
       } else if (entityType === 'asset_view') {
-        const [view] = await db.select().from(assetViews).where(eq(assetViews.id, entityId)).limit(1);
+        const [view] = await db.select().from(assetTheses).where(eq(assetTheses.id, entityId)).limit(1);
         if (!view) {
           return NextResponse.json({ error: 'Asset view not found' }, { status: 404 });
         }
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           results.push(result);
         }
       } else if (entityType === 'asset_view') {
-        const views = await db.select().from(assetViews);
+        const views = await db.select().from(assetTheses);
         for (const view of views) {
           let ticker: string | undefined;
           if (view.underlyingId) {
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Asset views
-      const views = await db.select().from(assetViews);
+      const views = await db.select().from(assetTheses);
       for (const view of views) {
         let ticker: string | undefined;
         if (view.underlyingId) {

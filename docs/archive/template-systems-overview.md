@@ -48,7 +48,7 @@ status: "active | verified | disputed | archived"
 type: main_claim | macro_thesis | asset_view | research_artifact
 category: macro | asset_specific  # for claims
 thesis_type: secular | cyclical | structural  # for theses
-ticker: TSLA  # for asset views
+ticker: TSLA  # for asset thesiss
 ```
 
 **Use When**: Investment research workflow, syncing with your trading journal database
@@ -65,7 +65,7 @@ ticker: TSLA  # for asset views
 ✅ research/transcripts/2025-12-21-apps-to-agents.md
 ❌ main-claims/ai-adoption-will-drive-pmi-expansion.md (no date)
 ❌ macro-theses/bullish-ai-supply-chains-in-2026.md (no date)
-❌ asset-views/bullish-tsla.md (no date)
+❌ asset-theses/bullish-tsla.md (no date)
 ```
 
 ### After (Consistent) ⭐️
@@ -74,7 +74,7 @@ ticker: TSLA  # for asset views
 ✅ research/transcripts/2025-12-21-apps-to-agents.md
 ✅ main-claims/2025-12-28-ai-adoption-will-drive-pmi-expansion.md
 ✅ macro-theses/2025-12-28-bullish-ai-supply-chains-in-2026.md
-✅ asset-views/2025-12-28-bullish-tsla.md
+✅ asset-theses/2025-12-28-bullish-tsla.md
 ```
 
 ### Naming Rules
@@ -84,7 +84,7 @@ ticker: TSLA  # for asset views
 **Date Source**:
 - **Main Claims**: `created_at` field from frontmatter
 - **Macro Theses**: `created_at` field from frontmatter
-- **Asset Views**: `created_at` field from frontmatter
+- **Asset Thesiss**: `created_at` field from frontmatter
 - **Research Artifacts**: `published_date` (or `created_at` if missing)
 - **Research Insights**: `audit_date` field
 
@@ -105,7 +105,7 @@ ticker: TSLA  # for asset views
 ---
 type: main_claim          # For claims
 type: macro_thesis        # For theses
-type: asset_view          # For asset views
+type: asset_view          # For asset thesiss
 type: research_artifact   # For raw content
 type: research_insight    # For processed audits
 ---
@@ -159,7 +159,7 @@ rm -rf .sync-state/  # or wherever sync cache is stored
 
 ### Use **Investment Research** Templates When:
 - Processing investment research (transcripts, articles, papers)
-- Creating macro theses or asset views
+- Creating macro theses or asset thesiss
 - Extracting claims for investment decisions
 - Syncing with trading journal database
 

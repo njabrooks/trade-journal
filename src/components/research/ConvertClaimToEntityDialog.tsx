@@ -4,7 +4,7 @@
  * Convert Claim To Entity Dialog
  *
  * Allows confirming a claim by either:
- * 1. Creating a new Macro Thesis or Asset View
+ * 1. Creating a new Macro Thesis or Asset Thesis
  * 2. Linking to existing Theses/Views
  *
  * The claim is NOT converted itself - it remains as evidence linked to the entity/entities.
@@ -170,12 +170,12 @@ export function ConvertClaimToEntityDialog({
         handleClose();
       } else if (entityType === 'asset_view') {
         if (!ticker) {
-          setError('Ticker is required for Asset Views');
+          setError('Ticker is required for Asset Thesiss');
           setIsSubmitting(false);
           return;
         }
 
-        const response = await fetch('/api/asset-views/create', {
+        const response = await fetch('/api/asset-theses/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -196,11 +196,11 @@ export function ConvertClaimToEntityDialog({
 
         if (!response.ok) {
           const data = await response.json();
-          throw new Error(data.error || 'Failed to create asset view');
+          throw new Error(data.error || 'Failed to create asset thesis');
         }
 
         const data = await response.json();
-        router.push(`/asset-views/${data.viewId}`);
+        router.push(`/asset-theses/${data.viewId}`);
         router.refresh();
         handleClose();
       }
@@ -293,7 +293,7 @@ export function ConvertClaimToEntityDialog({
                 >
                   <div className="font-semibold text-lg mb-2">Create New</div>
                   <div className="text-sm text-slate-600">
-                    Create a new macro thesis or asset view
+                    Create a new macro thesis or asset thesis
                   </div>
                 </button>
               </div>
@@ -355,10 +355,10 @@ export function ConvertClaimToEntityDialog({
                     )}
                   </div>
 
-                  {/* Asset Views */}
+                  {/* Asset Thesiss */}
                   <div>
                     <h4 className="text-sm font-semibold text-slate-700 mb-3">
-                      Asset Views ({availableViews.length})
+                      Asset Thesiss ({availableViews.length})
                     </h4>
                     {availableViews.length === 0 ? (
                       <p className="text-sm text-slate-500 italic">No available views</p>
@@ -418,7 +418,7 @@ export function ConvertClaimToEntityDialog({
                   onClick={() => setEntityType('asset_view')}
                   className="p-6 border-2 border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
                 >
-                  <div className="font-semibold text-lg mb-2">Asset View</div>
+                  <div className="font-semibold text-lg mb-2">Asset Thesis</div>
                   <div className="text-sm text-slate-600">
                     Asset-specific thesis about a particular underlying
                   </div>
@@ -506,7 +506,7 @@ export function ConvertClaimToEntityDialog({
                 </>
               )}
 
-              {/* Asset View Specific */}
+              {/* Asset Thesis Specific */}
               {entityType === 'asset_view' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -561,7 +561,7 @@ export function ConvertClaimToEntityDialog({
             )}
             {mode === 'create_new' && entityType && (
               <Button onClick={handleCreateNew} disabled={isSubmitting}>
-                {isSubmitting ? 'Creating...' : `Create ${entityType === 'macro_thesis' ? 'Macro Thesis' : 'Asset View'}`}
+                {isSubmitting ? 'Creating...' : `Create ${entityType === 'macro_thesis' ? 'Macro Thesis' : 'Asset Thesis'}`}
               </Button>
             )}
           </div>

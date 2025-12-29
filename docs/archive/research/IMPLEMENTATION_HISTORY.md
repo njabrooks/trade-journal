@@ -34,11 +34,11 @@
 
 6. **MCP Testing Skills Built** (`.claude/skills/`)
    - `/mcp-read-theses` - Query macro theses ✅
-   - `/mcp-read-views` - Query asset views ✅
+   - `/mcp-read-views` - Query asset thesiss ✅
    - `/mcp-upload-artifact` - Upload research artifacts ✅
    - `/mcp-upload-insight` - Upload structured insights ✅
    - `/mcp-create-thesis` - Create macro theses ✅
-   - `/mcp-create-view` - Create asset views ✅
+   - `/mcp-create-view` - Create asset thesiss ✅
 
 7. **End-to-End Testing Complete**
    - Read existing theses (1 found: "AI Infrastructure Build-Out")
@@ -105,11 +105,11 @@ The research workflow system is fully operational. You can now:
 ### Or Use Individual MCP Skills
 
 - `/mcp-read-theses` - Query macro theses
-- `/mcp-read-views ticker=NVDA` - Query asset views
+- `/mcp-read-views ticker=NVDA` - Query asset thesiss
 - `/mcp-upload-artifact` - Upload research artifacts
 - `/mcp-upload-insight` - Upload structured insights
 - `/mcp-create-thesis` - Create macro theses
-- `/mcp-create-view` - Create asset views
+- `/mcp-create-view` - Create asset thesiss
 
 ### Next Steps (Optional)
 

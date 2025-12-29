@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       const claimLinks = linkedMainClaimIds.map((mainClaimId: string) => ({
         mainClaimId,
         macroThesisId: createdThesis.id,
-        assetViewId: null,
+        assetThesisId: null,
         mappingType: 'supports',
         mappedBy: 'creation', // Linked at thesis creation time
       }));

@@ -5,7 +5,7 @@ import {
   deleteRecommendation,
 } from '@/db/queries/research';
 import { createMacroThesis } from '@/db/queries/macroTheses';
-import { createAssetView } from '@/db/queries/assetViews';
+import { createAssetThesis } from '@/db/queries/assetTheses';
 import { createResearchMapping } from '@/db/queries/research';
 import { db } from '@/db';
 import { underlyings } from '@/db/schema';
@@ -113,11 +113,11 @@ export async function PATCH(
           thesisId,
         });
       } else if (recommendation.recommendationType === 'new_asset_view') {
-        // Create new asset view
+        // Create new asset thesis
         const proposedData = recommendation.proposedData as any;
         if (!modifications?.title && !proposedData?.title) {
           return NextResponse.json(
-            { error: 'Title is required to create an asset view' },
+            { error: 'Title is required to create an asset thesis' },
             { status: 400 }
           );
         }
@@ -133,8 +133,8 @@ export async function PATCH(
           underlyingId = underlying?.id || null;
         }
 
-        const viewId = await createAssetView({
-          title: modifications?.title || proposedData?.title || 'New Asset View',
+        const viewId = await createAssetThesis({
+          title: modifications?.title || proposedData?.title || 'New Asset Thesis',
           description: modifications?.description !== undefined ? modifications.description : (proposedData?.description || null),
           narrative: modifications?.narrative !== undefined ? modifications.narrative : (proposedData?.narrative || null),
           underlyingId,
@@ -148,7 +148,7 @@ export async function PATCH(
         await createResearchMapping({
           researchInsightId: recommendation.researchInsightId,
           hierarchyLevel: 'asset_view',
-          assetViewId: viewId,
+          assetThesisId: viewId,
           mappingType: 'supports',
           confidence: 'high',
           mappedBy: 'ai_recommendation',
@@ -185,11 +185,11 @@ export async function PATCH(
             mappedBy: 'ai_recommendation',
             notes: `AI recommendation: ${recommendation.reasoning}`,
           });
-        } else if (recommendation.existingViewId) {
+        } else if (recommendation.existingAssetThesisId) {
           await createResearchMapping({
             researchInsightId: recommendation.researchInsightId,
             hierarchyLevel: 'asset_view',
-            assetViewId: recommendation.existingViewId,
+            assetThesisId: recommendation.existingAssetThesisId,
             mappingType,
             confidence: recommendation.confidenceScore
               ? Number(recommendation.confidenceScore) > 0.7

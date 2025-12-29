@@ -1,5 +1,5 @@
 import matter from 'gray-matter';
-import type { MainClaim, MacroThesis, AssetView } from '@/db/schema';
+import type { MainClaim, MacroThesis, AssetThesis } from '@/db/schema';
 
 /**
  * Obsidian frontmatter types
@@ -72,7 +72,7 @@ export function parseMarkdown(fileContent: string): ParsedMarkdown {
  * Generate frontmatter YAML from database entity
  */
 export function generateFrontmatter(
-  entity: MainClaim | MacroThesis | AssetView,
+  entity: MainClaim | MacroThesis | AssetThesis,
   type: 'main_claim' | 'macro_thesis' | 'asset_view',
   linkedCounts?: { theses?: number; views?: number }
 ): ObsidianFrontmatter {
@@ -123,7 +123,7 @@ export function generateFrontmatter(
   }
 
   if (type === 'asset_view') {
-    const view = entity as AssetView;
+    const view = entity as AssetThesis;
     const frontmatter = {
       ...base,
       // ticker would need to be passed separately or joined from underlyings table
@@ -244,10 +244,10 @@ export function generateMacroThesisMarkdown(
 }
 
 /**
- * Generate markdown content for asset view
+ * Generate markdown content for asset thesis
  */
-export function generateAssetViewMarkdown(
-  view: AssetView,
+export function generateAssetThesisMarkdown(
+  view: AssetThesis,
   ticker: string
 ): string {
   const sections: string[] = [];
@@ -317,7 +317,7 @@ export function generateAssetViewMarkdown(
  * Generate complete markdown file with frontmatter
  */
 export function generateMarkdownFile(
-  entity: MainClaim | MacroThesis | AssetView,
+  entity: MainClaim | MacroThesis | AssetThesis,
   type: 'main_claim' | 'macro_thesis' | 'asset_view',
   ticker?: string,
   linkedCounts?: { theses?: number; views?: number }
@@ -330,7 +330,7 @@ export function generateMarkdownFile(
   } else if (type === 'macro_thesis') {
     content = generateMacroThesisMarkdown(entity as MacroThesis);
   } else {
-    content = generateAssetViewMarkdown(entity as AssetView, ticker!);
+    content = generateAssetThesisMarkdown(entity as AssetThesis, ticker!);
   }
 
   return matter.stringify(content, frontmatter);

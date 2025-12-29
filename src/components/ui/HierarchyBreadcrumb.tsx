@@ -3,7 +3,7 @@
 /**
  * HierarchyBreadcrumb - Visual flow diagram showing hierarchy chain
  *
- * Displays the full hierarchy path from Macro Thesis → Asset View → Strategy → Position
+ * Displays the full hierarchy path from Macro Thesis → Asset Thesis → Strategy → Position
  * with visual indicators for linked (green) and missing (amber) connections.
  *
  * Part of Phase 2.6.6: Enhanced Hierarchy Linking UX
@@ -25,7 +25,7 @@ interface HierarchyBreadcrumbProps {
   position?: HierarchyLevel | null;
   currentLevel: 'macro_thesis' | 'asset_view' | 'strategy' | 'position';
   onLinkMacroThesis?: () => void;
-  onLinkAssetView?: () => void;
+  onLinkAssetThesis?: () => void;
   showFullPath?: boolean; // Show all levels vs just relevant ones
 }
 
@@ -36,13 +36,13 @@ export function HierarchyBreadcrumb({
   position,
   currentLevel,
   onLinkMacroThesis,
-  onLinkAssetView,
+  onLinkAssetThesis,
   showFullPath = false,
 }: HierarchyBreadcrumbProps) {
   // Determine which levels to show based on current level and showFullPath
   const levels = [];
 
-  // Always try to show Macro Thesis → Asset View → Strategy chain
+  // Always try to show Macro Thesis → Asset Thesis → Strategy chain
   if (currentLevel === 'strategy' || currentLevel === 'position' || showFullPath) {
     levels.push({
       type: 'macro_thesis' as const,
@@ -55,16 +55,16 @@ export function HierarchyBreadcrumb({
 
     levels.push({
       type: 'asset_view' as const,
-      label: 'Asset View',
+      label: 'Asset Thesis',
       data: assetView,
-      href: assetView ? `/asset-views/${assetView.id}` : null,
-      onLink: onLinkAssetView,
+      href: assetView ? `/asset-theses/${assetView.id}` : null,
+      onLink: onLinkAssetThesis,
       required: true, // Required for strategies
     });
   }
 
   if (currentLevel === 'asset_view' || showFullPath) {
-    // When viewing Asset View, show Macro Thesis → Asset View
+    // When viewing Asset Thesis, show Macro Thesis → Asset Thesis
     if (levels.length === 0) {
       levels.push({
         type: 'macro_thesis' as const,
@@ -72,7 +72,7 @@ export function HierarchyBreadcrumb({
         data: macroThesis,
         href: macroThesis ? `/theses/${macroThesis.id}` : null,
         onLink: onLinkMacroThesis,
-        required: true, // Required for asset views
+        required: true, // Required for asset thesiss
       });
     }
   }

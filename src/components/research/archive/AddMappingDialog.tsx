@@ -29,7 +29,7 @@ export function AddMappingDialog({ researchInsightId, onMappingCreated }: AddMap
 
   // Hierarchy options
   const [theses, setTheses] = useState<HierarchyItem[]>([]);
-  const [assetViews, setAssetViews] = useState<HierarchyItem[]>([]);
+  const [assetTheses, setAssetTheses] = useState<HierarchyItem[]>([]);
   const [strategies, setStrategies] = useState<HierarchyItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -53,7 +53,7 @@ export function AddMappingDialog({ researchInsightId, onMappingCreated }: AddMap
           const data = await response.json();
           // API returns array directly, not wrapped in { views: ... }
           const viewsList = Array.isArray(data) ? data : data.views || [];
-          setAssetViews(
+          setAssetTheses(
             viewsList.map((v: any) => ({
               id: v.id,
               name: v.title,
@@ -84,7 +84,7 @@ export function AddMappingDialog({ researchInsightId, onMappingCreated }: AddMap
   // Get available target items based on selected hierarchy level
   const getTargetOptions = () => {
     if (hierarchyLevel === 'macro_thesis') return theses;
-    if (hierarchyLevel === 'asset_view') return assetViews;
+    if (hierarchyLevel === 'asset_view') return assetTheses;
     if (hierarchyLevel === 'strategy') return strategies;
     return [];
   };
@@ -109,7 +109,7 @@ export function AddMappingDialog({ researchInsightId, onMappingCreated }: AddMap
       if (hierarchyLevel === 'macro_thesis') {
         mappingData.macroThesisId = targetId;
       } else if (hierarchyLevel === 'asset_view') {
-        mappingData.assetViewId = targetId;
+        mappingData.assetThesisId = targetId;
       } else if (hierarchyLevel === 'strategy') {
         mappingData.strategyId = targetId;
       } else if (hierarchyLevel === 'position') {
@@ -173,7 +173,7 @@ export function AddMappingDialog({ researchInsightId, onMappingCreated }: AddMap
               className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
             >
               <option value="macro_thesis">Macro Thesis</option>
-              <option value="asset_view">Asset View</option>
+              <option value="asset_view">Asset Thesis</option>
               <option value="strategy">Strategy</option>
             </select>
           </div>
@@ -185,7 +185,7 @@ export function AddMappingDialog({ researchInsightId, onMappingCreated }: AddMap
               {hierarchyLevel === 'macro_thesis'
                 ? 'Thesis'
                 : hierarchyLevel === 'asset_view'
-                  ? 'Asset View'
+                  ? 'Asset Thesis'
                   : 'Strategy'}
             </Label>
             {loading ? (

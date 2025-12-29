@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Next.js full-stack application** for managing options trading strategies, tracking trades, and analyzing performance. The system integrates multiple data sources (IBKR, Massive.com) and implements a decision hierarchy from macro theses down to individual positions.
 
-The application features a **local-first research workflow** using Toulmin framework claim extraction to process research artifacts (transcripts, articles) into structured evidence that feeds macro theses and asset views. This research layer bridges external intelligence gathering with the tactical execution system.
+The application features a **local-first research workflow** using Toulmin framework claim extraction to process research artifacts (transcripts, articles) into structured evidence that feeds macro theses and asset thesiss. This research layer bridges external intelligence gathering with the tactical execution system.
 
 ## Technology Stack
 
@@ -65,7 +65,7 @@ npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psq
 The system implements a four-level decision hierarchy (see `docs/PRD_v1.1.md` and `docs/terminology.md`):
 
 1. **Macro Theses** - Cross-asset beliefs (secular, cyclical, structural)
-2. **Asset Views** - Asset-specific theses about underlyings
+2. **Asset Thesiss** - Asset-specific theses about underlyings
 3. **Strategies** - Tactical implementations (options, duration, relative value)
 4. **Positions** - Individual trades and live exposures
 
@@ -122,7 +122,7 @@ React Frontend (ClaimsBrowser, ConvertClaimDialog)
 ## Key Directories
 
 ### `/src/app` - Next.js App Router
-- **Pages:** `/strategies`, `/triage`, `/blotter`, `/dashboard`, `/research/*`, `/theses/*`, `/asset-views/*`, `/admin/*`
+- **Pages:** `/strategies`, `/triage`, `/blotter`, `/dashboard`, `/research/*`, `/theses/*`, `/asset-theses/*`, `/admin/*`
 - **API Routes:** `/api/ingest/*`, `/api/ibkr/*`, `/api/strategies/*`, `/api/triage/*`, `/api/blotter/*`, `/api/recompute/*`, `/api/research/*`
 
 ### `/src/db` - Data Layer
@@ -175,7 +175,7 @@ Feature-based component organization:
 - **`blotter/`**, **`triage/`**, **`strategies/`**, **`ibkr/`** - Feature-specific components
 - **`research/`** - Research workflow components
   - `ClaimsBrowser.tsx` (665 lines) - Browse hierarchical claims with filtering, search, conversion status
-  - `ConvertClaimDialog.tsx` (282 lines) - Convert claims to macro theses or asset views
+  - `ConvertClaimDialog.tsx` (282 lines) - Convert claims to macro theses or asset thesiss
   - `WorkflowStatusCard.tsx` (130 lines) - Research workflow progress tracking UI
   - `EmptyClaimsState.tsx` (98 lines) - Onboarding guidance for research workflow
   - `archive/` - Deprecated in-app AI workflow components (11 components archived)
@@ -196,9 +196,9 @@ Research workflow automation skills (managed skills, invoked via `/skill-name`):
 - **`deep-dive`** - Guide collaborative deep dive analysis on themes or tickers
 - **`finalize-for-upload`** - Upload finalized research (auto-detects artifact/insight/thesis/view)
 - **`create-thesis`** - Create macro thesis in Supabase from markdown (via psql)
-- **`create-view`** - Create asset view in Supabase from markdown (via psql)
+- **`create-view`** - Create asset thesis in Supabase from markdown (via psql)
 - **`read-theses`** - Query and display macro theses from database (via psql)
-- **`read-views`** - Query and display asset views from database (via psql)
+- **`read-views`** - Query and display asset thesiss from database (via psql)
 - **`upload-artifact`** - Upload raw research artifact to database (via psql)
 - **`upload-insight`** - Upload structured insight to database (via psql)
 
@@ -245,7 +245,7 @@ See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 
 ### PRD-Aligned Terms (Use These)
 - **Macro Thesis / Macro Theses** - Cross-asset beliefs ✅ (implemented with claims provenance)
-- **Asset View / Asset Views** - Asset-specific theses about underlyings ✅ (implemented with claims provenance)
+- **Asset Thesis / Asset Thesiss** - Asset-specific theses about underlyings ✅ (implemented with claims provenance)
 - **Research Artifact** - Raw research content (transcript, article, note) ✅
 - **Research Insight** - Processed artifact with Toulmin claims structure ✅
 - **Claim** - Individual assertion from research with evidence/reasoning/backing ✅
@@ -262,7 +262,7 @@ See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 - **Blotter** - Current term for decision log (will evolve to "Journal")
 
 ### Critical Distinctions
-- **Underlying** (reference data) vs **Asset View** (belief about that underlying)
+- **Underlying** (reference data) vs **Asset Thesis** (belief about that underlying)
 - **Strategy** (tactical execution) vs **Thesis/View** (long-lived belief)
 - **Triage** (evaluation process) vs **Action Items** (user-facing queue)
 
@@ -427,7 +427,7 @@ The research workflow follows a **local-first AI processing pattern** using Toul
 - **Claims Browsing** → `/src/components/research/ClaimsBrowser.tsx` + `/src/app/research/[id]/page.tsx`
 - **Claim Conversion** → `/src/components/research/ConvertClaimDialog.tsx` + `/src/app/api/research/convert-claim/`
 - **Macro Theses** → `/src/app/theses/` + `/src/db/schema.ts` (macro_theses table)
-- **Asset Views** → `/src/app/asset-views/` + `/src/db/schema.ts` (asset_views table)
+- **Asset Thesiss** → `/src/app/asset-theses/` + `/src/db/schema.ts` (asset_views table)
 - **Strategy Management** → `/src/lib/services/strategies.ts` + `/src/app/admin/strategies/`
 - **Triage Alerts** → `/src/lib/derived/triage.ts` + `/src/components/triage/`
 - **Trade Ingestion** → `/src/lib/ingestion/flex/trades.ts` + `/src/app/api/ingest/flex/trades/route.ts`
@@ -441,7 +441,7 @@ The research workflow follows a **local-first AI processing pattern** using Toul
 This codebase is transitioning from a tactical options trading tool to the "Universal Investment Operating System" described in `docs/PRD_v1.1.md`.
 
 ### Implemented Features ✅
-- **Macro Theses** and **Asset Views** - Core entities with claims provenance tracking
+- **Macro Theses** and **Asset Thesiss** - Core entities with claims provenance tracking
 - **Research & Intelligence Layer** - Local-first Toulmin claim extraction workflow
 - **Claims Browsing & Conversion** - Web UI for exploring and converting research into theses/views
 - **Claude Code Skills** - Automated research processing and database integration

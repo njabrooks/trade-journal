@@ -13,7 +13,7 @@ interface Mapping {
   mappedAt: string;
   mappedBy: string;
   macroThesisId: string | null;
-  assetViewId: string | null;
+  assetThesisId: string | null;
   strategyId: string | null;
   positionId: string | null;
 }
@@ -60,18 +60,18 @@ export function MappingsList({ insightId, refreshTrigger }: MappingsListProps) {
           } catch (err) {
             console.error('Error fetching thesis:', err);
           }
-        } else if (mapping.assetViewId) {
+        } else if (mapping.assetThesisId) {
           try {
-            const res = await fetch(`/api/asset-views?id=${mapping.assetViewId}`);
+            const res = await fetch(`/api/asset-views?id=${mapping.assetThesisId}`);
             const viewData = await res.json();
             if (viewData.success) {
               const ticker = viewData.view.underlying?.ticker;
-              names[mapping.assetViewId] = ticker
+              names[mapping.assetThesisId] = ticker
                 ? `${ticker} - ${viewData.view.title}`
                 : viewData.view.title;
             }
           } catch (err) {
-            console.error('Error fetching asset view:', err);
+            console.error('Error fetching asset thesis:', err);
           }
         } else if (mapping.strategyId) {
           try {
@@ -159,8 +159,8 @@ export function MappingsList({ insightId, refreshTrigger }: MappingsListProps) {
   const getHierarchyLink = (mapping: Mapping) => {
     if (mapping.macroThesisId) {
       return `/theses/${mapping.macroThesisId}`;
-    } else if (mapping.assetViewId) {
-      return `/asset-views/${mapping.assetViewId}`;
+    } else if (mapping.assetThesisId) {
+      return `/asset-theses/${mapping.assetThesisId}`;
     } else if (mapping.strategyId) {
       return `/strategies/${mapping.strategyId}`;
     }
@@ -169,7 +169,7 @@ export function MappingsList({ insightId, refreshTrigger }: MappingsListProps) {
 
   const getHierarchyName = (mapping: Mapping) => {
     const targetId =
-      mapping.macroThesisId || mapping.assetViewId || mapping.strategyId || mapping.positionId;
+      mapping.macroThesisId || mapping.assetThesisId || mapping.strategyId || mapping.positionId;
     return targetId ? hierarchyNames[targetId] || 'Loading...' : 'Unknown';
   };
 
@@ -178,7 +178,7 @@ export function MappingsList({ insightId, refreshTrigger }: MappingsListProps) {
       case 'macro_thesis':
         return 'Macro Thesis';
       case 'asset_view':
-        return 'Asset View';
+        return 'Asset Thesis';
       case 'strategy':
         return 'Strategy';
       case 'position':

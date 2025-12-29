@@ -46,7 +46,7 @@ The system is structured as an explicit hierarchical decision model:
    - Cross-asset and non-asset-specific
    - Periodically re-underwritten
 
-2. **Asset Views**
+2. **Asset Thesiss**
    - Asset-specific theses
    - Narrative, fundamental, positioning, and regime context
 
@@ -149,7 +149,7 @@ Beliefs are treated as living objects that evolve with evidence.
 
 ### 5.6 Pre-Investment & Exploratory Research
 
-Research that cannot be confidently mapped to an existing thesis, asset view, strategy, or position is retained within a pre-investment research state.
+Research that cannot be confidently mapped to an existing thesis, asset thesis, strategy, or position is retained within a pre-investment research state.
 
 This supports:
 

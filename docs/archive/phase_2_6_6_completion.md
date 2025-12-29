@@ -8,7 +8,7 @@
 
 ## Overview
 
-Phase 2.6.6 implemented visual hierarchy indicators and inline linking workflows to improve the UX of establishing relationships between Macro Theses, Asset Views, Strategies, and Positions.
+Phase 2.6.6 implemented visual hierarchy indicators and inline linking workflows to improve the UX of establishing relationships between Macro Theses, Asset Thesiss, Strategies, and Positions.
 
 ---
 
@@ -29,8 +29,8 @@ Phase 2.6.6 implemented visual hierarchy indicators and inline linking workflows
 - Helper text explaining required vs optional links
 
 **Integration**:
-- Asset Views page (Macro Thesis → Asset View)
-- Strategy pages (Macro Thesis → Asset View → Strategy)
+- Asset Thesiss page (Macro Thesis → Asset Thesis)
+- Strategy pages (Macro Thesis → Asset Thesis → Strategy)
   - Triage tab
   - Performance tab
   - Blotter tab
@@ -45,7 +45,7 @@ Phase 2.6.6 implemented visual hierarchy indicators and inline linking workflows
    - Filter by direction (bullish/bearish/neutral)
    - Filter by status (active/under_review/retired)
    - Visual selection UI with metadata badges
-   - API: `PATCH /api/asset-views/[id]` with `macro_thesis_id`
+   - API: `PATCH /api/asset-theses/[id]` with `macro_thesis_id`
 
 2. **LinkToThesisButton.tsx** (56 lines)
    - Button wrapper for LinkToThesisDialog
@@ -53,12 +53,12 @@ Phase 2.6.6 implemented visual hierarchy indicators and inline linking workflows
    - Optional `onLinkComplete` callback
 
 3. **LinkToViewDialog.tsx** (342 lines)
-   - Search asset views by title or ticker
+   - Search asset thesiss by title or ticker
    - Filter by direction (bullish/bearish/neutral)
    - Filter by status (active/under_review/retired)
    - Filter by thesis linkage (linked/unlinked/all)
    - Shows underlying ticker and parent thesis
-   - **Cascade linking**: Links both `asset_view_id` AND `macro_thesis_id`
+   - **Cascade linking**: Links both `asset_thesis_id` AND `macro_thesis_id`
    - API: `PATCH /api/strategies/[id]`
 
 4. **LinkToViewButton.tsx** (58 lines)
@@ -74,7 +74,7 @@ Phase 2.6.6 implemented visual hierarchy indicators and inline linking workflows
 
 **Page Integration**:
 - All pages updated to use `ClientHierarchyBreadcrumb`:
-  - `src/app/asset-views/[id]/page.tsx`
+  - `src/app/asset-theses/[id]/page.tsx`
   - `src/app/strategies/[strategyId]/triage/page.tsx`
   - `src/app/strategies/[strategyId]/performance/page.tsx`
   - `src/app/strategies/[strategyId]/blotter/page.tsx`
@@ -217,7 +217,7 @@ Fixed 5 compilation errors blocking Phase B:
 4. **obsidian/markdown.ts**
    - Issue: `Object.fromEntries` result doesn't match ObsidianFrontmatter
    - Fix: Added `as unknown as ObsidianFrontmatter` double cast
-   - Issue: Missing `ticker` field on AssetView type
+   - Issue: Missing `ticker` field on AssetThesis type
    - Fix: Commented out (needs underlying join)
 
 5. **obsidian/watcher.ts**
@@ -233,7 +233,7 @@ Fixed 5 compilation errors blocking Phase B:
 ### New Components (Phase B)
 
 ```
-src/components/asset-views/
+src/components/asset-theses/
 ├── LinkToThesisButton.tsx      (56 lines)
 └── LinkToThesisDialog.tsx      (332 lines)
 
@@ -248,7 +248,7 @@ src/components/ui/
 ### Modified Pages (Phase B Integration)
 
 ```
-src/app/asset-views/[id]/page.tsx
+src/app/asset-theses/[id]/page.tsx
 src/app/strategies/[strategyId]/
 ├── triage/page.tsx
 ├── performance/page.tsx
@@ -271,7 +271,7 @@ src/lib/obsidian/watcher.ts
 
 ### Manual Testing Required
 
-- [ ] Asset View page: Click "+" to link Macro Thesis
+- [ ] Asset Thesis page: Click "+" to link Macro Thesis
   - [ ] Search by title works
   - [ ] Filter by thesis type works
   - [ ] Filter by direction works
@@ -279,7 +279,7 @@ src/lib/obsidian/watcher.ts
   - [ ] Page refreshes after link
   - [ ] Breadcrumb updates to green
 
-- [ ] Strategy page: Click "+" to link Asset View
+- [ ] Strategy page: Click "+" to link Asset Thesis
   - [ ] Search by title/ticker works
   - [ ] Filter by direction works
   - [ ] Filter by status works

@@ -1,20 +1,20 @@
-import { getAssetViewById, getLinkedStrategiesForAssetView, getLinkedMainClaimsForAssetView } from '@/db/queries/assetViews';
+import { getAssetThesisById, getLinkedStrategiesForAssetThesis, getLinkedMainClaimsForAssetThesis } from '@/db/queries/assetTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { ClientHierarchyBreadcrumb } from '@/components/ui/ClientHierarchyBreadcrumb';
-import { AddMainClaimButtonForView } from '@/components/asset-views/AddMainClaimButtonForView';
+import { AddMainClaimButtonForThesis } from '@/components/asset-theses/AddMainClaimButtonForThesis';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
-interface AssetViewDetailPageProps {
+interface AssetThesisDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function AssetViewDetailPage({ params }: AssetViewDetailPageProps) {
+export default async function AssetThesisDetailPage({ params }: AssetThesisDetailPageProps) {
   const { id } = await params;
   const [view, linkedStrategies, linkedClaims] = await Promise.all([
-    getAssetViewById(id),
-    getLinkedStrategiesForAssetView(id),
-    getLinkedMainClaimsForAssetView(id),
+    getAssetThesisById(id),
+    getLinkedStrategiesForAssetThesis(id),
+    getLinkedMainClaimsForAssetThesis(id),
   ]);
 
   if (!view) {
@@ -24,8 +24,8 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
   return (
     <DashboardShell
       title={view.title}
-      subtitle="Asset View Detail"
-      activeNav="asset-views"
+      subtitle="Asset Thesis Detail"
+      activeNav="asset-theses"
     >
       {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 Phase B */}
       <ClientHierarchyBreadcrumb
@@ -230,10 +230,10 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Main Claims ({linkedClaims.length})</h3>
-            <AddMainClaimButtonForView viewId={view.id} viewTitle={view.title} />
+            <AddMainClaimButtonForThesis viewId={view.id} viewTitle={view.title} />
           </div>
           {linkedClaims.length === 0 ? (
-            <p className="text-sm text-slate-500">No main claims linked to this asset view yet.</p>
+            <p className="text-sm text-slate-500">No main claims linked to this asset thesis yet.</p>
           ) : (
             <div className="space-y-3">
               {linkedClaims.map((claim) => (
@@ -302,7 +302,7 @@ export default async function AssetViewDetailPage({ params }: AssetViewDetailPag
         <div className="bg-white rounded-lg border border-slate-200 p-6">
           <h3 className="text-lg font-semibold mb-4">Linked Strategies ({linkedStrategies.length})</h3>
           {linkedStrategies.length === 0 ? (
-            <p className="text-sm text-slate-500">No strategies linked to this asset view yet.</p>
+            <p className="text-sm text-slate-500">No strategies linked to this asset thesis yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">

@@ -3,7 +3,7 @@ import {
   createResearchMapping,
   getResearchMappingsForInsight,
   getResearchForThesis,
-  getResearchForAssetView,
+  getResearchForAssetThesis,
   getResearchForStrategy,
 } from '@/db/queries/research';
 import type { NewResearchMapping } from '@/db/schema';
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (viewId) {
-      const research = await getResearchForAssetView(viewId);
+      const research = await getResearchForAssetThesis(viewId);
       return NextResponse.json({ success: true, research });
     }
 
@@ -100,14 +100,14 @@ export async function POST(request: NextRequest) {
     // Validate that exactly one target ID is provided
     const targetIds = [
       body.macroThesisId,
-      body.assetViewId,
+      body.assetThesisId,
       body.strategyId,
       body.positionId,
     ].filter((id) => id != null);
 
     if (targetIds.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'One target ID is required (macroThesisId, assetViewId, strategyId, or positionId)' },
+        { success: false, error: 'One target ID is required (macroThesisId, assetThesisId, strategyId, or positionId)' },
         { status: 400 }
       );
     }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       confidence: body.confidence || null,
       notes: body.notes || null,
       macroThesisId: body.macroThesisId || null,
-      assetViewId: body.assetViewId || null,
+      assetThesisId: body.assetThesisId || null,
       strategyId: body.strategyId || null,
       positionId: body.positionId || null,
       suggestedByAi: body.suggestedByAi || false,

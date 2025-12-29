@@ -1,9 +1,9 @@
 #!/usr/bin/env npx tsx
 
 /**
- * Backfill Auto-Generated Titles for Asset Views
+ * Backfill Auto-Generated Titles for Asset Thesiss
  *
- * This script updates existing asset views to use auto-generated titles
+ * This script updates existing asset thesiss to use auto-generated titles
  * based on their structured fields (direction, ticker, time horizon).
  *
  * Part of Phase 2.6.3: Auto-Generated Titles
@@ -17,16 +17,16 @@
  */
 
 import { db } from '@/db';
-import { assetViews, underlyings } from '@/db/schema';
+import { assetTheses, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { generateAssetViewTitle, type Direction, type TimeHorizon } from '@/lib/utils/title-generation';
+import { generateAssetThesisTitle, type Direction, type TimeHorizon } from '@/lib/utils/title-generation';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const forceUpdate = args.includes('--force');
 
-interface AssetViewWithTicker {
+interface AssetThesisWithTicker {
   id: string;
   title: string;
   direction: Direction;
@@ -36,35 +36,35 @@ interface AssetViewWithTicker {
 }
 
 async function main() {
-  console.log('🔄 Backfilling Asset View Titles...\n');
+  console.log('🔄 Backfilling Asset Thesis Titles...\n');
 
   if (isDryRun) {
     console.log('📋 DRY RUN MODE - No changes will be made\n');
   }
 
   try {
-    // Fetch all asset views with their underlying tickers
+    // Fetch all asset thesiss with their underlying tickers
     const views = await db
       .select({
-        id: assetViews.id,
-        title: assetViews.title,
-        direction: assetViews.direction,
-        timeHorizon: assetViews.timeHorizon,
-        underlyingId: assetViews.underlyingId,
+        id: assetTheses.id,
+        title: assetTheses.title,
+        direction: assetTheses.direction,
+        timeHorizon: assetTheses.timeHorizon,
+        underlyingId: assetTheses.underlyingId,
         ticker: underlyings.ticker,
       })
-      .from(assetViews)
-      .leftJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
-      .orderBy(assetViews.createdAt);
+      .from(assetTheses)
+      .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+      .orderBy(assetTheses.createdAt);
 
-    console.log(`📊 Found ${views.length} asset views\n`);
+    console.log(`📊 Found ${views.length} asset thesiss\n`);
 
     let updatedCount = 0;
     let skippedCount = 0;
     let errorCount = 0;
 
     for (const view of views) {
-      const viewData = view as AssetViewWithTicker;
+      const viewData = view as AssetThesisWithTicker;
 
       // Skip if no ticker (can't generate meaningful title)
       if (!viewData.ticker) {
@@ -74,7 +74,7 @@ async function main() {
       }
 
       // Generate the expected title
-      const generatedTitle = generateAssetViewTitle({
+      const generatedTitle = generateAssetThesisTitle({
         direction: viewData.direction,
         ticker: viewData.ticker,
         timeHorizon: viewData.timeHorizon,
@@ -90,7 +90,7 @@ async function main() {
       }
 
       if (needsUpdate) {
-        console.log(`\n📝 Updating Asset View:`);
+        console.log(`\n📝 Updating Asset Thesis:`);
         console.log(`   Current:   "${viewData.title}"`);
         console.log(`   Generated: "${generatedTitle}"`);
         console.log(`   Fields:    ${viewData.direction || 'none'} | ${viewData.ticker} | ${viewData.timeHorizon || 'none'}`);
@@ -98,12 +98,12 @@ async function main() {
         if (!isDryRun) {
           try {
             await db
-              .update(assetViews)
+              .update(assetTheses)
               .set({
                 title: generatedTitle,
                 updatedAt: new Date(),
               })
-              .where(eq(assetViews.id, viewData.id));
+              .where(eq(assetTheses.id, viewData.id));
 
             console.log(`   ✅ Updated successfully`);
             updatedCount++;

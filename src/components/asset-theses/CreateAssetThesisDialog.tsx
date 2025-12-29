@@ -6,17 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Target, AlertCircle, CheckCircle } from 'lucide-react';
 
-interface CreateAssetViewDialogProps {
+interface CreateAssetThesisDialogProps {
   onClose: () => void;
   prefilledMainClaimIds?: string[]; // Optional: pre-link main claims
   prefilledThesisIds?: string[]; // Optional: pre-link parent theses
 }
 
-export function CreateAssetViewDialog({
+export function CreateAssetThesisDialog({
   onClose,
   prefilledMainClaimIds = [],
   prefilledThesisIds = [],
-}: CreateAssetViewDialogProps) {
+}: CreateAssetThesisDialogProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +49,7 @@ export function CreateAssetViewDialog({
     setError(null);
 
     try {
-      const response = await fetch('/api/asset-views/create', {
+      const response = await fetch('/api/asset-theses/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,15 +75,15 @@ export function CreateAssetViewDialog({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create asset view');
+        throw new Error(errorData.error || 'Failed to create asset thesis');
       }
 
       const result = await response.json();
       setSuccess(true);
 
-      // Redirect to the new asset view page
+      // Redirect to the new asset thesis page
       setTimeout(() => {
-        router.push(`/asset-views/${result.viewId}`);
+        router.push(`/asset-theses/${result.viewId}`);
         router.refresh();
       }, 1500);
     } catch (err) {
@@ -99,7 +99,7 @@ export function CreateAssetViewDialog({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-emerald-600" />
-            <h2 className="text-lg font-semibold text-slate-900">Create Asset View</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Create Asset Thesis</h2>
           </div>
           <button
             onClick={onClose}
@@ -176,7 +176,7 @@ export function CreateAssetViewDialog({
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief description of the asset view..."
+                  placeholder="Brief description of the asset thesis..."
                   rows={3}
                   className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   disabled={loading}
@@ -325,7 +325,7 @@ export function CreateAssetViewDialog({
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={loading}>
-              {loading ? 'Creating...' : 'Create Asset View'}
+              {loading ? 'Creating...' : 'Create Asset Thesis'}
             </Button>
           </div>
         )}

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getAssetViewsList,
-  getAssetViewById,
-  createAssetView,
-  updateAssetView,
-} from '@/db/queries/assetViews';
+  getAssetThesesList,
+  getAssetThesisById,
+  createAssetThesis,
+  updateAssetThesis,
+} from '@/db/queries/assetTheses';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,20 +12,20 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (id) {
-      const view = await getAssetViewById(id);
+      const view = await getAssetThesisById(id);
       if (!view) {
         return NextResponse.json({ error: 'Asset view not found' }, { status: 404 });
       }
       return NextResponse.json(view);
     }
 
-    const views = await getAssetViewsList();
+    const views = await getAssetThesesList();
     return NextResponse.json(views);
   } catch (error) {
-    console.error('Error fetching asset views:', error);
+    console.error('Error fetching asset thesiss:', error);
     return NextResponse.json(
       {
-        error: 'Failed to fetch asset views',
+        error: 'Failed to fetch asset thesiss',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    const id = await createAssetView({
+    const id = await createAssetThesis({
       title,
       description,
       narrative,
@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, id, message: 'Asset view created successfully' });
   } catch (error) {
-    console.error('Error creating asset view:', error);
+    console.error('Error creating asset thesis:', error);
     return NextResponse.json(
       {
-        error: 'Failed to create asset view',
+        error: 'Failed to create asset thesis',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
@@ -94,18 +94,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Check existence
-    const existing = await getAssetViewById(id);
+    const existing = await getAssetThesisById(id);
     if (!existing) {
       return NextResponse.json({ error: 'Asset view not found' }, { status: 404 });
     }
 
-    await updateAssetView(id, updates);
+    await updateAssetThesis(id, updates);
     return NextResponse.json({ success: true, message: 'Asset view updated successfully' });
   } catch (error) {
-    console.error('Error updating asset view:', error);
+    console.error('Error updating asset thesis:', error);
     return NextResponse.json(
       {
-        error: 'Failed to update asset view',
+        error: 'Failed to update asset thesis',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

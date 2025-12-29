@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { mainClaims, claimThesisMappings, macroTheses, assetViews } from '@/db/schema';
+import { mainClaims, claimThesisMappings, macroTheses, assetTheses } from '@/db/schema';
 import { eq, and, or } from 'drizzle-orm';
 
 /**
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
     } else {
       const [view] = await db
         .select()
-        .from(assetViews)
-        .where(eq(assetViews.id, targetId))
+        .from(assetTheses)
+        .where(eq(assetTheses.id, targetId))
         .limit(1);
 
       if (!view) {
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
           eq(claimThesisMappings.mainClaimId, mainClaimId),
           targetType === 'macro_thesis'
             ? eq(claimThesisMappings.macroThesisId, targetId)
-            : eq(claimThesisMappings.assetViewId, targetId)
+            : eq(claimThesisMappings.assetThesisId, targetId)
         )
       )
       .limit(1);
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       .values({
         mainClaimId,
         macroThesisId: targetType === 'macro_thesis' ? targetId : null,
-        assetViewId: targetType === 'asset_view' ? targetId : null,
+        assetThesisId: targetType === 'asset_view' ? targetId : null,
         mappingType,
         confidence: confidence || null,
         mappedBy,
@@ -205,11 +205,11 @@ export async function GET(request: NextRequest) {
             .limit(1);
           target = thesis;
           targetType = 'macro_thesis';
-        } else if (mapping.assetViewId) {
+        } else if (mapping.assetThesisId) {
           const [view] = await db
             .select()
-            .from(assetViews)
-            .where(eq(assetViews.id, mapping.assetViewId))
+            .from(assetTheses)
+            .where(eq(assetTheses.id, mapping.assetThesisId))
             .limit(1);
           target = view;
           targetType = 'asset_view';

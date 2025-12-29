@@ -40,7 +40,7 @@ Extract the following information in JSON format:
 
 Return ONLY valid JSON matching this structure. Be thorough but concise.`;
 
-const DEFAULT_HIERARCHY_ANALYSIS_PROMPT = `You are an expert investment research analyst. Analyze the following research insights and compare them against existing macro theses and asset views.
+const DEFAULT_HIERARCHY_ANALYSIS_PROMPT = `You are an expert investment research analyst. Analyze the following research insights and compare them against existing macro theses and asset thesiss.
 
 Research Summary: {{insight.summary}}
 Key Themes: {{insight.keyThemes}}
@@ -50,12 +50,12 @@ Relevant Tickers: {{insight.relevantTickers}}
 Existing Macro Theses:
 {{existingTheses}}
 
-Existing Asset Views:
+Existing Asset Thesiss:
 {{existingViews}}
 
 Analyze whether these insights:
 1. Represent a NEW macro thesis (broader market theme)
-2. Represent a NEW asset view (specific asset/ticker view)
+2. Represent a NEW asset thesis (specific asset/ticker view)
 3. Support or refute an EXISTING thesis or view
 4. Are exploratory research that doesn't fit cleanly
 
@@ -72,7 +72,7 @@ Existing Hierarchy:
 
 Generate recommendations for:
 1. Creating new macro theses (if insights represent new macro themes)
-2. Creating new asset views (if insights represent new asset-specific views)
+2. Creating new asset thesiss (if insights represent new asset-specific views)
 3. Linking to existing items (with confidence scores and evidence type)
 
 Return recommendations in JSON format with:

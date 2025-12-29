@@ -15,7 +15,7 @@ Complete guide to the hierarchical Toulmin claims workflow for converting resear
 
 ## Overview
 
-The claims workflow enables systematic conversion of research transcripts into actionable macro theses and asset views using the Toulmin argumentation framework.
+The claims workflow enables systematic conversion of research transcripts into actionable macro theses and asset thesiss using the Toulmin argumentation framework.
 
 ### Key Features
 
@@ -95,7 +95,7 @@ Click "Convert" button on any unconverted claim.
 
 **Dialog Options**:
 - **Macro Thesis**: Select thesis type (secular, cyclical, structural, tactical)
-- **Asset View**: Enter ticker, optionally link to parent thesis
+- **Asset Thesis**: Enter ticker, optionally link to parent thesis
 
 **API Call**: `POST /api/research/convert-claim`
 
@@ -211,8 +211,8 @@ Enables efficient JSONB queries.
 4. Click "Convert" on view candidate
 5. Enter ticker (e.g., "NVDA")
 6. Optionally link to parent thesis
-7. Submit → redirected to /asset-views/{id}
-8. Claim shows "✓ Converted to asset view" badge
+7. Submit → redirected to /asset-theses/{id}
+8. Claim shows "✓ Converted to asset thesis" badge
 ```
 
 ### Workflow 3: Partial Conversion

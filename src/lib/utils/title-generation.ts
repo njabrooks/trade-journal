@@ -1,7 +1,7 @@
 /**
  * Title Generation Utilities
  *
- * Auto-generates consistent titles for Asset Views and Macro Theses
+ * Auto-generates consistent titles for Asset Thesiss and Macro Theses
  * based on structured fields (direction, underlying/sector, time horizon)
  *
  * Part of Phase 2.6.3: Auto-Generated Titles
@@ -42,21 +42,21 @@ function formatTimeHorizon(timeHorizon: TimeHorizon): string {
 }
 
 // ============================================================================
-// Asset View Title Generation
+// Asset Thesis Title Generation
 // ============================================================================
 
-export interface AssetViewTitleInput {
+export interface AssetThesisTitleInput {
   direction: Direction;
   ticker: string | null | undefined; // Underlying ticker
   timeHorizon: TimeHorizon;
 }
 
 /**
- * Generate title for Asset View
+ * Generate title for Asset Thesis
  * Format: {Direction} {Underlying} {Time Horizon}
  * Example: "Bullish TSLA Medium Term"
  */
-export function generateAssetViewTitle(input: AssetViewTitleInput): string {
+export function generateAssetThesisTitle(input: AssetThesisTitleInput): string {
   const parts: string[] = [];
 
   // Add direction if present
@@ -80,7 +80,7 @@ export function generateAssetViewTitle(input: AssetViewTitleInput): string {
   }
 
   // Fallback if insufficient data
-  return 'Untitled Asset View';
+  return 'Untitled Asset Thesis';
 }
 
 // ============================================================================
@@ -132,9 +132,9 @@ export function generateMacroThesisTitle(input: MacroThesisTitleInput): string {
 // ============================================================================
 
 /**
- * Check if Asset View has sufficient data for title generation
+ * Check if Asset Thesis has sufficient data for title generation
  */
-export function canGenerateAssetViewTitle(input: AssetViewTitleInput): boolean {
+export function canGenerateAssetThesisTitle(input: AssetThesisTitleInput): boolean {
   return !!input.ticker;
 }
 
@@ -150,11 +150,11 @@ export function canGenerateMacroThesisTitle(input: MacroThesisTitleInput): boole
 // ============================================================================
 
 /**
- * Check if Asset View title needs regeneration based on field changes
+ * Check if Asset Thesis title needs regeneration based on field changes
  */
-export function shouldRegenerateAssetViewTitle(
-  current: AssetViewTitleInput,
-  previous: AssetViewTitleInput
+export function shouldRegenerateAssetThesisTitle(
+  current: AssetThesisTitleInput,
+  previous: AssetThesisTitleInput
 ): boolean {
   return (
     current.direction !== previous.direction ||

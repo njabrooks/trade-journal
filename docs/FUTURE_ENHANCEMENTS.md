@@ -33,7 +33,7 @@
 **Phase**: Phase 2.6.1
 **Source**: docs/archive/20251228_enhancements.md (item 1)
 
-**Description**: Reorder main sidebar section to: Triage > Blotter > Strategies > Asset Views > Macro Theses > Research > Portfolio
+**Description**: Reorder main sidebar section to: Triage > Blotter > Strategies > Asset Thesiss > Macro Theses > Research > Portfolio
 
 **Big Picture Impact**: Reflects workflow priority - action items first, strategic context second
 
@@ -74,11 +74,11 @@
 
 ---
 
-#### #ENH-006: Asset View Auto-Generated Titles ✅
+#### #ENH-006: Asset Thesis Auto-Generated Titles ✅
 **Status**: ✅ Complete (2025-12-29)
 **Priority**: High
 **Effort**: ~2 hours actual (2-3 days estimated)
-**PRD**: Section 3 (Asset Views)
+**PRD**: Section 3 (Asset Thesiss)
 **Phase**: Phase 2.6.3
 **Source**: docs/archive/20251228_enhancements.md (item 6)
 **Dependencies**: Structured fields already existed in schema ✅
@@ -89,14 +89,14 @@
 
 **Implemented**:
 - ✅ Title generation utility functions (`src/lib/utils/title-generation.ts`)
-- ✅ Updated API route (`/api/asset-views/create/route.ts`) to auto-generate titles
+- ✅ Updated API route (`/api/asset-theses/create/route.ts`) to auto-generate titles
 - ✅ Backfill script (`scripts/backfill-asset-view-titles.ts`) with dry-run mode
-- ✅ Unit tests (7 tests for Asset Views, all passing)
+- ✅ Unit tests (7 tests for Asset Thesiss, all passing)
 - ✅ Title optional in API (allows manual override)
 
 **Key Discovery**: Schema already had `direction`, `timeHorizon`, `underlyingId` fields - no migration needed!
 
-**Big Picture Impact**: Consistent naming convention, easier scanning of asset views. Foundation for claim conversion workflow.
+**Big Picture Impact**: Consistent naming convention, easier scanning of asset thesiss. Foundation for claim conversion workflow.
 
 ---
 
@@ -127,24 +127,24 @@
 
 ---
 
-#### #ENH-004: Link Asset Views to Underlyings Schema ✅
+#### #ENH-004: Link Asset Thesiss to Underlyings Schema ✅
 **Status**: ✅ Complete (2025-12-29)
 **Priority**: Medium
 **Effort**: ~30 minutes actual (1-2 days estimated)
-**PRD**: Section 3.2 (Asset Views)
+**PRD**: Section 3.2 (Asset Thesiss)
 **Phase**: Phase 2.6.4
 **Source**: docs/archive/20251228_enhancements.md (item 4)
 
-**Description**: Ensure proper linkage between Asset Views and Underlyings tables
+**Description**: Ensure proper linkage between Asset Thesiss and Underlyings tables
 
 **Implemented**:
 - ✅ Verified `underlying_id` FK working correctly
-- ✅ Added "Underlying Market Data" section to Asset View detail pages
+- ✅ Added "Underlying Market Data" section to Asset Thesis detail pages
 - ✅ Display: Ticker, Name, Asset Class, Currency, Spot Price, IV30, ATR20, RV20
 - ✅ Conditional display of Next Earnings Date and Next Ex-Div Date
 - ✅ Enhanced Overview section with Direction badge and improved layout
 
-**Big Picture Impact**: Full market context visible on Asset View pages. Enables data-driven decision making.
+**Big Picture Impact**: Full market context visible on Asset Thesis pages. Enables data-driven decision making.
 
 ---
 
@@ -176,7 +176,7 @@
 
 ---
 
-#### #ENH-005: Rename Asset View to Asset Thesis?
+#### #ENH-005: Rename Asset Thesis to Asset Thesis?
 **Status**: ⏳ Under Consideration
 **Priority**: Medium
 **Effort**: 1 day (if approved)
@@ -184,11 +184,11 @@
 **Phase**: Phase 2.6.7
 **Source**: docs/archive/20251228_enhancements.md (item 5)
 
-**Description**: Rename "Asset View" to "Asset Thesis" for terminology consistency
+**Description**: Rename "Asset Thesis" to "Asset Thesis" for terminology consistency
 
 **Open Questions**:
 - Does this improve clarity or create confusion?
-- PRD uses "Asset Views" - would this deviate from PRD?
+- PRD uses "Asset Thesiss" - would this deviate from PRD?
 - Need user feedback before proceeding
 
 **Decision Required**: ⏳ Awaiting user decision (Yes/No)
@@ -220,7 +220,7 @@
    - Visual badges (purple for thesis types, blue for view tickers)
    - Button shows count: "Link & Confirm (3)"
 4. **Create Mode Features**:
-   - Choose entity type (Macro Thesis or Asset View)
+   - Choose entity type (Macro Thesis or Asset Thesis)
    - Fill structured fields (direction, sector/ticker, time horizon)
    - Live title preview shows auto-generated title
 5. Claim automatically linked to selected/created entities as evidence
@@ -250,19 +250,19 @@
 
 ---
 
-#### #ENH-007: Auto-Generate Asset View Descriptions
+#### #ENH-007: Auto-Generate Asset Thesis Descriptions
 **Status**: 🚧 Planned
 **Priority**: Medium
 **Effort**: 2-3 days
-**PRD**: Section 3 (Asset Views), Section 5.7 (AI Role)
+**PRD**: Section 3 (Asset Thesiss), Section 5.7 (AI Role)
 **Phase**: Phase 2.6.5
 **Source**: docs/archive/20251228_enhancements.md (item 7)
 **Dependencies**: #ENH-011 ✅ (requires claim linking)
 
-**Description**: AI-generated descriptions for Asset Views based on linked Macro Theses and Main Claims
+**Description**: AI-generated descriptions for Asset Thesiss based on linked Macro Theses and Main Claims
 
 **Implementation**:
-- When asset view created/updated, AI synthesizes description from:
+- When asset thesis created/updated, AI synthesizes description from:
   - Linked macro theses
   - Linked main claims (evidence)
   - Underlying context
@@ -286,9 +286,9 @@
 
 **Required Links**:
 - Every Position → Strategy (required)
-- Every Strategy → Asset View (required)
-- Every Asset View → Macro Thesis(es) (required, can be multiple)
-- Asset Views and Macro Theses → Main Claims (evidence linking)
+- Every Strategy → Asset Thesis (required)
+- Every Asset Thesis → Macro Thesis(es) (required, can be multiple)
+- Asset Thesiss and Macro Theses → Main Claims (evidence linking)
 
 **UX Improvements**:
 - Visual indicators for missing links
@@ -610,7 +610,7 @@
 **Source**: docs/archive/20251228_enhancements.md (item 12)
 **Reason for Deferral**: Requires Phase 4 trigger infrastructure
 
-**Description**: Generate triage records when mandatory links missing (Strategy without Asset View, etc.)
+**Description**: Generate triage records when mandatory links missing (Strategy without Asset Thesis, etc.)
 
 **Big Picture Impact**: Ensures hierarchy completeness through workflow enforcement
 

@@ -41,8 +41,8 @@ export default async function BlotterPage({ params }: BlotterPageProps) {
             : null
         }
         assetView={
-          strategy.assetViewId
-            ? { id: strategy.assetViewId, title: strategy.assetViewTitle || 'Asset View' }
+          strategy.assetThesisId
+            ? { id: strategy.assetThesisId, title: strategy.assetViewTitle || 'Asset Thesis' }
             : null
         }
         strategy={{

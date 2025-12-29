@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAssetViewById, deleteAssetView } from '@/db/queries/assetViews';
+import { getAssetThesisById, deleteAssetThesis } from '@/db/queries/assetTheses';
 
 export async function DELETE(
   request: NextRequest,
@@ -9,18 +9,18 @@ export async function DELETE(
     const { id: viewId } = await params;
 
     // Check existence
-    const existing = await getAssetViewById(viewId);
+    const existing = await getAssetThesisById(viewId);
     if (!existing) {
       return NextResponse.json({ error: 'Asset view not found' }, { status: 404 });
     }
 
-    await deleteAssetView(viewId);
+    await deleteAssetThesis(viewId);
     return NextResponse.json({ success: true, message: 'Asset view deleted successfully' });
   } catch (error) {
-    console.error('Error deleting asset view:', error);
+    console.error('Error deleting asset thesis:', error);
     return NextResponse.json(
       {
-        error: 'Failed to delete asset view',
+        error: 'Failed to delete asset thesis',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

@@ -40,7 +40,7 @@ The research section currently mixes TWO fundamentally different workflows, crea
 5. **MappingsSection** - OLD manual mappings system
 6. **RecommendationCard** - Part of OLD recommendations
 7. **CreateThesisFromRecommendation** - OLD workflow
-8. **CreateAssetViewFromRecommendation** - OLD workflow
+8. **CreateAssetThesisFromRecommendation** - OLD workflow
 9. **AddMappingDialog** - OLD manual mapping
 10. **MappingsList** - OLD mappings display
 11. **EvidenceDisplay** - OLD format evidence
@@ -54,7 +54,7 @@ src/components/research/
   ❌ HierarchyRecommendationsPanel.tsx
   ❌ RecommendationCard.tsx
   ❌ CreateThesisFromRecommendation.tsx
-  ❌ CreateAssetViewFromRecommendation.tsx
+  ❌ CreateAssetThesisFromRecommendation.tsx
   ❌ MappingsSection.tsx
   ❌ MappingsList.tsx
   ❌ AddMappingDialog.tsx
@@ -211,11 +211,11 @@ After converting a claim, show clear feedback:
 ```tsx
 // After conversion via ConvertClaimDialog
 toast.success(
-  `Claim converted to ${type === 'macro_thesis' ? 'macro thesis' : 'asset view'}!`,
+  `Claim converted to ${type === 'macro_thesis' ? 'macro thesis' : 'asset thesis'}!`,
   {
     action: {
       label: 'View',
-      onClick: () => router.push(`/${type === 'macro_thesis' ? 'theses' : 'asset-views'}/${id}`)
+      onClick: () => router.push(`/${type === 'macro_thesis' ? 'theses' : 'asset-theses'}/${id}`)
     }
   }
 )

@@ -20,7 +20,7 @@ This document tracks the actual implementation progress of the transition from "
 
 ## Phase 1: Beliefs & Decision Capture (✅ COMPLETE)
 
-**Goal**: Establish the belief hierarchy (Macro Theses → Asset Views → Strategies) and enhance decision capture in the blotter.
+**Goal**: Establish the belief hierarchy (Macro Theses → Asset Thesiss → Strategies) and enhance decision capture in the blotter.
 
 ### Phase 1.0: Core Implementation ✅
 
@@ -30,37 +30,37 @@ This document tracks the actual implementation progress of the transition from "
 - ✅ Database tables created in Supabase
   - `macro_theses` table with thesis metadata
   - `asset_views` table with belief narratives
-  - Extended `strategies` table with `asset_view_id` and `macro_thesis_id`
+  - Extended `strategies` table with `asset_thesis_id` and `macro_thesis_id`
   - Extended `blotter_actions` table with decision metadata
 
 - ✅ Drizzle schema updated (`/src/db/schema.ts`)
-  - Full type definitions for `MacroThesis`, `AssetView`
+  - Full type definitions for `MacroThesis`, `AssetThesis`
   - Proper foreign key relationships
   - Indexes for performance
 
 - ✅ Query functions implemented
   - `/src/db/queries/macroTheses.ts` - CRUD operations with aggregated counts
-  - `/src/db/queries/assetViews.ts` - CRUD operations with joined data
+  - `/src/db/queries/assetTheses.ts` - CRUD operations with joined data
 
 - ✅ API routes built
   - `/api/theses` - GET (list + single), POST, PATCH
   - `/api/theses/[id]` - DELETE
-  - `/api/asset-views` - GET (list + single), POST, PATCH
-  - `/api/asset-views/[id]` - DELETE
+  - `/api/asset-theses` - GET (list + single), POST, PATCH
+  - `/api/asset-theses/[id]` - DELETE
 
 - ✅ UI pages created (read-only)
   - `/theses` - Macro theses list page
   - `/theses/[id]` - Macro thesis detail page
-  - `/asset-views` - Asset views list page
-  - `/asset-views/[id]` - Asset view detail page
+  - `/asset-theses` - Asset views list page
+  - `/asset-theses/[id]` - Asset view detail page
 
 - ✅ Navigation updated
-  - AppSidebar extended with "Macro Theses" and "Asset Views" items
+  - AppSidebar extended with "Macro Theses" and "Asset Thesiss" items
   - NavKey types updated
 
 - ✅ Seed data inserted
   - Example macro thesis: "AI Infrastructure Build-Out"
-  - Example asset view: "NVDA: AI Chip Leader"
+  - Example asset thesis: "NVDA: AI Chip Leader"
 
 - ✅ TypeScript build passing
   - Fixed 20+ pre-existing type errors
@@ -83,17 +83,17 @@ This document tracks the actual implementation progress of the transition from "
 **Deliverables**:
 
 - ✅ Strategy form enhancements
-  - Add dropdowns for `macro_thesis_id` and `asset_view_id` in strategy create/edit forms
+  - Add dropdowns for `macro_thesis_id` and `asset_thesis_id` in strategy create/edit forms
   - Display linked thesis/view on strategy detail pages
 
 - ✅ Detail page enhancements
   - Show linked strategies on macro thesis detail page
-  - Show linked strategies on asset view detail page
+  - Show linked strategies on asset thesis detail page
   - Add counts and quick links
 
 - ✅ Filtering capabilities
   - Filter strategies by macro thesis on `/strategies` page
-  - Filter strategies by asset view on `/strategies` page
+  - Filter strategies by asset thesis on `/strategies` page
 
 - ✅ Backfilling support
   - Bulk-link existing strategies to newly created theses/views via checkbox selection in admin
@@ -106,7 +106,7 @@ This document tracks the actual implementation progress of the transition from "
 
 ## Phase 1.6: Create/Edit Forms ⏳
 
-**Goal**: Build full CRUD UI for macro theses and asset views (currently read-only).
+**Goal**: Build full CRUD UI for macro theses and asset thesiss (currently read-only).
 
 **Status**: Planned
 **Deliverables**:
@@ -118,8 +118,8 @@ This document tracks the actual implementation progress of the transition from "
   - Field validation (required fields, enum constraints)
 
 - ⏳ Asset view forms
-  - Create new asset view form with underlying/thesis selection
-  - Edit existing asset view form
+  - Create new asset thesis form with underlying/thesis selection
+  - Edit existing asset thesis form
   - Delete confirmation dialog
   - Rich text editor for narrative fields (optional enhancement)
 
@@ -340,7 +340,7 @@ This document tracks the actual implementation progress of the transition from "
   - POST `/api/research/mappings` - Create new mapping with validation
   - GET `/api/research/mappings?insightId=xyz` - List mappings for an insight
   - GET `/api/research/mappings?thesisId=xyz` - Get research for thesis
-  - GET `/api/research/mappings?viewId=xyz` - Get research for asset view
+  - GET `/api/research/mappings?viewId=xyz` - Get research for asset thesis
   - GET `/api/research/mappings?strategyId=xyz` - Get research for strategy
   - DELETE `/api/research/mappings/[id]` - Delete mapping
   - Validation for mapping types (supports/refutes/neutral/exploratory)
@@ -380,7 +380,7 @@ This document tracks the actual implementation progress of the transition from "
 - ✅ Integration points
   - Research detail page (/research/[id]) - Link research to hierarchy
   - Thesis detail page (/theses/[id]) - View linked research evidence
-  - Asset view detail page (/asset-views/[id]) - View linked research evidence
+  - Asset view detail page (/asset-theses/[id]) - View linked research evidence
   - Existing query functions leveraged from Phase 2.1
 
 **Notes**:
@@ -525,12 +525,12 @@ This document tracks the actual implementation progress of the transition from "
 **Scope**:
 
 - 🚧 Claims browser page (unified view of all main claims)
-- 🚧 Auto-generated titles for Asset Views (based on direction, underlying, time horizon)
+- 🚧 Auto-generated titles for Asset Thesiss (based on direction, underlying, time horizon)
 - 🚧 Auto-generated titles for Macro Theses (based on direction, sector/topic, time horizon)
-- 🚧 Link Asset Views to underlyings schema properly
+- 🚧 Link Asset Thesiss to underlyings schema properly
 - 🚧 Define sector/topic taxonomy for Macro Theses
 - 🚧 Streamlined claim → thesis/view conversion (creates new, doesn't convert claim)
-- 🚧 Enhanced hierarchy linking UX (Position → Strategy → Asset View → Macro Thesis)
+- 🚧 Enhanced hierarchy linking UX (Position → Strategy → Asset Thesis → Macro Thesis)
 - ⏳ Claims in triage page (deferred to Phase 4+)
 - ⏳ Mandatory link triage triggers (deferred to Phase 4+)
 
@@ -541,9 +541,9 @@ This document tracks the actual implementation progress of the transition from "
 
 **Context**: After completing Phase 2 (Research Infrastructure) and Phase 2.5 (AI Enhancements), several UX improvements emerged:
 - Need unified claims browsing across all research
-- Asset Views and Macro Theses need auto-generated titles/descriptions
+- Asset Thesiss and Macro Theses need auto-generated titles/descriptions
 - Linking workflow needs simplification
-- Asset Views should be properly linked to underlyings schema
+- Asset Thesiss should be properly linked to underlyings schema
 
 ---
 
@@ -554,7 +554,7 @@ This document tracks the actual implementation progress of the transition from "
 **Status**: ✅ Complete (2025-12-28)
 **Deliverables**:
 
-- ✅ Reordered main sidebar section: Triage > Blotter > Strategies > Asset Views > Macro Theses > Research > Portfolio
+- ✅ Reordered main sidebar section: Triage > Blotter > Strategies > Asset Thesiss > Macro Theses > Research > Portfolio
 
 **Notes**:
 - Reflects workflow priority: action items first, strategic context second
@@ -613,15 +613,15 @@ This document tracks the actual implementation progress of the transition from "
 
 ### Phase 2.6.3: Auto-Generated Titles ✅
 
-**Goal**: Generate consistent titles for Asset Views and Macro Theses from structured fields.
+**Goal**: Generate consistent titles for Asset Thesiss and Macro Theses from structured fields.
 
 **Status**: ✅ Complete (2025-12-29)
 **Deliverables**:
 
-- ✅ Asset View titles: `{Direction} {Underlying} {Time Horizon}` (e.g., "Bullish TSLA Medium Term")
+- ✅ Asset Thesis titles: `{Direction} {Underlying} {Time Horizon}` (e.g., "Bullish TSLA Medium Term")
 - ✅ Macro Thesis titles: `{Direction} {Sector/Topic} {Time Horizon}` (e.g., "Bullish US Inflation Medium Term")
 - ✅ Title generation utility functions with validation and fallback handling
-- ✅ Updated API routes (`/api/asset-views/create`, `/api/theses/create`) to auto-generate titles
+- ✅ Updated API routes (`/api/asset-theses/create`, `/api/theses/create`) to auto-generate titles
 - ✅ Backfill scripts for existing records (with dry-run mode)
 - ✅ Unit tests (17 tests, all passing)
 
@@ -629,7 +629,7 @@ This document tracks the actual implementation progress of the transition from "
 
 **Technical Implementation**:
 - `src/lib/utils/title-generation.ts` - Title generation functions
-- `scripts/backfill-asset-view-titles.ts` - Backfill existing Asset Views
+- `scripts/backfill-asset-view-titles.ts` - Backfill existing Asset Thesiss
 - `scripts/backfill-macro-thesis-titles.ts` - Backfill existing Macro Theses
 - `scripts/test-title-generation.ts` - Unit tests
 - API routes updated to make `title` optional (allows manual override)
@@ -650,8 +650,8 @@ This document tracks the actual implementation progress of the transition from "
 **Status**: ✅ Complete (2025-12-29)
 **Deliverables**:
 
-- ✅ Verified Asset Views → Underlyings linking (confirmed `underlying_id` FK working)
-- ✅ Added "Underlying Market Data" section to Asset View detail pages (spot, IV30, ATR, RV, earnings dates)
+- ✅ Verified Asset Thesiss → Underlyings linking (confirmed `underlying_id` FK working)
+- ✅ Added "Underlying Market Data" section to Asset Thesis detail pages (spot, IV30, ATR, RV, earnings dates)
 - ✅ Created comprehensive sector/topic taxonomy with **115 items across 6 categories**:
   - Sectors: 12 items (Technology, Financials, Transport, Energy, etc.)
   - Industries: 26 items (AI, Semiconductors, Banking, etc.)
@@ -666,7 +666,7 @@ This document tracks the actual implementation progress of the transition from "
 **Technical Implementation**:
 - `src/lib/constants/sector-taxonomy.ts` - Comprehensive taxonomy with utility functions
 - `src/components/ui/SectorSelector.tsx` - Reusable multi-select component
-- `src/app/asset-views/[id]/page.tsx` - Enhanced with underlying market data
+- `src/app/asset-theses/[id]/page.tsx` - Enhanced with underlying market data
 - `src/app/theses/[id]/page.tsx` - Enhanced with direction and sectors display
 
 **Actual Effort**: ~1 hour (faster than estimated 3-4 days)
@@ -686,7 +686,7 @@ This document tracks the actual implementation progress of the transition from "
 **Deliverables**:
 
 **Phase A: Core Linking Workflow** ✅ (Initial: 2025-12-29)
-- ✅ Convert button creates NEW macro thesis or asset view (doesn't convert claim itself)
+- ✅ Convert button creates NEW macro thesis or asset thesis (doesn't convert claim itself)
 - ✅ Claim automatically linked to newly created thesis/view as evidence
 - ✅ Two-step conversion workflow: Choose entity type → Fill structured fields
 - ✅ Live title preview showing auto-generated title as user types
@@ -723,7 +723,7 @@ This document tracks the actual implementation progress of the transition from "
 - Enhanced: `src/components/research/UnifiedClaimsBrowser.tsx` - status change triggers dialog
 - Enhanced: `src/db/queries/research.ts` - fixed title generation, added linked entities queries
 - New endpoints: `/api/research/claims/available-entities`, `/api/research/claims/link-to-entities`
-- Updated: `/api/theses/create`, `/api/asset-views/create` - auto-confirm linked claims
+- Updated: `/api/theses/create`, `/api/asset-theses/create` - auto-confirm linked claims
 - Enhanced: `src/db/schema.ts` - added 'rejected' status
 - Fixed: `src/lib/constants/sector-taxonomy.ts` - removed duplicate
 
@@ -749,11 +749,11 @@ This document tracks the actual implementation progress of the transition from "
 - ✅ Color-coded status indicators (green=linked, amber=missing required, gray=missing optional)
 - ✅ Always visible (shows missing links, not hidden)
 - ✅ Inline "+" buttons for missing links
-- ✅ Integration on Asset View and Strategy pages
+- ✅ Integration on Asset Thesis and Strategy pages
 
 **Phase B: Inline Linking Workflows** ✅
 - ✅ `LinkToThesisDialog.tsx` (332 lines) - Search/filter macro theses
-- ✅ `LinkToViewDialog.tsx` (342 lines) - Search/filter asset views
+- ✅ `LinkToViewDialog.tsx` (342 lines) - Search/filter asset thesiss
 - ✅ `ClientHierarchyBreadcrumb.tsx` (78 lines) - Client wrapper for server components
 - ✅ Search by title/ticker/sector with real-time filtering
 - ✅ Filter by thesis type, direction, status
@@ -778,14 +778,14 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-### Phase 2.6.7: Asset View Terminology Review ⏳
+### Phase 2.6.7: Asset Thesis Terminology Review ⏳
 
-**Goal**: Decide whether to rename "Asset View" to "Asset Thesis".
+**Goal**: Decide whether to rename "Asset Thesis" to "Asset Thesis".
 
 **Status**: ⏳ Under Consideration
 **Deliverables**:
 
-- ⏳ User decision: Keep "Asset View" or rename to "Asset Thesis"?
+- ⏳ User decision: Keep "Asset Thesis" or rename to "Asset Thesis"?
 - ⏳ If approved: Rename in schema, UI, docs
 - ⏳ Migration script if renaming
 
@@ -796,7 +796,7 @@ This document tracks the actual implementation progress of the transition from "
 
 **Open Questions**:
 - Does this improve clarity or create confusion?
-- PRD uses "Asset Views" - would this deviate from PRD?
+- PRD uses "Asset Thesiss" - would this deviate from PRD?
 - Need user feedback before proceeding
 
 ---
@@ -878,7 +878,7 @@ The system now has a full AI-powered research workflow: ingestion → AI structu
 **Implementation Order**:
 1. ✅ Sidebar reordering (#ENH-001) - Complete
 2. ✅ Claims browser page with auto-promotion (#ENH-002) - Complete
-3. ⏳ Auto-generated titles for Asset Views & Macro Theses (#ENH-006, #ENH-009) - Next
+3. ⏳ Auto-generated titles for Asset Thesiss & Macro Theses (#ENH-006, #ENH-009) - Next
 4. ⏳ Schema improvements & taxonomy (#ENH-004, #ENH-010)
 5. ⏳ Streamlined claim conversion (#ENH-011)
 6. ⏳ Enhanced hierarchy linking UX (#ENH-008)
@@ -1030,7 +1030,7 @@ The system now has a full AI-powered research workflow: ingestion → AI structu
 - ✅ All UI pages render correctly
 - ✅ Zero TypeScript compilation errors
 - ✅ Seed data successfully inserted
-- ✅ User can view theses and asset views in UI
+- ✅ User can view theses and asset thesiss in UI
 
 ### Phase 1.5 Success Metrics (✅ Achieved)
 - ✅ User can link strategies to theses/views via strategy creation form

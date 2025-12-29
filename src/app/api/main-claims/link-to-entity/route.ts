@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { claimThesisMappings, mainClaims, macroTheses, assetViews } from '@/db/schema';
+import { claimThesisMappings, mainClaims, macroTheses, assetTheses } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 /**
  * POST /api/main-claims/link-to-entity
  *
- * Links an existing main claim to an existing thesis or asset view.
+ * Links an existing main claim to an existing thesis or asset thesis.
  *
  * This allows flexible linking after entities are created separately,
  * rather than requiring linkage at creation time.
@@ -91,8 +91,8 @@ export async function POST(request: NextRequest) {
     } else if (entityType === 'view') {
       const [view] = await db
         .select()
-        .from(assetViews)
-        .where(eq(assetViews.id, entityId))
+        .from(assetTheses)
+        .where(eq(assetTheses.id, entityId))
         .limit(1);
 
       if (!view) {
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         )
       : and(
           eq(claimThesisMappings.mainClaimId, mainClaimId),
-          eq(claimThesisMappings.assetViewId, entityId)
+          eq(claimThesisMappings.assetThesisId, entityId)
         );
 
     const existingLink = await db
@@ -136,8 +136,8 @@ export async function POST(request: NextRequest) {
       mappingType: relationshipType,
       mappedBy: 'manual', // Manual linking via UI
       ...(entityType === 'thesis'
-        ? { macroThesisId: entityId, assetViewId: null }
-        : { assetViewId: entityId, macroThesisId: null }
+        ? { macroThesisId: entityId, assetThesisId: null }
+        : { assetThesisId: entityId, macroThesisId: null }
       ),
     };
 

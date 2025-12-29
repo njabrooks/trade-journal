@@ -12,7 +12,7 @@ export function FilterBar({ theses, views }: FilterBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const macroThesisId = searchParams.get('macroThesisId') || '';
-  const assetViewId = searchParams.get('assetViewId') || '';
+  const assetThesisId = searchParams.get('assetThesisId') || '';
 
   const handleThesisChange = (value: string) => {
     const params = new URLSearchParams(searchParams);
@@ -27,9 +27,9 @@ export function FilterBar({ theses, views }: FilterBarProps) {
   const handleViewChange = (value: string) => {
     const params = new URLSearchParams(searchParams);
     if (value) {
-      params.set('assetViewId', value);
+      params.set('assetThesisId', value);
     } else {
-      params.delete('assetViewId');
+      params.delete('assetThesisId');
     }
     router.push(`/strategies?${params.toString()}`);
   };
@@ -57,11 +57,11 @@ export function FilterBar({ theses, views }: FilterBarProps) {
       </div>
       <div className="flex items-center gap-2">
         <label htmlFor="assetViewFilter" className="text-sm text-slate-600">
-          Asset View:
+          Asset Thesis:
         </label>
         <select
           id="assetViewFilter"
-          value={assetViewId}
+          value={assetThesisId}
           onChange={(e) => handleViewChange(e.target.value)}
           className="text-sm border rounded px-2 py-1"
         >
@@ -73,7 +73,7 @@ export function FilterBar({ theses, views }: FilterBarProps) {
           ))}
         </select>
       </div>
-      {(macroThesisId || assetViewId) && (
+      {(macroThesisId || assetThesisId) && (
         <Link href="/strategies" className="text-sm text-blue-600 hover:text-blue-800">
           Clear filters
         </Link>

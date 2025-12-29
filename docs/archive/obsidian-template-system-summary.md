@@ -10,7 +10,7 @@
 **Location**: `/docs/obsidian-templates.md`
 
 Comprehensive template reference covering:
-- 5 entity types (Main Claim, Macro Thesis, Asset View, Research Artifact, Research Insight)
+- 5 entity types (Main Claim, Macro Thesis, Asset Thesis, Research Artifact, Research Insight)
 - Complete frontmatter schemas with field descriptions
 - Body structure specifications
 - Required vs optional fields
@@ -64,7 +64,7 @@ npx tsx scripts/fix-obsidian-template-issues.ts
 ```
 
 **Fixes Applied**:
-- Missing `ticker` in asset view frontmatter (looks up from database)
+- Missing `ticker` in asset thesis frontmatter (looks up from database)
 - JSONB `notes` field in macro theses (converts object → string)
 - Removes "undefined" values from frontmatter
 - Validates and fixes enum values
@@ -75,7 +75,7 @@ npx tsx scripts/fix-obsidian-template-issues.ts
 - `/src/lib/obsidian/markdown.ts` - Fixed frontmatter generation
 
 **Changes**:
-1. ✅ Added `ticker` to asset view frontmatter generation
+1. ✅ Added `ticker` to asset thesis frontmatter generation
 2. ✅ Fixed JSONB notes field serialization in macro theses
 3. ✅ Proper handling of undefined values
 
@@ -83,7 +83,7 @@ npx tsx scripts/fix-obsidian-template-issues.ts
 
 ## Issues Identified & Fixed
 
-### Issue 1: Missing Ticker in Asset Views
+### Issue 1: Missing Ticker in Asset Thesiss
 **Problem**: Asset view frontmatter didn't include `ticker` field
 **Result**: Body showed "**Underlying**: undefined"
 **Fix**: Added `ticker` parameter to frontmatter generation
@@ -136,7 +136,7 @@ npx tsx scripts/fix-obsidian-template-issues.ts
 ### For Database → Obsidian Sync
 
 The updated `markdown.ts` code will now generate proper frontmatter with:
-- ✅ `ticker` field in asset views
+- ✅ `ticker` field in asset thesiss
 - ✅ Properly serialized `notes` field
 - ✅ No undefined values
 
@@ -158,7 +158,7 @@ updated_at: '2025-12-28T15:18:42.055Z'
 ---
 ```
 
-### Valid Asset View
+### Valid Asset Thesis
 ```yaml
 ---
 id: 3bcd0e1e-3682-43e7-a017-a71785c2c375
@@ -212,7 +212,7 @@ created_at: 12/28/2025  # ❌ Should be: 2025-12-28 or ISO 8601
 **Enums**: `thesis_type` (secular, cyclical, structural), `direction` (bullish, bearish, neutral)
 **Sections**: `## Position`, `## Rationale Summary`, `## Notes`
 
-### Asset View
+### Asset Thesis
 **Required**: `id`, `type`, `ticker`, `created_at`, `updated_at`
 **Enums**: `direction` (bullish, bearish, neutral)
 **Sections**: `## Position`, `## Narrative`, `## Description`, Context sections
@@ -309,9 +309,9 @@ The template system is fully integrated with the bidirectional sync system:
 - [ ] Preview fixes: `npx tsx scripts/fix-obsidian-template-issues.ts --dry-run`
 - [ ] Apply fixes: `npx tsx scripts/fix-obsidian-template-issues.ts`
 - [ ] Create new main claim from template
-- [ ] Create new asset view from template
+- [ ] Create new asset thesis from template
 - [ ] Sync new files to database
-- [ ] Verify `ticker` appears in asset view frontmatter
+- [ ] Verify `ticker` appears in asset thesis frontmatter
 - [ ] Verify `notes` field renders correctly in macro theses
 - [ ] Test database → Obsidian sync with corrected generation
 - [ ] Verify no "undefined" or "[object Object]" in synced files

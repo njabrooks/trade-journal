@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * LinkToThesisDialog - Dialog for linking Asset Views to Macro Theses
+ * LinkToThesisDialog - Dialog for linking Asset Thesiss to Macro Theses
  *
  * Provides search and filter UI to select a macro thesis and link it
- * to the current asset view via API call.
+ * to the current asset thesis via API call.
  *
  * Part of Phase 2.6.6 Phase B: Inline Linking Workflows
  */
@@ -121,7 +121,7 @@ export function LinkToThesisDialog({
     setError(null);
 
     try {
-      const response = await fetch(`/api/asset-views/${viewId}`, {
+      const response = await fetch(`/api/asset-theses/${viewId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

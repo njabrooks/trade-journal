@@ -663,11 +663,11 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                     {linkedViews.map((view) => (
                                       <Link
                                         key={view.id}
-                                        href={`/asset-views/${view.id}`}
+                                        href={`/asset-theses/${view.id}`}
                                         className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
                                       >
                                         <span className="inline-flex items-center gap-1">
-                                          <Badge className="bg-blue-100 text-blue-700 text-xs">Asset View</Badge>
+                                          <Badge className="bg-blue-100 text-blue-700 text-xs">Asset Thesis</Badge>
                                           {view.title} ({view.ticker})
                                           <ExternalLink className="h-3 w-3" />
                                         </span>

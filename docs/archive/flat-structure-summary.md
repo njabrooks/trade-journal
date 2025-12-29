@@ -13,7 +13,7 @@ investing/
 │   └── claim2.md
 ├── macro-theses/
 │   └── thesis1.md
-├── asset-views/
+├── asset-theses/
 │   └── view1.md
 └── research/
     ├── transcripts/
@@ -87,7 +87,7 @@ Current files (8 total):
 ```
 ✅ 2 main claims  → 2025-12-28-main-claim-*.md
 ✅ 1 macro thesis → 2025-12-28-macro-thesis-*.md
-✅ 1 asset view   → 2025-12-28-asset-view-*.md
+✅ 1 asset thesis   → 2025-12-28-asset-view-*.md
 ✅ 2 transcripts  → 2025-12-21-transcript-*.md
 ✅ 2 audits       → 2025-12-14-audit-*.md, 2025-12-21-audit-*.md
 ```
@@ -116,7 +116,7 @@ This will:
 ### Step 3: Clean Up Empty Folders
 ```bash
 cd /Users/njb/Desktop/nick/investing
-rm -rf main-claims/ macro-theses/ asset-views/
+rm -rf main-claims/ macro-theses/ asset-theses/
 rm -rf research/transcripts/ research/audits/ research/syntheses/ research/deep-dives/
 ```
 
@@ -142,7 +142,7 @@ path:investing main-claim
 path:investing macro-thesis
 ```
 
-**All asset views**:
+**All asset thesiss**:
 ```
 path:investing asset-view
 ```
@@ -196,7 +196,7 @@ git checkout .env.local
 ```bash
 OBSIDIAN_MAIN_CLAIMS_DIR=investing/main-claims
 OBSIDIAN_MACRO_THESES_DIR=investing/macro-theses
-OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-views
+OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-theses
 OBSIDIAN_TRANSCRIPTS_DIR=investing/research/transcripts
 OBSIDIAN_AUDITS_DIR=investing/research/audits
 ```

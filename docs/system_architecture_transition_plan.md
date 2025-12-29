@@ -28,7 +28,7 @@ The target system implements a **four-level decision hierarchy**:
 
 ```
 Macro Theses (Level 1)
-  └─> Asset Views (Level 2)
+  └─> Asset Thesiss (Level 2)
       └─> Strategies (Level 3)
           └─> Positions (Level 4)
 ```
@@ -113,7 +113,7 @@ Retrospective Learning
 - **Journal** captures the complete loop
 - **Retrospective Learning** closes the loop by informing belief evolution
 
-This loop operates at all hierarchy levels (macro thesis → asset view → strategy → position).
+This loop operates at all hierarchy levels (macro thesis → asset thesis → strategy → position).
 
 ---
 
@@ -147,7 +147,7 @@ This loop operates at all hierarchy levels (macro thesis → asset view → stra
 
 **Missing Hierarchy Levels:**
 - No macro theses entity
-- No asset views entity
+- No asset thesiss entity
 - Strategies exist but are tactical, not connected to higher-level beliefs
 
 **No Research Layer:**
@@ -174,7 +174,7 @@ This loop operates at all hierarchy levels (macro thesis → asset view → stra
 **Goal:** Add hierarchy levels and enhance decision capture without breaking existing functionality.
 
 **Deliverables:**
-1. Macro theses and asset views data model
+1. Macro theses and asset thesiss data model
 2. Enhanced decision capture in blotter
 3. Basic hierarchy navigation UI
 4. Backward-compatible strategy linking
@@ -229,16 +229,16 @@ This loop operates at all hierarchy levels (macro thesis → asset view → stra
 
 **Deliverables:**
 1. Claims browser page (unified view of all claims)
-2. Auto-generated titles for Asset Views and Macro Theses
+2. Auto-generated titles for Asset Thesiss and Macro Theses
 3. Enhanced linking UX for hierarchy completeness
-4. Schema improvements (Asset Views → Underlyings linkage)
+4. Schema improvements (Asset Thesiss → Underlyings linkage)
 5. Sector/topic taxonomy for Macro Theses
 6. Streamlined claim → thesis/view conversion workflow
 
 **Context:** After completing Phase 2 (Research Infrastructure) and Phase 2.5 (AI Enhancements), several UX improvements emerged from user feedback:
 - Need to browse all claims in one place (both promoted and unpromoted)
-- Asset Views and Macro Theses need consistent, auto-generated titles
-- Linking workflow (Position → Strategy → Asset View → Macro Thesis) needs to be more intuitive
+- Asset Thesiss and Macro Theses need consistent, auto-generated titles
+- Linking workflow (Position → Strategy → Asset Thesis → Macro Thesis) needs to be more intuitive
 - Claim conversion should create new theses/views (not convert claims themselves)
 
 **Risk:** Low - All additive UX improvements, no breaking changes to data model.
@@ -253,7 +253,7 @@ This loop operates at all hierarchy levels (macro thesis → asset view → stra
 
 ## 4. Phase 1: Foundation - Detailed Design
 
-### 4.1 Data Model: Macro Theses & Asset Views
+### 4.1 Data Model: Macro Theses & Asset Thesiss
 
 #### 4.1.1 `macro_theses` Table
 
@@ -313,7 +313,7 @@ CREATE INDEX idx_asset_views_status ON asset_views(status);
 ```
 
 **Design Decisions:**
-- `macro_thesis_id` is nullable - asset views can exist independently
+- `macro_thesis_id` is nullable - asset thesiss can exist independently
 - `underlying_id` links to existing underlyings table
 - Multiple context fields support PRD requirement for "narrative, fundamental, positioning, and regime context"
 - Same status/review pattern as macro theses
@@ -322,25 +322,25 @@ CREATE INDEX idx_asset_views_status ON asset_views(status);
 
 ```sql
 ALTER TABLE strategies
-  ADD COLUMN asset_view_id uuid REFERENCES asset_views(id) ON DELETE SET NULL,
+  ADD COLUMN asset_thesis_id uuid REFERENCES asset_views(id) ON DELETE SET NULL,
   ADD COLUMN macro_thesis_id uuid REFERENCES macro_theses(id) ON DELETE SET NULL;
 
-CREATE INDEX idx_strategies_asset_view ON strategies(asset_view_id);
+CREATE INDEX idx_strategies_asset_view ON strategies(asset_thesis_id);
 CREATE INDEX idx_strategies_macro_thesis ON strategies(macro_thesis_id);
 ```
 
 **Design Decisions:**
 - Both foreign keys are nullable for backward compatibility
 - Existing strategies continue to work without hierarchy links
-- Strategies can link to asset views OR macro theses (or both)
+- Strategies can link to asset thesiss OR macro theses (or both)
 - Allows gradual migration of existing strategies
 
 **⚠️ Critical Clarification: Strategy vs Thesis**
 - **Strategies are tactical execution constructs**, not long-lived belief objects
-- **Macro Theses and Asset Views are belief objects** that evolve with evidence
+- **Macro Theses and Asset Thesiss are belief objects** that evolve with evidence
 - **Strategies link to theses/views** but remain tactical - their linkage is **additive, not redefining**
-- A strategy can express an asset view, but the strategy itself is not the belief
-- Example: "Covered call on GLXY" (strategy) expresses "GLXY will trade sideways" (asset view), but the strategy is the tactical implementation, not the belief itself
+- A strategy can express an asset thesis, but the strategy itself is not the belief
+- Example: "Covered call on GLXY" (strategy) expresses "GLXY will trade sideways" (asset thesis), but the strategy is the tactical implementation, not the belief itself
 
 ### 4.2 Enhanced Decision Capture
 
@@ -373,7 +373,7 @@ CREATE INDEX idx_blotter_decision_type ON blotter_actions(decision_type);
 **New Page:** `/hierarchy` or integrated into existing navigation
 
 **Components:**
-- Tree view: Macro Theses → Asset Views → Strategies → Positions
+- Tree view: Macro Theses → Asset Thesiss → Strategies → Positions
 - Breadcrumb navigation
 - Filter by status, type, confidence
 - Quick actions: Create thesis, link strategy, review due
@@ -389,14 +389,14 @@ CREATE INDEX idx_blotter_decision_type ON blotter_actions(decision_type);
 
 **Sections:**
 - Thesis overview (type, status, confidence, review schedule)
-- Linked asset views
+- Linked asset thesiss
 - Linked strategies (with performance)
 - Research mappings (Phase 2)
 - Review history
 
-#### 4.3.3 Asset View Detail Page
+#### 4.3.3 Asset Thesis Detail Page
 
-**New Page:** `/asset-views/[viewId]`
+**New Page:** `/asset-theses/[viewId]`
 
 **Sections:**
 - View overview (narrative, fundamental, positioning, regime context)
@@ -498,7 +498,7 @@ CREATE TABLE research_mappings (
   research_insight_id uuid NOT NULL REFERENCES research_insights(id) ON DELETE CASCADE,
   hierarchy_level text NOT NULL, -- 'macro_thesis' | 'asset_view' | 'strategy' | 'position'
   macro_thesis_id uuid REFERENCES macro_theses(id) ON DELETE CASCADE,
-  asset_view_id uuid REFERENCES asset_views(id) ON DELETE CASCADE,
+  asset_thesis_id uuid REFERENCES asset_views(id) ON DELETE CASCADE,
   strategy_id uuid REFERENCES strategies(id) ON DELETE CASCADE,
   position_id uuid REFERENCES positions(id) ON DELETE CASCADE,
   mapping_type text NOT NULL, -- 'supports' | 'refutes' | 'neutral' | 'exploratory'
@@ -511,7 +511,7 @@ CREATE TABLE research_mappings (
 
 CREATE INDEX idx_research_mappings_insight ON research_mappings(research_insight_id);
 CREATE INDEX idx_research_mappings_macro_thesis ON research_mappings(macro_thesis_id);
-CREATE INDEX idx_research_mappings_asset_view ON research_mappings(asset_view_id);
+CREATE INDEX idx_research_mappings_asset_view ON research_mappings(asset_thesis_id);
 CREATE INDEX idx_research_mappings_strategy ON research_mappings(strategy_id);
 CREATE INDEX idx_research_mappings_type ON research_mappings(mapping_type);
 ```
@@ -665,7 +665,7 @@ async function summarizeResearch(content: string): Promise<string> {
 
 **Context Provided:**
 - Existing macro theses (titles, descriptions)
-- Existing asset views (titles, narratives)
+- Existing asset thesiss (titles, narratives)
 - Existing strategies (if relevant)
 
 **Output:** Array of suggested mappings with confidence scores
@@ -687,7 +687,7 @@ async function summarizeResearch(content: string): Promise<string> {
 - `extractClaims(content: string): Promise<Claim[]>`
 - `classifyEvidence(claims: Claim[]): Promise<EvidenceClassification>`
 - `suggestMappings(insight: ResearchInsight, context: HierarchyContext): Promise<MappingSuggestion[]>`
-- `evaluateBelief(insight: ResearchInsight, thesis: MacroThesis | AssetView): Promise<BeliefEvaluation>`
+- `evaluateBelief(insight: ResearchInsight, thesis: MacroThesis | AssetThesis): Promise<BeliefEvaluation>`
 
 #### 6.2.2 Configuration
 
@@ -802,7 +802,7 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 
 **Examples:**
 - Weekly macro thesis review
-- Monthly asset view review
+- Monthly asset thesis review
 - Quarterly strategy review
 - Daily position check
 
@@ -815,7 +815,7 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 ### 7.3 Event-Based Triggers
 
 **Examples:**
-- Earnings announcement → asset view review
+- Earnings announcement → asset thesis review
 - Major market move → macro thesis review
 - Expiry approaching → position review
 - State code change → strategy review (already exists, but make explicit)
@@ -961,7 +961,7 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 ### 9.1 Phase 1 Metrics
 
 - Number of macro theses created
-- Number of asset views created
+- Number of asset thesiss created
 - Percentage of strategies linked to hierarchy
 - User engagement with hierarchy navigator
 
@@ -996,11 +996,11 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 
 **Recommendation:** Start simple (single-level theses). Add hierarchy later if needed.
 
-### 10.2 Asset View Relationship
+### 10.2 Asset Thesis Relationship
 
-**Question:** Can one strategy express multiple asset views?
+**Question:** Can one strategy express multiple asset thesiss?
 
-**Recommendation:** Start with one-to-many (asset view → strategies). Add many-to-many later if needed.
+**Recommendation:** Start with one-to-many (asset thesis → strategies). Add many-to-many later if needed.
 
 ### 10.3 Research → Thesis Mapping
 
@@ -1076,7 +1076,7 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 - `asset_views`
 
 ### Extended Tables (Phase 1)
-- `strategies` (add `macro_thesis_id`, `asset_view_id`)
+- `strategies` (add `macro_thesis_id`, `asset_thesis_id`)
 - `blotter_actions` (add decision fields)
 
 ### New Tables (Phase 2)
@@ -1097,10 +1097,10 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 - `GET /api/theses/[id]` - Get thesis detail
 - `POST /api/theses` - Create thesis
 - `PUT /api/theses/[id]` - Update thesis
-- `GET /api/asset-views` - List asset views
-- `GET /api/asset-views/[id]` - Get view detail
-- `POST /api/asset-views` - Create view
-- `PUT /api/asset-views/[id]` - Update view
+- `GET /api/asset-theses` - List asset thesiss
+- `GET /api/asset-theses/[id]` - Get view detail
+- `POST /api/asset-theses` - Create view
+- `PUT /api/asset-theses/[id]` - Update view
 
 ### Phase 2
 - `POST /api/research/ingest` - Ingest research
@@ -1123,8 +1123,8 @@ CREATE INDEX idx_trigger_executions_executed_at ON trigger_executions(executed_a
 ### Phase 1
 - `/theses` - Macro theses list
 - `/theses/[id]` - Thesis detail
-- `/asset-views` - Asset views list
-- `/asset-views/[id]` - View detail
+- `/asset-theses` - Asset views list
+- `/asset-theses/[id]` - View detail
 - `/hierarchy` - Hierarchy navigator (new or integrated)
 
 ### Phase 2

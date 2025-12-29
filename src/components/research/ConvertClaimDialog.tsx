@@ -148,7 +148,7 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
                   onChange={(e) => setConversionType(e.target.value as ConversionType)}
                   className="mr-2"
                 />
-                <span className="text-sm">Asset View</span>
+                <span className="text-sm">Asset Thesis</span>
               </label>
             </div>
           </div>
@@ -208,7 +208,7 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
             </div>
           )}
 
-          {/* Ticker (for asset view) */}
+          {/* Ticker (for asset thesis) */}
           {conversionType === 'asset_view' && (
             <div>
               <label htmlFor="ticker" className="block text-sm font-medium text-slate-700 mb-2">
@@ -332,7 +332,7 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
             </div>
           )}
 
-          {/* NEW: Price Targets (for asset view) */}
+          {/* NEW: Price Targets (for asset thesis) */}
           {conversionType === 'asset_view' && (
             <div className="grid grid-cols-2 gap-4">
               <div>

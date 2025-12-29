@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { macroTheses, assetViews, strategies, accounts, underlyings, mainClaims, claimThesisMappings } from '@/db/schema';
+import { macroTheses, assetTheses, strategies, accounts, underlyings, mainClaims, claimThesisMappings } from '@/db/schema';
 import { eq, desc, inArray, count, sql } from 'drizzle-orm';
 import type { NewMacroThesis } from '@/db/schema';
 
@@ -40,12 +40,12 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
 
   const assetViewCounts = await db
     .select({
-      macroThesisId: assetViews.macroThesisId,
+      macroThesisId: assetTheses.macroThesisId,
       count: count(),
     })
-    .from(assetViews)
-    .where(inArray(assetViews.macroThesisId, thesisIds))
-    .groupBy(assetViews.macroThesisId);
+    .from(assetTheses)
+    .where(inArray(assetTheses.macroThesisId, thesisIds))
+    .groupBy(assetTheses.macroThesisId);
 
   const strategyCounts = await db
     .select({
@@ -102,20 +102,20 @@ export async function deleteMacroThesis(id: string): Promise<void> {
   await db.delete(macroTheses).where(eq(macroTheses.id, id));
 }
 
-export async function getLinkedAssetViewsForThesis(thesisId: string) {
+export async function getLinkedAssetThesesForThesis(thesisId: string) {
   const views = await db
     .select({
-      id: assetViews.id,
-      title: assetViews.title,
+      id: assetTheses.id,
+      title: assetTheses.title,
       underlyingTicker: underlyings.ticker,
-      status: assetViews.status,
-      confidenceLevel: assetViews.confidenceLevel,
-      createdAt: assetViews.createdAt,
+      status: assetTheses.status,
+      confidenceLevel: assetTheses.confidenceLevel,
+      createdAt: assetTheses.createdAt,
     })
-    .from(assetViews)
-    .leftJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
-    .where(eq(assetViews.macroThesisId, thesisId))
-    .orderBy(desc(assetViews.createdAt));
+    .from(assetTheses)
+    .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+    .where(eq(assetTheses.macroThesisId, thesisId))
+    .orderBy(desc(assetTheses.createdAt));
 
   return views;
 }

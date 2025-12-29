@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * LinkToViewDialog - Dialog for linking Strategies to Asset Views
+ * LinkToViewDialog - Dialog for linking Strategies to Asset Thesiss
  *
- * Provides search and filter UI to select an asset view and link it
+ * Provides search and filter UI to select an asset thesis and link it
  * to the current strategy via API call.
  *
  * Part of Phase 2.6.6 Phase B: Inline Linking Workflows
@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { X, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface AssetView {
+interface AssetThesis {
   id: string;
   title: string;
   underlyingTicker: string | null;
@@ -44,8 +44,8 @@ export function LinkToViewDialog({
   currentThesisId,
 }: LinkToViewDialogProps) {
   const router = useRouter();
-  const [views, setViews] = useState<AssetView[]>([]);
-  const [filteredViews, setFilteredViews] = useState<AssetView[]>([]);
+  const [views, setViews] = useState<AssetThesis[]>([]);
+  const [filteredViews, setFilteredViews] = useState<AssetThesis[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,13 +104,13 @@ export function LinkToViewDialog({
     try {
       const response = await fetch('/api/asset-views');
       if (!response.ok) {
-        throw new Error('Failed to fetch asset views');
+        throw new Error('Failed to fetch asset thesiss');
       }
       const data = await response.json();
       setViews(data.views || []);
     } catch (err) {
       console.error('Error fetching views:', err);
-      setError('Failed to load asset views. Please try again.');
+      setError('Failed to load asset thesiss. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +118,7 @@ export function LinkToViewDialog({
 
   const handleLink = async () => {
     if (!selectedViewId) {
-      setError('Please select an asset view');
+      setError('Please select an asset thesis');
       return;
     }
 
@@ -133,7 +133,7 @@ export function LinkToViewDialog({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          asset_view_id: selectedViewId,
+          asset_thesis_id: selectedViewId,
           // Also link the macro thesis if the selected view has one
           macro_thesis_id: selectedView?.macroThesisId || currentThesisId,
         }),
@@ -141,7 +141,7 @@ export function LinkToViewDialog({
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to link asset view');
+        throw new Error(data.error || 'Failed to link asset thesis');
       }
 
       // Success! Refresh the page to show the new link
@@ -163,9 +163,9 @@ export function LinkToViewDialog({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div>
-            <h2 className="text-xl font-semibold">Link to Asset View</h2>
+            <h2 className="text-xl font-semibold">Link to Asset Thesis</h2>
             <p className="text-sm text-slate-600 mt-1">
-              Select an asset view to link to <span className="font-medium">{strategyLabel}</span>
+              Select an asset thesis to link to <span className="font-medium">{strategyLabel}</span>
             </p>
           </div>
           <button
@@ -248,7 +248,7 @@ export function LinkToViewDialog({
             </div>
           ) : filteredViews.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <p>No asset views found matching your filters.</p>
+              <p>No asset thesiss found matching your filters.</p>
               <button
                 onClick={() => {
                   setSearchQuery('');
@@ -330,7 +330,7 @@ export function LinkToViewDialog({
                   Linking...
                 </>
               ) : (
-                'Link Asset View'
+                'Link Asset Thesis'
               )}
             </Button>
           </div>

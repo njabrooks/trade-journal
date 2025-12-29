@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This plan details how to integrate the local Claude Code research workflow (forensic Toulmin claim extraction) with the app's research workflow (macro theses and asset views). The integration will preserve hierarchical claim structures, enable manual claim-to-thesis/view conversion, and support round-trip enhancement between local and app environments.
+This plan details how to integrate the local Claude Code research workflow (forensic Toulmin claim extraction) with the app's research workflow (macro theses and asset thesiss). The integration will preserve hierarchical claim structures, enable manual claim-to-thesis/view conversion, and support round-trip enhancement between local and app environments.
 
 **Key Changes**:
 1. **Schema Enhancement**: Preserve hierarchical Toulmin claim structure in `research_insights.key_claims`
@@ -89,7 +89,7 @@ This plan details how to integrate the local Claude Code research workflow (fore
 │    │ For Each Main Claim:                            │         │
 │    │  - Keep as draft (no action)                    │         │
 │    │  - Convert to macro thesis → creates record     │         │
-│    │  - Convert to asset view → creates record       │         │
+│    │  - Convert to asset thesis → creates record       │         │
 │    │  - Full Toulmin structure transferred           │         │
 │    └─────────────────────────────────────────────────┘         │
 │                                                                  │
@@ -879,8 +879,8 @@ export function ConvertClaimDialog({
     title: claim.claim.slice(0, 100), // Truncate to reasonable title length
     description: `${claim.grounds}\n\n${claim.warrant}`,
     thesisType: 'secular', // For macro thesis
-    viewType: 'bullish', // For asset view
-    ticker: claim.relevant_tickers?.[0] || '', // For asset view
+    viewType: 'bullish', // For asset thesis
+    ticker: claim.relevant_tickers?.[0] || '', // For asset thesis
     timeHorizon: claim.time_horizon || 'medium_term',
     conviction: claim.qualifier,
     notes: claim.backing ? `Backing: ${claim.backing}\n\nRebuttal: ${claim.rebuttal}` : '',
@@ -905,7 +905,7 @@ export function ConvertClaimDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            Convert to {targetType === 'macro_thesis' ? 'Macro Thesis' : 'Asset View'}
+            Convert to {targetType === 'macro_thesis' ? 'Macro Thesis' : 'Asset Thesis'}
           </DialogTitle>
         </DialogHeader>
 
@@ -1088,13 +1088,13 @@ async function handleConfirmConversion(data: ConversionData) {
 
 **Route**: `/api/research/convert-claim`
 
-**Purpose**: Convert a main claim to macro thesis or asset view.
+**Purpose**: Convert a main claim to macro thesis or asset thesis.
 
 ```typescript
 // src/app/api/research/convert-claim/route.ts
 
 import { db } from '@/db';
-import { researchInsights, macroTheses, assetViews, underlyings, researchMappings } from '@/db/schema';
+import { researchInsights, macroTheses, assetTheses, underlyings, researchMappings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(request: Request) {
@@ -1143,7 +1143,7 @@ export async function POST(request: Request) {
       })
       .returning();
   } else {
-    // For asset view, get or create underlying
+    // For asset thesis, get or create underlying
     const [underlying] = await db
       .select()
       .from(underlyings)
@@ -1154,7 +1154,7 @@ export async function POST(request: Request) {
     }
 
     [createdEntity] = await db
-      .insert(assetViews)
+      .insert(assetTheses)
       .values({
         underlyingId: underlying.id,
         title: conversionData.title,

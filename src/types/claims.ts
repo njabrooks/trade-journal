@@ -23,6 +23,7 @@ export type TimeHorizon = 'long_term' | 'medium_term' | 'short_term';
 export interface MainClaim {
   // Identity
   id: string; // e.g., "claim-1"
+  title: string; // Concise heading for the claim
   level: 'main';
   type: ClaimType;
   category: ClaimCategory;
@@ -264,7 +265,7 @@ export interface DbClaimThesisMapping {
 
   // Exactly one of these
   macroThesisId: string | null;
-  assetViewId: string | null;
+  assetThesisId: string | null;
 
   // Relationship
   mappingType: 'supports' | 'refutes' | 'foundation';
@@ -309,9 +310,9 @@ export interface DbMacroThesisEnhanced {
 }
 
 /**
- * Enhanced Asset View with position fields
+ * Enhanced Asset Thesis with position fields
  */
-export interface DbAssetViewEnhanced {
+export interface DbAssetThesisEnhanced {
   // Existing fields
   id: string;
   macroThesisId: string | null;
@@ -380,7 +381,7 @@ export function isDbClaimThesisMapping(data: any): data is DbClaimThesisMapping 
     data &&
     typeof data.id === 'string' &&
     typeof data.mainClaimId === 'string' &&
-    (data.macroThesisId || data.assetViewId) &&
+    (data.macroThesisId || data.assetThesisId) &&
     ['supports', 'refutes', 'foundation'].includes(data.mappingType)
   );
 }

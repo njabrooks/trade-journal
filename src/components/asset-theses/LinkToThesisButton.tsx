@@ -3,7 +3,7 @@
 /**
  * LinkToThesisButton - Button that opens LinkToThesisDialog
  *
- * Used in HierarchyBreadcrumb and Asset View detail pages to
+ * Used in HierarchyBreadcrumb and Asset Thesis detail pages to
  * trigger the linking workflow.
  *
  * Part of Phase 2.6.6 Phase B: Inline Linking Workflows

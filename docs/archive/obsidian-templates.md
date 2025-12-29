@@ -166,7 +166,7 @@ _Related theses, views, and strategies will be populated from the database_
 
 ---
 
-## Template 3: Asset View
+## Template 3: Asset Thesis
 
 Asset-specific theses about particular underlyings (stocks, commodities, etc.).
 
@@ -445,7 +445,7 @@ human_reviewed: true|false           # Default: false
 - `sectors` should be non-empty array
 - `position_end_date` should be >= `position_start_date`
 
-#### Asset View
+#### Asset Thesis
 - `ticker` must be present and valid (matches `underlyings.ticker`)
 - `ticker` should also appear in frontmatter (currently missing)
 - If `target_price` set, should have rationale in body
@@ -499,8 +499,8 @@ human_reviewed: true|false           # Default: false
 - Example: `2025-12-28-bullish-ai-supply-chains-in-2026.md`
 - Date: Uses `created_at` field
 
-### Asset Views
-- Path: `<vault>/investing/asset-views/<YYYY-MM-DD>-<sanitized-title>.md`
+### Asset Thesiss
+- Path: `<vault>/investing/asset-theses/<YYYY-MM-DD>-<sanitized-title>.md`
 - Example: `2025-12-28-bullish-tsla.md`
 - Date: Uses `created_at` field
 
@@ -526,7 +526,7 @@ human_reviewed: true|false           # Default: false
 
 To fix existing formatting issues:
 
-- [ ] Add `ticker` field to asset view frontmatter generation
+- [ ] Add `ticker` field to asset thesis frontmatter generation
 - [ ] Fix `notes` field serialization (JSONB → string)
 - [ ] Validate all existing files against templates
 - [ ] Re-sync files with schema mismatches

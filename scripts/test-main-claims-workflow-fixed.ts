@@ -7,7 +7,7 @@
  * 1. Promote main claim (now auto-links evidence)
  * 2. Create standalone macro thesis
  * 3. Link main claim to thesis
- * 4. Create standalone asset view
+ * 4. Create standalone asset thesis
  * 5. Link main claim to view
  * 6. Verify all linkages
  */
@@ -17,7 +17,7 @@ import {
   mainClaims,
   mainClaimEvidence,
   macroTheses,
-  assetViews,
+  assetTheses,
   claimThesisMappings,
 } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
@@ -115,12 +115,12 @@ async function runTest() {
   console.log(`✅ Linked main claim to thesis: ${claimToThesisLink.id}`);
 
   // ============================================================================
-  // Step 5: Create standalone asset view
+  // Step 5: Create standalone asset thesis
   // ============================================================================
-  console.log('\n📈 Step 5: Creating standalone asset view (CSCO)...');
+  console.log('\n📈 Step 5: Creating standalone asset thesis (CSCO)...');
 
   const [view] = await db
-    .insert(assetViews)
+    .insert(assetTheses)
     .values({
       title: 'Test: Cisco Long - On-Premise AI Networking',
       description: 'Standalone view on Cisco benefiting from enterprise on-premise AI buildout',
@@ -139,13 +139,13 @@ async function runTest() {
     })
     .returning();
 
-  console.log(`✅ Created standalone asset view: ${view.id}`);
+  console.log(`✅ Created standalone asset thesis: ${view.id}`);
   console.log(`   Title: "${view.title}"`);
 
   // ============================================================================
   // Step 6: Link main claim to view
   // ============================================================================
-  console.log('\n🔗 Step 6: Linking main claim to asset view...');
+  console.log('\n🔗 Step 6: Linking main claim to asset thesis...');
 
   const [claimToViewLink] = await db
     .insert(claimThesisMappings)

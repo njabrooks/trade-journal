@@ -1,7 +1,7 @@
 /**
  * AI Hierarchy Analysis Service
  *
- * Analyzes research insights against existing macro theses and asset views,
+ * Analyzes research insights against existing macro theses and asset thesiss,
  * and generates recommendations for creating new items or linking to existing ones.
  */
 
@@ -12,7 +12,7 @@ import {
   updateResearchProcessingRun,
 } from '@/db/queries/research';
 import { getMacroThesesList } from '@/db/queries/macroTheses';
-import { getAssetViewsList } from '@/db/queries/assetViews';
+import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { getRenderedPrompt } from '@/lib/services/prompt-manager';
 import { createAIProvider, getDefaultModel, type AIModel } from './ai-providers';
 
@@ -26,7 +26,7 @@ interface HierarchyRecommendation {
   proposed_underlying_ticker?: string;
   existing_thesis_id?: string;
   existing_thesis_title?: string;
-  existing_view_id?: string;
+  existing_asset_thesis_id?: string;
   existing_view_title?: string;
   mapping_type?: 'supports' | 'refutes' | 'neutral' | 'exploratory';
   confidence_score: number; // 0.0 to 1.0
@@ -53,7 +53,7 @@ export async function analyzeHierarchy(
   try {
     // Fetch existing hierarchy
     const existingTheses = await getMacroThesesList();
-    const existingViews = await getAssetViewsList();
+    const existingViews = await getAssetThesesList();
 
     // Prepare theses data for prompt
     const thesesData = existingTheses.map((t) => ({
@@ -133,7 +133,7 @@ export async function analyzeHierarchy(
     for (const rec of recommendations) {
       // Validate recommendation has at least some useful data
       const hasProposedData = rec.proposed_title || rec.proposed_description;
-      const hasExistingLink = rec.existing_thesis_id || rec.existing_view_id;
+      const hasExistingLink = rec.existing_thesis_id || rec.existing_asset_thesis_id;
       const hasValidReasoning = rec.reasoning && rec.reasoning !== 'No reasoning provided';
 
       if (!hasProposedData && !hasExistingLink && !hasValidReasoning) {
@@ -153,7 +153,7 @@ export async function analyzeHierarchy(
           underlyingTicker: rec.proposed_underlying_ticker,
         },
         existingThesisId: rec.existing_thesis_id || null,
-        existingViewId: rec.existing_view_id || null,
+        existingAssetThesisId: rec.existing_asset_thesis_id || null,
         mappingType: rec.mapping_type || null,
         confidenceScore: rec.confidence_score.toString(),
         reasoning: rec.reasoning,
@@ -241,7 +241,7 @@ function parseRecommendations(responseText: string): HierarchyRecommendation[] {
         proposed_underlying_ticker: rec.proposed_underlying_ticker,
         existing_thesis_id: rec.existing_thesis_id,
         existing_thesis_title: rec.existing_thesis_title,
-        existing_view_id: rec.existing_view_id,
+        existing_asset_thesis_id: rec.existing_asset_thesis_id,
         existing_view_title: rec.existing_view_title,
         mapping_type: rec.mapping_type || 'supports',
         confidence_score: Math.max(0, Math.min(1, rec.confidence_score || 0.5)),
@@ -268,7 +268,7 @@ function buildFallbackAnalysisPrompt(
   theses: Array<{ id: string; title: string; thesisType: string; status: string }>,
   views: Array<{ id: string; title: string; ticker: string | null; status: string }>
 ): string {
-  return `You are an expert investment research analyst. Analyze the following research insights and compare them against existing macro theses and asset views.
+  return `You are an expert investment research analyst. Analyze the following research insights and compare them against existing macro theses and asset thesiss.
 
 Research Summary: ${insight.summary}
 Key Themes: ${JSON.stringify(insight.keyThemes || [])}
@@ -278,12 +278,12 @@ Relevant Tickers: ${JSON.stringify(insight.relevantTickers || [])}
 Existing Macro Theses:
 ${JSON.stringify(theses, null, 2)}
 
-Existing Asset Views:
+Existing Asset Thesiss:
 ${JSON.stringify(views, null, 2)}
 
 Analyze whether these insights:
 1. Represent a NEW macro thesis (broader market theme)
-2. Represent a NEW asset view (specific asset/ticker view)
+2. Represent a NEW asset thesis (specific asset/ticker view)
 3. Support or refute an EXISTING thesis or view
 4. Are exploratory research that doesn't fit cleanly
 
@@ -309,13 +309,13 @@ Existing Hierarchy:
 
 Generate recommendations for:
 1. Creating new macro theses (if insights represent new macro themes)
-2. Creating new asset views (if insights represent new asset-specific views)
+2. Creating new asset thesiss (if insights represent new asset-specific views)
 3. Linking to existing items (with confidence scores and evidence type)
 
 Return recommendations in JSON array format, each with:
 - recommendation_type: 'new_macro_thesis' | 'new_asset_view' | 'link_existing' | 'refute_existing'
 - proposed_title, proposed_description (for new items)
-- existing_thesis_id or existing_view_id (for linking)
+- existing_thesis_id or existing_asset_thesis_id (for linking)
 - confidence_score: 0.0 to 1.0
 - reasoning: Why this recommendation
 - mapping_type: 'supports' | 'refutes' | 'neutral' | 'exploratory' (for linking)

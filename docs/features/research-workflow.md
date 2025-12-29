@@ -16,7 +16,7 @@ Research Artifacts & Insights (Database with Toulmin claims)
       ↓
 Main Claims (First-class entities with evidence accumulation)
       ↓
-Macro Theses & Asset Views (Decision hierarchy Level 1-2)
+Macro Theses & Asset Thesiss (Decision hierarchy Level 1-2)
       ↓
 Strategies & Positions (Tactical execution Level 3-4)
 ```
@@ -32,7 +32,7 @@ Strategies & Positions (Tactical execution Level 3-4)
 
 ## Overview
 
-The research workflow enables systematic conversion of research transcripts into actionable macro theses and asset views using the **Toulmin argumentation framework**. All processing happens locally via Claude Code skills, with the web app serving as a browser and conversion interface.
+The research workflow enables systematic conversion of research transcripts into actionable macro theses and asset thesiss using the **Toulmin argumentation framework**. All processing happens locally via Claude Code skills, with the web app serving as a browser and conversion interface.
 
 ### Key Features
 
@@ -85,7 +85,7 @@ Visit `http://localhost:3000/research/[insight-id]`
 **Features**:
 - Expandable claim cards with full Toulmin structure
 - **Promote** high-quality claims to first-class `main_claims` table
-- **Convert** claims to macro theses or asset views
+- **Convert** claims to macro theses or asset thesiss
 - Filter by type (thesis/view candidates), confidence, conversion status
 - Search across claims, evidence, reasoning, and tickers
 
@@ -210,7 +210,7 @@ claim_thesis_mappings (
   id,
   main_claim_id,
   macro_thesis_id,         -- One of these
-  asset_view_id,           -- is set
+  asset_thesis_id,           -- is set
   mapping_type,            -- 'supports' | 'refutes' | 'foundation'
   ...
 )
@@ -259,8 +259,8 @@ asset_views (id, underlying_id, title, description, direction, target_price, ...
 4. App: Click "Convert" on view candidate
 5. App: Enter ticker (e.g., "NVDA"), optionally link to parent thesis
 6. App: Add directional stance, target price, entry reference price
-7. App: Submit → redirected to /asset-views/{id}
-8. Claim shows "✓ Converted to asset view" badge
+7. App: Submit → redirected to /asset-theses/{id}
+8. Claim shows "✓ Converted to asset thesis" badge
 ```
 
 ### Partial Conversion
@@ -364,7 +364,7 @@ OBSIDIAN_SYNTHESES_DIR=investing/research/syntheses
 OBSIDIAN_DEEP_DIVES_DIR=investing/research/deep-dives
 OBSIDIAN_MAIN_CLAIMS_DIR=investing/main-claims
 OBSIDIAN_MACRO_THESES_DIR=investing/macro-theses
-OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-views
+OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-theses
 ```
 
 **Skills Configuration**:
@@ -379,7 +379,7 @@ OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-views
 The system implements real-time bidirectional sync using file watching (chokidar):
 
 **Obsidian → Database**:
-- File watcher monitors `main-claims/`, `macro-theses/`, `asset-views/` folders
+- File watcher monitors `main-claims/`, `macro-theses/`, `asset-theses/` folders
 - Detects file create/update/delete events
 - Automatically syncs changes to Supabase database
 - Debounced to avoid redundant syncs (1 second)
@@ -400,7 +400,7 @@ The system implements real-time bidirectional sync using file watching (chokidar
 **What Syncs**:
 - ✅ Main Claims (`investing/main-claims/` ↔ `main_claims` table)
 - ✅ Macro Theses (`investing/macro-theses/` ↔ `macro_theses` table)
-- ✅ Asset Views (`investing/asset-views/` ↔ `asset_views` table)
+- ✅ Asset Thesiss (`investing/asset-theses/` ↔ `asset_views` table)
 - ⚠️ Research Artifacts (transcripts, audits, etc.) - One-way only (skills write to Obsidian, upload via `/finalize-for-upload`)
 
 **Auto-Start**:
@@ -521,7 +521,7 @@ UPDATE macro_theses
 SET direction = 'neutral'
 WHERE direction IS NULL;
 
--- Backfill asset views
+-- Backfill asset thesiss
 UPDATE asset_views
 SET direction = 'neutral'
 WHERE direction IS NULL;
@@ -560,7 +560,7 @@ Look for `converted_to` field on claim.
 ```bash
 # Create missing directories
 mkdir -p /Users/njb/Desktop/nick/investing/research/{transcripts,audits,syntheses,deep-dives}
-mkdir -p /Users/njb/Desktop/nick/investing/{main-claims,macro-theses,asset-views}
+mkdir -p /Users/njb/Desktop/nick/investing/{main-claims,macro-theses,asset-theses}
 ```
 
 ---
@@ -596,7 +596,7 @@ mkdir -p /Users/njb/Desktop/nick/investing/{main-claims,macro-theses,asset-views
 - ✅ Promotion workflow via UI "Promote" button
 - ✅ Correct Toulmin terminology (evidence/reasoning) throughout codebase
 - ✅ **Real-time bidirectional sync** (Obsidian ↔ Supabase) using file watching
-- ✅ **Auto-sync on DB writes** for main claims, macro theses, and asset views
+- ✅ **Auto-sync on DB writes** for main claims, macro theses, and asset thesiss
 - ✅ **Sync dashboard** at `/admin/sync` for monitoring and control
 - ✅ **Conflict detection** and handling for concurrent edits
 

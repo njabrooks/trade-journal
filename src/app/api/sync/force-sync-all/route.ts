@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { mainClaims, macroTheses, assetViews } from '@/db/schema';
+import { mainClaims, macroTheses, assetTheses } from '@/db/schema';
 import { syncDatabaseToFile } from '@/lib/obsidian/sync';
 
 /**
@@ -14,7 +14,7 @@ export async function POST() {
     const results = {
       mainClaims: { success: 0, failed: 0, errors: [] as string[] },
       macroTheses: { success: 0, failed: 0, errors: [] as string[] },
-      assetViews: { success: 0, failed: 0, errors: [] as string[] },
+      assetTheses: { success: 0, failed: 0, errors: [] as string[] },
     };
 
     // Sync all main claims
@@ -41,15 +41,15 @@ export async function POST() {
       }
     }
 
-    // Sync all asset views
-    const views = await db.select().from(assetViews);
+    // Sync all asset thesiss
+    const views = await db.select().from(assetTheses);
     for (const view of views) {
       const result = await syncDatabaseToFile(view, 'asset_view');
       if (result.success) {
-        results.assetViews.success++;
+        results.assetTheses.success++;
       } else {
-        results.assetViews.failed++;
-        results.assetViews.errors.push(`${view.id}: ${result.error}`);
+        results.assetTheses.failed++;
+        results.assetTheses.errors.push(`${view.id}: ${result.error}`);
       }
     }
 
@@ -57,8 +57,8 @@ export async function POST() {
       success: true,
       results,
       summary: {
-        totalSynced: results.mainClaims.success + results.macroTheses.success + results.assetViews.success,
-        totalFailed: results.mainClaims.failed + results.macroTheses.failed + results.assetViews.failed,
+        totalSynced: results.mainClaims.success + results.macroTheses.success + results.assetTheses.success,
+        totalFailed: results.mainClaims.failed + results.macroTheses.failed + results.assetTheses.failed,
       },
     });
   } catch (error: any) {

@@ -9,7 +9,7 @@
 - ✅ Auto-fix script (`fix-obsidian-templates-simple.ts`)
 
 ### 2. Code Fixed
-- ✅ Added `ticker` to asset view frontmatter generation (`markdown.ts:129`)
+- ✅ Added `ticker` to asset thesis frontmatter generation (`markdown.ts:129`)
 - ✅ Fixed JSONB `notes` field serialization for macro theses (`markdown.ts:220-227`)
 
 ### 3. Existing Files Fixed
@@ -41,7 +41,7 @@ This will regenerate all files from the database using the fixed code:
 ```typescript
 // Create a script: scripts/force-resync-from-db.ts
 import { db } from '@/db';
-import { mainClaims, macroTheses, assetViews, underlyings } from '@/db/schema';
+import { mainClaims, macroTheses, assetTheses, underlyings } from '@/db/schema';
 import { syncDatabaseToFile } from '@/lib/obsidian/sync';
 
 async function main() {
@@ -51,8 +51,8 @@ async function main() {
     await syncDatabaseToFile(thesis, 'macro_thesis');
   }
 
-  // Re-sync all asset views
-  const views = await db.select().from(assetViews).innerJoin(underlyings, ...);
+  // Re-sync all asset thesiss
+  const views = await db.select().from(assetTheses).innerJoin(underlyings, ...);
   for (const { asset_views: view, underlyings: underlying } of views) {
     await syncDatabaseToFile(view, 'asset_view', underlying.ticker);
   }
@@ -77,7 +77,7 @@ Simply edit the Obsidian files and save - the next sync will clean up the format
 2. **Place in correct folder**:
    - Main claims: `/investing/main-claims/`
    - Macro theses: `/investing/macro-theses/`
-   - Asset views: `/investing/asset-views/`
+   - Asset views: `/investing/asset-theses/`
 3. **Fill in frontmatter**:
    - Leave `id` blank (auto-generated)
    - Set dates to current timestamp
@@ -149,7 +149,7 @@ position_end_date: YYYY-MM-DD
 <Additional context>
 ```
 
-### Asset View
+### Asset Thesis
 ```yaml
 ---
 type: asset_view
@@ -209,7 +209,7 @@ position_end_date: YYYY-MM-DD
 ## 🚀 Recommended Next Steps
 
 1. **[Optional] Force re-sync from database** - To apply formatting fixes to body content
-2. **Test creating new entity** - Try creating a new main claim or asset view using templates
+2. **Test creating new entity** - Try creating a new main claim or asset thesis using templates
 3. **Integrate into workflow** - Add validation to pre-commit hooks or CI
 4. **Configure Obsidian Templater** - Set up templates for easier creation
 5. **Document workflow** - Update research workflow guide with template usage

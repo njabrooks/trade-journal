@@ -42,7 +42,7 @@ export function LinkToViewButton({
         onClick={() => setIsOpen(true)}
         className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline"
       >
-        Link to Asset View
+        Link to Asset Thesis
       </button>
 
       <LinkToViewDialog

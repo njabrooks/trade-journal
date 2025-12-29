@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { assetViews, claimThesisMappings, underlyings, mainClaims } from '@/db/schema';
+import { assetTheses, claimThesisMappings, underlyings, mainClaims } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { generateAssetViewTitle } from '@/lib/utils/title-generation';
+import { generateAssetThesisTitle } from '@/lib/utils/title-generation';
 
 /**
- * POST /api/asset-views/create
+ * POST /api/asset-theses/create
  *
- * Creates a new asset view with optional links to main claims and parent theses.
+ * Creates a new asset thesis with optional links to main claims and parent theses.
  *
  * This is the standalone creation endpoint (not claim conversion).
  * Use this when creating a view from scratch or linking to existing entities.
@@ -103,15 +103,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Auto-generate title if not provided
-    const finalTitle = title || generateAssetViewTitle({
+    const finalTitle = title || generateAssetThesisTitle({
       direction: direction || null,
       ticker: underlying.ticker,
       timeHorizon: timeHorizon || null,
     });
 
-    // Create the asset view
+    // Create the asset thesis
     const [createdView] = await db
-      .insert(assetViews)
+      .insert(assetTheses)
       .values({
         title: finalTitle,
         underlyingId: underlying.id,
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     if (linkedMainClaimIds.length > 0) {
       const claimLinks = linkedMainClaimIds.map((mainClaimId: string) => ({
         mainClaimId,
-        assetViewId: createdView.id,
+        assetThesisId: createdView.id,
         macroThesisId: null,
         mappingType: 'supports',
         mappedBy: 'creation', // Linked at view creation time
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       await db.insert(claimThesisMappings).values(claimLinks);
       linkedClaimsCount = claimLinks.length;
 
-      // Mark linked claims as 'confirmed' (claim has been converted to an asset view)
+      // Mark linked claims as 'confirmed' (claim has been converted to an asset thesis)
       for (const mainClaimId of linkedMainClaimIds) {
         await db
           .update(mainClaims)
@@ -178,9 +178,9 @@ export async function POST(request: NextRequest) {
 
       // Update notes with thesis links
       await db
-        .update(assetViews)
+        .update(assetTheses)
         .set({ notes })
-        .where(eq(assetViews.id, createdView.id));
+        .where(eq(assetTheses.id, createdView.id));
     }
 
     return NextResponse.json({
@@ -193,9 +193,9 @@ export async function POST(request: NextRequest) {
       message: `Asset view created successfully${linkedClaimsCount > 0 ? ` with ${linkedClaimsCount} main claims linked` : ''}${linkedThesesCount > 0 ? ` and ${linkedThesesCount} parent theses referenced` : ''}`,
     });
   } catch (error: any) {
-    console.error('Error creating asset view:', error);
+    console.error('Error creating asset thesis:', error);
     return NextResponse.json(
-      { error: 'Failed to create asset view', details: error.message },
+      { error: 'Failed to create asset thesis', details: error.message },
       { status: 500 }
     );
   }

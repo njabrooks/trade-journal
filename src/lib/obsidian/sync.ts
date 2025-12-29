@@ -1,8 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '@/db';
-import { mainClaims, macroTheses, assetViews, underlyings } from '@/db/schema';
-import type { MainClaim, MacroThesis, AssetView } from '@/db/schema';
+import { mainClaims, macroTheses, assetTheses, underlyings } from '@/db/schema';
+import type { MainClaim, MacroThesis, AssetThesis } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import {
   parseMarkdown,
@@ -53,7 +53,7 @@ export async function syncFileToDatabase(
         await db.delete(macroTheses).where(eq(macroTheses.id, entityInfo.id));
         deleted = true;
       } else if (entityInfo.type === 'asset_view') {
-        await db.delete(assetViews).where(eq(assetViews.id, entityInfo.id));
+        await db.delete(assetTheses).where(eq(assetTheses.id, entityInfo.id));
         deleted = true;
       }
 
@@ -108,7 +108,7 @@ export async function syncFileToDatabase(
     } else if (entityType === 'macro_thesis') {
       return await syncMacroThesisToDatabase(frontmatter, markdownContent, filePath, operation);
     } else if (entityType === 'asset_view') {
-      return await syncAssetViewToDatabase(frontmatter, markdownContent, filePath, operation);
+      return await syncAssetThesisToDatabase(frontmatter, markdownContent, filePath, operation);
     }
 
     return {
@@ -422,9 +422,9 @@ async function syncMacroThesisToDatabase(
 }
 
 /**
- * Sync asset view from file to database
+ * Sync asset thesis from file to database
  */
-async function syncAssetViewToDatabase(
+async function syncAssetThesisToDatabase(
   frontmatter: ObsidianFrontmatter,
   content: string,
   filePath: string,
@@ -432,7 +432,7 @@ async function syncAssetViewToDatabase(
 ): Promise<SyncResult> {
   try {
     const existingId = frontmatter.id;
-    const sections = parseAssetViewSections(content);
+    const sections = parseAssetThesisSections(content);
 
     // Resolve ticker to underlying_id
     const ticker = frontmatter.ticker || sections.ticker;
@@ -491,19 +491,19 @@ async function syncAssetViewToDatabase(
       // Check for existing view with same ticker + title (prevent duplicates)
       const [existingByTitleAndTicker] = await db
         .select()
-        .from(assetViews)
+        .from(assetTheses)
         .where(and(
-          eq(assetViews.underlyingId, viewData.underlyingId),
-          eq(assetViews.title, viewData.title)
+          eq(assetTheses.underlyingId, viewData.underlyingId),
+          eq(assetTheses.title, viewData.title)
         ))
         .limit(1);
 
       if (existingByTitleAndTicker) {
         // Update existing record instead of creating duplicate
         await db
-          .update(assetViews)
+          .update(assetTheses)
           .set(viewData)
-          .where(eq(assetViews.id, existingByTitleAndTicker.id));
+          .where(eq(assetTheses.id, existingByTitleAndTicker.id));
 
         const newFrontmatter = { ...frontmatter, id: existingByTitleAndTicker.id, last_synced_at: new Date().toISOString() };
         const newContent = require('gray-matter').stringify(content, newFrontmatter);
@@ -522,7 +522,7 @@ async function syncAssetViewToDatabase(
       }
 
       const [created] = await db
-        .insert(assetViews)
+        .insert(assetTheses)
         .values(viewData)
         .returning();
 
@@ -543,13 +543,13 @@ async function syncAssetViewToDatabase(
     } else {
       const [existing] = await db
         .select()
-        .from(assetViews)
-        .where(eq(assetViews.id, existingId))
+        .from(assetTheses)
+        .where(eq(assetTheses.id, existingId))
         .limit(1);
 
       if (!existing) {
         const [created] = await db
-          .insert(assetViews)
+          .insert(assetTheses)
           .values({
             id: existingId,
             ...viewData,
@@ -569,9 +569,9 @@ async function syncAssetViewToDatabase(
       }
 
       await db
-        .update(assetViews)
+        .update(assetTheses)
         .set(viewData)
-        .where(eq(assetViews.id, existingId));
+        .where(eq(assetTheses.id, existingId));
 
       // Track in sync state cache
       await syncStateCache.track(filePath, existingId, 'asset_view');
@@ -599,7 +599,7 @@ async function syncAssetViewToDatabase(
  * Sync database entity to Obsidian file
  */
 export async function syncDatabaseToFile(
-  entity: MainClaim | MacroThesis | AssetView,
+  entity: MainClaim | MacroThesis | AssetThesis,
   type: 'main_claim' | 'macro_thesis' | 'asset_view',
   ticker?: string
 ): Promise<SyncResult> {
@@ -732,9 +732,9 @@ function parseMacroThesisSections(content: string) {
 }
 
 /**
- * Parse asset view sections from markdown content
+ * Parse asset thesis sections from markdown content
  */
-function parseAssetViewSections(content: string) {
+function parseAssetThesisSections(content: string) {
   const sections: Record<string, string> = {};
 
   const titleMatch = content.match(/^#\s+(.+)$/m);

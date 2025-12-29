@@ -60,7 +60,7 @@ Created `/src/components/research/archive/` with README explaining why.
 - `HierarchyRecommendationsPanel.tsx` - Old AI recommendations display
 - `RecommendationCard.tsx` - Individual recommendation cards
 - `CreateThesisFromRecommendation.tsx` - Create from AI recommendation
-- `CreateAssetViewFromRecommendation.tsx` - Create view from AI recommendation
+- `CreateAssetThesisFromRecommendation.tsx` - Create view from AI recommendation
 - `MappingsSection.tsx` - Old manual mappings
 - `MappingsList.tsx` - Mappings display
 - `AddMappingDialog.tsx` - Add mapping dialog
@@ -91,11 +91,11 @@ Added prominent workflow notice at top of `/research/upload` page:
 
 ### Phase 5: Bug Fixes ✅
 
-**Issue**: Theses and asset-views pages still importing archived EvidenceDisplay
+**Issue**: Theses and asset-theses pages still importing archived EvidenceDisplay
 
 **Fix**: Removed imports and usage from:
 - `/src/app/theses/[id]/page.tsx`
-- `/src/app/asset-views/[id]/page.tsx`
+- `/src/app/asset-theses/[id]/page.tsx`
 
 **Rationale**: EvidenceDisplay was part of old manual mapping workflow. New workflow tracks provenance via `claims_structure.converted_to` field automatically.
 
@@ -131,7 +131,7 @@ docs/research-ux-overhaul-COMPLETE.md                 (this file)
 src/app/research/[id]/page.tsx                        (195 → 189 lines, complete rewrite)
 src/app/research/upload/page.tsx                      (+75 lines workflow notice)
 src/app/theses/[id]/page.tsx                          (-3 lines, removed EvidenceDisplay)
-src/app/asset-views/[id]/page.tsx                     (-4 lines, removed EvidenceDisplay)
+src/app/asset-theses/[id]/page.tsx                     (-4 lines, removed EvidenceDisplay)
 ```
 
 ### Files Archived (11)
@@ -142,7 +142,7 @@ src/components/research/archive/AnalyzeHierarchyButton.tsx
 src/components/research/archive/HierarchyRecommendationsPanel.tsx
 src/components/research/archive/RecommendationCard.tsx
 src/components/research/archive/CreateThesisFromRecommendation.tsx
-src/components/research/archive/CreateAssetViewFromRecommendation.tsx
+src/components/research/archive/CreateAssetThesisFromRecommendation.tsx
 src/components/research/archive/MappingsSection.tsx
 src/components/research/archive/MappingsList.tsx
 src/components/research/archive/AddMappingDialog.tsx
@@ -264,8 +264,8 @@ Route (app)                               Status
 ├ ○ /research/upload                     ✅ Static
 ├ ○ /theses                              ✅ Static
 ├ ƒ /theses/[id]                         ✅ Dynamic
-├ ○ /asset-views                         ✅ Static
-├ ƒ /asset-views/[id]                    ✅ Dynamic
+├ ○ /asset-theses                         ✅ Static
+├ ƒ /asset-theses/[id]                    ✅ Dynamic
 ```
 
 **All pages compile successfully with no errors.**
@@ -304,7 +304,7 @@ Route (app)                               Status
 - [ ] Page renders without errors
 - [ ] Linked views and strategies display correctly
 
-**Asset Views Detail Page** (`/asset-views/[id]`):
+**Asset Thesiss Detail Page** (`/asset-theses/[id]`):
 - [ ] No EvidenceDisplay component (removed)
 - [ ] Page renders without errors
 - [ ] Linked strategies display correctly

@@ -25,11 +25,11 @@
 
 ---
 
-### 2. Create Asset View Dialog
+### 2. Create Asset Thesis Dialog
 
-**Component**: `/src/components/asset-views/CreateAssetViewDialog.tsx`
-**Button**: `/src/components/asset-views/CreateAssetViewButton.tsx`
-**Location**: `/asset-views` page - Top right "Create New View" button
+**Component**: `/src/components/asset-theses/CreateAssetThesisDialog.tsx`
+**Button**: `/src/components/asset-theses/CreateAssetThesisButton.tsx`
+**Location**: `/asset-theses` page - Top right "Create New View" button
 
 **Features**:
 - Title, ticker (required), description
@@ -42,7 +42,7 @@
 
 **Usage**:
 ```tsx
-<CreateAssetViewDialog
+<CreateAssetThesisDialog
   onClose={() => setShowDialog(false)}
   prefilledMainClaimIds={["<main-claim-uuid>"]} // Optional
   prefilledThesisIds={["<thesis-uuid>"]} // Optional
@@ -57,7 +57,7 @@
 **Location**: Can be triggered from research pages (needs integration)
 
 **Features**:
-- Select entity type: Macro Thesis or Asset View
+- Select entity type: Macro Thesis or Asset Thesis
 - Search theses/views by title (or ticker for views)
 - Select target entity from list
 - Choose relationship type: supports/rebuts/contextualizes
@@ -93,9 +93,9 @@
 
 ---
 
-### Example 2: Create Asset View for CSCO
+### Example 2: Create Asset Thesis for CSCO
 
-1. Navigate to `/asset-views`
+1. Navigate to `/asset-theses`
 2. Click **"Create New View"** button (top right)
 3. Fill in form:
    - Title: "Cisco Long: On-Premise AI Networking"
@@ -105,7 +105,7 @@
    - Direction: Bullish
    - Target Price: 65.00
    - Position dates: 2025-01-01 to 2026-06-30
-4. Click **"Create Asset View"**
+4. Click **"Create Asset Thesis"**
 5. Redirects to new view page
 
 ---
@@ -155,7 +155,7 @@ The Link functionality has been moved from ClaimsBrowser to the thesis and view 
    - Button wrapper for thesis pages
    - Opens AddMainClaimDialog with `entityType="thesis"`
 
-3. **AddMainClaimButtonForView** (`/src/components/asset-views/AddMainClaimButtonForView.tsx`)
+3. **AddMainClaimButtonForView** (`/src/components/asset-theses/AddMainClaimButtonForView.tsx`)
    - Button wrapper for view pages
    - Opens AddMainClaimDialog with `entityType="view"`
 
@@ -167,8 +167,8 @@ The Link functionality has been moved from ClaimsBrowser to the thesis and view 
    - Added "Add Main Claim" button
    - Shows relationship type badges (supports/rebuts/contextualizes)
 
-2. **Asset View Detail** (`/src/app/asset-views/[id]/page.tsx`)
-   - Added `getLinkedMainClaimsForAssetView()` query
+2. **Asset Thesis Detail** (`/src/app/asset-theses/[id]/page.tsx`)
+   - Added `getLinkedMainClaimsForAssetThesis()` query
    - Added "Main Claims" section with claim display
    - Added "Add Main Claim" button
    - Shows relationship type badges (supports/rebuts/contextualizes)
@@ -187,9 +187,9 @@ All dialogs call the new API endpoints:
 | Dialog | Endpoint | Method |
 |--------|----------|--------|
 | CreateThesisDialog | `/api/theses/create` | POST |
-| CreateAssetViewDialog | `/api/asset-views/create` | POST |
+| CreateAssetThesisDialog | `/api/asset-theses/create` | POST |
 | LinkClaimDialog | `/api/main-claims/link-to-entity` | POST |
-| LinkClaimDialog (load entities) | `/api/theses`, `/api/asset-views` | GET |
+| LinkClaimDialog (load entities) | `/api/theses`, `/api/asset-theses` | GET |
 
 ---
 
@@ -208,7 +208,7 @@ All dialogs include:
 ## Next Steps
 
 1. ✅ **DONE**: Create thesis dialog
-2. ✅ **DONE**: Create asset view dialog
+2. ✅ **DONE**: Create asset thesis dialog
 3. ✅ **DONE**: Link claim dialog
 4. ✅ **DONE**: Add "Create" buttons to pages
 5. ✅ **DONE**: Integrate LinkClaimDialog into ClaimsBrowser
@@ -224,15 +224,15 @@ src/
 │   ├── theses/
 │   │   ├── CreateThesisDialog.tsx       (Form dialog)
 │   │   └── CreateThesisButton.tsx       (Trigger button)
-│   ├── asset-views/
-│   │   ├── CreateAssetViewDialog.tsx    (Form dialog)
-│   │   └── CreateAssetViewButton.tsx    (Trigger button)
+│   ├── asset-theses/
+│   │   ├── CreateAssetThesisDialog.tsx    (Form dialog)
+│   │   └── CreateAssetThesisButton.tsx    (Trigger button)
 │   └── research/
 │       └── LinkClaimDialog.tsx          (Link dialog)
 └── app/
     ├── theses/
     │   └── page.tsx                     (Updated with Create button)
-    └── asset-views/
+    └── asset-theses/
         └── page.tsx                     (Updated with Create button)
 ```
 
@@ -242,7 +242,7 @@ src/
 
 1. **Start dev server**: `npm run dev`
 2. **Test create thesis**: Navigate to `/theses` → Click "Create New Thesis"
-3. **Test create view**: Navigate to `/asset-views` → Click "Create New View"
+3. **Test create view**: Navigate to `/asset-theses` → Click "Create New View"
 4. **Test linking**: (Once integrated) Click "Link" on a promoted claim
 
 All forms include validation and will show errors if required fields are missing!

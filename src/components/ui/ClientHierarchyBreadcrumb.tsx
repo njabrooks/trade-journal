@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import { HierarchyBreadcrumb } from './HierarchyBreadcrumb';
-import { LinkToThesisDialog } from '../asset-views/LinkToThesisDialog';
+import { LinkToThesisDialog } from '../asset-theses/LinkToThesisDialog';
 import { LinkToViewDialog } from '../strategies/LinkToViewDialog';
 
 interface HierarchyLevel {
@@ -38,7 +38,7 @@ export function ClientHierarchyBreadcrumb(props: ClientHierarchyBreadcrumbProps)
     }
   };
 
-  const handleLinkAssetView = () => {
+  const handleLinkAssetThesis = () => {
     if (props.currentLevel === 'strategy' && props.strategy) {
       setLinkViewDialogOpen(true);
     }
@@ -49,7 +49,7 @@ export function ClientHierarchyBreadcrumb(props: ClientHierarchyBreadcrumbProps)
       <HierarchyBreadcrumb
         {...props}
         onLinkMacroThesis={handleLinkMacroThesis}
-        onLinkAssetView={handleLinkAssetView}
+        onLinkAssetThesis={handleLinkAssetThesis}
       />
 
       {/* Dialogs */}

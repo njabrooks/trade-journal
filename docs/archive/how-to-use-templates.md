@@ -80,7 +80,7 @@ Run `/validate-templates` whenever:
 3. **Move to correct location**:
    - Main Claims → `/investing/main-claims/`
    - Macro Theses → `/investing/macro-theses/`
-   - Asset Views → `/investing/asset-views/`
+   - Asset Thesiss → `/investing/asset-theses/`
 4. **Rename with date prefix**: `YYYY-MM-DD-descriptive-name.md`
 5. **Fill in frontmatter and content**
 6. **Save** - sync will auto-populate ID
@@ -129,9 +129,9 @@ All templates in `/investing/templates/`:
 6. **Run `/process-transcript`** skill (if available)
 7. **Run `/validate-templates`** to ensure formatting
 
-### Workflow 2: Creating a New Asset View
+### Workflow 2: Creating a New Asset Thesis
 
-1. **Copy `asset-view-template.md`** to `/asset-views/`
+1. **Copy `asset-view-template.md`** to `/asset-theses/`
 2. **Rename**: `2025-12-28-bullish-tsla.md`
 3. **Fill frontmatter**:
    ```yaml

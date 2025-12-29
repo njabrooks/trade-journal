@@ -20,7 +20,7 @@ For each item, explicitly mark one of:
 - ✅ Strategy abstraction exists (explicit, not implied)
 - ✅ Position abstraction exists
 - 🟡 Clear parent–child relationships between hierarchy levels (positions → strategies → underlyings, but no macro/asset level)
-- 🟡 Hierarchy is represented explicitly in the data model (partial: strategies/positions exist, but macro/asset views missing)
+- 🟡 Hierarchy is represented explicitly in the data model (partial: strategies/positions exist, but macro/asset thesiss missing)
 - 🟡 Hierarchy is reflected in application logic (strategies and positions are linked, but no higher-level hierarchy)
 - 🟡 Hierarchy is visible or navigable in the UI (strategies and positions are navigable, but no macro/asset level navigation)
 
@@ -95,7 +95,7 @@ For each item, explicitly mark one of:
 
 ### Contextual Mapping
 - ❌ Research can be linked to macro theses
-- ❌ Research can be linked to asset views
+- ❌ Research can be linked to asset thesiss
 - 🟡 Research can be linked to strategies (strategies have `thesis` field, but no research linking)
 - ❌ Research can be linked to positions
 - ❌ Support / refute / neutral classification exists
@@ -175,7 +175,7 @@ Use this section to capture implementation-specific observations.
 ### Sequencing Considerations
 - ✅ **Low-risk, high-leverage additions**:
   - Add `macro_theses` and `asset_views` tables with foreign keys to `strategies` (backward compatible)
-  - Extend `strategies.thesis` to support linking to asset views
+  - Extend `strategies.thesis` to support linking to asset thesiss
   - Add research ingestion endpoints (no impact on existing data)
   - Enhance `blotter_actions` with structured decision fields (rationale, confidence)
 - ⚠️ **Prerequisites for later phases**:
@@ -193,7 +193,7 @@ Use this section to capture implementation-specific observations.
 ## H. Summary & Next Actions
 
 - ✅ **Major conceptual gaps identified**:
-  1. **Missing hierarchy levels**: No macro theses or asset views - system operates at strategy/position level only
+  1. **Missing hierarchy levels**: No macro theses or asset thesiss - system operates at strategy/position level only
   2. **No research layer**: Complete absence of research ingestion, structuring, or AI-assisted analysis
   3. **Implicit decision model**: Decisions are captured in `blotter_actions` but not explicitly modeled with rationale/confidence
   4. **No AI capabilities**: All logic is rule-based; no AI for research, decision support, or pattern detection
@@ -216,7 +216,7 @@ Use this section to capture implementation-specific observations.
 
 - ✅ **Items requiring design decisions**:
   1. **Macro thesis structure**: How to model secular vs cyclical vs structural beliefs? Should they have time horizons, confidence levels, review schedules?
-  2. **Asset view relationship**: Should asset views be one-to-many with strategies, or can strategies express multiple asset views?
+  2. **Asset view relationship**: Should asset thesiss be one-to-many with strategies, or can strategies express multiple asset thesiss?
   3. **Research → Thesis mapping**: How to handle research that supports/refutes multiple theses? Many-to-many relationship?
   4. **Thesis evolution**: How to track thesis changes over time? Version history? Re-underwriting workflow?
   5. **Pre-investment research**: Should there be a separate "research workspace" or integrate into existing triage/blotter flow?

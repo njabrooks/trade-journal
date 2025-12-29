@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { macroTheses, assetViews, underlyings, claimThesisMappings } from '@/db/schema';
+import { macroTheses, assetTheses, underlyings, claimThesisMappings } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
 /**
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const existingLinks = await db
       .select({
         thesisId: claimThesisMappings.macroThesisId,
-        viewId: claimThesisMappings.assetViewId,
+        viewId: claimThesisMappings.assetThesisId,
       })
       .from(claimThesisMappings)
       .where(eq(claimThesisMappings.mainClaimId, claimId));
@@ -66,14 +66,14 @@ export async function GET(request: NextRequest) {
     // Fetch all active views (excluding already linked ones)
     const allViews = await db
       .select({
-        id: assetViews.id,
-        title: assetViews.title,
-        status: assetViews.status,
+        id: assetTheses.id,
+        title: assetTheses.title,
+        status: assetTheses.status,
         ticker: underlyings.ticker,
       })
-      .from(assetViews)
-      .innerJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
-      .orderBy(assetViews.createdAt);
+      .from(assetTheses)
+      .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+      .orderBy(assetTheses.createdAt);
 
     const availableViews = allViews.filter(
       view => !linkedViewIds.includes(view.id)

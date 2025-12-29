@@ -13,7 +13,7 @@
 
 ## Active Work (Current Sprint)
 
-### 2025-12-28 Batch: Claims & Asset Views UX Improvements
+### 2025-12-28 Batch: Claims & Asset Thesiss UX Improvements
 **PRD Alignment**: Section 5 (Research & Intelligence Layer), Section 3 (Conceptual Model - Hierarchy)
 **Architecture Phase**: Phase 2.6 (Research UX Enhancements) - NEW
 **Status**: 🚧 In Progress
@@ -24,9 +24,9 @@
 
 **Context**: After completing Phase 2 (Research & Intelligence Layer), several UX improvements emerged:
 - Need unified claims browsing across all research
-- Asset Views and Macro Theses need auto-generated titles/descriptions
+- Asset Thesiss and Macro Theses need auto-generated titles/descriptions
 - Linking workflow needs simplification
-- Asset Views should be properly linked to underlyings schema
+- Asset Thesiss should be properly linked to underlyings schema
 
 **Enhancements**:
 
@@ -34,7 +34,7 @@
 **Status**: ✅ Complete (2025-12-28)
 **PRD**: Section 9 (Visualisation & Attention Management)
 **Effort**: 10 minutes
-**Details**: Reorder main sidebar section to: Triage > Blotter > Strategies > Asset Views > Macro Theses > Research > Portfolio
+**Details**: Reorder main sidebar section to: Triage > Blotter > Strategies > Asset Thesiss > Macro Theses > Research > Portfolio
 **Rationale**: Reflects workflow priority - action items first, strategic context second
 
 #### #ENH-002: Claims Browser Page
@@ -51,15 +51,15 @@
 - Actions: promote, convert to thesis/view, archive
 **Big Picture Impact**: Central hub for evaluating research claims before converting to theses/views
 
-#### #ENH-006: Asset View Auto-Generated Titles
+#### #ENH-006: Asset Thesis Auto-Generated Titles
 **Status**: 🚧 Planned
-**PRD**: Section 3 (Asset Views)
+**PRD**: Section 3 (Asset Thesiss)
 **Effort**: 2-3 days
 **Priority**: High
 **Details**: Generate titles from required fields: `{Direction} {Underlying} {Time Horizon}`
 **Example**: "Bullish TSLA Medium Term"
 **Dependencies**: Requires structured fields (direction, time_horizon) in asset_views table
-**Big Picture Impact**: Consistent naming convention, easier scanning of asset views
+**Big Picture Impact**: Consistent naming convention, easier scanning of asset thesiss
 
 #### #ENH-009: Macro Thesis Auto-Generated Titles
 **Status**: 🚧 Planned
@@ -71,26 +71,26 @@
 **Dependencies**: Requires structured fields (direction, sector, time_horizon) in macro_theses table
 **Big Picture Impact**: Consistent naming convention, clearer thesis hierarchy
 
-#### #ENH-004: Link Asset Views to Underlyings Schema
+#### #ENH-004: Link Asset Thesiss to Underlyings Schema
 **Status**: 🚧 Planned
-**PRD**: Section 3.2 (Asset Views)
+**PRD**: Section 3.2 (Asset Thesiss)
 **Effort**: 1-2 days
 **Priority**: Medium
 **Details**:
-- Asset Views already have `underlying_id` FK to underlyings table ✅
+- Asset Thesiss already have `underlying_id` FK to underlyings table ✅
 - Ensure metadata sharing (ticker, conid, IV history)
-- Display underlying metadata on Asset View detail pages
-**Big Picture Impact**: Proper data normalization, enables IV/spot price context for asset views
+- Display underlying metadata on Asset Thesis detail pages
+**Big Picture Impact**: Proper data normalization, enables IV/spot price context for asset thesiss
 
-#### #ENH-005: Rename Asset View to Asset Thesis?
+#### #ENH-005: Rename Asset Thesis to Asset Thesis?
 **Status**: 🚧 Under Consideration
 **PRD**: Section 3 (Conceptual Model)
 **Effort**: 1 day (if approved)
 **Priority**: Medium
-**Details**: Rename "Asset View" to "Asset Thesis" for terminology consistency
+**Details**: Rename "Asset Thesis" to "Asset Thesis" for terminology consistency
 **Open Questions**:
 - Does this improve clarity or create confusion?
-- PRD uses "Asset Views" - would this deviate from PRD?
+- PRD uses "Asset Thesiss" - would this deviate from PRD?
 - Need user feedback before proceeding
 **Decision Required**: Yes/No from user
 
@@ -100,7 +100,7 @@
 **Effort**: 3-4 days
 **Priority**: High
 **Details**:
-- Convert button creates NEW macro thesis or asset view (doesn't convert claim itself)
+- Convert button creates NEW macro thesis or asset thesis (doesn't convert claim itself)
 - Claim is promoted and linked to newly created thesis/view
 - AI suggests field values (direction, sector, time horizon) based on claim context
 - User reviews and approves suggestions
@@ -128,9 +128,9 @@
 **Priority**: High
 **Details**: Improve UX for linking hierarchy objects:
 - Every Position → Strategy (required)
-- Every Strategy → Asset View (required)
-- Every Asset View → Macro Thesis(es) (required, can be multiple)
-- Asset Views and Macro Theses → Main Claims (evidence linking)
+- Every Strategy → Asset Thesis (required)
+- Every Asset Thesis → Macro Thesis(es) (required, can be multiple)
+- Asset Thesiss and Macro Theses → Main Claims (evidence linking)
 **UX Improvements**:
 - Clear visual indicators for missing links
 - Inline linking workflows at obvious entry points
@@ -161,8 +161,8 @@
 **Effort**: 1 week
 **Reason for Deferral**: Requires Phase 4 trigger infrastructure
 **Details**: Generate triage records when mandatory links missing:
-- Strategy without Asset View
-- Asset View without Macro Thesis
+- Strategy without Asset Thesis
+- Asset Thesis without Macro Thesis
 - Position without Strategy
 **Big Picture Impact**: Ensures hierarchy completeness through workflow enforcement
 
@@ -226,7 +226,7 @@
 - ✅ Phase 1.5: Hierarchy Linking UI
 
 **Big Picture Impact**:
-- Established decision hierarchy (Macro Theses → Asset Views → Strategies → Positions)
+- Established decision hierarchy (Macro Theses → Asset Thesiss → Strategies → Positions)
 - Linking workflow functional
 - Foundation for research evidence linking
 

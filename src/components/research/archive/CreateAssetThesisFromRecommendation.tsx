@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import type { ResearchHierarchyRecommendation } from '@/db/schema';
 
-interface CreateAssetViewFromRecommendationProps {
+interface CreateAssetThesisFromRecommendationProps {
   recommendation: ResearchHierarchyRecommendation;
   onSave: (data: {
     title: string;
@@ -18,11 +18,11 @@ interface CreateAssetViewFromRecommendationProps {
   onCancel: () => void;
 }
 
-export function CreateAssetViewFromRecommendation({
+export function CreateAssetThesisFromRecommendation({
   recommendation,
   onSave,
   onCancel,
-}: CreateAssetViewFromRecommendationProps) {
+}: CreateAssetThesisFromRecommendationProps) {
   const proposedData = recommendation.proposedData as any;
 
   const [formData, setFormData] = useState({
@@ -57,7 +57,7 @@ export function CreateAssetViewFromRecommendation({
         confidenceLevel: formData.confidenceLevel || null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create asset view');
+      setError(err instanceof Error ? err.message : 'Failed to create asset thesis');
     } finally {
       setSaving(false);
     }
@@ -65,7 +65,7 @@ export function CreateAssetViewFromRecommendation({
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 p-6 space-y-4">
-      <h3 className="text-lg font-semibold">Create Asset View from Recommendation</h3>
+      <h3 className="text-lg font-semibold">Create Asset Thesis from Recommendation</h3>
       <p className="text-sm text-slate-600">{recommendation.reasoning}</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,7 +115,7 @@ export function CreateAssetViewFromRecommendation({
             onChange={(e) => setFormData({ ...formData, narrative: e.target.value })}
             rows={4}
             className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
-            placeholder="Detailed narrative about this asset view..."
+            placeholder="Detailed narrative about this asset thesis..."
           />
         </div>
 
@@ -163,7 +163,7 @@ export function CreateAssetViewFromRecommendation({
             Cancel
           </Button>
           <Button type="submit" disabled={saving || !formData.title.trim()}>
-            {saving ? 'Creating...' : 'Create Asset View'}
+            {saving ? 'Creating...' : 'Create Asset Thesis'}
           </Button>
         </div>
       </form>

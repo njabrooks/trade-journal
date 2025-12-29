@@ -6,14 +6,14 @@ import { eq } from 'drizzle-orm';
 /**
  * POST /api/research/claims/link-to-entities
  *
- * Links a main claim to existing macro theses and/or asset views.
+ * Links a main claim to existing macro theses and/or asset thesiss.
  * Also sets the claim status to 'confirmed' after linking.
  *
  * Request body:
  * {
  *   claimId: string;              // Main claim UUID
  *   thesisIds?: string[];         // Array of macro thesis UUIDs to link
- *   viewIds?: string[];           // Array of asset view UUIDs to link
+ *   viewIds?: string[];           // Array of asset thesis UUIDs to link
  * }
  *
  * Response:
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       const thesisLinks = thesisIds.map((thesisId: string) => ({
         mainClaimId: claimId,
         macroThesisId: thesisId,
-        assetViewId: null,
+        assetThesisId: null,
         mappingType: 'supports',
         mappedBy: 'user_link', // User manually linked via dialog
       }));
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       const viewLinks = viewIds.map((viewId: string) => ({
         mainClaimId: claimId,
         macroThesisId: null,
-        assetViewId: viewId,
+        assetThesisId: viewId,
         mappingType: 'supports',
         mappedBy: 'user_link', // User manually linked via dialog
       }));

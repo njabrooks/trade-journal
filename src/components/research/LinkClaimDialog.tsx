@@ -208,7 +208,7 @@ export function LinkClaimDialog({ mainClaimId, mainClaimTitle, onClose }: LinkCl
                     }`}
                     disabled={loading || loadingEntities}
                   >
-                    Asset View
+                    Asset Thesis
                   </button>
                 </div>
               </div>

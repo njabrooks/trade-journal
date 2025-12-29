@@ -3,7 +3,7 @@
  * Fix known template issues in Obsidian markdown files
  *
  * This script fixes:
- * 1. Missing ticker in asset view frontmatter
+ * 1. Missing ticker in asset thesis frontmatter
  * 2. JSONB notes field in macro theses (object → string)
  * 3. "undefined" values in frontmatter
  * 4. Invalid enum values
@@ -16,7 +16,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
 import { db } from '@/db';
-import { assetViews, macroTheses, underlyings } from '@/db/schema';
+import { assetTheses, macroTheses, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 interface FixResult {
@@ -50,7 +50,7 @@ async function findMarkdownFiles(dir: string): Promise<string[]> {
   return files;
 }
 
-async function fixAssetView(filePath: string, frontmatter: any, content: string, dryRun: boolean): Promise<FixResult> {
+async function fixAssetThesis(filePath: string, frontmatter: any, content: string, dryRun: boolean): Promise<FixResult> {
   const fixes: string[] = [];
   const errors: string[] = [];
 
@@ -60,9 +60,9 @@ async function fixAssetView(filePath: string, frontmatter: any, content: string,
       // Try to extract ticker from database
       if (frontmatter.id) {
         const [view] = await db
-          .select({ underlyingId: assetViews.underlyingId })
-          .from(assetViews)
-          .where(eq(assetViews.id, frontmatter.id))
+          .select({ underlyingId: assetTheses.underlyingId })
+          .from(assetTheses)
+          .where(eq(assetTheses.id, frontmatter.id))
           .limit(1);
 
         if (view?.underlyingId) {
@@ -221,7 +221,7 @@ async function fixFile(filePath: string, dryRun: boolean): Promise<FixResult | n
 
     switch (entityType) {
       case 'asset_view':
-        return await fixAssetView(filePath, frontmatter, content, dryRun);
+        return await fixAssetThesis(filePath, frontmatter, content, dryRun);
       case 'macro_thesis':
         return await fixMacroThesis(filePath, frontmatter, content, dryRun);
       case 'main_claim':

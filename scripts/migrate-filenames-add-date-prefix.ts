@@ -3,7 +3,7 @@
  * Migrate existing files to YYYY-MM-DD prefix naming convention
  *
  * This script:
- * 1. Scans main-claims, macro-theses, and asset-views directories
+ * 1. Scans main-claims, macro-theses, and asset-theses directories
  * 2. Reads created_at from frontmatter
  * 3. Renames files to add YYYY-MM-DD prefix
  *
@@ -116,7 +116,7 @@ async function main() {
   const directories = [
     path.join(vaultPath, 'main-claims'),
     path.join(vaultPath, 'macro-theses'),
-    path.join(vaultPath, 'asset-views'),
+    path.join(vaultPath, 'asset-theses'),
   ];
 
   const results: RenameResult[] = [];

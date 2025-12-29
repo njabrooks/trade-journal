@@ -1,9 +1,9 @@
 import { db } from '@/db';
-import { assetViews, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings } from '@/db/schema';
+import { assetTheses, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings } from '@/db/schema';
 import { eq, desc, inArray, count } from 'drizzle-orm';
-import type { NewAssetView } from '@/db/schema';
+import type { NewAssetThesis } from '@/db/schema';
 
-export interface AssetViewListItem {
+export interface AssetThesisListItem {
   id: string;
   title: string;
   underlyingId: string | null;
@@ -18,25 +18,25 @@ export interface AssetViewListItem {
   strategyCount: number;
 }
 
-export async function getAssetViewsList(): Promise<AssetViewListItem[]> {
+export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
   const views = await db
     .select({
-      id: assetViews.id,
-      title: assetViews.title,
-      underlyingId: assetViews.underlyingId,
+      id: assetTheses.id,
+      title: assetTheses.title,
+      underlyingId: assetTheses.underlyingId,
       ticker: underlyings.ticker,
-      macroThesisId: assetViews.macroThesisId,
+      macroThesisId: assetTheses.macroThesisId,
       macroThesisTitle: macroTheses.title,
-      timeHorizon: assetViews.timeHorizon,
-      confidenceLevel: assetViews.confidenceLevel,
-      status: assetViews.status,
-      createdAt: assetViews.createdAt,
-      updatedAt: assetViews.updatedAt,
+      timeHorizon: assetTheses.timeHorizon,
+      confidenceLevel: assetTheses.confidenceLevel,
+      status: assetTheses.status,
+      createdAt: assetTheses.createdAt,
+      updatedAt: assetTheses.updatedAt,
     })
-    .from(assetViews)
-    .leftJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
-    .leftJoin(macroTheses, eq(assetViews.macroThesisId, macroTheses.id))
-    .orderBy(desc(assetViews.createdAt));
+    .from(assetTheses)
+    .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+    .leftJoin(macroTheses, eq(assetTheses.macroThesisId, macroTheses.id))
+    .orderBy(desc(assetTheses.createdAt));
 
   if (views.length === 0) {
     return [];
@@ -46,15 +46,15 @@ export async function getAssetViewsList(): Promise<AssetViewListItem[]> {
   const viewIds = views.map((v) => v.id);
   const strategyCounts = await db
     .select({
-      assetViewId: strategies.assetViewId,
+      assetThesisId: strategies.assetThesisId,
       count: count(),
     })
     .from(strategies)
-    .where(inArray(strategies.assetViewId, viewIds))
-    .groupBy(strategies.assetViewId);
+    .where(inArray(strategies.assetThesisId, viewIds))
+    .groupBy(strategies.assetThesisId);
 
   const strategyMap = new Map(
-    strategyCounts.map((c) => [c.assetViewId, Number(c.count)])
+    strategyCounts.map((c) => [c.assetThesisId, Number(c.count)])
   );
 
   return views.map((view) => ({
@@ -63,17 +63,17 @@ export async function getAssetViewsList(): Promise<AssetViewListItem[]> {
   }));
 }
 
-export async function getAssetViewById(id: string) {
+export async function getAssetThesisById(id: string) {
   const rows = await db
     .select({
-      view: assetViews,
+      view: assetTheses,
       macroThesis: macroTheses,
       underlying: underlyings,
     })
-    .from(assetViews)
-    .leftJoin(macroTheses, eq(assetViews.macroThesisId, macroTheses.id))
-    .leftJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
-    .where(eq(assetViews.id, id))
+    .from(assetTheses)
+    .leftJoin(macroTheses, eq(assetTheses.macroThesisId, macroTheses.id))
+    .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+    .where(eq(assetTheses.id, id))
     .limit(1);
 
   if (rows.length === 0) return null;
@@ -85,29 +85,29 @@ export async function getAssetViewById(id: string) {
   };
 }
 
-export async function createAssetView(data: NewAssetView): Promise<string> {
+export async function createAssetThesis(data: NewAssetThesis): Promise<string> {
   const [view] = await db
-    .insert(assetViews)
+    .insert(assetTheses)
     .values(data)
-    .returning({ id: assetViews.id });
+    .returning({ id: assetTheses.id });
   return view.id;
 }
 
-export async function updateAssetView(
+export async function updateAssetThesis(
   id: string,
-  data: Partial<NewAssetView>
+  data: Partial<NewAssetThesis>
 ): Promise<void> {
   await db
-    .update(assetViews)
+    .update(assetTheses)
     .set({ ...data, updatedAt: new Date() })
-    .where(eq(assetViews.id, id));
+    .where(eq(assetTheses.id, id));
 }
 
-export async function deleteAssetView(id: string): Promise<void> {
-  await db.delete(assetViews).where(eq(assetViews.id, id));
+export async function deleteAssetThesis(id: string): Promise<void> {
+  await db.delete(assetTheses).where(eq(assetTheses.id, id));
 }
 
-export async function getLinkedStrategiesForAssetView(assetViewId: string) {
+export async function getLinkedStrategiesForAssetThesis(assetThesisId: string) {
   const strats = await db
     .select({
       id: strategies.id,
@@ -121,13 +121,13 @@ export async function getLinkedStrategiesForAssetView(assetViewId: string) {
     })
     .from(strategies)
     .leftJoin(accounts, eq(strategies.accountId, accounts.id))
-    .where(eq(strategies.assetViewId, assetViewId))
+    .where(eq(strategies.assetThesisId, assetThesisId))
     .orderBy(desc(strategies.openedAt));
 
   return strats;
 }
 
-export async function getLinkedMainClaimsForAssetView(assetViewId: string) {
+export async function getLinkedMainClaimsForAssetThesis(assetThesisId: string) {
   const claims = await db
     .select({
       id: mainClaims.id,
@@ -143,7 +143,7 @@ export async function getLinkedMainClaimsForAssetView(assetViewId: string) {
     })
     .from(claimThesisMappings)
     .innerJoin(mainClaims, eq(claimThesisMappings.mainClaimId, mainClaims.id))
-    .where(eq(claimThesisMappings.assetViewId, assetViewId))
+    .where(eq(claimThesisMappings.assetThesisId, assetThesisId))
     .orderBy(desc(mainClaims.createdAt));
 
   return claims;

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { CreateThesisFromRecommendation } from './CreateThesisFromRecommendation';
-import { CreateAssetViewFromRecommendation } from './CreateAssetViewFromRecommendation';
+import { CreateAssetThesisFromRecommendation } from './CreateAssetThesisFromRecommendation';
 import type { ResearchHierarchyRecommendation } from '@/db/schema';
 
 interface RecommendationCardProps {
@@ -26,7 +26,7 @@ export function RecommendationCard({ recommendation, onAction }: RecommendationC
       case 'new_macro_thesis':
         return 'New Macro Thesis';
       case 'new_asset_view':
-        return 'New Asset View';
+        return 'New Asset Thesis';
       case 'link_existing':
         return 'Link to Existing';
       case 'refute_existing':
@@ -124,7 +124,7 @@ export function RecommendationCard({ recommendation, onAction }: RecommendationC
       
       {/* Warning if recommendation is incomplete */}
       {!recommendation.existingThesisId && 
-       !recommendation.existingViewId && 
+       !recommendation.existingAssetThesisId && 
        !proposedData?.title && 
        recommendation.recommendationType === 'link_existing' && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
@@ -166,9 +166,9 @@ export function RecommendationCard({ recommendation, onAction }: RecommendationC
                   <br />
                 </>
               )}
-              {recommendation.existingViewId && (
+              {recommendation.existingAssetThesisId && (
                 <>
-                  <strong>Existing View ID:</strong> {recommendation.existingViewId}
+                  <strong>Existing View ID:</strong> {recommendation.existingAssetThesisId}
                   <br />
                 </>
               )}
@@ -196,7 +196,7 @@ export function RecommendationCard({ recommendation, onAction }: RecommendationC
             />
           )}
           {recommendation.recommendationType === 'new_asset_view' && (
-            <CreateAssetViewFromRecommendation
+            <CreateAssetThesisFromRecommendation
               recommendation={recommendation}
               onSave={async (data) => {
                 await handleAction('accept', data);

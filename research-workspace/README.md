@@ -18,7 +18,7 @@
 
 ## Overview
 
-The research workflow enables systematic conversion of research transcripts into actionable macro theses and asset views using the **Toulmin argumentation framework**. All processing happens locally via Claude Code skills, with the web app serving as a browser and conversion interface.
+The research workflow enables systematic conversion of research transcripts into actionable macro theses and asset thesiss using the **Toulmin argumentation framework**. All processing happens locally via Claude Code skills, with the web app serving as a browser and conversion interface.
 
 ### Key Features
 
@@ -60,7 +60,7 @@ Visit `http://localhost:3000/research/[insight-id]`
 **Features**:
 - Expandable claim cards with full Toulmin structure
 - **Promote** high-quality claims to first-class `main_claims` table
-- **Convert** claims to macro theses or asset views
+- **Convert** claims to macro theses or asset thesiss
 - Filter by type (thesis/view candidates), confidence, conversion status
 - Search across claims, evidence, reasoning, and tickers
 
@@ -179,7 +179,7 @@ claim_thesis_mappings (
   id,
   main_claim_id,
   macro_thesis_id,         -- One of these
-  asset_view_id,           -- is set
+  asset_thesis_id,           -- is set
   mapping_type,            -- 'supports' | 'refutes' | 'foundation'
   ...
 )
@@ -228,8 +228,8 @@ asset_views (id, underlying_id, title, description, direction, target_price, ...
 4. App: Click "Convert" on view candidate
 5. App: Enter ticker (e.g., "NVDA"), optionally link to parent thesis
 6. App: Add directional stance, target price, entry reference price
-7. App: Submit → redirected to /asset-views/{id}
-8. Claim shows "✓ Converted to asset view" badge
+7. App: Submit → redirected to /asset-theses/{id}
+8. Claim shows "✓ Converted to asset thesis" badge
 ```
 
 ### Partial Conversion
@@ -431,7 +431,7 @@ UPDATE macro_theses
 SET direction = 'neutral'
 WHERE direction IS NULL;
 
--- Backfill asset views
+-- Backfill asset thesiss
 UPDATE asset_views
 SET direction = 'neutral'
 WHERE direction IS NULL;

@@ -3,7 +3,7 @@
  * Fix template issues without database access
  *
  * This script fixes common template issues by extracting data from the markdown body:
- * 1. Missing ticker in asset view frontmatter (extracts from body)
+ * 1. Missing ticker in asset thesis frontmatter (extracts from body)
  * 2. JSONB notes field issues
  * 3. "undefined" values
  *
@@ -57,7 +57,7 @@ async function fixFile(filePath: string, dryRun: boolean): Promise<FixResult> {
     const entityType = frontmatter.type || 'unknown';
     let modified = false;
 
-    // Fix asset view ticker
+    // Fix asset thesis ticker
     if (entityType === 'asset_view') {
       if (!frontmatter.ticker || frontmatter.ticker === 'undefined') {
         // Try to extract from body first

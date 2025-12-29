@@ -87,13 +87,13 @@ return {
 
 ---
 
-### 3. ✅ Created Standalone Asset View Creation Endpoint
+### 3. ✅ Created Standalone Asset Thesis Creation Endpoint
 
-**File**: `/src/app/api/asset-views/create/route.ts`
+**File**: `/src/app/api/asset-theses/create/route.ts`
 
-**Endpoint**: `POST /api/asset-views/create`
+**Endpoint**: `POST /api/asset-theses/create`
 
-**Purpose**: Create asset views independently (not from claim conversion)
+**Purpose**: Create asset thesiss independently (not from claim conversion)
 
 **Request Body**:
 ```json
@@ -337,7 +337,7 @@ curl -X POST http://localhost:3000/api/research/link-evidence \
 | `/api/research/link-evidence` | POST | Link evidence claims to main claim |
 | `/api/research/convert-claim` | POST | Convert claim to thesis/view (with provenance) |
 | `/api/theses/create` | POST | Create standalone macro thesis |
-| `/api/asset-views/create` | POST | Create standalone asset view |
+| `/api/asset-theses/create` | POST | Create standalone asset thesis |
 | `/api/main-claims/link-to-entity` | POST | Link main claim to thesis/view |
 
 ---

@@ -1,5 +1,5 @@
 import { syncDatabaseToFile } from './sync';
-import type { MainClaim, MacroThesis, AssetView } from '@/db/schema';
+import type { MainClaim, MacroThesis, AssetThesis } from '@/db/schema';
 import { db } from '@/db';
 import { underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -9,7 +9,7 @@ import { eq } from 'drizzle-orm';
  * Call this after successful database writes (create/update)
  */
 export async function syncEntityToObsidian(
-  entity: MainClaim | MacroThesis | AssetView,
+  entity: MainClaim | MacroThesis | AssetThesis,
   type: 'main_claim' | 'macro_thesis' | 'asset_view'
 ): Promise<void> {
   const syncEnabled = process.env.OBSIDIAN_SYNC_ENABLED === 'true';
@@ -18,10 +18,10 @@ export async function syncEntityToObsidian(
   }
 
   try {
-    // Get ticker for asset views
+    // Get ticker for asset thesiss
     let ticker: string | undefined;
     if (type === 'asset_view') {
-      const view = entity as AssetView;
+      const view = entity as AssetThesis;
       if (view.underlyingId) {
         const [underlying] = await db
           .select()
@@ -59,8 +59,8 @@ export async function afterMacroThesisSave(thesis: MacroThesis): Promise<void> {
 }
 
 /**
- * Hook for after asset view is created/updated
+ * Hook for after asset thesis is created/updated
  */
-export async function afterAssetViewSave(view: AssetView): Promise<void> {
+export async function afterAssetThesisSave(view: AssetThesis): Promise<void> {
   await syncEntityToObsidian(view, 'asset_view');
 }

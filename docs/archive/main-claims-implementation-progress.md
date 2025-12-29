@@ -21,7 +21,7 @@ OBSIDIAN_SYNTHESES_DIR=investing/research/syntheses
 OBSIDIAN_DEEP_DIVES_DIR=investing/research/deep-dives
 OBSIDIAN_MAIN_CLAIMS_DIR=investing/main-claims
 OBSIDIAN_MACRO_THESES_DIR=investing/macro-theses
-OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-views
+OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-theses
 ```
 
 ### Database Schema Status
@@ -42,7 +42,7 @@ OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-views
 ├── investing/
 │   ├── main-claims/          # First-class main claim markdown files
 │   ├── macro-theses/          # Macro thesis markdown files
-│   ├── asset-views/           # Asset view markdown files
+│   ├── asset-theses/           # Asset view markdown files
 │   └── research/
 │       ├── transcripts/       # Original transcripts
 │       ├── audits/            # Processed audits with claims_structure JSONB
@@ -115,7 +115,7 @@ All core phases finished. Main claims architecture is production-ready:
 - **Wikilinks**: Extracted via regex `\[\[([^\]]+)\]\]`
 
 **Critical Fixes Applied**:
-- Use Drizzle-inferred types (`MainClaim`, `MacroThesis`, `AssetView` from schema)
+- Use Drizzle-inferred types (`MainClaim`, `MacroThesis`, `AssetThesis` from schema)
 - Date fields: No `.toISOString()` (already strings from Drizzle)
 - Numeric fields: Convert to strings (`String(value)`)
 - Null → undefined for optional fields (`|| undefined`)
@@ -194,7 +194,7 @@ All core phases finished. Main claims architecture is production-ready:
 |-------|------|----------|-------------------|-------|
 | 1. Process Transcript | `/process-transcript` | `research_insights` | `research/audits/` | Extract Toulmin claims |
 | 2. Promote Main Claim | UI "Promote" button | `main_claims` | `main-claims/` | **Auto-links evidence claims** |
-| 3. Create Thesis/View | API create endpoint | `macro_theses`/`asset_views` | `macro-theses/`/`asset-views/` | **Standalone creation** |
+| 3. Create Thesis/View | API create endpoint | `macro_theses`/`asset_views` | `macro-theses/`/`asset-theses/` | **Standalone creation** |
 | 4. Link Main Claim | UI link dialog | `claim_thesis_mappings` | (updates mappings) | **Link claim → thesis/view** |
 
 ### Key Distinction: Link vs Convert
@@ -230,7 +230,7 @@ All core phases finished. Main claims architecture is production-ready:
 ### Error: `Cannot find name 'DbMainClaim'`
 **Fix**: Use Drizzle-inferred types from schema:
 ```typescript
-import type { MainClaim, MacroThesis, AssetView } from '@/db/schema';
+import type { MainClaim, MacroThesis, AssetThesis } from '@/db/schema';
 ```
 
 ### Error: `Property 'toISOString' does not exist on type 'string'`

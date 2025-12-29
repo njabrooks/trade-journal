@@ -8,7 +8,7 @@
 
 ## Summary
 
-Phase 2.6.5 implemented a streamlined workflow for converting research claims into new Macro Theses or Asset Views. The "Convert" button creates a NEW entity (not converting the claim itself) and automatically links the claim as evidence with full provenance tracking.
+Phase 2.6.5 implemented a streamlined workflow for converting research claims into new Macro Theses or Asset Thesiss. The "Convert" button creates a NEW entity (not converting the claim itself) and automatically links the claim as evidence with full provenance tracking.
 
 ---
 
@@ -21,7 +21,7 @@ Phase 2.6.5 implemented a streamlined workflow for converting research claims in
 **Two-Step Conversion Workflow**:
 
 **Step 1: Choose Entity Type**
-- Large clickable cards for Macro Thesis or Asset View
+- Large clickable cards for Macro Thesis or Asset Thesis
 - Clear descriptions of each type
 - Simple visual design for quick decision
 
@@ -35,7 +35,7 @@ Phase 2.6.5 implemented a streamlined workflow for converting research claims in
   - Thesis Type (secular/cyclical/structural)
   - Sectors / Topics (multi-select using SectorSelector from Phase 2.6.4)
 
-- **Asset View Specific**:
+- **Asset Thesis Specific**:
   - Ticker (must exist in underlyings table)
 
 **Live Title Preview**:
@@ -81,7 +81,7 @@ Phase 2.6.5 implemented a streamlined workflow for converting research claims in
 
 ### 1. Create NEW Entity (Don't Convert Claim)
 
-**Decision**: "Convert" button creates a NEW macro thesis or asset view. The claim remains unchanged and is linked as evidence.
+**Decision**: "Convert" button creates a NEW macro thesis or asset thesis. The claim remains unchanged and is linked as evidence.
 
 **Rationale**:
 - ✅ Claim preserves full Toulmin framework structure
@@ -101,7 +101,7 @@ Phase 2.6.5 implemented a streamlined workflow for converting research claims in
 **Rationale**:
 - ✅ Clearer cognitive flow (decide what, then how)
 - ✅ Reduces visual complexity (only show relevant fields)
-- ✅ Macro Thesis vs Asset View have different required fields
+- ✅ Macro Thesis vs Asset Thesis have different required fields
 - ✅ Easier to add AI suggestions in future (suggestions based on chosen type)
 
 **Alternative Considered**: Single-page form with all fields
@@ -143,7 +143,7 @@ async function getSuggestions(claim: MainClaim) {
 
 ### 4. Use Existing API Routes
 
-**Decision**: Use existing `/api/theses/create` and `/api/asset-views/create` routes (not new conversion-specific endpoints)
+**Decision**: Use existing `/api/theses/create` and `/api/asset-theses/create` routes (not new conversion-specific endpoints)
 
 **Rationale**:
 - ✅ DRY (don't repeat validation/creation logic)
@@ -183,12 +183,12 @@ async function getSuggestions(claim: MainClaim) {
 6. Click "Create Macro Thesis"
 7. Verify redirect to new thesis detail page
 8. Verify claim is linked in "Main Claims" section
-9. Repeat for "Asset View" path
+9. Repeat for "Asset Thesis" path
 
 **Field Validation**:
 - Try creating Macro Thesis without sectors → should work but title is "Untitled Macro Thesis"
-- Try creating Asset View without ticker → should show error
-- Try creating Asset View with invalid ticker → should show error from API
+- Try creating Asset Thesis without ticker → should show error
+- Try creating Asset Thesis with invalid ticker → should show error from API
 
 **Navigation**:
 - Click "Back" button → should return to Step 1
@@ -208,7 +208,7 @@ npx tsc --noEmit --skipLibCheck
 
 - ✅ **Phase 2.6.3** (Auto-generated titles) - Dialog uses title generation functions
 - ✅ **Phase 2.6.4** (Sector taxonomy) - Dialog uses SectorSelector component
-- ✅ **Existing API routes** (`/api/theses/create`, `/api/asset-views/create`) support claim linking
+- ✅ **Existing API routes** (`/api/theses/create`, `/api/asset-theses/create`) support claim linking
 
 ---
 
@@ -219,16 +219,16 @@ npx tsc --noEmit --skipLibCheck
 **Goal**: Improve UX for end-to-end linking of hierarchy objects
 
 **Implementation**:
-1. Visual indicators for missing links (e.g., "⚠️ No Asset View linked")
+1. Visual indicators for missing links (e.g., "⚠️ No Asset Thesis linked")
 2. Inline linking workflows at obvious entry points
 3. Bulk linking tools
 4. Validation warnings for incomplete hierarchies
 
 **Required Links**:
 - Position → Strategy (required)
-- Strategy → Asset View (required)
-- Asset View → Macro Thesis(es) (required, can be multiple)
-- Asset Views and Macro Theses → Main Claims (evidence linking)
+- Strategy → Asset Thesis (required)
+- Asset Thesis → Macro Thesis(es) (required, can be multiple)
+- Asset Thesiss and Macro Theses → Main Claims (evidence linking)
 
 **Estimated Effort**: 1 week
 
@@ -329,4 +329,4 @@ npx tsc --noEmit --skipLibCheck
 - ✅ Phase 2.6.4: Schema & Taxonomy Improvements
 - ✅ Phase 2.6.5: Streamlined Claim Conversion
 - ⏳ Phase 2.6.6: Enhanced Hierarchy Linking UX
-- ⏳ Phase 2.6.7: Asset View Terminology Review
+- ⏳ Phase 2.6.7: Asset Thesis Terminology Review

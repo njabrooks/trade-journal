@@ -50,7 +50,7 @@ Retrospective Learning
 - **Journal** captures the complete loop
 - **Retrospective Learning** closes the loop by informing belief evolution
 
-This loop operates at all hierarchy levels (macro thesis → asset view → strategy → position).
+This loop operates at all hierarchy levels (macro thesis → asset thesis → strategy → position).
 
 ---
 
@@ -72,30 +72,30 @@ The system implements a four-level decision hierarchy. Terms below map to this s
 - Examples: "Inflation will remain structurally elevated", "Demographic shifts favor emerging markets"
 
 **Related Terms:**
-- **Thesis** (generic): Can refer to macro thesis, asset view, or strategy thesis. Be specific when context matters.
+- **Thesis** (generic): Can refer to macro thesis, asset thesis, or strategy thesis. Be specific when context matters.
 - **Belief**: Synonym for thesis at macro/asset level. "Belief" is more general; "thesis" is more formal.
 
 ---
 
-#### 2. Asset View / Asset Views
-**PRD Term:** ✅ **Asset Views**  
+#### 2. Asset Thesis / Asset Thesiss
+**PRD Term:** ✅ **Asset Thesiss**  
 **Existing Term:** ⚠️ **Underlying** (partial overlap, but different concept)  
 **Database:** `asset_views` (Phase 1), `underlyings` (existing)  
 **Definition:** Asset-specific theses with narrative, fundamental, positioning, and regime context. Expresses how a macro thesis applies to a specific asset, or independent asset-level beliefs.
 
 **Usage:**
-- Use "Asset View" (singular) or "Asset Views" (plural)
+- Use "Asset Thesis" (singular) or "Asset Thesiss" (plural)
 - Links to `underlyings` table (the instrument being viewed)
 - Examples: "GLXY will outperform due to institutional adoption", "TSLA faces margin compression"
 
 **Terminology Note:**
 - **Underlying** (existing): The financial instrument itself (e.g., GLXY stock, TSLA stock). This is a **reference data** concept.
-- **Asset View**: The **belief/thesis** about that underlying. This is a **knowledge/belief** concept.
-- **Relationship**: Asset Views reference Underlyings. One underlying can have multiple asset views over time.
+- **Asset Thesis**: The **belief/thesis** about that underlying. This is a **knowledge/belief** concept.
+- **Relationship**: Asset Thesiss reference Underlyings. One underlying can have multiple asset thesiss over time.
 
 **Example:**
 - **Underlying**: "GLXY" (the ticker/instrument)
-- **Asset View**: "GLXY will outperform due to institutional adoption" (the belief about GLXY)
+- **Asset Thesis**: "GLXY will outperform due to institutional adoption" (the belief about GLXY)
 
 ---
 
@@ -103,12 +103,12 @@ The system implements a four-level decision hierarchy. Terms below map to this s
 **PRD Term:** ✅ **Strategies**  
 **Existing Term:** ✅ **Strategies** (aligns)  
 **Database:** `strategies` (existing)  
-**Definition:** How asset views are expressed tactically (options, duration, relative value, etc.). Includes risk frameworks and payoff expectations.
+**Definition:** How asset thesiss are expressed tactically (options, duration, relative value, etc.). Includes risk frameworks and payoff expectations.
 
 **Usage:**
 - Use "Strategy" (singular) or "Strategies" (plural)
 - Existing `strategies` table aligns with PRD concept
-- Strategies express asset views (or macro theses) through tactical implementation
+- Strategies express asset thesiss (or macro theses) through tactical implementation
 - Examples: "Covered call on GLXY", "LEAPS risk reversal on TSLA"
 
 **Related Terms:**
@@ -118,10 +118,10 @@ The system implements a four-level decision hierarchy. Terms below map to this s
 
 **⚠️ Critical Clarification: Strategy vs Thesis**
 - **Strategies are tactical execution constructs**, not long-lived belief objects
-- **Macro Theses and Asset Views are belief objects** that evolve with evidence
+- **Macro Theses and Asset Thesiss are belief objects** that evolve with evidence
 - **Strategies link to theses/views** but remain tactical - their linkage is **additive, not redefining**
-- A strategy can express an asset view, but the strategy itself is not the belief
-- Example: "Covered call on GLXY" (strategy) expresses "GLXY will trade sideways" (asset view), but the strategy is the tactical implementation, not the belief itself
+- A strategy can express an asset thesis, but the strategy itself is not the belief
+- Example: "Covered call on GLXY" (strategy) expresses "GLXY will trade sideways" (asset thesis), but the strategy is the tactical implementation, not the belief itself
 
 **Terminology Note:**
 - PRD "Strategies" = existing "Strategies" ✅
@@ -300,7 +300,7 @@ The system implements a four-level decision hierarchy. Terms below map to this s
 **PRD Term:** ✅ **Contextual Mapping**  
 **Existing Term:** ❌ None (new concept)  
 **Database:** `research_mappings` (Phase 2)  
-**Definition:** Link between research insight and hierarchy element (macro thesis, asset view, strategy, or position). Records whether research supports, refutes, is neutral, or exploratory.
+**Definition:** Link between research insight and hierarchy element (macro thesis, asset thesis, strategy, or position). Records whether research supports, refutes, is neutral, or exploratory.
 
 **Usage:**
 - Use "Research Mapping" or "Mapping" (when context is clear)
@@ -355,7 +355,7 @@ The system implements a four-level decision hierarchy. Terms below map to this s
 
 **Terminology Note:**
 - **Underlying** = the instrument (reference data)
-- **Asset View** = the belief about that underlying (knowledge/belief)
+- **Asset Thesis** = the belief about that underlying (knowledge/belief)
 - ✅ **Keep "Underlying"** - useful reference data concept, even if not explicitly in PRD
 
 ---
@@ -437,7 +437,7 @@ These terms are implementation details that don't appear in PRD but are useful f
 
 ### ❌ New Terms (No Existing Equivalent)
 - **Macro Thesis** / **Macro Theses** (new)
-- **Asset View** / **Asset Views** (new)
+- **Asset Thesis** / **Asset Thesiss** (new)
 - **Research** / **Research Artifact** / **Research Insight** (new)
 - **Research Mapping** (new)
 - **Decision** (explicit concept, currently implicit)
@@ -461,7 +461,7 @@ These terms are implementation details that don't appear in PRD but are useful f
 ### When Writing Documentation
 1. **Use PRD terms** as primary terminology
 2. **Map to existing terms** in parentheses when first introducing concept
-3. **Clarify distinctions** (e.g., Underlying vs Asset View)
+3. **Clarify distinctions** (e.g., Underlying vs Asset Thesis)
 4. **Note tactical terms** that are implementation details
 
 ### When Writing UI Labels
@@ -475,9 +475,9 @@ These terms are implementation details that don't appear in PRD but are useful f
 3. **Clarify context** when term could be ambiguous
 
 ### When Constructing AI Prompts
-1. **Always use PRD terminology** in prompts (e.g., "asset view", "macro thesis")
+1. **Always use PRD terminology** in prompts (e.g., "asset thesis", "macro thesis")
 2. **Map from legacy data** internally - AI should see PRD terms, not implementation terms
-3. **Example**: Prompt says "asset view" even if querying `strategies` table that will link to `asset_views`
+3. **Example**: Prompt says "asset thesis" even if querying `strategies` table that will link to `asset_views`
 4. **Rationale**: AI should reason about PRD concepts, not implementation details
 
 ### Stability Guarantee
@@ -491,13 +491,13 @@ These terms are implementation details that don't appear in PRD but are useful f
 ## Examples: Correct Usage
 
 ### ✅ Correct
-- "The **macro thesis** 'Inflation remains elevated' links to multiple **asset views**"
+- "The **macro thesis** 'Inflation remains elevated' links to multiple **asset thesiss**"
 - "**Triage** evaluates urgency and severity; **decisions** are captured in the **journal**"
-- "**Research insights** are mapped to **asset views** to support or refute beliefs"
-- "The **underlying** GLXY has an **asset view** that supports the **macro thesis**"
+- "**Research insights** are mapped to **asset thesiss** to support or refute beliefs"
+- "The **underlying** GLXY has an **asset thesis** that supports the **macro thesis**"
 
 ### ❌ Incorrect (Common Confusions)
-- ❌ "The underlying view" → ✅ "The asset view about the underlying"
+- ❌ "The underlying view" → ✅ "The asset thesis about the underlying"
 - ❌ "Blotter actions are decisions" → ✅ "Blotter actions capture decisions" (or "Decisions are recorded in the journal")
 - ❌ "Triage rules trigger actions" → ✅ "Triggers initiate triage; triage produces decisions"
 
@@ -506,7 +506,7 @@ These terms are implementation details that don't appear in PRD but are useful f
 ## Future Evolution
 
 ### Phase 1
-- Introduce "Macro Thesis" and "Asset View" terminology
+- Introduce "Macro Thesis" and "Asset Thesis" terminology
 - Enhance "Blotter Action" with "Decision" concept
 - Keep all existing database/UI terms (backward compatibility)
 
@@ -524,7 +524,7 @@ These terms are implementation details that don't appear in PRD but are useful f
 
 ### Strategy vs Thesis
 - **Strategies** = tactical execution constructs (options, duration, relative value)
-- **Macro Theses / Asset Views** = long-lived belief objects that evolve with evidence
+- **Macro Theses / Asset Thesiss** = long-lived belief objects that evolve with evidence
 - Strategies link to theses/views but remain tactical - linkage is additive, not redefining
 - Do not confuse strategies with theses/views - they serve different roles
 

@@ -1,4 +1,4 @@
-import { getMacroThesisById, getLinkedAssetViewsForThesis, getLinkedStrategiesForThesis, getLinkedMainClaimsForThesis } from '@/db/queries/macroTheses';
+import { getMacroThesisById, getLinkedAssetThesesForThesis, getLinkedStrategiesForThesis, getLinkedMainClaimsForThesis } from '@/db/queries/macroTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { AddMainClaimButton } from '@/components/theses/AddMainClaimButton';
 import { notFound } from 'next/navigation';
@@ -12,7 +12,7 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
   const { id } = await params;
   const [thesis, linkedViews, linkedStrategies, linkedClaims] = await Promise.all([
     getMacroThesisById(id),
-    getLinkedAssetViewsForThesis(id),
+    getLinkedAssetThesesForThesis(id),
     getLinkedStrategiesForThesis(id),
     getLinkedMainClaimsForThesis(id),
   ]);
@@ -181,15 +181,15 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
         </div>
 
         <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Linked Asset Views ({linkedViews.length})</h3>
+          <h3 className="text-lg font-semibold mb-4">Linked Asset Thesiss ({linkedViews.length})</h3>
           {linkedViews.length === 0 ? (
-            <p className="text-sm text-slate-500">No asset views linked to this thesis yet.</p>
+            <p className="text-sm text-slate-500">No asset thesiss linked to this thesis yet.</p>
           ) : (
             <div className="space-y-2">
               {linkedViews.map((view) => (
                 <div key={view.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg hover:bg-slate-50">
                   <div className="flex-1">
-                    <Link href={`/asset-views/${view.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
+                    <Link href={`/asset-theses/${view.id}`} className="text-blue-600 hover:text-blue-800 font-medium">
                       {view.title}
                     </Link>
                     {view.underlyingTicker && (

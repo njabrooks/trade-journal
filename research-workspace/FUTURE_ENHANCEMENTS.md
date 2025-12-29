@@ -75,7 +75,7 @@ CREATE TABLE claim_mappings (
 
   -- Target in hierarchy (one of these must be set)
   macro_thesis_id UUID REFERENCES macro_theses(id),
-  asset_view_id UUID REFERENCES asset_views(id),
+  asset_thesis_id UUID REFERENCES asset_views(id),
   strategy_id UUID REFERENCES strategies(id),
   position_id UUID REFERENCES positions(id),
 
@@ -96,7 +96,7 @@ CREATE TABLE claim_mappings (
   -- Ensure at least one target is set
   CHECK (
     (macro_thesis_id IS NOT NULL)::int +
-    (asset_view_id IS NOT NULL)::int +
+    (asset_thesis_id IS NOT NULL)::int +
     (strategy_id IS NOT NULL)::int +
     (position_id IS NOT NULL)::int = 1
   )
@@ -115,7 +115,7 @@ CREATE INDEX idx_claim_rels_target ON claim_relationships(target_claim_id);
 
 CREATE INDEX idx_claim_mappings_claim ON claim_mappings(claim_id);
 CREATE INDEX idx_claim_mappings_thesis ON claim_mappings(macro_thesis_id);
-CREATE INDEX idx_claim_mappings_view ON claim_mappings(asset_view_id);
+CREATE INDEX idx_claim_mappings_view ON claim_mappings(asset_thesis_id);
 ```
 
 ### Benefits of Migration

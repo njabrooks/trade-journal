@@ -8,15 +8,15 @@
 
 ## Summary
 
-Phase 2.6.4 enhanced the data display for Asset Views and Macro Theses, and created a comprehensive sector/topic taxonomy system for structured categorization of macro theses.
+Phase 2.6.4 enhanced the data display for Asset Thesiss and Macro Theses, and created a comprehensive sector/topic taxonomy system for structured categorization of macro theses.
 
 ---
 
 ## What Was Implemented
 
-### 1. Asset View Detail Page Enhancement
+### 1. Asset Thesis Detail Page Enhancement
 
-**File**: `src/app/asset-views/[id]/page.tsx`
+**File**: `src/app/asset-theses/[id]/page.tsx`
 
 **Added "Underlying Market Data" Section** showing:
 - ✅ Ticker (with monospace font)
@@ -35,7 +35,7 @@ Phase 2.6.4 enhanced the data display for Asset Views and Macro Theses, and crea
 - ✅ Improved grid layout (2 cols → 3 cols on desktop)
 - ✅ Better formatting for time horizon (replaces underscores)
 
-**Verification**: Asset Views → Underlyings linking confirmed working via `underlying_id` foreign key ✅
+**Verification**: Asset Thesiss → Underlyings linking confirmed working via `underlying_id` foreign key ✅
 
 ### 2. Comprehensive Sector/Topic Taxonomy
 
@@ -131,7 +131,7 @@ Phase 2.6.4 enhanced the data display for Asset Views and Macro Theses, and crea
 - `docs/archive/phase_2_6_4_completion.md` (this file)
 
 **Modified Files**:
-- `src/app/asset-views/[id]/page.tsx` - Added underlying market data section
+- `src/app/asset-theses/[id]/page.tsx` - Added underlying market data section
 - `src/app/theses/[id]/page.tsx` - Enhanced overview with direction and sectors display
 
 **Total Lines Added**: ~600 lines
@@ -197,8 +197,8 @@ Phase 2.6.4 enhanced the data display for Asset Views and Macro Theses, and crea
 
 ### Manual Testing Required (User Action)
 
-**Asset View Detail Page**:
-1. Navigate to any Asset View detail page
+**Asset Thesis Detail Page**:
+1. Navigate to any Asset Thesis detail page
 2. Verify "Underlying Market Data" section displays:
    - Ticker, Name, Asset Class, Currency
    - Spot Price, IV30, ATR20, RV20 (if available)
@@ -232,7 +232,7 @@ npx tsc --noEmit --skipLibCheck
 
 ### Phase 2.6.5: Streamlined Claim Conversion (#ENH-011)
 
-**Goal**: Convert button creates NEW macro thesis or asset view from claims
+**Goal**: Convert button creates NEW macro thesis or asset thesis from claims
 
 **Dependencies Met**:
 - ✅ Phase 2.6.3 (Auto-generated titles)
@@ -255,7 +255,7 @@ npx tsc --noEmit --skipLibCheck
 
 ## Enhancement IDs
 
-- **#ENH-004**: Link Asset Views to Underlyings Schema ✅ Complete
+- **#ENH-004**: Link Asset Thesiss to Underlyings Schema ✅ Complete
 - **#ENH-010**: Define Sector/Topic Taxonomy for Macro Theses ✅ Complete
 
 ---
@@ -263,7 +263,7 @@ npx tsc --noEmit --skipLibCheck
 ## Big Picture Impact
 
 **User Benefits**:
-- ✅ Full market context visible on Asset View pages (IV, spot, earnings dates)
+- ✅ Full market context visible on Asset Thesis pages (IV, spot, earnings dates)
 - ✅ Structured sector categorization enables better organization
 - ✅ Easier to find related theses (filter by sector)
 - ✅ Rich taxonomy supports nuanced themes (115 pre-defined options)

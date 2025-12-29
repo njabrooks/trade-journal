@@ -8,7 +8,7 @@
 
 ## Summary
 
-Phase 2.6.3 implemented auto-generated titles for Asset Views and Macro Theses based on structured fields. The implementation was simpler than expected because the database schema already had all necessary fields (`direction`, `timeHorizon`, `sectors`).
+Phase 2.6.3 implemented auto-generated titles for Asset Thesiss and Macro Theses based on structured fields. The implementation was simpler than expected because the database schema already had all necessary fields (`direction`, `timeHorizon`, `sectors`).
 
 ---
 
@@ -16,9 +16,9 @@ Phase 2.6.3 implemented auto-generated titles for Asset Views and Macro Theses b
 
 ### 1. Title Generation Utility (`src/lib/utils/title-generation.ts`)
 
-**Asset View Title Format**: `{Direction} {Ticker} {Time Horizon}`
+**Asset Thesis Title Format**: `{Direction} {Ticker} {Time Horizon}`
 - Example: `"Bullish TSLA Medium Term"`
-- Fallback: `"Untitled Asset View"` (when ticker is missing)
+- Fallback: `"Untitled Asset Thesis"` (when ticker is missing)
 
 **Macro Thesis Title Format**: `{Direction} {Sector/Topic} {Time Horizon}`
 - Example: `"Bullish US Inflation Medium Term"`
@@ -34,7 +34,7 @@ Phase 2.6.3 implemented auto-generated titles for Asset Views and Macro Theses b
 ### 2. Updated API Routes
 
 **Modified Files**:
-- `/src/app/api/asset-views/create/route.ts`
+- `/src/app/api/asset-theses/create/route.ts`
 - `/src/app/api/theses/create/route.ts`
 
 **Changes**:
@@ -46,7 +46,7 @@ Phase 2.6.3 implemented auto-generated titles for Asset Views and Macro Theses b
 ### 3. Backfill Scripts
 
 **Created Scripts**:
-- `scripts/backfill-asset-view-titles.ts` - Updates existing Asset Views
+- `scripts/backfill-asset-view-titles.ts` - Updates existing Asset Thesiss
 - `scripts/backfill-macro-thesis-titles.ts` - Updates existing Macro Theses
 
 **Features**:
@@ -72,7 +72,7 @@ npx tsx scripts/backfill-macro-thesis-titles.ts
 **Created Test File**: `scripts/test-title-generation.ts`
 
 **Test Coverage**: 17 tests, all passing ✅
-- Asset View title generation (7 tests)
+- Asset Thesis title generation (7 tests)
 - Macro Thesis title generation (10 tests)
 - Edge cases (missing fields, empty arrays, fallbacks)
 - Validation functions
@@ -109,7 +109,7 @@ npx tsx scripts/test-title-generation.ts
 
 ### 3. Fallback Titles for Incomplete Data
 
-**Decision**: Return `"Untitled Asset View"` or `"Untitled Macro Thesis"` when essential fields are missing.
+**Decision**: Return `"Untitled Asset Thesis"` or `"Untitled Macro Thesis"` when essential fields are missing.
 
 **Rationale**:
 - Better than failing or using empty strings
@@ -136,7 +136,7 @@ npx tsx scripts/test-title-generation.ts
 - `scripts/test-title-generation.ts` (327 lines)
 
 **Modified Files**:
-- `src/app/api/asset-views/create/route.ts` (added title generation logic, removed invalid `viewType` field)
+- `src/app/api/asset-theses/create/route.ts` (added title generation logic, removed invalid `viewType` field)
 - `src/app/api/theses/create/route.ts` (added title generation logic)
 
 **Total Lines Added**: ~850 lines
@@ -162,8 +162,8 @@ npx tsc --noEmit --skipLibCheck
 
 ### Manual Testing Needed (User Action Required)
 
-**Asset Views**:
-1. Create new Asset View via `/api/asset-views/create` without `title`
+**Asset Thesiss**:
+1. Create new Asset Thesis via `/api/asset-theses/create` without `title`
 2. Verify title is auto-generated: `"{Direction} {Ticker} {Time Horizon}"`
 3. Test with missing fields (no direction, no time horizon)
 4. Test manual title override (provide `title` in request)
@@ -187,12 +187,12 @@ npx tsc --noEmit --skipLibCheck
 ### Remaining Phase 2.6 Work
 
 **Phase 2.6.4**: Schema & Taxonomy Improvements (#ENH-004, #ENH-010)
-- ✅ Asset Views → Underlyings linking (already complete - `underlyingId` FK exists)
-- ⏳ Display underlying metadata on Asset View detail pages
+- ✅ Asset Thesiss → Underlyings linking (already complete - `underlyingId` FK exists)
+- ⏳ Display underlying metadata on Asset Thesis detail pages
 - ⏳ Define sector/topic taxonomy for Macro Theses using Claude
 
 **Phase 2.6.5**: Streamlined Claim Conversion (#ENH-011)
-- Convert button creates NEW macro thesis or asset view
+- Convert button creates NEW macro thesis or asset thesis
 - Auto-suggests field values based on claim context
 - Dependencies: Requires Phase 2.6.3 ✅ and Phase 2.6.4 taxonomy
 
@@ -207,7 +207,7 @@ npx tsc --noEmit --skipLibCheck
 
 ### 1. Should We Update Generic API Routes Too?
 
-**Context**: We only updated `/api/asset-views/create/route.ts` and `/api/theses/create/route.ts`. The generic routes in `/api/asset-views/route.ts` and `/api/theses/route.ts` still require `title`.
+**Context**: We only updated `/api/asset-theses/create/route.ts` and `/api/theses/create/route.ts`. The generic routes in `/api/asset-theses/route.ts` and `/api/theses/route.ts` still require `title`.
 
 **Options**:
 - A) Leave as-is (generic routes require title, /create routes auto-generate)
@@ -231,7 +231,7 @@ npx tsc --noEmit --skipLibCheck
 
 ## Enhancement IDs
 
-- **#ENH-006**: Asset View Auto-Generated Titles ✅ Complete
+- **#ENH-006**: Asset Thesis Auto-Generated Titles ✅ Complete
 - **#ENH-009**: Macro Thesis Auto-Generated Titles ✅ Complete
 
 ---
@@ -239,7 +239,7 @@ npx tsc --noEmit --skipLibCheck
 ## Big Picture Impact
 
 **User Benefits**:
-- ✅ Consistent naming convention across all Asset Views and Macro Theses
+- ✅ Consistent naming convention across all Asset Thesiss and Macro Theses
 - ✅ Easier scanning and filtering (titles follow predictable pattern)
 - ✅ Less manual work (no need to type repetitive titles)
 - ✅ Better UX for claim conversion workflow (Phase 2.6.5)

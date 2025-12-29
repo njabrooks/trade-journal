@@ -3,25 +3,25 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { FilterBar } from "@/components/strategies/FilterBar";
 import { getStrategiesForList } from "@/db/queries/strategies";
 import { getMacroThesesList } from "@/db/queries/macroTheses";
-import { getAssetViewsList } from "@/db/queries/assetViews";
+import { getAssetThesesList } from "@/db/queries/assetTheses";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
 
 interface StrategiesPageProps {
   searchParams?: Promise<{
     macroThesisId?: string;
-    assetViewId?: string;
+    assetThesisId?: string;
   }>;
 }
 
 export default async function StrategiesPage({ searchParams }: StrategiesPageProps) {
   const params = await searchParams;
   const macroThesisId = params?.macroThesisId;
-  const assetViewId = params?.assetViewId;
+  const assetThesisId = params?.assetThesisId;
 
   const [strategies, theses, views] = await Promise.all([
-    getStrategiesForList(40, { macroThesisId, assetViewId }),
+    getStrategiesForList(40, { macroThesisId, assetThesisId }),
     getMacroThesesList(),
-    getAssetViewsList(),
+    getAssetThesesList(),
   ]);
 
   // Strategies are already filtered to open only, so use directly
@@ -69,7 +69,7 @@ export default async function StrategiesPage({ searchParams }: StrategiesPagePro
             <p className="text-sm font-medium text-slate-500">Strategy List</p>
             <p className="text-xs text-slate-400">
               Showing {strategies.length} most recent
-              {(macroThesisId || assetViewId) && ' (filtered)'}
+              {(macroThesisId || assetThesisId) && ' (filtered)'}
             </p>
           </div>
         </div>

@@ -34,7 +34,7 @@ const MAIN_NAV = [
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
   { href: "/blotter", label: "Blotter", icon: BookOpen, id: "blotter" },
   { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
-  { href: "/asset-views", label: "Asset Views", icon: Target, id: "asset-views" },
+  { href: "/asset-theses", label: "Asset Theses", icon: Target, id: "asset-theses" },
   { href: "/theses", label: "Macro Theses", icon: TrendingUp, id: "theses" },
   { href: "/research/claims", label: "Claims", icon: Lightbulb, id: "claims" },
   { href: "/research", label: "Research", icon: Library, id: "research" },

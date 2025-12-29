@@ -11,9 +11,9 @@
  */
 
 import {
-  generateAssetViewTitle,
+  generateAssetThesisTitle,
   generateMacroThesisTitle,
-  canGenerateAssetViewTitle,
+  canGenerateAssetThesisTitle,
   canGenerateMacroThesisTitle,
 } from '../src/lib/utils/title-generation';
 
@@ -63,13 +63,13 @@ console.log(`${blue}Testing Title Generation Functions${reset}`);
 console.log(`${blue}========================================${reset}\n`);
 
 // ============================================================================
-// Asset View Title Generation Tests
+// Asset Thesis Title Generation Tests
 // ============================================================================
 
-console.log('Asset View Title Generation:\n');
+console.log('Asset Thesis Title Generation:\n');
 
 test('generates title with all fields', () => {
-  const title = generateAssetViewTitle({
+  const title = generateAssetThesisTitle({
     direction: 'bullish',
     ticker: 'TSLA',
     timeHorizon: 'medium_term',
@@ -78,7 +78,7 @@ test('generates title with all fields', () => {
 });
 
 test('generates title without direction', () => {
-  const title = generateAssetViewTitle({
+  const title = generateAssetThesisTitle({
     direction: null,
     ticker: 'AAPL',
     timeHorizon: 'long_term',
@@ -87,7 +87,7 @@ test('generates title without direction', () => {
 });
 
 test('generates title without time horizon', () => {
-  const title = generateAssetViewTitle({
+  const title = generateAssetThesisTitle({
     direction: 'bearish',
     ticker: 'SPY',
     timeHorizon: null,
@@ -96,7 +96,7 @@ test('generates title without time horizon', () => {
 });
 
 test('generates title with only ticker', () => {
-  const title = generateAssetViewTitle({
+  const title = generateAssetThesisTitle({
     direction: null,
     ticker: 'NVDA',
     timeHorizon: null,
@@ -105,24 +105,24 @@ test('generates title with only ticker', () => {
 });
 
 test('returns fallback when ticker is missing', () => {
-  const title = generateAssetViewTitle({
+  const title = generateAssetThesisTitle({
     direction: 'bullish',
     ticker: null,
     timeHorizon: 'medium_term',
   });
-  assertEqual(title, 'Untitled Asset View');
+  assertEqual(title, 'Untitled Asset Thesis');
 });
 
-test('validates asset view can generate title with ticker', () => {
-  assertTrue(canGenerateAssetViewTitle({
+test('validates asset thesis can generate title with ticker', () => {
+  assertTrue(canGenerateAssetThesisTitle({
     direction: null,
     ticker: 'BTC',
     timeHorizon: null,
   }));
 });
 
-test('validates asset view cannot generate title without ticker', () => {
-  assertFalse(canGenerateAssetViewTitle({
+test('validates asset thesis cannot generate title without ticker', () => {
+  assertFalse(canGenerateAssetThesisTitle({
     direction: 'bullish',
     ticker: null,
     timeHorizon: 'long_term',

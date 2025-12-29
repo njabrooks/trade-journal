@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { researchInsights, macroTheses, assetViews, underlyings } from '@/db/schema';
+import { researchInsights, macroTheses, assetTheses, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure, MainClaim } from '@/types/claims';
-import { afterMacroThesisSave, afterAssetViewSave } from '@/lib/obsidian/hooks';
+import { afterMacroThesisSave, afterAssetThesisSave } from '@/lib/obsidian/hooks';
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     } else if (conversionType === 'asset_view') {
       // Validate ticker
       if (!data.ticker || data.ticker === 'undefined' || typeof data.ticker !== 'string' || data.ticker.trim() === '') {
-        return NextResponse.json({ error: 'Valid ticker is required for asset view' }, { status: 400 });
+        return NextResponse.json({ error: 'Valid ticker is required for asset thesis' }, { status: 400 });
       }
 
       // Resolve ticker to underlying_id
@@ -100,9 +100,9 @@ export async function POST(request: NextRequest) {
           .returning();
       }
 
-      // Create asset view
+      // Create asset thesis
       const [view] = await db
-        .insert(assetViews)
+        .insert(assetTheses)
         .values({
           underlyingId: underlying.id,
           title: data.title,
@@ -119,8 +119,8 @@ export async function POST(request: NextRequest) {
       createdId = view.id;
 
       // Sync to Obsidian (non-blocking)
-      afterAssetViewSave(view).catch((error) => {
-        console.error('Failed to sync asset view to Obsidian:', error);
+      afterAssetThesisSave(view).catch((error) => {
+        console.error('Failed to sync asset thesis to Obsidian:', error);
       });
     } else {
       return NextResponse.json({ error: 'Invalid conversion type' }, { status: 400 });

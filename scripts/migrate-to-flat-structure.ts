@@ -8,7 +8,7 @@
  * Before:
  *   investing/main-claims/2025-12-28-claim-title.md
  *   investing/macro-theses/2025-12-28-thesis-title.md
- *   investing/asset-views/2025-12-28-view-title.md
+ *   investing/asset-theses/2025-12-28-view-title.md
  *
  * After:
  *   investing/2025-12-28-main-claim-claim-title.md
@@ -36,7 +36,7 @@ interface MigrationResult {
 const FOLDER_TO_TYPE: { [folder: string]: string } = {
   'main-claims': 'main-claim',
   'macro-theses': 'macro-thesis',
-  'asset-views': 'asset-view',
+  'asset-theses': 'asset-view',
   'transcripts': 'transcript',
   'audits': 'audit',
   'syntheses': 'synthesis',
@@ -156,7 +156,7 @@ async function main() {
   const directories = [
     { path: path.join(vaultPath, 'main-claims'), type: 'main-claim' },
     { path: path.join(vaultPath, 'macro-theses'), type: 'macro-thesis' },
-    { path: path.join(vaultPath, 'asset-views'), type: 'asset-view' },
+    { path: path.join(vaultPath, 'asset-theses'), type: 'asset-view' },
     { path: path.join(vaultPath, 'research/transcripts'), type: 'transcript' },
     { path: path.join(vaultPath, 'research/audits'), type: 'audit' },
     { path: path.join(vaultPath, 'research/syntheses'), type: 'synthesis' },
@@ -236,7 +236,7 @@ async function main() {
     console.log('2. Delete empty nested folders:');
     console.log('   - main-claims/');
     console.log('   - macro-theses/');
-    console.log('   - asset-views/');
+    console.log('   - asset-theses/');
     console.log('   - research/transcripts/');
     console.log('   - research/audits/');
     console.log('   - research/syntheses/');

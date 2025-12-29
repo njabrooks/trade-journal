@@ -6,7 +6,7 @@ import {
   researchProcessingRuns,
   researchHierarchyRecommendations,
   macroTheses,
-  assetViews,
+  assetTheses,
   strategies,
   positions,
   underlyings,
@@ -268,13 +268,13 @@ export async function getAllMainClaimsWithSources() {
   const linkedViewsData = await db
     .select({
       claimId: claimThesisMappings.mainClaimId,
-      viewId: assetViews.id,
-      viewTitle: assetViews.title,
+      viewId: assetTheses.id,
+      viewTitle: assetTheses.title,
       ticker: underlyings.ticker,
     })
     .from(claimThesisMappings)
-    .innerJoin(assetViews, eq(claimThesisMappings.assetViewId, assetViews.id))
-    .innerJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
+    .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
+    .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
     .where(inArray(claimThesisMappings.mainClaimId, claimIds));
 
   // Group linked entities by claim ID
@@ -352,13 +352,13 @@ export async function getMainClaimsForArtifact(artifactId: string) {
   const linkedViewsData = await db
     .select({
       claimId: claimThesisMappings.mainClaimId,
-      viewId: assetViews.id,
-      viewTitle: assetViews.title,
+      viewId: assetTheses.id,
+      viewTitle: assetTheses.title,
       ticker: underlyings.ticker,
     })
     .from(claimThesisMappings)
-    .innerJoin(assetViews, eq(claimThesisMappings.assetViewId, assetViews.id))
-    .innerJoin(underlyings, eq(assetViews.underlyingId, underlyings.id))
+    .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
+    .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
     .where(inArray(claimThesisMappings.mainClaimId, claimIds));
 
   // Group linked entities by claim ID
@@ -490,7 +490,7 @@ export async function getResearchForThesis(thesisId: string) {
   return mappings;
 }
 
-export async function getResearchForAssetView(viewId: string) {
+export async function getResearchForAssetThesis(viewId: string) {
   const mappings = await db
     .select({
       mapping: researchMappings,
@@ -500,7 +500,7 @@ export async function getResearchForAssetView(viewId: string) {
     .from(researchMappings)
     .innerJoin(researchInsights, eq(researchMappings.researchInsightId, researchInsights.id))
     .innerJoin(researchArtifacts, eq(researchInsights.researchArtifactId, researchArtifacts.id))
-    .where(eq(researchMappings.assetViewId, viewId))
+    .where(eq(researchMappings.assetThesisId, viewId))
     .orderBy(desc(researchMappings.mappedAt));
 
   return mappings;
@@ -546,14 +546,14 @@ export async function getEvidenceSummaryForThesis(thesisId: string) {
   };
 }
 
-export async function getEvidenceSummaryForAssetView(viewId: string) {
+export async function getEvidenceSummaryForAssetThesis(viewId: string) {
   const mappings = await db
     .select({
       mappingType: researchMappings.mappingType,
       count: sql<number>`count(*)::int`,
     })
     .from(researchMappings)
-    .where(eq(researchMappings.assetViewId, viewId))
+    .where(eq(researchMappings.assetThesisId, viewId))
     .groupBy(researchMappings.mappingType);
 
   return {

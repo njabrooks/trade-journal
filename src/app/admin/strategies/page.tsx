@@ -20,7 +20,7 @@ interface StrategyFormData {
   timeRules?: string;
   exitCriteria?: string;
   macroThesisId?: string;
-  assetViewId?: string;
+  assetThesisId?: string;
 }
 
 function StrategiesPageContent() {
@@ -31,7 +31,7 @@ function StrategiesPageContent() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [macroTheses, setMacroTheses] = useState<Array<{ id: string; title: string }>>([]);
-  const [assetViews, setAssetViews] = useState<Array<{ id: string; title: string }>>([]);
+  const [assetTheses, setAssetTheses] = useState<Array<{ id: string; title: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<StrategyFormData>({
@@ -47,7 +47,7 @@ function StrategiesPageContent() {
     timeRules: '',
     exitCriteria: '',
     macroThesisId: '',
-    assetViewId: '',
+    assetThesisId: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +79,7 @@ function StrategiesPageContent() {
   const [editingHierarchyId, setEditingHierarchyId] = useState<string | null>(null);
   const [hierarchyEditValues, setHierarchyEditValues] = useState<{
     macroThesisId: string;
-    assetViewId: string;
+    assetThesisId: string;
   } | null>(null);
 
   useEffect(() => {
@@ -114,7 +114,7 @@ function StrategiesPageContent() {
 
       if (viewsRes.ok) {
         const viewsData = await viewsRes.json();
-        setAssetViews(viewsData.map((v: any) => ({ id: v.id, title: v.title })));
+        setAssetTheses(viewsData.map((v: any) => ({ id: v.id, title: v.title })));
       }
     } catch (err) {
       console.error('Failed to load theses and views:', err);
@@ -206,7 +206,7 @@ function StrategiesPageContent() {
         timeRules: '',
         exitCriteria: '',
         macroThesisId: '',
-        assetViewId: '',
+        assetThesisId: '',
       });
       setShowForm(false);
       await loadData();
@@ -512,7 +512,7 @@ function StrategiesPageContent() {
           body: JSON.stringify({
             id: strategyId,
             macroThesisId: bulkAssignThesisId || null,
-            assetViewId: bulkAssignViewId || null,
+            assetThesisId: bulkAssignViewId || null,
           }),
         });
 
@@ -535,7 +535,7 @@ function StrategiesPageContent() {
     setEditingHierarchyId(strategy.id);
     setHierarchyEditValues({
       macroThesisId: strategy.macroThesisId || '',
-      assetViewId: strategy.assetViewId || '',
+      assetThesisId: strategy.assetThesisId || '',
     });
   };
 
@@ -554,7 +554,7 @@ function StrategiesPageContent() {
         body: JSON.stringify({
           id: editingHierarchyId,
           macroThesisId: hierarchyEditValues.macroThesisId || null,
-          assetViewId: hierarchyEditValues.assetViewId || null,
+          assetThesisId: hierarchyEditValues.assetThesisId || null,
         }),
       });
 
@@ -782,19 +782,19 @@ function StrategiesPageContent() {
               </div>
 
               <div>
-                <label htmlFor="assetViewId" className="block text-sm font-medium mb-1">
-                  Asset View (Optional)
+                <label htmlFor="assetThesisId" className="block text-sm font-medium mb-1">
+                  Asset Thesis (Optional)
                 </label>
                 <select
-                  id="assetViewId"
-                  value={formData.assetViewId}
+                  id="assetThesisId"
+                  value={formData.assetThesisId}
                   onChange={(e) =>
-                    setFormData({ ...formData, assetViewId: e.target.value })
+                    setFormData({ ...formData, assetThesisId: e.target.value })
                   }
                   className="w-full border rounded px-3 py-2"
                 >
                   <option value="">None</option>
-                  {assetViews.map((view) => (
+                  {assetTheses.map((view) => (
                     <option key={view.id} value={view.id}>
                       {view.title}
                     </option>
@@ -958,7 +958,7 @@ function StrategiesPageContent() {
                   className="border rounded px-2 py-1 text-sm"
                 >
                   <option value="">None</option>
-                  {assetViews.map((view) => (
+                  {assetTheses.map((view) => (
                     <option key={view.id} value={view.id}>
                       {view.title}
                     </option>
@@ -1197,16 +1197,16 @@ function StrategiesPageContent() {
                             <td className="px-6 py-4 text-sm text-gray-500">
                               {editingHierarchyId === strategy.id ? (
                                 <select
-                                  value={hierarchyEditValues?.assetViewId ?? ''}
+                                  value={hierarchyEditValues?.assetThesisId ?? ''}
                                   onChange={(e) =>
                                     setHierarchyEditValues((prev) =>
-                                      prev ? { ...prev, assetViewId: e.target.value } : prev
+                                      prev ? { ...prev, assetThesisId: e.target.value } : prev
                                     )
                                   }
                                   className="border rounded px-2 py-1 text-xs w-full"
                                 >
                                   <option value="">None</option>
-                                  {assetViews.map((view) => (
+                                  {assetTheses.map((view) => (
                                     <option key={view.id} value={view.id}>
                                       {view.title}
                                     </option>
@@ -1218,7 +1218,7 @@ function StrategiesPageContent() {
                                   onClick={() => startEditingHierarchy(strategy)}
                                   title="Click to edit thesis/view"
                                 >
-                                  {assetViews.find((v) => v.id === strategy.assetViewId)?.title || '—'}
+                                  {assetTheses.find((v) => v.id === strategy.assetThesisId)?.title || '—'}
                                 </span>
                               )}
                             </td>

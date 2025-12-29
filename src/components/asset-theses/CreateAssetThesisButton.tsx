@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CreateAssetViewDialog } from './CreateAssetViewDialog';
+import { CreateAssetThesisDialog } from './CreateAssetThesisDialog';
 
-export function CreateAssetViewButton() {
+export function CreateAssetThesisButton() {
   const [showDialog, setShowDialog] = useState(false);
 
   return (
@@ -15,7 +15,7 @@ export function CreateAssetViewButton() {
         Create New View
       </Button>
 
-      {showDialog && <CreateAssetViewDialog onClose={() => setShowDialog(false)} />}
+      {showDialog && <CreateAssetThesisDialog onClose={() => setShowDialog(false)} />}
     </>
   );
 }

@@ -8,7 +8,7 @@ import * as path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 import { db } from '@/db';
-import { researchInsights, macroTheses, assetViews, underlyings } from '@/db/schema';
+import { researchInsights, macroTheses, assetTheses, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure, MainClaim } from '@/types/claims';
 
@@ -118,7 +118,7 @@ async function testConversion() {
     // Step 4: Convert view candidate (if exists)
     let createdView;
     if (viewCandidate) {
-      console.log('4️⃣  Converting view candidate to asset view...\n');
+      console.log('4️⃣  Converting view candidate to asset thesis...\n');
 
       const ticker = viewCandidate.relevant_tickers?.[0] || 'NVDA';
 
@@ -154,7 +154,7 @@ async function testConversion() {
       };
 
       [createdView] = await db
-        .insert(assetViews)
+        .insert(assetTheses)
         .values({
           ...viewData,
           status: 'active',
@@ -257,7 +257,7 @@ async function testConversion() {
     console.log('Created entities:');
     console.log(`   - Macro Thesis: ${createdThesis.id}`);
     if (createdView) {
-      console.log(`   - Asset View:   ${createdView.id}`);
+      console.log(`   - Asset Thesis:   ${createdView.id}`);
     }
     console.log('   ');
 
@@ -265,7 +265,7 @@ async function testConversion() {
     console.log(`   - Research: http://localhost:3000/research/${INSIGHT_ID}`);
     console.log(`   - Thesis:   http://localhost:3000/theses/${createdThesis.id}`);
     if (createdView) {
-      console.log(`   - View:     http://localhost:3000/asset-views/${createdView.id}`);
+      console.log(`   - View:     http://localhost:3000/asset-theses/${createdView.id}`);
     }
     console.log('   ');
 

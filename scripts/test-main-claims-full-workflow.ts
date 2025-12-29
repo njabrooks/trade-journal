@@ -8,7 +8,7 @@
  * 2. Promote a main claim to main_claims table
  * 3. Link evidence claims to the main claim
  * 4. Convert main claim to macro thesis
- * 5. Convert main claim to asset view
+ * 5. Convert main claim to asset thesis
  * 6. Verify all relationships
  */
 
@@ -18,7 +18,7 @@ import {
   mainClaims,
   mainClaimEvidence,
   macroTheses,
-  assetViews,
+  assetTheses,
   claimThesisMappings,
 } from '../src/db/schema';
 import { parseClaimsMarkdown } from '../src/lib/research/parseClaimsMarkdown';
@@ -162,9 +162,9 @@ async function runTest() {
   console.log(`✅ Linked claim to thesis\n`);
 
   // ============================================================================
-  // Step 5: Convert to Asset View
+  // Step 5: Convert to Asset Thesis
   // ============================================================================
-  console.log('📈 Step 5: Converting claim to asset view (CSCO)...');
+  console.log('📈 Step 5: Converting claim to asset thesis (CSCO)...');
 
   // Find Claim 4 (Cisco/Micron infrastructure)
   const claim4 = parsed.data.claimsStructure.main_claims.find(
@@ -173,7 +173,7 @@ async function runTest() {
 
   if (claim4) {
     const [view] = await db
-      .insert(assetViews)
+      .insert(assetTheses)
       .values({
         title: 'Cisco Long: On-Premise AI Infrastructure Buildout',
         description: claim4.claim_text || claim4.claim,
@@ -193,7 +193,7 @@ async function runTest() {
       })
       .returning();
 
-    console.log(`✅ Created asset view: ${view.id}`);
+    console.log(`✅ Created asset thesis: ${view.id}`);
 
     // Link claim to view
     await db.insert(claimThesisMappings).values({
@@ -204,7 +204,7 @@ async function runTest() {
       sourceInsightId: insight.id,
     });
 
-    console.log(`✅ Linked claim to asset view\n`);
+    console.log(`✅ Linked claim to asset thesis\n`);
   }
 
   // ============================================================================

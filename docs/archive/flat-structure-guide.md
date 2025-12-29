@@ -13,7 +13,7 @@ investing/
     ai-adoption-pmi-expansion.md
   macro-theses/
     bullish-ai-supply-chains.md
-  asset-views/
+  asset-theses/
     bullish-tsla.md
   research/
     transcripts/
@@ -96,7 +96,7 @@ path:investing main-claim
 path:investing macro-thesis
 ```
 
-**Asset Views Only**:
+**Asset Thesiss Only**:
 ```
 path:investing asset-view
 ```
@@ -130,7 +130,7 @@ path:investing 2025-12-28
 path:investing main-claim 2025-12
 ```
 
-**Asset Views for TSLA**:
+**Asset Thesiss for TSLA**:
 ```
 path:investing asset-view tsla
 ```
@@ -166,7 +166,7 @@ This will:
 ```bash
 # From vault root
 cd /Users/njb/Desktop/nick/investing
-rm -rf main-claims/ macro-theses/ asset-views/
+rm -rf main-claims/ macro-theses/ asset-theses/
 rm -rf research/transcripts/ research/audits/ research/syntheses/ research/deep-dives/
 rmdir research/  # Only if empty
 ```
@@ -257,7 +257,7 @@ Add to `.obsidian/app.json` to hide non-content folders:
     "research/",
     "main-claims/",
     "macro-theses/",
-    "asset-views/"
+    "asset-theses/"
   ]
 }
 ```
@@ -270,7 +270,7 @@ Create saved searches in Obsidian:
 
 1. **Recent Main Claims**: `path:investing main-claim 2025-12`
 2. **All Theses**: `path:investing macro-thesis`
-3. **Asset Views**: `path:investing asset-view`
+3. **Asset Thesiss**: `path:investing asset-view`
 4. **Research Content**: `path:investing (transcript OR audit)`
 
 ---

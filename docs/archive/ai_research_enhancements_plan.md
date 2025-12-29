@@ -10,7 +10,7 @@
 
 Enhance the AI research processing system to:
 1. Support multiple AI models (Claude, ChatGPT, Google Gemini)
-2. Analyze research insights against existing macro theses and asset views
+2. Analyze research insights against existing macro theses and asset thesiss
 3. Propose new theses/views or recommend linking to existing ones
 4. Provide UI for accepting/rejecting AI recommendations
 5. **Editable prompt management** for all AI workflows (insight extraction, hierarchy analysis, recommendations)
@@ -73,11 +73,11 @@ Enhance the AI research processing system to:
 **New AI Analysis Step**:
 After extracting structured insights, run a second AI call that:
 1. Fetches all existing macro theses (titles, descriptions, status)
-2. Fetches all existing asset views (titles, narratives, tickers)
+2. Fetches all existing asset thesiss (titles, narratives, tickers)
 3. Compares research insights against existing items
 4. Generates recommendations:
    - **New Macro Thesis**: If insights represent a new macro theme
-   - **New Asset View**: If insights represent a new asset-specific view
+   - **New Asset Thesis**: If insights represent a new asset-specific view
    - **Link to Existing**: If insights align with existing thesis/view (with confidence score)
    - **Refute Existing**: If insights contradict existing thesis/view
 
@@ -92,7 +92,7 @@ interface HierarchyRecommendation {
   proposedThesisType?: 'secular' | 'cyclical' | 'structural';
   proposedTimeHorizon?: 'long_term' | 'medium_term' | 'short_term';
   proposedConfidenceLevel?: 'high' | 'medium' | 'low' | 'exploratory';
-  proposedUnderlyingTicker?: string; // For asset views
+  proposedUnderlyingTicker?: string; // For asset thesiss
   
   // For existing items
   existingThesisId?: string;
@@ -137,7 +137,7 @@ interface HierarchyRecommendation {
   - Reasoning explanation
   - Action buttons (Accept, Reject, Modify)
 - `CreateThesisFromRecommendation` - Pre-filled form for new thesis
-- `CreateAssetViewFromRecommendation` - Pre-filled form for new asset view
+- `CreateAssetThesisFromRecommendation` - Pre-filled form for new asset thesis
 - `LinkToExistingDialog` - Pre-filled mapping dialog
 
 **Workflow**:
@@ -154,7 +154,7 @@ interface HierarchyRecommendation {
 - `src/components/research/HierarchyRecommendationsPanel.tsx`
 - `src/components/research/RecommendationCard.tsx`
 - `src/components/research/CreateThesisFromRecommendation.tsx`
-- `src/components/research/CreateAssetViewFromRecommendation.tsx`
+- `src/components/research/CreateAssetThesisFromRecommendation.tsx`
 - Update `src/app/research/[id]/page.tsx` to show recommendations
 
 ---

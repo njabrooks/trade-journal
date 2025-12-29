@@ -5,12 +5,12 @@ import { Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddMainClaimDialog } from '@/components/research/AddMainClaimDialog';
 
-interface AddMainClaimButtonForViewProps {
+interface AddMainClaimButtonForThesisProps {
   viewId: string;
   viewTitle: string;
 }
 
-export function AddMainClaimButtonForView({ viewId, viewTitle }: AddMainClaimButtonForViewProps) {
+export function AddMainClaimButtonForThesis({ viewId, viewTitle }: AddMainClaimButtonForThesisProps) {
   const [showDialog, setShowDialog] = useState(false);
 
   return (

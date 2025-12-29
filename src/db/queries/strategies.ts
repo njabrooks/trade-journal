@@ -9,7 +9,7 @@ import {
 import { db } from "@/db";
 import {
   accounts,
-  assetViews,
+  assetTheses,
   blotterActions,
   macroTheses,
   navSnapshots,
@@ -39,7 +39,7 @@ export interface StrategyListItem {
   strategyType: string | null;
   macroThesisId: string | null;
   macroThesisTitle: string | null;
-  assetViewId: string | null;
+  assetThesisId: string | null;
   assetViewTitle: string | null;
 }
 
@@ -47,7 +47,7 @@ export async function getStrategiesForList(
   limit = 40,
   filters?: {
     macroThesisId?: string;
-    assetViewId?: string;
+    assetThesisId?: string;
   }
 ): Promise<StrategyListItem[]> {
   // Get the most recent snapshot date from positions
@@ -67,8 +67,8 @@ export async function getStrategiesForList(
   if (filters?.macroThesisId) {
     whereConditions.push(eq(strategies.macroThesisId, filters.macroThesisId));
   }
-  if (filters?.assetViewId) {
-    whereConditions.push(eq(strategies.assetViewId, filters.assetViewId));
+  if (filters?.assetThesisId) {
+    whereConditions.push(eq(strategies.assetThesisId, filters.assetThesisId));
   }
 
   // Get all strategies with account info
@@ -85,13 +85,13 @@ export async function getStrategiesForList(
       strategyType: strategies.strategyType,
       macroThesisId: strategies.macroThesisId,
       macroThesisTitle: macroTheses.title,
-      assetViewId: strategies.assetViewId,
-      assetViewTitle: assetViews.title,
+      assetThesisId: strategies.assetThesisId,
+      assetViewTitle: assetTheses.title,
     })
     .from(strategies)
     .leftJoin(accounts, eq(strategies.accountId, accounts.id))
     .leftJoin(macroTheses, eq(strategies.macroThesisId, macroTheses.id))
-    .leftJoin(assetViews, eq(strategies.assetViewId, assetViews.id))
+    .leftJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
     .$dynamic();
 
   if (whereConditions.length > 0) {
@@ -186,7 +186,7 @@ export async function getStrategiesForList(
         strategyType: row.strategyType,
         macroThesisId: row.macroThesisId,
         macroThesisTitle: row.macroThesisTitle,
-        assetViewId: row.assetViewId,
+        assetThesisId: row.assetThesisId,
         assetViewTitle: row.assetViewTitle,
       };
     })
@@ -216,7 +216,7 @@ export interface StrategyDetail {
     strategyType: string | null;
     macroThesisId: string | null;
     macroThesisTitle: string | null;
-    assetViewId: string | null;
+    assetThesisId: string | null;
     assetViewTitle: string | null;
   };
   currentStateCode: string | null;
@@ -300,15 +300,15 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         strategyType: strategies.strategyType,
         macroThesisId: strategies.macroThesisId,
         macroThesisTitle: macroTheses.title,
-        assetViewId: strategies.assetViewId,
-        assetViewTitle: assetViews.title,
+        assetThesisId: strategies.assetThesisId,
+        assetViewTitle: assetTheses.title,
       })
       .from(strategies)
       .leftJoin(accounts, eq(strategies.accountId, accounts.id))
       .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
       .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
       .leftJoin(macroTheses, eq(strategies.macroThesisId, macroTheses.id))
-      .leftJoin(assetViews, eq(strategies.assetViewId, assetViews.id))
+      .leftJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
       .where(eq(strategies.id, strategyId))
       .limit(1);
 
@@ -513,7 +513,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         strategyType: strategyRow.strategyType,
         macroThesisId: strategyRow.macroThesisId,
         macroThesisTitle: strategyRow.macroThesisTitle,
-        assetViewId: strategyRow.assetViewId,
+        assetThesisId: strategyRow.assetThesisId,
         assetViewTitle: strategyRow.assetViewTitle,
       },
       currentStateCode,

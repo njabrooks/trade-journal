@@ -35,9 +35,9 @@
 - #ENH-001: Sidebar reordering ✅ Complete
 - #ENH-002: Claims browser page 🚧 Planned
 - #ENH-003: Claims in triage (deferred)
-- #ENH-004: Link Asset Views to underlyings
+- #ENH-004: Link Asset Thesiss to underlyings
 - #ENH-005: Rename to Asset Thesis? (under consideration)
-- #ENH-006: Asset View auto-titles
+- #ENH-006: Asset Thesis auto-titles
 - #ENH-007: Auto-generate descriptions
 - #ENH-008: Enhanced linking UX
 - #ENH-009: Macro Thesis auto-titles

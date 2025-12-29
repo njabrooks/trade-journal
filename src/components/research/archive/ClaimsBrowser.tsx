@@ -655,7 +655,7 @@ export function ClaimsBrowser({ claimsStructure, insightId }: ClaimsBrowserProps
                 <span className="inline-flex items-center justify-center w-6 h-6 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">
                   {viewCandidates.length}
                 </span>
-                Asset View Candidates
+                Asset Thesis Candidates
               </h4>
               <div className="space-y-3">{viewCandidates.map(renderMainClaim)}</div>
             </div>
