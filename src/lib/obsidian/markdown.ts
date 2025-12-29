@@ -6,7 +6,7 @@ import type { MainClaim, MacroThesis, AssetThesis } from '@/db/schema';
  */
 export interface ObsidianFrontmatter {
   id: string;
-  type: 'main_claim' | 'macro_thesis' | 'asset_view';
+  type: 'main_claim' | 'macro_thesis' | 'asset_thesis';
   created_at: string;
   updated_at: string;
   last_synced_at: string;
@@ -73,7 +73,7 @@ export function parseMarkdown(fileContent: string): ParsedMarkdown {
  */
 export function generateFrontmatter(
   entity: MainClaim | MacroThesis | AssetThesis,
-  type: 'main_claim' | 'macro_thesis' | 'asset_view',
+  type: 'main_claim' | 'macro_thesis' | 'asset_thesis',
   linkedCounts?: { theses?: number; views?: number }
 ): ObsidianFrontmatter {
   const base: ObsidianFrontmatter = {
@@ -122,7 +122,7 @@ export function generateFrontmatter(
     ) as unknown as ObsidianFrontmatter;
   }
 
-  if (type === 'asset_view') {
+  if (type === 'asset_thesis') {
     const view = entity as AssetThesis;
     const frontmatter = {
       ...base,
@@ -318,7 +318,7 @@ export function generateAssetThesisMarkdown(
  */
 export function generateMarkdownFile(
   entity: MainClaim | MacroThesis | AssetThesis,
-  type: 'main_claim' | 'macro_thesis' | 'asset_view',
+  type: 'main_claim' | 'macro_thesis' | 'asset_thesis',
   ticker?: string,
   linkedCounts?: { theses?: number; views?: number }
 ): string {
@@ -351,7 +351,7 @@ export function sanitizeFilename(title: string): string {
  * Generate filepath for entity (flat structure)
  */
 export function generateFilepath(
-  type: 'main_claim' | 'macro_thesis' | 'asset_view',
+  type: 'main_claim' | 'macro_thesis' | 'asset_thesis',
   title: string,
   vaultPath: string,
   createdAt?: Date
@@ -365,7 +365,7 @@ export function generateFilepath(
   const typePrefix =
     type === 'main_claim' ? 'main-claim-' :
     type === 'macro_thesis' ? 'macro-thesis-' :
-    'asset-view-';
+    'asset-thesis-';
 
   const filename = datePrefix + typePrefix + sanitizeFilename(title) + '.md';
 

@@ -12,7 +12,7 @@ import { syncDatabaseToFile, type SyncResult } from '@/lib/obsidian/sync';
  *
  * Request body:
  * {
- *   entityType?: 'main_claim' | 'macro_thesis' | 'asset_view';  // Optional: sync all of this type
+ *   entityType?: 'main_claim' | 'macro_thesis' | 'asset_thesis';  // Optional: sync all of this type
  *   entityId?: string;  // Optional: sync specific entity
  *   syncAll?: boolean;  // Optional: sync all entities of all types
  * }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         }
         const result = await syncDatabaseToFile(thesis as any, 'macro_thesis');
         results.push(result);
-      } else if (entityType === 'asset_view') {
+      } else if (entityType === 'asset_thesis') {
         const [view] = await db.select().from(assetTheses).where(eq(assetTheses.id, entityId)).limit(1);
         if (!view) {
           return NextResponse.json({ error: 'Asset view not found' }, { status: 404 });
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           ticker = underlying?.ticker;
         }
 
-        const result = await syncDatabaseToFile(view as any, 'asset_view', ticker);
+        const result = await syncDatabaseToFile(view as any, 'asset_thesis', ticker);
         results.push(result);
       }
     }
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
           const result = await syncDatabaseToFile(thesis as any, 'macro_thesis');
           results.push(result);
         }
-      } else if (entityType === 'asset_view') {
+      } else if (entityType === 'asset_thesis') {
         const views = await db.select().from(assetTheses);
         for (const view of views) {
           let ticker: string | undefined;
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
             const [underlying] = await db.select().from(underlyings).where(eq(underlyings.id, view.underlyingId)).limit(1);
             ticker = underlying?.ticker;
           }
-          const result = await syncDatabaseToFile(view as any, 'asset_view', ticker);
+          const result = await syncDatabaseToFile(view as any, 'asset_thesis', ticker);
           results.push(result);
         }
       }
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
           const [underlying] = await db.select().from(underlyings).where(eq(underlyings.id, view.underlyingId)).limit(1);
           ticker = underlying?.ticker;
         }
-        const result = await syncDatabaseToFile(view as any, 'asset_view', ticker);
+        const result = await syncDatabaseToFile(view as any, 'asset_thesis', ticker);
         results.push(result);
       }
     } else {

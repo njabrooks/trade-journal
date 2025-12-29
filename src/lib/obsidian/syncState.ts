@@ -8,7 +8,7 @@ import path from 'path';
 
 interface SyncStateEntry {
   id: string;
-  type: 'main_claim' | 'macro_thesis' | 'asset_view';
+  type: 'main_claim' | 'macro_thesis' | 'asset_thesis';
   lastSynced: string; // ISO timestamp
 }
 
@@ -68,7 +68,7 @@ class SyncStateCache {
   async track(
     filePath: string,
     id: string,
-    type: 'main_claim' | 'macro_thesis' | 'asset_view'
+    type: 'main_claim' | 'macro_thesis' | 'asset_thesis'
   ): Promise<void> {
     await this.load();
 

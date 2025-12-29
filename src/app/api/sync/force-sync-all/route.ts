@@ -44,7 +44,7 @@ export async function POST() {
     // Sync all asset thesiss
     const views = await db.select().from(assetTheses);
     for (const view of views) {
-      const result = await syncDatabaseToFile(view, 'asset_view');
+      const result = await syncDatabaseToFile(view, 'asset_thesis');
       if (result.success) {
         results.assetTheses.success++;
       } else {

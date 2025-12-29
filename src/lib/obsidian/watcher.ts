@@ -52,11 +52,9 @@ class ObsidianWatcher {
 
     this.config = config;
 
-    // Watch these folders for main claims, macro theses, and asset theses
+    // Watch the investing folder (flat structure with filename prefixes)
     const watchPaths = [
-      path.join(config.vaultPath, 'investing', 'main-claims'),
-      path.join(config.vaultPath, 'investing', 'macro-theses'),
-      path.join(config.vaultPath, 'investing', 'asset-theses'),
+      path.join(config.vaultPath, 'investing'),
     ];
 
     console.log('Starting Obsidian file watcher...');

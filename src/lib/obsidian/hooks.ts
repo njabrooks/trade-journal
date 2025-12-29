@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm';
  */
 export async function syncEntityToObsidian(
   entity: MainClaim | MacroThesis | AssetThesis,
-  type: 'main_claim' | 'macro_thesis' | 'asset_view'
+  type: 'main_claim' | 'macro_thesis' | 'asset_thesis'
 ): Promise<void> {
   const syncEnabled = process.env.OBSIDIAN_SYNC_ENABLED === 'true';
   if (!syncEnabled) {
@@ -20,7 +20,7 @@ export async function syncEntityToObsidian(
   try {
     // Get ticker for asset thesiss
     let ticker: string | undefined;
-    if (type === 'asset_view') {
+    if (type === 'asset_thesis') {
       const view = entity as AssetThesis;
       if (view.underlyingId) {
         const [underlying] = await db
@@ -62,5 +62,5 @@ export async function afterMacroThesisSave(thesis: MacroThesis): Promise<void> {
  * Hook for after asset thesis is created/updated
  */
 export async function afterAssetThesisSave(view: AssetThesis): Promise<void> {
-  await syncEntityToObsidian(view, 'asset_view');
+  await syncEntityToObsidian(view, 'asset_thesis');
 }

@@ -15,7 +15,7 @@ import { syncStateCache } from './syncState';
 export interface SyncResult {
   success: boolean;
   action: 'created' | 'updated' | 'skipped' | 'conflict' | 'deleted';
-  entityType: 'main_claim' | 'macro_thesis' | 'asset_view';
+  entityType: 'main_claim' | 'macro_thesis' | 'asset_thesis';
   entityId?: string;
   filePath?: string;
   error?: string;
@@ -52,7 +52,7 @@ export async function syncFileToDatabase(
       } else if (entityInfo.type === 'macro_thesis') {
         await db.delete(macroTheses).where(eq(macroTheses.id, entityInfo.id));
         deleted = true;
-      } else if (entityInfo.type === 'asset_view') {
+      } else if (entityInfo.type === 'asset_thesis') {
         await db.delete(assetTheses).where(eq(assetTheses.id, entityInfo.id));
         deleted = true;
       }
@@ -88,7 +88,7 @@ export async function syncFileToDatabase(
     // Determine entity type
     const entityType = frontmatter.type;
 
-    if (!entityType || !['main_claim', 'macro_thesis', 'asset_view'].includes(entityType)) {
+    if (!entityType || !['main_claim', 'macro_thesis', 'asset_thesis'].includes(entityType)) {
       return {
         success: false,
         action: 'skipped',
@@ -107,7 +107,7 @@ export async function syncFileToDatabase(
       return await syncMainClaimToDatabase(frontmatter, markdownContent, filePath, operation);
     } else if (entityType === 'macro_thesis') {
       return await syncMacroThesisToDatabase(frontmatter, markdownContent, filePath, operation);
-    } else if (entityType === 'asset_view') {
+    } else if (entityType === 'asset_thesis') {
       return await syncAssetThesisToDatabase(frontmatter, markdownContent, filePath, operation);
     }
 
@@ -440,7 +440,7 @@ async function syncAssetThesisToDatabase(
       return {
         success: false,
         action: 'skipped',
-        entityType: 'asset_view',
+        entityType: 'asset_thesis',
         filePath,
         error: 'Missing or invalid ticker in frontmatter',
       };
@@ -510,12 +510,12 @@ async function syncAssetThesisToDatabase(
         await fs.writeFile(filePath, newContent, 'utf-8');
 
         // Track in sync state cache
-        await syncStateCache.track(filePath, existingByTitleAndTicker.id, 'asset_view');
+        await syncStateCache.track(filePath, existingByTitleAndTicker.id, 'asset_thesis');
 
         return {
           success: true,
           action: 'updated',
-          entityType: 'asset_view',
+          entityType: 'asset_thesis',
           entityId: existingByTitleAndTicker.id,
           filePath,
         };
@@ -531,12 +531,12 @@ async function syncAssetThesisToDatabase(
       await fs.writeFile(filePath, newContent, 'utf-8');
 
       // Track in sync state cache
-      await syncStateCache.track(filePath, created.id, 'asset_view');
+      await syncStateCache.track(filePath, created.id, 'asset_thesis');
 
       return {
         success: true,
         action: 'created',
-        entityType: 'asset_view',
+        entityType: 'asset_thesis',
         entityId: created.id,
         filePath,
       };
@@ -557,12 +557,12 @@ async function syncAssetThesisToDatabase(
           .returning();
 
         // Track in sync state cache
-        await syncStateCache.track(filePath, created.id, 'asset_view');
+        await syncStateCache.track(filePath, created.id, 'asset_thesis');
 
         return {
           success: true,
           action: 'created',
-          entityType: 'asset_view',
+          entityType: 'asset_thesis',
           entityId: created.id,
           filePath,
         };
@@ -574,12 +574,12 @@ async function syncAssetThesisToDatabase(
         .where(eq(assetTheses.id, existingId));
 
       // Track in sync state cache
-      await syncStateCache.track(filePath, existingId, 'asset_view');
+      await syncStateCache.track(filePath, existingId, 'asset_thesis');
 
       return {
         success: true,
         action: 'updated',
-        entityType: 'asset_view',
+        entityType: 'asset_thesis',
         entityId: existingId,
         filePath,
       };
@@ -588,7 +588,7 @@ async function syncAssetThesisToDatabase(
     return {
       success: false,
       action: 'skipped',
-      entityType: 'asset_view',
+      entityType: 'asset_thesis',
       filePath,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
@@ -600,7 +600,7 @@ async function syncAssetThesisToDatabase(
  */
 export async function syncDatabaseToFile(
   entity: MainClaim | MacroThesis | AssetThesis,
-  type: 'main_claim' | 'macro_thesis' | 'asset_view',
+  type: 'main_claim' | 'macro_thesis' | 'asset_thesis',
   ticker?: string
 ): Promise<SyncResult> {
   try {

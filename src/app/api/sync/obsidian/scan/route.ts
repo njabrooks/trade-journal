@@ -52,39 +52,40 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Scan folders
-    const folders = ['main-claims', 'macro-theses', 'asset-views'];
+    // Scan the flat investing folder
+    const investingPath = path.join(vaultPath, 'investing');
     const results: SyncResult[] = [];
 
-    for (const folder of folders) {
-      const folderPath = path.join(vaultPath, 'investing', folder);
+    try {
+      await fs.access(investingPath);
+    } catch (error) {
+      return NextResponse.json(
+        { error: `Investing folder does not exist: ${investingPath}` },
+        { status: 404 }
+      );
+    }
+
+    // Read all .md files in flat structure
+    const files = await fs.readdir(investingPath);
+    const mdFiles = files.filter((f) =>
+      f.endsWith('.md') &&
+      (f.includes('-main-claim-') || f.includes('-macro-thesis-') || f.includes('-asset-thesis-'))
+    );
+
+    for (const file of mdFiles) {
+      const filePath = path.join(investingPath, file);
 
       try {
-        await fs.access(folderPath);
+        const result = await syncFileToDatabase(filePath, 'update');
+        results.push(result);
       } catch (error) {
-        // Folder doesn't exist, skip
-        continue;
-      }
-
-      // Read all .md files in folder
-      const files = await fs.readdir(folderPath);
-      const mdFiles = files.filter((f) => f.endsWith('.md'));
-
-      for (const file of mdFiles) {
-        const filePath = path.join(folderPath, file);
-
-        try {
-          const result = await syncFileToDatabase(filePath, 'update');
-          results.push(result);
-        } catch (error) {
-          results.push({
-            success: false,
-            action: 'skipped',
-            entityType: 'main_claim',
-            filePath,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
+        results.push({
+          success: false,
+          action: 'skipped',
+          entityType: 'main_claim',
+          filePath,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
     }
 
