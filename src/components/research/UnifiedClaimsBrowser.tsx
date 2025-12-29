@@ -4,11 +4,12 @@ import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import type { MainClaim as DbMainClaim, ResearchInsight, ResearchArtifact } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
 import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } from '@/types/claims';
+import { ConvertClaimToEntityDialog } from './ConvertClaimToEntityDialog';
 
 interface ClaimWithSource {
   claim: DbMainClaim;
@@ -44,6 +45,10 @@ export function UnifiedClaimsBrowser({ claimsWithSources }: UnifiedClaimsBrowser
 
   // Loading state for status updates
   const [updatingClaimId, setUpdatingClaimId] = useState<string | null>(null);
+
+  // Convert dialog state
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [claimToConvert, setClaimToConvert] = useState<DbMainClaim | null>(null);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -527,18 +532,33 @@ export function UnifiedClaimsBrowser({ claimsWithSources }: UnifiedClaimsBrowser
 
                         {/* Actions */}
                         <td className="px-4 py-3 text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setExpandedClaim(isExpanded ? null : claim.id)}
-                            className="h-7 w-7 p-0"
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setClaimToConvert(claim);
+                                setConvertDialogOpen(true);
+                              }}
+                              className="h-7 px-2 text-xs"
+                              title="Convert to Thesis/View"
+                            >
+                              <ArrowRight className="h-3 w-3 mr-1" />
+                              Convert
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setExpandedClaim(isExpanded ? null : claim.id)}
+                              className="h-7 w-7 p-0"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
 
@@ -667,6 +687,18 @@ export function UnifiedClaimsBrowser({ claimsWithSources }: UnifiedClaimsBrowser
           )}
         </div>
       </section>
+
+      {/* Convert Claim Dialog */}
+      {claimToConvert && (
+        <ConvertClaimToEntityDialog
+          claim={claimToConvert}
+          isOpen={convertDialogOpen}
+          onClose={() => {
+            setConvertDialogOpen(false);
+            setClaimToConvert(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -195,26 +195,36 @@
 
 ---
 
-#### #ENH-011: Convert Claim Button Creates New Thesis/View
-**Status**: 🚧 Planned
+#### #ENH-011: Convert Claim Button Creates New Thesis/View ✅
+**Status**: ✅ Complete (2025-12-29)
 **Priority**: High
-**Effort**: 3-4 days
+**Effort**: ~30 minutes actual (3-4 days estimated)
 **PRD**: Section 5.4 (Contextual Mapping)
 **Phase**: Phase 2.6.5
 **Source**: docs/archive/20251228_enhancements.md (item 11)
-**Dependencies**: #ENH-006 ✅, #ENH-009 ✅, #ENH-010 ✅ (requires structured fields and taxonomy)
+**Dependencies**: #ENH-006 ✅, #ENH-009 ✅, #ENH-010 ✅
 
 **Description**: Convert button creates NEW macro thesis or asset view (doesn't convert claim itself)
 
-**Workflow**:
-1. User clicks "Convert" on claim
-2. AI suggests field values (direction, sector/underlying, time horizon) based on claim context
-3. User reviews and approves/edits suggestions
-4. System creates new thesis/view with suggested fields
-5. Claim is promoted and linked to newly created thesis/view as evidence
-6. Automatic provenance tracking (claim → thesis/view)
+**Implemented Workflow**:
+1. User clicks "Convert" button on claim in claims browser
+2. Two-step dialog:
+   - Step 1: Choose entity type (Macro Thesis or Asset View)
+   - Step 2: Fill structured fields (direction, sector/ticker, time horizon)
+3. Live title preview shows auto-generated title as user types
+4. System creates new thesis/view via existing API routes
+5. Claim automatically linked to new entity as evidence
+6. Automatic provenance tracking in notes field
 
-**Big Picture Impact**: Streamlines claim → hierarchy workflow, maintains claim as evidence source
+**Technical Implementation**:
+- ✅ `ConvertClaimToEntityDialog` component (423 lines)
+- ✅ "Convert" button in claims browser Actions column
+- ✅ Uses SectorSelector for sector multi-select
+- ✅ Uses title generation for live preview
+- ✅ Reuses `/api/theses/create` and `/api/asset-views/create` routes
+- ⏳ AI field suggestions deferred to future enhancement
+
+**Big Picture Impact**: Completes research workflow loop. One-click conversion from claim to hierarchy entity with full provenance tracking.
 
 ---
 

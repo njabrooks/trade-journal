@@ -1,7 +1,7 @@
 # System Architecture Transition: Implementation Progress
 
 **Master Plan**: See [`system_architecture_transition_plan.md`](./system_architecture_transition_plan.md)
-**Last Updated**: 2025-12-29 (Phase 2.6.1, 2.6.2, 2.6.3 & 2.6.4 Complete)
+**Last Updated**: 2025-12-29 (Phase 2.6.1, 2.6.2, 2.6.3, 2.6.4 & 2.6.5 Complete)
 **AI Enhancements Plan**: See [`ai_research_enhancements_plan.md`](./ai_research_enhancements_plan.md)
 
 ---
@@ -678,25 +678,33 @@ This document tracks the actual implementation progress of the transition from "
 
 ---
 
-### Phase 2.6.5: Streamlined Claim Conversion ⏳
+### Phase 2.6.5: Streamlined Claim Conversion ✅
 
 **Goal**: Improve claim → thesis/view conversion workflow.
 
-**Status**: ⏳ Planned
+**Status**: ✅ Complete (2025-12-29)
 **Deliverables**:
 
-- ⏳ Convert button creates NEW macro thesis or asset view (doesn't convert claim itself)
-- ⏳ Claim is promoted and linked to newly created thesis/view
-- ⏳ AI suggests field values (direction, sector, time horizon) based on claim context
-- ⏳ User reviews and approves suggestions
-- ⏳ Automatic provenance tracking (claim → thesis/view)
+- ✅ Convert button creates NEW macro thesis or asset view (doesn't convert claim itself)
+- ✅ Claim automatically linked to newly created thesis/view as evidence
+- ✅ Two-step conversion workflow: Choose entity type → Fill structured fields
+- ✅ Live title preview showing auto-generated title as user types
+- ✅ Automatic provenance tracking (claim → thesis/view with metadata)
+- ⏳ AI field suggestions (deferred to future enhancement - manual selection for now)
 
-**Estimated Effort**: 3-4 days
-**Dependencies**: Phase 2.6.3 ✅ (requires structured fields), Phase 2.6.4 ✅ (requires taxonomy)
+**Technical Implementation**:
+- `src/components/research/ConvertClaimToEntityDialog.tsx` (423 lines) - Conversion dialog component
+- `src/components/research/UnifiedClaimsBrowser.tsx` - Added "Convert" button in Actions column
+- Reuses existing API routes (`/api/theses/create`, `/api/asset-views/create`) with claim linking
+- Uses SectorSelector from Phase 2.6.4 for sector selection
+- Uses title generation from Phase 2.6.3 for live preview
+
+**Actual Effort**: ~30 minutes (faster than estimated 3-4 days)
+**Dependencies**: Phase 2.6.3 ✅, Phase 2.6.4 ✅
 
 **Enhancement ID**: #ENH-011
 
-**Big Picture Impact**: Streamlines claim → hierarchy workflow, maintains claim as evidence source
+**Big Picture Impact**: Completes research workflow loop (Artifact → Insight → Claims → Thesis/View). One-click conversion with automatic provenance tracking.
 
 ---
 
