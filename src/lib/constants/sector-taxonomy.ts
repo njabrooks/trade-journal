@@ -29,18 +29,18 @@ export interface TaxonomyItem {
 // ============================================================================
 
 export const SECTORS: TaxonomyItem[] = [
-  { value: 'Technology', label: 'Technology', description: 'Tech companies and services' },
-  { value: 'Financials', label: 'Financials', description: 'Banks, insurance, asset management' },
-  { value: 'Healthcare', label: 'Healthcare', description: 'Pharma, biotech, medical devices' },
-  { value: 'Energy', label: 'Energy', description: 'Oil, gas, renewables' },
-  { value: 'Industrials', label: 'Industrials', description: 'Manufacturing, aerospace, defense' },
-  { value: 'Consumer Discretionary', label: 'Consumer Discretionary', description: 'Retail, autos, entertainment' },
-  { value: 'Consumer Staples', label: 'Consumer Staples', description: 'Food, beverage, household products' },
-  { value: 'Materials', label: 'Materials', description: 'Chemicals, metals, mining' },
-  { value: 'Real Estate', label: 'Real Estate', description: 'REITs, property' },
-  { value: 'Utilities', label: 'Utilities', description: 'Electric, gas, water' },
-  { value: 'Communication Services', label: 'Communication Services', description: 'Telecom, media' },
-  { value: 'Transport', label: 'Transport', description: 'Airlines, shipping, logistics' },
+  { value: 'Sector - Technology', label: 'Technology sector', description: 'Tech companies and services' },
+  { value: 'Sector - Financials', label: 'Financials sector', description: 'Banks, insurance, asset management' },
+  { value: 'Sector - Healthcare', label: 'Healthcare sector', description: 'Pharma, biotech, medical devices' },
+  { value: 'Sector - Energy', label: 'Energy sector', description: 'Oil, gas, renewables' },
+  { value: 'Sector - Industrials', label: 'Industrials sector', description: 'Manufacturing, aerospace, defense' },
+  { value: 'Sector - Consumer Discretionary', label: 'Consumer Discretionary sector', description: 'Retail, autos, entertainment' },
+  { value: 'Sector - Consumer Staples', label: 'Consumer Staples sector', description: 'Food, beverage, household products' },
+  { value: 'Sector - Materials', label: 'Materials sector', description: 'Chemicals, metals, mining' },
+  { value: 'Sector - Real Estate', label: 'Real Estate sector', description: 'REITs, property' },
+  { value: 'Sector - Utilities', label: 'Utilities sector', description: 'Electric, gas, water' },
+  { value: 'Sector - Communication Services', label: 'Communication Services sector', description: 'Telecom, media' },
+  { value: 'Sector - Transport', label: 'Transport sector', description: 'Airlines, shipping, logistics' },
 ];
 
 // ============================================================================
@@ -49,35 +49,37 @@ export const SECTORS: TaxonomyItem[] = [
 
 export const INDUSTRIES: TaxonomyItem[] = [
   // Technology Industries
-  { value: 'AI', label: 'Artificial Intelligence' },
-  { value: 'Semiconductors', label: 'Semiconductors' },
-  { value: 'Software', label: 'Software' },
-  { value: 'Cloud Computing', label: 'Cloud Computing' },
-  { value: 'Cybersecurity', label: 'Cybersecurity' },
-  { value: 'Gaming', label: 'Gaming' },
-  { value: 'Social Media', label: 'Social Media' },
-
+  { value: 'Industry - AI', label: 'Artificial Intelligence', description: 'AI - Technology' },
+  { value: 'Industry - Semiconductors', label: 'Semiconductors', description: 'Semiconductors - Technology' },
+  { value: 'Industry - Software', label: 'Software', description: 'Software - Technology' },
+  { value: 'Industry - Cloud Computing', label: 'Cloud Computing', description: 'Cloud Computing - Technology' },
+  { value: 'Industry - Cybersecurity', label: 'Cybersecurity', description: 'Cybersecurity - Technology' },
+  { value: 'Industry - Gaming', label: 'Gaming', description: 'Gaming - Technology' },
+  { value: 'Industry - Social Media', label: 'Social Media', description: 'Social Media - Technology' },
+  { value: 'Industry - Quantum Computing', label: 'Quantum Computing', description: 'Quantum Computing - Technology' },
+  { value: 'Industry - Genomics', label: 'Genomics', description: 'Genomics - Technology' },
+  { value: 'Industry - Robotics', label: 'Robotics', description: 'Robotics - Technology' },
+  
   // Financial Industries
-  { value: 'Banking', label: 'Banking' },
-  { value: 'Insurance', label: 'Insurance' },
-  { value: 'Asset Management', label: 'Asset Management' },
-  { value: 'Payment Processing', label: 'Payment Processing' },
+  { value: 'Industry - Banking', label: 'Banking' },
+  { value: 'Industry - Insurance', label: 'Insurance' },
+  { value: 'Industry - Asset Management', label: 'Asset Management' },
+  { value: 'Industry - Payment Processing', label: 'Payment Processing' },
 
   // Energy Industries
-  { value: 'Oil & Gas', label: 'Oil & Gas' },
-  { value: 'Renewables', label: 'Renewables' },
-  { value: 'Nuclear', label: 'Nuclear' },
+  { value: 'Industry - Oil & Gas', label: 'Oil & Gas' },
+  { value: 'Industry - Renewables', label: 'Renewables' },
+  { value: 'Industry - Nuclear', label: 'Nuclear' },
 
   // Healthcare Industries
-  { value: 'Biotech', label: 'Biotechnology' },
-  { value: 'Pharmaceuticals', label: 'Pharmaceuticals' },
-  { value: 'Medical Devices', label: 'Medical Devices' },
+  { value: 'Industry - Biotech', label: 'Biotechnology' },
+  { value: 'Industry - Pharmaceuticals', label: 'Pharmaceuticals' },
+  { value: 'Industry - Medical Devices', label: 'Medical Devices' },
 
   // Other
-  { value: 'Aviation', label: 'Aviation' },
-  { value: 'Defense', label: 'Defense' },
-  { value: 'Automotive', label: 'Automotive' },
-  { value: 'E-commerce', label: 'E-commerce' },
+  { value: 'Industry - Aviation', label: 'Aviation' },
+  { value: 'Industry - Defense', label: 'Defense' },
+  { value: 'Industry - Automotive', label: 'Automotive' },
 ];
 
 // ============================================================================
@@ -122,14 +124,14 @@ export const REGIONS: TaxonomyItem[] = [
 // ============================================================================
 
 export const ASSET_CLASSES: TaxonomyItem[] = [
-  { value: 'Equities', label: 'Equities', description: 'Stocks and equity indices' },
-  { value: 'Bonds', label: 'Bonds', description: 'Government and corporate debt' },
-  { value: 'Commodities', label: 'Commodities', description: 'Physical goods' },
-  { value: 'Currencies', label: 'Currencies', description: 'FX markets' },
-  { value: 'Crypto', label: 'Crypto', description: 'Digital assets' },
-  { value: 'Real Estate', label: 'Real Estate', description: 'Property markets' },
-  { value: 'Options', label: 'Options', description: 'Derivatives' },
-  { value: 'Futures', label: 'Futures', description: 'Futures contracts' },
+  { value: 'Asset Class - Equities', label: 'Equities', description: 'Stocks and equity indices' },
+  { value: 'Asset Class - Bonds', label: 'Bonds', description: 'Government and corporate debt' },
+  { value: 'Asset Class - Commodities', label: 'Commodities', description: 'Physical goods' },
+  { value: 'Asset Class - FX', label: 'FX', description: 'FX markets' },
+  { value: 'Asset Class - Crypto', label: 'Crypto', description: 'Digital assets' },
+  { value: 'Asset Class - Real Estate', label: 'Real Estate', description: 'Property markets' },
+  { value: 'Asset Class - Options', label: 'Options', description: 'Derivatives' },
+  { value: 'Asset Class - Futures', label: 'Futures', description: 'Futures contracts' },
 ];
 
 // ============================================================================

@@ -364,16 +364,18 @@ The research workflow follows a **local-first AI processing pattern** using Toul
 - **Process**:
   1. Update `src/db/schema.ts` with new table/column definitions
   2. Create migration SQL file in `/migrations/` directory
-  3. Run migration via psql:
+  3. **Run migration immediately via psql** (don't ask user to run it):
      ```bash
      /opt/homebrew/opt/postgresql@16/bin/psql "$DATABASE_URL_POOLER" -f migrations/your-migration.sql
      ```
-  4. Verify changes took effect
+  4. Verify changes took effect with a query
 
 **Why psql?**
 - Supabase MCP tools (`apply_migration`, `execute_sql`) experience timeout errors
 - Direct psql execution is fast and reliable
 - Migration files provide version control and documentation
+
+**IMPORTANT**: Always run migrations yourself immediately after creating them. Don't ask the user to run them manually.
 
 ### Git Commits
 **IMPORTANT**: Always use the commit message template at **[docs/archive/commit_message_template.md](docs/archive/commit_message_template.md)**

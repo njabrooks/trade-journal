@@ -16,7 +16,7 @@ import { eq, and } from 'drizzle-orm';
  *   mainClaimId: string;         // UUID of the main_claim to link
  *   entityType: 'thesis' | 'view';
  *   entityId: string;            // UUID of the thesis or view
- *   relationshipType?: 'supports' | 'rebuts' | 'contextualizes';
+ *   relationshipType?: 'supports' | 'refutes' | 'foundation';
  * }
  *
  * Response:
@@ -53,9 +53,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate relationshipType
-    if (!['supports', 'rebuts', 'contextualizes'].includes(relationshipType)) {
+    if (!['supports', 'refutes', 'foundation'].includes(relationshipType)) {
       return NextResponse.json(
-        { error: 'Invalid relationshipType. Must be: supports, rebuts, or contextualizes' },
+        { error: 'Invalid relationshipType. Must be: supports, refutes, or foundation' },
         { status: 400 }
       );
     }

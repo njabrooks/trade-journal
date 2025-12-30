@@ -63,6 +63,7 @@ export function ConvertClaimToEntityDialog({
   const [selectedThesisIds, setSelectedThesisIds] = useState<string[]>([]);
   const [selectedViewIds, setSelectedViewIds] = useState<string[]>([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
+  const [relationshipType, setRelationshipType] = useState<'supports' | 'refutes' | 'foundation'>('supports');
 
   // Create New mode state
   const [entityType, setEntityType] = useState<EntityType | null>(null);
@@ -115,6 +116,7 @@ export function ConvertClaimToEntityDialog({
           claimId: claim.id,
           thesisIds: selectedThesisIds,
           viewIds: selectedViewIds,
+          relationshipType,
         }),
       });
 
@@ -222,6 +224,7 @@ export function ConvertClaimToEntityDialog({
     setTicker('');
     setSelectedThesisIds([]);
     setSelectedViewIds([]);
+    setRelationshipType('supports');
     setError(null);
   };
 
@@ -395,6 +398,27 @@ export function ConvertClaimToEntityDialog({
                       </div>
                     )}
                   </div>
+
+                  {/* Relationship Type Selector */}
+                  {(selectedThesisIds.length > 0 || selectedViewIds.length > 0) && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Relationship Type *
+                      </label>
+                      <select
+                        value={relationshipType}
+                        onChange={(e) => setRelationshipType(e.target.value as typeof relationshipType)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="supports">Supports - This claim provides evidence for the thesis/view</option>
+                        <option value="refutes">Refutes - This claim contradicts or challenges the thesis/view</option>
+                        <option value="foundation">Foundation - This claim is the foundational reasoning for the thesis/view</option>
+                      </select>
+                      <p className="text-xs text-slate-600 mt-2">
+                        This relationship will be applied to all {selectedThesisIds.length + selectedViewIds.length} selected theses/views.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

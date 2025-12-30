@@ -68,12 +68,19 @@ async function main() {
 
   console.log('✅ Artifact status updated to "structured"');
 
+  // Auto-promote claims to main_claims table
+  const { autoPromoteAuditClaims } = await import('../src/db/queries/research.js');
+  console.log('\n🚀 Promoting claims to main_claims table...');
+  const promotedCount = await autoPromoteAuditClaims(insight.id);
+  console.log(`✅ Promoted ${promotedCount} claims`);
+
   console.log('\n📊 Upload Summary:');
   console.log('─'.repeat(60));
   console.log(`Artifact ID: ${artifact.id}`);
   console.log(`Insight ID:  ${insight.id}`);
   console.log(`Title:       ${artifact.title}`);
   console.log(`Claims:      ${claimsStructure.main_claims.length} main, ${claimsStructure.evidence_claims.length} evidence (${claimsStructure.main_claims.length + claimsStructure.evidence_claims.length} total)`);
+  console.log(`Promoted:    ${promotedCount} claims to main_claims table`);
   console.log(`Tickers:     ${insight.relevantTickers?.join(', ')}`);
   console.log('\n✅ Ready to browse in app at:');
   console.log(`   http://localhost:3000/research/${artifact.id}`);

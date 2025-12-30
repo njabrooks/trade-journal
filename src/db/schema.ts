@@ -171,11 +171,11 @@ export const mainClaims = pgTable(
 
     // Toulmin Framework (full structure)
     claim: text('claim').notNull(),
-    evidence: text('evidence'),
+    evidence: text('evidence').array(), // Array of evidence points
     reasoning: text('reasoning'),
     backing: text('backing'),
     qualifier: text('qualifier'), // 'high' | 'medium' | 'low' | 'exploratory'
-    rebuttal: text('rebuttal'),
+    rebuttal: text('rebuttal').array(), // Array of rebuttal points
 
     // Metadata
     timeHorizon: text('time_horizon'), // 'long_term' | 'medium_term' | 'short_term'

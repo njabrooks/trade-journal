@@ -14,6 +14,7 @@ import { eq } from 'drizzle-orm';
  *   claimId: string;              // Main claim UUID
  *   thesisIds?: string[];         // Array of macro thesis UUIDs to link
  *   viewIds?: string[];           // Array of asset thesis UUIDs to link
+ *   relationshipType?: 'supports' | 'refutes' | 'foundation'; // Relationship type (default: 'supports')
  * }
  *
  * Response:
@@ -27,7 +28,7 @@ import { eq } from 'drizzle-orm';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { claimId, thesisIds = [], viewIds = [] } = body;
+    const { claimId, thesisIds = [], viewIds = [], relationshipType = 'supports' } = body;
 
     // Validate required fields
     if (!claimId) {
@@ -61,13 +62,21 @@ export async function POST(request: NextRequest) {
     let linkedThesesCount = 0;
     let linkedViewsCount = 0;
 
+    // Validate relationshipType
+    if (!['supports', 'refutes', 'foundation'].includes(relationshipType)) {
+      return NextResponse.json(
+        { error: 'Invalid relationshipType. Must be: supports, refutes, or foundation' },
+        { status: 400 }
+      );
+    }
+
     // Link to theses
     if (thesisIds.length > 0) {
       const thesisLinks = thesisIds.map((thesisId: string) => ({
         mainClaimId: claimId,
         macroThesisId: thesisId,
         assetThesisId: null,
-        mappingType: 'supports',
+        mappingType: relationshipType,
         mappedBy: 'user_link', // User manually linked via dialog
       }));
 
@@ -81,7 +90,7 @@ export async function POST(request: NextRequest) {
         mainClaimId: claimId,
         macroThesisId: null,
         assetThesisId: viewId,
-        mappingType: 'supports',
+        mappingType: relationshipType,
         mappedBy: 'user_link', // User manually linked via dialog
       }));
 

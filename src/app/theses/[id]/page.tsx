@@ -1,6 +1,7 @@
 import { getMacroThesisById, getLinkedAssetThesesForThesis, getLinkedStrategiesForThesis, getLinkedMainClaimsForThesis } from '@/db/queries/macroTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { AddMainClaimButton } from '@/components/theses/AddMainClaimButton';
+import { EditMacroThesisButton } from '@/components/theses/EditMacroThesisButton';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
@@ -29,7 +30,10 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
     >
       <div className="space-y-6">
         <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Overview</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Overview</h3>
+            <EditMacroThesisButton thesis={thesis} />
+          </div>
           <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <dt className="text-sm font-medium text-slate-500">Thesis Type</dt>

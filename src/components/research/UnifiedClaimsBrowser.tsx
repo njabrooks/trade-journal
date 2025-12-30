@@ -442,14 +442,8 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                       {getSortIcon('claim')}
                     </div>
                   </th>
-                  <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
-                    onClick={() => handleSort('source')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Source
-                      {getSortIcon('source')}
-                    </div>
+                  <th className="px-4 py-3 text-left">
+                    Linked To
                   </th>
                   <th
                     className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
@@ -514,24 +508,40 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                           </div>
                         </td>
 
-                        {/* Source */}
+                        {/* Linked To */}
                         <td className="px-4 py-3">
-                          {artifact && insight ? (
-                            <>
-                              <Link
-                                href={`/research/${artifact.id}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 text-sm"
-                              >
-                                <span className="line-clamp-2">{artifact.title}</span>
-                                <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                              </Link>
-                              <div className="text-xs text-slate-500 capitalize mt-0.5">
-                                {artifact.sourceType}
-                              </div>
-                            </>
-                          ) : (
-                            <span className="text-xs text-slate-400">No source</span>
-                          )}
+                          <div className="space-y-1">
+                            {linkedTheses.length === 0 && linkedViews.length === 0 ? (
+                              <span className="text-xs text-slate-400">Not linked</span>
+                            ) : (
+                              <>
+                                {linkedTheses.map((thesis) => (
+                                  <Link
+                                    key={thesis.id}
+                                    href={`/theses/${thesis.id}`}
+                                    className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                  >
+                                    <span className="inline-flex items-center gap-1">
+                                      <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
+                                      <span className="line-clamp-1">{thesis.title}</span>
+                                    </span>
+                                  </Link>
+                                ))}
+                                {linkedViews.map((view) => (
+                                  <Link
+                                    key={view.id}
+                                    href={`/asset-theses/${view.id}`}
+                                    className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                  >
+                                    <span className="inline-flex items-center gap-1">
+                                      <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
+                                      <span className="line-clamp-1">{view.title}</span>
+                                    </span>
+                                  </Link>
+                                ))}
+                              </>
+                            )}
+                          </div>
                         </td>
 
                         {/* Confidence */}
@@ -591,7 +601,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                       {isExpanded && (
                         <tr className="bg-slate-50 border-b">
                           <td colSpan={6} className="px-4 py-4">
-                            <div className="space-y-4 max-w-4xl">
+                            <div className="space-y-4">
                               {/* Full Claim Text */}
                               <div>
                                 <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
@@ -601,12 +611,26 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                               </div>
 
                               {/* Evidence */}
-                              {claim.evidence && (
+                              {claim.evidence && claim.evidence.length > 0 && (
                                 <div>
                                   <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
                                     Evidence
                                   </h4>
-                                  <p className="text-sm text-slate-600">{claim.evidence}</p>
+                                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
+                                    {claim.evidence.flatMap((point, idx) => {
+                                      // Backward compatibility: split old comma-separated strings
+                                      if (point.includes('(Transcript') && point.match(/\),/)) {
+                                        return point
+                                          .split(/\),\s*(?=[A-Z])/)
+                                          .map(p => p.trim().replace(/^-\s*/, ''))
+                                          .filter(p => p.length > 0)
+                                          .map(p => p.includes('(') && !p.includes(')') ? p + ')' : p);
+                                      }
+                                      return [point.replace(/^-\s*/, '')];
+                                    }).map((point, idx) => (
+                                      <li key={idx}>{point}</li>
+                                    ))}
+                                  </ul>
                                 </div>
                               )}
 
@@ -631,49 +655,26 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                               )}
 
                               {/* Rebuttal */}
-                              {claim.rebuttal && (
+                              {claim.rebuttal && claim.rebuttal.length > 0 && (
                                 <div>
                                   <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
                                     Rebuttal
                                   </h4>
-                                  <p className="text-sm text-slate-600">{claim.rebuttal}</p>
-                                </div>
-                              )}
-
-                              {/* Linked Theses and Views */}
-                              {(linkedTheses.length > 0 || linkedViews.length > 0) && (
-                                <div className="pt-2 border-t border-slate-200">
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
-                                    Linked To
-                                  </h4>
-                                  <div className="space-y-2">
-                                    {linkedTheses.map((thesis) => (
-                                      <Link
-                                        key={thesis.id}
-                                        href={`/theses/${thesis.id}`}
-                                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                      >
-                                        <span className="inline-flex items-center gap-1">
-                                          <Badge className="bg-purple-100 text-purple-700 text-xs">Macro Thesis</Badge>
-                                          {thesis.title}
-                                          <ExternalLink className="h-3 w-3" />
-                                        </span>
-                                      </Link>
+                                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
+                                    {claim.rebuttal.flatMap((point, idx) => {
+                                      // Backward compatibility: split old comma-separated strings
+                                      if (point.includes('(Transcript') && point.match(/\),/)) {
+                                        return point
+                                          .split(/\),\s*(?=[A-Z])/)
+                                          .map(p => p.trim().replace(/^-\s*/, ''))
+                                          .filter(p => p.length > 0)
+                                          .map(p => p.includes('(') && !p.includes(')') ? p + ')' : p);
+                                      }
+                                      return [point.replace(/^-\s*/, '')];
+                                    }).map((point, idx) => (
+                                      <li key={idx}>{point}</li>
                                     ))}
-                                    {linkedViews.map((view) => (
-                                      <Link
-                                        key={view.id}
-                                        href={`/asset-theses/${view.id}`}
-                                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                      >
-                                        <span className="inline-flex items-center gap-1">
-                                          <Badge className="bg-blue-100 text-blue-700 text-xs">Asset Thesis</Badge>
-                                          {view.title} ({view.ticker})
-                                          <ExternalLink className="h-3 w-3" />
-                                        </span>
-                                      </Link>
-                                    ))}
-                                  </div>
+                                  </ul>
                                 </div>
                               )}
 
@@ -729,6 +730,62 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                       </ul>
                                     </div>
                                   )}
+                                </div>
+                              )}
+
+                              {/* Linked Theses and Views */}
+                              {(linkedTheses.length > 0 || linkedViews.length > 0) && (
+                                <div className="pt-2 border-t border-slate-200">
+                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+                                    Linked To
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {linkedTheses.map((thesis) => (
+                                      <Link
+                                        key={thesis.id}
+                                        href={`/theses/${thesis.id}`}
+                                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                      >
+                                        <span className="inline-flex items-center gap-1">
+                                          <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
+                                          {thesis.title}
+                                          <ExternalLink className="h-3 w-3" />
+                                        </span>
+                                      </Link>
+                                    ))}
+                                    {linkedViews.map((view) => (
+                                      <Link
+                                        key={view.id}
+                                        href={`/asset-theses/${view.id}`}
+                                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                      >
+                                        <span className="inline-flex items-center gap-1">
+                                          <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
+                                          {view.title} ({view.ticker})
+                                          <ExternalLink className="h-3 w-3" />
+                                        </span>
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Source */}
+                              {artifact && insight && (
+                                <div className="pt-2 border-t border-slate-200">
+                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+                                    Source
+                                  </h4>
+                                  <Link
+                                    href={`/research/${artifact.id}`}
+                                    className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 text-sm"
+                                  >
+                                    <span>{artifact.title}</span>
+                                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                                  </Link>
+                                  <div className="text-xs text-slate-500 capitalize mt-1">
+                                    {artifact.sourceType}
+                                  </div>
                                 </div>
                               )}
 

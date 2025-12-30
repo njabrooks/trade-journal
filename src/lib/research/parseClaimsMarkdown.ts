@@ -251,6 +251,7 @@ function extractBulletList(block: string, sectionName: string): string[] {
   const items = text
     .split(/\n-\s+/)
     .map(item => item.trim())
+    .map(item => item.replace(/^-\s+/, '')) // Remove leading "- " if present
     .filter(item => item.length > 0);
 
   return items;

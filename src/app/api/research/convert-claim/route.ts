@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { researchInsights, macroTheses, assetTheses, underlyings } from '@/db/schema';
+import { researchInsights, macroTheses, assetTheses, underlyings, mainClaims, claimThesisMappings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure, MainClaim } from '@/types/claims';
 import { afterMacroThesisSave, afterAssetThesisSave } from '@/lib/obsidian/hooks';
@@ -8,7 +8,7 @@ import { afterMacroThesisSave, afterAssetThesisSave } from '@/lib/obsidian/hooks
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { insightId, claimId, conversionType, data } = body;
+    const { insightId, claimId, conversionType, relationshipType = 'supports', data } = body;
 
     if (!insightId || !claimId || !conversionType || !data) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -126,6 +126,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid conversion type' }, { status: 400 });
     }
 
+    // Create a main_claim record from the source claim (for linking)
+    const [createdMainClaim] = await db
+      .insert(mainClaims)
+      .values({
+        title: claim.claim.substring(0, 100), // Use first 100 chars of claim as title
+        category: claim.type === 'thesis_candidate' ? 'macro' : 'asset_specific',
+        claim: claim.claim,
+        evidence: claim.evidence ? [claim.evidence] : [],
+        reasoning: claim.reasoning,
+        backing: claim.backing,
+        qualifier: claim.qualifier,
+        timeHorizon: claim.time_horizon,
+        relevantTickers: claim.relevant_tickers || [],
+        status: 'confirmed', // Mark as confirmed since it was converted
+        sourceInsightId: insightId,
+        sourceClaimId: claimId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    // Create claim-to-thesis mapping
+    await db.insert(claimThesisMappings).values({
+      mainClaimId: createdMainClaim.id,
+      macroThesisId: conversionType === 'macro_thesis' ? createdId : null,
+      assetThesisId: conversionType === 'asset_view' ? createdId : null,
+      mappingType: relationshipType,
+      mappedBy: 'conversion', // Indicate this was created during claim conversion
+      notes: `Original claim converted to ${conversionType}`,
+      mappedAt: new Date(),
+    });
+
     // Update the claim with converted_to metadata
     const updatedClaim: MainClaim = {
       ...claim,
@@ -159,6 +191,8 @@ export async function POST(request: NextRequest) {
       success: true,
       id: createdId,
       type: conversionType,
+      claimId: createdMainClaim.id,
+      relationshipType,
     });
   } catch (error) {
     console.error('Error converting claim:', error);

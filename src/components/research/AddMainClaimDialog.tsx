@@ -33,7 +33,7 @@ export function AddMainClaimDialog({
   const [filteredClaims, setFilteredClaims] = useState<MainClaim[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClaimId, setSelectedClaimId] = useState<string>('');
-  const [relationshipType, setRelationshipType] = useState<'supports' | 'rebuts' | 'contextualizes'>('supports');
+  const [relationshipType, setRelationshipType] = useState<'supports' | 'refutes' | 'foundation'>('supports');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -245,13 +245,13 @@ export function AddMainClaimDialog({
             <select
               value={relationshipType}
               onChange={(e) =>
-                setRelationshipType(e.target.value as 'supports' | 'rebuts' | 'contextualizes')
+                setRelationshipType(e.target.value as 'supports' | 'refutes' | 'foundation')
               }
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="supports">Supports - This claim provides evidence for the {entityType}</option>
-              <option value="rebuts">Rebuts - This claim contradicts or challenges the {entityType}</option>
-              <option value="contextualizes">Contextualizes - This claim provides context for the {entityType}</option>
+              <option value="refutes">Refutes - This claim contradicts or challenges the {entityType}</option>
+              <option value="foundation">Foundation - This claim is the foundational reasoning for the {entityType}</option>
             </select>
           </div>
 

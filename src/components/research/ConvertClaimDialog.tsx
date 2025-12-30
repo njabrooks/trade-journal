@@ -45,6 +45,9 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
   const [targetPrice, setTargetPrice] = useState('');
   const [entryReferencePrice, setEntryReferencePrice] = useState('');
 
+  // NEW: Relationship type for claim-to-thesis mapping
+  const [relationshipType, setRelationshipType] = useState<'supports' | 'refutes' | 'foundation'>('supports');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -58,6 +61,7 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
           insightId,
           claimId: claim.id,
           conversionType,
+          relationshipType,
           data: {
             title,
             description,
@@ -379,6 +383,26 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
               className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Additional context, risks, or observations..."
             />
+          </div>
+
+          {/* Relationship Type */}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <label htmlFor="relationshipType" className="block text-sm font-medium text-slate-700 mb-2">
+              Claim Relationship to {conversionType === 'macro_thesis' ? 'Thesis' : 'Asset Thesis'} *
+            </label>
+            <select
+              id="relationshipType"
+              value={relationshipType}
+              onChange={(e) => setRelationshipType(e.target.value as typeof relationshipType)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="supports">Supports - This claim provides evidence for the {conversionType === 'macro_thesis' ? 'thesis' : 'asset thesis'}</option>
+              <option value="refutes">Refutes - This claim contradicts or challenges the {conversionType === 'macro_thesis' ? 'thesis' : 'asset thesis'}</option>
+              <option value="foundation">Foundation - This claim is the foundational reasoning for the {conversionType === 'macro_thesis' ? 'thesis' : 'asset thesis'}</option>
+            </select>
+            <p className="text-xs text-slate-600 mt-2">
+              After conversion, the original claim will be linked to the newly created {conversionType === 'macro_thesis' ? 'thesis' : 'asset thesis'} with this relationship.
+            </p>
           </div>
 
           {/* Error Display */}
