@@ -12,8 +12,8 @@ interface AssetThesis {
   timeHorizon: string | null;
   confidenceLevel: string | null;
   status: string;
-  macroThesisId: string | null;
-  macroThesisTitle: string | null;
+  primaryMacroThesisId: string | null;
+  primaryMacroThesisTitle: string | null;
 }
 
 interface AssetThesisSelectorProps {
@@ -236,8 +236,8 @@ export function AssetThesisSelector({
                       {view.confidenceLevel}
                     </span>
                   )}
-                  {view.macroThesisTitle && (
-                    <span className="text-xs text-slate-500">→ {view.macroThesisTitle}</span>
+                  {view.primaryMacroThesisTitle && (
+                    <span className="text-xs text-slate-500">→ {view.primaryMacroThesisTitle}</span>
                   )}
                 </div>
               </button>

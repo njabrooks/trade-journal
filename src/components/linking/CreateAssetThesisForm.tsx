@@ -12,7 +12,7 @@ interface CreateAssetThesisFormData {
   timeHorizon: 'long_term' | 'medium_term' | 'short_term';
   confidenceLevel: 'high' | 'medium' | 'low' | 'exploratory';
   status: 'active' | 'under_review' | 'retired';
-  macroThesisId?: string;
+  primaryMacroThesisId?: string;
 }
 
 interface Underlying {

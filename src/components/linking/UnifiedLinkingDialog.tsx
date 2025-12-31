@@ -243,7 +243,6 @@ export function UnifiedLinkingDialog({
                   onCancel={onClose}
                   autoGenLabel={true}
                   assetThesisId={autoLinkContext?.assetThesisId}
-                  macroThesisId={autoLinkContext?.macroThesisId}
                 />
               )}
             </div>

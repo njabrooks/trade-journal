@@ -38,13 +38,13 @@ export function LinkToViewDialog({
     }
     const selectedView = await viewResponse.json();
 
-    // Link the strategy to both the asset thesis and its macro thesis (if it has one)
+    // Link the strategy to the asset thesis
+    // Note: strategies no longer have direct macroThesisId - they inherit through asset thesis
     const response = await fetch(`/api/strategies/${strategyId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         assetThesisId,
-        macroThesisId: selectedView.macroThesisId || currentThesisId,
       }),
     });
 
