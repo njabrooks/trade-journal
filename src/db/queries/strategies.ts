@@ -37,8 +37,8 @@ export interface StrategyListItem {
   latestPctNav: number | null;
   stateCode: string | null;
   strategyType: string | null;
-  macroThesisId: string | null;
-  macroThesisTitle: string | null;
+  primaryMacroThesisId: string | null; // Inherited from asset thesis
+  primaryMacroThesisTitle: string | null; // Inherited from asset thesis
   assetThesisId: string | null;
   assetViewTitle: string | null;
 }
@@ -64,15 +64,17 @@ export async function getStrategiesForList(
   const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
 
   // Build where clause based on filters
+  // Note: macroThesisId filter now works through assetTheses
   const whereConditions = [];
   if (filters?.macroThesisId) {
-    whereConditions.push(eq(strategies.macroThesisId, filters.macroThesisId));
+    whereConditions.push(eq(assetTheses.primaryMacroThesisId, filters.macroThesisId));
   }
   if (filters?.assetThesisId) {
     whereConditions.push(eq(strategies.assetThesisId, filters.assetThesisId));
   }
 
   // Get all strategies with account info
+  // Strategies inherit macro thesis through assetTheses.primaryMacroThesisId
   let query = db
     .select({
       id: strategies.id,
@@ -84,15 +86,15 @@ export async function getStrategiesForList(
       accountLabel: accounts.label,
       accountBrokerId: accounts.brokerAccountId,
       strategyType: strategies.strategyType,
-      macroThesisId: strategies.macroThesisId,
-      macroThesisTitle: macroTheses.title,
+      primaryMacroThesisId: assetTheses.primaryMacroThesisId,
+      primaryMacroThesisTitle: macroTheses.title,
       assetThesisId: strategies.assetThesisId,
       assetViewTitle: assetTheses.title,
     })
     .from(strategies)
     .leftJoin(accounts, eq(strategies.accountId, accounts.id))
-    .leftJoin(macroTheses, eq(strategies.macroThesisId, macroTheses.id))
     .leftJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
+    .leftJoin(macroTheses, eq(assetTheses.primaryMacroThesisId, macroTheses.id))
     .$dynamic();
 
   if (whereConditions.length > 0) {
@@ -185,8 +187,8 @@ export async function getStrategiesForList(
         latestPctNav: metrics?.pctNavAbsNotional ?? null,
         stateCode: metrics?.stateCode ?? null,
         strategyType: row.strategyType,
-        macroThesisId: row.macroThesisId,
-        macroThesisTitle: row.macroThesisTitle,
+        primaryMacroThesisId: row.primaryMacroThesisId,
+        primaryMacroThesisTitle: row.primaryMacroThesisTitle,
         assetThesisId: row.assetThesisId,
         assetViewTitle: row.assetViewTitle,
       };
@@ -215,8 +217,8 @@ export interface StrategyDetail {
     underlyingTicker: string | null;
     templateLabel: string | null;
     strategyType: string | null;
-    macroThesisId: string | null;
-    macroThesisTitle: string | null;
+    primaryMacroThesisId: string | null;
+    primaryMacroThesisTitle: string | null;
     assetThesisId: string | null;
     assetViewTitle: string | null;
   };
@@ -299,8 +301,8 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         templateLabel: strategyTemplates.label,
         underlyingTicker: underlyings.ticker,
         strategyType: strategies.strategyType,
-        macroThesisId: strategies.macroThesisId,
-        macroThesisTitle: macroTheses.title,
+        primaryMacroThesisId: assetTheses.primaryMacroThesisId,
+        primaryMacroThesisTitle: macroTheses.title,
         assetThesisId: strategies.assetThesisId,
         assetViewTitle: assetTheses.title,
       })
@@ -308,8 +310,8 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       .leftJoin(accounts, eq(strategies.accountId, accounts.id))
       .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
       .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
-      .leftJoin(macroTheses, eq(strategies.macroThesisId, macroTheses.id))
       .leftJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
+      .leftJoin(macroTheses, eq(assetTheses.primaryMacroThesisId, macroTheses.id))
       .where(eq(strategies.id, strategyId))
       .limit(1);
 
@@ -512,8 +514,8 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         underlyingTicker: strategyRow.underlyingTicker,
         templateLabel: strategyRow.templateLabel,
         strategyType: strategyRow.strategyType,
-        macroThesisId: strategyRow.macroThesisId,
-        macroThesisTitle: strategyRow.macroThesisTitle,
+        primaryMacroThesisId: strategyRow.primaryMacroThesisId,
+        primaryMacroThesisTitle: strategyRow.primaryMacroThesisTitle,
         assetThesisId: strategyRow.assetThesisId,
         assetViewTitle: strategyRow.assetViewTitle,
       },

@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { assetTheses, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings, researchInsights, researchArtifacts } from '@/db/schema';
+import { assetTheses, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings, researchInsights, researchArtifacts, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq, desc, inArray, count } from 'drizzle-orm';
 import type { NewAssetThesis } from '@/db/schema';
 
@@ -10,8 +10,8 @@ export interface AssetThesisListItem {
   underlyingId: string | null;
   ticker: string | null;
   underlyingName: string | null;
-  macroThesisId: string | null;
-  macroThesisTitle: string | null;
+  primaryMacroThesisId: string | null;
+  primaryMacroThesisTitle: string | null;
   direction: string | null;
   timeHorizon: string | null;
   confidenceLevel: string | null;
@@ -20,6 +20,7 @@ export interface AssetThesisListItem {
   createdAt: Date;
   updatedAt: Date;
   strategyCount: number;
+  relatedMacroThesesCount: number; // New field
 }
 
 export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
@@ -31,8 +32,8 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
       underlyingId: assetTheses.underlyingId,
       ticker: underlyings.ticker,
       underlyingName: underlyings.name,
-      macroThesisId: assetTheses.macroThesisId,
-      macroThesisTitle: macroTheses.title,
+      primaryMacroThesisId: assetTheses.primaryMacroThesisId,
+      primaryMacroThesisTitle: macroTheses.title,
       direction: assetTheses.direction,
       timeHorizon: assetTheses.timeHorizon,
       confidenceLevel: assetTheses.confidenceLevel,
@@ -43,7 +44,7 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
     })
     .from(assetTheses)
     .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
-    .leftJoin(macroTheses, eq(assetTheses.macroThesisId, macroTheses.id))
+    .leftJoin(macroTheses, eq(assetTheses.primaryMacroThesisId, macroTheses.id))
     .orderBy(desc(assetTheses.createdAt));
 
   if (views.length === 0) {
@@ -65,9 +66,24 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
     strategyCounts.map((c) => [c.assetThesisId, Number(c.count)])
   );
 
+  // Get related macro theses counts
+  const relatedCounts = await db
+    .select({
+      assetThesisId: assetThesisRelatedMacroTheses.assetThesisId,
+      count: count(),
+    })
+    .from(assetThesisRelatedMacroTheses)
+    .where(inArray(assetThesisRelatedMacroTheses.assetThesisId, viewIds))
+    .groupBy(assetThesisRelatedMacroTheses.assetThesisId);
+
+  const relatedMap = new Map(
+    relatedCounts.map((c) => [c.assetThesisId, Number(c.count)])
+  );
+
   return views.map((view) => ({
     ...view,
     strategyCount: strategyMap.get(view.id) ?? 0,
+    relatedMacroThesesCount: relatedMap.get(view.id) ?? 0,
   }));
 }
 
@@ -75,20 +91,39 @@ export async function getAssetThesisById(id: string) {
   const rows = await db
     .select({
       view: assetTheses,
-      macroThesis: macroTheses,
+      primaryMacroThesis: macroTheses,
       underlying: underlyings,
     })
     .from(assetTheses)
-    .leftJoin(macroTheses, eq(assetTheses.macroThesisId, macroTheses.id))
+    .leftJoin(macroTheses, eq(assetTheses.primaryMacroThesisId, macroTheses.id))
     .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
     .where(eq(assetTheses.id, id))
     .limit(1);
 
   if (rows.length === 0) return null;
 
+  // Get related macro theses
+  const relatedTheses = await db
+    .select({
+      id: assetThesisRelatedMacroTheses.id,
+      macroThesisId: macroTheses.id,
+      title: macroTheses.title,
+      thesisType: macroTheses.thesisType,
+      direction: macroTheses.direction,
+      timeHorizon: macroTheses.timeHorizon,
+      status: macroTheses.status,
+      relationshipNote: assetThesisRelatedMacroTheses.relationshipNote,
+      addedAt: assetThesisRelatedMacroTheses.addedAt,
+    })
+    .from(assetThesisRelatedMacroTheses)
+    .innerJoin(macroTheses, eq(assetThesisRelatedMacroTheses.macroThesisId, macroTheses.id))
+    .where(eq(assetThesisRelatedMacroTheses.assetThesisId, id))
+    .orderBy(assetThesisRelatedMacroTheses.addedAt);
+
   return {
     ...rows[0].view,
-    macroThesis: rows[0].macroThesis,
+    primaryMacroThesis: rows[0].primaryMacroThesis,
+    relatedMacroTheses: relatedTheses,
     underlying: rows[0].underlying,
   };
 }
