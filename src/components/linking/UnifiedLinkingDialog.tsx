@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CreateMacroThesisForm } from './CreateMacroThesisForm';
 import { CreateAssetThesisForm } from './CreateAssetThesisForm';
+import { CreateStrategyForm } from './CreateStrategyForm';
 import { useRouter } from 'next/navigation';
 
 type SourceType = 'claim' | 'strategy' | 'assetThesis' | 'macroThesis';
@@ -138,6 +139,34 @@ export function UnifiedLinkingDialog({
     }
   };
 
+  const handleCreateStrategy = async (data: any) => {
+    try {
+      // Add auto-link context
+      const createData = {
+        ...data,
+        assetThesisId: autoLinkContext?.assetThesisId || data.assetThesisId,
+        macroThesisId: autoLinkContext?.macroThesisId || data.macroThesisId,
+      };
+
+      // Create the strategy
+      const response = await fetch('/api/strategies/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create strategy');
+      }
+
+      router.refresh();
+      onClose();
+    } catch (error) {
+      throw error; // Let form handle the error
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -207,9 +236,13 @@ export function UnifiedLinkingDialog({
                 />
               )}
               {targetType === 'strategy' && (
-                <div className="text-center py-8 text-slate-500">
-                  Strategy creation form coming soon
-                </div>
+                <CreateStrategyForm
+                  onSubmit={handleCreateStrategy}
+                  onCancel={onClose}
+                  autoGenLabel={true}
+                  assetThesisId={autoLinkContext?.assetThesisId}
+                  macroThesisId={autoLinkContext?.macroThesisId}
+                />
               )}
             </div>
           )}
