@@ -6,13 +6,17 @@ import type { NewAssetThesis } from '@/db/schema';
 export interface AssetThesisListItem {
   id: string;
   title: string;
+  description: string | null;
   underlyingId: string | null;
   ticker: string | null;
+  underlyingName: string | null;
   macroThesisId: string | null;
   macroThesisTitle: string | null;
+  direction: string | null;
   timeHorizon: string | null;
   confidenceLevel: string | null;
   status: string;
+  notes: any;
   createdAt: Date;
   updatedAt: Date;
   strategyCount: number;
@@ -23,13 +27,17 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
     .select({
       id: assetTheses.id,
       title: assetTheses.title,
+      description: assetTheses.description,
       underlyingId: assetTheses.underlyingId,
       ticker: underlyings.ticker,
+      underlyingName: underlyings.name,
       macroThesisId: assetTheses.macroThesisId,
       macroThesisTitle: macroTheses.title,
+      direction: assetTheses.direction,
       timeHorizon: assetTheses.timeHorizon,
       confidenceLevel: assetTheses.confidenceLevel,
       status: assetTheses.status,
+      notes: assetTheses.notes,
       createdAt: assetTheses.createdAt,
       updatedAt: assetTheses.updatedAt,
     })
