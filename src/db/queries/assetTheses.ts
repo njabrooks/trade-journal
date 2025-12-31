@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { assetTheses, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings } from '@/db/schema';
+import { assetTheses, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings, researchInsights, researchArtifacts } from '@/db/schema';
 import { eq, desc, inArray, count } from 'drizzle-orm';
 import type { NewAssetThesis } from '@/db/schema';
 
@@ -155,4 +155,80 @@ export async function getLinkedMainClaimsForAssetThesis(assetThesisId: string) {
     .orderBy(desc(mainClaims.createdAt));
 
   return claims;
+}
+
+export async function getMainClaimsWithSourcesForAssetThesis(assetThesisId: string) {
+  // Get claims linked to this asset thesis with their source information
+  const claimsData = await db
+    .select({
+      claim: mainClaims,
+      insight: researchInsights,
+      artifact: researchArtifacts,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(mainClaims, eq(claimThesisMappings.mainClaimId, mainClaims.id))
+    .leftJoin(researchInsights, eq(mainClaims.sourceInsightId, researchInsights.id))
+    .leftJoin(researchArtifacts, eq(researchInsights.researchArtifactId, researchArtifacts.id))
+    .where(eq(claimThesisMappings.assetThesisId, assetThesisId))
+    .orderBy(desc(mainClaims.createdAt));
+
+  // Get linked theses and views for each claim
+  const claimIds = claimsData.map((c) => c.claim.id);
+  
+  let linkedThesesMap = new Map();
+  let linkedViewsMap = new Map();
+  
+  if (claimIds.length > 0) {
+    const thesisLinks = await db
+      .select({
+        claimId: claimThesisMappings.mainClaimId,
+        thesisId: macroTheses.id,
+        thesisTitle: macroTheses.title,
+      })
+      .from(claimThesisMappings)
+      .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
+      .where(inArray(claimThesisMappings.mainClaimId, claimIds));
+
+    const viewLinks = await db
+      .select({
+        claimId: claimThesisMappings.mainClaimId,
+        viewId: assetTheses.id,
+        viewTitle: assetTheses.title,
+        viewTicker: underlyings.ticker,
+      })
+      .from(claimThesisMappings)
+      .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
+      .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+      .where(inArray(claimThesisMappings.mainClaimId, claimIds));
+
+    // Build maps
+    for (const link of thesisLinks) {
+      if (!linkedThesesMap.has(link.claimId)) {
+        linkedThesesMap.set(link.claimId, []);
+      }
+      linkedThesesMap.get(link.claimId).push({
+        id: link.thesisId,
+        title: link.thesisTitle,
+      });
+    }
+
+    for (const link of viewLinks) {
+      if (!linkedViewsMap.has(link.claimId)) {
+        linkedViewsMap.set(link.claimId, []);
+      }
+      linkedViewsMap.get(link.claimId).push({
+        id: link.viewId,
+        title: link.viewTitle,
+        ticker: link.viewTicker || '',
+      });
+    }
+  }
+
+  return claimsData.map((row) => ({
+    claim: row.claim,
+    insight: row.insight,
+    artifact: row.artifact,
+    linkedTheses: linkedThesesMap.get(row.claim.id) || [],
+    linkedViews: linkedViewsMap.get(row.claim.id) || [],
+  }));
 }

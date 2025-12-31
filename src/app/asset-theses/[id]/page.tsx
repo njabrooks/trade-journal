@@ -1,10 +1,14 @@
-import { getAssetThesisById, getLinkedStrategiesForAssetThesis, getLinkedMainClaimsForAssetThesis } from '@/db/queries/assetTheses';
+import { getAssetThesisById } from '@/db/queries/assetTheses';
+import { getMacroThesesList } from '@/db/queries/macroTheses';
+import { getStrategiesForList } from '@/db/queries/strategies';
+import { getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { ClientHierarchyBreadcrumb } from '@/components/ui/ClientHierarchyBreadcrumb';
-import { AddMainClaimButtonForThesis } from '@/components/asset-theses/AddMainClaimButtonForThesis';
 import { EditAssetThesisButton } from '@/components/asset-theses/EditAssetThesisButton';
+import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
+import { UnifiedMacroThesisBrowser } from '@/components/theses/UnifiedMacroThesisBrowser';
+import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 
 interface AssetThesisDetailPageProps {
   params: Promise<{ id: string }>;
@@ -12,15 +16,21 @@ interface AssetThesisDetailPageProps {
 
 export default async function AssetThesisDetailPage({ params }: AssetThesisDetailPageProps) {
   const { id } = await params;
-  const [view, linkedStrategies, linkedClaims] = await Promise.all([
+  
+  const [view, claimsWithSources, allMacroTheses, allStrategies] = await Promise.all([
     getAssetThesisById(id),
-    getLinkedStrategiesForAssetThesis(id),
-    getLinkedMainClaimsForAssetThesis(id),
+    getMainClaimsWithSourcesForAssetThesis(id),
+    getMacroThesesList(),
+    getStrategiesForList(1000, { includeClosedStrategies: true }),
   ]);
 
   if (!view) {
     notFound();
   }
+
+  // Filter macro theses and strategies linked to this asset thesis
+  const linkedMacroTheses = view.macroThesis ? allMacroTheses.filter((mt) => mt.id === view.macroThesis!.id) : [];
+  const linkedStrategies = allStrategies.filter((s) => s.assetThesisId === id);
 
   return (
     <DashboardShell
@@ -28,7 +38,7 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
       subtitle="Asset Thesis Detail"
       activeNav="asset-theses"
     >
-      {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 Phase B */}
+      {/* Hierarchy Breadcrumb */}
       <ClientHierarchyBreadcrumb
         macroThesis={
           view.macroThesis
@@ -43,62 +53,49 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
       />
 
       <div className="space-y-6">
-        {/* Overview Card */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Overview</h3>
+        {/* Compact Overview */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold">Overview</h3>
             <EditAssetThesisButton thesis={view} />
           </div>
-          <dl className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
             <div>
-              <dt className="text-sm font-medium text-slate-500">Underlying</dt>
-              <dd className="mt-1 text-sm text-slate-900">
+              <dt className="text-xs font-medium text-slate-500">Underlying</dt>
+              <dd className="mt-0.5 text-sm text-slate-900 font-mono">
                 {view.underlying?.ticker ?? '—'}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Direction</dt>
-              <dd className="mt-1">
+              <dt className="text-xs font-medium text-slate-500">Direction</dt>
+              <dd className="mt-0.5">
                 {view.direction ? (
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                  <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                     view.direction === 'bullish' ? 'bg-emerald-100 text-emerald-700' :
                     view.direction === 'bearish' ? 'bg-red-100 text-red-700' :
                     'bg-slate-200 text-slate-700'
                   }`}>
                     {view.direction}
                   </span>
-                ) : '—'}
+                ) : <span className="text-sm text-slate-500">—</span>}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Time Horizon</dt>
-              <dd className="mt-1 text-sm text-slate-900">
+              <dt className="text-xs font-medium text-slate-500">Time Horizon</dt>
+              <dd className="mt-0.5 text-sm text-slate-900">
                 {view.timeHorizon?.replace('_', ' ') ?? '—'}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Confidence Level</dt>
-              <dd className="mt-1 text-sm text-slate-900">
+              <dt className="text-xs font-medium text-slate-500">Confidence</dt>
+              <dd className="mt-0.5 text-sm text-slate-900">
                 {view.confidenceLevel ?? '—'}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Macro Thesis</dt>
-              <dd className="mt-1 text-sm text-slate-900">
-                {view.macroThesis ? (
-                  <Link
-                    href={`/macro-theses/${view.macroThesis.id}`}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {view.macroThesis.title}
-                  </Link>
-                ) : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-medium text-slate-500">Status</dt>
-              <dd className="mt-1">
-                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+              <dt className="text-xs font-medium text-slate-500">Status</dt>
+              <dd className="mt-0.5">
+                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                   view.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
                   view.status === 'under_review' ? 'bg-amber-100 text-amber-700' :
                   'bg-slate-200 text-slate-700'
@@ -107,75 +104,59 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
                 </span>
               </dd>
             </div>
+            {view.targetPrice && (
+              <div>
+                <dt className="text-xs font-medium text-slate-500">Target Price</dt>
+                <dd className="mt-0.5 text-sm text-slate-900 font-mono">
+                  ${Number(view.targetPrice).toFixed(2)}
+                </dd>
+              </div>
+            )}
+            {view.entryReferencePrice && (
+              <div>
+                <dt className="text-xs font-medium text-slate-500">Entry Reference</dt>
+                <dd className="mt-0.5 text-sm text-slate-900 font-mono">
+                  ${Number(view.entryReferencePrice).toFixed(2)}
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
 
+        {/* Summary (formerly Description) */}
+        {view.description ? (
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <h3 className="text-base font-semibold mb-3">Summary</h3>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap">{view.description}</p>
+          </div>
+        ) : null}
+
         {/* Underlying Market Data */}
         {view.underlying && (
-          <div className="bg-white rounded-lg border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">Underlying Market Data</h3>
-            <dl className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <h3 className="text-base font-semibold mb-3">Underlying Market Data</h3>
+            <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
               <div>
-                <dt className="text-sm font-medium text-slate-500">Ticker</dt>
-                <dd className="mt-1 text-sm font-mono text-slate-900">
-                  {view.underlying.ticker}
-                </dd>
+                <dt className="text-xs font-medium text-slate-500">Name</dt>
+                <dd className="mt-0.5 text-sm text-slate-900">{view.underlying.name ?? '—'}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-slate-500">Name</dt>
-                <dd className="mt-1 text-sm text-slate-900">
-                  {view.underlying.name ?? '—'}
-                </dd>
+                <dt className="text-xs font-medium text-slate-500">Asset Class</dt>
+                <dd className="mt-0.5 text-sm text-slate-900">{view.underlying.assetClass ?? '—'}</dd>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500">Asset Class</dt>
-                <dd className="mt-1 text-sm text-slate-900">
-                  {view.underlying.assetClass ?? '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500">Currency</dt>
-                <dd className="mt-1 text-sm text-slate-900">
-                  {view.underlying.baseCurrency ?? '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500">Spot Price</dt>
-                <dd className="mt-1 text-sm font-mono text-slate-900">
-                  {view.underlying.spot ? `$${parseFloat(view.underlying.spot).toFixed(2)}` : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500">IV30</dt>
-                <dd className="mt-1 text-sm font-mono text-slate-900">
-                  {view.underlying.iv30 ? `${(parseFloat(view.underlying.iv30) * 100).toFixed(1)}%` : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500">ATR20</dt>
-                <dd className="mt-1 text-sm font-mono text-slate-900">
-                  {view.underlying.atr20 ? `$${parseFloat(view.underlying.atr20).toFixed(2)}` : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500">RV20</dt>
-                <dd className="mt-1 text-sm font-mono text-slate-900">
-                  {view.underlying.rv20 ? `${(parseFloat(view.underlying.rv20) * 100).toFixed(1)}%` : '—'}
-                </dd>
-              </div>
-              {view.underlying.nextEarningsDate && (
+              {view.underlying.spot && (
                 <div>
-                  <dt className="text-sm font-medium text-slate-500">Next Earnings</dt>
-                  <dd className="mt-1 text-sm text-slate-900">
-                    {new Date(view.underlying.nextEarningsDate).toLocaleDateString()}
+                  <dt className="text-xs font-medium text-slate-500">Spot</dt>
+                  <dd className="mt-0.5 text-sm text-slate-900 font-mono">
+                    ${Number(view.underlying.spot).toFixed(2)}
                   </dd>
                 </div>
               )}
-              {view.underlying.nextExDivDate && (
+              {view.underlying.iv30 && (
                 <div>
-                  <dt className="text-sm font-medium text-slate-500">Next Ex-Div</dt>
-                  <dd className="mt-1 text-sm text-slate-900">
-                    {new Date(view.underlying.nextExDivDate).toLocaleDateString()}
+                  <dt className="text-xs font-medium text-slate-500">IV30</dt>
+                  <dd className="mt-0.5 text-sm text-slate-900 font-mono">
+                    {(Number(view.underlying.iv30) * 100).toFixed(1)}%
                   </dd>
                 </div>
               )}
@@ -183,173 +164,51 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
           </div>
         )}
 
-        {/* Description & Narrative */}
-        {(view.description || view.narrative) && (
-          <div className="bg-white rounded-lg border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold mb-4">Description & Narrative</h3>
-            {view.description && (
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-slate-500 mb-2">Description</h4>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{view.description}</p>
-              </div>
-            )}
-            {view.narrative && (
-              <div>
-                <h4 className="text-sm font-medium text-slate-500 mb-2">Narrative</h4>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{view.narrative}</p>
-              </div>
-            )}
+        {/* Main Claims - UnifiedClaimsBrowser */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-base font-semibold mb-3">
+            Main Claims ({claimsWithSources.length})
+          </h3>
+          {claimsWithSources.length === 0 ? (
+            <p className="text-sm text-slate-500">No main claims linked to this thesis yet.</p>
+          ) : (
+            <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
+          )}
+        </div>
+
+        {/* Linked Macro Theses - UnifiedMacroThesisBrowser */}
+        {linkedMacroTheses.length > 0 && (
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <h3 className="text-base font-semibold mb-3">
+              Linked Macro Theses ({linkedMacroTheses.length})
+            </h3>
+            <UnifiedMacroThesisBrowser theses={linkedMacroTheses} />
           </div>
         )}
 
-        {/* Context Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {view.fundamentalContext && (
-            <div className="bg-white rounded-lg border border-slate-200 p-6">
-              <h3 className="text-sm font-semibold mb-2">Fundamental Context</h3>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                {view.fundamentalContext}
-              </p>
-            </div>
-          )}
-          {view.positioningContext && (
-            <div className="bg-white rounded-lg border border-slate-200 p-6">
-              <h3 className="text-sm font-semibold mb-2">Positioning Context</h3>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                {view.positioningContext}
-              </p>
-            </div>
-          )}
-          {view.regimeContext && (
-            <div className="bg-white rounded-lg border border-slate-200 p-6">
-              <h3 className="text-sm font-semibold mb-2">Regime Context</h3>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                {view.regimeContext}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Main Claims */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Main Claims ({linkedClaims.length})</h3>
-            <AddMainClaimButtonForThesis viewId={view.id} viewTitle={view.title} />
-          </div>
-          {linkedClaims.length === 0 ? (
-            <p className="text-sm text-slate-500">No main claims linked to this asset thesis yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {linkedClaims.map((claim) => (
-                <div key={claim.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      {claim.title && (
-                        <div className="font-medium text-slate-900 mb-1">{claim.title}</div>
-                      )}
-                      <p className="text-sm text-slate-700">{claim.claim}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span
-                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
-                            claim.qualifier === 'high'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : claim.qualifier === 'medium'
-                              ? 'bg-blue-100 text-blue-700'
-                              : claim.qualifier === 'low'
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
-                          {claim.qualifier} confidence
-                        </span>
-                        <span className="text-xs text-slate-500">{claim.category}</span>
-                        {claim.timeHorizon && (
-                          <span className="text-xs text-slate-500">
-                            {claim.timeHorizon.replace('_', ' ')}
-                          </span>
-                        )}
-                        {claim.mappingType && (
-                          <span
-                            className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
-                              claim.mappingType === 'supports'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : claim.mappingType === 'refutes'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}
-                          >
-                            {claim.mappingType}
-                          </span>
-                        )}
-                        {claim.relevantTickers && claim.relevantTickers.length > 0 && (
-                          <div className="flex gap-1">
-                            {claim.relevantTickers.map((ticker) => (
-                              <span
-                                key={ticker}
-                                className="inline-flex px-1.5 py-0.5 text-xs font-mono bg-slate-100 text-slate-900 rounded"
-                              >
-                                {ticker}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Linked Strategies */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold mb-4">Linked Strategies ({linkedStrategies.length})</h3>
+        {/* Linked Strategies - UnifiedStrategiesBrowser */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-base font-semibold mb-3">
+            Linked Strategies ({linkedStrategies.length})
+          </h3>
           {linkedStrategies.length === 0 ? (
             <p className="text-sm text-slate-500">No strategies linked to this asset thesis yet.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide text-slate-400 border-b">
-                    <th className="pb-2">Strategy</th>
-                    <th className="pb-2">Type</th>
-                    <th className="pb-2">Account</th>
-                    <th className="pb-2">Status</th>
-                    <th className="pb-2">Opened</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {linkedStrategies.map((strategy) => (
-                    <tr key={strategy.id} className="hover:bg-slate-50">
-                      <td className="py-2">
-                        <Link href={`/strategies/${strategy.id}/triage`} className="text-blue-600 hover:text-blue-800 font-medium">
-                          {strategy.label || strategy.strategyKey}
-                        </Link>
-                      </td>
-                      <td className="py-2 text-slate-600">{strategy.strategyType || '—'}</td>
-                      <td className="py-2 text-slate-600">{strategy.accountLabel || strategy.accountBrokerId || '—'}</td>
-                      <td className="py-2">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          strategy.status === 'open' ? 'bg-emerald-100 text-emerald-700' :
-                          strategy.status === 'closed' ? 'bg-slate-200 text-slate-700' :
-                          strategy.status === 'draft' ? 'bg-amber-100 text-amber-700' :
-                          'bg-slate-200 text-slate-700'
-                        }`}>
-                          {strategy.status}
-                        </span>
-                      </td>
-                      <td className="py-2 text-slate-600">
-                        {strategy.openedAt ? new Date(strategy.openedAt).toLocaleDateString() : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <UnifiedStrategiesBrowser strategies={linkedStrategies} />
           )}
         </div>
+
+        {/* Notes - Moved to bottom */}
+        {view.notes !== null && view.notes !== undefined ? (
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <h3 className="text-base font-semibold mb-3">Notes</h3>
+            <pre className="text-sm text-slate-700 whitespace-pre-wrap">
+              {JSON.stringify(view.notes, null, 2)}
+            </pre>
+          </div>
+        ) : null}
       </div>
     </DashboardShell>
   );
 }
+
