@@ -126,7 +126,7 @@ export function LinkToThesisDialog({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          macro_thesis_id: selectedThesisId,
+          macroThesisId: selectedThesisId,
         }),
       });
 

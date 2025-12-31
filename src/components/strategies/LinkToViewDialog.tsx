@@ -134,9 +134,9 @@ export function LinkToViewDialog({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          asset_thesis_id: selectedViewId,
+          assetThesisId: selectedViewId,
           // Also link the macro thesis if the selected view has one
-          macro_thesis_id: selectedView?.macroThesisId || currentThesisId,
+          macroThesisId: selectedView?.macroThesisId || currentThesisId,
         }),
       });
 
