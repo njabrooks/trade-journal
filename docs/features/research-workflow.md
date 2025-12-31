@@ -1,7 +1,7 @@
 # Research Workflow - Complete Guide
 
-**Last Updated**: 2025-12-28
-**Status**: Production-ready with first-class main claims architecture
+**Last Updated**: 2025-12-31
+**Status**: Production-ready with local-first workflow (Supabase as single source of truth)
 
 ---
 
@@ -21,7 +21,11 @@ Macro Theses & Asset Thesiss (Decision hierarchy Level 1-2)
 Strategies & Positions (Tactical execution Level 3-4)
 ```
 
-**Key Principle**: All AI processing happens **locally** via Claude Code skills. The web app is for browsing, converting, and managing research—not for AI-assisted processing.
+**Key Principles**: 
+- All AI processing happens **locally** via Claude Code skills
+- **Supabase is the single source of truth** - no bidirectional sync with external tools
+- Local Markdown files are staging area only; upload is one-way to database
+- Web app is for browsing, converting, and managing research
 
 **Related Documentation**:
 - [PRD v1.1](/docs/PRD_v1.1.md) - System vision and requirements
@@ -55,13 +59,13 @@ The research workflow enables systematic conversion of research transcripts into
 /process-transcript path/to/transcript.md
 ```
 
-**Output**: Audit file with Toulmin claims structure
+**Output**: Audit file with Toulmin claims structure (local Markdown)
 
 **What it does**:
 - Extracts hierarchical claims (main claims + evidence claims)
 - Applies Toulmin framework (claim, evidence, reasoning, backing, rebuttal, qualifier)
 - Categorizes claims (thesis_candidate, view_candidate, macro, asset_specific)
-- Writes to Obsidian vault (configured via `OBSIDIAN_AUDITS_DIR` env var)
+- Writes to local directory (configured via `OBSIDIAN_AUDITS_DIR` env var or `research-workspace/`)
 
 ### 2. Upload to Database
 
@@ -350,69 +354,38 @@ macro_theses / asset_views (actionable beliefs)
 
 ## Environment Configuration
 
-Research processing integrates with an external Obsidian vault:
+Research processing writes local Markdown files before upload:
 
 ```bash
 # .env.local
-OBSIDIAN_VAULT_PATH=/Users/njb/Desktop/nick
-OBSIDIAN_SYNC_ENABLED=true
+OBSIDIAN_VAULT_PATH=/Users/njb/Desktop/nick  # Optional: base path for local files
 
-# Content directories (relative to OBSIDIAN_VAULT_PATH)
+# Content directories (relative to OBSIDIAN_VAULT_PATH, or absolute paths)
 OBSIDIAN_TRANSCRIPTS_DIR=investing/research/transcripts
 OBSIDIAN_AUDITS_DIR=investing/research/audits
 OBSIDIAN_SYNTHESES_DIR=investing/research/syntheses
 OBSIDIAN_DEEP_DIVES_DIR=investing/research/deep-dives
-OBSIDIAN_MAIN_CLAIMS_DIR=investing/main-claims
-OBSIDIAN_MACRO_THESES_DIR=investing/macro-theses
-OBSIDIAN_ASSET_VIEWS_DIR=investing/asset-theses
 ```
 
 **Skills Configuration**:
-- All skills read these env vars to determine output paths
+- Skills read these env vars to determine where to write local Markdown files
 - Fallback to `research-workspace/` if env vars not set
-- Skills write directly to Obsidian vault (not to project folder)
+- Files are staging area only - upload to Supabase is one-way via `/finalize-for-upload`
 
-## Bidirectional Sync
+**Data Flow**:
+```
+Local Markdown (transcripts, audits, syntheses)
+  ↓ (one-way upload)
+Supabase Database (single source of truth)
+  ↓ (browse/manage)
+Web UI (read, convert, promote claims)
+```
 
-**File Watch Sync** (Obsidian ↔ Supabase):
-
-The system implements real-time bidirectional sync using file watching (chokidar):
-
-**Obsidian → Database**:
-- File watcher monitors `main-claims/`, `macro-theses/`, `asset-theses/` folders
-- Detects file create/update/delete events
-- Automatically syncs changes to Supabase database
-- Debounced to avoid redundant syncs (1 second)
-- **DELETE**: Deleting a file in Obsidian permanently removes the corresponding database record
-
-**Database → Obsidian**:
-- Triggered automatically after DB writes via API routes
-- Creates/updates markdown files in Obsidian vault
-- Maintains frontmatter with sync metadata
-- **DELETE**: Database deletions do NOT delete Obsidian files (one-way delete only)
-
-**Sync Dashboard**:
-- Visit `http://localhost:3000/admin/sync` to monitor sync status
-- View recent syncs, errors, and statistics
-- Start/stop/restart watcher manually
-- Clear statistics
-
-**What Syncs**:
-- ✅ Main Claims (`investing/main-claims/` ↔ `main_claims` table)
-- ✅ Macro Theses (`investing/macro-theses/` ↔ `macro_theses` table)
-- ✅ Asset Thesiss (`investing/asset-theses/` ↔ `asset_views` table)
-- ⚠️ Research Artifacts (transcripts, audits, etc.) - One-way only (skills write to Obsidian, upload via `/finalize-for-upload`)
-
-**Auto-Start**:
-- Watcher starts automatically when Next.js server starts (via `instrumentation.ts`)
-- Requires `OBSIDIAN_SYNC_ENABLED=true` in `.env.local`
-
-**Sync State Cache**:
-- File path → entity ID mappings stored in `.obsidian-sync-state.json`
-- Enables delete operations (when file is deleted, we can't read it to get the ID)
-- Automatically maintained on every sync
-- Safe to delete (will rebuild on next sync)
-- Excluded from git (see `.gitignore`)
+**No Bidirectional Sync**: 
+- Supabase is the canonical source
+- Local files are for processing only
+- Manual export from UI if needed (copy/paste or future export feature)
+- Simplifies maintenance - no UUID ↔ backlink translation issues
 
 ---
 
@@ -549,18 +522,19 @@ Look for `converted_to` field on claim.
 2. Select onChange: Cast value `e.target.value as typeof state`
 3. JSONB casting: Use `as any` for Drizzle JSONB fields
 
-### Issue: Skills not writing to Obsidian vault
+### Issue: Skills not writing local Markdown files
 
 **Check**:
 1. `.env.local` has correct `OBSIDIAN_*_DIR` paths
-2. Directories exist in the Obsidian vault
-3. Paths are relative to `OBSIDIAN_VAULT_PATH`
+2. Directories exist at configured paths
+3. Paths are relative to `OBSIDIAN_VAULT_PATH` or absolute
 
 **Fix**:
 ```bash
 # Create missing directories
 mkdir -p /Users/njb/Desktop/nick/investing/research/{transcripts,audits,syntheses,deep-dives}
-mkdir -p /Users/njb/Desktop/nick/investing/{main-claims,macro-theses,asset-theses}
+# Or use project fallback
+mkdir -p research-workspace/{1-transcripts,2-audits,3-syntheses,4-deep-dives}
 ```
 
 ---
@@ -588,17 +562,16 @@ mkdir -p /Users/njb/Desktop/nick/investing/{main-claims,macro-theses,asset-these
 
 ## Implementation Status
 
-**Complete** (2025-12-28):
+**Complete** (2025-12-31):
 - ✅ First-class `main_claims` table with full Toulmin structure
 - ✅ Evidence linking via `main_claim_evidence` table
 - ✅ Claim-to-thesis/view mappings via `claim_thesis_mappings` table
 - ✅ Directional stance fields added to theses/views
 - ✅ Promotion workflow via UI "Promote" button
 - ✅ Correct Toulmin terminology (evidence/reasoning) throughout codebase
-- ✅ **Real-time bidirectional sync** (Obsidian ↔ Supabase) using file watching
-- ✅ **Auto-sync on DB writes** for main claims, macro theses, and asset thesiss
-- ✅ **Sync dashboard** at `/admin/sync` for monitoring and control
-- ✅ **Conflict detection** and handling for concurrent edits
+- ✅ **Local-first workflow** with Supabase as single source of truth
+- ✅ **One-way upload** from local Markdown to database
+- ✅ **Removed bidirectional sync** - simplified architecture, no UUID ↔ backlink issues
 
 **Future Enhancements** (see `docs/archive/research/FUTURE_ENHANCEMENTS.md`):
 - Main Claim Evolution View: Timeline of evidence accumulation over time

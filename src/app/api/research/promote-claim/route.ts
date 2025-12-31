@@ -3,7 +3,6 @@ import { db } from '@/db';
 import { researchInsights, mainClaims, mainClaimEvidence } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure } from '@/types/claims';
-import { afterMainClaimSave } from '@/lib/obsidian/hooks';
 
 /**
  * POST /api/research/promote-claim
@@ -153,11 +152,6 @@ export async function POST(request: NextRequest) {
         linkedEvidenceCount = evidenceLinks.length;
       }
     }
-
-    // Sync to Obsidian (non-blocking)
-    afterMainClaimSave(createdMainClaim).catch((error) => {
-      console.error('Failed to sync main claim to Obsidian:', error);
-    });
 
     return NextResponse.json({
       success: true,

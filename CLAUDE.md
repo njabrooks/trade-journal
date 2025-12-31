@@ -116,7 +116,7 @@ React Frontend (ClaimsBrowser, ConvertClaimDialog)
 3. **Server Components** - Next.js 16 defaults to server components; client components are minimal
 4. **Process Tracking** - All ingestion runs logged to `ingestion_runs` table
 5. **Normalized + Denormalized** - Some denormalization (e.g., ticker in multiple tables) for query efficiency
-6. **Local-First AI Processing** - Research processing happens locally via Claude Code skills before database upload (no in-app AI endpoints)
+6. **Local-First Research Workflow** - Research processing happens locally via Claude Code skills, with Supabase as single source of truth
 7. **Provenance Tracking** - Automatic tracking from claims → theses/views via conversion metadata
 
 ## Key Directories
@@ -328,28 +328,29 @@ MASSIVE_API_BASE_URL=https://api.massive.com
 - State codes are managed via playbook system (`playbook_items` table)
 
 ### When Working with Research Workflow
-The research workflow follows a **local-first AI processing pattern** using Toulmin framework claim extraction.
+The research workflow follows a **local-first processing pattern** using Toulmin framework claim extraction. **Supabase is the single source of truth** - no bidirectional sync with external tools.
 
 **Quick Start**:
 ```bash
-/process-transcript path/to/transcript    # Extract Toulmin claims
-/finalize-for-upload path/to/audit        # Upload to database
+/process-transcript path/to/transcript    # Extract Toulmin claims → local Markdown
+/finalize-for-upload path/to/audit        # Upload to Supabase (one-way)
 ```
 
 **Full Guide**: See **[docs/features/research-workflow.md](docs/features/research-workflow.md)** for:
 - Detailed workflow stages and Toulmin framework explanation
 - Claims structure specification (main claims + evidence claims)
-- UI features (filtering, search, conversion)
+- UI features (filtering, search, conversion, promotion)
 - Testing procedures and troubleshooting
-- Environment configuration (Obsidian vault integration)
+- Environment configuration (local Markdown output paths)
 
 **Key Components**:
 - **Parser**: `src/lib/research/parseClaimsMarkdown.ts` - Audit markdown → JSON
+- **Markdown Generator**: `src/lib/obsidian/markdown.ts` - Used by skills to write local files
 - **UI Components**: `src/components/research/` (ClaimsBrowser, ConvertClaimDialog, etc.)
 - **Skills**: `.claude/skills/` (process-transcript, synthesize-claims, deep-dive, finalize-for-upload)
 - **Database**: `research_artifacts`, `research_insights` (with `claims_structure` JSONB), `main_claims` tables
 
-**CRITICAL**: No in-app AI processing - all AI work happens locally via Claude Code skills before upload. The web UI is for browsing and manual conversion only.
+**Data Flow**: Local Markdown → Upload to Supabase → Browse/manage in web UI. No automatic sync back to local files.
 
 ### When Adding API Routes
 - Use Next.js App Router conventions (`/src/app/api/*/route.ts`)
@@ -418,10 +419,11 @@ The research workflow follows a **local-first AI processing pattern** using Toul
 5. **Multi-source Data** - Yahoo Finance (spot) → IBKR Gateway → Massive (fallback priority)
 6. **CSV Error Handling** - Detailed row-by-row error reporting with line numbers
 7. **State Codes** - Playbook states like "LC1", "RR2" are tactical workflow concepts, not PRD concepts
-8. **Local-First Research** - All AI processing via Claude Code skills; no in-app AI endpoints (archived old workflow)
+8. **Local-First Research** - Research processing via Claude Code skills with Supabase as single source of truth
 9. **Toulmin Framework** - Claims use Toulmin argumentation model (claim, evidence, reasoning, backing)
 10. **Provenance Tracking** - Automatic tracking from research claims → theses/views with source metadata
 11. **JSONB Claims Structure** - `research_insights.claims_structure` stores hierarchical claim tree
+12. **No Bidirectional Sync** - One-way upload from local Markdown to Supabase; no automatic sync back to files
 
 ## Quick Navigation for Specific Features
 
