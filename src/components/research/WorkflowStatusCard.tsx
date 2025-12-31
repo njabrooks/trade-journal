@@ -106,11 +106,11 @@ export function WorkflowStatusCard({
               )}
             </ChecklistItem>
 
-            {/* Step 4: Converted Count */}
+            {/* Step 4: Linked Count */}
             {convertedCount > 0 && (
               <ChecklistItem done={true}>
                 <span className="text-emerald-600">{convertedCount}</span> claim
-                {convertedCount !== 1 ? 's' : ''} converted to hierarchy
+                {convertedCount !== 1 ? 's' : ''} linked to theses
               </ChecklistItem>
             )}
           </>
