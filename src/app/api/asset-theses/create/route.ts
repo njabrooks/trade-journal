@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { assetTheses, claimThesisMappings, underlyings, mainClaims } from '@/db/schema';
+import { assetTheses, claimThesisMappings, underlyings, mainClaims, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateAssetThesisTitle } from '@/lib/utils/title-generation';
 
@@ -30,9 +30,10 @@ import { generateAssetThesisTitle } from '@/lib/utils/title-generation';
  *   outcomeNotes?: string;
  *
  *   // Linkage
- *   macroThesisId?: string;          // Auto-link to this macro thesis
+ *   primaryMacroThesisId?: string;   // Auto-link to this macro thesis (primary)
+ *   relatedMacroThesisIds?: string[];// Array of related macro thesis IDs
  *   linkedMainClaimIds?: string[];   // Array of main_claim UUIDs to link
- *   linkedThesisIds?: string[];      // Array of macro_thesis UUIDs to link
+ *   linkedThesisIds?: string[];      // DEPRECATED: Use primaryMacroThesisId + relatedMacroThesisIds
  *
  *   // Additional metadata
  *   notes?: object;
@@ -63,10 +64,15 @@ export async function POST(request: NextRequest) {
       outcome,
       outcomeNotes,
       linkedMainClaimIds = [],
-      linkedThesisIds = [],
-      macroThesisId, // For auto-linking when created from macro thesis context
+      linkedThesisIds = [], // DEPRECATED
+      primaryMacroThesisId, // For auto-linking when created from macro thesis context
+      relatedMacroThesisIds = [], // For linking additional related macro theses
+      macroThesisId, // DEPRECATED: backwards compatibility
       notes = {},
     } = body;
+
+    // Backwards compatibility: use macroThesisId if primaryMacroThesisId not provided
+    const finalPrimaryMacroThesisId = primaryMacroThesisId || macroThesisId || null;
 
     // Validate required fields
     // Note: title is now optional and will be auto-generated if not provided
@@ -117,7 +123,7 @@ export async function POST(request: NextRequest) {
       .values({
         title: finalTitle,
         underlyingId: underlying.id,
-        macroThesisId: macroThesisId || null, // Auto-link to macro thesis if provided
+        primaryMacroThesisId: finalPrimaryMacroThesisId, // Auto-link to primary macro thesis if provided
         description: description || null,
         timeHorizon: timeHorizon || null,
         confidenceLevel: confidenceLevel || null,
@@ -171,20 +177,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // TODO: Link to parent theses (if provided)
-    // This requires a thesis-view linkage table that doesn't exist yet
-    // For now, store thesis IDs in notes
+    // Link related macro theses (if provided)
+    let linkedRelatedMacroThesesCount = 0;
+    if (relatedMacroThesisIds.length > 0) {
+      const relatedLinks = relatedMacroThesisIds.map((macroThesisId: string) => ({
+        assetThesisId: createdView.id,
+        macroThesisId,
+        addedBy: 'creation', // Linked at asset thesis creation time
+      }));
+
+      await db.insert(assetThesisRelatedMacroTheses).values(relatedLinks);
+      linkedRelatedMacroThesesCount = relatedLinks.length;
+    }
+
+    // DEPRECATED: Link to parent theses via linkedThesisIds (backwards compat)
     let linkedThesesCount = 0;
     if (linkedThesisIds.length > 0) {
-      notes.linked_thesis_ids = linkedThesisIds;
+      // Store deprecated thesis IDs in notes for migration
+      notes.legacy_linked_thesis_ids = linkedThesisIds;
       linkedThesesCount = linkedThesisIds.length;
 
-      // Update notes with thesis links
+      // Update notes
       await db
         .update(assetTheses)
         .set({ notes })
         .where(eq(assetTheses.id, createdView.id));
     }
+
+    const totalMacroThesesCount = (finalPrimaryMacroThesisId ? 1 : 0) + linkedRelatedMacroThesesCount;
 
     return NextResponse.json({
       success: true,
@@ -192,8 +212,9 @@ export async function POST(request: NextRequest) {
       title: createdView.title,
       ticker: ticker.toUpperCase(),
       linkedClaimsCount,
-      linkedThesesCount,
-      message: `Asset view created successfully${linkedClaimsCount > 0 ? ` with ${linkedClaimsCount} main claims linked` : ''}${linkedThesesCount > 0 ? ` and ${linkedThesesCount} parent theses referenced` : ''}`,
+      linkedMacroThesesCount: totalMacroThesesCount,
+      linkedThesesCount, // DEPRECATED: for backwards compat
+      message: `Asset view created successfully${linkedClaimsCount > 0 ? ` with ${linkedClaimsCount} main claims linked` : ''}${totalMacroThesesCount > 0 ? ` and ${totalMacroThesesCount} macro theses linked` : ''}`,
     });
   } catch (error: any) {
     console.error('Error creating asset thesis:', error);

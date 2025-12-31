@@ -14,8 +14,7 @@ import { strategies } from '@/db/schema';
  *   description?: string;
  *   direction: 'long' | 'short' | 'neutral';
  *   status?: 'open' | 'closed';
- *   assetThesisId?: string;          // Auto-link to this asset thesis
- *   macroThesisId?: string;          // Auto-link to this macro thesis
+ *   assetThesisId?: string;          // Auto-link to this asset thesis (inherits macro thesis)
  *   rationale?: string;
  *   exitStrategy?: string;
  *   riskManagement?: string;
@@ -44,8 +43,7 @@ export async function POST(request: NextRequest) {
       description,
       direction,
       status = 'open',
-      assetThesisId,
-      macroThesisId,
+      assetThesisId, // Strategy inherits macro thesis through asset thesis
       rationale,
       exitStrategy,
       riskManagement,
@@ -84,8 +82,7 @@ export async function POST(request: NextRequest) {
         description: description || null,
         direction,
         status,
-        assetThesisId: assetThesisId || null,
-        macroThesisId: macroThesisId || null,
+        assetThesisId: assetThesisId || null, // Inherits macro thesis through asset thesis
         rationale: rationale || null,
         exitStrategy: exitStrategy || null,
         riskManagement: riskManagement || null,

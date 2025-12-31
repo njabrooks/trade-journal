@@ -12,13 +12,13 @@ export async function PATCH(
     const body = await request.json();
 
     // Extract fields that can be updated
-    const { assetThesisId, macroThesisId, label, description, rationale, status } = body;
+    // Note: macroThesisId is no longer supported - strategies inherit via assetThesis
+    const { assetThesisId, label, description, rationale, status } = body;
 
     // Build update object with only provided fields
     const updates: any = {};
     
     if (assetThesisId !== undefined) updates.assetThesisId = assetThesisId;
-    if (macroThesisId !== undefined) updates.macroThesisId = macroThesisId;
     if (label !== undefined) updates.label = label;
     if (description !== undefined) updates.description = description;
     if (rationale !== undefined) updates.rationale = rationale;
