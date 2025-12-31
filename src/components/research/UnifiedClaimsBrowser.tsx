@@ -689,19 +689,14 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                     Evidence
                                   </h4>
                                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
-                                    {claim.evidence.flatMap((point, idx) => {
-                                      // Backward compatibility: split old comma-separated strings
-                                      if (point.includes('(Transcript') && point.match(/\),/)) {
-                                        return point
-                                          .split(/\),\s*(?=[A-Z])/)
-                                          .map(p => p.trim().replace(/^-\s*/, ''))
-                                          .filter(p => p.length > 0)
-                                          .map(p => p.includes('(') && !p.includes(')') ? p + ')' : p);
+                                    {claim.evidence.map((point, idx) => {
+                                      // Type guard: ensure point is a string
+                                      if (typeof point !== 'string') {
+                                        console.warn('Non-string evidence point:', point);
+                                        return null;
                                       }
-                                      return [point.replace(/^-\s*/, '')];
-                                    }).map((point, idx) => (
-                                      <li key={idx}>{point}</li>
-                                    ))}
+                                      return <li key={idx}>{point}</li>;
+                                    })}
                                   </ul>
                                 </div>
                               )}
@@ -733,19 +728,14 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                     Rebuttal
                                   </h4>
                                   <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
-                                    {claim.rebuttal.flatMap((point, idx) => {
-                                      // Backward compatibility: split old comma-separated strings
-                                      if (point.includes('(Transcript') && point.match(/\),/)) {
-                                        return point
-                                          .split(/\),\s*(?=[A-Z])/)
-                                          .map(p => p.trim().replace(/^-\s*/, ''))
-                                          .filter(p => p.length > 0)
-                                          .map(p => p.includes('(') && !p.includes(')') ? p + ')' : p);
+                                    {claim.rebuttal.map((point, idx) => {
+                                      // Type guard: ensure point is a string
+                                      if (typeof point !== 'string') {
+                                        console.warn('Non-string rebuttal point:', point);
+                                        return null;
                                       }
-                                      return [point.replace(/^-\s*/, '')];
-                                    }).map((point, idx) => (
-                                      <li key={idx}>{point}</li>
-                                    ))}
+                                      return <li key={idx}>{point}</li>;
+                                    })}
                                   </ul>
                                 </div>
                               )}
