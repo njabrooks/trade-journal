@@ -14,7 +14,9 @@ interface EditMacroThesisDialogProps {
 export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialogProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Form state
   const [title, setTitle] = useState(thesis.title);
@@ -37,6 +39,31 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
   const [sectors, setSectors] = useState(thesis.sectors?.join(', ') || '');
   const [outcome, setOutcome] = useState(thesis.outcome || '');
   const [outcomeNotes, setOutcomeNotes] = useState(thesis.outcomeNotes || '');
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/theses/${thesis.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete thesis');
+      }
+
+      // Success! Navigate to theses list
+      router.push('/macro-theses');
+      router.refresh();
+    } catch (err) {
+      console.error('Error deleting thesis:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete thesis');
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -305,13 +332,50 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 justify-end pt-4 border-t border-slate-200">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
+          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+            <div>
+              {!showDeleteConfirm ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={loading || deleting}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                >
+                  Delete Thesis
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-red-600 font-medium">Are you sure?</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {deleting ? 'Deleting...' : 'Confirm Delete'}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading || deleting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading || deleting}>
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
           </div>
         </form>
       </div>
