@@ -77,11 +77,12 @@ export function UnifiedLinkingDialog({
         const linkResponse = await fetch(`/api/asset-theses/${sourceId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ macroThesisId: newThesis.id }),
+          body: JSON.stringify({ macroThesisId: newThesis.thesisId }), // API returns thesisId, not id
         });
         
         if (!linkResponse.ok) {
-          throw new Error('Created thesis but failed to link');
+          const errorData = await linkResponse.json();
+          throw new Error(errorData.error || 'Created thesis but failed to link');
         }
       }
 
@@ -120,13 +121,14 @@ export function UnifiedLinkingDialog({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            assetThesisId: newThesis.id,
+            assetThesisId: newThesis.viewId, // API returns viewId, not id
             macroThesisId: autoLinkContext?.macroThesisId || newThesis.macroThesisId,
           }),
         });
         
         if (!linkResponse.ok) {
-          throw new Error('Created thesis but failed to link');
+          const errorData = await linkResponse.json();
+          throw new Error(errorData.error || 'Created thesis but failed to link');
         }
       } else if (sourceType === 'macroThesis') {
         // Link was already done via macroThesisId in create
