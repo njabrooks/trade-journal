@@ -172,7 +172,7 @@ export function ConvertClaimToEntityDialog({
         handleClose();
       } else if (entityType === 'asset_view') {
         if (!ticker) {
-          setError('Ticker is required for Asset Thesiss');
+          setError('Ticker is required for Asset Theses');
           setIsSubmitting(false);
           return;
         }
@@ -264,16 +264,18 @@ export function ConvertClaimToEntityDialog({
 
         {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Show claim being confirmed */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-blue-900 mb-2">Claim</h3>
-            <p className="text-sm font-medium text-blue-800 mb-1">{claim.title}</p>
-            <p className="text-xs text-blue-700">{claim.claim}</p>
-            {claim.qualifier && (
-              <Badge className="bg-blue-100 text-blue-800 text-xs mt-2">
-                {claim.qualifier} confidence
-              </Badge>
-            )}
+          {/* Show claim being confirmed - compact */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-blue-900 truncate">{claim.title}</p>
+              </div>
+              {claim.qualifier && (
+                <Badge className="bg-blue-100 text-blue-800 text-xs ml-3 flex-shrink-0">
+                  {claim.qualifier}
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Step 0: Choose Mode */}
@@ -377,10 +379,10 @@ export function ConvertClaimToEntityDialog({
                     )}
                   </div>
 
-                  {/* Asset Thesiss */}
+                  {/* Asset Theses */}
                   <div>
                     <h4 className="text-sm font-semibold text-slate-700 mb-3">
-                      Asset Thesiss ({availableViews.length})
+                      Asset Theses ({availableViews.length})
                     </h4>
                     {availableViews.length === 0 ? (
                       <p className="text-sm text-slate-500 italic">No available views</p>
