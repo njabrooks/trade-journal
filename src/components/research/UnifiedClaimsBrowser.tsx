@@ -51,7 +51,24 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [confidenceFilter, setConfidenceFilter] = useState<ConfidenceFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
+  const [linkedToFilter, setLinkedToFilter] = useState<string>('all'); // 'all', 'unlinked', or thesis/view ID
   const [showFilters, setShowFilters] = useState(false);
+
+  // Get unique theses and views for filter dropdown
+  const uniqueLinkedEntities = useMemo(() => {
+    const entities = new Map<string, { id: string; title: string; type: 'macro' | 'asset' }>();
+    
+    claimsWithSources.forEach((claimWithSource) => {
+      claimWithSource.linkedTheses?.forEach((thesis) => {
+        entities.set(`macro-${thesis.id}`, { id: thesis.id, title: thesis.title, type: 'macro' });
+      });
+      claimWithSource.linkedViews?.forEach((view) => {
+        entities.set(`asset-${view.id}`, { id: view.id, title: view.title, type: 'asset' });
+      });
+    });
+    
+    return Array.from(entities.values()).sort((a, b) => a.title.localeCompare(b.title));
+  }, [claimsWithSources]);
 
   // Sort states
   const [sortColumn, setSortColumn] = useState<SortColumn>('createdAt');
@@ -110,6 +127,24 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
     if (categoryFilter !== 'all') {
       claims = claims.filter((c) => c.claim.category === categoryFilter);
+    }
+
+    // Linked To filter
+    if (linkedToFilter !== 'all') {
+      if (linkedToFilter === 'unlinked') {
+        claims = claims.filter((c) => {
+          const hasLinks = (c.linkedTheses && c.linkedTheses.length > 0) ||
+                          (c.linkedViews && c.linkedViews.length > 0);
+          return !hasLinks;
+        });
+      } else {
+        // Filter by specific thesis or view ID
+        claims = claims.filter((c) => {
+          const linkedThesisIds = c.linkedTheses?.map(t => t.id) || [];
+          const linkedViewIds = c.linkedViews?.map(v => v.id) || [];
+          return linkedThesisIds.includes(linkedToFilter) || linkedViewIds.includes(linkedToFilter);
+        });
+      }
     }
 
     if (searchQuery) {
@@ -180,6 +215,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
     statusFilter,
     confidenceFilter,
     categoryFilter,
+    linkedToFilter,
     searchQuery,
     sortColumn,
     sortDirection,
@@ -353,7 +389,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -402,6 +438,41 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                 <option value="asset_specific">Asset Specific</option>
               </select>
             </div>
+
+            {/* Linked To */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Linked To</label>
+              <select
+                value={linkedToFilter}
+                onChange={(e) => setLinkedToFilter(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Claims</option>
+                <option value="unlinked">Unlinked Only</option>
+                {uniqueLinkedEntities.length > 0 && (
+                  <>
+                    <optgroup label="Macro Theses">
+                      {uniqueLinkedEntities
+                        .filter((e) => e.type === 'macro')
+                        .map((entity) => (
+                          <option key={entity.id} value={entity.id}>
+                            {entity.title}
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="Asset Theses">
+                      {uniqueLinkedEntities
+                        .filter((e) => e.type === 'asset')
+                        .map((entity) => (
+                          <option key={entity.id} value={entity.id}>
+                            {entity.title}
+                          </option>
+                        ))}
+                    </optgroup>
+                  </>
+                )}
+              </select>
+            </div>
           </div>
 
           {/* Clear Filters */}
@@ -414,6 +485,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                 setStatusFilter('all');
                 setConfidenceFilter('all');
                 setCategoryFilter('all');
+                setLinkedToFilter('all');
               }}
             >
               Clear Filters
