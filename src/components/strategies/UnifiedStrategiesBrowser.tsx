@@ -60,8 +60,8 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   const uniqueMacroTheses = useMemo(() => {
     const theses = new Map<string, string>();
     strategies.forEach((strategy) => {
-      if (strategy.macroThesisId && strategy.macroThesisTitle) {
-        theses.set(strategy.macroThesisId, strategy.macroThesisTitle);
+      if (strategy.primaryMacroThesisId && strategy.primaryMacroThesisTitle) {
+        theses.set(strategy.primaryMacroThesisId, strategy.primaryMacroThesisTitle);
       }
     });
     return Array.from(theses.entries()).sort((a, b) => a[1].localeCompare(b[1]));
@@ -122,7 +122,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
     }
 
     if (macroThesisFilter !== 'all') {
-      filtered = filtered.filter((s) => s.macroThesisId === macroThesisFilter);
+      filtered = filtered.filter((s) => s.primaryMacroThesisId === macroThesisFilter);
     }
 
     if (stateCodeFilter !== 'all') {
@@ -139,7 +139,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
           s.accountLabel,
           s.accountBrokerId,
           s.assetViewTitle,
-          s.macroThesisTitle,
+          s.primaryMacroThesisTitle,
           s.stateCode,
         ]
           .filter(Boolean)
@@ -579,19 +579,19 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                           <td colSpan={9} className="px-4 py-4">
                             <div className="space-y-4">
                               {/* Linked Theses */}
-                              {(strategy.macroThesisTitle || strategy.assetViewTitle) && (
+                              {(strategy.primaryMacroThesisTitle || strategy.assetViewTitle) && (
                                 <div>
                                   <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
                                     Linked Theses
                                   </h4>
                                   <div className="flex flex-wrap gap-2">
-                                    {strategy.macroThesisTitle && strategy.macroThesisId && (
+                                    {strategy.primaryMacroThesisTitle && strategy.primaryMacroThesisId && (
                                       <Link
-                                        href={`/macro-theses/${strategy.macroThesisId}`}
+                                        href={`/macro-theses/${strategy.primaryMacroThesisId}`}
                                         className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
                                       >
                                         <Badge className="bg-purple-200 text-purple-800 text-xs">Macro</Badge>
-                                        {strategy.macroThesisTitle}
+                                        {strategy.primaryMacroThesisTitle}
                                       </Link>
                                     )}
                                     {strategy.assetViewTitle && strategy.assetThesisId && (

@@ -54,8 +54,8 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
   const uniqueMacroTheses = useMemo(() => {
     const theses = new Map<string, string>();
     assetTheses.forEach((thesis) => {
-      if (thesis.macroThesisId && thesis.macroThesisTitle) {
-        theses.set(thesis.macroThesisId, thesis.macroThesisTitle);
+      if (thesis.primaryMacroThesisId && thesis.primaryMacroThesisTitle) {
+        theses.set(thesis.primaryMacroThesisId, thesis.primaryMacroThesisTitle);
       }
     });
     return Array.from(theses.entries()).sort((a, b) => a[1].localeCompare(b[1]));
@@ -113,7 +113,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
     }
 
     if (macroThesisFilter !== 'all') {
-      filtered = filtered.filter((t) => t.macroThesisId === macroThesisFilter);
+      filtered = filtered.filter((t) => t.primaryMacroThesisId === macroThesisFilter);
     }
 
     // Search
@@ -125,7 +125,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
           t.description,
           t.ticker,
           t.underlyingName,
-          t.macroThesisTitle,
+          t.primaryMacroThesisTitle,
           t.direction,
         ]
           .filter(Boolean)
@@ -151,8 +151,8 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
           bVal = b.ticker?.toLowerCase() || '';
           break;
         case 'macroThesis':
-          aVal = a.macroThesisTitle?.toLowerCase() || '';
-          bVal = b.macroThesisTitle?.toLowerCase() || '';
+          aVal = a.primaryMacroThesisTitle?.toLowerCase() || '';
+          bVal = b.primaryMacroThesisTitle?.toLowerCase() || '';
           break;
         case 'timeHorizon':
           const horizonOrder = { long_term: 3, medium_term: 2, short_term: 1, null: 0 };
@@ -572,12 +572,19 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                         <td className="px-4 py-3">
                           <button
                             onClick={() => setLinkingViewToThesis({ assetThesisId: thesis.id, assetThesisTitle: thesis.title })}
-                            className="text-left w-full"
+                            className="text-left w-full flex items-center gap-2"
                           >
-                            {thesis.macroThesisTitle && thesis.macroThesisId ? (
-                              <span className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1 cursor-pointer">
-                                {thesis.macroThesisTitle}
-                              </span>
+                            {thesis.primaryMacroThesisTitle && thesis.primaryMacroThesisId ? (
+                              <>
+                                <span className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1 cursor-pointer flex-1">
+                                  {thesis.primaryMacroThesisTitle}
+                                </span>
+                                {thesis.relatedMacroThesesCount > 0 && (
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex-shrink-0">
+                                    +{thesis.relatedMacroThesesCount}
+                                  </span>
+                                )}
+                              </>
                             ) : (
                               <span className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer">Click to link</span>
                             )}
@@ -587,7 +594,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                         {/* Strategies Count */}
                         <td className="px-4 py-3 text-center">
                           <button
-                            onClick={() => setLinkingStrategyToView({ assetThesisId: thesis.id, assetThesisTitle: thesis.title, macroThesisId: thesis.macroThesisId })}
+                            onClick={() => setLinkingStrategyToView({ assetThesisId: thesis.id, assetThesisTitle: thesis.title, macroThesisId: thesis.primaryMacroThesisId })}
                             className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
                           >
                             {thesis.strategyCount}
