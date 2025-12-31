@@ -1,6 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAssetThesisById, deleteAssetThesis, updateAssetThesis } from '@/db/queries/assetTheses';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: viewId } = await params;
+
+    const assetThesis = await getAssetThesisById(viewId);
+    if (!assetThesis) {
+      return NextResponse.json({ error: 'Asset thesis not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(assetThesis);
+  } catch (error) {
+    console.error('Error fetching asset thesis:', error);
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch asset thesis',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
