@@ -48,6 +48,7 @@ export async function getStrategiesForList(
   filters?: {
     macroThesisId?: string;
     assetThesisId?: string;
+    includeClosedStrategies?: boolean;
   }
 ): Promise<StrategyListItem[]> {
   // Get the most recent snapshot date from positions
@@ -166,7 +167,7 @@ export async function getStrategiesForList(
     }
   }
 
-  // Map rows with computed status and filter to open only
+  // Map rows with computed status and optionally filter to open only
   const strategiesWithStatus = rows
     .map((row) => {
       const computedStatus = statusByStrategy.get(row.id) ?? "closed";
@@ -190,7 +191,7 @@ export async function getStrategiesForList(
         assetViewTitle: row.assetViewTitle,
       };
     })
-    .filter((s) => s.status === "open")
+    .filter((s) => filters?.includeClosedStrategies ? true : s.status === "open")
     .slice(0, limit);
 
   return strategiesWithStatus;
