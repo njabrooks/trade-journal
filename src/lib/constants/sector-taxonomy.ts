@@ -166,6 +166,7 @@ export const ECONOMIC_FACTORS: TaxonomyItem[] = [
   { value: 'Government Spending', label: 'Government Spending' },
   { value: 'Regulation', label: 'Regulation' },
   { value: 'Tax Policy', label: 'Tax Policy' },
+  { value: 'Monetary Debasement', label: 'Monetary Debasement' },
 
   // Trade & Global
   { value: 'Trade', label: 'Trade' },
