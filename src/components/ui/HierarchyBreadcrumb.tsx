@@ -6,39 +6,55 @@
  * Displays the full hierarchy path from Macro Thesis → Asset Thesis → Strategy → Position
  * with visual indicators for linked (green) and missing (amber) connections.
  *
- * Part of Phase 2.6.6: Enhanced Hierarchy Linking UX
+ * Updated for Sprint 2: Multi-Macro-Thesis Support
+ * - Shows primary macro thesis + "+N related" badge
+ * - Expandable to show all related macro theses
  */
 
 import Link from 'next/link';
-import { AlertTriangle, Plus } from 'lucide-react';
+import { AlertTriangle, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 interface HierarchyLevel {
   id: string;
   title: string;
 }
 
+interface RelatedMacroThesis {
+  id: string;
+  title: string;
+  relationshipNote?: string | null;
+}
+
 interface HierarchyBreadcrumbProps {
-  macroThesis?: HierarchyLevel | null;
+  macroThesis?: HierarchyLevel | null; // Primary macro thesis
+  relatedMacroTheses?: RelatedMacroThesis[]; // Related macro theses
   assetView?: HierarchyLevel | null;
   strategy?: HierarchyLevel | null;
   position?: HierarchyLevel | null;
   currentLevel: 'macro_thesis' | 'asset_view' | 'strategy' | 'position';
   onLinkMacroThesis?: () => void;
   onLinkAssetThesis?: () => void;
+  onManageRelatedTheses?: () => void; // New: manage related theses
   showFullPath?: boolean; // Show all levels vs just relevant ones
 }
 
 export function HierarchyBreadcrumb({
   macroThesis,
+  relatedMacroTheses = [],
   assetView,
   strategy,
   position,
   currentLevel,
   onLinkMacroThesis,
   onLinkAssetThesis,
+  onManageRelatedTheses,
   showFullPath = false,
 }: HierarchyBreadcrumbProps) {
+  const [showRelated, setShowRelated] = useState(false);
+  const relatedCount = relatedMacroTheses.length;
+  
   // Determine which levels to show based on current level and showFullPath
   const levels = [];
 
@@ -109,6 +125,7 @@ export function HierarchyBreadcrumb({
           const isLinked = !!level.data;
           const isCurrent = level.type === currentLevel;
           const showArrow = index < levels.length - 1;
+          const isMacroThesisLevel = level.type === 'macro_thesis';
 
           return (
             <div key={level.type} className="flex items-center gap-3">
@@ -131,18 +148,36 @@ export function HierarchyBreadcrumb({
                   </span>
 
                   {isLinked && level.data ? (
-                    level.href ? (
-                      <Link
-                        href={level.href}
-                        className="text-sm font-medium text-slate-900 hover:text-blue-600 truncate"
-                      >
-                        {level.data.title}
-                      </Link>
-                    ) : (
-                      <span className="text-sm font-medium text-slate-900 truncate">
-                        {level.data.title}
-                      </span>
-                    )
+                    <div className="flex items-center gap-2">
+                      {level.href ? (
+                        <Link
+                          href={level.href}
+                          className="text-sm font-medium text-slate-900 hover:text-blue-600 truncate"
+                        >
+                          {level.data.title}
+                        </Link>
+                      ) : (
+                        <span className="text-sm font-medium text-slate-900 truncate">
+                          {level.data.title}
+                        </span>
+                      )}
+                      
+                      {/* Show "+N related" badge for macro thesis with related theses */}
+                      {isMacroThesisLevel && relatedCount > 0 && (
+                        <button
+                          onClick={() => setShowRelated(!showRelated)}
+                          className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full hover:bg-purple-200 transition-colors"
+                          title={`${relatedCount} related macro ${relatedCount === 1 ? 'thesis' : 'theses'}`}
+                        >
+                          +{relatedCount}
+                          {showRelated ? (
+                            <ChevronUp className="h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" />
+                          )}
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
                       {level.required && (
@@ -192,6 +227,45 @@ export function HierarchyBreadcrumb({
           );
         })}
       </div>
+
+      {/* Related Macro Theses Panel (Expandable) */}
+      {showRelated && relatedCount > 0 && (
+        <div className="mt-4 pt-4 border-t border-slate-300">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+              Related Macro Theses ({relatedCount})
+            </h4>
+            {onManageRelatedTheses && (
+              <button
+                onClick={onManageRelatedTheses}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Manage
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-2">
+            {relatedMacroTheses.map((related) => (
+              <Link
+                key={related.id}
+                href={`/macro-theses/${related.id}`}
+                className="flex items-start gap-2 px-3 py-2 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-all group"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-slate-900 group-hover:text-purple-700 truncate">
+                    {related.title}
+                  </div>
+                  {related.relationshipNote && (
+                    <div className="text-xs text-slate-600 mt-0.5 line-clamp-1">
+                      {related.relationshipNote}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Helper Text */}
       {levels.some(l => !l.data && l.required) && (
