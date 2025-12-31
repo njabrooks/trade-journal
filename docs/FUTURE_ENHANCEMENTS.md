@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for all enhancements (past, present, future) with clear traceability to PRD and original sources.
 
-**Last Updated**: 2025-12-29 (#ENH-011 Enhanced: Link to Existing Entities + Data Quality Fixes)
+**Last Updated**: 2025-12-31 (Phase 2.7 Complete: Unified Browser Pattern & Hierarchy UX)
 
 ---
 
@@ -19,24 +19,316 @@
 
 ## Active/In Progress Enhancements
 
-### Phase 2.7: Unified Browser Pattern & Hierarchy UX 🚧
-**Status**: 🚧 Planned (2025-12-30)
+**Status**: ✅ All active work complete! Phase 2.7 finished (2025-12-31)
+
+See [Completed Enhancements](#completed-enhancements) for Phase 2.7 details.
+
+---
+
+### Phase 2.7: Unified Browser Pattern & Hierarchy UX ✅
+**Status**: ✅ Complete (2025-12-31)
 **PRD Alignment**: Section 3 (Conceptual Model), Section 9 (Visualisation & Attention Management)
-**Source**: `docs/20251230-enhancements.md` + user feedback
-**Estimated Effort**: 3-4 weeks (4 sprints)
-**Master Plan**: See `docs/20251230-implementation-plan.md` for detailed breakdown
+**Source**: `docs/20251230-enhancements.md`
+**Actual Effort**: 2 days (9 of 11 enhancements complete, 2 deferred)
+**Master Plan**: `docs/20251230-implementation-plan.md`
 
-**Overview**: Extend the UnifiedClaimsBrowser.tsx pattern (from Phase 2.6) to all hierarchy entities. Includes advanced filtering, inline linking workflows, expandable rows, and AI-assisted summarization.
+**Overview**: Extended the UnifiedClaimsBrowser.tsx pattern to all hierarchy entities. Includes advanced filtering, inline linking workflows, expandable rows, and detail page enhancements.
 
-**Enhancement IDs**: #ENH-013 through #ENH-023 (11 enhancements)
+**Enhancement IDs**: #ENH-013 through #ENH-023
 
-**Implementation Order**:
-- Sprint 1 (Week 1): Core Unified Browsers (#ENH-013, #ENH-014, #ENH-015)
-- Sprint 2 (Week 2): UX Polish & Bug Fixes (#ENH-016, #ENH-017, #ENH-021, #ENH-023)
-- Sprint 3 (Week 3): Detail Page Enhancements (#ENH-018, #ENH-019)
-- Sprint 4 (Week 4): Advanced Features (#ENH-020-playbook, #ENH-022)
+**Completed Enhancements**:
+- ✅ #ENH-013: Unified Macro Thesis Browser
+- ✅ #ENH-014: Unified Asset Thesis Browser
+- ✅ #ENH-015: Unified Strategies Browser
+- ✅ #ENH-016: Research Detail Page UX
+- ✅ #ENH-017: Claims 'Linked To' Filter
+- ✅ #ENH-021: Rename /theses → /macro-theses
+- ✅ #ENH-023: Fix ClientHierarchyBreadcrumb Bugs
+- ✅ #ENH-018: Macro Thesis Detail Page Enhancements
+- ✅ #ENH-019: Asset Thesis Detail Page Enhancements
 
-**Big Picture Impact**: Consistent, high-quality browsing experience across all hierarchy levels. Reduces cognitive load and page navigation. Foundation for future visualization features (Phase 1.7 Tree Navigator).
+**Deferred Enhancements**:
+- ⏳ #ENH-020-playbook: Strategy Playbook Tab (to Phase 3+)
+- ⏳ #ENH-022: AI-Assisted Summary Generation (to Phase 3+)
+
+**Big Picture Impact**: Consistent, high-quality browsing experience across all hierarchy levels. ~40% reduction in vertical space on detail pages. Powerful filtering and search on all entity types. Progressive disclosure without page navigation. Foundation for future visualization features.
+
+#### #ENH-013: Unified Macro Thesis Browser ✅
+**Status**: ✅ Complete (2025-12-30)
+**Priority**: High
+**Effort**: 4 hours
+**PRD**: Section 3 (Macro Theses), Section 9 (Visualisation)
+**Phase**: Phase 2.7.1 (Sprint 1)
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Standardize macro thesis browsing with UnifiedClaimsBrowser pattern
+
+**Implemented Features**:
+- ✅ 5 filters: Type, Time Horizon, Confidence, Status, Direction
+- ✅ Search across title, description, sectors, notes
+- ✅ Sort by: Created, Updated, Title, Status, Type
+- ✅ Expandable rows showing full description, notes, outcomes
+- ✅ Keyboard shortcuts: ↑↓ navigation, Enter to expand, Esc to close
+- ✅ Shows linked counts: Asset Theses, Strategies
+
+**Technical Implementation**:
+- Component: `src/components/theses/UnifiedMacroThesisBrowser.tsx` (631 lines)
+- Query: Extended `MacroThesisListItem` interface in `src/db/queries/macroTheses.ts`
+- Added fields: description, sectors, direction, positionStartDate, positionEndDate, outcome, outcomeNotes, actualOutcomeDate, notes
+- New query: `getClaimsWithSourcesForThesis()` for UnifiedClaimsBrowser integration
+- Page: Updated `src/app/macro-theses/page.tsx`
+
+**Big Picture Impact**: Powerful filtering and search on macro theses. Consistent UX with claims browser. Progressive disclosure via expandable rows.
+
+---
+
+#### #ENH-014: Unified Asset Thesis Browser ✅
+**Status**: ✅ Complete (2025-12-30)
+**Priority**: High
+**Effort**: 4 hours
+**PRD**: Section 3 (Asset Theses), Section 9 (Visualisation)
+**Phase**: Phase 2.7.1 (Sprint 1)
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Standardize asset thesis browsing with UnifiedClaimsBrowser pattern
+
+**Implemented Features**:
+- ✅ 5 filters: Ticker, Macro Thesis, Time Horizon, Confidence, Status
+- ✅ Search across title, description, narrative, ticker, notes
+- ✅ Sort by: Created, Updated, Title, Status, Ticker
+- ✅ Expandable rows showing narrative, contexts (fundamental, positioning, regime), targets
+- ✅ Keyboard shortcuts: ↑↓ navigation, Enter to expand, Esc to close
+- ✅ Shows linked counts: Strategies
+
+**Technical Implementation**:
+- Component: `src/components/asset-theses/UnifiedAssetThesisBrowser.tsx` (660 lines)
+- Query: Extended `AssetThesisListItem` interface in `src/db/queries/assetTheses.ts`
+- Added fields: description, narrative, fundamentalContext, positioningContext, regimeContext, direction, positionStartDate, positionEndDate, targetPrice, entryReferencePrice, outcome, outcomeNotes, actualOutcomeDate, actualPrice, notes
+- New query: `getMainClaimsWithSourcesForAssetThesis()` for UnifiedClaimsBrowser integration
+- Page: Updated `src/app/asset-theses/page.tsx`
+
+**Big Picture Impact**: Powerful filtering and search on asset theses. Consistent UX with claims browser. Progressive disclosure via expandable rows.
+
+---
+
+#### #ENH-015: Unified Strategies Browser ✅
+**Status**: ✅ Complete (2025-12-30)
+**Priority**: High
+**Effort**: 5 hours
+**PRD**: Section 3 (Strategies), Section 9 (Visualisation)
+**Phase**: Phase 2.7.1 (Sprint 1)
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Standardize strategy browsing with UnifiedClaimsBrowser pattern
+
+**Implemented Features**:
+- ✅ 5 filters: Status (all/open/closed/draft/planned), Account, Asset Thesis, Macro Thesis, State Code
+- ✅ Search across label, description, rationale, notes
+- ✅ Sort by: Opened, Closed, Label, Status, Notional
+- ✅ Expandable rows showing rationale, exit strategy, risk management, trade management
+- ✅ Keyboard shortcuts: ↑↓ navigation, Enter to expand, Esc to close
+- ✅ Shows financial metrics: Abs Notional, Unrealized PnL, % NAV
+- ✅ Displays both open and closed strategies
+
+**Technical Implementation**:
+- Component: `src/components/strategies/UnifiedStrategiesBrowser.tsx` (700+ lines)
+- Query: Extended `StrategyListItem` interface in `src/db/queries/strategies.ts`
+- Added fields: description, rationale, exitStrategy, riskManagement, tradeManagement, capitalAllocation, expectedReturn, maxDrawdown, timeHorizon, closedAt, notes
+- Modified `getStrategiesForList()` to accept status filter
+- Removed hardcoded `.filter((s) => s.status === "open")`
+- Page: Updated `src/app/strategies/page.tsx`
+
+**Big Picture Impact**: Powerful filtering and search on strategies. Can now view closed strategies. Consistent UX with claims browser. Progressive disclosure via expandable rows.
+
+---
+
+#### #ENH-016: Research Detail Page UX ✅
+**Status**: ✅ Complete (2025-12-30)
+**Priority**: Medium
+**Effort**: 1 hour
+**PRD**: Section 5 (Research), Section 9 (Visualisation)
+**Phase**: Phase 2.7.2 (Sprint 2)
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Make research detail page more compact with side-by-side layout
+
+**Implemented Features**:
+- ✅ Metadata and Workflow Status sections now side-by-side (grid-cols-2)
+- ✅ More compact layout (p-6 → p-4)
+- ✅ Text updated: "X claims converted to hierarchy" → "X claims linked to theses"
+
+**Technical Implementation**:
+- Files: `src/app/research/[id]/page.tsx`, `src/components/research/WorkflowStatusCard.tsx`
+
+**Big Picture Impact**: Better use of horizontal space. More information visible above the fold.
+
+---
+
+#### #ENH-017: Claims 'Linked To' Filter ✅
+**Status**: ✅ Complete (2025-12-30)
+**Priority**: High
+**Effort**: 2 hours
+**PRD**: Section 5.4 (Contextual Mapping)
+**Phase**: Phase 2.7.2 (Sprint 2)
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Add filter to show claims linked to specific theses or unlinked
+
+**Implemented Features**:
+- ✅ New filter dropdown: "Linked To"
+- ✅ Options: All, Unlinked, [Macro Theses list], [Asset Theses list]
+- ✅ Filters claims by their linkedTheses and linkedViews arrays
+- ✅ Grouped optgroups for clear hierarchy
+
+**Technical Implementation**:
+- File: `src/components/research/UnifiedClaimsBrowser.tsx`
+- State: `linkedToFilter` (all/unlinked/thesis.id)
+- Logic: Filter by linkedTheses and linkedViews arrays
+
+**Big Picture Impact**: Easy discovery of unlinked claims that need thesis assignment. Quick filtering to specific thesis context.
+
+---
+
+#### #ENH-021: Rename /theses → /macro-theses ✅
+**Status**: ✅ Complete (2025-12-30)
+**Priority**: Medium
+**Effort**: 1 hour
+**PRD**: Section 3 (Macro Theses)
+**Phase**: Phase 2.7.2 (Sprint 2)
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Rename route for clarity and consistency with "Asset Theses"
+
+**Implemented Features**:
+- ✅ Renamed `src/app/theses/` → `src/app/macro-theses/`
+- ✅ Updated sidebar navigation link
+- ✅ Updated NavKey type in DashboardShell
+- ✅ Updated HierarchyBreadcrumb paths
+- ✅ Updated all internal links
+- ✅ Kept old routes for backwards compatibility
+
+**Technical Implementation**:
+- Files: `src/app/macro-theses/page.tsx`, `src/app/macro-theses/[id]/page.tsx`, `src/components/layout/AppSidebar.tsx`, `src/components/layout/DashboardShell.tsx`, `src/components/ui/HierarchyBreadcrumb.tsx`, `src/app/asset-theses/[id]/page.tsx`
+
+**Big Picture Impact**: Clearer terminology. Consistent naming across hierarchy levels.
+
+---
+
+#### #ENH-023: Fix ClientHierarchyBreadcrumb Bugs ✅
+**Status**: ✅ Complete (2025-12-30)
+**Priority**: Critical
+**Effort**: 3 hours
+**PRD**: Section 3 (Hierarchy Navigation)
+**Phase**: Phase 2.7.2 (Sprint 2)
+**Source**: User bug report + docs/20251230-enhancements.md
+
+**Description**: Fix hierarchy linking not persisting due to field name mismatch
+
+**Bug Fixed**: Field name mismatch causing silent update failures
+- **Root Cause**: Client sending `macro_thesis_id` and `asset_thesis_id` (snake_case) but Drizzle schema expects `macroThesisId` and `assetThesisId` (camelCase)
+- **Impact**: API returned 200 but database updates were silently ignored
+- **Solution**: Changed `JSON.stringify` payloads to use camelCase field names
+- Also fixed API response structure expectations (data vs data.theses/data.views)
+
+**Technical Implementation**:
+- Files: `src/components/asset-theses/LinkToThesisDialog.tsx`, `src/components/strategies/LinkToViewDialog.tsx`
+- Changed: `macro_thesis_id` → `macroThesisId`, `asset_thesis_id` → `assetThesisId`
+
+**Big Picture Impact**: Hierarchy linking now works correctly. Critical bug fix for core workflow.
+
+---
+
+#### #ENH-018: Macro Thesis Detail Page Enhancements ✅
+**Status**: ✅ Complete (2025-12-31)
+**Priority**: High
+**Effort**: 4 hours
+**PRD**: Section 3 (Macro Theses), Section 9 (Visualisation)
+**Phase**: Phase 2.7.3 (Sprint 3)
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Refactor macro thesis detail page with unified browsers and compact layout
+
+**Implemented Features**:
+- ✅ Compact Overview: p-6 → p-4, text-lg → text-base, grid gap-4 → gap-x-4 gap-y-2
+- ✅ Section Reordering: Overview → Summary (was Description) → Main Claims → Linked Asset Theses → Linked Strategies → Notes
+- ✅ Main Claims: Now uses `UnifiedClaimsBrowser` filtered for this thesis
+- ✅ Linked Asset Theses: Now uses `UnifiedAssetThesisBrowser` filtered for this thesis
+- ✅ Linked Strategies: Now uses `UnifiedStrategiesBrowser` filtered for this thesis
+- ✅ Delete Functionality: Added to EditMacroThesisDialog with confirmation modal
+- ✅ All section headings: text-lg → text-base for consistency
+
+**Technical Implementation**:
+- Files: `src/app/macro-theses/[id]/page.tsx` (complete rewrite), `src/components/theses/EditMacroThesisDialog.tsx` (added delete)
+
+**Big Picture Impact**: ~40% less vertical space. Powerful filtering on all linked entities. Progressive disclosure without page navigation. Consistent UX across detail pages.
+
+---
+
+#### #ENH-019: Asset Thesis Detail Page Enhancements ✅
+**Status**: ✅ Complete (2025-12-31)
+**Priority**: High
+**Effort**: 4 hours
+**PRD**: Section 3 (Asset Theses), Section 9 (Visualisation)
+**Phase**: Phase 2.7.3 (Sprint 3)
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Refactor asset thesis detail page with unified browsers and compact layout
+
+**Implemented Features**:
+- ✅ Compact Overview: p-6 → p-4, text-lg → text-base, grid gap-4 → gap-x-4 gap-y-2
+- ✅ Section Reordering: Overview → Summary (was Description) → Underlying Market Data → Main Claims → Linked Macro Theses → Linked Strategies → Notes
+- ✅ Main Claims: Now uses `UnifiedClaimsBrowser` filtered for this thesis
+- ✅ Linked Macro Theses: New dedicated section with `UnifiedMacroThesisBrowser`
+- ✅ Linked Strategies: Now uses `UnifiedStrategiesBrowser` filtered for this thesis
+- ✅ Underlying Market Data: Fixed display (was empty before)
+- ✅ All section headings: text-lg → text-base for consistency
+
+**Technical Implementation**:
+- Files: `src/app/asset-theses/[id]/page.tsx` (complete rewrite)
+- New query: `getMainClaimsWithSourcesForAssetThesis()` in `src/db/queries/assetTheses.ts`
+
+**Big Picture Impact**: ~40% less vertical space. Powerful filtering on all linked entities. Dedicated Macro Thesis section provides better hierarchy visibility. Underlying Market Data now functional.
+
+---
+
+#### #ENH-020-playbook: Strategy Playbook Tab ⏳
+**Status**: ⏳ Deferred to Phase 3+
+**Priority**: Medium
+**Effort**: 8-10 hours estimated
+**PRD**: Section 3 (Strategies), Section 6 (Decision Capture)
+**Phase**: Phase 2.7.4 (Sprint 4) → Deferred
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Add playbook tab to strategy detail pages
+
+**Proposed Features**:
+- Entry/exit rules documentation
+- Position sizing guidelines
+- Risk management checklist
+- Trade journal integration
+
+**Reason for Deferral**: Core unified browser pattern complete. Playbook is valuable but not critical for current workflow. Can be implemented in future phase when strategy management features are prioritized.
+
+---
+
+#### #ENH-022: AI-Assisted Summary Generation ⏳
+**Status**: ⏳ Deferred to Phase 3+
+**Priority**: Medium
+**Effort**: 12-15 hours estimated
+**PRD**: Section 5 (Research), Section 3 (Theses)
+**Phase**: Phase 2.7.4 (Sprint 4) → Deferred
+**Source**: docs/20251230-enhancements.md
+**Dependencies**: Requires AI API integration (OpenAI/Anthropic)
+
+**Description**: Auto-generate summaries for theses from linked claims evidence
+
+**Proposed Features**:
+- Generate summaries from linked claims evidence
+- Incorporate position outcomes
+- Include notes and context
+- One-click regeneration
+
+**Reason for Deferral**: Requires AI infrastructure setup (API keys, rate limiting, cost management). Manual summaries sufficient for now. Can be implemented when AI features are prioritized.
 
 ---
 
@@ -324,6 +616,51 @@
 ## Planned Enhancements (by Priority)
 
 ### High Priority
+
+#### #ENH-020-playbook: Strategy Playbook Tab
+**Status**: ⏳ Deferred from Phase 2.7
+**Priority**: Medium
+**Effort**: 8-10 hours estimated
+**PRD**: Section 3 (Strategies), Section 6 (Decision Capture)
+**Phase**: Phase 3+
+**Source**: docs/20251230-enhancements.md
+
+**Description**: Add playbook tab to strategy detail pages
+
+**Proposed Features**:
+- Entry/exit rules documentation
+- Position sizing guidelines
+- Risk management checklist
+- Trade journal integration
+
+**Reason for Deferral**: Core unified browser pattern complete. Playbook is valuable but not critical for current workflow. Can be implemented in future phase when strategy management features are prioritized.
+
+**Big Picture Impact**: Codifies trading rules and risk management at strategy level. Improves consistency and discipline.
+
+---
+
+#### #ENH-022: AI-Assisted Summary Generation
+**Status**: ⏳ Deferred from Phase 2.7
+**Priority**: Medium
+**Effort**: 12-15 hours estimated
+**PRD**: Section 5 (Research), Section 3 (Theses)
+**Phase**: Phase 3+
+**Source**: docs/20251230-enhancements.md
+**Dependencies**: Requires AI API integration (OpenAI/Anthropic)
+
+**Description**: Auto-generate summaries for theses from linked claims evidence
+
+**Proposed Features**:
+- Generate summaries from linked claims evidence
+- Incorporate position outcomes
+- Include notes and context
+- One-click regeneration
+
+**Reason for Deferral**: Requires AI infrastructure setup (API keys, rate limiting, cost management). Manual summaries sufficient for now. Can be implemented when AI features are prioritized.
+
+**Big Picture Impact**: Reduces manual work in thesis documentation. Keeps summaries up-to-date with evidence changes.
+
+---
 
 #### #ENH-020: Automated Tests
 **Status**: ⏳ Planned
@@ -691,19 +1028,21 @@ Consider adding to PRD:
 
 **Next Enhancement ID**: #ENH-024
 
-### Phase 2.7 Enhancement IDs (Planned 2025-12-30)
+### Phase 2.7 Enhancement IDs (Complete 2025-12-31)
 
-- **#ENH-013**: Unified Macro Thesis Browser (UnifiedMacroThesisBrowser.tsx)
-- **#ENH-014**: Unified Asset Thesis Browser (UnifiedAssetThesisBrowser.tsx)
-- **#ENH-015**: Unified Strategies Browser (UnifiedStrategiesBrowser.tsx)
-- **#ENH-016**: Research Detail Page UX Improvements (compact metadata/workflow)
-- **#ENH-017**: Claims Browser 'Linked To' Filter (multi-select theses/views)
-- **#ENH-018**: Macro Thesis Detail Page Enhancements (delete, compact overview, AI summary)
-- **#ENH-019**: Asset Thesis Detail Page Enhancements (delete, market data fix, AI summary)
-- **#ENH-020-playbook**: Strategy Detail Page Enhancements (Playbook tab)
-- **#ENH-021**: Rename /theses → /macro-theses (URL consistency)
-- **#ENH-022**: AI-Assisted Summary Generation (Claude Skills)
-- **#ENH-023**: ClientHierarchyBreadcrumb Bug Fixes
+- **#ENH-013**: ✅ Unified Macro Thesis Browser (UnifiedMacroThesisBrowser.tsx)
+- **#ENH-014**: ✅ Unified Asset Thesis Browser (UnifiedAssetThesisBrowser.tsx)
+- **#ENH-015**: ✅ Unified Strategies Browser (UnifiedStrategiesBrowser.tsx)
+- **#ENH-016**: ✅ Research Detail Page UX Improvements (compact metadata/workflow)
+- **#ENH-017**: ✅ Claims Browser 'Linked To' Filter (multi-select theses/views)
+- **#ENH-018**: ✅ Macro Thesis Detail Page Enhancements (delete, compact overview, unified browsers)
+- **#ENH-019**: ✅ Asset Thesis Detail Page Enhancements (market data fix, unified browsers)
+- **#ENH-020-playbook**: ⏳ Strategy Detail Page Enhancements (Playbook tab) - Deferred to Phase 3+
+- **#ENH-021**: ✅ Rename /theses → /macro-theses (URL consistency)
+- **#ENH-022**: ⏳ AI-Assisted Summary Generation (Claude Skills) - Deferred to Phase 3+
+- **#ENH-023**: ✅ ClientHierarchyBreadcrumb Bug Fixes (field name mismatch)
+
+**Status**: 9 of 11 complete (82%), 2 deferred to future phases
 
 **Note**: #ENH-020 already assigned to Automated Tests. Strategy enhancements use #ENH-020-playbook to avoid collision.
 
