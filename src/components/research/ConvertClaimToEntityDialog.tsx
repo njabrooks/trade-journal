@@ -167,7 +167,7 @@ export function ConvertClaimToEntityDialog({
         }
 
         const data = await response.json();
-        router.push(`/theses/${data.thesisId}`);
+        router.push(`/macro-theses/${data.thesisId}`);
         router.refresh();
         handleClose();
       } else if (entityType === 'asset_view') {

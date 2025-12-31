@@ -71,9 +71,9 @@ export function AssetThesisSelector({
 
     // Thesis filter
     if (thesisFilter === 'linked') {
-      filtered = filtered.filter((v) => v.macroThesisId !== null);
+      filtered = filtered.filter((v) => v.primaryMacroThesisId !== null);
     } else if (thesisFilter === 'unlinked') {
-      filtered = filtered.filter((v) => v.macroThesisId === null);
+      filtered = filtered.filter((v) => v.primaryMacroThesisId === null);
     }
 
     setFilteredViews(filtered);

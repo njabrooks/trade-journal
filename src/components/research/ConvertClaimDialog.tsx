@@ -93,9 +93,9 @@ export function ConvertClaimDialog({ claim, insightId, onClose }: ConvertClaimDi
 
       // Navigate to the created thesis/view
       if (conversionType === 'macro_thesis') {
-        router.push(`/admin/theses/${result.id}`);
+        router.push(`/macro-theses/${result.id}`);
       } else {
-        router.push(`/admin/views/${result.id}`);
+        router.push(`/asset-theses/${result.id}`);
       }
 
       router.refresh();

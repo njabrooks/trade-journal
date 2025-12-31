@@ -815,7 +815,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                     {linkedTheses.map((thesis) => (
                                       <Link
                                         key={thesis.id}
-                                        href={`/theses/${thesis.id}`}
+                                        href={`/macro-theses/${thesis.id}`}
                                         className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
                                       >
                                         <span className="inline-flex items-center gap-1">

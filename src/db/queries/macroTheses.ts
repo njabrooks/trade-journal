@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { macroTheses, assetTheses, strategies, accounts, underlyings, mainClaims, claimThesisMappings, researchInsights, researchArtifacts } from '@/db/schema';
+import { macroTheses, assetTheses, strategies, accounts, underlyings, mainClaims, claimThesisMappings, researchInsights, researchArtifacts, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq, desc, inArray, count, sql } from 'drizzle-orm';
 import type { NewMacroThesis } from '@/db/schema';
 
@@ -47,7 +47,7 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
   const thesisIds = theses.map((t) => t.id);
 
   // Count asset theses linked as primary macro thesis
-  const assetViewCounts = await db
+  const primaryAssetViewCounts = await db
     .select({
       primaryMacroThesisId: assetTheses.primaryMacroThesisId,
       count: count(),
@@ -56,9 +56,19 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     .where(inArray(assetTheses.primaryMacroThesisId, thesisIds))
     .groupBy(assetTheses.primaryMacroThesisId);
 
+  // Count asset theses linked as related macro thesis (from junction table)
+  const relatedAssetViewCounts = await db
+    .select({
+      macroThesisId: assetThesisRelatedMacroTheses.macroThesisId,
+      count: count(),
+    })
+    .from(assetThesisRelatedMacroTheses)
+    .where(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds))
+    .groupBy(assetThesisRelatedMacroTheses.macroThesisId);
+
   // Strategies no longer have direct macroThesisId - they inherit through asset thesis
-  // So strategy count is derived from asset theses
-  const strategyCounts = await db
+  // Count strategies from both primary and related asset thesis connections
+  const primaryStrategyCounts = await db
     .select({
       primaryMacroThesisId: assetTheses.primaryMacroThesisId,
       count: count(),
@@ -68,12 +78,39 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     .where(inArray(assetTheses.primaryMacroThesisId, thesisIds))
     .groupBy(assetTheses.primaryMacroThesisId);
 
-  const assetViewMap = new Map(
-    assetViewCounts.map((c) => [c.primaryMacroThesisId, Number(c.count)])
-  );
-  const strategyMap = new Map(
-    strategyCounts.map((c) => [c.primaryMacroThesisId, Number(c.count)])
-  );
+  const relatedStrategyCounts = await db
+    .select({
+      macroThesisId: assetThesisRelatedMacroTheses.macroThesisId,
+      count: count(),
+    })
+    .from(strategies)
+    .innerJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
+    .innerJoin(assetThesisRelatedMacroTheses, eq(assetTheses.id, assetThesisRelatedMacroTheses.assetThesisId))
+    .where(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds))
+    .groupBy(assetThesisRelatedMacroTheses.macroThesisId);
+
+  // Combine counts (note: some asset theses/strategies may be counted in both primary and related)
+  const assetViewMap = new Map<string, number>();
+  primaryAssetViewCounts.forEach((c) => {
+    if (c.primaryMacroThesisId) {
+      assetViewMap.set(c.primaryMacroThesisId, Number(c.count));
+    }
+  });
+  relatedAssetViewCounts.forEach((c) => {
+    const current = assetViewMap.get(c.macroThesisId) ?? 0;
+    assetViewMap.set(c.macroThesisId, current + Number(c.count));
+  });
+
+  const strategyMap = new Map<string, number>();
+  primaryStrategyCounts.forEach((c) => {
+    if (c.primaryMacroThesisId) {
+      strategyMap.set(c.primaryMacroThesisId, Number(c.count));
+    }
+  });
+  relatedStrategyCounts.forEach((c) => {
+    const current = strategyMap.get(c.macroThesisId) ?? 0;
+    strategyMap.set(c.macroThesisId, current + Number(c.count));
+  });
 
   return theses.map((thesis) => ({
     ...thesis,
@@ -115,7 +152,8 @@ export async function deleteMacroThesis(id: string): Promise<void> {
 }
 
 export async function getLinkedAssetThesesForThesis(thesisId: string) {
-  const views = await db
+  // Get asset theses where this is the primary macro thesis
+  const primaryViews = await db
     .select({
       id: assetTheses.id,
       title: assetTheses.title,
@@ -129,12 +167,36 @@ export async function getLinkedAssetThesesForThesis(thesisId: string) {
     .where(eq(assetTheses.primaryMacroThesisId, thesisId))
     .orderBy(desc(assetTheses.createdAt));
 
-  return views;
+  // Get asset theses where this is a related macro thesis
+  const relatedViews = await db
+    .select({
+      id: assetTheses.id,
+      title: assetTheses.title,
+      underlyingTicker: underlyings.ticker,
+      status: assetTheses.status,
+      confidenceLevel: assetTheses.confidenceLevel,
+      createdAt: assetTheses.createdAt,
+    })
+    .from(assetTheses)
+    .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+    .innerJoin(assetThesisRelatedMacroTheses, eq(assetTheses.id, assetThesisRelatedMacroTheses.assetThesisId))
+    .where(eq(assetThesisRelatedMacroTheses.macroThesisId, thesisId))
+    .orderBy(desc(assetTheses.createdAt));
+
+  // Combine and dedupe by ID
+  const viewsMap = new Map();
+  primaryViews.forEach((v) => viewsMap.set(v.id, v));
+  relatedViews.forEach((v) => viewsMap.set(v.id, v));
+  
+  return Array.from(viewsMap.values()).sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 export async function getLinkedStrategiesForThesis(thesisId: string) {
   // Strategies inherit macro thesis through asset theses
-  const strats = await db
+  // Get strategies from primary macro thesis connections
+  const primaryStrats = await db
     .select({
       id: strategies.id,
       strategyKey: strategies.strategyKey,
@@ -151,7 +213,33 @@ export async function getLinkedStrategiesForThesis(thesisId: string) {
     .where(eq(assetTheses.primaryMacroThesisId, thesisId))
     .orderBy(desc(strategies.openedAt));
 
-  return strats;
+  // Get strategies from related macro thesis connections
+  const relatedStrats = await db
+    .select({
+      id: strategies.id,
+      strategyKey: strategies.strategyKey,
+      label: strategies.autoDerivedLabel,
+      status: strategies.status,
+      strategyType: strategies.strategyType,
+      accountLabel: accounts.label,
+      accountBrokerId: accounts.brokerAccountId,
+      openedAt: strategies.openedAt,
+    })
+    .from(strategies)
+    .innerJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
+    .innerJoin(assetThesisRelatedMacroTheses, eq(assetTheses.id, assetThesisRelatedMacroTheses.assetThesisId))
+    .leftJoin(accounts, eq(strategies.accountId, accounts.id))
+    .where(eq(assetThesisRelatedMacroTheses.macroThesisId, thesisId))
+    .orderBy(desc(strategies.openedAt));
+
+  // Combine and dedupe by ID
+  const stratsMap = new Map();
+  primaryStrats.forEach((s) => stratsMap.set(s.id, s));
+  relatedStrats.forEach((s) => stratsMap.set(s.id, s));
+  
+  return Array.from(stratsMap.values()).sort((a, b) => 
+    new Date(b.openedAt || 0).getTime() - new Date(a.openedAt || 0).getTime()
+  );
 }
 
 export async function getLinkedMainClaimsForThesis(thesisId: string) {

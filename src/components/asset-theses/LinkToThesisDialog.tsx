@@ -33,7 +33,7 @@ export function LinkToThesisDialog({
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        macroThesisId,
+        primaryMacroThesisId: macroThesisId,
       }),
     });
 

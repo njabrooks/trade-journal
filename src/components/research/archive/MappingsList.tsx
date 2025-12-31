@@ -158,7 +158,7 @@ export function MappingsList({ insightId, refreshTrigger }: MappingsListProps) {
 
   const getHierarchyLink = (mapping: Mapping) => {
     if (mapping.macroThesisId) {
-      return `/theses/${mapping.macroThesisId}`;
+      return `/macro-theses/${mapping.macroThesisId}`;
     } else if (mapping.assetThesisId) {
       return `/asset-theses/${mapping.assetThesisId}`;
     } else if (mapping.strategyId) {

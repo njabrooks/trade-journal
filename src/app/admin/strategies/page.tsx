@@ -78,7 +78,6 @@ function StrategiesPageContent() {
   const [assigningBulk, setAssigningBulk] = useState(false);
   const [editingHierarchyId, setEditingHierarchyId] = useState<string | null>(null);
   const [hierarchyEditValues, setHierarchyEditValues] = useState<{
-    macroThesisId: string;
     assetThesisId: string;
   } | null>(null);
 
@@ -534,7 +533,6 @@ function StrategiesPageContent() {
   const startEditingHierarchy = (strategy: Strategy) => {
     setEditingHierarchyId(strategy.id);
     setHierarchyEditValues({
-      macroThesisId: strategy.macroThesisId || '',
       assetThesisId: strategy.assetThesisId || '',
     });
   };
@@ -548,19 +546,17 @@ function StrategiesPageContent() {
     if (!editingHierarchyId || !hierarchyEditValues) return;
 
     try {
-      const response = await fetch('/api/strategies', {
+      const response = await fetch(`/api/strategies/${editingHierarchyId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: editingHierarchyId,
-          macroThesisId: hierarchyEditValues.macroThesisId || null,
           assetThesisId: hierarchyEditValues.assetThesisId || null,
         }),
       });
 
       if (!response.ok) throw new Error('Failed to update hierarchy');
 
-      setSuccess('Hierarchy updated successfully');
+      setSuccess('Asset thesis updated successfully (macro thesis inherited from asset thesis)');
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update hierarchy');
@@ -1166,33 +1162,13 @@ function StrategiesPageContent() {
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
-                              {editingHierarchyId === strategy.id ? (
-                                <select
-                                  value={hierarchyEditValues?.macroThesisId ?? ''}
-                                  onChange={(e) =>
-                                    setHierarchyEditValues((prev) =>
-                                      prev ? { ...prev, macroThesisId: e.target.value } : prev
-                                    )
-                                  }
-                                  className="border rounded px-2 py-1 text-xs w-full"
-                                >
-                                  <option value="">None</option>
-                                  {macroTheses.map((thesis) => (
-                                    <option key={thesis.id} value={thesis.id}>
-                                      {thesis.title}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:text-blue-600"
-                                  onClick={() => startEditingHierarchy(strategy)}
-                                  title="Click to edit thesis/view"
-                                >
-                                  {macroTheses.find((t) => t.id === strategy.macroThesisId)?.title || '—'}
-                                </span>
-                              )}
+                            <td className="px-6 py-4 text-sm text-gray-400 italic" title="Inherited from asset thesis">
+                              {(() => {
+                                const assetThesis = assetTheses.find((v) => v.id === strategy.assetThesisId);
+                                // For now, we can't show the inherited macro thesis without fetching it
+                                // This would require the API to return it, or we'd need to fetch asset thesis details
+                                return assetThesis ? `(via ${assetThesis.title})` : '—';
+                              })()}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-500">
                               {editingHierarchyId === strategy.id ? (

@@ -1,6 +1,7 @@
 import { getMacroThesisById, getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
 import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
+import { getAssetThesesForRelatedMacroThesis } from '@/db/queries/relatedMacroTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { EditMacroThesisButton } from '@/components/theses/EditMacroThesisButton';
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
@@ -15,20 +16,32 @@ interface ThesisDetailPageProps {
 export default async function ThesisDetailPage({ params }: ThesisDetailPageProps) {
   const { id } = await params;
   
-  const [thesis, claimsWithSources, allAssetTheses, allStrategies] = await Promise.all([
+  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks] = await Promise.all([
     getMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
     getStrategiesForList(1000, { includeClosedStrategies: true }),
+    getAssetThesesForRelatedMacroThesis(id),
   ]);
 
   if (!thesis) {
     notFound();
   }
 
-  // Filter asset theses and strategies linked to this macro thesis
-  const linkedAssetTheses = allAssetTheses.filter((at) => at.macroThesisId === id);
-  const linkedStrategies = allStrategies.filter((s) => s.macroThesisId === id);
+  // Filter asset theses linked to this macro thesis
+  // Include both PRIMARY connections and RELATED connections
+  const primaryLinkedAssetTheses = allAssetTheses.filter((at) => at.primaryMacroThesisId === id);
+  const relatedAssetThesisIds = new Set(relatedAssetThesisLinks.map((link) => link.assetThesisId));
+  const relatedLinkedAssetTheses = allAssetTheses.filter((at) => relatedAssetThesisIds.has(at.id));
+  
+  // Combine and dedupe (in case an asset thesis is both primary and related)
+  const linkedAssetThesesMap = new Map<string, typeof allAssetTheses[0]>();
+  primaryLinkedAssetTheses.forEach((at) => linkedAssetThesesMap.set(at.id, at));
+  relatedLinkedAssetTheses.forEach((at) => linkedAssetThesesMap.set(at.id, at));
+  const linkedAssetTheses = Array.from(linkedAssetThesesMap.values());
+  
+  // Strategies inherit macro thesis through asset theses
+  const linkedStrategies = allStrategies.filter((s) => s.primaryMacroThesisId === id);
 
   return (
     <DashboardShell
@@ -129,8 +142,11 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
         {/* Linked Asset Theses - UnifiedAssetThesisBrowser */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">
           <h3 className="text-base font-semibold mb-3">
-            Linked Asset Theses ({linkedAssetTheses.length})
+            Asset Theses ({linkedAssetTheses.length})
           </h3>
+          <p className="text-xs text-slate-500 mb-3">
+            Includes asset theses where this is the primary macro thesis, or a related macro thesis.
+          </p>
           {linkedAssetTheses.length === 0 ? (
             <p className="text-sm text-slate-500">No asset theses linked to this macro thesis yet.</p>
           ) : (
