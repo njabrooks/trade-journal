@@ -102,7 +102,8 @@ export function LinkToThesisDialog({
         throw new Error('Failed to fetch macro theses');
       }
       const data = await response.json();
-      setTheses(data.theses || []);
+      // API returns array directly, not wrapped in { theses: [] }
+      setTheses(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching theses:', err);
       setError('Failed to load macro theses. Please try again.');

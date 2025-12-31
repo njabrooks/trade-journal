@@ -102,15 +102,16 @@ export function LinkToViewDialog({
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/asset-views');
+      const response = await fetch('/api/asset-theses');
       if (!response.ok) {
-        throw new Error('Failed to fetch asset thesiss');
+        throw new Error('Failed to fetch asset theses');
       }
       const data = await response.json();
-      setViews(data.views || []);
+      // API returns array directly, not wrapped in { views: [] }
+      setViews(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching views:', err);
-      setError('Failed to load asset thesiss. Please try again.');
+      setError('Failed to load asset theses. Please try again.');
     } finally {
       setIsLoading(false);
     }
