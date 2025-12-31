@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
+import { LinkToViewDialog } from './LinkToViewDialog';
 
 interface UnifiedStrategiesBrowserProps {
   strategies: StrategyListItem[];
@@ -32,6 +33,9 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   // Sort states
   const [sortColumn, setSortColumn] = useState<SortColumn>('openedAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Link dialog state
+  const [linkingStrategy, setLinkingStrategy] = useState<{ id: string; label: string } | null>(null);
 
   // Get unique values for filters
   const uniqueAccounts = useMemo(() => {
@@ -517,16 +521,18 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
                         {/* Asset Theses */}
                         <td className="px-4 py-3">
-                          {strategy.assetViewTitle && strategy.assetThesisId ? (
-                            <Link
-                              href={`/asset-theses/${strategy.assetThesisId}`}
-                              className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1"
-                            >
-                              {strategy.assetViewTitle}
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-slate-400">Not linked</span>
-                          )}
+                          <button
+                            onClick={() => setLinkingStrategy({ id: strategy.id, label: strategy.label || strategy.strategyKey })}
+                            className="text-left w-full"
+                          >
+                            {strategy.assetViewTitle && strategy.assetThesisId ? (
+                              <span className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1 cursor-pointer">
+                                {strategy.assetViewTitle}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer">Click to link</span>
+                            )}
+                          </button>
                         </td>
 
                         {/* Abs Notional */}
@@ -638,6 +644,16 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
           )}
         </div>
       </section>
+
+      {/* Link to Asset Thesis Dialog */}
+      {linkingStrategy && (
+        <LinkToViewDialog
+          strategyId={linkingStrategy.id}
+          strategyLabel={linkingStrategy.label}
+          isOpen={!!linkingStrategy}
+          onClose={() => setLinkingStrategy(null)}
+        />
+      )}
     </div>
   );
 }

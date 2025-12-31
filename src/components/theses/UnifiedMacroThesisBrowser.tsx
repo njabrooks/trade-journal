@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
+import { LinkAssetThesesToMacroDialog } from './LinkAssetThesesToMacroDialog';
 
 interface UnifiedMacroThesisBrowserProps {
   theses: MacroThesisListItem[];
@@ -35,6 +36,9 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
   // Sort states
   const [sortColumn, setSortColumn] = useState<SortColumn>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Link Asset Theses Dialog
+  const [linkingAssetThesis, setLinkingAssetThesis] = useState<{ id: string; title: string } | null>(null);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -523,12 +527,12 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
                         {/* Asset Theses Count */}
                         <td className="px-4 py-3 text-center">
-                          <Link
-                            href={`/asset-theses?macroThesisId=${thesis.id}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                          <button
+                            onClick={() => setLinkingAssetThesis({ id: thesis.id, title: thesis.title })}
+                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
                           >
                             {thesis.assetViewCount}
-                          </Link>
+                          </button>
                         </td>
 
                         {/* Strategies Count */}
@@ -624,6 +628,16 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
           )}
         </div>
       </section>
+
+      {/* Link Asset Theses to Macro Thesis Dialog */}
+      {linkingAssetThesis && (
+        <LinkAssetThesesToMacroDialog
+          macroThesisId={linkingAssetThesis.id}
+          macroThesisTitle={linkingAssetThesis.title}
+          isOpen={!!linkingAssetThesis}
+          onClose={() => setLinkingAssetThesis(null)}
+        />
+      )}
     </div>
   );
 }

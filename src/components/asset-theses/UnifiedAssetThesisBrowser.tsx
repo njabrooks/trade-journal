@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
+import { LinkStrategiesToViewDialog } from './LinkStrategiesToViewDialog';
+import { LinkToThesisDialog } from './LinkToThesisDialog';
 
 interface UnifiedAssetThesisBrowserProps {
   assetTheses: AssetThesisListItem[];
@@ -35,6 +37,10 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
   // Sort states
   const [sortColumn, setSortColumn] = useState<SortColumn>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Link dialog states
+  const [linkingStrategyToView, setLinkingStrategyToView] = useState<{ assetThesisId: string; assetThesisTitle: string; macroThesisId: string | null } | null>(null);
+  const [linkingViewToThesis, setLinkingViewToThesis] = useState<{ assetThesisId: string; assetThesisTitle: string } | null>(null);
 
   // Get unique underlyings and macro theses for filters
   const uniqueUnderlyings = useMemo(() => {
@@ -564,26 +570,28 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
 
                         {/* Macro Theses */}
                         <td className="px-4 py-3">
-                          {thesis.macroThesisTitle && thesis.macroThesisId ? (
-                            <Link
-                              href={`/macro-theses/${thesis.macroThesisId}`}
-                              className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1"
-                            >
-                              {thesis.macroThesisTitle}
-                            </Link>
-                          ) : (
-                            <span className="text-xs text-slate-400">Not linked</span>
-                          )}
+                          <button
+                            onClick={() => setLinkingViewToThesis({ assetThesisId: thesis.id, assetThesisTitle: thesis.title })}
+                            className="text-left w-full"
+                          >
+                            {thesis.macroThesisTitle && thesis.macroThesisId ? (
+                              <span className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1 cursor-pointer">
+                                {thesis.macroThesisTitle}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer">Click to link</span>
+                            )}
+                          </button>
                         </td>
 
                         {/* Strategies Count */}
                         <td className="px-4 py-3 text-center">
-                          <Link
-                            href={`/strategies?assetThesisId=${thesis.id}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                          <button
+                            onClick={() => setLinkingStrategyToView({ assetThesisId: thesis.id, assetThesisTitle: thesis.title, macroThesisId: thesis.macroThesisId })}
+                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
                           >
                             {thesis.strategyCount}
-                          </Link>
+                          </button>
                         </td>
 
                         {/* Actions */}
@@ -653,6 +661,27 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
           )}
         </div>
       </section>
+
+      {/* Link Strategies to Asset Thesis Dialog */}
+      {linkingStrategyToView && (
+        <LinkStrategiesToViewDialog
+          assetThesisId={linkingStrategyToView.assetThesisId}
+          assetThesisTitle={linkingStrategyToView.assetThesisTitle}
+          macroThesisId={linkingStrategyToView.macroThesisId}
+          isOpen={!!linkingStrategyToView}
+          onClose={() => setLinkingStrategyToView(null)}
+        />
+      )}
+
+      {/* Link Asset Thesis to Macro Thesis Dialog */}
+      {linkingViewToThesis && (
+        <LinkToThesisDialog
+          viewId={linkingViewToThesis.assetThesisId}
+          viewTitle={linkingViewToThesis.assetThesisTitle}
+          isOpen={!!linkingViewToThesis}
+          onClose={() => setLinkingViewToThesis(null)}
+        />
+      )}
     </div>
   );
 }
