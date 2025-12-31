@@ -313,6 +313,25 @@ export function ConvertClaimToEntityDialog({
                 </div>
               </div>
 
+              {/* Relationship Type - Always visible at top */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Relationship Type *
+                </label>
+                <select
+                  value={relationshipType}
+                  onChange={(e) => setRelationshipType(e.target.value as typeof relationshipType)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="supports">✓ Supports - This claim provides evidence</option>
+                  <option value="refutes">✗ Refutes - This claim contradicts or challenges</option>
+                  <option value="foundation">★ Foundation - This claim is the foundational reasoning</option>
+                </select>
+                <p className="text-xs text-slate-600 mt-1">
+                  Select your relationship first, then choose theses/views below
+                </p>
+              </div>
+
               {loadingEntities ? (
                 <div className="text-center py-8 text-slate-500">Loading...</div>
               ) : (
@@ -399,23 +418,14 @@ export function ConvertClaimToEntityDialog({
                     )}
                   </div>
 
-                  {/* Relationship Type Selector */}
+                  {/* Selection Summary */}
                   {(selectedThesisIds.length > 0 || selectedViewIds.length > 0) && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Relationship Type *
-                      </label>
-                      <select
-                        value={relationshipType}
-                        onChange={(e) => setRelationshipType(e.target.value as typeof relationshipType)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="supports">Supports - This claim provides evidence for the thesis/view</option>
-                        <option value="refutes">Refutes - This claim contradicts or challenges the thesis/view</option>
-                        <option value="foundation">Foundation - This claim is the foundational reasoning for the thesis/view</option>
-                      </select>
-                      <p className="text-xs text-slate-600 mt-2">
-                        This relationship will be applied to all {selectedThesisIds.length + selectedViewIds.length} selected theses/views.
+                      <p className="text-sm font-medium text-blue-900">
+                        {selectedThesisIds.length + selectedViewIds.length} selected · 
+                        <span className="ml-1 font-normal">
+                          Will be linked as <span className="font-semibold">{relationshipType}</span>
+                        </span>
                       </p>
                     </div>
                   )}
