@@ -46,29 +46,33 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
   // Get counts for each thesis
   const thesisIds = theses.map((t) => t.id);
 
+  // Count asset theses linked as primary macro thesis
   const assetViewCounts = await db
     .select({
-      macroThesisId: assetTheses.macroThesisId,
+      primaryMacroThesisId: assetTheses.primaryMacroThesisId,
       count: count(),
     })
     .from(assetTheses)
-    .where(inArray(assetTheses.macroThesisId, thesisIds))
-    .groupBy(assetTheses.macroThesisId);
+    .where(inArray(assetTheses.primaryMacroThesisId, thesisIds))
+    .groupBy(assetTheses.primaryMacroThesisId);
 
+  // Strategies no longer have direct macroThesisId - they inherit through asset thesis
+  // So strategy count is derived from asset theses
   const strategyCounts = await db
     .select({
-      macroThesisId: strategies.macroThesisId,
+      primaryMacroThesisId: assetTheses.primaryMacroThesisId,
       count: count(),
     })
     .from(strategies)
-    .where(inArray(strategies.macroThesisId, thesisIds))
-    .groupBy(strategies.macroThesisId);
+    .innerJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
+    .where(inArray(assetTheses.primaryMacroThesisId, thesisIds))
+    .groupBy(assetTheses.primaryMacroThesisId);
 
   const assetViewMap = new Map(
-    assetViewCounts.map((c) => [c.macroThesisId, Number(c.count)])
+    assetViewCounts.map((c) => [c.primaryMacroThesisId, Number(c.count)])
   );
   const strategyMap = new Map(
-    strategyCounts.map((c) => [c.macroThesisId, Number(c.count)])
+    strategyCounts.map((c) => [c.primaryMacroThesisId, Number(c.count)])
   );
 
   return theses.map((thesis) => ({
@@ -122,13 +126,14 @@ export async function getLinkedAssetThesesForThesis(thesisId: string) {
     })
     .from(assetTheses)
     .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
-    .where(eq(assetTheses.macroThesisId, thesisId))
+    .where(eq(assetTheses.primaryMacroThesisId, thesisId))
     .orderBy(desc(assetTheses.createdAt));
 
   return views;
 }
 
 export async function getLinkedStrategiesForThesis(thesisId: string) {
+  // Strategies inherit macro thesis through asset theses
   const strats = await db
     .select({
       id: strategies.id,
@@ -141,8 +146,9 @@ export async function getLinkedStrategiesForThesis(thesisId: string) {
       openedAt: strategies.openedAt,
     })
     .from(strategies)
+    .innerJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
     .leftJoin(accounts, eq(strategies.accountId, accounts.id))
-    .where(eq(strategies.macroThesisId, thesisId))
+    .where(eq(assetTheses.primaryMacroThesisId, thesisId))
     .orderBy(desc(strategies.openedAt));
 
   return strats;
