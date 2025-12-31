@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 interface CreateAssetThesisFormData {
   title?: string;
   description?: string;
-  underlyingId?: string;
+  ticker: string; // API expects ticker, not underlyingId
   direction: 'bullish' | 'bearish' | 'neutral';
   timeHorizon: 'long_term' | 'medium_term' | 'short_term';
   confidenceLevel: 'high' | 'medium' | 'low' | 'exploratory';
@@ -41,13 +41,14 @@ export function CreateAssetThesisForm({
     timeHorizon: initialData.timeHorizon || 'medium_term',
     confidenceLevel: initialData.confidenceLevel || 'medium',
     status: initialData.status || 'active',
-    underlyingId: initialData.underlyingId,
+    ticker: '', // Will be set when underlying is selected
     macroThesisId: macroThesisId || initialData.macroThesisId,
     title: initialData.title,
     description: initialData.description,
   });
 
   const [underlyings, setUnderlyings] = useState<Underlying[]>([]);
+  const [selectedUnderlyingId, setSelectedUnderlyingId] = useState<string>('');
   const [loadingUnderlyings, setLoadingUnderlyings] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +71,15 @@ export function CreateAssetThesisForm({
     fetchUnderlyings();
   }, []);
 
-  const selectedUnderlying = underlyings.find((u) => u.id === formData.underlyingId);
+  const selectedUnderlying = underlyings.find((u) => u.id === selectedUnderlyingId);
+
+  const handleUnderlyingChange = (underlyingId: string) => {
+    setSelectedUnderlyingId(underlyingId);
+    const underlying = underlyings.find((u) => u.id === underlyingId);
+    if (underlying) {
+      setFormData({ ...formData, ticker: underlying.ticker });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +91,7 @@ export function CreateAssetThesisForm({
       return;
     }
 
-    if (!formData.underlyingId) {
+    if (!formData.ticker) {
       setError('Underlying is required');
       return;
     }
@@ -134,8 +143,8 @@ export function CreateAssetThesisForm({
           Underlying <span className="text-red-500">*</span>
         </label>
         <select
-          value={formData.underlyingId || ''}
-          onChange={(e) => setFormData({ ...formData, underlyingId: e.target.value })}
+          value={selectedUnderlyingId}
+          onChange={(e) => handleUnderlyingChange(e.target.value)}
           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
           disabled={loading || loadingUnderlyings}
