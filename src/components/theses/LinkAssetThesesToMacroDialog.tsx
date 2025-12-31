@@ -32,7 +32,7 @@ export function LinkAssetThesesToMacroDialog({
     const response = await fetch(`/api/asset-theses/${assetThesisId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ macroThesisId }),
+      body: JSON.stringify({ primaryMacroThesisId: macroThesisId }),
     });
 
     if (!response.ok) {
