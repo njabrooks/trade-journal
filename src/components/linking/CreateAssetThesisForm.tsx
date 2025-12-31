@@ -42,7 +42,7 @@ export function CreateAssetThesisForm({
     confidenceLevel: initialData.confidenceLevel || 'medium',
     status: initialData.status || 'active',
     ticker: '', // Will be set when underlying is selected
-    macroThesisId: macroThesisId || initialData.macroThesisId,
+    primaryMacroThesisId: macroThesisId || initialData.primaryMacroThesisId,
     title: initialData.title,
     description: initialData.description,
   });

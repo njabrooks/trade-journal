@@ -25,7 +25,7 @@ export function CreateAssetThesisDialog({
         ...data,
         linkedMainClaimIds: prefilledMainClaimIds,
         linkedThesisIds: prefilledThesisIds,
-        macroThesisId: prefilledThesisIds[0] || undefined, // Link to first thesis if provided
+        primaryMacroThesisId: prefilledThesisIds[0] || undefined, // Link to first thesis if provided
         notes: {
           created_via: 'UI',
           created_at: new Date().toISOString(),

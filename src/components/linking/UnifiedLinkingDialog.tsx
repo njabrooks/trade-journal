@@ -77,7 +77,7 @@ export function UnifiedLinkingDialog({
         const linkResponse = await fetch(`/api/asset-theses/${sourceId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ macroThesisId: newThesis.thesisId }), // API returns thesisId, not id
+          body: JSON.stringify({ primaryMacroThesisId: newThesis.thesisId }), // API returns thesisId, not id
         });
         
         if (!linkResponse.ok) {
@@ -98,7 +98,7 @@ export function UnifiedLinkingDialog({
       // Add auto-link context
       const createData = {
         ...data,
-        macroThesisId: autoLinkContext?.macroThesisId || data.macroThesisId,
+        primaryMacroThesisId: autoLinkContext?.macroThesisId || data.primaryMacroThesisId,
       };
 
       // Create the asset thesis
@@ -122,7 +122,7 @@ export function UnifiedLinkingDialog({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             assetThesisId: newThesis.viewId, // API returns viewId, not id
-            macroThesisId: autoLinkContext?.macroThesisId || newThesis.macroThesisId,
+            // Note: strategies don't have macroThesisId anymore - they inherit through asset thesis
           }),
         });
         
@@ -131,7 +131,7 @@ export function UnifiedLinkingDialog({
           throw new Error(errorData.error || 'Created thesis but failed to link');
         }
       } else if (sourceType === 'macroThesis') {
-        // Link was already done via macroThesisId in create
+        // Link was already done via primaryMacroThesisId in create
       }
 
       router.refresh();
@@ -147,7 +147,7 @@ export function UnifiedLinkingDialog({
       const createData = {
         ...data,
         assetThesisId: autoLinkContext?.assetThesisId || data.assetThesisId,
-        macroThesisId: autoLinkContext?.macroThesisId || data.macroThesisId,
+        // Note: strategies don't have macroThesisId - they inherit through asset thesis
       };
 
       // Create the strategy

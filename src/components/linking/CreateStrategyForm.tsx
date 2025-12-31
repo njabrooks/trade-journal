@@ -11,7 +11,7 @@ interface CreateStrategyFormData {
   direction: 'long' | 'short' | 'neutral';
   status: 'open' | 'closed';
   assetThesisId?: string;
-  macroThesisId?: string;
+  // Note: strategies no longer have direct macroThesisId - they inherit through asset thesis
 }
 
 interface CreateStrategyFormProps {
@@ -20,7 +20,7 @@ interface CreateStrategyFormProps {
   initialData?: Partial<CreateStrategyFormData>;
   autoGenLabel?: boolean;
   assetThesisId?: string; // Auto-link to this asset thesis
-  macroThesisId?: string; // Auto-link to this macro thesis
+  // Note: macroThesisId removed - strategies inherit macro thesis through asset thesis
 }
 
 export function CreateStrategyForm({
@@ -29,7 +29,6 @@ export function CreateStrategyForm({
   initialData = {},
   autoGenLabel = true,
   assetThesisId,
-  macroThesisId,
 }: CreateStrategyFormProps) {
   const [formData, setFormData] = useState<CreateStrategyFormData>({
     direction: initialData.direction || 'long',
@@ -38,7 +37,6 @@ export function CreateStrategyForm({
     label: initialData.label,
     description: initialData.description,
     assetThesisId: assetThesisId || initialData.assetThesisId,
-    macroThesisId: macroThesisId || initialData.macroThesisId,
   });
 
   const [loading, setLoading] = useState(false);
