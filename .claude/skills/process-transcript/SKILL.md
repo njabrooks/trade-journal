@@ -470,6 +470,26 @@ For example (with default env vars):
 - Structure data for easy migration to dedicated claims table
 - Preserve claim IDs for referencing
 
+## Post-Processing Workflow
+
+**IMPORTANT**: After completing the audit, ALWAYS prompt the user about next steps:
+
+```
+Audit complete! Created [N] claims ([M] main, [K] evidence).
+
+Next steps:
+1. Upload to database now (auto-promotes main claims for linking)
+2. Review audit first, then upload later
+3. Run synthesize-claims to see how this relates to existing hierarchy
+
+Would you like to upload this to the database now? (y/n)
+```
+
+**If user says yes**: Immediately run `finalize-for-upload [audit-file-path]`
+**If user says no**: Remind them they can run `finalize-for-upload [audit-file-path]` when ready
+
+This ensures users don't forget to upload and provides clear guidance on workflow options.
+
 ## Notes
 
 - This skill does NOT cross-reference against existing hierarchy (that's `/synthesize-claims`)
@@ -480,3 +500,4 @@ For example (with default env vars):
 - When in doubt, extract more claims rather than fewer
 - Preserve exact quotes with timestamps for traceability
 - ALWAYS update the original transcript file with populated tags after completing the audit (Step 5)
+- ALWAYS prompt user about uploading after audit completion (see Post-Processing Workflow above)
