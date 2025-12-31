@@ -231,6 +231,23 @@ export function LinkClaimDialog({ mainClaimId, mainClaimTitle, onClose }: LinkCl
                 </div>
               </div>
 
+              {/* Relationship Type - Moved above entity selection for visibility */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Relationship Type
+                </label>
+                <select
+                  value={relationshipType}
+                  onChange={(e) => setRelationshipType(e.target.value as any)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  disabled={loading}
+                >
+                  <option value="supports">✓ Supports - Provides evidence for the {entityType}</option>
+                  <option value="rebuts">✗ Refutes - Contradicts or challenges the {entityType}</option>
+                  <option value="contextualizes">◉ Contextualizes - Provides context for the {entityType}</option>
+                </select>
+              </div>
+
               {/* Entity Selection */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -273,22 +290,6 @@ export function LinkClaimDialog({ mainClaimId, mainClaimTitle, onClose }: LinkCl
                 )}
               </div>
 
-              {/* Relationship Type */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Relationship Type
-                </label>
-                <select
-                  value={relationshipType}
-                  onChange={(e) => setRelationshipType(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={loading}
-                >
-                  <option value="supports">Supports (provides evidence for)</option>
-                  <option value="rebuts">Rebuts (contradicts or challenges)</option>
-                  <option value="contextualizes">Contextualizes (provides context)</option>
-                </select>
-              </div>
             </>
           )}
         </div>
