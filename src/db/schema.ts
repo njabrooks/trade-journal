@@ -106,7 +106,7 @@ export const assetTheses = pgTable(
   'asset_theses',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, {
+    primaryMacroThesisId: uuid('primary_macro_thesis_id').references(() => macroTheses.id, {
       onDelete: 'set null',
     }),
     underlyingId: uuid('underlying_id').references(() => underlyings.id, {
@@ -144,7 +144,7 @@ export const assetTheses = pgTable(
     notes: jsonb('notes'),
   },
   (table) => ({
-    macroThesisIdx: index('idx_asset_theses_macro_thesis').on(table.macroThesisId),
+    primaryMacroThesisIdx: index('idx_asset_theses_primary_macro_thesis').on(table.primaryMacroThesisId),
     underlyingIdx: index('idx_asset_theses_underlying').on(table.underlyingId),
     statusIdx: index('idx_asset_theses_status').on(table.status),
     nextReviewIdx: index('idx_asset_theses_next_review').on(table.nextReviewDueAt),
@@ -155,6 +155,36 @@ export const assetTheses = pgTable(
 
 export type AssetThesis = typeof assetTheses.$inferSelect;
 export type NewAssetThesis = typeof assetTheses.$inferInsert;
+
+// ============================================================================
+// Asset Thesis Related Macro Theses (Junction Table)
+// ============================================================================
+
+export const assetThesisRelatedMacroTheses = pgTable(
+  'asset_thesis_related_macro_theses',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    assetThesisId: uuid('asset_thesis_id')
+      .notNull()
+      .references(() => assetTheses.id, { onDelete: 'cascade' }),
+    macroThesisId: uuid('macro_thesis_id')
+      .notNull()
+      .references(() => macroTheses.id, { onDelete: 'cascade' }),
+    
+    // Optional metadata
+    relationshipNote: text('relationship_note'), // e.g. "provides sector context", "supports timing"
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+    addedBy: text('added_by'), // Future: user tracking
+  },
+  (table) => ({
+    assetIdx: index('idx_at_related_mt_asset').on(table.assetThesisId),
+    macroIdx: index('idx_at_related_mt_macro').on(table.macroThesisId),
+    uniquePair: unique().on(table.assetThesisId, table.macroThesisId),
+  })
+);
+
+export type AssetThesisRelatedMacroThesis = typeof assetThesisRelatedMacroTheses.$inferSelect;
+export type NewAssetThesisRelatedMacroThesis = typeof assetThesisRelatedMacroTheses.$inferInsert;
 
 // ============================================================================
 // Main Claims (First-Class Claim Entities)
@@ -422,10 +452,8 @@ export const strategies = pgTable(
     // Playbook linkage
     strategyType: text('strategy_type'), // Links to playbook_items.strategy_type
     // Hierarchy linkage (Phase 1)
+    // Note: Strategies inherit macro thesis connections through assetThesisId
     assetThesisId: uuid('asset_thesis_id').references(() => assetTheses.id, {
-      onDelete: 'set null',
-    }),
-    macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, {
       onDelete: 'set null',
     }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -435,7 +463,6 @@ export const strategies = pgTable(
     accountStrategyIdx: index('idx_strategies_account').on(table.accountId),
     strategyKeyIdx: index('idx_strategies_key').on(table.strategyKey),
     assetThesisIdx: index('idx_strategies_asset_thesis').on(table.assetThesisId),
-    macroThesisIdx: index('idx_strategies_macro_thesis').on(table.macroThesisId),
   })
 );
 
