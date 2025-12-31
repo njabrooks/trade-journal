@@ -48,7 +48,7 @@ export function HierarchyBreadcrumb({
       type: 'macro_thesis' as const,
       label: 'Macro Thesis',
       data: macroThesis,
-      href: macroThesis ? `/theses/${macroThesis.id}` : null,
+      href: macroThesis ? `/macro-theses/${macroThesis.id}` : null,
       onLink: onLinkMacroThesis,
       required: false, // Recommended but not required
     });
@@ -70,7 +70,7 @@ export function HierarchyBreadcrumb({
         type: 'macro_thesis' as const,
         label: 'Macro Thesis',
         data: macroThesis,
-        href: macroThesis ? `/theses/${macroThesis.id}` : null,
+        href: macroThesis ? `/macro-theses/${macroThesis.id}` : null,
         onLink: onLinkMacroThesis,
         required: true, // Required for asset thesiss
       });

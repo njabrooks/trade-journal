@@ -87,7 +87,7 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
               <dd className="mt-1 text-sm text-slate-900">
                 {view.macroThesis ? (
                   <Link
-                    href={`/theses/${view.macroThesis.id}`}
+                    href={`/macro-theses/${view.macroThesis.id}`}
                     className="text-blue-600 hover:text-blue-800"
                   >
                     {view.macroThesis.title}

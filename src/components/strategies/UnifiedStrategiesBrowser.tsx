@@ -581,7 +581,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                                   <div className="flex flex-wrap gap-2">
                                     {strategy.macroThesisTitle && strategy.macroThesisId && (
                                       <Link
-                                        href={`/theses/${strategy.macroThesisId}`}
+                                        href={`/macro-theses/${strategy.macroThesisId}`}
                                         className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
                                       >
                                         <Badge className="bg-purple-200 text-purple-800 text-xs">Macro</Badge>

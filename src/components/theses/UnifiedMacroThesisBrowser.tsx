@@ -476,7 +476,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                         <td className="px-4 py-3">
                           <div className="space-y-1">
                             <Link
-                              href={`/theses/${thesis.id}`}
+                              href={`/macro-theses/${thesis.id}`}
                               className="text-slate-900 font-medium hover:text-blue-600 line-clamp-2"
                             >
                               {thesis.title}
@@ -605,7 +605,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                                 </div>
                                 <div>
                                   <Link
-                                    href={`/theses/${thesis.id}`}
+                                    href={`/macro-theses/${thesis.id}`}
                                     className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
                                   >
                                     View Full Details →

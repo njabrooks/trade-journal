@@ -5,12 +5,13 @@ import { PersistentHeader } from "./PersistentHeader";
 
 export type NavKey =
   | "portfolio"
-  | "theses"
+  | "macro-theses"
   | "asset-theses"
   | "strategies"
   | "triage"
   | "blotter"
   | "research"
+  | "claims"
   | "admin-strategies"
   | "admin-playbook"
   | "admin-triage"
