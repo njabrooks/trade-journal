@@ -3,7 +3,7 @@ import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { ClientHierarchyBreadcrumb } from '@/components/ui/ClientHierarchyBreadcrumb';
+import { AssetThesisDetailClient } from '@/components/asset-theses/AssetThesisDetailClient';
 import { EditAssetThesisButton } from '@/components/asset-theses/EditAssetThesisButton';
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
 import { UnifiedMacroThesisBrowser } from '@/components/theses/UnifiedMacroThesisBrowser';
@@ -44,25 +44,23 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
       subtitle="Asset Thesis Detail"
       activeNav="asset-theses"
     >
-      {/* Hierarchy Breadcrumb */}
-      <ClientHierarchyBreadcrumb
-        macroThesis={
+      {/* Hierarchy Breadcrumb with Related Theses Management */}
+      <AssetThesisDetailClient
+        assetThesisId={view.id}
+        assetThesisTitle={view.title}
+        primaryMacroThesis={
           view.primaryMacroThesis
             ? { id: view.primaryMacroThesis.id, title: view.primaryMacroThesis.title }
             : null
         }
         relatedMacroTheses={
           view.relatedMacroTheses?.map((r) => ({
-            id: r.macroThesisId || '',
+            id: r.id,
+            macroThesisId: r.macroThesisId || '',
             title: r.title || '',
             relationshipNote: r.relationshipNote,
           })) || []
         }
-        assetView={{
-          id: view.id,
-          title: view.title,
-        }}
-        currentLevel="asset_view"
       />
 
       <div className="space-y-6">
