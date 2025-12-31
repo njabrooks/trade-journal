@@ -31,6 +31,8 @@ export interface EvidenceClaim {
   supports: string; // References main claim ID
   claim: string;
   evidence: string[];
+  reasoning: string; // Full Toulmin framework
+  backing: string; // Full Toulmin framework
   qualifier: 'high' | 'medium' | 'low' | 'exploratory';
   rebuttal?: string;
 }
@@ -200,9 +202,11 @@ function parseEvidenceClaimBlock(block: string): EvidenceClaim | null {
   const supports = extractField(block, 'Supports') || '';
   const qualifier = extractField(block, 'Qualifier') as 'high' | 'medium' | 'low' | 'exploratory' || 'medium';
 
-  // Extract content sections
+  // Extract content sections (full Toulmin framework)
   const claim = extractSection(block, 'Claim');
   const evidence = extractBulletList(block, 'Evidence');
+  const reasoning = extractSection(block, 'Reasoning');
+  const backing = extractSection(block, 'Backing');
   const rebuttal = extractSection(block, 'Rebuttal');
 
   return {
@@ -213,6 +217,8 @@ function parseEvidenceClaimBlock(block: string): EvidenceClaim | null {
     supports,
     claim,
     evidence,
+    reasoning,
+    backing,
     qualifier,
     ...(rebuttal ? { rebuttal } : {}),
   };

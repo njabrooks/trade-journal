@@ -61,16 +61,18 @@ export type EvidenceClaimType = 'supporting' | 'rebutting';
 export interface EvidenceClaim {
   // Identity
   id: string; // e.g., "claim-19"
+  title: string; // Concise heading for the evidence claim
   level: 'evidence';
   type: EvidenceClaimType;
+  supports: string; // References main claim ID
 
-  // Simplified Toulmin (evidence claims don't need full structure)
+  // Full Toulmin Framework (evidence claims get complete structure too)
   claim: string; // The evidence assertion
-  evidence?: string; // Optional additional context
-  confidence: ClaimConfidence;
-
-  // References
-  supports_main_claims: string[]; // Which main claims this evidence supports/refutes
+  evidence: string[]; // Supporting data points
+  reasoning: string; // Logic connecting evidence to claim
+  backing: string; // Additional support for the reasoning
+  qualifier: ClaimConfidence; // Confidence level
+  rebuttal?: string; // Counter-arguments or exceptions
 }
 
 // ============================================================================

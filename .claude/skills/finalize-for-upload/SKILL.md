@@ -275,6 +275,13 @@ The parser produces:
       "title": "Dollar Weakness Signals Reflation",
       "level": "evidence",
       "type": "supporting" | "rebutting",
+      "supports": "claim-1",  // References main claim ID
+      "claim": "Dollar weakness against major currencies signals reflation expectations",
+      "evidence": ["DXY down 5% YTD", "EUR/USD breaking key resistance"],
+      "reasoning": "Currency markets price in inflation expectations faster than bonds",
+      "backing": "Historical pattern: dollar weakness preceded 2009-2011 and 2016-2018 reflation cycles",
+      "qualifier": "high",
+      "rebuttal": "Dollar weakness could reflect US-specific factors rather than global reflation"
       "supports": "Claim 1 (AI-driven PMI expansion)",
       "claim": "MACD sell signal in dollar...",
       "evidence": ["Dollar MACD potential...", "MSCI World rising..."],
@@ -294,6 +301,16 @@ The parser automatically:
 4. Extracts content sections (Claim, Evidence bullets, Reasoning, Backing, Rebuttal bullets)
 5. Preserves relationships (Supporting Evidence Claims, Rebutting Evidence Claims)
 6. Returns fully structured JSON ready for `claims_structure` JSONB column
+
+**IMPORTANT**: Both main claims AND evidence claims get the FULL Toulmin framework:
+- Claim (assertion)
+- Evidence (data points as array)
+- Reasoning (logic connecting evidence to claim)
+- Backing (additional theoretical/empirical support)
+- Qualifier (confidence level)
+- Rebuttal (counter-arguments)
+
+Evidence claims are NOT abbreviated - they receive complete argumentation structure for rigorous analysis.
 
 **Output**:
 

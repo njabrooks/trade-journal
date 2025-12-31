@@ -107,6 +107,8 @@ tags: []  # Will be populated during extraction
 
 #### Toulmin Framework Components
 
+**CRITICAL**: Apply the FULL Toulmin structure to BOTH main claims AND evidence claims. Evidence claims are not abbreviated - they get complete reasoning and backing just like main claims.
+
 **1. Claim** (The assertion)
 - What is being asserted?
 - Example: "AI agents will replace traditional applications by 2026"
@@ -114,6 +116,7 @@ tags: []  # Will be populated during extraction
 **2. Evidence** (Data supporting the claim)
 - What evidence supports this claim?
 - Direct quotes, statistics, examples from transcript
+- Use bullet points for multiple evidence items
 - Example: "GPT-4 can now execute multi-step tasks autonomously; agent market growing 300% YoY"
 
 **3. Reasoning** (Why evidence supports claim)
@@ -122,6 +125,7 @@ tags: []  # Will be populated during extraction
 
 **4. Backing** (Support for reasoning)
 - Additional theoretical or empirical support
+- Historical precedents, academic research, industry patterns
 - Example: "Historical precedent: mobile apps replaced desktop software when mobile hardware enabled standalone functionality"
 
 **5. Qualifier** (Degree of confidence)
@@ -282,10 +286,14 @@ Historical pattern: Hyperscalers vertically integrated when scale justified cust
 GPT-4 demonstrates 85% accuracy on multi-step reasoning benchmarks, indicating maturity for autonomous agent workflows.
 
 **Evidence**:
-Transcript timestamp 02:45: "Recent benchmarks show GPT-4 hitting 85% on tasks that require planning across multiple steps."
+- Transcript timestamp 02:45: "Recent benchmarks show GPT-4 hitting 85% on tasks that require planning across multiple steps."
+- OpenAI's published benchmark results confirm consistent performance across diverse reasoning tasks
 
 **Reasoning**:
 85% accuracy approaches the threshold where AI becomes reliable enough for production deployment in agent scenarios. Users will tolerate occasional errors if overall success rate is >80%.
+
+**Backing**:
+Industry adoption patterns show that tools with 80-85% accuracy reach mainstream adoption when benefits outweigh error costs. Email spam filters (85% accuracy) and voice recognition (80% accuracy) both achieved mass adoption at similar thresholds.
 
 **Qualifier**: high (benchmark data is verifiable)
 
@@ -304,10 +312,14 @@ Benchmarks may not reflect real-world complexity. Production deployment requires
 The market for agent frameworks and orchestration tools is growing 300% year-over-year.
 
 **Evidence**:
-Transcript 05:30: "Looking at GitHub stars and npm downloads for agent frameworks, we're seeing 3x growth year-over-year."
+- Transcript 05:30: "Looking at GitHub stars and npm downloads for agent frameworks, we're seeing 3x growth year-over-year."
+- Specific frameworks like LangChain, AutoGPT showing exponential adoption curves
 
 **Reasoning**:
 Rapid adoption of developer tools signals imminent production deployment. Frameworks mature before applications built on them reach scale.
+
+**Backing**:
+Historical pattern: React.js framework adoption (2013-2015) preceded mass adoption of React-based web applications (2016-2018). Similar 18-24 month lag from framework adoption to production scale.
 
 **Qualifier**: medium (growth metric is directional but not audited)
 
@@ -323,10 +335,14 @@ Rapid adoption of developer tools signals imminent production deployment. Framew
 Current AI models hallucinate (generate false information) approximately 15% of the time, limiting autonomous agent reliability.
 
 **Evidence**:
-Transcript 12:00: "Even the best models still hallucinate about 15% of the time in production use cases."
+- Transcript 12:00: "Even the best models still hallucinate about 15% of the time in production use cases."
+- Multiple independent studies confirm hallucination rates between 10-20% for frontier models
 
 **Reasoning**:
 15% error rate is unacceptable for mission-critical workflows. Enterprise adoption requires <1% error rates for autonomous agents.
+
+**Backing**:
+Enterprise software adoption patterns show that mission-critical systems require "five nines" (99.999%) reliability. Current AI at 85% accuracy is orders of magnitude below enterprise SLAs. Financial trading systems, medical diagnostics, and autonomous vehicles all require <0.1% error rates.
 
 **Qualifier**: high (well-documented limitation)
 

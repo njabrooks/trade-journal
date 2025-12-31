@@ -165,7 +165,8 @@ Contains business logic for calculating derived insights from raw data:
 ### `/src/lib/research` - Research Processing
 - **`parseClaimsMarkdown.ts`** (257 lines) - Parser for Toulmin framework markdown audits → JSON
   - Hierarchical claim structure (main_claims with nested evidence_claims)
-  - Extracts claim text, evidence, reasoning, backing, confidence, category
+  - Extracts FULL Toulmin framework for BOTH main and evidence claims
+  - Full structure: claim, evidence[], reasoning, backing, qualifier, rebuttal
   - Validates claim structure and metadata
 
 ### `/src/components` - React UI
@@ -174,7 +175,8 @@ Feature-based component organization:
 - **`layout/`** - Shell, navigation, tabs
 - **`blotter/`**, **`triage/`**, **`strategies/`**, **`ibkr/`** - Feature-specific components
 - **`research/`** - Research workflow components
-  - `ClaimsBrowser.tsx` (665 lines) - Browse hierarchical claims with filtering, search, conversion status
+  - `UnifiedClaimsBrowser.tsx` - Browse main claims with filtering, search, status management
+  - `ExpandableEvidenceClaim.tsx` - Expandable card showing full Toulmin framework for evidence claims
   - `ConvertClaimDialog.tsx` (282 lines) - Convert claims to macro theses or asset thesiss
   - `WorkflowStatusCard.tsx` (130 lines) - Research workflow progress tracking UI
   - `EmptyClaimsState.tsx` (98 lines) - Onboarding guidance for research workflow

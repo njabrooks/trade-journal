@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
 import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } from '@/types/claims';
 import { ConvertClaimToEntityDialog } from './ConvertClaimToEntityDialog';
+import { ExpandableEvidenceClaim } from './ExpandableEvidenceClaim';
 
 interface LinkedThesis {
   id: string;
@@ -740,7 +741,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                 </div>
                               )}
 
-                              {/* Evidence Claims from Audit */}
+                              {/* Evidence Claims from Audit - Full Toulmin Framework */}
                               {(evidenceClaims.supporting.length > 0 || evidenceClaims.rebutting.length > 0) && (
                                 <div className="pt-2 border-t border-slate-200">
                                   <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
@@ -749,47 +750,37 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
                                   {evidenceClaims.supporting.length > 0 && (
                                     <div className="mb-3">
-                                      <h5 className="text-xs font-medium text-emerald-700 mb-1">
+                                      <h5 className="text-xs font-medium text-emerald-700 mb-2">
                                         Supporting ({evidenceClaims.supporting.length})
                                       </h5>
-                                      <ul className="space-y-2">
+                                      <div className="space-y-2">
                                         {evidenceClaims.supporting.map((evidence) => (
-                                          <li key={evidence.id} className="text-sm text-slate-600 pl-3 border-l-2 border-emerald-300">
-                                            <div className="flex items-start gap-2">
-                                              <Badge className="bg-emerald-100 text-emerald-700 text-xs shrink-0">
-                                                {evidence.confidence}
-                                              </Badge>
-                                              <span>{evidence.claim}</span>
-                                            </div>
-                                            {evidence.evidence && (
-                                              <p className="text-xs text-slate-500 mt-1 italic">{evidence.evidence}</p>
-                                            )}
-                                          </li>
+                                          <ExpandableEvidenceClaim
+                                            key={evidence.id}
+                                            evidenceClaim={evidence}
+                                            relationshipType="supports"
+                                            showRelationship={false}
+                                          />
                                         ))}
-                                      </ul>
+                                      </div>
                                     </div>
                                   )}
 
                                   {evidenceClaims.rebutting.length > 0 && (
                                     <div>
-                                      <h5 className="text-xs font-medium text-red-700 mb-1">
+                                      <h5 className="text-xs font-medium text-red-700 mb-2">
                                         Rebutting ({evidenceClaims.rebutting.length})
                                       </h5>
-                                      <ul className="space-y-2">
+                                      <div className="space-y-2">
                                         {evidenceClaims.rebutting.map((evidence) => (
-                                          <li key={evidence.id} className="text-sm text-slate-600 pl-3 border-l-2 border-red-300">
-                                            <div className="flex items-start gap-2">
-                                              <Badge className="bg-red-100 text-red-700 text-xs shrink-0">
-                                                {evidence.confidence}
-                                              </Badge>
-                                              <span>{evidence.claim}</span>
-                                            </div>
-                                            {evidence.evidence && (
-                                              <p className="text-xs text-slate-500 mt-1 italic">{evidence.evidence}</p>
-                                            )}
-                                          </li>
+                                          <ExpandableEvidenceClaim
+                                            key={evidence.id}
+                                            evidenceClaim={evidence}
+                                            relationshipType="refutes"
+                                            showRelationship={false}
+                                          />
                                         ))}
-                                      </ul>
+                                      </div>
                                     </div>
                                   )}
                                 </div>

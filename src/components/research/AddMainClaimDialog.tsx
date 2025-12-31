@@ -165,8 +165,26 @@ export function AddMainClaimDialog({
             </p>
           </div>
 
-          {/* Claims List */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-3">
+          {/* Relationship Type - Moved above claims list for visibility */}
+          <div className="px-6 pt-4 pb-2 bg-slate-50 border-b border-slate-200">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Relationship Type
+            </label>
+            <select
+              value={relationshipType}
+              onChange={(e) =>
+                setRelationshipType(e.target.value as 'supports' | 'refutes' | 'foundation')
+              }
+              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="supports">✓ Supports - This claim provides evidence for the {entityType}</option>
+              <option value="refutes">✗ Refutes - This claim contradicts or challenges the {entityType}</option>
+              <option value="foundation">★ Foundation - This claim is the foundational reasoning for the {entityType}</option>
+            </select>
+          </div>
+
+          {/* Claims List - Now has max height to ensure relationship type is visible */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-3 max-h-96">
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -237,23 +255,6 @@ export function AddMainClaimDialog({
             )}
           </div>
 
-          {/* Relationship Type */}
-          <div className="p-6 border-t border-slate-200 bg-slate-50">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Relationship Type
-            </label>
-            <select
-              value={relationshipType}
-              onChange={(e) =>
-                setRelationshipType(e.target.value as 'supports' | 'refutes' | 'foundation')
-              }
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="supports">Supports - This claim provides evidence for the {entityType}</option>
-              <option value="refutes">Refutes - This claim contradicts or challenges the {entityType}</option>
-              <option value="foundation">Foundation - This claim is the foundational reasoning for the {entityType}</option>
-            </select>
-          </div>
 
           {/* Error/Success Messages */}
           {error && (
