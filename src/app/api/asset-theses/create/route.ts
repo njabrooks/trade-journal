@@ -30,6 +30,7 @@ import { generateAssetThesisTitle } from '@/lib/utils/title-generation';
  *   outcomeNotes?: string;
  *
  *   // Linkage
+ *   macroThesisId?: string;          // Auto-link to this macro thesis
  *   linkedMainClaimIds?: string[];   // Array of main_claim UUIDs to link
  *   linkedThesisIds?: string[];      // Array of macro_thesis UUIDs to link
  *
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
       outcomeNotes,
       linkedMainClaimIds = [],
       linkedThesisIds = [],
+      macroThesisId, // For auto-linking when created from macro thesis context
       notes = {},
     } = body;
 
@@ -115,6 +117,7 @@ export async function POST(request: NextRequest) {
       .values({
         title: finalTitle,
         underlyingId: underlying.id,
+        macroThesisId: macroThesisId || null, // Auto-link to macro thesis if provided
         description: description || null,
         timeHorizon: timeHorizon || null,
         confidenceLevel: confidenceLevel || null,
