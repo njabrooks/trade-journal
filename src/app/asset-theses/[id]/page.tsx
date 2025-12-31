@@ -29,7 +29,13 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
   }
 
   // Filter macro theses and strategies linked to this asset thesis
-  const linkedMacroTheses = view.macroThesis ? allMacroTheses.filter((mt) => mt.id === view.macroThesis!.id) : [];
+  // Include primary macro thesis + all related macro theses
+  const linkedMacroThesesIds = [
+    view.primaryMacroThesis?.id,
+    ...(view.relatedMacroTheses?.map((r) => r.macroThesisId) || []),
+  ].filter(Boolean) as string[];
+  
+  const linkedMacroTheses = allMacroTheses.filter((mt) => linkedMacroThesesIds.includes(mt.id));
   const linkedStrategies = allStrategies.filter((s) => s.assetThesisId === id);
 
   return (
@@ -41,9 +47,16 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
       {/* Hierarchy Breadcrumb */}
       <ClientHierarchyBreadcrumb
         macroThesis={
-          view.macroThesis
-            ? { id: view.macroThesis.id, title: view.macroThesis.title }
+          view.primaryMacroThesis
+            ? { id: view.primaryMacroThesis.id, title: view.primaryMacroThesis.title }
             : null
+        }
+        relatedMacroTheses={
+          view.relatedMacroTheses?.map((r) => ({
+            id: r.macroThesisId || '',
+            title: r.title || '',
+            relationshipNote: r.relationshipNote,
+          })) || []
         }
         assetView={{
           id: view.id,
