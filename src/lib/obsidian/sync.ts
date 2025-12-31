@@ -148,14 +148,14 @@ async function syncMainClaimToDatabase(
       title: sections.title || frontmatter.id,
       category: (frontmatter.category || 'macro') as 'macro' | 'asset_specific',
       claim: sections.claim || '',
-      evidence: sections.evidence || null,
+      evidence: sections.evidence ? [sections.evidence] : null,
       reasoning: sections.reasoning || null,
       backing: sections.backing || null,
       qualifier: (frontmatter.confidence as any) || null,
-      rebuttal: sections.rebuttal || null,
+      rebuttal: sections.rebuttal ? [sections.rebuttal] : null,
       timeHorizon: (frontmatter.time_horizon as any) || null,
       relevantTickers: null,
-      status: (frontmatter.status || 'active') as 'active' | 'invalidated' | 'merged',
+      status: (frontmatter.status || 'unconfirmed') as 'unconfirmed' | 'confirmed' | 'rejected' | 'invalidated' | 'merged',
       confidenceEvolution: null,
     };
 

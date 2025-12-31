@@ -19,6 +19,27 @@
 
 ## Active/In Progress Enhancements
 
+### Phase 2.7: Unified Browser Pattern & Hierarchy UX 🚧
+**Status**: 🚧 Planned (2025-12-30)
+**PRD Alignment**: Section 3 (Conceptual Model), Section 9 (Visualisation & Attention Management)
+**Source**: `docs/20251230-enhancements.md` + user feedback
+**Estimated Effort**: 3-4 weeks (4 sprints)
+**Master Plan**: See `docs/20251230-implementation-plan.md` for detailed breakdown
+
+**Overview**: Extend the UnifiedClaimsBrowser.tsx pattern (from Phase 2.6) to all hierarchy entities. Includes advanced filtering, inline linking workflows, expandable rows, and AI-assisted summarization.
+
+**Enhancement IDs**: #ENH-013 through #ENH-023 (11 enhancements)
+
+**Implementation Order**:
+- Sprint 1 (Week 1): Core Unified Browsers (#ENH-013, #ENH-014, #ENH-015)
+- Sprint 2 (Week 2): UX Polish & Bug Fixes (#ENH-016, #ENH-017, #ENH-021, #ENH-023)
+- Sprint 3 (Week 3): Detail Page Enhancements (#ENH-018, #ENH-019)
+- Sprint 4 (Week 4): Advanced Features (#ENH-020-playbook, #ENH-022)
+
+**Big Picture Impact**: Consistent, high-quality browsing experience across all hierarchy levels. Reduces cognitive load and page navigation. Foundation for future visualization features (Phase 1.7 Tree Navigator).
+
+---
+
 ### Phase 2.6: Research UX Enhancements ✅
 **Status**: ✅ Complete (2025-12-29)
 **PRD Alignment**: Section 5 (Research & Intelligence Layer), Section 3 (Conceptual Model)
@@ -667,6 +688,24 @@ Consider adding to PRD:
 ---
 
 ## Enhancement Registry
+
+**Next Enhancement ID**: #ENH-024
+
+### Phase 2.7 Enhancement IDs (Planned 2025-12-30)
+
+- **#ENH-013**: Unified Macro Thesis Browser (UnifiedMacroThesisBrowser.tsx)
+- **#ENH-014**: Unified Asset Thesis Browser (UnifiedAssetThesisBrowser.tsx)
+- **#ENH-015**: Unified Strategies Browser (UnifiedStrategiesBrowser.tsx)
+- **#ENH-016**: Research Detail Page UX Improvements (compact metadata/workflow)
+- **#ENH-017**: Claims Browser 'Linked To' Filter (multi-select theses/views)
+- **#ENH-018**: Macro Thesis Detail Page Enhancements (delete, compact overview, AI summary)
+- **#ENH-019**: Asset Thesis Detail Page Enhancements (delete, market data fix, AI summary)
+- **#ENH-020-playbook**: Strategy Detail Page Enhancements (Playbook tab)
+- **#ENH-021**: Rename /theses → /macro-theses (URL consistency)
+- **#ENH-022**: AI-Assisted Summary Generation (Claude Skills)
+- **#ENH-023**: ClientHierarchyBreadcrumb Bug Fixes
+
+**Note**: #ENH-020 already assigned to Automated Tests. Strategy enhancements use #ENH-020-playbook to avoid collision.
 
 **Next Enhancement ID**: #ENH-024
 

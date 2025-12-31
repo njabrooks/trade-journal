@@ -189,11 +189,11 @@ export async function autoPromoteAuditClaims(insightId: string): Promise<number>
         .update(mainClaims)
         .set({
           claim: auditClaim.claim,
-          evidence: auditClaim.evidence || null,
+          evidence: auditClaim.evidence ? [auditClaim.evidence] : null,
           reasoning: auditClaim.reasoning || null,
           backing: auditClaim.backing || null,
           qualifier: auditClaim.qualifier || null,
-          rebuttal: auditClaim.rebuttal || null,
+          rebuttal: auditClaim.rebuttal ? [auditClaim.rebuttal] : null,
           timeHorizon: normalizedTimeHorizon,
           relevantTickers: auditClaim.relevant_tickers || [],
           category: auditClaim.category,
@@ -206,11 +206,11 @@ export async function autoPromoteAuditClaims(insightId: string): Promise<number>
         title: auditClaim.title, // Use the concise title from audit heading
         category: auditClaim.category,
         claim: auditClaim.claim,
-        evidence: auditClaim.evidence || null,
+        evidence: auditClaim.evidence ? [auditClaim.evidence] : null,
         reasoning: auditClaim.reasoning || null,
         backing: auditClaim.backing || null,
         qualifier: auditClaim.qualifier || null,
-        rebuttal: auditClaim.rebuttal || null,
+        rebuttal: auditClaim.rebuttal ? [auditClaim.rebuttal] : null,
         timeHorizon: normalizedTimeHorizon,
         relevantTickers: auditClaim.relevant_tickers || [],
         status: 'unconfirmed', // Default status for auto-promoted claims

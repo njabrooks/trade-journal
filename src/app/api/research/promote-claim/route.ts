@@ -106,18 +106,18 @@ export async function POST(request: NextRequest) {
 
         // Toulmin Framework
         claim: claim.claim,
-        evidence: claim.evidence,
+        evidence: claim.evidence ? [claim.evidence] : [],
         reasoning: claim.reasoning,
         backing: claim.backing,
         qualifier: claim.qualifier,
-        rebuttal: claim.rebuttal,
+        rebuttal: claim.rebuttal ? [claim.rebuttal] : [],
 
         // Metadata
         timeHorizon: claim.time_horizon || null,
         relevantTickers: relevantTickers.length > 0 ? relevantTickers : null,
 
         // Lifecycle
-        status: 'active',
+        status: 'unconfirmed',
         confidenceEvolution: null,
 
         // Timestamps

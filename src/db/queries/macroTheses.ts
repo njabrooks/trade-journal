@@ -6,10 +6,14 @@ import type { NewMacroThesis } from '@/db/schema';
 export interface MacroThesisListItem {
   id: string;
   title: string;
+  description: string | null;
   thesisType: string;
   timeHorizon: string | null;
   confidenceLevel: string | null;
   status: string;
+  sectors: string[] | null;
+  direction: string | null;
+  notes: any;
   createdAt: Date;
   updatedAt: Date;
   assetViewCount: number;
@@ -21,10 +25,14 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     .select({
       id: macroTheses.id,
       title: macroTheses.title,
+      description: macroTheses.description,
       thesisType: macroTheses.thesisType,
       timeHorizon: macroTheses.timeHorizon,
       confidenceLevel: macroTheses.confidenceLevel,
       status: macroTheses.status,
+      sectors: macroTheses.sectors,
+      direction: macroTheses.direction,
+      notes: macroTheses.notes,
       createdAt: macroTheses.createdAt,
       updatedAt: macroTheses.updatedAt,
     })
