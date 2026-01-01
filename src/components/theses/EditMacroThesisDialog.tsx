@@ -3,8 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import type { MacroThesis } from '@/db/schema';
+import { 
+  getAllTaxonomyItems, 
+  searchTaxonomy,
+  type TaxonomyItem 
+} from '@/lib/constants/sector-taxonomy';
 
 interface EditMacroThesisDialogProps {
   thesis: MacroThesis;
@@ -36,9 +42,28 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
   const [positionEndDate, setPositionEndDate] = useState(
     thesis.positionEndDate ? new Date(thesis.positionEndDate).toISOString().split('T')[0] : ''
   );
-  const [sectors, setSectors] = useState(thesis.sectors?.join(', ') || '');
+  const [sectors, setSectors] = useState<string[]>(thesis.sectors || []);
+  const [sectorSearch, setSectorSearch] = useState('');
+  const [showSectorDropdown, setShowSectorDropdown] = useState(false);
   const [outcome, setOutcome] = useState(thesis.outcome || '');
   const [outcomeNotes, setOutcomeNotes] = useState(thesis.outcomeNotes || '');
+
+  // Get filtered taxonomy items
+  const filteredTaxonomyItems = sectorSearch 
+    ? searchTaxonomy(sectorSearch) 
+    : getAllTaxonomyItems().slice(0, 20);
+
+  const handleAddSector = (item: TaxonomyItem) => {
+    if (!sectors.includes(item.value)) {
+      setSectors([...sectors, item.value]);
+    }
+    setSectorSearch('');
+    setShowSectorDropdown(false);
+  };
+
+  const handleRemoveSector = (sectorValue: string) => {
+    setSectors(sectors.filter((s) => s !== sectorValue));
+  };
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -84,9 +109,7 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
           direction,
           positionStartDate: positionStartDate || null,
           positionEndDate: positionEndDate || null,
-          sectors: sectors
-            ? sectors.split(',').map(s => s.trim()).filter(Boolean)
-            : [],
+          sectors: sectors,
           outcome: outcome || null,
           outcomeNotes: outcomeNotes || null,
         }),
@@ -277,16 +300,74 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
             <label htmlFor="sectors" className="block text-sm font-medium text-slate-700 mb-2">
               Sectors / Topics
             </label>
-            <input
-              id="sectors"
-              type="text"
-              value={sectors}
-              onChange={(e) => setSectors(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., AI hyperscalers, crypto alts, energy infrastructure"
-            />
+            <div className="relative">
+              <input
+                id="sectors"
+                type="text"
+                value={sectorSearch}
+                onChange={(e) => {
+                  setSectorSearch(e.target.value);
+                  setShowSectorDropdown(true);
+                }}
+                onFocus={() => setShowSectorDropdown(true)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search sectors, industries, regions..."
+                disabled={loading}
+              />
+              {showSectorDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
+                  {filteredTaxonomyItems.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-slate-500">No matches found</div>
+                  ) : (
+                    filteredTaxonomyItems.map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => handleAddSector(item)}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                        disabled={sectors.includes(item.value)}
+                      >
+                        <div className="font-medium text-sm text-slate-900">{item.label}</div>
+                        {item.description && (
+                          <div className="text-xs text-slate-500">{item.description}</div>
+                        )}
+                        {sectors.includes(item.value) && (
+                          <Badge className="mt-1 bg-green-100 text-green-700 text-xs">Selected</Badge>
+                        )}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Selected sectors */}
+            {sectors.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {sectors.map((sectorValue) => {
+                  const item = getAllTaxonomyItems().find(i => i.value === sectorValue);
+                  return (
+                    <Badge
+                      key={sectorValue}
+                      variant="secondary"
+                      className="pl-2 pr-1 py-1 text-xs"
+                    >
+                      {item?.label || sectorValue}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSector(sectorValue)}
+                        className="ml-1 hover:bg-slate-300 rounded-full p-0.5"
+                        disabled={loading}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
             <p className="text-xs text-slate-500 mt-1">
-              Comma-separated list of sectors this thesis applies to. You can create new sectors by typing them here.
+              Search and select from structured taxonomy
             </p>
           </div>
 
