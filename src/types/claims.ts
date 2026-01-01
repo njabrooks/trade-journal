@@ -30,11 +30,11 @@ export interface MainClaim {
 
   // Toulmin Framework
   claim: string; // The main assertion
-  evidence: string; // Supporting data and observations (string for backward compatibility - use string[] in new code)
+  evidence: string[]; // Supporting data and observations
   reasoning: string; // Logic connecting evidence to claim
   backing: string; // Additional support for the reasoning
   qualifier: ClaimConfidence; // Confidence level
-  rebuttal: string; // Counter-arguments or exceptions (string for backward compatibility - use string[] in new code)
+  rebuttal: string[]; // Counter-arguments or exceptions
 
   // Metadata
   time_horizon?: TimeHorizon;

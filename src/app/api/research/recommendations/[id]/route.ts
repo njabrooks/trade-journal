@@ -138,7 +138,7 @@ export async function PATCH(
           description: modifications?.description !== undefined ? modifications.description : (proposedData?.description || null),
           narrative: modifications?.narrative !== undefined ? modifications.narrative : (proposedData?.narrative || null),
           underlyingId,
-          macroThesisId: null, // Can be linked later
+          primaryMacroThesisId: null, // Can be linked later
           timeHorizon: modifications?.timeHorizon || proposedData?.timeHorizon || null,
           confidenceLevel: modifications?.confidenceLevel || proposedData?.confidenceLevel || null,
           status: 'active',

@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       fundamentalContext,
       positioningContext,
       regimeContext,
-      macroThesisId,
+      primaryMacroThesisId: macroThesisId,
       underlyingId,
       timeHorizon,
       confidenceLevel,

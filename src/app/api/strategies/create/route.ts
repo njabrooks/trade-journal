@@ -74,24 +74,19 @@ export async function POST(request: NextRequest) {
     const finalLabel = label || `${direction.toUpperCase()} ${strategyKey}`;
 
     // Create the strategy
+    // Note: Using placeholder strategyTemplateId - in production, this should be provided or looked up
     const [createdStrategy] = await db
       .insert(strategies)
       .values({
         strategyKey,
-        label: finalLabel,
-        description: description || null,
-        direction,
+        strategyTemplateId: '00000000-0000-0000-0000-000000000000', // TODO: Should be provided in request
+        autoDerivedLabel: finalLabel,
         status,
+        openedAt: new Date(),
         assetThesisId: assetThesisId || null, // Inherits macro thesis through asset thesis
-        rationale: rationale || null,
-        exitStrategy: exitStrategy || null,
-        riskManagement: riskManagement || null,
-        tradeManagement: tradeManagement || null,
-        capitalAllocation: capitalAllocation || null,
-        expectedReturn: expectedReturn || null,
-        maxDrawdown: maxDrawdown || null,
+        thesis: rationale || null,
+        exitCriteria: exitStrategy || null,
         timeHorizon: timeHorizon || null,
-        notes,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -101,7 +96,7 @@ export async function POST(request: NextRequest) {
       success: true,
       id: createdStrategy.id,
       strategyKey: createdStrategy.strategyKey,
-      label: createdStrategy.label,
+      label: createdStrategy.autoDerivedLabel,
       message: 'Strategy created successfully',
     });
   } catch (error: any) {
