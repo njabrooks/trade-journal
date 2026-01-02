@@ -560,7 +560,12 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                         {/* Claim Title (brief summary) */}
                         <td className="px-4 py-3">
                           <div className="space-y-1">
-                            <p className="text-slate-900 font-medium line-clamp-2">{claim.title}</p>
+                            <Link
+                              href={`/claims/${claim.id}`}
+                              className="text-slate-900 font-medium line-clamp-2 hover:text-blue-600 hover:underline transition-colors block"
+                            >
+                              {claim.title}
+                            </Link>
                             {claim.relevantTickers && claim.relevantTickers.length > 0 && (
                               <div className="flex flex-wrap gap-1">
                                 {claim.relevantTickers.slice(0, 3).map((ticker) => (

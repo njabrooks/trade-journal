@@ -407,6 +407,58 @@ export async function promoteMainClaim(claimId: string): Promise<void> {
 }
 
 /**
+ * Get a single main claim by ID with source metadata and linked entity IDs
+ * Used for claims detail page
+ */
+export async function getMainClaimById(claimId: string) {
+  const [claimData] = await db
+    .select({
+      claim: mainClaims,
+      insight: researchInsights,
+      artifact: researchArtifacts,
+    })
+    .from(mainClaims)
+    .leftJoin(
+      researchInsights,
+      eq(mainClaims.sourceInsightId, researchInsights.id)
+    )
+    .leftJoin(
+      researchArtifacts,
+      eq(researchInsights.researchArtifactId, researchArtifacts.id)
+    )
+    .where(eq(mainClaims.id, claimId))
+    .limit(1);
+
+  if (!claimData) {
+    return null;
+  }
+
+  // Fetch linked macro thesis IDs
+  const linkedMacroThesisIds = await db
+    .select({
+      thesisId: macroTheses.id,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
+    .where(eq(claimThesisMappings.mainClaimId, claimId));
+
+  // Fetch linked asset thesis IDs
+  const linkedAssetThesisIds = await db
+    .select({
+      assetThesisId: assetTheses.id,
+    })
+    .from(claimThesisMappings)
+    .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
+    .where(eq(claimThesisMappings.mainClaimId, claimId));
+
+  return {
+    ...claimData,
+    linkedMacroThesisIds: linkedMacroThesisIds.map(row => row.thesisId),
+    linkedAssetThesisIds: linkedAssetThesisIds.map(row => row.assetThesisId),
+  };
+}
+
+/**
  * @deprecated Use getAllMainClaimsWithSources() instead
  * Get all claims from all research insights with source metadata (JSONB)
  * This is the old method that queries JSONB claims_structure
