@@ -1,9 +1,5 @@
 import { getMainClaimById } from '@/db/queries/research';
-import { getMacroThesesList } from '@/db/queries/macroTheses';
-import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { UnifiedMacroThesisBrowser } from '@/components/theses/UnifiedMacroThesisBrowser';
-import { UnifiedAssetThesisBrowser } from '@/components/asset-theses/UnifiedAssetThesisBrowser';
 import { ExpandableEvidenceClaim } from '@/components/research/ExpandableEvidenceClaim';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,21 +16,13 @@ interface ClaimDetailPageProps {
 export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) {
   const { id } = await params;
 
-  const [claimData, allMacroTheses, allAssetTheses] = await Promise.all([
-    getMainClaimById(id),
-    getMacroThesesList(),
-    getAssetThesesList(),
-  ]);
+  const claimData = await getMainClaimById(id);
 
   if (!claimData) {
     notFound();
   }
 
-  const { claim, insight, artifact, linkedMacroThesisIds, linkedAssetThesisIds } = claimData;
-
-  // Filter the full lists to get linked entities
-  const linkedTheses = allMacroTheses.filter(t => linkedMacroThesisIds.includes(t.id));
-  const linkedViews = allAssetTheses.filter(v => linkedAssetThesisIds.includes(v.id));
+  const { claim, insight, artifact, linkedTheses, linkedViews } = claimData;
 
   // Get evidence claims from the audit structure if available
   const getEvidenceClaims = (): {
@@ -87,6 +75,19 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
         return 'bg-slate-100 text-slate-700';
       default:
         return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  const getRelationshipBadge = (mappingType: string) => {
+    switch (mappingType) {
+      case 'supports':
+        return { className: 'bg-emerald-100 text-emerald-700', label: 'Supports' };
+      case 'refutes':
+        return { className: 'bg-red-100 text-red-700', label: 'Refutes' };
+      case 'foundation':
+        return { className: 'bg-amber-100 text-amber-700', label: 'Foundation' };
+      default:
+        return { className: 'bg-slate-100 text-slate-700', label: mappingType };
     }
   };
 
@@ -339,7 +340,29 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
             <h3 className="text-base font-semibold mb-3">
               Linked Macro Theses ({linkedTheses.length})
             </h3>
-            <UnifiedMacroThesisBrowser theses={linkedTheses} />
+            <div className="space-y-2">
+              {linkedTheses.map((thesis) => {
+                const relationshipBadge = getRelationshipBadge(thesis.mappingType);
+                return (
+                  <Link
+                    key={thesis.id}
+                    href={`/macro-theses/${thesis.id}`}
+                    className="block p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
+                      <Badge className={`${relationshipBadge.className} text-xs`}>
+                        {relationshipBadge.label}
+                      </Badge>
+                      <span className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                        {thesis.title}
+                      </span>
+                      <ExternalLink className="h-3 w-3 ml-auto text-slate-400" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -349,7 +372,30 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
             <h3 className="text-base font-semibold mb-3">
               Linked Asset Theses ({linkedViews.length})
             </h3>
-            <UnifiedAssetThesisBrowser assetTheses={linkedViews} />
+            <div className="space-y-2">
+              {linkedViews.map((view) => {
+                const relationshipBadge = getRelationshipBadge(view.mappingType);
+                return (
+                  <Link
+                    key={view.id}
+                    href={`/asset-theses/${view.id}`}
+                    className="block p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
+                      <Badge className={`${relationshipBadge.className} text-xs`}>
+                        {relationshipBadge.label}
+                      </Badge>
+                      <span className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                        {view.title}
+                      </span>
+                      <span className="text-sm text-slate-500">({view.ticker})</span>
+                      <ExternalLink className="h-3 w-3 ml-auto text-slate-400" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
 

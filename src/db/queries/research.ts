@@ -260,6 +260,7 @@ export async function getAllMainClaimsWithSources() {
       claimId: claimThesisMappings.mainClaimId,
       thesisId: macroTheses.id,
       thesisTitle: macroTheses.title,
+      mappingType: claimThesisMappings.mappingType,
     })
     .from(claimThesisMappings)
     .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
@@ -271,6 +272,7 @@ export async function getAllMainClaimsWithSources() {
       viewId: assetTheses.id,
       viewTitle: assetTheses.title,
       ticker: underlyings.ticker,
+      mappingType: claimThesisMappings.mappingType,
     })
     .from(claimThesisMappings)
     .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
@@ -278,7 +280,7 @@ export async function getAllMainClaimsWithSources() {
     .where(inArray(claimThesisMappings.mainClaimId, claimIds));
 
   // Group linked entities by claim ID
-  const thesesByClaimId = new Map<string, Array<{ id: string; title: string }>>();
+  const thesesByClaimId = new Map<string, Array<{ id: string; title: string; mappingType: string }>>();
   linkedThesesData.forEach(row => {
     if (!thesesByClaimId.has(row.claimId)) {
       thesesByClaimId.set(row.claimId, []);
@@ -286,10 +288,11 @@ export async function getAllMainClaimsWithSources() {
     thesesByClaimId.get(row.claimId)!.push({
       id: row.thesisId,
       title: row.thesisTitle,
+      mappingType: row.mappingType,
     });
   });
 
-  const viewsByClaimId = new Map<string, Array<{ id: string; title: string; ticker: string }>>();
+  const viewsByClaimId = new Map<string, Array<{ id: string; title: string; ticker: string; mappingType: string }>>();
   linkedViewsData.forEach(row => {
     if (!viewsByClaimId.has(row.claimId)) {
       viewsByClaimId.set(row.claimId, []);
@@ -298,6 +301,7 @@ export async function getAllMainClaimsWithSources() {
       id: row.viewId,
       title: row.viewTitle,
       ticker: row.ticker,
+      mappingType: row.mappingType,
     });
   });
 
@@ -344,6 +348,7 @@ export async function getMainClaimsForArtifact(artifactId: string) {
       claimId: claimThesisMappings.mainClaimId,
       thesisId: macroTheses.id,
       thesisTitle: macroTheses.title,
+      mappingType: claimThesisMappings.mappingType,
     })
     .from(claimThesisMappings)
     .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
@@ -355,6 +360,7 @@ export async function getMainClaimsForArtifact(artifactId: string) {
       viewId: assetTheses.id,
       viewTitle: assetTheses.title,
       ticker: underlyings.ticker,
+      mappingType: claimThesisMappings.mappingType,
     })
     .from(claimThesisMappings)
     .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
@@ -362,7 +368,7 @@ export async function getMainClaimsForArtifact(artifactId: string) {
     .where(inArray(claimThesisMappings.mainClaimId, claimIds));
 
   // Group linked entities by claim ID
-  const thesesByClaimId = new Map<string, Array<{ id: string; title: string }>>();
+  const thesesByClaimId = new Map<string, Array<{ id: string; title: string; mappingType: string }>>();
   linkedThesesData.forEach(row => {
     if (!thesesByClaimId.has(row.claimId)) {
       thesesByClaimId.set(row.claimId, []);
@@ -370,10 +376,11 @@ export async function getMainClaimsForArtifact(artifactId: string) {
     thesesByClaimId.get(row.claimId)!.push({
       id: row.thesisId,
       title: row.thesisTitle,
+      mappingType: row.mappingType,
     });
   });
 
-  const viewsByClaimId = new Map<string, Array<{ id: string; title: string; ticker: string }>>();
+  const viewsByClaimId = new Map<string, Array<{ id: string; title: string; ticker: string; mappingType: string }>>();
   linkedViewsData.forEach(row => {
     if (!viewsByClaimId.has(row.claimId)) {
       viewsByClaimId.set(row.claimId, []);
@@ -382,6 +389,7 @@ export async function getMainClaimsForArtifact(artifactId: string) {
       id: row.viewId,
       title: row.viewTitle,
       ticker: row.ticker,
+      mappingType: row.mappingType,
     });
   });
 
@@ -407,7 +415,7 @@ export async function promoteMainClaim(claimId: string): Promise<void> {
 }
 
 /**
- * Get a single main claim by ID with source metadata and linked entity IDs
+ * Get a single main claim by ID with source metadata and linked entities with relationship type
  * Used for claims detail page
  */
 export async function getMainClaimById(claimId: string) {
@@ -433,28 +441,46 @@ export async function getMainClaimById(claimId: string) {
     return null;
   }
 
-  // Fetch linked macro thesis IDs
-  const linkedMacroThesisIds = await db
+  // Fetch linked macro theses with mapping type
+  const linkedThesesData = await db
     .select({
       thesisId: macroTheses.id,
+      thesisTitle: macroTheses.title,
+      mappingType: claimThesisMappings.mappingType,
     })
     .from(claimThesisMappings)
     .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
     .where(eq(claimThesisMappings.mainClaimId, claimId));
 
-  // Fetch linked asset thesis IDs
-  const linkedAssetThesisIds = await db
+  // Fetch linked asset theses with mapping type
+  const linkedViewsData = await db
     .select({
       assetThesisId: assetTheses.id,
+      assetThesisTitle: assetTheses.title,
+      ticker: underlyings.ticker,
+      mappingType: claimThesisMappings.mappingType,
     })
     .from(claimThesisMappings)
     .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
+    .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
     .where(eq(claimThesisMappings.mainClaimId, claimId));
 
   return {
     ...claimData,
-    linkedMacroThesisIds: linkedMacroThesisIds.map(row => row.thesisId),
-    linkedAssetThesisIds: linkedAssetThesisIds.map(row => row.assetThesisId),
+    linkedTheses: linkedThesesData.map(row => ({
+      id: row.thesisId,
+      title: row.thesisTitle,
+      mappingType: row.mappingType,
+    })),
+    linkedViews: linkedViewsData.map(row => ({
+      id: row.assetThesisId,
+      title: row.assetThesisTitle,
+      ticker: row.ticker,
+      mappingType: row.mappingType,
+    })),
+    // Keep backward compatibility with ID-only arrays if needed
+    linkedMacroThesisIds: linkedThesesData.map(row => row.thesisId),
+    linkedAssetThesisIds: linkedViewsData.map(row => row.assetThesisId),
   };
 }
 

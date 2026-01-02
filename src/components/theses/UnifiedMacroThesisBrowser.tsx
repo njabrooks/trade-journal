@@ -43,6 +43,20 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
   // Standard Link Dialog
   const [linkingThesis, setLinkingThesis] = useState<{ id: string; title: string } | null>(null);
 
+  // Get badge styling for time horizon
+  const getTimeHorizonBadge = (timeHorizon: string | null) => {
+    switch (timeHorizon) {
+      case 'long_term':
+        return { className: 'bg-indigo-100 text-indigo-700', label: 'Long' };
+      case 'medium_term':
+        return { className: 'bg-cyan-100 text-cyan-700', label: 'Medium' };
+      case 'short_term':
+        return { className: 'bg-teal-100 text-teal-700', label: 'Short' };
+      default:
+        return null;
+    }
+  };
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -509,9 +523,16 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
                         {/* Time Horizon */}
                         <td className="px-4 py-3 text-center">
-                          <span className="text-slate-600 capitalize text-xs">
-                            {thesis.timeHorizon?.replace('_', ' ') || '—'}
-                          </span>
+                          {(() => {
+                            const horizonBadge = getTimeHorizonBadge(thesis.timeHorizon);
+                            return horizonBadge ? (
+                              <Badge className={`${horizonBadge.className} text-xs`}>
+                                {horizonBadge.label}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            );
+                          })()}
                         </td>
 
                         {/* Confidence */}

@@ -15,12 +15,14 @@ import { ExpandableEvidenceClaim } from './ExpandableEvidenceClaim';
 interface LinkedThesis {
   id: string;
   title: string;
+  mappingType: string; // 'supports' | 'refutes' | 'foundation'
 }
 
 interface LinkedView {
   id: string;
   title: string;
   ticker: string;
+  mappingType: string; // 'supports' | 'refutes' | 'foundation'
 }
 
 interface ClaimWithSource {
@@ -355,6 +357,32 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
     return { supporting, rebutting };
   };
 
+  // Get badge styling for relationship type
+  const getRelationshipBadge = (mappingType: string) => {
+    switch (mappingType) {
+      case 'supports':
+        return { className: 'bg-emerald-100 text-emerald-700', label: 'Supports' };
+      case 'refutes':
+        return { className: 'bg-red-100 text-red-700', label: 'Refutes' };
+      case 'foundation':
+        return { className: 'bg-amber-100 text-amber-700', label: 'Foundation' };
+      default:
+        return { className: 'bg-slate-100 text-slate-700', label: mappingType };
+    }
+  };
+
+  // Get badge styling for category
+  const getCategoryBadge = (category: string) => {
+    switch (category) {
+      case 'macro':
+        return { className: 'bg-purple-100 text-purple-700', label: 'Macro' };
+      case 'asset_specific':
+        return { className: 'bg-blue-100 text-blue-700', label: 'Asset' };
+      default:
+        return { className: 'bg-slate-100 text-slate-700', label: category };
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Search and Filter Bar */}
@@ -601,12 +629,14 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                       title: thesis.title,
                                       type: 'macro' as const,
                                       url: `/macro-theses/${thesis.id}`,
+                                      mappingType: thesis.mappingType,
                                     })),
                                     ...linkedViews.map((view) => ({
                                       id: view.id,
                                       title: view.title,
                                       type: 'asset' as const,
                                       url: `/asset-theses/${view.id}`,
+                                      mappingType: view.mappingType,
                                     })),
                                   ];
 
@@ -616,18 +646,24 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
                                   return (
                                     <>
-                                      {visibleEntities.map((entity, index) => (
-                                        <span key={entity.id} className={isExpanded ? "block" : "inline-flex items-center gap-1 shrink-0"}>
-                                          <Link
-                                            href={entity.url}
-                                            className={`text-sm text-blue-600 hover:text-blue-800 hover:underline ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[200px]'}`}
-                                            title={entity.title}
-                                          >
-                                            {entity.title}
-                                          </Link>
-                                          {!isExpanded && index < visibleEntities.length - 1 && !showMoreBadge && <span className="text-slate-400">,</span>}
-                                        </span>
-                                      ))}
+                                      {visibleEntities.map((entity, index) => {
+                                        const relationshipBadge = getRelationshipBadge(entity.mappingType);
+                                        return (
+                                          <span key={entity.id} className={isExpanded ? "flex items-center gap-1" : "inline-flex items-center gap-1 shrink-0"}>
+                                            <Badge className={`${relationshipBadge.className} text-xs`}>
+                                              {relationshipBadge.label}
+                                            </Badge>
+                                            <Link
+                                              href={entity.url}
+                                              className={`text-sm text-blue-600 hover:text-blue-800 hover:underline ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[150px]'}`}
+                                              title={entity.title}
+                                            >
+                                              {entity.title}
+                                            </Link>
+                                            {!isExpanded && index < visibleEntities.length - 1 && !showMoreBadge && <span className="text-slate-400">,</span>}
+                                          </span>
+                                        );
+                                      })}
                                       {showMoreBadge && (
                                         <button
                                           onClick={(e) => {
@@ -635,9 +671,10 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                             e.stopPropagation();
                                             setExpandedClaim(claim.id);
                                           }}
-                                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer shrink-0 ml-1"
+                                          title={`Show all ${allLinked.length} linked entities:\n${allLinked.slice(1).map(e => `• ${e.title}`).join('\n')}`}
+                                          className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer shrink-0 ml-1 group"
                                         >
-                                          <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                          <Badge className="bg-blue-50 text-blue-700 group-hover:bg-blue-100 group-hover:underline text-xs transition-colors">
                                             +{remainingCount}
                                           </Badge>
                                         </button>
@@ -663,9 +700,14 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
                         {/* Category */}
                         <td className="px-4 py-3 text-center">
-                          <span className="text-slate-600 capitalize text-xs">
-                            {claim.category.replace('_', ' ')}
-                          </span>
+                          {(() => {
+                            const categoryBadge = getCategoryBadge(claim.category);
+                            return (
+                              <Badge className={`${categoryBadge.className} text-xs`}>
+                                {categoryBadge.label}
+                              </Badge>
+                            );
+                          })()}
                         </td>
 
                         {/* Status - Editable Dropdown */}
@@ -840,32 +882,44 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                     Linked To
                                   </h4>
                                   <div className="space-y-2">
-                                    {linkedTheses.map((thesis) => (
-                                      <Link
-                                        key={thesis.id}
-                                        href={`/macro-theses/${thesis.id}`}
-                                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                      >
-                                        <span className="inline-flex items-center gap-1">
-                                          <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
-                                          {thesis.title}
-                                          <ExternalLink className="h-3 w-3" />
-                                        </span>
-                                      </Link>
-                                    ))}
-                                    {linkedViews.map((view) => (
-                                      <Link
-                                        key={view.id}
-                                        href={`/asset-theses/${view.id}`}
-                                        className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                      >
-                                        <span className="inline-flex items-center gap-1">
-                                          <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
-                                          {view.title} ({view.ticker})
-                                          <ExternalLink className="h-3 w-3" />
-                                        </span>
-                                      </Link>
-                                    ))}
+                                    {linkedTheses.map((thesis) => {
+                                      const relationshipBadge = getRelationshipBadge(thesis.mappingType);
+                                      return (
+                                        <Link
+                                          key={thesis.id}
+                                          href={`/macro-theses/${thesis.id}`}
+                                          className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                        >
+                                          <span className="inline-flex items-center gap-1">
+                                            <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
+                                            <Badge className={`${relationshipBadge.className} text-xs`}>
+                                              {relationshipBadge.label}
+                                            </Badge>
+                                            {thesis.title}
+                                            <ExternalLink className="h-3 w-3" />
+                                          </span>
+                                        </Link>
+                                      );
+                                    })}
+                                    {linkedViews.map((view) => {
+                                      const relationshipBadge = getRelationshipBadge(view.mappingType);
+                                      return (
+                                        <Link
+                                          key={view.id}
+                                          href={`/asset-theses/${view.id}`}
+                                          className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                        >
+                                          <span className="inline-flex items-center gap-1">
+                                            <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
+                                            <Badge className={`${relationshipBadge.className} text-xs`}>
+                                              {relationshipBadge.label}
+                                            </Badge>
+                                            {view.title} ({view.ticker})
+                                            <ExternalLink className="h-3 w-3" />
+                                          </span>
+                                        </Link>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}
