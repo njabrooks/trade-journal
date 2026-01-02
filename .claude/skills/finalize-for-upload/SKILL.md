@@ -677,6 +677,132 @@ confidence_level: high
 → Monitor against positions via triage
 ```
 
+## Critical Implementation Notes (Lessons Learned)
+
+**IMPORTANT**: Use these patterns to avoid common upload failures.
+
+### 1. Use Drizzle ORM, Not Raw psql for Complex Inserts
+
+Raw psql with JSON escaping is error-prone and can silently fail. Use the `scripts/lib/db.ts` helper:
+
+```typescript
+import { db, closeDb, schema } from './lib/db.js';
+const { researchInsights, mainClaims } = schema;
+
+async function uploadAudit() {
+  // Drizzle handles JSONB correctly
+  await db.insert(researchInsights).values({
+    id: insightId,
+    researchArtifactId: artifactId,
+    claimsStructure: claimsStructure,  // JSONB handled automatically
+    // ... other fields
+  });
+
+  await closeDb();
+}
+```
+
+### 2. Check schema.ts for Correct Field Names
+
+The `main_claims` table uses **camelCase** field names in Drizzle:
+
+```typescript
+// CORRECT field names (from src/db/schema.ts):
+{
+  sourceInsightId: insightId,      // NOT researchInsightId
+  sourceClaimId: claim.id,         // NOT claimId
+  claim: claim.claim,              // NOT claimText
+  relevantTickers: claim.tickers,  // NOT tickers
+  status: 'unconfirmed',           // required
+}
+```
+
+### 3. Use parseClaimsMarkdown for Claims Extraction
+
+Always use the parser function, don't manually construct JSON:
+
+```typescript
+import { parseClaimsMarkdown } from '../src/lib/research/parseClaimsMarkdown.js';
+
+const auditContent = readFileSync(auditPath, 'utf-8');
+const claimsStructure = parseClaimsMarkdown(auditContent);
+
+// claimsStructure.main_claims[]  - thesis/view candidates
+// claimsStructure.evidence_claims[]  - supporting/rebutting evidence
+```
+
+### 4. Verify Inserts Succeeded
+
+Raw psql can report success even when inserts fail. Always verify:
+
+```bash
+# After upload, verify the record exists:
+source .env.local && psql "$DATABASE_URL_POOLER" -c "SELECT id, summary FROM research_insights WHERE id = '$INSIGHT_ID'"
+```
+
+### 5. Handle Environment Variables Correctly
+
+ES module imports are hoisted before dotenv runs. Use the scripts helper:
+
+```typescript
+// ❌ WRONG - imports run before dotenv
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+import { db } from '../src/db/index.js';  // db reads env vars before config()!
+
+// ✅ CORRECT - use scripts helper
+import { db, closeDb } from './lib/db.js';  // handles dotenv internally
+```
+
+### 6. Example Upload Script Pattern
+
+For audits, follow this working pattern (see `scripts/upload-gromen-insight.ts`):
+
+```typescript
+import { db, closeDb, schema } from './lib/db.js';
+import { parseClaimsMarkdown } from '../src/lib/research/parseClaimsMarkdown.js';
+import { readFileSync } from 'fs';
+import { randomUUID } from 'crypto';
+
+const { researchInsights, mainClaims } = schema;
+
+async function main() {
+  // 1. Parse audit file
+  const auditContent = readFileSync(AUDIT_FILE, 'utf-8');
+  const claimsStructure = parseClaimsMarkdown(auditContent);
+
+  // 2. Insert insight with claims_structure
+  const insightId = randomUUID();
+  await db.insert(researchInsights).values({
+    id: insightId,
+    researchArtifactId: ARTIFACT_ID,
+    claimsStructure: claimsStructure,
+    // ... other fields
+  });
+
+  // 3. Auto-promote main claims
+  for (const claim of claimsStructure.main_claims) {
+    await db.insert(mainClaims).values({
+      sourceInsightId: insightId,
+      sourceClaimId: claim.id,
+      title: claim.title,
+      claim: claim.claim,  // NOT claimText!
+      category: claim.category,
+      relevantTickers: claim.tickers.length > 0 ? claim.tickers : null,
+      timeHorizon: claim.time_horizon,
+      qualifier: claim.qualifier,
+      evidence: claim.evidence.length > 0 ? claim.evidence : null,
+      reasoning: claim.reasoning || null,
+      backing: claim.backing || null,
+      rebuttal: claim.rebuttal.length > 0 ? claim.rebuttal : null,
+      status: 'unconfirmed',
+    });
+  }
+
+  await closeDb();
+}
+```
+
 ## Notes
 
 - Use parameterized queries to prevent SQL injection

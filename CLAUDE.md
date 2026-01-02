@@ -183,6 +183,7 @@ Feature-based component organization:
   - `archive/` - Deprecated in-app AI workflow components (11 components archived)
 
 ### `/scripts` - Standalone Utilities
+- **`lib/db.ts`** - Database helper for scripts (handles dotenv + Drizzle ORM correctly)
 - **`run-flex-ingestion.ts`** - Flex ingestion runner (used by GitHub Actions)
 - **`ingest-underlyings-massive.ts`** - Massive.com daily ingestion
 - **`seed_playbook_items.ts`** - Playbook initialization
@@ -322,6 +323,47 @@ MASSIVE_API_BASE_URL=https://api.massive.com
 - All ingestion has row-level validation with detailed error reporting
 - Process tracking is critical - log to `ingestion_runs` with status/errors
 - Handle multipliers carefully (100 for equity options contracts)
+
+### When Writing Scripts with Database Access
+
+**Use the scripts helper** (`scripts/lib/db.ts`) for reliable database access:
+
+```typescript
+import { db, closeDb, schema } from './lib/db.js';
+const { researchInsights, mainClaims } = schema;
+
+async function main() {
+  // Use db normally with Drizzle ORM
+  const results = await db.select().from(mainClaims);
+
+  // Always close connection when done
+  await closeDb();
+  process.exit(0);
+}
+
+main().catch(e => {
+  console.error('Error:', e);
+  process.exit(1);
+});
+```
+
+**Why use the helper instead of `src/db/index.ts`?**
+
+ES module imports are hoisted, so this pattern **fails**:
+```typescript
+import { config } from 'dotenv';
+config({ path: '.env.local' });           // This runs SECOND
+import { db } from '../src/db/index.js';  // This runs FIRST (env vars undefined!)
+```
+
+The `scripts/lib/db.ts` helper solves this by loading dotenv before creating the client.
+
+**For shell commands**, use `source .env.local`:
+```bash
+source .env.local && /opt/homebrew/opt/postgresql@16/bin/psql "$DATABASE_URL_POOLER" -c "SELECT ..."
+```
+
+**Common pitfall**: Ensure `.env.local` has valid syntax (all lines must have `KEY=value` format, not just `KEY`).
 
 ### When Working with Triage/Blotter
 - **Triage** (`/src/lib/derived/triage.ts`) - Evaluates positions, creates `triage_records`
