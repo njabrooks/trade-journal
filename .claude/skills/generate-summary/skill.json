@@ -1,0 +1,5 @@
+{
+  "name": "generate-summary",
+  "description": "Generate AI summary of asset thesis from linked claims with provenance tracking",
+  "instructions": "SKILL.md"
+}

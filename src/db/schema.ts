@@ -122,6 +122,13 @@ export const assetTheses = pgTable(
     confidenceLevel: text('confidence_level'),
     status: text('status').notNull().default('active'),
 
+    // AI-generated summary (Phase 2.8)
+    aiSummary: text('ai_summary'),
+    aiSummaryDetailLevel: text('ai_summary_detail_level'),
+    aiSummaryGeneratedAt: timestamp('ai_summary_generated_at', { withTimezone: true }),
+    aiSummaryClaimIds: text('ai_summary_claim_ids').array().default(sql`'{}'`),
+    aiSummaryClaimCount: integer('ai_summary_claim_count').default(0),
+
     // Position structure (NEW)
     direction: text('direction'), // 'bullish' | 'bearish' | 'neutral'
     positionStartDate: date('position_start_date'),

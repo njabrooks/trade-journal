@@ -9,6 +9,7 @@ import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown
 import Link from 'next/link';
 import { LinkedEntitiesBadges } from '@/components/linking/LinkedEntitiesBadges';
 import { StandardLinkDialog } from '@/components/linking/StandardLinkDialog';
+import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
 
 interface UnifiedAssetThesisBrowserProps {
   assetTheses: AssetThesisListItem[];
@@ -18,7 +19,7 @@ type TimeHorizonFilter = 'all' | 'long_term' | 'medium_term' | 'short_term';
 type ConfidenceFilter = 'all' | 'high' | 'medium' | 'low' | 'exploratory';
 type StatusFilter = 'all' | 'active' | 'under_review' | 'retired' | 'superseded';
 type DirectionFilter = 'all' | 'bullish' | 'bearish' | 'neutral';
-type SortColumn = 'title' | 'underlying' | 'macroThesis' | 'timeHorizon' | 'confidence' | 'status' | 'strategies' | 'createdAt';
+type SortColumn = 'title' | 'underlying' | 'macroThesis' | 'timeHorizon' | 'confidence' | 'status' | 'claims' | 'strategies' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
 export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBrowserProps) {
@@ -183,6 +184,10 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
           const statusOrder = { active: 0, under_review: 1, retired: 2, superseded: 3 };
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 0;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 0;
+          break;
+        case 'claims':
+          aVal = a.claimCount;
+          bVal = b.claimCount;
           break;
         case 'strategies':
           aVal = a.strategyCount;
@@ -509,6 +514,15 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                   </th>
                   <th
                     className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => handleSort('claims')}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      Claims
+                      {getSortIcon('claims')}
+                    </div>
+                  </th>
+                  <th
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
                     onClick={() => handleSort('strategies')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -612,6 +626,13 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                           />
                         </td>
 
+                        {/* Claims */}
+                        <td className="px-4 py-3 text-center">
+                          <span className="text-sm text-slate-700 font-medium">
+                            {thesis.claimCount}
+                          </span>
+                        </td>
+
                         {/* Strategies */}
                         <td className="px-4 py-3">
                           <LinkedEntitiesBadges
@@ -656,7 +677,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                       {/* Expanded Details Row */}
                       {isExpanded && (
                         <tr className="bg-slate-50 border-b">
-                          <td colSpan={8} className="px-4 py-4">
+                          <td colSpan={9} className="px-4 py-4">
                             <div className="space-y-4">
                               {/* Description */}
                               {thesis.description && (
@@ -665,6 +686,28 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                                     Description
                                   </h4>
                                   <p className="text-sm text-slate-900">{thesis.description}</p>
+                                </div>
+                              )}
+
+                              {/* Linked Claims Summary */}
+                              {thesis.claimCount > 0 && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <h4 className="text-xs font-semibold text-blue-900 mb-1 uppercase tracking-wide">
+                                        Linked Claims
+                                      </h4>
+                                      <p className="text-sm text-blue-800">
+                                        {thesis.claimCount} claim{thesis.claimCount !== 1 ? 's' : ''} support this thesis
+                                      </p>
+                                    </div>
+                                    <Link
+                                      href={`/asset-theses/${thesis.id}#claims`}
+                                      className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                                    >
+                                      View Claims →
+                                    </Link>
+                                  </div>
                                 </div>
                               )}
 

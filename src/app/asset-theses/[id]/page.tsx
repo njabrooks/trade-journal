@@ -134,13 +134,77 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
           </dl>
         </div>
 
-        {/* Summary (formerly Description) */}
-        {view.description ? (
+        {/* Summary Section - AI + Manual */}
+        {(view.aiSummary || view.description) && (
           <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <h3 className="text-base font-semibold mb-3">Summary</h3>
-            <p className="text-sm text-slate-700 whitespace-pre-wrap">{view.description}</p>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold">Summary</h3>
+              {view.aiSummary && view.aiSummaryGeneratedAt && (
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <span>
+                    {new Date(view.aiSummaryGeneratedAt).toLocaleDateString()}
+                  </span>
+                  <span>•</span>
+                  <span>{view.aiSummaryClaimCount} claims</span>
+                </div>
+              )}
+            </div>
+
+            {/* AI Summary */}
+            {view.aiSummary && (
+              <div className="mb-4">
+                <div className="text-sm whitespace-pre-wrap text-slate-900">
+                  {view.aiSummary}
+                </div>
+
+                {/* Staleness warning */}
+                {(() => {
+                  const currentClaimCount = claimsWithSources?.length ?? 0;
+                  const newClaims = currentClaimCount - (view.aiSummaryClaimCount ?? 0);
+                  const daysOld = view.aiSummaryGeneratedAt
+                    ? Math.floor((Date.now() - new Date(view.aiSummaryGeneratedAt).getTime()) / (1000 * 60 * 60 * 24))
+                    : 0;
+
+                  if (newClaims >= 3) {
+                    return (
+                      <div className="mt-2 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                        ⚠️ {newClaims} new claims added since generation — consider regenerating with /generate-summary
+                      </div>
+                    );
+                  }
+
+                  if (daysOld >= 30) {
+                    return (
+                      <div className="mt-2 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                        ⚠️ Summary is {daysOld} days old — consider regenerating with /generate-summary
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
+              </div>
+            )}
+
+            {/* Manual Description */}
+            {view.description && (
+              <div>
+                <span className="text-xs font-medium text-slate-500 block mb-2">
+                  MANUAL DESCRIPTION
+                </span>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                  {view.description}
+                </p>
+              </div>
+            )}
+
+            {!view.aiSummary && !view.description && (
+              <p className="text-sm text-slate-500">
+                No summary available. Use <code className="px-1 py-0.5 bg-slate-100 rounded text-xs">/generate-summary {view.underlying?.ticker || view.id}</code> to create one.
+              </p>
+            )}
           </div>
-        ) : null}
+        )}
 
         {/* Underlying Market Data */}
         {view.underlying && (

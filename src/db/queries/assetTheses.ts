@@ -21,6 +21,7 @@ export interface AssetThesisListItem {
   createdAt: Date;
   updatedAt: Date;
   strategyCount: number;
+  claimCount: number;
   relatedMacroThesesCount: number;
   primaryMacroThesis: { id: string; title: string; thesisType: string } | null;
   relatedMacroTheses: Array<{ id: string; title: string; relationshipNote: string | null }>;
@@ -83,6 +84,20 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
 
   const relatedMap = new Map(
     relatedCounts.map((c) => [c.assetThesisId, Number(c.count)])
+  );
+
+  // Get claim counts
+  const claimCounts = await db
+    .select({
+      assetThesisId: claimThesisMappings.assetThesisId,
+      count: count(),
+    })
+    .from(claimThesisMappings)
+    .where(inArray(claimThesisMappings.assetThesisId, viewIds))
+    .groupBy(claimThesisMappings.assetThesisId);
+
+  const claimMap = new Map(
+    claimCounts.map((c) => [c.assetThesisId, Number(c.count)])
   );
 
   // Fetch all related macro theses for all views
@@ -149,6 +164,7 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
     return {
       ...view,
       strategyCount: strategyMap.get(view.id) ?? 0,
+      claimCount: claimMap.get(view.id) ?? 0,
       relatedMacroThesesCount: relatedMap.get(view.id) ?? 0,
       primaryMacroThesis,
       relatedMacroTheses,
@@ -289,6 +305,7 @@ export async function getMainClaimsWithSourcesForAssetThesis(assetThesisId: stri
         claimId: claimThesisMappings.mainClaimId,
         thesisId: macroTheses.id,
         thesisTitle: macroTheses.title,
+        mappingType: claimThesisMappings.mappingType,
       })
       .from(claimThesisMappings)
       .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
@@ -300,6 +317,7 @@ export async function getMainClaimsWithSourcesForAssetThesis(assetThesisId: stri
         viewId: assetTheses.id,
         viewTitle: assetTheses.title,
         viewTicker: underlyings.ticker,
+        mappingType: claimThesisMappings.mappingType,
       })
       .from(claimThesisMappings)
       .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
@@ -314,6 +332,7 @@ export async function getMainClaimsWithSourcesForAssetThesis(assetThesisId: stri
       linkedThesesMap.get(link.claimId).push({
         id: link.thesisId,
         title: link.thesisTitle,
+        mappingType: link.mappingType,
       });
     }
 
@@ -325,6 +344,7 @@ export async function getMainClaimsWithSourcesForAssetThesis(assetThesisId: stri
         id: link.viewId,
         title: link.viewTitle,
         ticker: link.viewTicker || '',
+        mappingType: link.mappingType,
       });
     }
   }
