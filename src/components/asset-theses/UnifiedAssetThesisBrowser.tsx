@@ -596,7 +596,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                               ...(thesis.primaryMacroThesis
                                 ? [{
                                     id: thesis.primaryMacroThesis.id,
-                                    title: `${thesis.primaryMacroThesis.title} (Primary)`,
+                                    title: thesis.primaryMacroThesis.title,
                                     type: 'macro' as const,
                                   }]
                                 : []),

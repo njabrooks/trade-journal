@@ -128,9 +128,10 @@ export function LinkedEntitiesBadges({
             e.stopPropagation();
             onExpand();
           }}
-          className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer shrink-0 ml-1"
+          title={`Show all ${entities.length} linked entities:\n${entities.slice(maxVisibleWhenCollapsed).map(e => `• ${e.title}`).join('\n')}`}
+          className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer shrink-0 ml-1 group"
         >
-          <Badge className="bg-slate-100 text-slate-700 text-xs">
+          <Badge className="bg-blue-50 text-blue-700 group-hover:bg-blue-100 group-hover:underline text-xs transition-colors">
             +{remainingCount}
           </Badge>
         </button>
