@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
+import { useRouter } from 'next/navigation';
 import type { MacroThesisListItem } from '@/db/queries/macroTheses';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, Link2 } from 'lucide-react';
 import Link from 'next/link';
-import { LinkAssetThesesToMacroDialog } from './LinkAssetThesesToMacroDialog';
+import { LinkedEntitiesBadges } from '@/components/linking/LinkedEntitiesBadges';
+import { StandardLinkDialog } from '@/components/linking/StandardLinkDialog';
 
 interface UnifiedMacroThesisBrowserProps {
   theses: MacroThesisListItem[];
@@ -21,6 +23,7 @@ type SortColumn = 'title' | 'thesisType' | 'timeHorizon' | 'confidence' | 'statu
 type SortDirection = 'asc' | 'desc';
 
 export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserProps) {
+  const router = useRouter();
   const [expandedThesis, setExpandedThesis] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,8 +40,8 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
   const [sortColumn, setSortColumn] = useState<SortColumn>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // Link Asset Theses Dialog
-  const [linkingAssetThesis, setLinkingAssetThesis] = useState<{ id: string; title: string } | null>(null);
+  // Standard Link Dialog
+  const [linkingThesis, setLinkingThesis] = useState<{ id: string; title: string } | null>(null);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -478,19 +481,23 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                       <tr className="border-b hover:bg-slate-50 transition-colors">
                         {/* Title */}
                         <td className="px-4 py-3">
-                          <div className="space-y-1">
-                            <Link
-                              href={`/macro-theses/${thesis.id}`}
-                              className="text-slate-900 font-medium hover:text-blue-600 line-clamp-2"
-                            >
-                              {thesis.title}
-                            </Link>
-                            {thesis.direction && (
-                              <Badge className={`${directionBadgeColor(thesis.direction)} text-xs`}>
-                                {thesis.direction}
-                              </Badge>
-                            )}
-                          </div>
+                          <Link
+                            href={`/macro-theses/${thesis.id}`}
+                            className="text-slate-900 font-medium hover:text-blue-600 truncate block"
+                            title={thesis.title}
+                          >
+                            {thesis.title.split(/(\bbullish\b|\bbearish\b|\bneutral\b)/gi).map((part, i) => {
+                              const lower = part.toLowerCase();
+                              if (lower === 'bullish') {
+                                return <span key={i} className="text-emerald-600 font-semibold">{part}</span>;
+                              } else if (lower === 'bearish') {
+                                return <span key={i} className="text-rose-600 font-semibold">{part}</span>;
+                              } else if (lower === 'neutral') {
+                                return <span key={i} className="text-slate-600 font-semibold">{part}</span>;
+                              }
+                              return part;
+                            })}
+                          </Link>
                         </td>
 
                         {/* Type */}
@@ -525,40 +532,58 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                           </Badge>
                         </td>
 
-                        {/* Asset Theses Count */}
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => setLinkingAssetThesis({ id: thesis.id, title: thesis.title })}
-                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
-                          >
-                            {thesis.assetViewCount}
-                          </button>
+                        {/* Asset Theses */}
+                        <td className="px-4 py-3">
+                          <LinkedEntitiesBadges
+                            entities={thesis.linkedAssetTheses.map((at) => ({
+                              id: at.id,
+                              title: at.title,
+                              type: 'asset' as const,
+                            }))}
+                            isExpanded={isExpanded}
+                            onExpand={() => setExpandedThesis(thesis.id)}
+                            maxVisibleWhenCollapsed={1}
+                          />
                         </td>
 
-                        {/* Strategies Count */}
-                        <td className="px-4 py-3 text-center">
-                          <Link
-                            href={`/strategies?macroThesisId=${thesis.id}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                          >
-                            {thesis.strategyCount}
-                          </Link>
+                        {/* Strategies */}
+                        <td className="px-4 py-3">
+                          <LinkedEntitiesBadges
+                            entities={thesis.linkedStrategies.map((s) => ({
+                              id: s.id,
+                              title: s.label || s.id,
+                              type: 'strategy' as const,
+                            }))}
+                            isExpanded={isExpanded}
+                            onExpand={() => setExpandedThesis(thesis.id)}
+                            maxVisibleWhenCollapsed={1}
+                          />
                         </td>
 
                         {/* Actions */}
                         <td className="px-4 py-3 text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setExpandedThesis(isExpanded ? null : thesis.id)}
-                            className="h-7 w-7 p-0"
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setLinkingThesis({ id: thesis.id, title: thesis.title })}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setExpandedThesis(isExpanded ? null : thesis.id)}
+                              className="h-7 w-7 p-0"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
 
@@ -629,13 +654,18 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
         </div>
       </section>
 
-      {/* Link Asset Theses to Macro Thesis Dialog */}
-      {linkingAssetThesis && (
-        <LinkAssetThesesToMacroDialog
-          macroThesisId={linkingAssetThesis.id}
-          macroThesisTitle={linkingAssetThesis.title}
-          isOpen={!!linkingAssetThesis}
-          onClose={() => setLinkingAssetThesis(null)}
+      {/* Standard Link Dialog */}
+      {linkingThesis && (
+        <StandardLinkDialog
+          sourceType="macroThesis"
+          sourceId={linkingThesis.id}
+          sourceTitle={linkingThesis.title}
+          isOpen={!!linkingThesis}
+          onClose={() => setLinkingThesis(null)}
+          onSuccess={() => {
+            setLinkingThesis(null);
+            router.refresh();
+          }}
         />
       )}
     </div>

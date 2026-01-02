@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import dns from 'dns';
+import * as schema from './schema';
 
 // Configure DNS to use Google DNS for better resolution
 // This helps with IPv6-only hostnames like Supabase direct connections
@@ -37,5 +38,5 @@ const client = postgres(connectionString, {
   max_lifetime: 60 * 30, // Max connection lifetime in seconds (30 minutes)
 });
 
-export const db = drizzle(client);
+export const db = drizzle(client, { schema });
 

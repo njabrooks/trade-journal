@@ -18,6 +18,8 @@ export interface MacroThesisListItem {
   updatedAt: Date;
   assetViewCount: number;
   strategyCount: number;
+  linkedAssetTheses: Array<{ id: string; title: string; ticker: string | null }>;
+  linkedStrategies: Array<{ id: string; label: string | null; status: string }>;
 }
 
 export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
@@ -112,11 +114,114 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     strategyMap.set(c.macroThesisId, current + Number(c.count));
   });
 
-  return theses.map((thesis) => ({
-    ...thesis,
-    assetViewCount: assetViewMap.get(thesis.id) ?? 0,
-    strategyCount: strategyMap.get(thesis.id) ?? 0,
-  }));
+  // Fetch all linked asset theses for all theses
+  const allAssetTheses = await db
+    .select({
+      macroThesisId: assetTheses.primaryMacroThesisId,
+      id: assetTheses.id,
+      title: assetTheses.title,
+      ticker: underlyings.ticker,
+      relatedMacroThesisId: sql<string | null>`NULL`.as('relatedMacroThesisId'),
+    })
+    .from(assetTheses)
+    .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+    .where(inArray(assetTheses.primaryMacroThesisId, thesisIds));
+
+  // Fetch related asset theses (through junction table)
+  const relatedAssetTheses = await db
+    .select({
+      macroThesisId: assetThesisRelatedMacroTheses.macroThesisId,
+      id: assetTheses.id,
+      title: assetTheses.title,
+      ticker: underlyings.ticker,
+      relatedMacroThesisId: assetThesisRelatedMacroTheses.macroThesisId,
+    })
+    .from(assetThesisRelatedMacroTheses)
+    .innerJoin(assetTheses, eq(assetThesisRelatedMacroTheses.assetThesisId, assetTheses.id))
+    .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+    .where(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds));
+
+  // Fetch all linked strategies for all theses
+  const allStrategies = await db
+    .select({
+      macroThesisId: assetTheses.primaryMacroThesisId,
+      id: strategies.id,
+      label: strategies.autoDerivedLabel,
+      status: strategies.status,
+      relatedMacroThesisId: sql<string | null>`NULL`.as('relatedMacroThesisId'),
+    })
+    .from(strategies)
+    .innerJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
+    .where(inArray(assetTheses.primaryMacroThesisId, thesisIds));
+
+  // Fetch strategies through related asset theses
+  const relatedStrategies = await db
+    .select({
+      macroThesisId: assetThesisRelatedMacroTheses.macroThesisId,
+      id: strategies.id,
+      label: strategies.autoDerivedLabel,
+      status: strategies.status,
+      relatedMacroThesisId: assetThesisRelatedMacroTheses.macroThesisId,
+    })
+    .from(strategies)
+    .innerJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
+    .innerJoin(assetThesisRelatedMacroTheses, eq(assetTheses.id, assetThesisRelatedMacroTheses.assetThesisId))
+    .where(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds));
+
+  // Build maps of linked entities
+  const assetThesesByThesisId = new Map<string, Array<{ id: string; title: string; ticker: string | null }>>();
+  const strategiesByThesisId = new Map<string, Array<{ id: string; label: string | null; status: string }>>();
+
+  // Combine primary and related asset theses (dedupe by ID per thesis)
+  [...allAssetTheses, ...relatedAssetTheses].forEach((at) => {
+    const thesisId = at.macroThesisId;
+    if (!thesisId) return;
+
+    if (!assetThesesByThesisId.has(thesisId)) {
+      assetThesesByThesisId.set(thesisId, []);
+    }
+
+    const existing = assetThesesByThesisId.get(thesisId)!;
+    if (!existing.some(e => e.id === at.id)) {
+      existing.push({
+        id: at.id,
+        title: at.title,
+        ticker: at.ticker,
+      });
+    }
+  });
+
+  // Combine primary and related strategies (dedupe by ID per thesis)
+  [...allStrategies, ...relatedStrategies].forEach((s) => {
+    const thesisId = s.macroThesisId;
+    if (!thesisId) return;
+
+    if (!strategiesByThesisId.has(thesisId)) {
+      strategiesByThesisId.set(thesisId, []);
+    }
+
+    const existing = strategiesByThesisId.get(thesisId)!;
+    if (!existing.some(e => e.id === s.id)) {
+      existing.push({
+        id: s.id,
+        label: s.label,
+        status: s.status,
+      });
+    }
+  });
+
+  return theses.map((thesis) => {
+    const linkedAssetTheses = assetThesesByThesisId.get(thesis.id) ?? [];
+    const linkedStrategies = strategiesByThesisId.get(thesis.id) ?? [];
+
+    return {
+      ...thesis,
+      assetViewCount: assetViewMap.get(thesis.id) ?? 0,
+      strategyCount: strategyMap.get(thesis.id) ?? 0,
+      linkedAssetTheses,
+      linkedStrategies,
+    };
+  });
 }
 
 export async function getMacroThesisById(id: string) {

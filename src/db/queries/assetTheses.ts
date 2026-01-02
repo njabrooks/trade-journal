@@ -12,6 +12,7 @@ export interface AssetThesisListItem {
   underlyingName: string | null;
   primaryMacroThesisId: string | null;
   primaryMacroThesisTitle: string | null;
+  primaryMacroThesisType: string | null;
   direction: string | null;
   timeHorizon: string | null;
   confidenceLevel: string | null;
@@ -20,7 +21,10 @@ export interface AssetThesisListItem {
   createdAt: Date;
   updatedAt: Date;
   strategyCount: number;
-  relatedMacroThesesCount: number; // New field
+  relatedMacroThesesCount: number;
+  primaryMacroThesis: { id: string; title: string; thesisType: string } | null;
+  relatedMacroTheses: Array<{ id: string; title: string; relationshipNote: string | null }>;
+  linkedStrategies: Array<{ id: string; label: string | null; status: string }>;
 }
 
 export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
@@ -34,6 +38,7 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
       underlyingName: underlyings.name,
       primaryMacroThesisId: assetTheses.primaryMacroThesisId,
       primaryMacroThesisTitle: macroTheses.title,
+      primaryMacroThesisType: macroTheses.thesisType,
       direction: assetTheses.direction,
       timeHorizon: assetTheses.timeHorizon,
       confidenceLevel: assetTheses.confidenceLevel,
@@ -80,11 +85,76 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
     relatedCounts.map((c) => [c.assetThesisId, Number(c.count)])
   );
 
-  return views.map((view) => ({
-    ...view,
-    strategyCount: strategyMap.get(view.id) ?? 0,
-    relatedMacroThesesCount: relatedMap.get(view.id) ?? 0,
-  }));
+  // Fetch all related macro theses for all views
+  const allRelatedMacroTheses = await db
+    .select({
+      assetThesisId: assetThesisRelatedMacroTheses.assetThesisId,
+      id: macroTheses.id,
+      title: macroTheses.title,
+      relationshipNote: assetThesisRelatedMacroTheses.relationshipNote,
+    })
+    .from(assetThesisRelatedMacroTheses)
+    .innerJoin(macroTheses, eq(assetThesisRelatedMacroTheses.macroThesisId, macroTheses.id))
+    .where(inArray(assetThesisRelatedMacroTheses.assetThesisId, viewIds));
+
+  // Fetch all linked strategies for all views
+  const allStrategies = await db
+    .select({
+      assetThesisId: strategies.assetThesisId,
+      id: strategies.id,
+      label: strategies.autoDerivedLabel,
+      status: strategies.status,
+    })
+    .from(strategies)
+    .where(inArray(strategies.assetThesisId, viewIds));
+
+  // Build maps of linked entities
+  const relatedMacroThesesByViewId = new Map<string, Array<{ id: string; title: string; relationshipNote: string | null }>>();
+  const strategiesByViewId = new Map<string, Array<{ id: string; label: string | null; status: string }>>();
+
+  allRelatedMacroTheses.forEach((mt) => {
+    if (!relatedMacroThesesByViewId.has(mt.assetThesisId)) {
+      relatedMacroThesesByViewId.set(mt.assetThesisId, []);
+    }
+    relatedMacroThesesByViewId.get(mt.assetThesisId)!.push({
+      id: mt.id,
+      title: mt.title,
+      relationshipNote: mt.relationshipNote,
+    });
+  });
+
+  allStrategies.forEach((s) => {
+    if (!s.assetThesisId) return;
+    if (!strategiesByViewId.has(s.assetThesisId)) {
+      strategiesByViewId.set(s.assetThesisId, []);
+    }
+    strategiesByViewId.get(s.assetThesisId)!.push({
+      id: s.id,
+      label: s.label,
+      status: s.status,
+    });
+  });
+
+  return views.map((view) => {
+    const relatedMacroTheses = relatedMacroThesesByViewId.get(view.id) ?? [];
+    const linkedStrategies = strategiesByViewId.get(view.id) ?? [];
+    const primaryMacroThesis = view.primaryMacroThesisId && view.primaryMacroThesisTitle && view.primaryMacroThesisType
+      ? {
+          id: view.primaryMacroThesisId,
+          title: view.primaryMacroThesisTitle,
+          thesisType: view.primaryMacroThesisType,
+        }
+      : null;
+
+    return {
+      ...view,
+      strategyCount: strategyMap.get(view.id) ?? 0,
+      relatedMacroThesesCount: relatedMap.get(view.id) ?? 0,
+      primaryMacroThesis,
+      relatedMacroTheses,
+      linkedStrategies,
+    };
+  });
 }
 
 export async function getAssetThesisById(id: string) {

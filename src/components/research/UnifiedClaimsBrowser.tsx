@@ -562,12 +562,12 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                           <div className="space-y-1">
                             <Link
                               href={`/claims/${claim.id}`}
-                              className="text-slate-900 font-medium line-clamp-2 hover:text-blue-600 hover:underline transition-colors block"
+                              className="text-slate-900 font-medium hover:text-blue-600 hover:underline transition-colors block line-clamp-2"
                             >
                               {claim.title}
                             </Link>
                             {claim.relevantTickers && claim.relevantTickers.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
+                              <div className="flex items-center gap-1">
                                 {claim.relevantTickers.slice(0, 3).map((ticker) => (
                                   <span
                                     key={ticker}
@@ -588,35 +588,63 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
                         {/* Linked To */}
                         <td className="px-4 py-3">
-                          <div className="space-y-1">
+                          <div className={isExpanded ? "space-y-1" : "flex items-center gap-1 overflow-hidden"}>
                             {linkedTheses.length === 0 && linkedViews.length === 0 ? (
                               <span className="text-xs text-slate-400">Not linked</span>
                             ) : (
                               <>
-                                {linkedTheses.map((thesis) => (
-                                  <Link
-                                    key={thesis.id}
-                                    href={`/macro-theses/${thesis.id}`}
-                                    className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                  >
-                                    <span className="inline-flex items-center gap-1">
-                                      <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
-                                      <span className="line-clamp-1">{thesis.title}</span>
-                                    </span>
-                                  </Link>
-                                ))}
-                                {linkedViews.map((view) => (
-                                  <Link
-                                    key={view.id}
-                                    href={`/asset-theses/${view.id}`}
-                                    className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                  >
-                                    <span className="inline-flex items-center gap-1">
-                                      <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
-                                      <span className="line-clamp-1">{view.title}</span>
-                                    </span>
-                                  </Link>
-                                ))}
+                                {/* Combined list of all linked entities */}
+                                {(() => {
+                                  const allLinked = [
+                                    ...linkedTheses.map((thesis) => ({
+                                      id: thesis.id,
+                                      title: thesis.title,
+                                      type: 'macro' as const,
+                                      url: `/macro-theses/${thesis.id}`,
+                                    })),
+                                    ...linkedViews.map((view) => ({
+                                      id: view.id,
+                                      title: view.title,
+                                      type: 'asset' as const,
+                                      url: `/asset-theses/${view.id}`,
+                                    })),
+                                  ];
+
+                                  const visibleEntities = isExpanded ? allLinked : allLinked.slice(0, 1);
+                                  const remainingCount = allLinked.length - 1;
+                                  const showMoreBadge = !isExpanded && remainingCount > 0;
+
+                                  return (
+                                    <>
+                                      {visibleEntities.map((entity, index) => (
+                                        <span key={entity.id} className={isExpanded ? "block" : "inline-flex items-center gap-1 shrink-0"}>
+                                          <Link
+                                            href={entity.url}
+                                            className={`text-sm text-blue-600 hover:text-blue-800 hover:underline ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[200px]'}`}
+                                            title={entity.title}
+                                          >
+                                            {entity.title}
+                                          </Link>
+                                          {!isExpanded && index < visibleEntities.length - 1 && !showMoreBadge && <span className="text-slate-400">,</span>}
+                                        </span>
+                                      ))}
+                                      {showMoreBadge && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setExpandedClaim(claim.id);
+                                          }}
+                                          className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer shrink-0 ml-1"
+                                        >
+                                          <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                            +{remainingCount}
+                                          </Badge>
+                                        </button>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </>
                             )}
                           </div>
