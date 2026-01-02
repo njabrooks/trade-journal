@@ -536,7 +536,7 @@ export async function getBlotterEntriesCounts(
     db
       .select({
         value: blotterActions.source,
-        count: sql<number>\`count(*)::int\`,
+        count: sql<number>`count(*)::int`,
       })
       .from(blotterActions)
       .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
@@ -547,7 +547,7 @@ export async function getBlotterEntriesCounts(
     db
       .select({
         value: blotterActions.actionClass,
-        count: sql<number>\`count(*)::int\`,
+        count: sql<number>`count(*)::int`,
       })
       .from(blotterActions)
       .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
@@ -558,20 +558,20 @@ export async function getBlotterEntriesCounts(
     db
       .select({
         value: strategies.strategyKey,
-        count: sql<number>\`count(*)::int\`,
+        count: sql<number>`count(*)::int`,
       })
       .from(blotterActions)
       .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
-      .where(and(...baseConditions, sql\`\${strategies.strategyKey} IS NOT NULL\`))
+      .where(and(...baseConditions, sql`${strategies.strategyKey} IS NOT NULL`))
       .groupBy(strategies.strategyKey),
   ]);
 
   // Status counts require complex logic, fetch with CASE
   const statusRows = await db
     .select({
-      matched: sql<number>\`count(*) FILTER (WHERE \${blotterActions.linkedBlotterActionId} IS NOT NULL OR \${blotterActions.linkedTradeBlotterIds} IS NOT NULL)::int\`,
-      unmatched: sql<number>\`count(*) FILTER (WHERE \${blotterActions.source} = 'trade_ingestion' AND \${blotterActions.linkedBlotterActionId} IS NULL AND \${blotterActions.linkedTradeBlotterIds} IS NULL)::int\`,
-      pending: sql<number>\`count(*) FILTER (WHERE \${blotterActions.followUpRequired} = true AND \${blotterActions.completed} = false)::int\`,
+      matched: sql<number>`count(*) FILTER (WHERE ${blotterActions.linkedBlotterActionId} IS NOT NULL OR ${blotterActions.linkedTradeBlotterIds} IS NOT NULL)::int`,
+      unmatched: sql<number>`count(*) FILTER (WHERE ${blotterActions.source} = 'trade_ingestion' AND ${blotterActions.linkedBlotterActionId} IS NULL AND ${blotterActions.linkedTradeBlotterIds} IS NULL)::int`,
+      pending: sql<number>`count(*) FILTER (WHERE ${blotterActions.followUpRequired} = true AND ${blotterActions.completed} = false)::int`,
     })
     .from(blotterActions)
     .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
@@ -580,9 +580,9 @@ export async function getBlotterEntriesCounts(
   // Follow-up counts
   const followUpRows = await db
     .select({
-      pending: sql<number>\`count(*) FILTER (WHERE \${blotterActions.followUpRequired} = true AND \${blotterActions.completed} = false)::int\`,
-      completed: sql<number>\`count(*) FILTER (WHERE \${blotterActions.followUpRequired} = true AND \${blotterActions.completed} = true)::int\`,
-      none: sql<number>\`count(*) FILTER (WHERE \${blotterActions.followUpRequired} = false OR \${blotterActions.followUpRequired} IS NULL)::int\`,
+      pending: sql<number>`count(*) FILTER (WHERE ${blotterActions.followUpRequired} = true AND ${blotterActions.completed} = false)::int`,
+      completed: sql<number>`count(*) FILTER (WHERE ${blotterActions.followUpRequired} = true AND ${blotterActions.completed} = true)::int`,
+      none: sql<number>`count(*) FILTER (WHERE ${blotterActions.followUpRequired} = false OR ${blotterActions.followUpRequired} IS NULL)::int`,
     })
     .from(blotterActions)
     .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))

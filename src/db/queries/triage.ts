@@ -471,7 +471,7 @@ export async function getTriageQueueCounts(
     db
       .select({
         value: triageRecords.severity,
-        count: sql<number>\`count(*)::int\`,
+        count: sql<number>`count(*)::int`,
       })
       .from(triageRecords)
       .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
@@ -482,7 +482,7 @@ export async function getTriageQueueCounts(
     db
       .select({
         value: triageRecords.contextLevel,
-        count: sql<number>\`count(*)::int\`,
+        count: sql<number>`count(*)::int`,
       })
       .from(triageRecords)
       .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
@@ -493,7 +493,7 @@ export async function getTriageQueueCounts(
     db
       .select({
         value: triageRecords.recommendedAction,
-        count: sql<number>\`count(*)::int\`,
+        count: sql<number>`count(*)::int`,
       })
       .from(triageRecords)
       .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
@@ -504,11 +504,11 @@ export async function getTriageQueueCounts(
     db
       .select({
         value: strategies.strategyKey,
-        count: sql<number>\`count(*)::int\`,
+        count: sql<number>`count(*)::int`,
       })
       .from(triageRecords)
       .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
-      .where(and(...baseConditions, sql\`\${strategies.strategyKey} IS NOT NULL\`))
+      .where(and(...baseConditions, sql`${strategies.strategyKey} IS NOT NULL`))
       .groupBy(strategies.strategyKey),
   ]);
 

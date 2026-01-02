@@ -25,7 +25,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "STATE_CODE_CHANGE": ["MONITOR", "DISMISS"],
-  "QUANTITY_CHANGE": [], // Handled directly through quantity change trigger flow
+  "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
 };
 
 // Helper to determine available actions for a trigger
