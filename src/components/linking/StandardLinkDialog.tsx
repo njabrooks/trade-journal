@@ -70,6 +70,7 @@ export function StandardLinkDialog({
 
   // Link to Existing mode state
   const [availableEntities, setAvailableEntities] = useState<AvailableEntity[]>([]);
+  const [currentlyLinkedEntities, setCurrentlyLinkedEntities] = useState<AvailableEntity[]>([]);
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
   const [relationshipType, setRelationshipType] = useState<RelationshipType>('supports');
@@ -84,6 +85,8 @@ export function StandardLinkDialog({
       setMode(null);
       setTargetType(validTargetTypes.length === 1 ? validTargetTypes[0] : null);
       setSelectedEntityIds([]);
+      setCurrentlyLinkedEntities([]);
+      setAvailableEntities([]);
       setSearchQuery('');
       setError(null);
     }
@@ -113,10 +116,12 @@ export function StandardLinkDialog({
 
       const data = await response.json();
       setAvailableEntities(data.entities || []);
+      setCurrentlyLinkedEntities(data.currentlyLinked || []);
     } catch (err) {
       console.error('Error fetching entities:', err);
       setError('Failed to load available entities');
       setAvailableEntities([]);
+      setCurrentlyLinkedEntities([]);
     } finally {
       setLoadingEntities(false);
     }
@@ -155,15 +160,37 @@ export function StandardLinkDialog({
 
     try {
       const endpoint = getLinkEndpoint(sourceType, sourceId);
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+
+      // Claims have a different API format
+      let requestBody;
+      if (sourceType === 'claim') {
+        // Claims endpoint expects: { claimId, thesisIds, viewIds, relationshipType }
+        const thesisIds = selectedEntityIds.filter(id =>
+          availableEntities.find(e => e.id === id && e.type === 'macroThesis')
+        );
+        const viewIds = selectedEntityIds.filter(id =>
+          availableEntities.find(e => e.id === id && e.type === 'assetThesis')
+        );
+        requestBody = {
+          claimId: sourceId,
+          thesisIds,
+          viewIds,
+          relationshipType: requireRelationshipType ? relationshipType : undefined,
+        };
+      } else {
+        // Other endpoints use standard format
+        requestBody = {
           targetType,
           targetIds: selectedEntityIds,
           relationshipType: requireRelationshipType ? relationshipType : undefined,
           linkType: sourceType === 'assetThesis' && targetType === 'macroThesis' ? linkTypeAssetToMacro : undefined,
-        }),
+        };
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -183,11 +210,61 @@ export function StandardLinkDialog({
     }
   };
 
+  // Handle unlinking an entity
+  const handleUnlinkEntity = async (entityId: string) => {
+    setError(null);
+
+    try {
+      const endpoint = getLinkEndpoint(sourceType, sourceId);
+
+      // Determine the target type for the entity being unlinked
+      const entity = currentlyLinkedEntities.find(e => e.id === entityId);
+      const entityTargetType = entity?.type || targetType;
+
+      // Claims have a different API format
+      let requestBody;
+      if (sourceType === 'claim') {
+        // Claims endpoint expects: { claimId, targetType, targetId }
+        requestBody = {
+          claimId: sourceId,
+          targetType: entityTargetType,
+          targetId: entityId,
+        };
+      } else {
+        // Other endpoints use standard format
+        requestBody = {
+          targetType: entityTargetType,
+          targetId: entityId,
+        };
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to remove link');
+      }
+
+      // Remove from currently linked and refresh
+      setCurrentlyLinkedEntities((prev) => prev.filter((e) => e.id !== entityId));
+
+      // Refresh to update the page
+      router.refresh();
+    } catch (err) {
+      console.error('Error unlinking entity:', err);
+      setError(err instanceof Error ? err.message : 'Failed to remove link');
+    }
+  };
+
   // Get link endpoint based on source type
   const getLinkEndpoint = (source: SourceEntityType, id: string): string => {
     switch (source) {
       case 'claim':
-        return '/api/main-claims/link-to-entity';
+        return '/api/research/claims/link-to-entities';
       case 'macroThesis':
         return `/api/macro-theses/${id}/link-asset-theses`;
       case 'assetThesis':
@@ -230,8 +307,14 @@ export function StandardLinkDialog({
     }
   };
 
-  // Filter entities based on search query
+  // Filter entities based on search query and target type
   const filteredEntities = availableEntities.filter((entity) => {
+    // Filter by target type (important for claims which can link to both macro/asset theses)
+    if (targetType && entity.type && entity.type !== targetType) {
+      return false;
+    }
+
+    // Filter by search query
     const searchLower = searchQuery.toLowerCase();
     return (
       entity.title.toLowerCase().includes(searchLower) ||
@@ -411,16 +494,49 @@ export function StandardLinkDialog({
                 </div>
               )}
 
+              {/* Currently Linked Entities */}
+              {currentlyLinkedEntities.length > 0 && (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                    Currently Linked ({currentlyLinkedEntities.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {currentlyLinkedEntities.map((entity) => (
+                      <div
+                        key={entity.id}
+                        className="flex items-center justify-between bg-white p-3 rounded border border-slate-200"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{entity.title}</div>
+                          {entity.ticker && (
+                            <div className="text-xs text-slate-500">{entity.ticker}</div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleUnlinkEntity(entity.id)}
+                          className="ml-3 p-1 text-red-600 hover:bg-red-50 rounded"
+                          title="Remove link"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Search */}
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search available entities..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
 
-              {/* Entity List */}
+              {/* Available Entities List */}
               <div className="border border-slate-200 rounded-lg max-h-96 overflow-y-auto">
                 {loadingEntities ? (
                   <div className="p-8 text-center text-slate-500">Loading...</div>

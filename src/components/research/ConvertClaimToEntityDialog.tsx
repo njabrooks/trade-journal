@@ -60,6 +60,8 @@ export function ConvertClaimToEntityDialog({
   // Link to Existing mode state
   const [availableTheses, setAvailableTheses] = useState<AvailableThesis[]>([]);
   const [availableViews, setAvailableViews] = useState<AvailableView[]>([]);
+  const [linkedTheses, setLinkedTheses] = useState<AvailableThesis[]>([]);
+  const [linkedViews, setLinkedViews] = useState<AvailableView[]>([]);
   const [selectedThesisIds, setSelectedThesisIds] = useState<string[]>([]);
   const [selectedViewIds, setSelectedViewIds] = useState<string[]>([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
@@ -88,8 +90,50 @@ export function ConvertClaimToEntityDialog({
       if (!response.ok) throw new Error('Failed to fetch entities');
 
       const data = await response.json();
-      setAvailableTheses(data.theses || []);
-      setAvailableViews(data.views || []);
+
+      // API now returns { entities: [...], currentlyLinked: [...] } with type field
+      // Separate entities by type for backward compatibility
+      const entities = data.entities || [];
+      const currentlyLinked = data.currentlyLinked || [];
+
+      const theses = entities
+        .filter((e: any) => e.type === 'macroThesis')
+        .map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          status: e.status,
+          thesisType: e.thesisType,
+        }));
+      const views = entities
+        .filter((e: any) => e.type === 'assetThesis')
+        .map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          ticker: e.ticker,
+          status: e.status,
+        }));
+
+      const linkedThesesData = currentlyLinked
+        .filter((e: any) => e.type === 'macroThesis')
+        .map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          status: e.status,
+          thesisType: e.thesisType,
+        }));
+      const linkedViewsData = currentlyLinked
+        .filter((e: any) => e.type === 'assetThesis')
+        .map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          ticker: e.ticker,
+          status: e.status,
+        }));
+
+      setAvailableTheses(theses);
+      setAvailableViews(views);
+      setLinkedTheses(linkedThesesData);
+      setLinkedViews(linkedViewsData);
     } catch (err) {
       console.error('Error fetching entities:', err);
       setError('Failed to load available theses and views');
@@ -132,6 +176,40 @@ export function ConvertClaimToEntityDialog({
       console.error('Error linking claim:', err);
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
       setIsSubmitting(false);
+    }
+  };
+
+  const handleUnlinkEntity = async (entityId: string, entityType: 'macroThesis' | 'assetThesis') => {
+    setError(null);
+
+    try {
+      const response = await fetch('/api/research/claims/link-to-entities', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          claimId: claim.id,
+          targetType: entityType,
+          targetId: entityId,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to remove link');
+      }
+
+      // Remove from linked lists
+      if (entityType === 'macroThesis') {
+        setLinkedTheses((prev) => prev.filter((t) => t.id !== entityId));
+      } else {
+        setLinkedViews((prev) => prev.filter((v) => v.id !== entityId));
+      }
+
+      // Refresh to update the page
+      router.refresh();
+    } catch (err) {
+      console.error('Error unlinking entity:', err);
+      setError(err instanceof Error ? err.message : 'Failed to remove link');
     }
   };
 
@@ -338,6 +416,71 @@ export function ConvertClaimToEntityDialog({
                 <div className="text-center py-8 text-slate-500">Loading...</div>
               ) : (
                 <div className="space-y-6">
+                  {/* Currently Linked Entities */}
+                  {(linkedTheses.length > 0 || linkedViews.length > 0) && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                        Currently Linked ({linkedTheses.length + linkedViews.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {linkedTheses.map((thesis) => (
+                          <div
+                            key={thesis.id}
+                            className="flex items-center justify-between bg-white p-3 rounded border border-slate-200"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm">{thesis.title}</div>
+                              <div className="flex gap-2 mt-1">
+                                <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                  {thesis.thesisType}
+                                </Badge>
+                                <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                  {thesis.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleUnlinkEntity(thesis.id, 'macroThesis')}
+                              className="ml-3 p-1 text-red-600 hover:bg-red-50 rounded"
+                              title="Remove link"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                        {linkedViews.map((view) => (
+                          <div
+                            key={view.id}
+                            className="flex items-center justify-between bg-white p-3 rounded border border-slate-200"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm">{view.title}</div>
+                              <div className="flex gap-2 mt-1">
+                                <Badge className="bg-blue-100 text-blue-700 text-xs">
+                                  {view.ticker}
+                                </Badge>
+                                <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                  {view.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleUnlinkEntity(view.id, 'assetThesis')}
+                              className="ml-3 p-1 text-red-600 hover:bg-red-50 rounded"
+                              title="Remove link"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Macro Theses */}
                   <div>
                     <h4 className="text-sm font-semibold text-slate-700 mb-3">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { claimThesisMappings, mainClaims } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, or } from 'drizzle-orm';
 
 /**
  * POST /api/research/claims/link-to-entities
@@ -117,6 +117,84 @@ export async function POST(request: NextRequest) {
     console.error('Error linking claim to entities:', error);
     return NextResponse.json(
       { error: 'Failed to link claim', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/research/claims/link-to-entities
+ *
+ * Unlinks a main claim from a thesis or view.
+ *
+ * Request body:
+ * {
+ *   claimId: string;       // Main claim UUID
+ *   targetType: 'macroThesis' | 'assetThesis';
+ *   targetId: string;      // Thesis or view UUID to unlink
+ * }
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { claimId, targetType, targetId } = body;
+
+    // Validate required fields
+    if (!claimId || !targetType || !targetId) {
+      return NextResponse.json(
+        { error: 'Missing required fields: claimId, targetType, targetId' },
+        { status: 400 }
+      );
+    }
+
+    // Verify claim exists
+    const [claim] = await db
+      .select()
+      .from(mainClaims)
+      .where(eq(mainClaims.id, claimId))
+      .limit(1);
+
+    if (!claim) {
+      return NextResponse.json(
+        { error: 'Claim not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete the mapping based on target type
+    if (targetType === 'macroThesis') {
+      await db
+        .delete(claimThesisMappings)
+        .where(
+          and(
+            eq(claimThesisMappings.mainClaimId, claimId),
+            eq(claimThesisMappings.macroThesisId, targetId)
+          )
+        );
+    } else if (targetType === 'assetThesis') {
+      await db
+        .delete(claimThesisMappings)
+        .where(
+          and(
+            eq(claimThesisMappings.mainClaimId, claimId),
+            eq(claimThesisMappings.assetThesisId, targetId)
+          )
+        );
+    } else {
+      return NextResponse.json(
+        { error: 'Invalid targetType. Must be: macroThesis or assetThesis' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Link removed successfully',
+    });
+  } catch (error: any) {
+    console.error('Error unlinking claim from entity:', error);
+    return NextResponse.json(
+      { error: 'Failed to unlink claim', details: error.message },
       { status: 500 }
     );
   }

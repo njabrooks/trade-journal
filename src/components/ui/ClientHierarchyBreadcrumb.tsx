@@ -3,16 +3,17 @@
 /**
  * ClientHierarchyBreadcrumb - Client wrapper for HierarchyBreadcrumb with dialog state
  *
- * Handles the state for LinkToThesisDialog and LinkToViewDialog,
+ * Handles the state for StandardLinkDialog,
  * allowing server components to use the interactive breadcrumb.
  *
  * Part of Phase 2.6.6 Phase B: Inline Linking Workflows
+ * Updated to use StandardLinkDialog for consistency
  */
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { HierarchyBreadcrumb } from './HierarchyBreadcrumb';
-import { LinkToThesisDialog } from '../asset-theses/LinkToThesisDialog';
-import { LinkToViewDialog } from '../strategies/LinkToViewDialog';
+import { StandardLinkDialog } from '../linking/StandardLinkDialog';
 
 interface HierarchyLevel {
   id: string;
@@ -37,18 +38,30 @@ interface ClientHierarchyBreadcrumbProps {
 }
 
 export function ClientHierarchyBreadcrumb(props: ClientHierarchyBreadcrumbProps) {
-  const [linkThesisDialogOpen, setLinkThesisDialogOpen] = useState(false);
-  const [linkViewDialogOpen, setLinkViewDialogOpen] = useState(false);
+  const router = useRouter();
+  const [linkingEntity, setLinkingEntity] = useState<{
+    sourceType: 'assetThesis' | 'strategy';
+    sourceId: string;
+    sourceTitle: string;
+  } | null>(null);
 
   const handleLinkMacroThesis = () => {
     if (props.currentLevel === 'asset_view' && props.assetView) {
-      setLinkThesisDialogOpen(true);
+      setLinkingEntity({
+        sourceType: 'assetThesis',
+        sourceId: props.assetView.id,
+        sourceTitle: props.assetView.title,
+      });
     }
   };
 
   const handleLinkAssetThesis = () => {
     if (props.currentLevel === 'strategy' && props.strategy) {
-      setLinkViewDialogOpen(true);
+      setLinkingEntity({
+        sourceType: 'strategy',
+        sourceId: props.strategy.id,
+        sourceTitle: props.strategy.title,
+      });
     }
   };
 
@@ -62,25 +75,18 @@ export function ClientHierarchyBreadcrumb(props: ClientHierarchyBreadcrumbProps)
         onManageRelatedTheses={props.onManageRelatedTheses}
       />
 
-      {/* Dialogs */}
-      {props.currentLevel === 'asset_view' && props.assetView && (
-        <LinkToThesisDialog
-          viewId={props.assetView.id}
-          viewTitle={props.assetView.title}
-          currentThesisId={props.macroThesis?.id || null}
-          isOpen={linkThesisDialogOpen}
-          onClose={() => setLinkThesisDialogOpen(false)}
-        />
-      )}
-
-      {props.currentLevel === 'strategy' && props.strategy && (
-        <LinkToViewDialog
-          strategyId={props.strategy.id}
-          strategyLabel={props.strategy.title}
-          currentViewId={props.assetView?.id || null}
-          currentThesisId={props.macroThesis?.id || null}
-          isOpen={linkViewDialogOpen}
-          onClose={() => setLinkViewDialogOpen(false)}
+      {/* Standard Link Dialog */}
+      {linkingEntity && (
+        <StandardLinkDialog
+          sourceType={linkingEntity.sourceType}
+          sourceId={linkingEntity.sourceId}
+          sourceTitle={linkingEntity.sourceTitle}
+          isOpen={!!linkingEntity}
+          onClose={() => setLinkingEntity(null)}
+          onSuccess={() => {
+            setLinkingEntity(null);
+            router.refresh();
+          }}
         />
       )}
     </>

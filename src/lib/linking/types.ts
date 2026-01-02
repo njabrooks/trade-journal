@@ -38,6 +38,7 @@ export interface LinkingConfig {
 export interface AvailableEntity {
   id: string;
   title: string;
+  type?: TargetEntityType; // Used to filter entities by type (e.g., for claims)
   ticker?: string;
   status?: string;
   thesisType?: string;

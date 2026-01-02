@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { assetTheses, strategies, assetThesisRelatedMacroTheses } from '@/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 
 /**
  * POST /api/asset-theses/[id]/link-entities
@@ -149,42 +149,188 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await params; // Await params even if not using the id
+    const { id: assetThesisId } = await params;
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type'); // 'macroThesis' or 'strategy'
 
+    // Fetch the asset thesis to get currently linked entities
+    const assetThesis = await db.query.assetTheses.findFirst({
+      where: (at, { eq }) => eq(at.id, assetThesisId),
+      with: {
+        primaryMacroThesis: true,
+        relatedMacroTheses: {
+          with: {
+            macroThesis: true,
+          },
+        },
+        linkedStrategies: true,
+      },
+    });
+
+    if (!assetThesis) {
+      return NextResponse.json(
+        { error: 'Asset thesis not found' },
+        { status: 404 }
+      );
+    }
+
     if (type === 'macroThesis' || !type) {
-      const availableMacroTheses = await db.query.macroTheses.findMany({
+      // Get all macro theses
+      const allMacroTheses = await db.query.macroTheses.findMany({
         orderBy: (mt, { desc }) => [desc(mt.createdAt)],
       });
 
-      const entities = availableMacroTheses.map(mt => ({
-        id: mt.id,
-        title: mt.title,
-        thesisType: mt.thesisType,
-        status: mt.status,
-      }));
+      // Get currently linked IDs (primary + related)
+      const linkedIds = new Set<string>();
+      if (assetThesis.primaryMacroThesisId) {
+        linkedIds.add(assetThesis.primaryMacroThesisId);
+      }
+      assetThesis.relatedMacroTheses?.forEach(rel => {
+        linkedIds.add(rel.macroThesisId);
+      });
 
-      return NextResponse.json({ entities });
+      // Separate into currently linked and available
+      const currentlyLinked = allMacroTheses
+        .filter(mt => linkedIds.has(mt.id))
+        .map(mt => ({
+          id: mt.id,
+          title: mt.title,
+          type: 'macroThesis' as const,
+          thesisType: mt.thesisType,
+          status: mt.status,
+        }));
+
+      const available = allMacroTheses
+        .filter(mt => !linkedIds.has(mt.id))
+        .map(mt => ({
+          id: mt.id,
+          title: mt.title,
+          type: 'macroThesis' as const,
+          thesisType: mt.thesisType,
+          status: mt.status,
+        }));
+
+      return NextResponse.json({ entities: available, currentlyLinked });
     } else if (type === 'strategy') {
-      const availableStrategies = await db.query.strategies.findMany({
+      // Get all strategies
+      const allStrategies = await db.query.strategies.findMany({
         orderBy: (s, { desc }) => [desc(s.openedAt)],
       });
 
-      const entities = availableStrategies.map(s => ({
-        id: s.id,
-        title: s.autoDerivedLabel || s.strategyKey,
-        status: s.status,
-      }));
+      // Get currently linked strategy IDs
+      const linkedIds = new Set(
+        assetThesis.linkedStrategies?.map(s => s.id) || []
+      );
 
-      return NextResponse.json({ entities });
+      // Separate into currently linked and available
+      const currentlyLinked = allStrategies
+        .filter(s => linkedIds.has(s.id))
+        .map(s => ({
+          id: s.id,
+          title: s.autoDerivedLabel || s.strategyKey,
+          type: 'strategy' as const,
+          status: s.status,
+        }));
+
+      const available = allStrategies
+        .filter(s => !linkedIds.has(s.id))
+        .map(s => ({
+          id: s.id,
+          title: s.autoDerivedLabel || s.strategyKey,
+          type: 'strategy' as const,
+          status: s.status,
+        }));
+
+      return NextResponse.json({ entities: available, currentlyLinked });
     }
 
-    return NextResponse.json({ entities: [] });
+    return NextResponse.json({ entities: [], currentlyLinked: [] });
   } catch (error) {
     console.error('Error fetching available entities:', error);
     return NextResponse.json(
       { error: 'Failed to fetch available entities' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/asset-theses/[id]/link-entities
+ *
+ * Unlink an entity from an asset thesis.
+ * Supports unlinking:
+ * - Macro theses (primary or related)
+ * - Strategies
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: assetThesisId } = await params;
+    const body = await req.json();
+    const { targetType, targetId } = body as {
+      targetType: 'macroThesis' | 'strategy';
+      targetId: string;
+    };
+
+    if (!targetType || !targetId) {
+      return NextResponse.json(
+        { error: 'targetType and targetId are required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify asset thesis exists
+    const assetThesisExists = await db.query.assetTheses.findFirst({
+      where: (at, { eq }) => eq(at.id, assetThesisId),
+    });
+
+    if (!assetThesisExists) {
+      return NextResponse.json(
+        { error: 'Asset thesis not found' },
+        { status: 404 }
+      );
+    }
+
+    if (targetType === 'macroThesis') {
+      // Check if it's the primary macro thesis
+      if (assetThesisExists.primaryMacroThesisId === targetId) {
+        // Remove primary macro thesis
+        await db
+          .update(assetTheses)
+          .set({
+            primaryMacroThesisId: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(assetTheses.id, assetThesisId));
+      } else {
+        // Remove from related macro theses
+        await db
+          .delete(assetThesisRelatedMacroTheses)
+          .where(
+            and(
+              eq(assetThesisRelatedMacroTheses.assetThesisId, assetThesisId),
+              eq(assetThesisRelatedMacroTheses.macroThesisId, targetId)
+            )
+          );
+      }
+    } else if (targetType === 'strategy') {
+      // Unlink strategy
+      await db
+        .update(strategies)
+        .set({
+          assetThesisId: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(strategies.id, targetId));
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error unlinking entity:', error);
+    return NextResponse.json(
+      { error: 'Failed to unlink entity' },
       { status: 500 }
     );
   }

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import type { MainClaim as DbMainClaim, ResearchInsight, ResearchArtifact } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Link2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
@@ -78,7 +78,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
   // Loading state for status updates
   const [updatingClaimId, setUpdatingClaimId] = useState<string | null>(null);
 
-  // Convert dialog state
+  // Convert/Link dialog state (used by both status badge and Link button)
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [claimToConvert, setClaimToConvert] = useState<DbMainClaim | null>(null);
 
@@ -688,18 +688,32 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
                         {/* Actions */}
                         <td className="px-4 py-3 text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setExpandedClaim(isExpanded ? null : claim.id)}
-                            className="h-7 w-7 p-0"
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setClaimToConvert(claim);
+                                setConvertDialogOpen(true);
+                              }}
+                              className="h-7 w-7 p-0"
+                              title="Link to theses/views"
+                            >
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setExpandedClaim(isExpanded ? null : claim.id)}
+                              className="h-7 w-7 p-0"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
 
@@ -901,7 +915,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
         </div>
       </section>
 
-      {/* Convert Claim Dialog */}
+      {/* Convert/Link Claim Dialog (used by both status badge and Link button) */}
       {claimToConvert && (
         <ConvertClaimToEntityDialog
           claim={claimToConvert}

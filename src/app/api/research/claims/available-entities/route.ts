@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       .map(link => link.viewId)
       .filter((id): id is string => id !== null);
 
-    // Fetch all active theses (excluding already linked ones)
+    // Fetch all theses
     let thesesQuery = db
       .select({
         id: macroTheses.id,
@@ -62,8 +62,11 @@ export async function GET(request: NextRequest) {
     const availableTheses = allTheses.filter(
       thesis => !linkedThesisIds.includes(thesis.id)
     );
+    const linkedTheses = allTheses.filter(
+      thesis => linkedThesisIds.includes(thesis.id)
+    );
 
-    // Fetch all active views (excluding already linked ones)
+    // Fetch all views
     const allViews = await db
       .select({
         id: assetTheses.id,
@@ -78,11 +81,47 @@ export async function GET(request: NextRequest) {
     const availableViews = allViews.filter(
       view => !linkedViewIds.includes(view.id)
     );
+    const linkedViews = allViews.filter(
+      view => linkedViewIds.includes(view.id)
+    );
 
-    return NextResponse.json({
-      theses: availableTheses,
-      views: availableViews,
-    });
+    // Combine theses and views into a single entities array
+    // StandardLinkDialog expects { entities: [...], currentlyLinked: [...] } format
+    const entities = [
+      ...availableTheses.map(thesis => ({
+        id: thesis.id,
+        title: thesis.title,
+        type: 'macroThesis' as const,
+        thesisType: thesis.thesisType,
+        status: thesis.status,
+      })),
+      ...availableViews.map(view => ({
+        id: view.id,
+        title: view.title,
+        type: 'assetThesis' as const,
+        ticker: view.ticker,
+        status: view.status,
+      })),
+    ];
+
+    const currentlyLinked = [
+      ...linkedTheses.map(thesis => ({
+        id: thesis.id,
+        title: thesis.title,
+        type: 'macroThesis' as const,
+        thesisType: thesis.thesisType,
+        status: thesis.status,
+      })),
+      ...linkedViews.map(view => ({
+        id: view.id,
+        title: view.title,
+        type: 'assetThesis' as const,
+        ticker: view.ticker,
+        status: view.status,
+      })),
+    ];
+
+    return NextResponse.json({ entities, currentlyLinked });
   } catch (error: any) {
     console.error('Error fetching available entities:', error);
     return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { strategies, assetTheses } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { strategies, assetTheses, underlyings } from '@/db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 /**
  * POST /api/strategies/[id]/link-asset-thesis
@@ -83,31 +83,107 @@ export async function POST(
 }
 
 /**
- * GET /api/strategies/[id]/available-asset-theses
+ * GET /api/strategies/[id]/link-asset-thesis
  *
  * Get available asset theses that can be linked to this strategy
+ * Returns both available entities and currently linked entity
  */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await params; // Await params even if not using the id
-    const availableAssetTheses = await db.query.assetTheses.findMany({
-      orderBy: (at, { desc }) => [desc(at.createdAt)],
+    const { id: strategyId } = await params;
+
+    // Fetch the strategy to get currently linked asset thesis
+    const strategy = await db.query.strategies.findFirst({
+      where: (s, { eq }) => eq(s.id, strategyId),
     });
 
-    const entities = availableAssetTheses.map(at => ({
-      id: at.id,
-      title: at.title,
-      status: at.status,
+    if (!strategy) {
+      return NextResponse.json(
+        { error: 'Strategy not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get all asset theses with tickers (join with underlyings)
+    const allAssetThesesRaw = await db
+      .select({
+        id: assetTheses.id,
+        title: assetTheses.title,
+        status: assetTheses.status,
+        ticker: underlyings.ticker,
+        createdAt: assetTheses.createdAt,
+      })
+      .from(assetTheses)
+      .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+      .orderBy(desc(assetTheses.createdAt));
+
+    const allAssetTheses = allAssetThesesRaw.map(at => ({
+      ...at,
+      ticker: at.ticker || undefined,
     }));
 
-    return NextResponse.json({ entities });
+    // Fetch currently linked asset thesis if it exists
+    let currentlyLinked: typeof allAssetTheses = [];
+    if (strategy.assetThesisId) {
+      const linkedAssetThesis = allAssetTheses.find(at => at.id === strategy.assetThesisId);
+      if (linkedAssetThesis) {
+        currentlyLinked = [linkedAssetThesis];
+      }
+    }
+
+    const available = allAssetTheses.filter(at => at.id !== strategy.assetThesisId);
+
+    return NextResponse.json({ entities: available, currentlyLinked });
   } catch (error) {
     console.error('Error fetching available asset theses:', error);
     return NextResponse.json(
       { error: 'Failed to fetch available asset theses' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/strategies/[id]/link-asset-thesis
+ *
+ * Unlink the asset thesis from this strategy
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: strategyId } = await params;
+
+    // Verify strategy exists
+    const strategyExists = await db.query.strategies.findFirst({
+      where: (s, { eq }) => eq(s.id, strategyId),
+    });
+
+    if (!strategyExists) {
+      return NextResponse.json(
+        { error: 'Strategy not found' },
+        { status: 404 }
+      );
+    }
+
+    // Unlink asset thesis
+    await db
+      .update(strategies)
+      .set({
+        assetThesisId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(strategies.id, strategyId));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error unlinking strategy from asset thesis:', error);
+    return NextResponse.json(
+      { error: 'Failed to unlink strategy' },
       { status: 500 }
     );
   }
