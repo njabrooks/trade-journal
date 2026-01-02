@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for all enhancements (past, present, future) with clear traceability to PRD and original sources.
 
-**Last Updated**: 2025-12-31 (Phase 2.7 Complete: Unified Browser Pattern & Hierarchy UX)
+**Last Updated**: 2026-01-02 (Phase 2.8 Complete: AI-Generated Thesis Summaries | Added #ENH-034)
 
 ---
 
@@ -810,6 +810,55 @@ See [Completed Enhancements](#completed-enhancements) for Phase 2.7 details.
 
 ---
 
+#### #ENH-034: AI Summary Version History
+**Status**: ⏳ Planned
+**Priority**: Medium
+**Effort**: 3-4 days
+**PRD**: Section 5.5 (Thesis Evaluation & Re-Underwriting), Section 8 (Institutional Memory)
+**Phase**: Phase 3+
+**Source**: User request (2026-01-02)
+**Related**: #ENH-033 (Thesis Evolution Timeline)
+
+**Problem**: When AI summaries are regenerated, old claim IDs and summary text are lost - no audit trail or version history
+
+**Current State**:
+- `UPDATE asset_theses SET ai_summary = ...` completely overwrites previous summary
+- No way to see how thesis evolved over time
+- Can't compare versions or rollback if new summary is worse quality
+- Lost provenance if a claim gets invalidated after summary generation
+
+**Proposed Solutions**:
+
+**Option 1: Version History JSONB Field** (simplest):
+```sql
+ALTER TABLE asset_theses
+  ADD COLUMN ai_summary_versions JSONB DEFAULT '[]';
+```
+Store array of versions with timestamps, claim IDs, and summary text.
+
+**Option 2: Separate Table** (normalized):
+Create `asset_thesis_summary_versions` table with FK to `asset_theses`.
+
+**Option 3: PostgreSQL Temporal Tables**:
+Use PostgreSQL's native temporal/audit features to track all changes automatically.
+
+**Deliverables**:
+- Database schema for version storage
+- Migration to preserve existing summaries as v1
+- Update `/generate-summary` skill to append versions instead of overwrite
+- UI to view version history (expandable timeline)
+- Diff view comparing versions
+- Optional rollback functionality
+
+**Big Picture Impact**:
+- Complete audit trail of belief evolution
+- Can trace "what I believed then vs now"
+- Compare summaries to see what evidence changed over time
+- Aligns with PRD emphasis on learning and re-underwriting
+- Foundation for thesis evolution timeline (#ENH-033)
+
+---
+
 ### Low Priority
 
 #### #ENH-002-timeout: Trade Decision Timeout/Resolution
@@ -1026,7 +1075,7 @@ Consider adding to PRD:
 
 ## Enhancement Registry
 
-**Next Enhancement ID**: #ENH-024
+**Next Enhancement ID**: #ENH-035
 
 ### Phase 2.7 Enhancement IDs (Complete 2025-12-31)
 
