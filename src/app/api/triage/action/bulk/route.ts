@@ -381,11 +381,15 @@ export async function POST(request: NextRequest) {
         // Attempt to match with existing trade blotter entry
         if (insertedBlotterAction && actionType === "TRADE") {
           try {
+            // For strategy-level QUANTITY_CHANGE, pass null as conid to match ALL trades
+            // For other actions, pass the specific conid to match only that position's trade
+            const conidForMatching = commonTrigger === "QUANTITY_CHANGE" ? null : conid;
+
             await matchTriageActionToTradeBlotter(
               insertedBlotterAction.id,
               triage.strategyId,
               ticker ?? triage.symbol,
-              conid,
+              conidForMatching,
               triage.snapshotDate
             );
           } catch (error) {
