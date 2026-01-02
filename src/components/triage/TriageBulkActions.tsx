@@ -23,7 +23,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [],
   "STATE_CODE_CHANGE": ["MONITOR", "DISMISS"],
-  "QUANTITY_CHANGE": [], // Handled directly through quantity change trigger flow
+  "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
 };
 
 const ACTION_LABELS: Record<ActionType, string> = {
@@ -78,10 +78,10 @@ export function TriageBulkActions({
       return;
     }
 
-    // Validate required fields for QUANTITY_CHANGE UPDATE
-    if (actionType === "UPDATE" && commonTrigger === "QUANTITY_CHANGE") {
+    // Validate required fields for QUANTITY_CHANGE TRADE
+    if (actionType === "TRADE" && commonTrigger === "QUANTITY_CHANGE") {
       if (!tradeReason.trim() || !tradeStage) {
-        setError("Trade reason and trade stage are required for QUANTITY_CHANGE updates");
+        setError("Trade reason and trade stage are required for QUANTITY_CHANGE trade actions");
         return;
       }
     }
@@ -98,8 +98,8 @@ export function TriageBulkActions({
           actionType,
           notes: notes.trim() || undefined,
           monitorDays: actionType === "MONITOR" ? monitorDays : undefined,
-          tradeReason: actionType === "UPDATE" && commonTrigger === "QUANTITY_CHANGE" ? tradeReason.trim() : undefined,
-          tradeStage: actionType === "UPDATE" && commonTrigger === "QUANTITY_CHANGE" ? tradeStage : undefined,
+          tradeReason: actionType === "TRADE" && commonTrigger === "QUANTITY_CHANGE" ? tradeReason.trim() : undefined,
+          tradeStage: actionType === "TRADE" && commonTrigger === "QUANTITY_CHANGE" ? tradeStage : undefined,
         }),
       });
 
@@ -192,7 +192,7 @@ export function TriageBulkActions({
                   />
                 </div>
               )}
-              {selectedAction === "UPDATE" && commonTrigger === "QUANTITY_CHANGE" && (
+              {selectedAction === "TRADE" && commonTrigger === "QUANTITY_CHANGE" && (
                 <>
                   <input
                     type="text"
