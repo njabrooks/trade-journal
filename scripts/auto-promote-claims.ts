@@ -29,7 +29,7 @@ async function main() {
     } else {
       console.log(`✅ Successfully auto-promoted ${promotedCount} claims to main_claims table`);
       console.log(`   Status: unconfirmed (ready for manual review and confirmation)`);
-      console.log(`\n→ View claims at: /research/claims`);
+      console.log(`\n→ View claims at: /claims`);
     }
 
     process.exit(0);

@@ -76,7 +76,7 @@ async function main() {
     console.log(`Errors: ${errors}`);
     console.log('='.repeat(60));
     console.log('\n✅ Backfill complete!');
-    console.log('\n→ View all claims at: /research/claims');
+    console.log('\n→ View all claims at: /claims');
 
     process.exit(0);
   } catch (error) {

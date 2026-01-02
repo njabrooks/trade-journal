@@ -328,11 +328,11 @@ Evidence claims are NOT abbreviated - they receive complete argumentation struct
    Status: unconfirmed (ready for manual review and confirmation)
 
 → View in app: /research/xyz-789-ghi
-→ Browse all claims: /research/claims
+→ Browse all claims: /claims
 → Promote claims from unconfirmed → confirmed in Claims Browser
 ```
 
-**Then suggest**: "Open the Claims Browser at /research/claims to review and promote high-priority claims"
+**Then suggest**: "Open the Claims Browser at /claims to review and promote high-priority claims"
 
 #### For Insights
 

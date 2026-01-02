@@ -36,7 +36,7 @@ const MAIN_NAV = [
   { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
   { href: "/asset-theses", label: "Asset Theses", icon: Target, id: "asset-theses" },
   { href: "/macro-theses", label: "Macro Theses", icon: TrendingUp, id: "macro-theses" },
-  { href: "/research/claims", label: "Claims", icon: Lightbulb, id: "claims" },
+  { href: "/claims", label: "Claims", icon: Lightbulb, id: "claims" },
   { href: "/research", label: "Research", icon: Library, id: "research" },
   { href: "/dashboard/portfolio", label: "Portfolio", icon: LayoutDashboard, id: "portfolio" },
 ] as const;
