@@ -4,9 +4,19 @@ import { UnifiedStrategiesBrowser } from "@/components/strategies/UnifiedStrateg
 import { getStrategiesForList } from "@/db/queries/strategies";
 import { formatCurrency } from "@/lib/formatters";
 
-export default async function StrategiesPage() {
-  // Fetch all strategies (including closed) with a higher limit
-  const allStrategies = await getStrategiesForList(1000, { includeClosedStrategies: true });
+interface StrategiesPageProps {
+  searchParams?: Promise<{
+    includeClosed?: string;
+  }>;
+}
+
+export default async function StrategiesPage({ searchParams }: StrategiesPageProps) {
+  const params = await searchParams;
+
+  // Fetch only open strategies by default (reduces egress from ~1.5MB to ~300KB)
+  // Users can add ?includeClosed=true to URL to see all strategies
+  const includeClosed = params?.includeClosed === 'true';
+  const allStrategies = await getStrategiesForList(200, { includeClosedStrategies: includeClosed });
 
   // Calculate totals for open strategies only
   const openStrategies = allStrategies.filter((s) => s.status === 'open');

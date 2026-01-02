@@ -416,3 +416,114 @@ export async function getTriageQueueForStrategy(
   };
 }
 
+export interface TriageQueueCounts {
+  severity: Record<string, number>;
+  contextLevel: Record<string, number>;
+  recommendedAction: Record<string, number>;
+  strategyKey: Record<string, number>;
+}
+
+/**
+ * Get counts for all triage filter options using SQL aggregation
+ * This replaces the pattern of fetching ALL records just to count them
+ */
+export async function getTriageQueueCounts(
+  accountId: string
+): Promise<TriageQueueCounts> {
+  // Get latest snapshot date
+  const latestDateRow = await db
+    .select({ snapshotDate: triageRecords.snapshotDate })
+    .from(triageRecords)
+    .where(eq(triageRecords.accountId, accountId))
+    .orderBy(desc(triageRecords.snapshotDate))
+    .limit(1);
+
+  const snapshotDate = latestDateRow[0]?.snapshotDate ?? null;
+
+  if (!snapshotDate) {
+    return {
+      severity: {},
+      contextLevel: {},
+      recommendedAction: {},
+      strategyKey: {},
+    };
+  }
+
+  // Same logic as getTriageQueue for which records to include
+  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
+
+  const baseConditions = [
+    eq(triageRecords.accountId, accountId),
+    or(
+      inArray(triageRecords.recommendedAction, historicalTriggers),
+      eq(triageRecords.snapshotDate, snapshotDate)
+    ),
+    ne(triageRecords.severity, 'complete'), // Exclude completed by default
+    or(
+      isNull(strategies.status),
+      ne(strategies.status, 'merged')
+    ),
+  ];
+
+  // Get counts for each dimension using SQL GROUP BY
+  const [severityRows, contextRows, actionRows, strategyRows] = await Promise.all([
+    // Severity counts
+    db
+      .select({
+        value: triageRecords.severity,
+        count: sql<number>\`count(*)::int\`,
+      })
+      .from(triageRecords)
+      .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+      .where(and(...baseConditions))
+      .groupBy(triageRecords.severity),
+
+    // Context level counts
+    db
+      .select({
+        value: triageRecords.contextLevel,
+        count: sql<number>\`count(*)::int\`,
+      })
+      .from(triageRecords)
+      .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+      .where(and(...baseConditions))
+      .groupBy(triageRecords.contextLevel),
+
+    // Recommended action counts
+    db
+      .select({
+        value: triageRecords.recommendedAction,
+        count: sql<number>\`count(*)::int\`,
+      })
+      .from(triageRecords)
+      .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+      .where(and(...baseConditions))
+      .groupBy(triageRecords.recommendedAction),
+
+    // Strategy key counts
+    db
+      .select({
+        value: strategies.strategyKey,
+        count: sql<number>\`count(*)::int\`,
+      })
+      .from(triageRecords)
+      .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+      .where(and(...baseConditions, sql\`\${strategies.strategyKey} IS NOT NULL\`))
+      .groupBy(strategies.strategyKey),
+  ]);
+
+  return {
+    severity: Object.fromEntries(
+      severityRows.map((row) => [row.value ?? '', row.count])
+    ),
+    contextLevel: Object.fromEntries(
+      contextRows.map((row) => [row.value ?? '', row.count])
+    ),
+    recommendedAction: Object.fromEntries(
+      actionRows.map((row) => [row.value ?? '', row.count])
+    ),
+    strategyKey: Object.fromEntries(
+      strategyRows.map((row) => [row.value ?? '', row.count])
+    ),
+  };
+}

@@ -5,7 +5,7 @@ import { TriageTableRow } from "@/components/triage/TriageTableRow";
 import { TriageBulkActions } from "@/components/triage/TriageBulkActions";
 import { SortableHeader } from "@/components/triage/SortableHeader";
 import { getPrimaryAccount, getAccounts } from "@/db/queries/accounts";
-import { getTriageQueue } from "@/db/queries/triage";
+import { getTriageQueue, getTriageQueueCounts } from "@/db/queries/triage";
 import { formatDateFull } from "@/lib/formatters";
 import { ALL_SEVERITIES, ALL_CONTEXTS, ALL_TRIGGERS } from "@/lib/constants/triage";
 import { TriagePageClient } from "./TriagePageClient";
@@ -99,51 +99,34 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   const sortParam = params?.sort;
   const directionParam = params?.direction as "asc" | "desc" | undefined;
 
-  // Get all records first to extract unique values for dropdowns
-  const allRecords = await getTriageQueue(account.id, {});
+  // Get counts using SQL aggregation (replaces double-query pattern)
+  const counts = await getTriageQueueCounts(account.id);
 
   // Use all available options (not just ones that exist in records)
   const allSeverities = [...ALL_SEVERITIES];
   const allContexts = [...ALL_CONTEXTS];
   const allTriggers = [...ALL_TRIGGERS];
-  
-  // Strategies are dynamic - extract from records
-  const allStrategies = Array.from(
-    new Set(
-      allRecords.records
-        .map((r) => r.strategyKey)
-        .filter((r): r is string => r !== null)
-    )
-  ).sort();
 
-  // Calculate counts for all options
+  // Strategies are dynamic - extract from counts
+  const allStrategies = Object.keys(counts.strategyKey).sort();
+
+  // Map counts to the expected format (include zero counts for all options)
   const severityCounts: Record<string, number> = {};
   allSeverities.forEach((severity) => {
-    severityCounts[severity] = allRecords.records.filter(
-      (r) => r.severity === severity
-    ).length;
+    severityCounts[severity] = counts.severity[severity] ?? 0;
   });
 
   const contextCounts: Record<string, number> = {};
   allContexts.forEach((context) => {
-    contextCounts[context] = allRecords.records.filter(
-      (r) => r.contextLevel === context
-    ).length;
+    contextCounts[context] = counts.contextLevel[context] ?? 0;
   });
 
   const triggerCounts: Record<string, number> = {};
   allTriggers.forEach((trigger) => {
-    triggerCounts[trigger] = allRecords.records.filter(
-      (r) => r.recommendedAction === trigger
-    ).length;
+    triggerCounts[trigger] = counts.recommendedAction[trigger] ?? 0;
   });
 
-  const strategyCounts: Record<string, number> = {};
-  allStrategies.forEach((strategy) => {
-    strategyCounts[strategy] = allRecords.records.filter(
-      (r) => r.strategyKey === strategy
-    ).length;
-  });
+  const strategyCounts = counts.strategyKey;
 
   // Now get filtered records
   const queue = await getTriageQueue(account.id, {

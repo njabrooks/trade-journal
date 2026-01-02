@@ -500,3 +500,113 @@ export async function getBlotterEntries(
   });
 }
 
+
+export interface BlotterEntriesCounts {
+  source: Record<string, number>;
+  actionClass: Record<string, number>;
+  status: Record<string, number>;
+  strategyKey: Record<string, number>;
+  followUp: Record<string, number>;
+}
+
+/**
+ * Get counts for all blotter filter options using SQL aggregation
+ * This replaces the pattern of fetching ALL records just to count them
+ */
+export async function getBlotterEntriesCounts(
+  accountId: string | null
+): Promise<BlotterEntriesCounts> {
+  const baseConditions = [];
+  
+  if (accountId) {
+    baseConditions.push(eq(strategies.accountId, accountId));
+  }
+
+  // Exclude merged strategies
+  baseConditions.push(
+    or(
+      isNull(strategies.status),
+      ne(strategies.status, 'merged')
+    )
+  );
+
+  // Get counts for each dimension using SQL GROUP BY
+  const [sourceRows, actionClassRows, strategyRows] = await Promise.all([
+    // Source counts
+    db
+      .select({
+        value: blotterActions.source,
+        count: sql<number>\`count(*)::int\`,
+      })
+      .from(blotterActions)
+      .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
+      .where(and(...baseConditions))
+      .groupBy(blotterActions.source),
+
+    // Action class counts
+    db
+      .select({
+        value: blotterActions.actionClass,
+        count: sql<number>\`count(*)::int\`,
+      })
+      .from(blotterActions)
+      .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
+      .where(and(...baseConditions))
+      .groupBy(blotterActions.actionClass),
+
+    // Strategy key counts
+    db
+      .select({
+        value: strategies.strategyKey,
+        count: sql<number>\`count(*)::int\`,
+      })
+      .from(blotterActions)
+      .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
+      .where(and(...baseConditions, sql\`\${strategies.strategyKey} IS NOT NULL\`))
+      .groupBy(strategies.strategyKey),
+  ]);
+
+  // Status counts require complex logic, fetch with CASE
+  const statusRows = await db
+    .select({
+      matched: sql<number>\`count(*) FILTER (WHERE \${blotterActions.linkedBlotterActionId} IS NOT NULL OR \${blotterActions.linkedTradeBlotterIds} IS NOT NULL)::int\`,
+      unmatched: sql<number>\`count(*) FILTER (WHERE \${blotterActions.source} = 'trade_ingestion' AND \${blotterActions.linkedBlotterActionId} IS NULL AND \${blotterActions.linkedTradeBlotterIds} IS NULL)::int\`,
+      pending: sql<number>\`count(*) FILTER (WHERE \${blotterActions.followUpRequired} = true AND \${blotterActions.completed} = false)::int\`,
+    })
+    .from(blotterActions)
+    .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
+    .where(and(...baseConditions));
+
+  // Follow-up counts
+  const followUpRows = await db
+    .select({
+      pending: sql<number>\`count(*) FILTER (WHERE \${blotterActions.followUpRequired} = true AND \${blotterActions.completed} = false)::int\`,
+      completed: sql<number>\`count(*) FILTER (WHERE \${blotterActions.followUpRequired} = true AND \${blotterActions.completed} = true)::int\`,
+      none: sql<number>\`count(*) FILTER (WHERE \${blotterActions.followUpRequired} = false OR \${blotterActions.followUpRequired} IS NULL)::int\`,
+    })
+    .from(blotterActions)
+    .leftJoin(strategies, eq(blotterActions.strategyId, strategies.id))
+    .where(and(...baseConditions));
+
+  return {
+    source: Object.fromEntries(
+      sourceRows.map((row) => [row.value ?? '', row.count])
+    ),
+    actionClass: Object.fromEntries(
+      actionClassRows.map((row) => [row.value ?? '', row.count])
+    ),
+    status: {
+      matched: statusRows[0]?.matched ?? 0,
+      unmatched: statusRows[0]?.unmatched ?? 0,
+      pending: statusRows[0]?.pending ?? 0,
+    },
+    strategyKey: Object.fromEntries(
+      strategyRows.map((row) => [row.value ?? '', row.count])
+    ),
+    followUp: {
+      pending: followUpRows[0]?.pending ?? 0,
+      completed: followUpRows[0]?.completed ?? 0,
+      none: followUpRows[0]?.none ?? 0,
+    },
+  };
+}

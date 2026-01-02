@@ -4,7 +4,7 @@ import { ExportCsvButton } from "@/components/blotter/ExportCsvButton";
 import { BlotterFilters } from "@/components/blotter/BlotterFilters";
 import { BlotterPageClient } from "./BlotterPageClient";
 import { getPrimaryAccount, getAccounts } from "@/db/queries/accounts";
-import { getBlotterEntries } from "@/db/queries/blotter";
+import { getBlotterEntries, getBlotterEntriesCounts } from "@/db/queries/blotter";
 import type { BlotterEntry } from "@/db/queries/blotter";
 
 interface BlotterPageProps {
@@ -99,65 +99,22 @@ export default async function BlotterPage({ searchParams }: BlotterPageProps) {
   const sortParam = params?.sort;
   const directionParam = params?.direction as "asc" | "desc" | undefined;
 
-  // Get all records first to extract unique values for dropdowns
-  const allEntries = await getBlotterEntries(account.id, {});
+  // Get counts using SQL aggregation (replaces double-query pattern)
+  const counts = await getBlotterEntriesCounts(account.id);
 
-  // Extract unique values for filters
-  const allSources = Array.from(new Set(allEntries.map(e => e.source).filter(Boolean))) as string[];
-  const allActionClasses = Array.from(new Set(allEntries.map(e => e.actionClass).filter(Boolean))) as string[];
+  // Extract unique values for filters from counts
+  const allSources = Object.keys(counts.source).sort();
+  const allActionClasses = Object.keys(counts.actionClass).sort();
   const allStatuses = ["matched", "unmatched", "pending"];
-  const allStrategies = Array.from(
-    new Set(
-      allEntries
-        .map((e) => e.strategyKey)
-        .filter((k): k is string => k !== null)
-    )
-  ).sort();
+  const allStrategies = Object.keys(counts.strategyKey).sort();
   const allFollowUps = ["pending", "completed", "none"];
 
-  // Calculate counts for all options
-  const sourceCounts: Record<string, number> = {};
-  allSources.forEach((source) => {
-    sourceCounts[source] = allEntries.filter((e) => e.source === source).length;
-  });
-
-  const actionClassCounts: Record<string, number> = {};
-  allActionClasses.forEach((actionClass) => {
-    actionClassCounts[actionClass] = allEntries.filter((e) => e.actionClass === actionClass).length;
-  });
-
-  const statusCounts: Record<string, number> = {};
-  allStatuses.forEach((status) => {
-    if (status === "matched") {
-      statusCounts[status] = allEntries.filter((e) => 
-        e.linkedBlotterActionId || (e.linkedTradeBlotterIds && e.linkedTradeBlotterIds.length > 0)
-      ).length;
-    } else if (status === "unmatched") {
-      statusCounts[status] = allEntries.filter((e) => 
-        e.source === 'trade_ingestion' && !e.linkedBlotterActionId && (!e.linkedTradeBlotterIds || e.linkedTradeBlotterIds.length === 0)
-      ).length;
-    } else if (status === "pending") {
-      statusCounts[status] = allEntries.filter((e) => 
-        e.followUpRequired && !e.completed
-      ).length;
-    }
-  });
-
-  const strategyCounts: Record<string, number> = {};
-  allStrategies.forEach((strategy) => {
-    strategyCounts[strategy] = allEntries.filter((e) => e.strategyKey === strategy).length;
-  });
-
-  const followUpCounts: Record<string, number> = {};
-  allFollowUps.forEach((followUp) => {
-    if (followUp === "pending") {
-      followUpCounts[followUp] = allEntries.filter((e) => e.followUpRequired && !e.completed).length;
-    } else if (followUp === "completed") {
-      followUpCounts[followUp] = allEntries.filter((e) => e.completed).length;
-    } else if (followUp === "none") {
-      followUpCounts[followUp] = allEntries.filter((e) => !e.followUpRequired).length;
-    }
-  });
+  // Use counts directly
+  const sourceCounts = counts.source;
+  const actionClassCounts = counts.actionClass;
+  const statusCounts = counts.status;
+  const strategyCounts = counts.strategyKey;
+  const followUpCounts = counts.followUp;
 
   // Now get filtered records
   const entries = await getBlotterEntries(account.id, {
