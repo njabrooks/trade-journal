@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
+import { useRouter } from 'next/navigation';
 import type { StrategyListItem } from '@/db/queries/strategies';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, Link2 } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
-import { LinkToViewDialog } from './LinkToViewDialog';
+import { StandardLinkDialog } from '@/components/linking/StandardLinkDialog';
 
 interface UnifiedStrategiesBrowserProps {
   strategies: StrategyListItem[];
@@ -18,6 +19,7 @@ type SortColumn = 'label' | 'account' | 'stateCode' | 'status' | 'absNotional' |
 type SortDirection = 'asc' | 'desc';
 
 export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowserProps) {
+  const router = useRouter();
   const [expandedStrategy, setExpandedStrategy] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,7 +36,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   const [sortColumn, setSortColumn] = useState<SortColumn>('openedAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // Link dialog state
+  // Standard Link Dialog
   const [linkingStrategy, setLinkingStrategy] = useState<{ id: string; label: string } | null>(null);
 
   // Get unique values for filters
@@ -104,6 +106,9 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   // Filter and sort strategies
   const filteredAndSortedStrategies = useMemo(() => {
     let filtered = [...strategies];
+
+    // Always exclude merged strategies (they've been merged into other strategies)
+    filtered = filtered.filter((s) => s.status?.toLowerCase() !== 'merged');
 
     // Apply filters
     if (statusFilter !== 'all') {
@@ -485,15 +490,14 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                       <tr className="border-b hover:bg-slate-50 transition-colors">
                         {/* Strategy */}
                         <td className="px-4 py-3">
-                          <div className="space-y-1">
-                            <Link
-                              href={`/strategies/${strategy.id}`}
-                              className="text-slate-900 font-medium hover:text-blue-600 line-clamp-1"
-                            >
-                              {strategy.label}
-                            </Link>
-                            <div className="text-xs text-slate-400 font-mono">{strategy.strategyKey}</div>
-                          </div>
+                          <Link
+                            href={`/strategies/${strategy.id}`}
+                            className="text-slate-900 font-medium hover:text-blue-600 truncate block"
+                            title={`${strategy.label} (${strategy.strategyKey})`}
+                          >
+                            <span>{strategy.label}</span>
+                            <span className="text-xs text-slate-400 font-mono ml-2">({strategy.strategyKey})</span>
+                          </Link>
                         </td>
 
                         {/* Account */}
@@ -521,18 +525,16 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
                         {/* Asset Theses */}
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => setLinkingStrategy({ id: strategy.id, label: strategy.label || strategy.strategyKey })}
-                            className="text-left w-full"
-                          >
-                            {strategy.assetViewTitle && strategy.assetThesisId ? (
-                              <span className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1 cursor-pointer">
-                                {strategy.assetViewTitle}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-slate-400 hover:text-slate-600 cursor-pointer">Click to link</span>
-                            )}
-                          </button>
+                          {strategy.assetViewTitle && strategy.assetThesisId ? (
+                            <Link
+                              href={`/asset-theses/${strategy.assetThesisId}`}
+                              className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1"
+                            >
+                              {strategy.assetViewTitle}
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-slate-400">Not linked</span>
+                          )}
                         </td>
 
                         {/* Abs Notional */}
@@ -558,18 +560,28 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
                         {/* Actions */}
                         <td className="px-4 py-3 text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setExpandedStrategy(isExpanded ? null : strategy.id)}
-                            className="h-7 w-7 p-0"
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setLinkingStrategy({ id: strategy.id, label: strategy.label || strategy.strategyKey })}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Link2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setExpandedStrategy(isExpanded ? null : strategy.id)}
+                              className="h-7 w-7 p-0"
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
 
@@ -645,13 +657,18 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
         </div>
       </section>
 
-      {/* Link to Asset Thesis Dialog */}
+      {/* Standard Link Dialog */}
       {linkingStrategy && (
-        <LinkToViewDialog
-          strategyId={linkingStrategy.id}
-          strategyLabel={linkingStrategy.label}
+        <StandardLinkDialog
+          sourceType="strategy"
+          sourceId={linkingStrategy.id}
+          sourceTitle={linkingStrategy.label}
           isOpen={!!linkingStrategy}
           onClose={() => setLinkingStrategy(null)}
+          onSuccess={() => {
+            setLinkingStrategy(null);
+            router.refresh();
+          }}
         />
       )}
     </div>

@@ -172,7 +172,13 @@ export async function getStrategiesForList(
   // Map rows with computed status and optionally filter to open only
   const strategiesWithStatus = rows
     .map((row) => {
-      const computedStatus = statusByStrategy.get(row.id) ?? "closed";
+      // Respect database status for special statuses like "merged", "draft", "planned"
+      // Only compute status for "open"/"closed" strategies
+      const dbStatus = row.status;
+      const computedStatus =
+        dbStatus === "merged" || dbStatus === "draft" || dbStatus === "planned"
+          ? dbStatus
+          : (statusByStrategy.get(row.id) ?? "closed");
       const metrics = metricsByStrategy.get(row.id);
       return {
         id: row.id,
