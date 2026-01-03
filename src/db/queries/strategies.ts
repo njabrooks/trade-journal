@@ -10,6 +10,7 @@ import { db } from "@/db";
 import {
   accounts,
   assetTheses,
+  assetThesisRelatedMacroTheses,
   blotterActions,
   macroTheses,
   navSnapshots,
@@ -37,10 +38,10 @@ export interface StrategyListItem {
   latestPctNav: number | null;
   stateCode: string | null;
   strategyType: string | null;
-  primaryMacroThesisId: string | null; // Inherited from asset thesis
-  primaryMacroThesisTitle: string | null; // Inherited from asset thesis
   assetThesisId: string | null;
   assetViewTitle: string | null;
+  // Linked macro theses (via asset thesis junction)
+  linkedMacroTheses: Array<{ id: string; title: string }>;
 }
 
 export async function getStrategiesForList(
@@ -64,17 +65,12 @@ export async function getStrategiesForList(
   const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
 
   // Build where clause based on filters
-  // Note: macroThesisId filter now works through assetTheses
   const whereConditions = [];
-  if (filters?.macroThesisId) {
-    whereConditions.push(eq(assetTheses.primaryMacroThesisId, filters.macroThesisId));
-  }
   if (filters?.assetThesisId) {
     whereConditions.push(eq(strategies.assetThesisId, filters.assetThesisId));
   }
 
   // Get all strategies with account info
-  // Strategies inherit macro thesis through assetTheses.primaryMacroThesisId
   let query = db
     .select({
       id: strategies.id,
@@ -86,24 +82,32 @@ export async function getStrategiesForList(
       accountLabel: accounts.label,
       accountBrokerId: accounts.brokerAccountId,
       strategyType: strategies.strategyType,
-      primaryMacroThesisId: assetTheses.primaryMacroThesisId,
-      primaryMacroThesisTitle: macroTheses.title,
       assetThesisId: strategies.assetThesisId,
       assetViewTitle: assetTheses.title,
     })
     .from(strategies)
     .leftJoin(accounts, eq(strategies.accountId, accounts.id))
     .leftJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
-    .leftJoin(macroTheses, eq(assetTheses.primaryMacroThesisId, macroTheses.id))
     .$dynamic();
 
   if (whereConditions.length > 0) {
     query = query.where(and(...whereConditions));
   }
 
-  const rows = await query
+  let rows = await query
     .orderBy(desc(strategies.openedAt))
     .limit(limit * 2); // Get more to filter after determining status
+
+  // If filtering by macroThesisId, we need to filter via junction table
+  if (filters?.macroThesisId) {
+    const assetThesisIdsForMacro = await db
+      .select({ assetThesisId: assetThesisRelatedMacroTheses.assetThesisId })
+      .from(assetThesisRelatedMacroTheses)
+      .where(eq(assetThesisRelatedMacroTheses.macroThesisId, filters.macroThesisId));
+
+    const validAssetThesisIds = new Set(assetThesisIdsForMacro.map(r => r.assetThesisId));
+    rows = rows.filter(r => r.assetThesisId && validAssetThesisIds.has(r.assetThesisId));
+  }
 
   const strategyIds = rows.map((row) => row.id);
 
@@ -169,6 +173,32 @@ export async function getStrategiesForList(
     }
   }
 
+  // Get linked macro theses for all asset theses
+  const assetThesisIds = rows.map(r => r.assetThesisId).filter(Boolean) as string[];
+  const macroThesesByAssetThesis = new Map<string, Array<{ id: string; title: string }>>();
+
+  if (assetThesisIds.length > 0) {
+    const linkedMacroTheses = await db
+      .select({
+        assetThesisId: assetThesisRelatedMacroTheses.assetThesisId,
+        macroThesisId: macroTheses.id,
+        macroThesisTitle: macroTheses.title,
+      })
+      .from(assetThesisRelatedMacroTheses)
+      .innerJoin(macroTheses, eq(assetThesisRelatedMacroTheses.macroThesisId, macroTheses.id))
+      .where(inArray(assetThesisRelatedMacroTheses.assetThesisId, assetThesisIds));
+
+    linkedMacroTheses.forEach(lmt => {
+      if (!macroThesesByAssetThesis.has(lmt.assetThesisId)) {
+        macroThesesByAssetThesis.set(lmt.assetThesisId, []);
+      }
+      macroThesesByAssetThesis.get(lmt.assetThesisId)!.push({
+        id: lmt.macroThesisId,
+        title: lmt.macroThesisTitle,
+      });
+    });
+  }
+
   // Map rows with computed status and optionally filter to open only
   const strategiesWithStatus = rows
     .map((row) => {
@@ -193,10 +223,11 @@ export async function getStrategiesForList(
         latestPctNav: metrics?.pctNavAbsNotional ?? null,
         stateCode: metrics?.stateCode ?? null,
         strategyType: row.strategyType,
-        primaryMacroThesisId: row.primaryMacroThesisId,
-        primaryMacroThesisTitle: row.primaryMacroThesisTitle,
         assetThesisId: row.assetThesisId,
         assetViewTitle: row.assetViewTitle,
+        linkedMacroTheses: row.assetThesisId
+          ? macroThesesByAssetThesis.get(row.assetThesisId) ?? []
+          : [],
       };
     })
     .filter((s) => filters?.includeClosedStrategies ? true : s.status === "open")
@@ -223,10 +254,9 @@ export interface StrategyDetail {
     underlyingTicker: string | null;
     templateLabel: string | null;
     strategyType: string | null;
-    primaryMacroThesisId: string | null;
-    primaryMacroThesisTitle: string | null;
     assetThesisId: string | null;
     assetViewTitle: string | null;
+    linkedMacroTheses: Array<{ id: string; title: string }>;
   };
   currentStateCode: string | null;
   currentPlaybookItem: {
@@ -307,8 +337,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         templateLabel: strategyTemplates.label,
         underlyingTicker: underlyings.ticker,
         strategyType: strategies.strategyType,
-        primaryMacroThesisId: assetTheses.primaryMacroThesisId,
-        primaryMacroThesisTitle: macroTheses.title,
         assetThesisId: strategies.assetThesisId,
         assetViewTitle: assetTheses.title,
       })
@@ -317,13 +345,27 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
       .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
       .leftJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
-      .leftJoin(macroTheses, eq(assetTheses.primaryMacroThesisId, macroTheses.id))
       .where(eq(strategies.id, strategyId))
       .limit(1);
 
     const strategyRow = strategyRows[0];
     if (!strategyRow) {
       return null;
+    }
+
+    // Get linked macro theses via junction table
+    let linkedMacroTheses: Array<{ id: string; title: string }> = [];
+    if (strategyRow.assetThesisId) {
+      const macroThesisRows = await db
+        .select({
+          id: macroTheses.id,
+          title: macroTheses.title,
+        })
+        .from(assetThesisRelatedMacroTheses)
+        .innerJoin(macroTheses, eq(assetThesisRelatedMacroTheses.macroThesisId, macroTheses.id))
+        .where(eq(assetThesisRelatedMacroTheses.assetThesisId, strategyRow.assetThesisId));
+
+      linkedMacroTheses = macroThesisRows;
     }
 
     const metricsTimelineRows = await db
@@ -520,10 +562,9 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         underlyingTicker: strategyRow.underlyingTicker,
         templateLabel: strategyRow.templateLabel,
         strategyType: strategyRow.strategyType,
-        primaryMacroThesisId: strategyRow.primaryMacroThesisId,
-        primaryMacroThesisTitle: strategyRow.primaryMacroThesisTitle,
         assetThesisId: strategyRow.assetThesisId,
         assetViewTitle: strategyRow.assetViewTitle,
+        linkedMacroTheses,
       },
       currentStateCode,
       currentPlaybookItem,

@@ -36,8 +36,8 @@ export default async function BlotterPage({ params }: BlotterPageProps) {
       {/* Enhanced Hierarchy Breadcrumb - Phase 2.6.6 Phase B */}
       <ClientHierarchyBreadcrumb
         macroThesis={
-          strategy.primaryMacroThesisId
-            ? { id: strategy.primaryMacroThesisId, title: strategy.primaryMacroThesisTitle || 'Macro Thesis' }
+          strategy.linkedMacroTheses.length > 0
+            ? { id: strategy.linkedMacroTheses[0].id, title: strategy.linkedMacroTheses[0].title }
             : null
         }
         assetView={

@@ -8,7 +8,7 @@ import { createMacroThesis } from '@/db/queries/macroTheses';
 import { createAssetThesis } from '@/db/queries/assetTheses';
 import { createResearchMapping } from '@/db/queries/research';
 import { db } from '@/db';
-import { underlyings } from '@/db/schema';
+import { underlyings, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -138,7 +138,6 @@ export async function PATCH(
           description: modifications?.description !== undefined ? modifications.description : (proposedData?.description || null),
           narrative: modifications?.narrative !== undefined ? modifications.narrative : (proposedData?.narrative || null),
           underlyingId,
-          primaryMacroThesisId: null, // Can be linked later
           timeHorizon: modifications?.timeHorizon || proposedData?.timeHorizon || null,
           confidenceLevel: modifications?.confidenceLevel || proposedData?.confidenceLevel || null,
           status: 'active',

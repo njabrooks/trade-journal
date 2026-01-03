@@ -122,7 +122,10 @@ export function HierarchyBreadcrumb({
     <div className="mb-6 bg-slate-50 border border-slate-200 rounded-lg px-6 py-4">
       <div className="flex items-center gap-3 flex-wrap">
         {levels.map((level, index) => {
-          const isLinked = !!level.data;
+          // For macro thesis level, consider linked if primary OR any related theses exist
+          const isLinked = level.type === 'macro_thesis'
+            ? !!(level.data || relatedMacroTheses.length > 0)
+            : !!level.data;
           const isCurrent = level.type === currentLevel;
           const showArrow = index < levels.length - 1;
           const isMacroThesisLevel = level.type === 'macro_thesis';
@@ -147,29 +150,50 @@ export function HierarchyBreadcrumb({
                     {level.label}
                   </span>
 
-                  {isLinked && level.data ? (
+                  {isLinked ? (
                     <div className="flex items-center gap-2">
-                      {level.href ? (
-                        <Link
-                          href={level.href}
-                          className="text-sm font-medium text-slate-900 hover:text-blue-600 truncate"
-                        >
-                          {level.data.title}
-                        </Link>
-                      ) : (
-                        <span className="text-sm font-medium text-slate-900 truncate">
-                          {level.data.title}
+                      {level.data ? (
+                        level.href ? (
+                          <Link
+                            href={level.href}
+                            className="text-sm font-medium text-slate-900 hover:text-blue-600 truncate"
+                          >
+                            {level.data.title}
+                          </Link>
+                        ) : (
+                          <span className="text-sm font-medium text-slate-900 truncate">
+                            {level.data.title}
+                          </span>
+                        )
+                      ) : isMacroThesisLevel && relatedCount > 0 ? (
+                        // No primary, but has related theses - show first related as representative
+                        <span className="text-sm font-medium text-slate-600 italic truncate">
+                          {relatedCount} related
                         </span>
-                      )}
-                      
-                      {/* Show "+N related" badge for macro thesis with related theses */}
-                      {isMacroThesisLevel && relatedCount > 0 && (
+                      ) : null}
+
+                      {/* Show "+N related" badge for macro thesis with related theses (when there's also a primary) */}
+                      {isMacroThesisLevel && level.data && relatedCount > 0 && (
                         <button
                           onClick={() => setShowRelated(!showRelated)}
                           className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full hover:bg-purple-200 transition-colors"
                           title={`${relatedCount} related macro ${relatedCount === 1 ? 'thesis' : 'theses'}`}
                         >
                           +{relatedCount}
+                          {showRelated ? (
+                            <ChevronUp className="h-3 w-3" />
+                          ) : (
+                            <ChevronDown className="h-3 w-3" />
+                          )}
+                        </button>
+                      )}
+                      {/* Show expandable badge when only related theses exist (no primary) */}
+                      {isMacroThesisLevel && !level.data && relatedCount > 0 && (
+                        <button
+                          onClick={() => setShowRelated(!showRelated)}
+                          className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded-full hover:bg-purple-200 transition-colors"
+                          title={`${relatedCount} related macro ${relatedCount === 1 ? 'thesis' : 'theses'}`}
+                        >
                           {showRelated ? (
                             <ChevronUp className="h-3 w-3" />
                           ) : (

@@ -70,9 +70,9 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
   const uniqueMacroTheses = useMemo(() => {
     const theses = new Map<string, string>();
     assetTheses.forEach((thesis) => {
-      if (thesis.primaryMacroThesisId && thesis.primaryMacroThesisTitle) {
-        theses.set(thesis.primaryMacroThesisId, thesis.primaryMacroThesisTitle);
-      }
+      thesis.linkedMacroTheses.forEach((lmt) => {
+        theses.set(lmt.id, lmt.title);
+      });
     });
     return Array.from(theses.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [assetTheses]);
@@ -129,7 +129,9 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
     }
 
     if (macroThesisFilter !== 'all') {
-      filtered = filtered.filter((t) => t.primaryMacroThesisId === macroThesisFilter);
+      filtered = filtered.filter((t) =>
+        t.linkedMacroTheses.some((lmt) => lmt.id === macroThesisFilter)
+      );
     }
 
     // Search
@@ -141,7 +143,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
           t.description,
           t.ticker,
           t.underlyingName,
-          t.primaryMacroThesisTitle,
+          ...t.linkedMacroTheses.map((lmt) => lmt.title),
           t.direction,
         ]
           .filter(Boolean)
@@ -167,8 +169,8 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
           bVal = b.ticker?.toLowerCase() || '';
           break;
         case 'macroThesis':
-          aVal = a.primaryMacroThesisTitle?.toLowerCase() || '';
-          bVal = b.primaryMacroThesisTitle?.toLowerCase() || '';
+          aVal = a.linkedMacroTheses[0]?.title?.toLowerCase() || '';
+          bVal = b.linkedMacroTheses[0]?.title?.toLowerCase() || '';
           break;
         case 'timeHorizon':
           const horizonOrder = { long_term: 3, medium_term: 2, short_term: 1, null: 0 };
@@ -606,20 +608,11 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                         {/* Macro Theses */}
                         <td className="px-4 py-3">
                           <LinkedEntitiesBadges
-                            entities={[
-                              ...(thesis.primaryMacroThesis
-                                ? [{
-                                    id: thesis.primaryMacroThesis.id,
-                                    title: thesis.primaryMacroThesis.title,
-                                    type: 'macro' as const,
-                                  }]
-                                : []),
-                              ...thesis.relatedMacroTheses.map((mt) => ({
-                                id: mt.id,
-                                title: mt.title,
-                                type: 'macro' as const,
-                              })),
-                            ]}
+                            entities={thesis.linkedMacroTheses.map((lmt) => ({
+                              id: lmt.id,
+                              title: lmt.title,
+                              type: 'macro' as const,
+                            }))}
                             isExpanded={isExpanded}
                             onExpand={() => setExpandedThesis(thesis.id)}
                             maxVisibleWhenCollapsed={1}

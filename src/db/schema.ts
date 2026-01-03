@@ -106,9 +106,7 @@ export const assetTheses = pgTable(
   'asset_theses',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    primaryMacroThesisId: uuid('primary_macro_thesis_id').references(() => macroTheses.id, {
-      onDelete: 'set null',
-    }),
+    // Note: primaryMacroThesisId removed - all macro thesis links now use junction table
     underlyingId: uuid('underlying_id').references(() => underlyings.id, {
       onDelete: 'set null',
     }),
@@ -151,7 +149,6 @@ export const assetTheses = pgTable(
     notes: jsonb('notes'),
   },
   (table) => ({
-    primaryMacroThesisIdx: index('idx_asset_theses_primary_macro_thesis').on(table.primaryMacroThesisId),
     underlyingIdx: index('idx_asset_theses_underlying').on(table.underlyingId),
     statusIdx: index('idx_asset_theses_status').on(table.status),
     nextReviewIdx: index('idx_asset_theses_next_review').on(table.nextReviewDueAt),
@@ -199,20 +196,13 @@ export type NewAssetThesisRelatedMacroThesis = typeof assetThesisRelatedMacroThe
 
 // Note: Forward references to strategies table (defined below) - Drizzle handles this
 export const macroThesesRelations = relations(macroTheses, ({ many }) => ({
-  // Asset theses that have this as their primary macro thesis
-  primaryAssetTheses: many(assetTheses),
-  // Junction table entries for related asset theses
-  relatedAssetTheses: many(assetThesisRelatedMacroTheses),
+  // All macro thesis links now go through junction table
+  linkedAssetTheses: many(assetThesisRelatedMacroTheses),
 }));
 
-export const assetThesesRelations = relations(assetTheses, ({ one, many }) => ({
-  // Primary macro thesis (one-to-one via foreign key)
-  primaryMacroThesis: one(macroTheses, {
-    fields: [assetTheses.primaryMacroThesisId],
-    references: [macroTheses.id],
-  }),
-  // Related macro theses (many-to-many via junction table)
-  relatedMacroTheses: many(assetThesisRelatedMacroTheses),
+export const assetThesesRelations = relations(assetTheses, ({ many }) => ({
+  // Macro theses (many-to-many via junction table)
+  linkedMacroTheses: many(assetThesisRelatedMacroTheses),
   // Strategies linked to this asset thesis
   linkedStrategies: many(strategies),
 }));

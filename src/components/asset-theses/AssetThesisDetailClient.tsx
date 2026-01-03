@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { ClientHierarchyBreadcrumb } from '@/components/ui/ClientHierarchyBreadcrumb';
 import { ManageRelatedMacroThesesDialog } from './ManageRelatedMacroThesesDialog';
 
-interface RelatedMacroThesis {
+interface LinkedMacroThesis {
   id: string;
   macroThesisId: string;
   title: string;
@@ -19,17 +19,23 @@ interface RelatedMacroThesis {
 interface AssetThesisDetailClientProps {
   assetThesisId: string;
   assetThesisTitle: string;
-  primaryMacroThesis: { id: string; title: string } | null;
-  relatedMacroTheses: RelatedMacroThesis[];
+  linkedMacroTheses: LinkedMacroThesis[];
 }
 
 export function AssetThesisDetailClient({
   assetThesisId,
   assetThesisTitle,
-  primaryMacroThesis,
-  relatedMacroTheses,
+  linkedMacroTheses,
 }: AssetThesisDetailClientProps) {
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+
+  // First linked macro thesis is treated as "primary" for display purposes
+  const primaryMacroThesis = linkedMacroTheses.length > 0
+    ? { id: linkedMacroTheses[0].macroThesisId, title: linkedMacroTheses[0].title }
+    : null;
+
+  // All other linked theses are "related"
+  const relatedMacroTheses = linkedMacroTheses.slice(1);
 
   return (
     <>
@@ -52,7 +58,7 @@ export function AssetThesisDetailClient({
         assetThesisId={assetThesisId}
         assetThesisTitle={assetThesisTitle}
         primaryMacroThesisId={primaryMacroThesis?.id}
-        currentRelated={relatedMacroTheses}
+        currentRelated={linkedMacroTheses}
         isOpen={manageDialogOpen}
         onClose={() => setManageDialogOpen(false)}
       />

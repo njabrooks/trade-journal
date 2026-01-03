@@ -5,6 +5,8 @@ import {
   createAssetThesis,
   updateAssetThesis,
 } from '@/db/queries/assetTheses';
+import { db } from '@/db';
+import { assetThesisRelatedMacroTheses } from '@/db/schema';
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,13 +65,21 @@ export async function POST(request: NextRequest) {
       fundamentalContext,
       positioningContext,
       regimeContext,
-      primaryMacroThesisId: macroThesisId,
       underlyingId,
       timeHorizon,
       confidenceLevel,
       status: status ?? 'active',
       notes,
     });
+
+    // Link to macro thesis via junction table if provided
+    if (macroThesisId) {
+      await db.insert(assetThesisRelatedMacroTheses).values({
+        assetThesisId: id,
+        macroThesisId,
+        addedBy: 'creation',
+      });
+    }
 
     return NextResponse.json({ success: true, id, message: 'Asset view created successfully' });
   } catch (error) {

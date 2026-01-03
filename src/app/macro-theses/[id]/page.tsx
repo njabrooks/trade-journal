@@ -28,20 +28,14 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
     notFound();
   }
 
-  // Filter asset theses linked to this macro thesis
-  // Include both PRIMARY connections and RELATED connections
-  const primaryLinkedAssetTheses = allAssetTheses.filter((at) => at.primaryMacroThesisId === id);
+  // Filter asset theses linked to this macro thesis (via junction table)
   const relatedAssetThesisIds = new Set(relatedAssetThesisLinks.map((link) => link.assetThesisId));
-  const relatedLinkedAssetTheses = allAssetTheses.filter((at) => relatedAssetThesisIds.has(at.id));
-  
-  // Combine and dedupe (in case an asset thesis is both primary and related)
-  const linkedAssetThesesMap = new Map<string, typeof allAssetTheses[0]>();
-  primaryLinkedAssetTheses.forEach((at) => linkedAssetThesesMap.set(at.id, at));
-  relatedLinkedAssetTheses.forEach((at) => linkedAssetThesesMap.set(at.id, at));
-  const linkedAssetTheses = Array.from(linkedAssetThesesMap.values());
-  
-  // Strategies inherit macro thesis through asset theses
-  const linkedStrategies = allStrategies.filter((s) => s.primaryMacroThesisId === id);
+  const linkedAssetTheses = allAssetTheses.filter((at) => relatedAssetThesisIds.has(at.id));
+
+  // Strategies are linked through asset theses - filter by those with a linked macro thesis matching this id
+  const linkedStrategies = allStrategies.filter((s) =>
+    s.linkedMacroTheses.some((lmt) => lmt.id === id)
+  );
 
   return (
     <DashboardShell

@@ -6,8 +6,7 @@ import { eq, inArray, and, desc } from 'drizzle-orm';
 /**
  * POST /api/macro-theses/[id]/link-asset-theses
  *
- * Link asset theses to a macro thesis.
- * Can set as primary or add as related.
+ * Link asset theses to a macro thesis via the junction table.
  */
 export async function POST(
   req: NextRequest,
@@ -16,9 +15,8 @@ export async function POST(
   try {
     const { id: macroThesisId } = await params;
     const body = await req.json();
-    const { targetIds, linkType = 'related' } = body as {
+    const { targetIds } = body as {
       targetIds: string[];
-      linkType?: 'primary' | 'related';
     };
 
     if (!targetIds || !Array.isArray(targetIds) || targetIds.length === 0) {
@@ -53,45 +51,35 @@ export async function POST(
       );
     }
 
-    if (linkType === 'primary') {
-      // Set as primary macro thesis (update FK)
+    // Add to junction table (insert only if not already exists)
+    const existingRelations = await db
+      .select({ assetThesisId: assetThesisRelatedMacroTheses.assetThesisId })
+      .from(assetThesisRelatedMacroTheses)
+      .where(
+        and(
+          inArray(assetThesisRelatedMacroTheses.assetThesisId, targetIds),
+          eq(assetThesisRelatedMacroTheses.macroThesisId, macroThesisId)
+        )
+      );
+
+    const existingSet = new Set(existingRelations.map(r => r.assetThesisId));
+    const newRelations = targetIds
+      .filter(id => !existingSet.has(id))
+      .map(assetThesisId => ({
+        assetThesisId,
+        macroThesisId,
+        addedAt: new Date(),
+      }));
+
+    if (newRelations.length > 0) {
       await db
-        .update(assetTheses)
-        .set({
-          primaryMacroThesisId: macroThesisId,
-          updatedAt: new Date(),
-        })
-        .where(inArray(assetTheses.id, targetIds));
-    } else {
-      // Add as related macro theses (junction table)
-      // Insert only if not already exists
-      const existingRelations = await db
-        .select({ assetThesisId: assetThesisRelatedMacroTheses.assetThesisId })
-        .from(assetThesisRelatedMacroTheses)
-        .where(
-          inArray(assetThesisRelatedMacroTheses.assetThesisId, targetIds)
-        );
-
-      const existingSet = new Set(existingRelations.map(r => r.assetThesisId));
-      const newRelations = targetIds
-        .filter(id => !existingSet.has(id))
-        .map(assetThesisId => ({
-          assetThesisId,
-          macroThesisId,
-          addedAt: new Date(),
-        }));
-
-      if (newRelations.length > 0) {
-        await db
-          .insert(assetThesisRelatedMacroTheses)
-          .values(newRelations);
-      }
+        .insert(assetThesisRelatedMacroTheses)
+        .values(newRelations);
     }
 
     return NextResponse.json({
       success: true,
       linkedCount: targetIds.length,
-      linkType,
     });
   } catch (error) {
     console.error('Error linking asset theses to macro thesis:', error);
@@ -133,7 +121,6 @@ export async function GET(
         id: assetTheses.id,
         title: assetTheses.title,
         status: assetTheses.status,
-        primaryMacroThesisId: assetTheses.primaryMacroThesisId,
         ticker: underlyings.ticker,
         createdAt: assetTheses.createdAt,
       })
@@ -146,20 +133,17 @@ export async function GET(
       ticker: at.ticker || undefined,
     }));
 
-    // Get related asset theses from junction table
-    const relatedAssetTheses = await db
+    // Get linked asset theses from junction table
+    const linkedAssetTheses = await db
       .select({ assetThesisId: assetThesisRelatedMacroTheses.assetThesisId })
       .from(assetThesisRelatedMacroTheses)
       .where(eq(assetThesisRelatedMacroTheses.macroThesisId, macroThesisId));
 
-    const relatedSet = new Set(relatedAssetTheses.map(r => r.assetThesisId));
+    const linkedSet = new Set(linkedAssetTheses.map(r => r.assetThesisId));
 
-    // Separate into currently linked (primary or related) and available
+    // Separate into currently linked and available
     const currentlyLinked = allAssetTheses
-      .filter(
-        at =>
-          at.primaryMacroThesisId === macroThesisId || relatedSet.has(at.id)
-      )
+      .filter(at => linkedSet.has(at.id))
       .map(at => ({
         id: at.id,
         title: at.title,
@@ -168,10 +152,7 @@ export async function GET(
       }));
 
     const available = allAssetTheses
-      .filter(
-        at =>
-          at.primaryMacroThesisId !== macroThesisId && !relatedSet.has(at.id)
-      )
+      .filter(at => !linkedSet.has(at.id))
       .map(at => ({
         id: at.id,
         title: at.title,
@@ -192,8 +173,7 @@ export async function GET(
 /**
  * DELETE /api/macro-theses/[id]/link-asset-theses
  *
- * Unlink an asset thesis from this macro thesis
- * Handles both primary and related relationships
+ * Unlink an asset thesis from this macro thesis via the junction table
  */
 export async function DELETE(
   req: NextRequest,
@@ -225,7 +205,7 @@ export async function DELETE(
       );
     }
 
-    // Fetch the asset thesis to check relationship type
+    // Verify asset thesis exists
     const assetThesis = await db.query.assetTheses.findFirst({
       where: (at, { eq }) => eq(at.id, targetId),
     });
@@ -237,19 +217,7 @@ export async function DELETE(
       );
     }
 
-    // Check if it's a primary relationship
-    if (assetThesis.primaryMacroThesisId === macroThesisId) {
-      // Remove primary relationship
-      await db
-        .update(assetTheses)
-        .set({
-          primaryMacroThesisId: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(assetTheses.id, targetId));
-    }
-
-    // Also remove from related (junction table) if exists
+    // Remove from junction table
     await db
       .delete(assetThesisRelatedMacroTheses)
       .where(

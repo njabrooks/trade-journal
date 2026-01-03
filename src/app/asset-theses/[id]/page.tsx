@@ -29,12 +29,8 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
   }
 
   // Filter macro theses and strategies linked to this asset thesis
-  // Include primary macro thesis + all related macro theses
-  const linkedMacroThesesIds = [
-    view.primaryMacroThesis?.id,
-    ...(view.relatedMacroTheses?.map((r) => r.macroThesisId) || []),
-  ].filter(Boolean) as string[];
-  
+  const linkedMacroThesesIds = view.linkedMacroTheses.map((lmt) => lmt.macroThesisId);
+
   const linkedMacroTheses = allMacroTheses.filter((mt) => linkedMacroThesesIds.includes(mt.id));
   const linkedStrategies = allStrategies.filter((s) => s.assetThesisId === id);
 
@@ -48,19 +44,12 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
       <AssetThesisDetailClient
         assetThesisId={view.id}
         assetThesisTitle={view.title}
-        primaryMacroThesis={
-          view.primaryMacroThesis
-            ? { id: view.primaryMacroThesis.id, title: view.primaryMacroThesis.title }
-            : null
-        }
-        relatedMacroTheses={
-          view.relatedMacroTheses?.map((r) => ({
-            id: r.id,
-            macroThesisId: r.macroThesisId || '',
-            title: r.title || '',
-            relationshipNote: r.relationshipNote,
-          })) || []
-        }
+        linkedMacroTheses={view.linkedMacroTheses.map((lmt) => ({
+          id: lmt.id,
+          macroThesisId: lmt.macroThesisId,
+          title: lmt.title || '',
+          relationshipNote: lmt.relationshipNote,
+        }))}
       />
 
       <div className="space-y-6">

@@ -8,7 +8,7 @@ import { eq, inArray, and } from 'drizzle-orm';
  *
  * Link entities to an asset thesis.
  * Supports linking to:
- * - Macro theses (primary or related)
+ * - Macro theses (via junction table)
  * - Strategies
  */
 export async function POST(
@@ -18,10 +18,9 @@ export async function POST(
   try {
     const { id: assetThesisId } = await params;
     const body = await req.json();
-    const { targetType, targetIds, linkType } = body as {
+    const { targetType, targetIds } = body as {
       targetType: 'macroThesis' | 'strategy';
       targetIds: string[];
-      linkType?: 'primary' | 'related';
     };
 
     if (!targetType) {
@@ -51,50 +50,30 @@ export async function POST(
     }
 
     if (targetType === 'macroThesis') {
-      // Link to macro theses
-      if (linkType === 'primary') {
-        // Set as primary macro thesis (only one allowed)
-        if (targetIds.length > 1) {
-          return NextResponse.json(
-            { error: 'Only one primary macro thesis allowed' },
-            { status: 400 }
-          );
-        }
+      // Link to macro theses via junction table
+      const existingRelations = await db
+        .select({ macroThesisId: assetThesisRelatedMacroTheses.macroThesisId })
+        .from(assetThesisRelatedMacroTheses)
+        .where(eq(assetThesisRelatedMacroTheses.assetThesisId, assetThesisId));
 
+      const existingSet = new Set(existingRelations.map(r => r.macroThesisId));
+      const newRelations = targetIds
+        .filter(id => !existingSet.has(id))
+        .map(macroThesisId => ({
+          assetThesisId,
+          macroThesisId,
+          addedAt: new Date(),
+        }));
+
+      if (newRelations.length > 0) {
         await db
-          .update(assetTheses)
-          .set({
-            primaryMacroThesisId: targetIds[0],
-            updatedAt: new Date(),
-          })
-          .where(eq(assetTheses.id, assetThesisId));
-      } else {
-        // Add as related macro theses (junction table)
-        const existingRelations = await db
-          .select({ macroThesisId: assetThesisRelatedMacroTheses.macroThesisId })
-          .from(assetThesisRelatedMacroTheses)
-          .where(eq(assetThesisRelatedMacroTheses.assetThesisId, assetThesisId));
-
-        const existingSet = new Set(existingRelations.map(r => r.macroThesisId));
-        const newRelations = targetIds
-          .filter(id => !existingSet.has(id))
-          .map(macroThesisId => ({
-            assetThesisId,
-            macroThesisId,
-            addedAt: new Date(),
-          }));
-
-        if (newRelations.length > 0) {
-          await db
-            .insert(assetThesisRelatedMacroTheses)
-            .values(newRelations);
-        }
+          .insert(assetThesisRelatedMacroTheses)
+          .values(newRelations);
       }
 
       return NextResponse.json({
         success: true,
         linkedCount: targetIds.length,
-        linkType: linkType || 'related',
       });
     } else if (targetType === 'strategy') {
       // Link to strategies
@@ -140,9 +119,9 @@ export async function POST(
 }
 
 /**
- * GET /api/asset-theses/[id]/available-macro-theses
+ * GET /api/asset-theses/[id]/link-entities
  *
- * Get available macro theses that can be linked to this asset thesis
+ * Get available entities that can be linked to this asset thesis
  */
 export async function GET(
   req: NextRequest,
@@ -157,8 +136,7 @@ export async function GET(
     const assetThesis = await db.query.assetTheses.findFirst({
       where: (at, { eq }) => eq(at.id, assetThesisId),
       with: {
-        primaryMacroThesis: true,
-        relatedMacroTheses: {
+        linkedMacroTheses: {
           with: {
             macroThesis: true,
           },
@@ -180,14 +158,11 @@ export async function GET(
         orderBy: (mt, { desc }) => [desc(mt.createdAt)],
       });
 
-      // Get currently linked IDs (primary + related)
+      // Get currently linked IDs from junction table
       const linkedIds = new Set<string>();
-      if (assetThesis.primaryMacroThesisId) {
-        linkedIds.add(assetThesis.primaryMacroThesisId);
-      }
-      assetThesis.relatedMacroTheses?.forEach(rel => {
+      for (const rel of (assetThesis.linkedMacroTheses ?? [])) {
         linkedIds.add(rel.macroThesisId);
-      });
+      }
 
       // Separate into currently linked and available
       const currentlyLinked = allMacroTheses
@@ -218,9 +193,10 @@ export async function GET(
       });
 
       // Get currently linked strategy IDs
-      const linkedIds = new Set(
-        assetThesis.linkedStrategies?.map(s => s.id) || []
-      );
+      const linkedIds = new Set<string>();
+      for (const s of (assetThesis.linkedStrategies ?? [])) {
+        linkedIds.add(s.id);
+      }
 
       // Separate into currently linked and available
       const currentlyLinked = allStrategies
@@ -259,7 +235,7 @@ export async function GET(
  *
  * Unlink an entity from an asset thesis.
  * Supports unlinking:
- * - Macro theses (primary or related)
+ * - Macro theses (via junction table)
  * - Strategies
  */
 export async function DELETE(
@@ -294,27 +270,15 @@ export async function DELETE(
     }
 
     if (targetType === 'macroThesis') {
-      // Check if it's the primary macro thesis
-      if (assetThesisExists.primaryMacroThesisId === targetId) {
-        // Remove primary macro thesis
-        await db
-          .update(assetTheses)
-          .set({
-            primaryMacroThesisId: null,
-            updatedAt: new Date(),
-          })
-          .where(eq(assetTheses.id, assetThesisId));
-      } else {
-        // Remove from related macro theses
-        await db
-          .delete(assetThesisRelatedMacroTheses)
-          .where(
-            and(
-              eq(assetThesisRelatedMacroTheses.assetThesisId, assetThesisId),
-              eq(assetThesisRelatedMacroTheses.macroThesisId, targetId)
-            )
-          );
-      }
+      // Remove from junction table
+      await db
+        .delete(assetThesisRelatedMacroTheses)
+        .where(
+          and(
+            eq(assetThesisRelatedMacroTheses.assetThesisId, assetThesisId),
+            eq(assetThesisRelatedMacroTheses.macroThesisId, targetId)
+          )
+        );
     } else if (targetType === 'strategy') {
       // Unlink strategy
       await db
