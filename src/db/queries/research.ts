@@ -56,6 +56,107 @@ export async function getResearchArtifactsList(filters?: {
   return query.orderBy(desc(researchArtifacts.ingestedAt));
 }
 
+// ============================================================================
+// Research Artifact List Items (for unified browser)
+// ============================================================================
+
+export interface ResearchArtifactListItem {
+  id: string;
+  title: string;
+  sourceType: string;
+  sourceUrl: string | null;
+  author: string | null;
+  publishedDate: Date | null;
+  status: string;
+  tags: string[] | null;
+  ingestedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  claimCount: number;
+  unconfirmedClaimCount: number;
+  hasInsight: boolean;
+}
+
+export async function getResearchArtifactsListWithCounts(): Promise<ResearchArtifactListItem[]> {
+  const artifacts = await db
+    .select({
+      id: researchArtifacts.id,
+      title: researchArtifacts.title,
+      sourceType: researchArtifacts.sourceType,
+      sourceUrl: researchArtifacts.sourceUrl,
+      author: researchArtifacts.author,
+      publishedDate: researchArtifacts.publishedDate,
+      status: researchArtifacts.status,
+      tags: researchArtifacts.tags,
+      ingestedAt: researchArtifacts.ingestedAt,
+      createdAt: researchArtifacts.createdAt,
+      updatedAt: researchArtifacts.updatedAt,
+    })
+    .from(researchArtifacts)
+    .orderBy(desc(researchArtifacts.ingestedAt));
+
+  if (artifacts.length === 0) {
+    return [];
+  }
+
+  const artifactIds = artifacts.map((a) => a.id);
+
+  // Get insight IDs for each artifact
+  const insights = await db
+    .select({
+      artifactId: researchInsights.researchArtifactId,
+      insightId: researchInsights.id,
+    })
+    .from(researchInsights)
+    .where(inArray(researchInsights.researchArtifactId, artifactIds));
+
+  const insightIds = insights.map((i) => i.insightId);
+  const artifactHasInsight = new Map<string, boolean>();
+  insights.forEach((i) => {
+    artifactHasInsight.set(i.artifactId, true);
+  });
+
+  // Get claim counts per artifact (via insight)
+  const claimCounts = insightIds.length > 0
+    ? await db
+        .select({
+          insightId: mainClaims.sourceInsightId,
+          totalCount: sql<number>`count(*)::int`,
+          unconfirmedCount: sql<number>`count(*) FILTER (WHERE ${mainClaims.status} = 'unconfirmed')::int`,
+        })
+        .from(mainClaims)
+        .where(inArray(mainClaims.sourceInsightId, insightIds))
+        .groupBy(mainClaims.sourceInsightId)
+    : [];
+
+  // Map insight IDs to artifact IDs
+  const insightToArtifact = new Map<string, string>();
+  insights.forEach((i) => {
+    insightToArtifact.set(i.insightId, i.artifactId);
+  });
+
+  // Aggregate counts by artifact
+  const artifactClaimCounts = new Map<string, { total: number; unconfirmed: number }>();
+  claimCounts.forEach((c) => {
+    const artifactId = insightToArtifact.get(c.insightId);
+    if (artifactId) {
+      const existing = artifactClaimCounts.get(artifactId) || { total: 0, unconfirmed: 0 };
+      artifactClaimCounts.set(artifactId, {
+        total: existing.total + Number(c.totalCount),
+        unconfirmed: existing.unconfirmed + Number(c.unconfirmedCount),
+      });
+    }
+  });
+
+  // Combine data
+  return artifacts.map((artifact) => ({
+    ...artifact,
+    claimCount: artifactClaimCounts.get(artifact.id)?.total || 0,
+    unconfirmedClaimCount: artifactClaimCounts.get(artifact.id)?.unconfirmed || 0,
+    hasInsight: artifactHasInsight.get(artifact.id) || false,
+  }));
+}
+
 export async function getResearchArtifactById(id: string) {
   const rows = await db
     .select()
