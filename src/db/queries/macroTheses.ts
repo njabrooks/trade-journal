@@ -396,6 +396,7 @@ export async function getMainClaimsWithSourcesForThesis(thesisId: string) {
         claimId: claimThesisMappings.mainClaimId,
         thesisId: macroTheses.id,
         thesisTitle: macroTheses.title,
+        mappingType: claimThesisMappings.mappingType,
       })
       .from(claimThesisMappings)
       .innerJoin(macroTheses, eq(claimThesisMappings.macroThesisId, macroTheses.id))
@@ -407,6 +408,7 @@ export async function getMainClaimsWithSourcesForThesis(thesisId: string) {
         viewId: assetTheses.id,
         viewTitle: assetTheses.title,
         viewTicker: underlyings.ticker,
+        mappingType: claimThesisMappings.mappingType,
       })
       .from(claimThesisMappings)
       .innerJoin(assetTheses, eq(claimThesisMappings.assetThesisId, assetTheses.id))
@@ -421,6 +423,7 @@ export async function getMainClaimsWithSourcesForThesis(thesisId: string) {
       linkedThesesMap.get(link.claimId).push({
         id: link.thesisId,
         title: link.thesisTitle,
+        mappingType: link.mappingType,
       });
     }
 
@@ -432,6 +435,7 @@ export async function getMainClaimsWithSourcesForThesis(thesisId: string) {
         id: link.viewId,
         title: link.viewTitle,
         ticker: link.viewTicker || '',
+        mappingType: link.mappingType,
       });
     }
   }

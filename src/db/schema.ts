@@ -194,6 +194,46 @@ export type AssetThesisRelatedMacroThesis = typeof assetThesisRelatedMacroTheses
 export type NewAssetThesisRelatedMacroThesis = typeof assetThesisRelatedMacroTheses.$inferInsert;
 
 // ============================================================================
+// Relations Definitions (for Drizzle relational query builder)
+// ============================================================================
+
+// Note: Forward references to strategies table (defined below) - Drizzle handles this
+export const macroThesesRelations = relations(macroTheses, ({ many }) => ({
+  // Asset theses that have this as their primary macro thesis
+  primaryAssetTheses: many(assetTheses),
+  // Junction table entries for related asset theses
+  relatedAssetTheses: many(assetThesisRelatedMacroTheses),
+}));
+
+export const assetThesesRelations = relations(assetTheses, ({ one, many }) => ({
+  // Primary macro thesis (one-to-one via foreign key)
+  primaryMacroThesis: one(macroTheses, {
+    fields: [assetTheses.primaryMacroThesisId],
+    references: [macroTheses.id],
+  }),
+  // Related macro theses (many-to-many via junction table)
+  relatedMacroTheses: many(assetThesisRelatedMacroTheses),
+  // Strategies linked to this asset thesis
+  linkedStrategies: many(strategies),
+}));
+
+export const assetThesisRelatedMacroThesesRelations = relations(
+  assetThesisRelatedMacroTheses,
+  ({ one }) => ({
+    assetThesis: one(assetTheses, {
+      fields: [assetThesisRelatedMacroTheses.assetThesisId],
+      references: [assetTheses.id],
+    }),
+    macroThesis: one(macroTheses, {
+      fields: [assetThesisRelatedMacroTheses.macroThesisId],
+      references: [macroTheses.id],
+    }),
+  })
+);
+
+// Note: strategiesRelations is defined after the strategies table below
+
+// ============================================================================
 // Main Claims (First-Class Claim Entities)
 // ============================================================================
 
@@ -901,6 +941,14 @@ export type NewStrategyTemplate = typeof strategyTemplates.$inferInsert;
 
 export type Strategy = typeof strategies.$inferSelect;
 export type NewStrategy = typeof strategies.$inferInsert;
+
+// Strategies relations (defined here after strategies table)
+export const strategiesRelations = relations(strategies, ({ one }) => ({
+  assetThesis: one(assetTheses, {
+    fields: [strategies.assetThesisId],
+    references: [assetTheses.id],
+  }),
+}));
 
 export type PlaybookItem = typeof playbookItems.$inferSelect;
 export type NewPlaybookItem = typeof playbookItems.$inferInsert;
