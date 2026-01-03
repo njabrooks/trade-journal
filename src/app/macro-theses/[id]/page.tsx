@@ -5,7 +5,7 @@ import { getAssetThesesForRelatedMacroThesis } from '@/db/queries/relatedMacroTh
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { EditMacroThesisButton } from '@/components/theses/EditMacroThesisButton';
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
-import { UnifiedAssetThesisBrowser } from '@/components/asset-theses/UnifiedAssetThesisBrowser';
+import { LinkedAssetThesesSection } from '@/components/theses/LinkedAssetThesesSection';
 import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
 import { notFound } from 'next/navigation';
 
@@ -133,20 +133,12 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
           )}
         </div>
 
-        {/* Linked Asset Theses - UnifiedAssetThesisBrowser */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base font-semibold mb-3">
-            Asset Theses ({linkedAssetTheses.length})
-          </h3>
-          <p className="text-xs text-slate-500 mb-3">
-            Includes asset theses where this is the primary macro thesis, or a related macro thesis.
-          </p>
-          {linkedAssetTheses.length === 0 ? (
-            <p className="text-sm text-slate-500">No asset theses linked to this macro thesis yet.</p>
-          ) : (
-            <UnifiedAssetThesisBrowser assetTheses={linkedAssetTheses} />
-          )}
-        </div>
+        {/* Linked Asset Theses - with Link Button */}
+        <LinkedAssetThesesSection
+          macroThesisId={thesis.id}
+          macroThesisTitle={thesis.title}
+          linkedAssetTheses={linkedAssetTheses}
+        />
 
         {/* Linked Strategies - UnifiedStrategiesBrowser */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">

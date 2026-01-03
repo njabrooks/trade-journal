@@ -24,7 +24,6 @@ export const LINKING_CONFIGS: Record<SourceEntityType, LinkingConfig> = {
     validTargetTypes: ['macroThesis', 'strategy'],
     allowMultipleTargets: true,
     requireRelationshipType: false,
-    primaryLinkType: 'primary', // For Macro Thesis links (primary vs related)
   },
   strategy: {
     sourceType: 'strategy',

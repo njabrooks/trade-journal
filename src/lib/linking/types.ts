@@ -29,7 +29,6 @@ export interface LinkingConfig {
   validTargetTypes: TargetEntityType[];
   allowMultipleTargets: boolean;
   requireRelationshipType: boolean; // Claims only
-  primaryLinkType?: 'primary' | 'related'; // For Asset Thesis → Macro Thesis
 }
 
 /**

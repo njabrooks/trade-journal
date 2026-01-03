@@ -6,14 +6,13 @@
  * Supports linking between:
  * - Claims → Macro Theses / Asset Theses
  * - Macro Theses → Asset Theses
- * - Asset Theses → Macro Theses (primary/related) / Strategies
+ * - Asset Theses → Macro Theses / Strategies
  * - Strategies → Asset Theses
  *
  * Features:
  * - Context-aware: Skips unnecessary steps based on source type
  * - Two modes: "Link to Existing" vs "Create New & Link"
  * - Relationship types for Claims (supports/refutes/foundation)
- * - Primary vs Related for Asset→Macro links
  * - One-to-one constraint for Strategy→Asset links
  *
  * Based on ConvertClaimToEntityDialog pattern but generalized
@@ -42,6 +41,8 @@ interface StandardLinkDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** Pre-select target type to skip the type selection step */
+  defaultTargetType?: TargetEntityType;
 }
 
 export function StandardLinkDialog({
@@ -51,6 +52,7 @@ export function StandardLinkDialog({
   isOpen,
   onClose,
   onSuccess,
+  defaultTargetType,
 }: StandardLinkDialogProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,9 +65,9 @@ export function StandardLinkDialog({
   // Step 0: Choose mode
   const [mode, setMode] = useState<LinkMode | null>(null);
 
-  // Step 1: Choose target type (skip if only one valid type)
+  // Step 1: Choose target type (skip if only one valid type OR if defaultTargetType provided)
   const [targetType, setTargetType] = useState<TargetEntityType | null>(
-    validTargetTypes.length === 1 ? validTargetTypes[0] : null
+    defaultTargetType ?? (validTargetTypes.length === 1 ? validTargetTypes[0] : null)
   );
 
   // Link to Existing mode state
@@ -74,7 +76,6 @@ export function StandardLinkDialog({
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
   const [relationshipType, setRelationshipType] = useState<RelationshipType>('supports');
-  const [linkTypeAssetToMacro, setLinkTypeAssetToMacro] = useState<'primary' | 'related'>('related');
 
   // Search/filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -83,14 +84,14 @@ export function StandardLinkDialog({
   useEffect(() => {
     if (!isOpen) {
       setMode(null);
-      setTargetType(validTargetTypes.length === 1 ? validTargetTypes[0] : null);
+      setTargetType(defaultTargetType ?? (validTargetTypes.length === 1 ? validTargetTypes[0] : null));
       setSelectedEntityIds([]);
       setCurrentlyLinkedEntities([]);
       setAvailableEntities([]);
       setSearchQuery('');
       setError(null);
     }
-  }, [isOpen, validTargetTypes]);
+  }, [isOpen, validTargetTypes, defaultTargetType]);
 
   // Fetch available entities when switching to link mode
   useEffect(() => {
@@ -183,7 +184,6 @@ export function StandardLinkDialog({
           targetType,
           targetIds: selectedEntityIds,
           relationshipType: requireRelationshipType ? relationshipType : undefined,
-          linkType: sourceType === 'assetThesis' && targetType === 'macroThesis' ? linkTypeAssetToMacro : undefined,
         };
       }
 
@@ -457,39 +457,6 @@ export function StandardLinkDialog({
                         <span className="capitalize">{type}</span>
                       </label>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Link Type Selector (Asset Thesis → Macro Thesis only) */}
-              {sourceType === 'assetThesis' && targetType === 'macroThesis' && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Link Type
-                  </label>
-                  <div className="flex gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="linkType"
-                        value="primary"
-                        checked={linkTypeAssetToMacro === 'primary'}
-                        onChange={(e) => setLinkTypeAssetToMacro('primary')}
-                        className="cursor-pointer"
-                      />
-                      <span>Primary (main macro thesis)</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="linkType"
-                        value="related"
-                        checked={linkTypeAssetToMacro === 'related'}
-                        onChange={(e) => setLinkTypeAssetToMacro('related')}
-                        className="cursor-pointer"
-                      />
-                      <span>Related (additional context)</span>
-                    </label>
                   </div>
                 </div>
               )}

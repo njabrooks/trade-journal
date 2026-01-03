@@ -6,8 +6,8 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 import { AssetThesisDetailClient } from '@/components/asset-theses/AssetThesisDetailClient';
 import { EditAssetThesisButton } from '@/components/asset-theses/EditAssetThesisButton';
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
-import { UnifiedMacroThesisBrowser } from '@/components/theses/UnifiedMacroThesisBrowser';
-import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
+import { LinkedMacroThesesSection } from '@/components/asset-theses/LinkedMacroThesesSection';
+import { LinkedStrategiesSection } from '@/components/asset-theses/LinkedStrategiesSection';
 import { notFound } from 'next/navigation';
 
 interface AssetThesisDetailPageProps {
@@ -240,27 +240,19 @@ export default async function AssetThesisDetailPage({ params }: AssetThesisDetai
           )}
         </div>
 
-        {/* Linked Macro Theses - UnifiedMacroThesisBrowser */}
-        {linkedMacroTheses.length > 0 && (
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <h3 className="text-base font-semibold mb-3">
-              Linked Macro Theses ({linkedMacroTheses.length})
-            </h3>
-            <UnifiedMacroThesisBrowser theses={linkedMacroTheses} />
-          </div>
-        )}
+        {/* Linked Macro Theses - with Link Button */}
+        <LinkedMacroThesesSection
+          assetThesisId={view.id}
+          assetThesisTitle={view.title}
+          linkedMacroTheses={linkedMacroTheses}
+        />
 
-        {/* Linked Strategies - UnifiedStrategiesBrowser */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base font-semibold mb-3">
-            Linked Strategies ({linkedStrategies.length})
-          </h3>
-          {linkedStrategies.length === 0 ? (
-            <p className="text-sm text-slate-500">No strategies linked to this asset thesis yet.</p>
-          ) : (
-            <UnifiedStrategiesBrowser strategies={linkedStrategies} />
-          )}
-        </div>
+        {/* Linked Strategies - with Link Button */}
+        <LinkedStrategiesSection
+          assetThesisId={view.id}
+          assetThesisTitle={view.title}
+          linkedStrategies={linkedStrategies}
+        />
 
         {/* Notes - Moved to bottom */}
         {view.notes !== null && view.notes !== undefined ? (
