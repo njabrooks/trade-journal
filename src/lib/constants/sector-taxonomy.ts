@@ -210,7 +210,7 @@ export const COMMON_COMBINATIONS: TaxonomyItem[] = [
   { value: 'AI Infrastructure Build-Out', label: 'AI Infrastructure Build-Out' },
   { value: 'Deglobalization', label: 'Deglobalization' },
   { value: 'Reshoring', label: 'Reshoring' },
-  { value: 'Crypto Adoption', label: 'Crypto Adoption' },
+  { value: 'Crypto Adoption (Tokenisation)', label: 'Crypto Adoption (Tokenisation)' },
 ];
 
 // ============================================================================

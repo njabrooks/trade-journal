@@ -15,9 +15,9 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (!status || !['unconfirmed', 'confirmed', 'invalidated', 'merged'].includes(status)) {
+    if (!status || !['unconfirmed', 'confirmed', 'rejected', 'invalidated', 'merged'].includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid status. Must be one of: unconfirmed, confirmed, invalidated, merged' },
+        { error: 'Invalid status. Must be one of: unconfirmed, confirmed, rejected, invalidated, merged' },
         { status: 400 }
       );
     }
