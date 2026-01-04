@@ -187,8 +187,8 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
 
       {/* Expanded Claims List */}
       {isExpanded && (
-        <div className="border-t border-slate-100 divide-y divide-slate-100">
-          {claims.slice(0, 5).map((claim) => (
+        <div className="border-t border-slate-100 divide-y divide-slate-100 max-h-80 overflow-y-auto">
+          {claims.map((claim) => (
             <div key={claim.id} className="px-4 py-3 hover:bg-slate-50">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -212,16 +212,15 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
             </div>
           ))}
 
-          {claims.length > 5 && (
-            <div className="px-4 py-2 bg-slate-50">
-              <Link
-                href={`/asset-theses/${data.assetThesisId}`}
-                className="text-xs text-blue-600 hover:underline"
-              >
-                View all {claims.length} claims →
-              </Link>
-            </div>
-          )}
+          {/* Link to full detail page */}
+          <div className="px-4 py-2 bg-slate-50 sticky bottom-0">
+            <Link
+              href={`/asset-theses/${data.assetThesisId}`}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              View full thesis detail →
+            </Link>
+          </div>
         </div>
       )}
     </div>
