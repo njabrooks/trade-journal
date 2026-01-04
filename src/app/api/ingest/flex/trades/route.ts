@@ -5,11 +5,10 @@ import { trades, strategies, ingestionRuns } from '@/db/schema';
 import { normalizeFlexTradeRow, validateFlexTradeRow, FlexTradeRow } from '@/lib/ingestion/flex/trades';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { and, eq, ne } from 'drizzle-orm';
-import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
 import { autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
-import { trackProcess, startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
+import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
 const SECTION_CODES = {
   TRADES: 'TRNT',
@@ -224,8 +223,9 @@ export async function POST(request: NextRequest) {
               // Don't fail ingestion if blotter creation fails
             }
 
-            // Triage (position-level and strategy-level flags, but NOT QUANTITY_CHANGE)
-            await computeTriageForDate(tradeDate, accountId);
+            // NOTE: Position-level and strategy-level triage (DTE, sigma, ITM, etc.) is computed
+            // during positions ingestion, NOT here. Trades ingestion only creates QUANTITY_CHANGE
+            // records for unmatched trades, which is strategy-level only.
 
             // Create QUANTITY_CHANGE triage records for unmatched trades (after matching completes)
             try {
