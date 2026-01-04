@@ -112,7 +112,7 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
             <span>
               Linked to{" "}
               <Link
-                href={`/asset-views/${data.assetThesisId}`}
+                href={`/asset-theses/${data.assetThesisId}`}
                 className="font-medium text-blue-600 hover:underline"
               >
                 {data.assetThesisTicker || data.assetThesisTitle}
@@ -137,7 +137,7 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
             <span className="text-sm font-medium text-slate-700">Evidence Context</span>
             <span className="text-xs text-slate-400">|</span>
             <Link
-              href={`/asset-views/${data.assetThesisId}`}
+              href={`/asset-theses/${data.assetThesisId}`}
               className="text-sm text-blue-600 hover:underline flex items-center gap-1"
             >
               {data.assetThesisTicker || data.assetThesisTitle}
@@ -215,7 +215,7 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
           {claims.length > 5 && (
             <div className="px-4 py-2 bg-slate-50">
               <Link
-                href={`/asset-views/${data.assetThesisId}`}
+                href={`/asset-theses/${data.assetThesisId}`}
                 className="text-xs text-blue-600 hover:underline"
               >
                 View all {claims.length} claims →
