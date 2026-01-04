@@ -11,6 +11,7 @@
 - [Active/In Progress](#activein-progress-enhancements) - Current work
 - [Planned Enhancements](#planned-enhancements-by-priority) - Prioritized backlog
 - [Completed Enhancements](#completed-enhancements) - Historical record
+- [Abandoned Enhancements](#abandoned-enhancements) - Cancelled features
 - [Deferred Enhancements](#deferred-enhancements) - Future phases
 - [Gap Analysis](#gap-analysis) - PRD alignment notes
 - [Enhancement Registry](#enhancement-registry) - ID tracker
@@ -964,6 +965,29 @@ See [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.
 
 ---
 
+## Abandoned Enhancements
+
+### #ENH-025: Strategy Provenance Chain Component
+**Status**: ❌ ABANDONED (2026-01-04)
+**Priority**: Was Tier 1 (Quick Win)
+**Effort**: 2-3 days (implementation completed but reverted)
+**PRD**: Section 3 (Conceptual Model - Decision Hierarchy)
+**Phase**: Was Phase 2.10
+**Source**: ACTIVE_ROADMAP.md Phase 2.10
+**Reason for Abandonment**: Does not add sufficient value beyond existing HierarchyBreadcrumb component, which already shows the full hierarchy chain in a compact, effective format. The dedicated provenance tab would duplicate functionality without meaningful improvement.
+
+**What Was Built**:
+- Full implementation with 9 components and API endpoint
+- Positions → Strategy → Asset Thesis → Macro Theses → Claims flow
+- Responsive layout with visual status indicators
+- Code preserved in git history (commits `9d8ba79` and `074a67e`)
+
+**Big Picture Impact**: None - existing HierarchyBreadcrumb already fulfills the "why this position?" requirement effectively.
+
+**Recovery Path**: Code can be restored from git commit `9d8ba79` if requirements change.
+
+---
+
 ## Deferred Enhancements
 
 ### Deferred to Phase 4+ (Requires Trigger Infrastructure)
@@ -1176,6 +1200,81 @@ Consider adding to PRD:
 
 ---
 
+#### #ENH-041: Local-First Database Architecture Migration
+**Status**: 💡 Proposed
+**Priority**: High (Tier 1 - Cost Optimization & Performance)
+**Effort**: 1-2 weeks (phased implementation)
+**Phase**: Backlog (high priority)
+**Source**: docs/local-db-architecture-vs-supabase.md
+
+**Description**: Migrate from Supabase-only to hybrid local-first architecture with SQLite as primary data store and Supabase as backup/sync layer.
+
+**Current State**:
+- Supabase Pro hosting all data (~$25/month = $300/year)
+- Single-user application with local/LAN-only access
+- PostgreSQL-compatible schema via Drizzle ORM
+- No Supabase-specific features in use (no RLS, Edge Functions, Realtime)
+
+**Proposed Architecture (Hybrid)**:
+```
+┌─────────────────────────────────────┐
+│  Local SQLite (source of truth)     │
+│  - Trades, positions, strategies    │
+│  - Research artifacts & claims      │
+│  - Zero latency, zero cost          │
+└─────────────────────────────────────┘
+              │
+              │ (nightly push or manual sync)
+              ▼
+┌─────────────────────────────────────┐
+│  Supabase (backup + future mobile)  │
+│  - Read-only mirror                 │
+│  - Off-site durability              │
+│  - Optional: future multi-device    │
+└─────────────────────────────────────┘
+```
+
+**Implementation Plan**:
+1. **Phase 1**: Add SQLite via `better-sqlite3` as primary store
+2. **Phase 2**: Refactor `src/db/index.ts` to support dual connections (env flag)
+3. **Phase 3**: Update all writes to hit SQLite first
+4. **Phase 4**: Create sync script `scripts/sync-to-supabase.ts` (one-way push)
+5. **Phase 5**: Validate both systems in parallel for 2-4 weeks
+6. **Phase 6**: Optionally downgrade Supabase to free tier or read-only
+
+**Schema Portability**: Already PostgreSQL-compatible (via Drizzle), migration is mechanical:
+- `jsonb` → `text` (JSON as text)
+- `serial` → `integer primary key autoincrement`
+- Everything else: identical
+
+**Why This Helps**:
+- **Cost Savings**: $300/year → $0/year (immediate ROI)
+- **Performance**: Sub-millisecond queries (no network latency)
+- **Ownership**: Full data control, offline-first
+- **Future Optionality**: Keep Supabase for mobile/remote access without lock-in
+- **Simplicity**: Zero backend infrastructure to manage
+
+**Benefits Over Pure Local**:
+- Off-site backup via Supabase free tier
+- Future multi-device access without re-architecture
+- GitHub Actions can write to either store
+
+**Risks & Mitigation**:
+| Risk               | Mitigation                               |
+| ------------------ | ---------------------------------------- |
+| Data loss          | Daily backup script to Supabase          |
+| Migration bugs     | Run both systems in parallel for 2-4 weeks |
+| GitHub Actions     | Support both connection modes via env vars |
+| Schema divergence  | Drizzle ORM ensures schema parity        |
+
+**Dependencies**: None (schema already portable)
+
+**Big Picture Impact**: Aligns architecture with actual use case (single-user, local-first), eliminates recurring costs, improves performance, maintains future optionality for collaboration/mobile.
+
+**Reference**: See `docs/local-db-architecture-vs-supabase.md` for full architectural analysis and conversation transcript.
+
+---
+
 ### Phase 2.7 Enhancement IDs (Complete 2025-12-31)
 
 - **#ENH-013**: ✅ Unified Macro Thesis Browser (UnifiedMacroThesisBrowser.tsx)
@@ -1186,6 +1285,10 @@ Consider adding to PRD:
 - **#ENH-018**: ✅ Macro Thesis Detail Page Enhancements (delete, compact overview, unified browsers)
 - **#ENH-019**: ✅ Asset Thesis Detail Page Enhancements (market data fix, unified browsers)
 - **#ENH-020-playbook**: ⏳ Strategy Detail Page Enhancements (Playbook tab) - Deferred to Phase 3+
+
+### Phase 2.10 Enhancement ID (Abandoned 2026-01-04)
+
+- **#ENH-025**: ❌ Strategy Provenance Chain Component - ABANDONED (redundant with HierarchyBreadcrumb)
 - **#ENH-021**: ✅ Rename /theses → /macro-theses (URL consistency)
 - **#ENH-022**: ⏳ AI-Assisted Summary Generation (Claude Skills) - Deferred to Phase 3+
 - **#ENH-023**: ✅ ClientHierarchyBreadcrumb Bug Fixes (field name mismatch)
@@ -1194,7 +1297,7 @@ Consider adding to PRD:
 
 **Note**: #ENH-020 already assigned to Automated Tests. Strategy enhancements use #ENH-020-playbook to avoid collision.
 
-**Next Enhancement ID**: #ENH-041
+**Next Enhancement ID**: #ENH-042
 
 **ID Format**: `#ENH-XXX` (zero-padded to 3 digits) or `#ENH-XXX-name` (for descriptive variants)
 

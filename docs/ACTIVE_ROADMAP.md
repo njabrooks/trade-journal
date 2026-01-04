@@ -88,36 +88,23 @@
 
 ---
 
-## Phase 2.10: Strategy Provenance Chain Component 🎯
+## Phase 2.10: Strategy Provenance Chain Component ❌
 
 **Goal**: "Why am I holding this position?" component showing full hierarchy chain
 
 **PRD Alignment**: Section 3 (Conceptual Model - Decision Hierarchy)
 
-**Status**: 🎯 Prioritized (Tier 1 - Quick Win)
+**Status**: ❌ ABANDONED (2026-01-04)
 
-**Deliverables**:
-- Component: `<ProvenanceChain>` - Position → Strategy → Asset Thesis → Macro Thesis → Claims
-- Collapsible sections with expandable details
-- Integration: Strategy detail, triage pages, position pages
-- Visual flow diagram with hierarchy levels
+**Reason for Abandonment**:
+This feature does not add sufficient value beyond the existing `HierarchyBreadcrumb` component, which already shows the full hierarchy chain (Macro Thesis → Asset Thesis → Strategy → Position) in a compact, effective format. The proposed dedicated provenance tab would duplicate this functionality without meaningful improvement.
 
-**Why This Helps**:
-- **Clarity**: Instant answer to "why this position?"
-- **Prevents orphaned positions**: Forces explicit linkage
-- **Learning**: Trace decision rationale over time
-- **Risk management**: Identify positions relying on weak theses
+**Code Preservation**:
+- Implementation committed to git history (commit `9d8ba79`)
+- Can be recovered if requirements change in the future
+- See commit message for full implementation details
 
-**Implementation Approach**:
-- Recursive query up hierarchy from position
-- Visual breadcrumb-style component
-- Click to expand each level
-- Show evidence summary at thesis level
-
-**Effort**: 2-3 days
-**Dependencies**: None (uses existing hierarchy)
-
-**Enhancement ID**: #ENH-025
+**Enhancement ID**: #ENH-025 (ABANDONED)
 
 ---
 
@@ -351,6 +338,21 @@ These items complement Phase 3 but remain separate:
 
 ### Tier 1 (Quick Wins)
 
+**Local-First Database Architecture Migration** (#ENH-041)
+- **Goal**: Migrate to hybrid local-first architecture (SQLite primary + Supabase backup)
+- **PRD Alignment**: Infrastructure optimization (not in PRD)
+- **Status**: 💡 Proposed (High Priority)
+- **Why High Priority**:
+  - **Cost Savings**: $300/year → $0/year (immediate ROI)
+  - **Performance**: Sub-millisecond queries vs network latency
+  - **Data Ownership**: Full control, offline-first capability
+  - **Future Optionality**: Maintains Supabase for future mobile/multi-device
+- **Implementation**: Phased migration (SQLite + dual connections + sync script)
+- **Effort**: 1-2 weeks (6 phases, can run in parallel validation)
+- **Dependencies**: None (schema already PostgreSQL-compatible via Drizzle)
+- **Risk**: Low (run both systems in parallel for 2-4 weeks before cutover)
+- **Reference**: `docs/local-db-architecture-vs-supabase.md`
+
 **Data Visualization Enhancements** (#ENH-040)
 - **Goal**: Leverage existing data sources to enhance detail pages with market context
 - **PRD Alignment**: Section 7 (Decision Support & Analytics)
@@ -436,8 +438,11 @@ These items complement Phase 3 but remain separate:
 - Phase 2.9 (Claims-Aware Triage UI) ✅
 - Phase 2.8 (AI-Generated Thesis Summaries) ✅
 
+**Recently Abandoned**:
+- Phase 2.10 (Strategy Provenance Chain) ❌ - Redundant with existing HierarchyBreadcrumb
+
 **Tier 1 Quick Wins** (ready to work on):
-1. Phase 2.10: Strategy Provenance Chain
+- (None currently - consider promoting from Tier 2 backlog)
 
 **Strategic Horizon** (Tier 2 - Phase 3: Thesis Synthesis & Monitoring):
 - **Phase 3.1 (MVP)**: ✅ Thesis Articulation (#ENH-035) + Validation Points (#ENH-036) + Audit Trail (#ENH-037)
