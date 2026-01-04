@@ -902,3 +902,166 @@ Expected Resolution: Q4 2026
 - **`/deep-dive`** - Develop claims further before synthesis
 - **`/read-views`** - Query existing asset theses
 - **`/read-theses`** - Query existing macro theses
+
+---
+
+## Appendix: Data Sources Reference for Validation Points
+
+When defining validation points, use this reference to suggest appropriate data sources. The goal is to make explicit points **actually monitorable** by mapping them to real data access.
+
+See **[docs/data-sources-strategy.md](../../../docs/data-sources-strategy.md)** for full details.
+
+### Available Data Sources by Category
+
+#### Tier 0: Existing Integrations (Already Paid/Configured)
+
+| Source | Data Types | Access | Automation |
+|--------|------------|--------|------------|
+| **IBKR Client Portal Gateway** | Real-time spot, historical OHLCV (2yr), IV snapshots | `src/lib/services/ibkr/` | Requires gateway running |
+| **Massive.com** | Daily spot, IV30 | `src/lib/ingestion/massive/` | Daily via GitHub Actions |
+
+#### Tier 1: Free Sources (Configured)
+
+| Source | Data Types | Access | Automation |
+|--------|------------|--------|------------|
+| **FRED** (34 series) | Fed funds, Treasury yields, CPI, PCE, unemployment, GDP, credit spreads | `scripts/openbb/fetch_macro_indicators.py` | On-demand or schedulable |
+| **yfinance** | Company financials, profiles, price history | `scripts/openbb/fetch_company_data.py` | On-demand |
+| **SEC EDGAR** | 10-K, 10-Q, 8-K, Form 4 filings | OpenBB SDK | On-demand |
+| **FMP (free tier)** | Revenue segments, basic fundamentals | OpenBB SDK | 250 calls/day |
+
+#### Tier 1: Free Sources (Planned/Available)
+
+| Source | Data Types | Access | Status |
+|--------|------------|--------|--------|
+| **CoinGecko** | Crypto prices, market cap, volume, on-chain metrics | Direct API | 30 req/min, 10K/month |
+| **Finnhub** | News with sentiment, insider trades | Direct API | Generous free tier |
+
+#### Tier 2+: Paid Sources (Available if Needed)
+
+| Source | Data Types | Cost | Best For |
+|--------|------------|------|----------|
+| **FMP Ultimate** | Earnings transcripts, ETF holdings | $149/mo | Automated transcript pipeline |
+| **Polygon.io** | Real-time quotes, options chains | ~$100/mo | High-frequency monitoring |
+| **CoinGecko Pro** | Higher API limits | $129/mo | Heavy crypto thesis monitoring |
+| **EODHD** | Global EOD, extended history | $20-30/mo | International equities |
+
+---
+
+### Data Source Suggestions by Metric Type
+
+When a user specifies a validation point metric, suggest the appropriate source:
+
+#### Price & Market Data
+
+| Metric | Suggested Source | Automation Level |
+|--------|------------------|------------------|
+| Stock price (real-time) | IBKR Gateway | Manual (gateway required) |
+| Stock price (daily/historical) | IBKR Gateway → yfinance fallback | Automated possible |
+| Crypto price | CoinGecko | Automated |
+| Options IV (IV30) | Massive.com | Daily automated |
+| Volume, market cap | yfinance | On-demand |
+
+#### Macro Economic
+
+| Metric | Suggested Source | Series ID | Frequency |
+|--------|------------------|-----------|-----------|
+| Fed funds rate | FRED | `FEDFUNDS` | Daily |
+| 10Y Treasury yield | FRED | `DGS10` | Daily |
+| 2Y Treasury yield | FRED | `DGS2` | Daily |
+| Yield curve (10Y-2Y) | FRED | `T10Y2Y` | Daily |
+| CPI (inflation) | FRED | `CPIAUCSL` | Monthly |
+| Core PCE | FRED | `PCEPILFE` | Monthly |
+| Unemployment rate | FRED | `UNRATE` | Monthly |
+| Initial claims | FRED | `ICSA` | Weekly |
+| Nonfarm payrolls | FRED | `PAYEMS` | Monthly |
+| GDP | FRED | `GDP` | Quarterly |
+| HY credit spread | FRED | `BAMLH0A0HYM2` | Daily |
+| Consumer sentiment | FRED | `UMCSENT` | Monthly |
+
+#### Company Fundamentals
+
+| Metric | Suggested Source | Frequency |
+|--------|------------------|-----------|
+| Revenue, EPS | yfinance | Quarterly (post-earnings) |
+| Gross/operating margins | yfinance | Quarterly |
+| Revenue by segment | FMP (free tier) | Quarterly |
+| Balance sheet items | yfinance | Quarterly |
+| SEC filings (10-K, 10-Q) | SEC EDGAR | On-event |
+
+#### News & Sentiment (Judgment-Required Proxies)
+
+| Observable | Suggested Source | Notes |
+|------------|------------------|-------|
+| Regulatory news | Finnhub, SEC EDGAR (8-K) | Filter by keywords |
+| Enforcement actions | SEC EDGAR | 8-K filings |
+| Insider trading | SEC EDGAR (Form 4), Finnhub | |
+| Earnings sentiment | Finnhub | Post-earnings news |
+| Crypto sentiment | CoinGecko, news APIs | |
+
+---
+
+### How to Use This Reference During Synthesis
+
+**For explicit validation points:**
+
+1. When user specifies a metric (e.g., "Fed funds rate > 6%"), suggest:
+   ```
+   Data Source: FRED - FEDFUNDS
+   Monitoring: Daily (automated via fetch_macro_indicators.py)
+   Current Value: [fetch and show]
+   ```
+
+2. If no automated source exists, note it:
+   ```
+   Data Source: Manual check required
+   Suggested proxy: [alternative that IS automated]
+   ```
+
+**For judgment-required points:**
+
+1. Always suggest observable proxies with data sources:
+   ```
+   For "Developer sentiment shifts away from CUDA":
+
+   Observable Proxies:
+   - GitHub star trends (manual check)
+   - Stack Overflow developer survey (annual)
+   - Finnhub news sentiment for "CUDA" OR "ROCm" keywords
+   ```
+
+2. Note which proxies can be automated vs require manual review.
+
+**When no good source exists:**
+
+Be honest:
+```
+This metric doesn't have an easily accessible data source.
+Options:
+A) Accept as judgment-required with manual review
+B) Find a proxy metric that IS accessible
+C) Consider paid source: [specific recommendation]
+```
+
+---
+
+### Automation Levels
+
+When suggesting data sources, clarify the automation level:
+
+| Level | Description | Example |
+|-------|-------------|---------|
+| **Automated (scheduled)** | Runs on GitHub Actions schedule | Massive IV30, FRED indicators |
+| **Automated (on-demand)** | Script exists, run manually | `fetch_company_data.py` |
+| **Semi-automated** | API available, script needed | CoinGecko, Finnhub |
+| **Manual** | No API, requires human lookup | Analyst reports, transcripts |
+| **Paid (available)** | API available with subscription | FMP Ultimate transcripts |
+
+---
+
+### Cross-Reference
+
+- **Full data sources documentation**: `docs/data-sources-strategy.md`
+- **OpenBB scripts**: `scripts/openbb/`
+- **IBKR integration**: `src/lib/services/ibkr/`
+- **Massive integration**: `src/lib/ingestion/massive/`
+- **FRED series reference**: Run `python scripts/openbb/fetch_macro_indicators.py --list-series`

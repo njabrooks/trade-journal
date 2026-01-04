@@ -925,6 +925,7 @@ User can:
 
 - **[PRD v1.1](../PRD_v1.1.md)** - Product vision (Sections 5.5, 5.7, 6.1, 8)
 - **[Research Workflow](research-workflow.md)** - Current claims extraction process
+- **[Data Sources Strategy](../data-sources-strategy.md)** - Available data sources for validation point monitoring
 - **[FUTURE_ENHANCEMENTS.md](../FUTURE_ENHANCEMENTS.md)** - Enhancement registry
 - **[System Architecture](../system_architecture_transition_plan.md)** - Technical implementation context
 

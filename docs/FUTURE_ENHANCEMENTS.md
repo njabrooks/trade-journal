@@ -1150,6 +1150,32 @@ Consider adding to PRD:
 
 **Phase 3.4 (Learning & Feedback)**: Outcome analysis, process adherence metrics, thesis quality scoring. Specified in detail doc, no ENH ID assigned yet.
 
+---
+
+#### #ENH-040: Data Visualization Enhancements
+**Status**: 💡 Proposed
+**Priority**: Medium (Tier 1 Quick Win)
+**Effort**: 1-2 days per enhancement
+**Phase**: Backlog
+
+**Description**: Leverage existing data sources to enhance detail pages with market context and visualizations. Data already flows into the system via IBKR, Massive.com, and FRED/OpenBB integrations.
+
+**Opportunities Identified**:
+- **Asset Thesis Detail**: 90-day spot/IV history chart (data in `underlyings_iv_history`)
+- **Asset Thesis Detail**: Options chain IV surface visualization (data in `options_chain_snapshots`)
+- **Macro Thesis Detail**: Relevant FRED metrics display (via OpenBB integration)
+- **Strategy Performance**: Asset contribution waterfall
+- **Portfolio Dashboard**: Cross-asset correlation matrix
+
+**Why This Helps**:
+- Market context at decision point (no external lookups needed)
+- Visual validation of thesis assumptions
+- Connects data layer to belief layer
+
+**Data Sources**: IBKR (existing), Massive.com (existing), FRED via OpenBB (configured)
+
+---
+
 ### Phase 2.7 Enhancement IDs (Complete 2025-12-31)
 
 - **#ENH-013**: ✅ Unified Macro Thesis Browser (UnifiedMacroThesisBrowser.tsx)
@@ -1168,7 +1194,7 @@ Consider adding to PRD:
 
 **Note**: #ENH-020 already assigned to Automated Tests. Strategy enhancements use #ENH-020-playbook to avoid collision.
 
-**Next Enhancement ID**: #ENH-024
+**Next Enhancement ID**: #ENH-041
 
 **ID Format**: `#ENH-XXX` (zero-padded to 3 digits) or `#ENH-XXX-name` (for descriptive variants)
 

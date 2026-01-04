@@ -353,6 +353,21 @@ These items complement Phase 3 but remain separate:
 
 ## Backlog (Unprioritized)
 
+### Tier 1 (Quick Wins)
+
+**Data Visualization Enhancements** (#ENH-040)
+- **Goal**: Leverage existing data sources to enhance detail pages with market context
+- **PRD Alignment**: Section 7 (Decision Support & Analytics)
+- **Opportunities Identified**:
+  - **Asset Thesis Detail**: 90-day spot/IV history chart (data in `underlyings_iv_history`)
+  - **Asset Thesis Detail**: Options chain IV surface visualization (data in `options_chain_snapshots`)
+  - **Macro Thesis Detail**: Relevant FRED metrics display (via OpenBB integration)
+  - **Strategy Performance**: Asset contribution waterfall
+  - **Portfolio Dashboard**: Cross-asset correlation matrix
+- **Data Sources**: IBKR, Massive.com (existing), FRED via OpenBB (configured)
+- **Effort**: 1-2 days per enhancement
+- **Dependencies**: None (data already flows into system)
+
 ### Tier 2 (Strategic)
 
 **Pre-Investment Pipeline** (#ENH-032)
