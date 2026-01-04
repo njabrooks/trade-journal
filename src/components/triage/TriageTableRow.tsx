@@ -6,6 +6,7 @@ import { ChevronDownIcon } from "lucide-react";
 import { TriagePositionsTable } from "./TriagePositionsTable";
 import { TriageActionsTable } from "./TriageActionsTable";
 import { TriageActionButtons } from "./TriageActionButtons";
+import { ClaimsContext } from "./ClaimsContext";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -197,6 +198,11 @@ export function TriageTableRow({
         <tr>
           <td colSpan={columnCount + 1} className="px-4 py-4 bg-slate-50">
             <div className="space-y-4">
+              {/* Evidence Context - Shows claims linked to this strategy's asset thesis */}
+              {record.strategyId && (
+                <ClaimsContext strategyId={record.strategyId} />
+              )}
+
               {/* Positions Table */}
               <TriagePositionsTable
                 positionId={record.positionId}

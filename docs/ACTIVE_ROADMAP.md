@@ -59,34 +59,30 @@
 
 ---
 
-## Phase 2.9: Claims-Aware Triage UI 🎯
+## Phase 2.9: Claims-Aware Triage UI ✅
 
 **Goal**: Show supporting claims and evidence summary inline in triage detail view
 
 **PRD Alignment**: Section 6 (Workflow & Triage Engine), Section 7 (Decision Support)
 
-**Status**: 🎯 Prioritized (Tier 1 - Quick Win)
+**Status**: ✅ Complete (2026-01-04)
 
 **Deliverables**:
-- Component: `<ClaimsContext>` shows linked claims in triage
-- Evidence summary: "7 supports, 2 refutes, last updated 3 days ago"
-- Expandable claim details with full Toulmin framework
-- Integration: Triage detail page, strategy pages
+- ✅ Component: `<ClaimsContext>` shows linked claims in triage
+- ✅ Evidence summary: "X supports, Y refutes, Z foundation" with last updated
+- ✅ Expandable claim details with category, confidence, and claim text
+- ✅ Integration: Triage detail page (expanded row view)
+- ✅ API endpoint: `/api/strategies/[id]/claims-context`
 
-**Why This Helps**:
-- **Context at decision point**: See why strategy exists when reviewing triage
-- **Informed decisions**: Full evidence available without navigation
-- **Confidence**: Know recency and strength of supporting evidence
-- **Reduces cognitive load**: No need to remember thesis rationale
+**Implementation**:
+- `src/components/triage/ClaimsContext.tsx` - Collapsible claims display component
+- `src/app/api/strategies/[id]/claims-context/route.ts` - API for fetching claims via strategy → asset thesis → claims chain
+- Integrated into `TriageTableRow.tsx` expanded section
 
-**Implementation Approach**:
-- Query claims linked to strategy's asset thesis
-- Display in collapsible section above triage actions
-- Color-coded evidence type indicators (supports/refutes/foundation)
-- Link to full claim detail for deep dives
-
-**Effort**: 2-3 days
-**Dependencies**: Phase 2.8 (AI summaries useful but not required)
+**Files Changed**:
+- New: `src/components/triage/ClaimsContext.tsx`
+- New: `src/app/api/strategies/[id]/claims-context/route.ts`
+- Modified: `src/components/triage/TriageTableRow.tsx`
 
 **Enhancement ID**: #ENH-003 (enhanced from original deferral)
 
@@ -145,9 +141,9 @@
 
 ---
 
-### Phase 3.1: MVP - Synthesis & Manual Tracking 🚧
+### Phase 3.1: MVP - Synthesis & Manual Tracking ✅
 
-**Status**: 🚧 In Progress (Started 2026-01-04)
+**Status**: ✅ Complete (2026-01-04)
 
 #### #ENH-035: Thesis Articulation Generation
 **Effort**: 1 week
@@ -435,21 +431,17 @@ These items complement Phase 3 but remain separate:
 
 ## Quick Reference: Next Steps
 
-**Currently In Progress**: Phase 3.1 (Thesis Synthesis MVP) 🚧
-- ✅ Database tables created
-- ✅ `/synthesize-thesis` skill created
-- ⏳ End-to-end testing
-- ⏳ UI for viewing articulations and updating validation point status
+**Recently Completed**:
+- Phase 3.1 (Thesis Synthesis MVP) ✅
+- Phase 2.9 (Claims-Aware Triage UI) ✅
+- Phase 2.8 (AI-Generated Thesis Summaries) ✅
 
-**Recently Completed**: Phase 2.8 (AI-Generated Thesis Summaries) ✅
-
-**Tier 1 Quick Wins** (can be done in parallel):
-1. Phase 2.9: Claims-Aware Triage UI
-2. Phase 2.10: Strategy Provenance Chain
+**Tier 1 Quick Wins** (ready to work on):
+1. Phase 2.10: Strategy Provenance Chain
 
 **Strategic Horizon** (Tier 2 - Phase 3: Thesis Synthesis & Monitoring):
-- **Phase 3.1 (MVP)**: 🚧 Thesis Articulation (#ENH-035) + Validation Points (#ENH-036) + Audit Trail (#ENH-037)
-- **Phase 3.2**: Automated Monitoring (#ENH-038)
+- **Phase 3.1 (MVP)**: ✅ Thesis Articulation (#ENH-035) + Validation Points (#ENH-036) + Audit Trail (#ENH-037)
+- **Phase 3.2**: 💡 Automated Monitoring (#ENH-038)
 - **Phase 3.3**: News & Narratives (#ENH-039)
 - **Parallel**: Performance Attribution (#ENH-027), Claim Invalidation (#ENH-028), Strategy Playbook (#ENH-020-playbook)
 
