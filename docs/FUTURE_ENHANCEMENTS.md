@@ -1205,7 +1205,7 @@ Consider adding to PRD:
 **Priority**: High (Tier 1 - Cost Optimization & Performance)
 **Effort**: 1-2 weeks (phased implementation)
 **Phase**: Backlog (high priority)
-**Source**: docs/local-db-architecture-vs-supabase.md
+**Source**: docs/archive/local-db-architecture-vs-supabase.md
 
 **Description**: Migrate from Supabase-only to hybrid local-first architecture with SQLite as primary data store and Supabase as backup/sync layer.
 
@@ -1271,7 +1271,7 @@ Consider adding to PRD:
 
 **Big Picture Impact**: Aligns architecture with actual use case (single-user, local-first), eliminates recurring costs, improves performance, maintains future optionality for collaboration/mobile.
 
-**Reference**: See `docs/local-db-architecture-vs-supabase.md` for full architectural analysis and conversation transcript.
+**Reference**: See [docs/archive/local-db-architecture-vs-supabase.md](archive/local-db-architecture-vs-supabase.md) for full architectural analysis and conversation transcript.
 
 ---
 

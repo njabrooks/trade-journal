@@ -3,9 +3,9 @@
 **Status**: Planning Draft
 **Created**: 2026-01-04
 **Related**:
-- [thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md) - Validation point system design
-- [OpenBB Scripts](../scripts/openbb/) - Python scripts for data fetching
-- [/synthesize-thesis skill](../.claude/skills/synthesize-thesis/SKILL.md) - Uses this doc during validation point definition
+- [thesis-synthesis-monitoring.md](thesis-synthesis-monitoring.md) - Validation point system design
+- [OpenBB Scripts](../../scripts/openbb/) - Python scripts for data fetching
+- [/synthesize-thesis skill](../../.claude/skills/synthesize-thesis/SKILL.md) - Uses this doc during validation point definition
 
 ---
 

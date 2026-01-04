@@ -351,7 +351,7 @@ These items complement Phase 3 but remain separate:
 - **Effort**: 1-2 weeks (6 phases, can run in parallel validation)
 - **Dependencies**: None (schema already PostgreSQL-compatible via Drizzle)
 - **Risk**: Low (run both systems in parallel for 2-4 weeks before cutover)
-- **Reference**: `docs/local-db-architecture-vs-supabase.md`
+- **Reference**: [docs/archive/local-db-architecture-vs-supabase.md](archive/local-db-architecture-vs-supabase.md)
 
 **Data Visualization Enhancements** (#ENH-040)
 - **Goal**: Leverage existing data sources to enhance detail pages with market context
