@@ -130,10 +130,7 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
   return (
     <div className={cn("rounded-lg border border-slate-200 bg-white", className)}>
       {/* Summary Header - Always visible */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-3 text-left hover:bg-slate-50 transition-colors"
-      >
+      <div className="flex items-center justify-between p-3 hover:bg-slate-50 transition-colors">
         <div className="flex items-center gap-3">
           <FileTextIcon className="h-4 w-4 text-slate-400" />
           <div className="flex items-center gap-2">
@@ -141,7 +138,6 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
             <span className="text-xs text-slate-400">|</span>
             <Link
               href={`/asset-views/${data.assetThesisId}`}
-              onClick={(e) => e.stopPropagation()}
               className="text-sm text-blue-600 hover:underline flex items-center gap-1"
             >
               {data.assetThesisTicker || data.assetThesisTitle}
@@ -150,7 +146,10 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-3 text-left"
+        >
           {/* Evidence Summary Pills */}
           <div className="flex items-center gap-1.5">
             {summary.supports > 0 && (
@@ -183,8 +182,8 @@ export function ClaimsContext({ strategyId, className }: ClaimsContextProps) {
               isExpanded && "rotate-180"
             )}
           />
-        </div>
-      </button>
+        </button>
+      </div>
 
       {/* Expanded Claims List */}
       {isExpanded && (
