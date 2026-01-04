@@ -12,6 +12,7 @@ const TABS = [
   { href: (id: string) => `/strategies/${id}/performance`, label: "Performance", id: "performance" },
   { href: (id: string) => `/strategies/${id}/triage`, label: "Triage", id: "triage" },
   { href: (id: string) => `/strategies/${id}/blotter`, label: "Blotter", id: "blotter" },
+  { href: (id: string) => `/strategies/${id}/provenance`, label: "Provenance", id: "provenance" },
 ] as const;
 
 export function StrategyTabs({ strategyId }: StrategyTabsProps) {
