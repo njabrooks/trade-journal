@@ -2,11 +2,13 @@ import { getMacroThesisById, getMainClaimsWithSourcesForThesis } from '@/db/quer
 import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getAssetThesesForRelatedMacroThesis } from '@/db/queries/relatedMacroTheses';
+import { getLatestArticulation, getActiveValidationPoints } from '@/db/queries/thesisSynthesis';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { EditMacroThesisButton } from '@/components/theses/EditMacroThesisButton';
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
 import { LinkedAssetThesesSection } from '@/components/theses/LinkedAssetThesesSection';
 import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
+import { ThesisSynthesisSection } from '@/components/thesis-synthesis';
 import { notFound } from 'next/navigation';
 
 interface ThesisDetailPageProps {
@@ -16,12 +18,14 @@ interface ThesisDetailPageProps {
 export default async function ThesisDetailPage({ params }: ThesisDetailPageProps) {
   const { id } = await params;
   
-  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks] = await Promise.all([
+  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, articulation, validationPoints] = await Promise.all([
     getMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
     getStrategiesForList(1000, { includeClosedStrategies: true }),
     getAssetThesesForRelatedMacroThesis(id),
+    getLatestArticulation(id, 'macro'),
+    getActiveValidationPoints(id, 'macro'),
   ]);
 
   if (!thesis) {
@@ -120,6 +124,15 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
             <p className="text-sm text-slate-700 whitespace-pre-wrap">{thesis.description}</p>
           </div>
         ) : null}
+
+        {/* Thesis Synthesis - Articulation & Validation Points */}
+        <ThesisSynthesisSection
+          thesisId={id}
+          thesisType="macro"
+          articulation={articulation}
+          validationPoints={validationPoints}
+          claimCount={claimsWithSources.length}
+        />
 
         {/* Main Claims - UnifiedClaimsBrowser */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">

@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for all enhancements (past, present, future) with clear traceability to PRD and original sources.
 
-**Last Updated**: 2026-01-02 (Phase 2.8 Complete: AI-Generated Thesis Summaries | Added #ENH-034)
+**Last Updated**: 2026-01-03 (Phase 3 Requirements: Thesis Synthesis & Monitoring System | #ENH-035 through #ENH-039)
 
 ---
 
@@ -622,8 +622,9 @@ See [Completed Enhancements](#completed-enhancements) for Phase 2.7 details.
 **Priority**: Medium
 **Effort**: 8-10 hours estimated
 **PRD**: Section 3 (Strategies), Section 6 (Decision Capture)
-**Phase**: Phase 3+
+**Phase**: Phase 3+ (complementary to Phase 3.1)
 **Source**: docs/20251230-enhancements.md
+**Related**: #ENH-036 (Validation Points) - playbooks should define reaction functions
 
 **Description**: Add playbook tab to strategy detail pages
 
@@ -632,33 +633,32 @@ See [Completed Enhancements](#completed-enhancements) for Phase 2.7 details.
 - Position sizing guidelines
 - Risk management checklist
 - Trade journal integration
+- **Reaction functions**: Per-strategy responses to thesis validation point changes (integrates with #ENH-036)
 
-**Reason for Deferral**: Core unified browser pattern complete. Playbook is valuable but not critical for current workflow. Can be implemented in future phase when strategy management features are prioritized.
+**Relationship to Phase 3**: Strategy playbooks should define **reaction functions** that reference thesis-level validation points. When a validation point triggers, each linked strategy evaluates its reaction function to determine response.
 
-**Big Picture Impact**: Codifies trading rules and risk management at strategy level. Improves consistency and discipline.
+**Big Picture Impact**: Codifies trading rules and risk management at strategy level. Improves consistency and discipline. Connects tactical execution to fundamental monitoring.
 
 ---
 
 #### #ENH-022: AI-Assisted Summary Generation
-**Status**: ⏳ Deferred from Phase 2.7
+**Status**: 🔀 Superseded by #ENH-035 (Thesis Articulation Generation)
 **Priority**: Medium
 **Effort**: 12-15 hours estimated
 **PRD**: Section 5 (Research), Section 3 (Theses)
-**Phase**: Phase 3+
+**Phase**: Absorbed into Phase 3.1
 **Source**: docs/20251230-enhancements.md
-**Dependencies**: Requires AI API integration (OpenAI/Anthropic)
 
 **Description**: Auto-generate summaries for theses from linked claims evidence
 
-**Proposed Features**:
-- Generate summaries from linked claims evidence
-- Incorporate position outcomes
-- Include notes and context
-- One-click regeneration
+**Superseded By**: #ENH-035 (Thesis Articulation Generation) provides a more comprehensive solution that includes:
+- Full thesis articulation (not just summary)
+- Key drivers, assumptions, confidence rationale
+- Evidence gaps identification
+- Versioned storage for belief evolution tracking
+- Interactive refinement workflow
 
-**Reason for Deferral**: Requires AI infrastructure setup (API keys, rate limiting, cost management). Manual summaries sufficient for now. Can be implemented when AI features are prioritized.
-
-**Big Picture Impact**: Reduces manual work in thesis documentation. Keeps summaries up-to-date with evidence changes.
+See [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.md) for the comprehensive design.
 
 ---
 
@@ -790,72 +790,48 @@ See [Completed Enhancements](#completed-enhancements) for Phase 2.7 details.
 ---
 
 #### #ENH-008-time: Time-Based Workflow & Memory System
-**Status**: ⏳ Planned
+**Status**: ⏳ Partially absorbed into Phase 3
 **Priority**: Medium-High
 **Effort**: Very High (multiple phases)
 **PRD**: Section 8 (Logging, Journal & Institutional Memory)
-**Phase**: Phase 6+ (break into smaller phases)
+**Phase**: Some components absorbed into Phase 3, others remain for Phase 6+
 **Source**: FUTURE_ENHANCEMENTS.md #8
 
 **Context**: Addresses fundamental workflow needs (memory, pattern recognition, reviews)
 
 **Sub-Components** (implement in phases):
-1. **Event Logging & Tracking** (#8a) - Market events, trade context, patterns
-2. **Time-Based Review Workflows** (#8b) - Weekly/monthly reviews
-3. **Pattern Recognition & Connection System** (#8c) - Historical comparisons
-4. **Emotional State Tracking** (#8d) - Emotional context during trades
-5. **Calendar-Based Triggers** (#8e) - Expiry/earnings reminders
+1. **Event Logging & Tracking** (#8a) - Market events, trade context, patterns → *Partially absorbed into #ENH-037 (audit trail)*
+2. **Time-Based Review Workflows** (#8b) - Weekly/monthly reviews → *Absorbed into #ENH-038 (automated monitoring)*
+3. **Pattern Recognition & Connection System** (#8c) - Historical comparisons → *Absorbed into Phase 3.4 (Learning & Feedback)*
+4. **Emotional State Tracking** (#8d) - Emotional context during trades → *Remains distinct (Phase 6+)*
+5. **Calendar-Based Triggers** (#8e) - Expiry/earnings reminders → *Remains distinct (Phase 6+)*
+
+**What Phase 3 Covers**: Event logging (#8a), time-based reviews (#8b), pattern recognition (#8c) are substantially covered by the Thesis Synthesis & Monitoring System.
+
+**What Remains Distinct**: Emotional state tracking (#8d) and calendar-based triggers (#8e) are not addressed by Phase 3 and remain for future implementation.
 
 **Big Picture Impact**: Transforms system from reactive to proactive, enables learning across time
 
 ---
 
 #### #ENH-034: AI Summary Version History
-**Status**: ⏳ Planned
+**Status**: 🔀 Absorbed into #ENH-035 (Thesis Articulation Generation)
 **Priority**: Medium
 **Effort**: 3-4 days
 **PRD**: Section 5.5 (Thesis Evaluation & Re-Underwriting), Section 8 (Institutional Memory)
-**Phase**: Phase 3+
+**Phase**: Absorbed into Phase 3.1
 **Source**: User request (2026-01-02)
 **Related**: #ENH-033 (Thesis Evolution Timeline)
 
 **Problem**: When AI summaries are regenerated, old claim IDs and summary text are lost - no audit trail or version history
 
-**Current State**:
-- `UPDATE asset_theses SET ai_summary = ...` completely overwrites previous summary
-- No way to see how thesis evolved over time
-- Can't compare versions or rollback if new summary is worse quality
-- Lost provenance if a claim gets invalidated after summary generation
+**Absorbed By**: #ENH-035 (Thesis Articulation Generation) addresses this comprehensively via:
+- `thesis_articulations` table with built-in versioning (version number per thesis)
+- Each articulation stores `claim_ids_used` for full provenance
+- Version history queryable by thesis_id + thesis_type
+- Designed for comparison and evolution tracking from the start
 
-**Proposed Solutions**:
-
-**Option 1: Version History JSONB Field** (simplest):
-```sql
-ALTER TABLE asset_theses
-  ADD COLUMN ai_summary_versions JSONB DEFAULT '[]';
-```
-Store array of versions with timestamps, claim IDs, and summary text.
-
-**Option 2: Separate Table** (normalized):
-Create `asset_thesis_summary_versions` table with FK to `asset_theses`.
-
-**Option 3: PostgreSQL Temporal Tables**:
-Use PostgreSQL's native temporal/audit features to track all changes automatically.
-
-**Deliverables**:
-- Database schema for version storage
-- Migration to preserve existing summaries as v1
-- Update `/generate-summary` skill to append versions instead of overwrite
-- UI to view version history (expandable timeline)
-- Diff view comparing versions
-- Optional rollback functionality
-
-**Big Picture Impact**:
-- Complete audit trail of belief evolution
-- Can trace "what I believed then vs now"
-- Compare summaries to see what evidence changed over time
-- Aligns with PRD emphasis on learning and re-underwriting
-- Foundation for thesis evolution timeline (#ENH-033)
+See [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.md) Section 2.1 for schema design.
 
 ---
 
@@ -1075,7 +1051,104 @@ Consider adding to PRD:
 
 ## Enhancement Registry
 
-**Next Enhancement ID**: #ENH-035
+**Next Enhancement ID**: #ENH-040
+
+### Phase 3: Thesis Synthesis & Monitoring System (Planned)
+
+**Status**: Requirements Complete (2026-01-03)
+**PRD Alignment**: Sections 5.5 (Thesis Evaluation), 5.7 (Role of AI), 6.1 (Triggers), 8 (Institutional Memory)
+**Specification**: [docs/features/thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md)
+
+**Overview**: Transform atomic research claims into articulated investment theses with explicit validation/invalidation criteria, then monitor those criteria over time to ensure accountability and enable learning.
+
+**Enhancement IDs**: #ENH-035 through #ENH-039
+
+#### #ENH-035: Thesis Articulation Generation
+**Status**: ⏳ Planned
+**Priority**: High
+**Effort**: 1 week
+**Phase**: 3.1 (MVP)
+
+**Description**: Claude Code skill to synthesize linked claims into coherent thesis articulation with key drivers, assumptions, confidence level, and evidence gaps. Versioned storage for tracking belief evolution.
+
+**Deliverables**:
+- `/synthesize-thesis` Claude Code skill
+- `thesis_articulations` table with versioning
+- Interactive refinement workflow
+- Provenance tracking (which claims were synthesized)
+
+---
+
+#### #ENH-036: Validation/Invalidation Point Extraction
+**Status**: ⏳ Planned
+**Priority**: High
+**Effort**: 1 week
+**Phase**: 3.1 (MVP)
+**Dependencies**: #ENH-035
+
+**Description**: Extract explicit, measurable criteria for thesis success and failure. Claude pushes for specificity on qualitative criteria while accepting judgment-required points with observable proxies.
+
+**Deliverables**:
+- Extraction as part of `/synthesize-thesis` skill
+- `validation_points` table with explicit/judgment classification
+- Response protocol specification
+- Push-for-specificity interaction pattern
+
+---
+
+#### #ENH-037: Manual Status Tracking & Audit Trail
+**Status**: ⏳ Planned
+**Priority**: High
+**Effort**: 1 week
+**Phase**: 3.1 (MVP)
+**Dependencies**: #ENH-036
+
+**Description**: In-app UI for manually updating validation point status with evidence. Full audit trail of status changes and linked user decisions. Decision audit log tracking process vs. actual actions.
+
+**Deliverables**:
+- `validation_status_history` table
+- `decision_audit_log` table
+- Validation point detail UI with status timeline
+- Divergence acknowledgment workflow
+
+---
+
+#### #ENH-038: Automated Monitoring System
+**Status**: ⏳ Planned
+**Priority**: High
+**Effort**: 2 weeks
+**Phase**: 3.2
+**Dependencies**: #ENH-037
+
+**Description**: Claude proactively monitors validation points via scheduled jobs. Web search, RSS feeds, and API integrations with relevance filtering and alert generation.
+
+**Deliverables**:
+- `monitoring_specs` table
+- `/monitor-theses` scheduled Claude Code skill
+- GitHub Actions cron integration
+- Relevance scoring and noise filtering
+- In-app alert system
+
+---
+
+#### #ENH-039: News & Narratives Integration
+**Status**: ⏳ Planned
+**Priority**: Medium
+**Effort**: 2-3 weeks
+**Phase**: 3.3
+**Dependencies**: #ENH-038
+
+**Description**: Proactive intelligence gathering beyond explicit monitoring. Track emerging narratives, suggest new validation points, detect cross-thesis correlations.
+
+**Deliverables**:
+- Narrative tracking system
+- Cross-thesis intelligence ("affects 3 theses")
+- Source management and credibility scoring
+- Financial data provider API integrations
+
+---
+
+**Phase 3.4 (Learning & Feedback)**: Outcome analysis, process adherence metrics, thesis quality scoring. Specified in detail doc, no ENH ID assigned yet.
 
 ### Phase 2.7 Enhancement IDs (Complete 2025-12-31)
 

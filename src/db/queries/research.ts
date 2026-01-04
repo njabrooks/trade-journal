@@ -66,7 +66,7 @@ export interface ResearchArtifactListItem {
   sourceType: string;
   sourceUrl: string | null;
   author: string | null;
-  publishedDate: Date | null;
+  publishedDate: string | null;
   status: string;
   tags: string[] | null;
   ingestedAt: Date;
@@ -138,6 +138,7 @@ export async function getResearchArtifactsListWithCounts(): Promise<ResearchArti
   // Aggregate counts by artifact
   const artifactClaimCounts = new Map<string, { total: number; unconfirmed: number }>();
   claimCounts.forEach((c) => {
+    if (!c.insightId) return;
     const artifactId = insightToArtifact.get(c.insightId);
     if (artifactId) {
       const existing = artifactClaimCounts.get(artifactId) || { total: 0, unconfirmed: 0 };

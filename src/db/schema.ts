@@ -1314,3 +1314,207 @@ export const aiPrompts = pgTable(
 
 export type AIPrompt = typeof aiPrompts.$inferSelect;
 export type NewAIPrompt = typeof aiPrompts.$inferInsert;
+
+// ============================================================================
+// Phase 3.1: Thesis Synthesis & Monitoring System
+// ============================================================================
+
+// Thesis Articulations - Versioned synthesized thesis articulations
+export const thesisArticulations = pgTable(
+  'thesis_articulations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    thesisId: uuid('thesis_id').notNull(),
+    thesisType: text('thesis_type').notNull(), // 'macro' | 'asset'
+    version: integer('version').notNull().default(1),
+
+    // Core synthesis
+    coreArgument: text('core_argument').notNull(),
+    keyDrivers: jsonb('key_drivers').notNull().default([]),
+    keyAssumptions: jsonb('key_assumptions').notNull().default([]),
+
+    // Context
+    timeframe: jsonb('timeframe').notNull(), // { horizon, expectedResolution }
+    confidenceLevel: text('confidence_level').notNull(), // 'low' | 'medium' | 'high' | 'very_high'
+    confidenceRationale: text('confidence_rationale'),
+    evidenceGaps: jsonb('evidence_gaps').default([]),
+
+    // Provenance
+    claimIdsUsed: jsonb('claim_ids_used').notNull().default([]),
+    generatedBy: text('generated_by').notNull(), // 'claude' | 'user'
+    userEdits: text('user_edits'),
+
+    // Compositional dependencies
+    referencedTheses: jsonb('referenced_theses').default([]),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    thesisIdx: index('idx_articulations_thesis').on(table.thesisId, table.thesisType),
+    createdIdx: index('idx_articulations_created').on(table.createdAt),
+    uniqueVersion: unique().on(table.thesisId, table.thesisType, table.version),
+  })
+);
+
+export type ThesisArticulation = typeof thesisArticulations.$inferSelect;
+export type NewThesisArticulation = typeof thesisArticulations.$inferInsert;
+
+// Validation Points - Explicit validation/invalidation criteria
+export const validationPoints = pgTable(
+  'validation_points',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    thesisId: uuid('thesis_id').notNull(),
+    thesisType: text('thesis_type').notNull(), // 'macro' | 'asset'
+    articulationId: uuid('articulation_id').references(() => thesisArticulations.id, {
+      onDelete: 'set null',
+    }),
+
+    // Core definition
+    type: text('type').notNull(), // 'validation' | 'invalidation'
+    statement: text('statement').notNull(),
+    rationale: text('rationale'),
+
+    // Classification
+    category: text('category').notNull(), // 'explicit' | 'judgment_required'
+    importance: text('importance').notNull(), // 'critical' | 'significant' | 'supporting'
+    timeframe: text('timeframe').notNull(), // 'immediate' | 'medium_term' | 'secular'
+
+    // Category-specific details
+    explicitDetails: jsonb('explicit_details'), // { metric, threshold, dataSources, monitoringFrequency }
+    judgmentDetails: jsonb('judgment_details'), // { observableProxies, judgmentCriteria, reviewFrequency }
+
+    // Response protocol
+    responseProtocol: jsonb('response_protocol').notNull(), // { description, linkedStrategies?, escalation? }
+
+    // Status
+    status: text('status').notNull().default('not_triggered'), // 'not_triggered' | 'monitoring' | 'triggered' | 'superseded'
+
+    // Dependent thesis reference (for compositional validation)
+    dependentThesisId: uuid('dependent_thesis_id'),
+    dependentThesisType: text('dependent_thesis_type'), // 'macro' | 'asset'
+    dependentThesisCondition: text('dependent_thesis_condition'), // 'invalidated' | 'confidence_drops' | 'status_changes'
+    dependentThesisConditionDetail: text('dependent_thesis_condition_detail'),
+
+    // Provenance
+    linkedClaimIds: jsonb('linked_claim_ids').default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    thesisIdx: index('idx_validation_points_thesis').on(table.thesisId, table.thesisType),
+    statusIdx: index('idx_validation_points_status').on(table.status),
+    typeIdx: index('idx_validation_points_type').on(table.type),
+    importanceIdx: index('idx_validation_points_importance').on(table.importance),
+  })
+);
+
+export type ValidationPoint = typeof validationPoints.$inferSelect;
+export type NewValidationPoint = typeof validationPoints.$inferInsert;
+
+// Validation Status History - Audit trail of status changes
+export const validationStatusHistory = pgTable(
+  'validation_status_history',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    validationPointId: uuid('validation_point_id')
+      .notNull()
+      .references(() => validationPoints.id, { onDelete: 'cascade' }),
+
+    timestamp: timestamp('timestamp', { withTimezone: true }).notNull().defaultNow(),
+    previousStatus: text('previous_status'),
+    newStatus: text('new_status').notNull(),
+
+    // Evidence
+    evidence: jsonb('evidence').notNull(), // { source, summary, link?, rawContent? }
+
+    // Assessment
+    confidence: text('confidence').notNull(), // 'low' | 'medium' | 'high'
+    assessedBy: text('assessed_by').notNull(), // 'claude' | 'user'
+
+    // Action tracking
+    userActionRequired: boolean('user_action_required').default(false),
+    userActionTaken: text('user_action_taken'),
+    userActionTimestamp: timestamp('user_action_timestamp', { withTimezone: true }),
+  },
+  (table) => ({
+    pointIdx: index('idx_status_history_point').on(table.validationPointId),
+    timestampIdx: index('idx_status_history_timestamp').on(table.timestamp),
+  })
+);
+
+export type ValidationStatusHistory = typeof validationStatusHistory.$inferSelect;
+export type NewValidationStatusHistory = typeof validationStatusHistory.$inferInsert;
+
+// Decision Audit Log - Process vs actual actions
+export const decisionAuditLog = pgTable(
+  'decision_audit_log',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    timestamp: timestamp('timestamp', { withTimezone: true }).notNull().defaultNow(),
+
+    // Context
+    thesisId: uuid('thesis_id'),
+    thesisType: text('thesis_type'), // 'macro' | 'asset'
+    strategyId: uuid('strategy_id'),
+    validationPointId: uuid('validation_point_id').references(() => validationPoints.id, {
+      onDelete: 'set null',
+    }),
+
+    // Trigger
+    triggerType: text('trigger_type').notNull(), // 'validation_point' | 'playbook' | 'user_discretion' | 'other'
+    triggerDescription: text('trigger_description').notNull(),
+
+    // Process vs. actual
+    statedProcessResponse: text('stated_process_response').notNull(),
+    actualActionTaken: text('actual_action_taken').notNull(),
+    rationale: text('rationale'),
+    divergenceAcknowledged: boolean('divergence_acknowledged').default(false),
+
+    // Outcome (updated later)
+    outcome: jsonb('outcome'), // { timestamp, result, retrospectiveNotes? }
+  },
+  (table) => ({
+    thesisIdx: index('idx_decision_audit_thesis').on(table.thesisId, table.thesisType),
+    strategyIdx: index('idx_decision_audit_strategy').on(table.strategyId),
+    timestampIdx: index('idx_decision_audit_timestamp').on(table.timestamp),
+  })
+);
+
+export type DecisionAuditLog = typeof decisionAuditLog.$inferSelect;
+export type NewDecisionAuditLog = typeof decisionAuditLog.$inferInsert;
+
+// Monitoring Specs - Phase 3.2: Automated monitoring configuration
+export const monitoringSpecs = pgTable(
+  'monitoring_specs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    validationPointId: uuid('validation_point_id')
+      .notNull()
+      .references(() => validationPoints.id, { onDelete: 'cascade' }),
+
+    // Search strategy
+    keywords: jsonb('keywords').notNull().default([]),
+    semanticDescription: text('semantic_description'),
+    sources: jsonb('sources').default([]),
+    exclusions: jsonb('exclusions').default([]),
+
+    // Timing
+    frequency: text('frequency').notNull(), // 'daily' | 'weekly' | 'on_demand'
+    lastChecked: timestamp('last_checked', { withTimezone: true }),
+    nextCheck: timestamp('next_check', { withTimezone: true }),
+
+    // Alert configuration
+    alertThreshold: jsonb('alert_threshold').notNull(), // { type, condition?, scoreThreshold? }
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    nextCheckIdx: index('idx_monitoring_specs_next_check').on(table.nextCheck),
+    pointIdx: index('idx_monitoring_specs_point').on(table.validationPointId),
+  })
+);
+
+export type MonitoringSpec = typeof monitoringSpecs.$inferSelect;
+export type NewMonitoringSpec = typeof monitoringSpecs.$inferInsert;

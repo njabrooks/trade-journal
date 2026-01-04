@@ -125,41 +125,154 @@
 
 ---
 
-## Phase 3.0: Thesis Review Triggers 💡
+## Phase 3: Thesis Synthesis & Monitoring System 🎯
 
-**Goal**: Time-based triggers create triage when thesis review is due
+**Goal**: Transform atomic research claims into articulated investment theses with explicit validation/invalidation criteria, then monitor those criteria over time to ensure accountability and enable learning.
 
-**PRD Alignment**: Section 6.1 (Triggers), Section 5.5 (Thesis Re-Underwriting)
+**PRD Alignment**: Sections 5.5 (Thesis Evaluation), 5.7 (Role of AI), 6.1 (Triggers), 8 (Institutional Memory)
 
-**Status**: 💡 Proposed (Tier 2 - Strategic)
+**Status**: 🎯 Requirements Complete (2026-01-03)
 
-**Deliverables**:
-- Cron job: Check `next_review_due_at` daily
-- Create triage record type `THESIS_REVIEW`
-- UI: Show claims added since last review
-- AI assistance: Suggest confidence updates based on new evidence
-- Action: User confirms/updates thesis or defers
+**Specification**: [docs/features/thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md)
 
-**Why This Helps**:
-- **Systematic belief maintenance**: No theses forgotten
-- **Evidence-driven review**: See new claims since last review
-- **Confidence calibration**: Update conviction based on new evidence
-- **Closes decision loop**: Ensures beliefs evolve with information
-
-**Implementation Approach**:
-- GitHub Action cron job (like Flex/Massive ingestion)
-- Query theses with `next_review_due_at <= NOW()`
-- Create triage with context: new claims, P&L since last review
-- Optionally regenerate AI summary as part of review
-
-**Effort**: 3-4 days
-**Dependencies**: Phase 2.8 (AI summaries enhance review workflow)
-
-**Enhancement ID**: #ENH-026
+**Note**: This phase consolidates and supersedes several previously planned items:
+- #ENH-022 (AI Summary Generation) → absorbed into #ENH-035
+- #ENH-031 (News/Narrative Monitoring) → absorbed into #ENH-038/039
+- #ENH-033 (Thesis Evolution Timeline) → absorbed into #ENH-035 versioning
+- #ENH-034 (AI Summary Version History) → absorbed into #ENH-035
+- Phase 3.0-old (Thesis Review Triggers) → absorbed into #ENH-038
+- Phase 4.0-old (Decision Journal) → partially absorbed into #ENH-037
 
 ---
 
-## Phase 3.1: Performance Attribution by Thesis 💡
+### Phase 3.1: MVP - Synthesis & Manual Tracking 🚧
+
+**Status**: 🚧 In Progress (Started 2026-01-04)
+
+#### #ENH-035: Thesis Articulation Generation
+**Effort**: 1 week
+
+**Deliverables**:
+- ✅ `/synthesize-thesis` Claude Code skill (`.claude/skills/synthesize-thesis/SKILL.md`)
+- ✅ `thesis_articulations` table with versioning (`migrations/phase3_1_thesis_synthesis_monitoring.sql`)
+- ✅ Drizzle schema types (`src/db/schema.ts`)
+- ⏳ Interactive refinement workflow (pending end-to-end testing)
+- ✅ Provenance tracking (which claims were synthesized)
+
+**Why This Helps**:
+- **Crystallizes beliefs**: Forces articulation of what you believe and why
+- **Identifies assumptions**: Surfaces implicit assumptions that can be tested
+- **Tracks evolution**: Versioned storage shows how beliefs change over time
+- **Enables validation**: Articulated thesis → extractable validation criteria
+
+#### #ENH-036: Validation/Invalidation Point Extraction
+**Effort**: 1 week
+**Dependencies**: #ENH-035
+
+**Deliverables**:
+- ✅ Extraction as part of `/synthesize-thesis` skill
+- ✅ `validation_points` table with explicit/judgment classification
+- ✅ Response protocol specification (in skill prompt)
+- ✅ Push-for-specificity interaction pattern (in skill prompt)
+
+**Why This Helps**:
+- **Falsifiability**: Makes theses testable - what would prove you wrong?
+- **Accountability**: Explicit criteria you commit to
+- **Process discipline**: Forces thinking through success/failure conditions
+- **Monitoring targets**: Creates concrete things to track
+
+#### #ENH-037: Manual Status Tracking & Audit Trail
+**Effort**: 1 week
+**Dependencies**: #ENH-036
+
+**Deliverables**:
+- ✅ `validation_status_history` table
+- ✅ `decision_audit_log` table
+- ⏳ Validation point detail UI with status timeline
+- ⏳ Divergence acknowledgment workflow
+
+**Why This Helps**:
+- **Commitment device**: You've stated your process, now system tracks adherence
+- **Full audit trail**: See exactly what changed and when
+- **Divergence capture**: When you don't follow process, record why
+- **Learning data**: Foundation for post-outcome analysis
+
+---
+
+### Phase 3.2: Automated Monitoring 💡
+
+**Status**: 💡 Proposed (Tier 2 - Strategic)
+
+#### #ENH-038: Automated Monitoring System
+**Effort**: 2 weeks
+**Dependencies**: #ENH-037
+
+**Deliverables**:
+- `monitoring_specs` table
+- `/monitor-theses` scheduled Claude Code skill
+- GitHub Actions cron integration
+- Relevance scoring and noise filtering
+- In-app alert system
+
+**Why This Helps**:
+- **Proactive intelligence**: Claude watches for you
+- **Reduces cognitive load**: Don't need to remember what to track
+- **Timely alerts**: Know when validation points are affected
+- **Systematic coverage**: No blind spots in monitoring
+
+**Note**: Absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept.
+
+---
+
+### Phase 3.3: News & Narratives 💡
+
+**Status**: 💡 Proposed (Tier 2 - Strategic)
+
+#### #ENH-039: News & Narratives Integration
+**Effort**: 2-3 weeks
+**Dependencies**: #ENH-038
+
+**Deliverables**:
+- Narrative tracking system
+- Cross-thesis intelligence ("affects 3 theses")
+- Source management and credibility scoring
+- Financial data provider API integrations
+
+**Why This Helps**:
+- **Beyond explicit monitoring**: Catch things you didn't know to watch for
+- **Cross-thesis insights**: See how developments ripple across portfolio
+- **Source quality**: Weight information by credibility
+- **Emerging narratives**: Spot new themes before they're obvious
+
+**Note**: Supersedes the original #ENH-031 (News/Narrative Monitoring) with a more comprehensive design.
+
+---
+
+### Phase 3.4: Learning & Feedback ⏸️
+
+**Status**: ⏸️ Deferred (Tier 3 - Long-Term)
+
+**Deliverables** (specified in detail doc, no ENH ID yet):
+- Outcome recording when strategies close
+- Validation point accuracy assessment
+- Process adherence analysis
+- Thesis quality scoring over time
+- Feedback integration into future synthesis
+
+**Why This Helps**:
+- **Closes the loop**: Did following your process produce better results?
+- **Identifies patterns**: Which thesis types work? Which validation points predict well?
+- **Continuous improvement**: Learnings inform future theses
+
+**Note**: Absorbs and extends the original Phase 4.0 (Decision Journal with Outcomes) and Phase 4.1 (Pattern Detection) concepts.
+
+---
+
+## Complementary Enhancements (Remain Distinct)
+
+These items complement Phase 3 but remain separate:
+
+### Phase 3.1-parallel: Performance Attribution by Thesis 💡
 
 **Goal**: P&L rollup by hierarchy (macro thesis → asset thesis → strategy → position)
 
@@ -179,20 +292,14 @@
 - **Informs conviction**: High P&L + strong evidence = confidence boost
 - **Portfolio management**: Allocate more capital to high-conviction, profitable theses
 
-**Implementation Approach**:
-- Extend `strategy_metrics_snapshots` with thesis linkage
-- Compute P&L aggregations in nightly cron
-- Dashboard UI showing thesis performance
-- Filter by time period, thesis type, confidence level
-
 **Effort**: 1-2 weeks
-**Dependencies**: Phase 3 analytics infrastructure
+**Dependencies**: Phase 3.1 (thesis articulations provide confidence data)
 
 **Enhancement ID**: #ENH-027
 
 ---
 
-## Phase 3.2: Claim Invalidation Workflow 💡
+### Phase 3.2-parallel: Claim Invalidation Workflow 💡
 
 **Goal**: Systematic invalidation + impact analysis when claims proven wrong
 
@@ -200,12 +307,14 @@
 
 **Status**: 💡 Proposed (Tier 2 - Strategic)
 
+**Relationship to Phase 3**: Claim invalidation is one specific type of validation point status change. The audit trail (#ENH-037) captures this, but the impact analysis workflow adds value.
+
 **Deliverables**:
 - UI: Invalidate claim from claims browser
 - Impact analysis: "3 theses rely on this claim, 5 strategies ($XX notional)"
 - Triage generation: Create review for affected theses
 - Workflow: User confirms/updates theses
-- Audit trail: Track why claim was invalidated
+- Audit trail: Track why claim was invalidated (uses #ENH-037 infrastructure)
 
 **Why This Helps**:
 - **Data integrity**: Remove invalidated claims from consideration
@@ -213,99 +322,38 @@
 - **Risk management**: Identify positions based on invalidated beliefs
 - **Learning**: Understand what evidence was wrong and why
 
-**Implementation Approach**:
-- Query `claim_thesis_mappings` for impact
-- Calculate notional at risk (sum of strategy exposures)
-- Create triage for each affected thesis
-- Optionally regenerate AI summaries without invalidated claim
-
 **Effort**: 1-2 weeks
-**Dependencies**: Phase 2.8 (summary regeneration useful after invalidation)
+**Dependencies**: Phase 3.1 (#ENH-037 audit trail)
 
 **Enhancement ID**: #ENH-028
 
 ---
 
-## Phase 4.0: Decision Journal with Outcomes ⏸️
+### #ENH-020-playbook: Strategy Playbook Tab 💡
 
-**Goal**: Track expected vs actual outcomes, periodic review workflow
+**Goal**: Add playbook tab to strategy detail pages with reaction functions
 
-**PRD Alignment**: Section 8 (Logging, Journal & Institutional Memory)
+**PRD Alignment**: Section 3 (Strategies), Section 6 (Decision Capture)
 
-**Status**: ⏸️ Deferred to Phase 4 (Long-Term Vision)
+**Status**: 💡 Proposed (Tier 2 - Strategic)
 
-**Deliverables**:
-- Schema: `expected_outcome`, `actual_outcome` fields (already exist in `blotter_actions`)
-- UI: Mark outcomes when reviewing past decisions
-- Periodic review: Weekly/monthly "review last week's decisions"
-- Metrics: Decision accuracy by context (time pressure, volatility, etc.)
-- Dashboard: Decision quality over time
-
-**Why This Helps**:
-- **Learning substrate**: Basis for pattern detection
-- **Bias identification**: "Decisions under time pressure underperform"
-- **Process improvement**: Validate which decision contexts work
-- **Accountability**: Forces reflection on decision quality
-
-**Implementation Approach**:
-- Add outcome review UI to blotter
-- Time-triggered review (weekly/monthly triage)
-- AI assistance: Compare expected vs actual, calculate accuracy
-- Pattern detection queries
-
-**Effort**: 2-3 weeks
-**Dependencies**: Decision rationale capture (Phase 2.9)
-
-**Enhancement ID**: #ENH-029
-
----
-
-## Phase 4.1: Pattern Detection (AI-Powered) ⏸️
-
-**Goal**: AI analyzes decision journal for patterns in decision quality
-
-**PRD Alignment**: Section 8.1 (Pattern Recognition)
-
-**Status**: ⏸️ Deferred to Phase 4 (Long-Term Vision)
+**Relationship to Phase 3**: Strategy playbooks should define **reaction functions** that reference thesis-level validation points. When a validation point triggers, each linked strategy evaluates its reaction function.
 
 **Deliverables**:
-- Batch job: Monthly analysis of blotter actions + outcomes
-- AI prompt: "Find patterns in decision quality"
-- Insights: "Trades during high volatility underperform by 15%"
-- Dashboard: Pattern insights with evidence
-- Recommendations: "Avoid X, double-down on Y"
+- Entry/exit rules documentation
+- Position sizing guidelines
+- Risk management checklist
+- **Reaction functions**: Per-strategy responses to thesis validation point changes
+- Integration with #ENH-036 validation points
 
-**Why This Helps**:
-- **Identifies biases**: Systematic patterns in mistakes
-- **Validates processes**: Which workflows lead to better outcomes
-- **Continuous improvement**: Learn from history
-- **Competitive advantage**: Turn experience into systematic edge
-
-**Implementation Approach**:
-- Extend AI processing to decision journal
-- Statistical analysis + AI interpretation
-- Pattern library (common biases)
-- Actionable recommendations
-
-**Effort**: 2-3 weeks
-**Dependencies**: Phase 4.0 (outcome tracking)
-
-**Enhancement ID**: #ENH-030
+**Effort**: 8-10 hours
+**Dependencies**: #ENH-036 (validation points to reference)
 
 ---
 
 ## Backlog (Unprioritized)
 
-Items from enhancement analysis not yet assigned to phases:
-
 ### Tier 2 (Strategic)
-
-**News/Narrative Monitoring** (#ENH-031)
-- Automated news ingestion → claim validation
-- Real-time thesis confidence updates
-- Early warning system for contradictory evidence
-- **Effort**: 1-2 weeks
-- **PRD**: Section 5.5 (Thesis Evaluation)
 
 **Pre-Investment Pipeline** (#ENH-032)
 - Dedicated workflow for exploratory research
@@ -313,13 +361,6 @@ Items from enhancement analysis not yet assigned to phases:
 - Track time from research → position (idea velocity)
 - **Effort**: 1-2 weeks
 - **PRD**: Section 5.6 (Pre-Investment Research)
-
-**Thesis Evolution Timeline** (#ENH-033)
-- Version history for belief changes
-- Diff view: what changed between versions
-- Compare thesis confidence over time
-- **Effort**: 1 week
-- **PRD**: Section 5.5 (Thesis Evaluation)
 
 ### Tier 3 (Future)
 
@@ -379,19 +420,27 @@ Items from enhancement analysis not yet assigned to phases:
 
 ## Quick Reference: Next Steps
 
+**Currently In Progress**: Phase 3.1 (Thesis Synthesis MVP) 🚧
+- ✅ Database tables created
+- ✅ `/synthesize-thesis` skill created
+- ⏳ End-to-end testing
+- ⏳ UI for viewing articulations and updating validation point status
+
 **Recently Completed**: Phase 2.8 (AI-Generated Thesis Summaries) ✅
 
-**Up Next** (Tier 1 Quick Wins):
+**Tier 1 Quick Wins** (can be done in parallel):
 1. Phase 2.9: Claims-Aware Triage UI
 2. Phase 2.10: Strategy Provenance Chain
 
-**Strategic Horizon** (Tier 2):
-- Phase 3.0: Thesis Review Triggers
-- Phase 3.1: Performance Attribution
-- Phase 3.2: Claim Invalidation Workflow
+**Strategic Horizon** (Tier 2 - Phase 3: Thesis Synthesis & Monitoring):
+- **Phase 3.1 (MVP)**: 🚧 Thesis Articulation (#ENH-035) + Validation Points (#ENH-036) + Audit Trail (#ENH-037)
+- **Phase 3.2**: Automated Monitoring (#ENH-038)
+- **Phase 3.3**: News & Narratives (#ENH-039)
+- **Parallel**: Performance Attribution (#ENH-027), Claim Invalidation (#ENH-028), Strategy Playbook (#ENH-020-playbook)
 
 **Long-Term Vision** (Tier 3+):
-- Phase 4.0: Decision Journal with Outcomes
-- Phase 4.1: Pattern Detection (AI-Powered)
+- Phase 3.4: Learning & Feedback (outcomes, process adherence, thesis quality scoring)
+
+**Full Specification**: [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.md)
 
 See [Implementation Completion Log](archive/implementation_completion_log.md) for Phases 1.0-2.7.
