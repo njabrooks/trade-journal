@@ -104,7 +104,8 @@ Already integrated in `src/lib/ingestion/massive/`:
 | **FMP (Free tier)** | Revenue segments, 150+ endpoints | $0 | OpenBB | Segment data, basic fundamentals |
 | **EODHD** | Global EOD, fundamentals | $20-30/mo | OpenBB | Historical data, international |
 | **Alpha Vantage** | Prices, fundamentals | $50/mo (free: 25/day) | OpenBB | Prototyping |
-| **Finnhub** | News, sentiment, transcripts | Free tier generous | Direct | News monitoring |
+| **Finnhub** | News, sentiment, company news | Free tier generous | Direct | **News monitoring (primary)** |
+| **NewsAPI** | News aggregation | Free tier: 100 req/day | Direct | Backup news source |
 | **API Ninjas** | Earnings transcripts | Pay-per-call | Direct | Transcript access |
 
 ### Tier 3: Medium-Cost Sources ($50-200/month)
@@ -316,6 +317,397 @@ EXTERNAL SOURCES
 
 ---
 
+## News & Narrative Monitoring Strategy
+
+This section details the systematic approach to tracking news developments for validation point monitoring (see [thesis-synthesis-monitoring.md](thesis-synthesis-monitoring.md) Phase 3).
+
+### Architecture Overview
+
+**Multi-layer approach** combining keyword monitoring with narrative synthesis:
+
+```
+Layer 1: Keyword Monitoring (Explicit validation points)
+  ↓ Finnhub API + SEC EDGAR + RSS feeds
+  ↓ Daily searches for specific keywords
+  ↓ Claude scores relevance (semantic + novelty + credibility)
+  ↓ Store to validation_status_history
+
+Layer 2: Narrative Synthesis (Judgment-required points)
+  ↓ Aggregate week's news by thesis
+  ↓ Claude synthesizes narrative changes
+  ↓ Weekly synthesis identifying themes, sentiment shifts
+  ↓ Store to narrative_snapshots table
+
+Layer 3: Cross-thesis Intelligence
+  ↓ Identify developments affecting multiple theses
+  ↓ Suggest new validation points
+  ↓ Portfolio-wide risk detection
+```
+
+### News Data Sources
+
+#### Primary: Finnhub (Free Tier)
+
+**Capabilities**:
+- Company-specific news with sentiment scoring
+- Coverage: US equities, crypto, forex
+- Free tier: 60 API calls/minute
+- Data fields: headline, summary, source, category, datetime, sentiment
+
+**API Endpoints**:
+```python
+# Company news
+GET /api/v1/company-news?symbol={ticker}&from={date}&to={date}
+
+# General news by category
+GET /api/v1/news?category={category}  # 'general', 'forex', 'crypto', etc.
+
+# News sentiment
+# Included in company-news response as sentiment score (-1 to 1)
+```
+
+**Integration**: Direct REST API (TypeScript or Python)
+
+**Best for**:
+- Company-specific validation points ("regulatory action against COIN")
+- Crypto news monitoring
+- Daily news aggregation
+
+**Limitations**:
+- Free tier rate limits (60/min sufficient for daily monitoring)
+- Sentiment is broad (-1 to 1), not topic-specific
+- Historical data limited on free tier
+
+#### Secondary: SEC EDGAR (Free)
+
+**Capabilities**:
+- All SEC filings (8-K, 10-K, 10-Q, Form 4, etc.)
+- Official source for material events
+- Rate limit: 10 requests/second
+- Real-time filing alerts possible via RSS
+
+**API Endpoints**:
+```python
+# Company submissions
+GET /cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type={form_type}&count={n}
+
+# Full-text search
+GET /cgi-bin/srch-edgar?text={query}
+
+# RSS feeds for recent filings
+GET /cgi-bin/browse-edgar?action=getcurrent&CIK=&type={form_type}&output=atom
+```
+
+**Integration**: OpenBB (`obb.equity.filings()`) or direct API
+
+**Best for**:
+- Regulatory validation points (enforcement actions, material events)
+- Insider trading monitoring (Form 4)
+- Earnings release dates (8-K)
+
+#### Tertiary: RSS Feeds (Free)
+
+**Curated feed list by topic**:
+
+| Topic | Feed URL | Update Frequency | Use Case |
+|-------|----------|------------------|----------|
+| **Crypto** | `https://www.coindesk.com/arc/outboundfeeds/rss/` | Hourly | Crypto regulatory/market news |
+| **Fed/Macro** | `https://www.federalreserve.gov/feeds/press_all.xml` | On events | Fed announcements, policy |
+| **FRED Economics** | `https://fredblog.stlouisfed.org/feed/` | Weekly | Economic analysis, data releases |
+| **Crypto regulation** | `https://cointelegraph.com/rss` | Hourly | Crypto regulatory coverage |
+| **WSJ Markets** | `https://feeds.a.dj.com/rss/RSSMarketsMain.xml` | Real-time | Broad market developments |
+
+**Integration**: RSS parser library (e.g., `rss-parser` in Node.js or `feedparser` in Python)
+
+**Best for**:
+- Targeted topic monitoring (crypto, Fed policy, specific sectors)
+- Lower rate limits than news APIs
+- Free, no API keys required
+
+**Limitations**:
+- No sentiment scoring (would need Claude to assess)
+- Update frequency varies by source
+- Content formatting inconsistent
+
+#### Upgrade Path: Benzinga Pro ($200+/month)
+
+**When to upgrade**:
+- Monitoring >20 tickers with high news volume
+- Need sub-hour latency for critical alerts
+- Free tier noise/signal ratio insufficient
+
+**Additional capabilities**:
+- Real-time news alerts (WebSocket)
+- Analyst ratings and price targets
+- Higher quality sentiment analysis
+- Better categorization
+
+**Integration**: Available via OpenBB (`obb.news()`)
+
+### News Monitoring Implementation
+
+#### Phase 1: Manual + Structure ($0/month)
+
+User manually checks Finnhub daily, logs relevant news:
+
+```typescript
+// User workflow
+1. Check Finnhub for validation point keywords
+2. Assess relevance and sentiment
+3. Log to validation_status_history via UI
+4. Weekly: Review for narrative shifts
+```
+
+**Time commitment**: ~10 minutes/day
+
+#### Phase 2: Automated Keyword Monitoring ($0/month)
+
+**Script**: `scripts/monitor-news.ts`
+
+```typescript
+// Pseudo-code for scripts/monitor-news.ts
+import { finnhub } from './lib/finnhub-client';
+import { parseRSS } from './lib/rss-parser';
+import { db } from './lib/db';
+
+async function monitorNews() {
+  // 1. Load active monitoring specs from database
+  const specs = await db.query(`
+    SELECT vp.id, vp.statement, ms.keywords, ms.semantic_description, ms.sources
+    FROM validation_points vp
+    JOIN monitoring_specs ms ON ms.validation_point_id = vp.id
+    WHERE vp.status = 'monitoring' AND ms.next_check <= NOW()
+  `);
+
+  for (const spec of specs) {
+    const newsResults = [];
+
+    // 2. Query Finnhub for company/topic news
+    if (spec.sources.includes('finnhub')) {
+      const news = await finnhub.companyNews(spec.keywords, {
+        from: oneDayAgo,
+        to: today
+      });
+      newsResults.push(...news);
+    }
+
+    // 3. Query RSS feeds
+    if (spec.sources.includes('rss:coindesk')) {
+      const feed = await parseRSS('https://www.coindesk.com/arc/outboundfeeds/rss/');
+      const filtered = feed.items.filter(item =>
+        spec.keywords.some(kw => item.title.toLowerCase().includes(kw.toLowerCase()))
+      );
+      newsResults.push(...filtered);
+    }
+
+    // 4. Claude scores relevance for each article
+    const scored = await Promise.all(newsResults.map(async article => {
+      const score = await claudeScoreRelevance(
+        article,
+        spec.statement,
+        spec.semantic_description
+      );
+      return { ...article, relevance_score: score };
+    }));
+
+    // 5. Filter by threshold and store
+    const relevant = scored.filter(a => a.relevance_score > 0.7);
+
+    if (relevant.length > 0) {
+      // Store to validation_status_history
+      await db.insert('validation_status_history', {
+        validation_point_id: spec.id,
+        evidence: {
+          articles: relevant.map(a => ({
+            source: a.source,
+            headline: a.headline,
+            summary: a.summary,
+            link: a.url,
+            relevance_score: a.relevance_score,
+            date: a.datetime
+          }))
+        },
+        confidence: 'medium',
+        assessed_by: 'claude'
+      });
+
+      // 6. Create alert if critical
+      if (spec.importance === 'critical') {
+        await createAlert(spec.id, relevant);
+      }
+    }
+
+    // Update last_checked and next_check
+    await db.update('monitoring_specs', spec.id, {
+      last_checked: new Date(),
+      next_check: calculateNextCheck(spec.frequency)
+    });
+  }
+}
+
+// Claude relevance scoring function
+async function claudeScoreRelevance(article, statement, semanticDescription) {
+  const prompt = `
+    Validation point: "${statement}"
+    Context: ${semanticDescription}
+
+    Article: "${article.headline}"
+    Summary: "${article.summary}"
+
+    Score this article's relevance to the validation point on a scale of 0-1:
+    - 0.0-0.3: Not relevant (noise)
+    - 0.3-0.5: Potentially relevant (needs review)
+    - 0.5-0.7: Likely relevant (flag for attention)
+    - 0.7-1.0: Definitely relevant (create alert)
+
+    Consider:
+    1. Semantic relevance (does this actually relate?)
+    2. Novelty (is this new information?)
+    3. Source credibility (is this a trustworthy source?)
+
+    Return ONLY a number between 0 and 1.
+  `;
+
+  const response = await claude.messages.create({
+    model: 'claude-sonnet-4-5-20250929',
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 10
+  });
+
+  return parseFloat(response.content[0].text.trim());
+}
+```
+
+**GitHub Actions schedule**:
+```yaml
+# .github/workflows/news-monitoring.yml
+name: News Monitoring
+on:
+  schedule:
+    - cron: '0 9 * * *'  # 9 AM UTC daily
+  workflow_dispatch:     # Manual trigger
+
+jobs:
+  monitor-news:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - run: npm install
+      - run: npx tsx scripts/monitor-news.ts
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+#### Phase 3: Narrative Synthesis ($0/month)
+
+**Claude Code Skill**: `/monitor-narratives` (weekly run)
+
+```typescript
+// Pseudo-code for .claude/skills/monitor-narratives
+async function synthesizeNarratives() {
+  // 1. Load previous week's news by thesis
+  const theses = await db.query(`
+    SELECT t.id, t.title, t.description,
+           array_agg(DISTINCT vsh.evidence) as weekly_news
+    FROM macro_theses t
+    JOIN validation_points vp ON vp.thesis_id = t.id
+    JOIN validation_status_history vsh ON vsh.validation_point_id = vp.id
+    WHERE vsh.timestamp > NOW() - INTERVAL '7 days'
+    GROUP BY t.id
+  `);
+
+  for (const thesis of theses) {
+    // 2. Claude synthesizes narrative changes
+    const synthesis = await claude.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      messages: [{
+        role: 'user',
+        content: `
+          Thesis: "${thesis.title}"
+          Description: ${thesis.description}
+
+          News from the past week:
+          ${JSON.stringify(thesis.weekly_news, null, 2)}
+
+          Synthesize:
+          1. Overall narrative summary (2-3 sentences)
+          2. Sentiment shift (more_positive, neutral, more_negative)
+          3. Key developments that affect this thesis
+          4. Should any new validation points be added?
+          5. Confidence in this assessment (low, medium, high)
+
+          Return as JSON.
+        `
+      }],
+      max_tokens: 1000
+    });
+
+    const result = JSON.parse(synthesis.content[0].text);
+
+    // 3. Store to narrative_snapshots
+    await db.insert('narrative_snapshots', {
+      thesis_id: thesis.id,
+      thesis_type: 'macro',
+      snapshot_date: new Date(),
+      narrative_summary: result.narrative_summary,
+      supporting_evidence: thesis.weekly_news,
+      sentiment_shift: result.sentiment_shift,
+      suggested_validation_points: result.suggested_validation_points,
+      generated_by: 'claude',
+      confidence: result.confidence
+    });
+  }
+}
+```
+
+### Source Credibility Scoring
+
+**Tier 1 sources** (1.0x weight):
+- Wall Street Journal, Bloomberg, Reuters, Financial Times
+- SEC filings (official)
+- Federal Reserve press releases
+- Company investor relations
+
+**Tier 2 sources** (0.8x weight):
+- CoinDesk, The Block (crypto)
+- TechCrunch, The Information (tech)
+- Reputable industry publications
+
+**Tier 3 sources** (0.5x weight):
+- News aggregators
+- Social media
+- Blogs without editorial oversight
+
+**Implementation**: Maintain credibility mapping in `monitoring_specs.sources` JSONB field:
+
+```json
+{
+  "sources": [
+    { "name": "wsj", "url": "wsj.com", "tier": 1, "weight": 1.0 },
+    { "name": "coindesk", "url": "coindesk.com", "tier": 2, "weight": 0.8 }
+  ]
+}
+```
+
+### Cost Structure & Scaling
+
+| Phase | Sources | API Calls/Day | Monthly Cost | Coverage |
+|-------|---------|---------------|--------------|----------|
+| **Phase 1: Manual** | Finnhub (manual checks) | ~10 | $0 | 1-3 theses |
+| **Phase 2: Automated Keywords** | Finnhub + RSS | ~500 | $0 | 5-10 theses, 20-30 validation points |
+| **Phase 3: Narrative Synthesis** | + Claude synthesis | ~500 + weekly Claude | ~$5 | 10+ theses, full automation |
+| **Upgrade: Benzinga** | All above + Benzinga | Unlimited | $200 | Professional-grade, >20 tickers |
+
+**Breaking point for Benzinga**:
+- Monitoring >20 companies with high news volume (e.g., large-cap tech)
+- Need sub-hour alert latency
+- Free tier false positive rate >30%
+
+---
+
 ## Implementation Roadmap
 
 ### Immediate (This Week)
@@ -327,9 +719,10 @@ EXTERNAL SOURCES
 
 ### Short-term (Next 2-4 Weeks)
 1. [ ] Create `fetch_crypto_data.py` for crypto thesis monitoring
-2. [ ] Add Finnhub for news sentiment access
-3. [ ] Build news monitoring prototype for judgment-required points
-4. [ ] Document manual transcript workflow with free sources
+2. [ ] Add Finnhub API key for news/sentiment access
+3. [ ] Build news monitoring prototype (`scripts/monitor-news.ts`)
+4. [ ] Test RSS feed parsing for CoinDesk, FRED blog
+5. [ ] Document manual transcript workflow with free sources
 
 ### Medium-term (When Thesis Monitoring Goes Live)
 1. [ ] Evaluate FMP Ultimate ROI based on company coverage
@@ -463,3 +856,4 @@ This allows users to make informed decisions about the trade-off between monitor
 |------|--------|---------|
 | 2026-01-04 | Claude + User | Initial strategy draft |
 | 2026-01-04 | Claude + User | Added integration with thesis synthesis section, cross-references |
+| 2026-01-04 | Claude + User | Added comprehensive "News & Narrative Monitoring Strategy" section with Finnhub, SEC EDGAR, RSS feeds, implementation pseudo-code, GitHub Actions setup, source credibility scoring, and cost structure |

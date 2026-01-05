@@ -802,25 +802,66 @@ User can:
 
 **Goal**: Claude proactively monitors validation points.
 
-#### Deliverables
+**Status**: 🚧 In Progress (Phase 3.2A Complete, 3.2B+ Planned)
 
-1. **Monitoring specification creation**
-   - As part of validation point creation
-   - Define search strategy, sources, frequency
+#### Phase 3.2A: Validation Assessment Workflow ✅ Complete
 
-2. **Scheduled monitoring jobs**
-   - GitHub Actions cron
-   - Claude Code session for search/evaluation
+**Delivered** (2026-01-05):
+1. ✅ `/assess-validation-evidence` Claude Code skill
+2. ✅ Top-down evidence assessment of SEC filings, presentations, transcripts
+3. ✅ Ticker-based thesis lookup (auto-find thesis by ticker)
+4. ✅ Structured markdown reports with evidence categorization
+5. ✅ Confidence scoring (high/medium/low/none)
+6. ✅ Real-world testing with Galaxy Digital SEC presentation
 
-3. **Relevance filtering**
-   - Semantic scoring
-   - Noise reduction
-   - Source prioritization
+**Documentation**: [validation-assessment-workflow.md](validation-assessment-workflow.md)
 
-4. **Alert system**
-   - Flag points requiring attention
-   - In-app notification
-   - Optional email/webhook
+**Enhancement ID**: #ENH-042
+
+---
+
+#### Phase 3.2B: Database Integration & UI ⏳ Planned
+
+**Deliverables**:
+1. **Assessment-to-database recording** (#ENH-042B)
+   - Interactive review mode (approve/reject/modify)
+   - Write to `validation_status_history` table
+   - Batch approval workflow
+
+2. **Validation Status History UI** (#ENH-042C)
+   - Validation point detail page
+   - Status timeline component
+   - Monitoring events log
+   - Evidence comparison views
+
+---
+
+#### Phase 3.2C-E: Multi-Source Automation ⏳ Planned
+
+**Phase 3.2D - Multi-Source Data Integration**:
+1. **FRED Economic Data** (#ENH-042E - Tier 1)
+   - Daily scheduled checks
+   - Threshold evaluation
+   - GitHub Actions integration
+
+2. **Price/IV Data** (#ENH-042F - Tier 2)
+   - Monitor existing `underlyings_iv_history` data
+   - Spot, IV30, IV rank monitoring
+   - Daily checks after Massive ingestion
+
+3. **News & SEC Filings** (#ENH-042G - Tier 2)
+   - Finnhub integration (free tier)
+   - SEC EDGAR RSS parsing
+   - Claude relevance scoring
+   - Auto-assessment triggering
+
+**Phase 3.2E - Master Orchestration** (#ENH-042H):
+- Unified monitoring script
+- GitHub Actions daily workflow
+- Summary reporting
+- Alert aggregation
+
+**Continuation Document**: [phase3_2_continuation.md](phase3_2_continuation.md)
 
 ---
 
@@ -828,20 +869,182 @@ User can:
 
 **Goal**: Proactive intelligence gathering beyond explicit monitoring.
 
+#### Architecture Overview
+
+**Multi-layer approach** combining keyword monitoring with narrative synthesis:
+
+```
+Layer 1: Keyword Monitoring (Explicit validation points)
+  ↓ Finnhub API + SEC EDGAR + RSS feeds
+  ↓ Daily searches for specific keywords
+  ↓ Store to validation_status_history
+
+Layer 2: Narrative Synthesis (Judgment-required points)
+  ↓ Claude Code skill analyzing aggregated news
+  ↓ Weekly synthesis identifying themes
+  ↓ Store to narrative_snapshots table
+
+Layer 3: Cross-thesis Intelligence
+  ↓ Identify developments affecting multiple theses
+  ↓ Suggest new validation points
+  ↓ Detect narrative shifts across portfolio
+```
+
 #### Deliverables
 
-1. **Narrative tracking**
-   - Track emerging themes relevant to theses
-   - Suggest new validation points based on news
+1. **Keyword-based news monitoring**
+   - Integration with Finnhub (free tier) for company/topic news
+   - SEC EDGAR 8-K monitoring for material events
+   - RSS feed parsing for targeted sources (CoinDesk, FRED blog, etc.)
+   - Claude-powered relevance scoring (semantic understanding, not just keyword matching)
+   - Alert generation for critical developments
 
-2. **Cross-thesis intelligence**
-   - "This development affects 3 of your theses"
-   - Correlation detection
+2. **Narrative tracking & synthesis**
+   - New `narrative_snapshots` table for weekly narrative summaries
+   - Claude skill: `/monitor-narratives` (weekly synthesis of judgment-required points)
+   - Fields: narrative_summary, supporting_evidence JSONB, sentiment_shift, confidence
+   - Track emerging themes beyond explicit validation points
+   - Suggest new validation points based on narrative developments
 
-3. **Source management**
-   - Curated source lists
-   - Credibility scoring
-   - API integrations (financial data providers)
+3. **Cross-thesis intelligence**
+   - "This development affects 3 of your theses" correlation detection
+   - Narrative shift detection (e.g., "Regulatory stance changed from neutral to hostile")
+   - Portfolio-wide narrative dashboard
+
+4. **Source management**
+   - Curated source lists by validation point type
+   - Source credibility scoring (weight trusted sources higher)
+   - API integrations:
+     - **Finnhub** (free) - Primary news/sentiment source
+     - **SEC EDGAR** (free) - Regulatory filings
+     - **RSS feeds** (free) - Targeted monitoring
+     - **Benzinga** ($200/mo) - Only if free sources insufficient
+   - Feedback loop for false positive reduction
+
+#### Implementation Pattern
+
+**Phase 3A: Manual + Structure** ($0/month)
+```typescript
+// User workflow
+1. Check Finnhub daily for validation point keywords
+2. Log relevant news to validation_status_history
+3. Weekly: Run /monitor-narratives skill for synthesis
+```
+
+**Phase 3B: Automated Keyword Monitoring** ($0/month)
+```typescript
+// scripts/monitor-news.ts (GitHub Actions daily)
+1. Load active monitoring_specs from database
+2. Query Finnhub, SEC EDGAR, RSS feeds for each spec
+3. Claude scores relevance (semantic + novelty + credibility)
+4. Store articles above threshold (0.7+)
+5. Generate alerts for critical importance
+```
+
+**Phase 3C: Narrative Synthesis** ($0/month)
+```typescript
+// /monitor-narratives skill (GitHub Actions weekly)
+1. Load previous week's news by thesis
+2. Claude synthesizes narrative changes
+3. Identify sentiment shifts
+4. Store to narrative_snapshots table
+5. Suggest new validation points if needed
+```
+
+#### Data Sources by Validation Point Type
+
+| Validation Point Type | Primary Source | Backup | Cost | Integration |
+|----------------------|----------------|--------|------|-------------|
+| Regulatory news | Finnhub (free) | SEC EDGAR 8-K | Free | Direct API |
+| Company-specific | Finnhub (free) | Yahoo Finance RSS | Free | Direct API |
+| Macro/Fed policy | FRED blog RSS | Manual | Free | RSS parser |
+| Crypto developments | CoinDesk RSS | Finnhub crypto | Free | RSS parser |
+| Enforcement actions | SEC EDGAR (free) | Finnhub | Free | OpenBB/Direct |
+| Insider trading | SEC Form 4 (free) | Finnhub | Free | OpenBB |
+| Sentiment shifts | Finnhub sentiment | Manual review | Free | Direct API |
+
+#### Relevance Scoring Design
+
+Claude's role in filtering noise:
+
+1. **Semantic relevance** (0-1 score)
+   - Does this actually relate to the validation point?
+   - Example: "SEC fines crypto exchange" → high relevance for "regulatory hostility" point
+   - Example: "BTC price prediction" → low relevance (noise)
+
+2. **Novelty assessment**
+   - Is this new information or rehash of known facts?
+   - Track article similarity to prevent duplicate alerts
+
+3. **Source credibility weighting**
+   - Tier 1 sources (WSJ, Bloomberg, official filings): 1.0x weight
+   - Tier 2 sources (reputable crypto news): 0.8x weight
+   - Tier 3 sources (aggregators, blogs): 0.5x weight
+   - User can override via feedback
+
+4. **Confidence scoring**
+   - Low (0.3-0.5): Potentially relevant, needs review
+   - Medium (0.5-0.7): Likely relevant, flag for attention
+   - High (0.7+): Definitely relevant, create alert
+
+**Alert thresholds** (TBD through testing):
+- Critical importance: relevance score > 0.6
+- Significant importance: relevance score > 0.7
+- Supporting importance: relevance score > 0.8
+
+#### Database Schema Additions
+
+```sql
+-- Narrative snapshots (weekly synthesis for judgment-required points)
+CREATE TABLE narrative_snapshots (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  thesis_id UUID NOT NULL,
+  thesis_type TEXT NOT NULL CHECK (thesis_type IN ('macro', 'asset')),
+  snapshot_date DATE NOT NULL,
+
+  -- Synthesized narrative
+  narrative_summary TEXT NOT NULL,        -- "Regulatory narrative shifted from..."
+  supporting_evidence JSONB NOT NULL,     -- [{ source, headline, date, relevance_score, link }]
+  sentiment_shift TEXT,                   -- 'more_positive' | 'neutral' | 'more_negative'
+
+  -- Suggested actions
+  suggested_validation_points JSONB,      -- New validation points to consider
+  affected_validation_points JSONB,       -- Existing points this impacts
+
+  -- AI synthesis metadata
+  generated_by TEXT NOT NULL CHECK (generated_by IN ('claude', 'user')),
+  confidence TEXT NOT NULL CHECK (confidence IN ('low', 'medium', 'high')),
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  UNIQUE (thesis_id, thesis_type, snapshot_date)
+);
+
+CREATE INDEX idx_narrative_snapshots_thesis ON narrative_snapshots(thesis_id, thesis_type);
+CREATE INDEX idx_narrative_snapshots_date ON narrative_snapshots(snapshot_date DESC);
+```
+
+#### Success Metrics
+
+**Phase 3 Success Criteria:**
+- [ ] Automated monitoring catches 80%+ of relevant developments before user would notice
+- [ ] False positive rate <20% (noise is manageable without overwhelming user)
+- [ ] User spends <10 minutes/week reviewing news monitoring results
+- [ ] Narrative synthesis surfaces at least 1 actionable insight per month
+- [ ] Cross-thesis correlation detection identifies portfolio-wide risks
+
+#### Cost Structure
+
+| Component | Source | Monthly Cost |
+|-----------|--------|--------------|
+| News API | Finnhub (free tier) | $0 |
+| RSS parsing | Built-in library | $0 |
+| SEC filings | EDGAR API (free) | $0 |
+| Compute | GitHub Actions | ~$0 (within free tier) |
+| **Total Phase 3** | | **$0/month** |
+
+Upgrade path if free tier insufficient:
+- Benzinga News API: $200/mo (only if monitoring >20 tickers with high news volume)
 
 ---
 
@@ -936,3 +1139,4 @@ User can:
 | Date | Author | Changes |
 |------|--------|---------|
 | 2026-01-03 | Claude + User | Initial requirements draft |
+| 2026-01-04 | Claude + User | Expanded Phase 3 (News & Narratives) with detailed implementation strategy, database schema, relevance scoring design, and cost structure |

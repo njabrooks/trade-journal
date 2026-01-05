@@ -78,9 +78,9 @@ The system implements a four-level decision hierarchy. Terms below map to this s
 ---
 
 #### 2. Asset Thesis / Asset Thesiss
-**PRD Term:** ✅ **Asset Thesiss**  
-**Existing Term:** ⚠️ **Underlying** (partial overlap, but different concept)  
-**Database:** `asset_views` (Phase 1), `underlyings` (existing)  
+**PRD Term:** ✅ **Asset Thesiss**
+**Existing Term:** ⚠️ **Underlying** (partial overlap, but different concept)
+**Database:** `asset_theses` (table name), `assetTheses` (schema export)
 **Definition:** Asset-specific theses with narrative, fundamental, positioning, and regime context. Expresses how a macro thesis applies to a specific asset, or independent asset-level beliefs.
 
 **Usage:**
@@ -477,7 +477,7 @@ These terms are implementation details that don't appear in PRD but are useful f
 ### When Constructing AI Prompts
 1. **Always use PRD terminology** in prompts (e.g., "asset thesis", "macro thesis")
 2. **Map from legacy data** internally - AI should see PRD terms, not implementation terms
-3. **Example**: Prompt says "asset thesis" even if querying `strategies` table that will link to `asset_views`
+3. **Example**: Prompt says "asset thesis" even if querying `strategies` table that will link to `asset_theses`
 4. **Rationale**: AI should reason about PRD concepts, not implementation details
 
 ### Stability Guarantee

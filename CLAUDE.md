@@ -194,10 +194,17 @@ Feature-based component organization:
 
 ### `/.cursor/skills` - Claude Code Skills
 Research workflow automation skills (managed skills, invoked via `/skill-name`):
+
+**Research Ingestion (Bottom-Up Discovery):**
 - **`process-transcript`** - Process research transcripts with forensic Toulmin claim extraction
 - **`synthesize-claims`** - Cross-reference audit claims against existing theses/views in database
 - **`deep-dive`** - Guide collaborative deep dive analysis on themes or tickers
 - **`finalize-for-upload`** - Upload finalized research (auto-detects artifact/insight/thesis/view)
+
+**Validation Assessment (Top-Down Evidence):**
+- **`assess-validation-evidence`** - Assess content against existing validation points to identify evidence of validation/invalidation
+
+**Database Operations:**
 - **`create-thesis`** - Create macro thesis in Supabase from markdown (via psql)
 - **`create-view`** - Create asset thesis in Supabase from markdown (via psql)
 - **`read-theses`** - Query and display macro theses from database (via psql)

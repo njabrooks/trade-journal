@@ -182,28 +182,132 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 
 ---
 
-### Phase 3.2: Automated Monitoring 💡
+### Phase 3.2: Automated Monitoring 🚧
 
-**Status**: 💡 Proposed (Tier 2 - Strategic)
+**Status**: 🚧 In Progress (Phase 3.2A Complete, 3.2B+ In Planning)
 
-#### #ENH-038: Automated Monitoring System
-**Effort**: 2 weeks
-**Dependencies**: #ENH-037
+#### Phase 3.2A: Validation Assessment Workflow ✅
+**Status**: ✅ Complete (2026-01-05)
+**Enhancement ID**: #ENH-042
 
 **Deliverables**:
-- `monitoring_specs` table
-- `/monitor-theses` scheduled Claude Code skill
-- GitHub Actions cron integration
-- Relevance scoring and noise filtering
-- In-app alert system
+- ✅ `/assess-validation-evidence` Claude Code skill
+- ✅ Database script with ticker-based thesis lookup
+- ✅ Structured markdown assessment reports
+- ✅ Evidence categorization and confidence scoring
+- ✅ Real-world testing (Galaxy Digital SEC presentation)
+- ✅ Documentation: [validation-assessment-workflow.md](features/validation-assessment-workflow.md)
 
 **Why This Helps**:
-- **Proactive intelligence**: Claude watches for you
-- **Reduces cognitive load**: Don't need to remember what to track
-- **Timely alerts**: Know when validation points are affected
-- **Systematic coverage**: No blind spots in monitoring
+- Top-down validation check complements bottom-up research discovery
+- Structured assessment of SEC filings, presentations, transcripts
+- Evidence-based validation tracking
+- Foundation for automated monitoring
 
-**Note**: Absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept.
+---
+
+#### Phase 3.2B: Database Integration & Status History UI 💡
+**Status**: 💡 Planned (Tier 1 - Next Sprint)
+**Enhancement IDs**: #ENH-042B, #ENH-042C
+**Effort**: 3-5 days
+**Dependencies**: #ENH-042 (Complete)
+
+**Deliverables**:
+- Assessment-to-database recording with interactive review
+- Validation point detail page with status timeline
+- Monitoring events log UI
+- Evidence comparison views
+- Batch approval workflow
+
+**Why This Helps**:
+- Eliminates manual data entry gap
+- Complete audit trail visualization
+- Enables trend analysis
+- User accountability and learning
+
+---
+
+#### Phase 3.2C: Evidence Analysis & Visualization 💡
+**Status**: 💡 Planned (Tier 2)
+**Enhancement ID**: #ENH-042D
+**Effort**: 1 week
+**Dependencies**: #ENH-042C
+
+**Deliverables**:
+- Evidence strength scoring (0-100)
+- Trend visualization with annotations
+- Conflicting evidence detection
+- Forecast trajectory analysis
+
+---
+
+#### Phase 3.2D: Multi-Source Data Integration 💡
+**Status**: 💡 Planned (Tier 1-2)
+**Enhancement IDs**: #ENH-042E, #ENH-042F, #ENH-042G
+**Effort**: 2-3 weeks total
+**Dependencies**: #ENH-042B
+
+**Sprint Breakdown**:
+
+**FRED Economic Data** (#ENH-042E - Tier 1):
+- FRED monitoring spec support
+- Daily scheduled checks (GitHub Actions)
+- Threshold evaluation and alerts
+- Effort: 2-3 days
+
+**Price/IV Data** (#ENH-042F - Tier 2):
+- Leverage existing `underlyings_iv_history` table
+- Monitor spot, IV30, IV rank, IV percentile
+- Daily checks after Massive ingestion
+- Effort: 3-4 days
+
+**News & SEC Filings** (#ENH-042G - Tier 2):
+- Finnhub integration (free tier)
+- SEC EDGAR RSS parsing
+- Claude relevance scoring
+- Auto-assessment triggering
+- Effort: 1-2 weeks
+
+**Why This Helps**:
+- Automated monitoring across all data sources
+- Zero manual effort for economic/market monitoring
+- Proactive intelligence gathering
+- Catches developments before user notices
+
+---
+
+#### Phase 3.2E: Master Orchestration 💡
+**Status**: 💡 Planned (Tier 2)
+**Enhancement ID**: #ENH-042H
+**Effort**: 1 week
+**Dependencies**: #ENH-042E, #ENH-042F, #ENH-042G
+
+**Deliverables**:
+- Master monitoring script (`scripts/run-all-monitoring.ts`)
+- GitHub Actions daily workflow
+- Unified summary reporting
+- Alert aggregation and notification
+
+**Workflow**:
+```
+Daily 9 AM ET:
+  → FRED economic data
+  → Price/IV data (after Massive)
+  → News & SEC filings
+  → Generate summary
+  → Notify if alerts
+```
+
+**Why This Helps**:
+- Single daily monitoring run
+- Centralized error handling
+- One summary instead of multiple alerts
+
+---
+
+**Continuation Document**: [phase3_2_continuation.md](features/phase3_2_continuation.md)
+
+**Note**: Phase 3.2 absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept.
 
 ---
 
@@ -338,7 +442,7 @@ These items complement Phase 3 but remain separate:
 
 ### Tier 1 (Quick Wins)
 
-**Local-First Database Architecture Migration** (#ENH-041)
+#### **Local-First Database Architecture Migration** (#ENH-041)
 - **Goal**: Migrate to hybrid local-first architecture (SQLite primary + Supabase backup)
 - **PRD Alignment**: Infrastructure optimization (not in PRD)
 - **Status**: 💡 Proposed (High Priority)
@@ -353,7 +457,7 @@ These items complement Phase 3 but remain separate:
 - **Risk**: Low (run both systems in parallel for 2-4 weeks before cutover)
 - **Reference**: [docs/archive/local-db-architecture-vs-supabase.md](archive/local-db-architecture-vs-supabase.md)
 
-**Data Visualization Enhancements** (#ENH-040)
+#### **Data Visualization Enhancements** (#ENH-040)
 - **Goal**: Leverage existing data sources to enhance detail pages with market context
 - **PRD Alignment**: Section 7 (Decision Support & Analytics)
 - **Opportunities Identified**:
@@ -366,9 +470,62 @@ These items complement Phase 3 but remain separate:
 - **Effort**: 1-2 days per enhancement
 - **Dependencies**: None (data already flows into system)
 
+#### **Claim Detail Page Linking Workflow** (#ENH-042)
+- **Goal**: Add claim-to-thesis linking directly from claim detail page
+- **PRD Alignment**: Section 5.4 (Contextual Mapping to Investment Hierarchy)
+- **Status**: 💡 Proposed (Tier 1 Quick Win)
+- **Current Gap**: Claim linking only available from claims browser, not from claim detail page
+- **Solution**: Reuse existing `ConvertClaimToEntityDialog` component with pre-selected claim context
+- **Why Quick Win**:
+  - **Low Effort**: 2-4 hours (reuses existing component)
+  - **High Value**: Completes workflow at point of review (no navigation back to browser)
+  - **Zero Duplication**: Uses tested component as-is
+- **Implementation**: Add "Link to Thesis" button in claim detail page (`/research/claims/[id]`)
+- **Effort**: 2-4 hours
+- **Dependencies**: None (component already exists)
+
 ### Tier 2 (Strategic)
 
-**Pre-Investment Pipeline** (#ENH-032)
+#### **Multi-Account IBKR Support** (#ENH-044)
+- **Goal**: Support multiple Interactive Brokers accounts within the same system
+- **PRD Alignment**: Section 4 (Data Ingestion & Normalisation)
+- **Status**: 💡 Proposed (Medium-High Priority)
+- **Current State**: System assumes single IBKR account, but schema already multi-account ready
+- **Why Strategic**:
+  - **Account Segregation**: Personal, IRA, institutional accounts
+  - **Tax Optimization**: Taxable vs tax-advantaged tracking
+  - **Foundation for Multi-Exchange**: Establishes pattern for #ENH-043
+- **Quick Win Potential**: Much infrastructure exists (account selector, schema FK, UI components)
+- **Implementation**:
+  - Multiple Flex query IDs (one per account)
+  - Config via env vars or database-stored credentials
+  - Ingestion loop per account
+  - Account-specific triage rules
+- **Effort**: 1-2 weeks
+- **Dependencies**: None (schema ready, UI exists)
+
+#### **Multi-Exchange Crypto Ingestion** (#ENH-043)
+- **Goal**: Unified portfolio tracking across TradFi and crypto markets
+- **PRD Alignment**: Section 4 (Data Ingestion & Normalisation)
+- **Status**: 💡 Proposed (Medium Priority)
+- **Supported Exchanges**:
+  - Coinbase Prime (institutional)
+  - Coinbase & Kraken (retail)
+  - HyperLiquid (perpetuals)
+  - Decentralized Exchanges (on-chain)
+- **Why Strategic**:
+  - **Cross-Asset Thesis Validation**: "Bullish BTC" across IBKR futures + Coinbase spot + HyperLiquid perps
+  - **DeFi Integration**: Track LP tokens, staking, lending
+  - **Institutional Crypto**: Coinbase Prime support
+- **Technical Approach**:
+  - Abstract `IExchangeAdapter` interface
+  - Exchange-specific adapters (API + CSV imports)
+  - Schema extensions: instrument types (crypto_spot, crypto_perp), exchange field
+  - Multi-source reconciliation (cross-exchange transfers)
+- **Effort**: 2-3 weeks
+- **Dependencies**: #ENH-044 (multi-account pattern)
+
+#### **Pre-Investment Pipeline** (#ENH-032)
 - Dedicated workflow for exploratory research
 - Claims without thesis linkage = pipeline
 - Track time from research → position (idea velocity)
@@ -377,14 +534,14 @@ These items complement Phase 3 but remain separate:
 
 ### Tier 3 (Future)
 
-**Automated Tests** (#ENH-020)
+#### **Automated Tests** (#ENH-020)
 - Test coverage for reliability
 - Unit, integration, UI tests
 - Prevent regressions
 - **Effort**: 2-3 weeks
 - **Priority**: High for long-term maintainability
 
-**Complete Manual Linking UI** (#ENH-014)
+#### **Complete Manual Linking UI** (#ENH-014)
 - Better UX for unlinking positions/trades
 - Bulk-select unlinked items
 - Filter by account, date, symbol

@@ -1507,14 +1507,70 @@ export const monitoringSpecs = pgTable(
     // Alert configuration
     alertThreshold: jsonb('alert_threshold').notNull(), // { type, condition?, scoreThreshold? }
 
+    // Phase 3.2A: Enable/disable toggle
+    enabled: boolean('enabled').default(true),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     nextCheckIdx: index('idx_monitoring_specs_next_check').on(table.nextCheck),
     pointIdx: index('idx_monitoring_specs_point').on(table.validationPointId),
+    enabledIdx: index('idx_monitoring_specs_enabled').on(table.enabled),
   })
 );
 
 export type MonitoringSpec = typeof monitoringSpecs.$inferSelect;
 export type NewMonitoringSpec = typeof monitoringSpecs.$inferInsert;
+
+// Monitoring Events - Phase 3.2A: Manual check results
+export const monitoringEvents = pgTable(
+  'monitoring_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    monitoringSpecId: uuid('monitoring_spec_id')
+      .notNull()
+      .references(() => monitoringSpecs.id, { onDelete: 'cascade' }),
+    validationPointId: uuid('validation_point_id')
+      .notNull()
+      .references(() => validationPoints.id, { onDelete: 'cascade' }),
+
+    // Check metadata
+    checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
+    checkedBy: text('checked_by').notNull(), // 'user' | 'scheduled' | 'claude'
+
+    // Data source results
+    dataSource: text('data_source').notNull(), // 'fred' | 'news' | 'price_iv' | 'sec_filings'
+    queryParams: jsonb('query_params').notNull(), // { keywords, dateRange, filters, etc. }
+
+    // Results
+    resultsCount: integer('results_count').notNull().default(0),
+    resultsSummary: jsonb('results_summary').notNull(), // [{ title, date, source, snippet, link?, rawData? }]
+
+    // Manual assessment (Phase 3.2A)
+    userRelevanceScore: integer('user_relevance_score'), // 0-10
+    userAssessmentNotes: text('user_assessment_notes'),
+
+    // Automated assessment (Phase 3.2B - future)
+    claudeRelevanceScore: numeric('claude_relevance_score', { precision: 3, scale: 2 }), // 0-1
+    claudeAssessmentNotes: text('claude_assessment_notes'),
+
+    // Status change trigger
+    triggeredStatusChange: boolean('triggered_status_change').default(false),
+    statusHistoryId: uuid('status_history_id').references(() => validationStatusHistory.id, {
+      onDelete: 'set null',
+    }),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    specIdx: index('idx_monitoring_events_spec').on(table.monitoringSpecId),
+    pointIdx: index('idx_monitoring_events_validation_point').on(table.validationPointId),
+    checkedAtIdx: index('idx_monitoring_events_checked_at').on(table.checkedAt),
+    dataSourceIdx: index('idx_monitoring_events_data_source').on(table.dataSource),
+    checkedByIdx: index('idx_monitoring_events_checked_by').on(table.checkedBy),
+  })
+);
+
+export type MonitoringEvent = typeof monitoringEvents.$inferSelect;
+export type NewMonitoringEvent = typeof monitoringEvents.$inferInsert;

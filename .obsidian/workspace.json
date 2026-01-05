@@ -1,0 +1,259 @@
+{
+  "main": {
+    "id": "1edc88eec3205e04",
+    "type": "split",
+    "children": [
+      {
+        "id": "e1f46d14e1be67b0",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2526c237de0f2d6f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/FUTURE_ENHANCEMENTS.md",
+                "mode": "source",
+                "source": false,
+                "backlinks": true,
+                "backlinkOpts": {
+                  "collapseAll": false,
+                  "extraContext": false,
+                  "sortOrder": "alphabetical",
+                  "showSearch": false,
+                  "searchQuery": "",
+                  "backlinkCollapsed": false,
+                  "unlinkedCollapsed": true
+                }
+              },
+              "icon": "lucide-file",
+              "title": "FUTURE_ENHANCEMENTS"
+            }
+          },
+          {
+            "id": "dfb23b257551b06f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/features/thesis-synthesis-monitoring.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "thesis-synthesis-monitoring"
+            }
+          },
+          {
+            "id": "79dadf58bc00fc4f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/features/data-sources-strategy.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "data-sources-strategy"
+            }
+          },
+          {
+            "id": "210b37009ce1e851",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/ACTIVE_ROADMAP.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "ACTIVE_ROADMAP"
+            }
+          }
+        ],
+        "currentTab": 3
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "399177cfc8de709b",
+    "type": "split",
+    "children": [
+      {
+        "id": "bdcd3f66c498936a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a930359c24a503bc",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "a37a4cdb2caa59de",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "ENH-045",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "23f97bc8bea2b493",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "right": {
+    "id": "ceaf49673227bd2d",
+    "type": "split",
+    "children": [
+      {
+        "id": "c306bfa813c53be4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "493aa95304a7af7b",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "docs/ACTIVE_ROADMAP.md",
+                "collapseAll": true,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for ACTIVE_ROADMAP"
+            }
+          },
+          {
+            "id": "c92be7809e4b2069",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "docs/ACTIVE_ROADMAP.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from ACTIVE_ROADMAP"
+            }
+          },
+          {
+            "id": "8d1033ab15beb4be",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "d98beed6dc143a43",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "31a2edc1b926bef7",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "docs/ACTIVE_ROADMAP.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of ACTIVE_ROADMAP"
+            }
+          }
+        ],
+        "currentTab": 4
+      }
+    ],
+    "direction": "horizontal",
+    "width": 267.5,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "210b37009ce1e851",
+  "lastOpenFiles": [
+    "docs/features/phase3_2_continuation.md",
+    "docs/features/thesis-synthesis-monitoring.md",
+    "docs/features/validation-assessment-workflow.md",
+    "scripts/assess-validation-evidence.ts",
+    "docs/FUTURE_ENHANCEMENTS.md",
+    "docs/ACTIVE_ROADMAP.md",
+    "src/components/thesis-synthesis/ManualCheckDialog.tsx",
+    "src/components/thesis-synthesis/MonitoringSpecsList.tsx",
+    "src/components/thesis-synthesis/MonitoringSpecForm.tsx",
+    "src/app/api/monitoring/events/route.ts",
+    "src/app/api/monitoring/events/[eventId]/assess/route.ts",
+    "src/app/api/monitoring/events/[eventId]/assess",
+    "src/app/api/monitoring/events/[eventId]",
+    "src/app/api/monitoring/events",
+    "src/app/api/monitoring/check/[specId]/route.ts",
+    "docs/features/data-sources-strategy.md"
+  ]
+}

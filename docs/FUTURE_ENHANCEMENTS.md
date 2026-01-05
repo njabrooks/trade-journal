@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for all enhancements (past, present, future) with clear traceability to PRD and original sources.
 
-**Last Updated**: 2026-01-03 (Phase 3 Requirements: Thesis Synthesis & Monitoring System | #ENH-035 through #ENH-039)
+**Last Updated**: 2026-01-05 (Phase 3.2A Complete: Validation Assessment Workflow | #ENH-042)
 
 ---
 
@@ -20,9 +20,9 @@
 
 ## Active/In Progress Enhancements
 
-**Status**: ✅ All active work complete! Phase 2.7 finished (2025-12-31)
+**Status**: ✅ All active work complete! Phase 3.2A finished (2026-01-05)
 
-See [Completed Enhancements](#completed-enhancements) for Phase 2.7 details.
+See [Completed Enhancements](#completed-enhancements) for Phase 3.2A details.
 
 ---
 
@@ -790,6 +790,124 @@ See [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.
 
 ---
 
+#### #ENH-043: Multi-Exchange Crypto Ingestion
+**Status**: 💡 Proposed
+**Priority**: Medium
+**Effort**: 2-3 weeks
+**PRD**: Section 4 (Data Ingestion & Normalisation)
+**Phase**: Phase 5+
+**Source**: User request (2026-01-05)
+
+**Description**: Extend ingestion infrastructure to support cryptocurrency exchanges beyond IBKR, enabling unified portfolio tracking across traditional and crypto markets.
+
+**Supported Exchanges**:
+- **Coinbase Prime** - Institutional crypto trading
+- **Coinbase** - Retail crypto exchange
+- **Kraken** - Multi-asset crypto exchange
+- **HyperLiquid** - Perpetuals and derivatives
+- **Decentralized Exchanges (DEX)** - On-chain activity (Uniswap, etc.)
+
+**Current State**:
+- Ingestion pipeline designed for IBKR Flex API (trades, positions, MTM)
+- Schema supports options and equities, not crypto-specific instruments
+- Single-source ingestion architecture (one primary broker)
+
+**Technical Approach**:
+1. **Schema Extensions**:
+   - Add `exchange` field to `trades` and `positions` tables
+   - Add `instrument_type` enum: equity, option, crypto_spot, crypto_perp, crypto_futures
+   - Extend `underlyings` table for crypto assets (on-chain addresses, network identifiers)
+   - Support crypto-specific fields: gas fees, network, contract address, settlement type
+
+2. **Standardized Ingestion Interface**:
+   - Abstract ingestion layer: `IExchangeAdapter` interface
+   - Common normalization: ticker, quantity, price, timestamp, fees
+   - Exchange-specific adapters: `CoinbasePrimeAdapter`, `HyperLiquidAdapter`, etc.
+   - Handle exchange-specific quirks (Coinbase API vs CSV exports, DEX on-chain logs)
+
+3. **Data Source Integration**:
+   - **Coinbase/Coinbase Prime**: REST API + CSV exports
+   - **Kraken**: REST API + CSV exports
+   - **HyperLiquid**: REST API (perpetuals focus)
+   - **DEX**: Web3 provider (Etherscan/block explorers + RPC nodes)
+
+4. **Multi-Source Reconciliation**:
+   - Deduplicate cross-exchange transfers (withdrawal on Exchange A = deposit on Exchange B)
+   - Track inter-exchange flows in `cash_flows` or new `transfers` table
+   - Portfolio-level aggregation across exchanges
+
+**Why This Helps**:
+- **Unified View**: Single system tracking traditional + crypto portfolios
+- **Cross-Asset Strategies**: Manage strategies spanning TradFi and crypto
+- **Institutional Crypto**: Support Coinbase Prime for institutional-grade crypto trading
+- **DeFi Integration**: Track on-chain positions (LP tokens, staking, lending)
+
+**Big Picture Impact**: Transforms system into true multi-asset, multi-exchange portfolio operating system. Enables cross-market thesis validation (e.g., "Bullish BTC" thesis linked to strategies across IBKR futures, Coinbase spot, HyperLiquid perps).
+
+**Dependencies**:
+- #ENH-044 (Multi-Account IBKR Support) - establish multi-account pattern first
+- Schema migration for instrument types and exchange identifiers
+
+---
+
+#### #ENH-044: Multi-Account IBKR Support
+**Status**: 💡 Proposed
+**Priority**: Medium-High
+**Effort**: 1-2 weeks
+**PRD**: Section 4 (Data Ingestion & Normalisation)
+**Phase**: Phase 5+
+**Source**: User request (2026-01-05)
+
+**Description**: Support multiple Interactive Brokers accounts within the same system, enabling consolidated portfolio management across personal, institutional, or strategy-segregated accounts.
+
+**Current State**:
+- System assumes single IBKR account
+- `accounts` table exists but ingestion hardcoded to single Flex query
+- Account selector UI exists but limited use (prepared for multi-account)
+
+**Proposed Solution**:
+
+1. **Ingestion Layer**:
+   - Support multiple Flex query IDs (one per IBKR account)
+   - Store account-specific credentials in `accounts` table or env vars
+   - Run ingestion per account: `IBKR_FLEX_QUERIES=account1:query1,account2:query2`
+   - Tag all imported data with `account_id`
+
+2. **Configuration**:
+   - Env var format: `IBKR_ACCOUNTS=[{name:"Personal",flexToken:"...",positionsQueryId:"...",tradesQueryId:"..."},{name:"IRA",...}]`
+   - Alternative: Database-stored config in `accounts` table with encrypted credentials
+   - UI: Admin page for adding/editing IBKR accounts
+
+3. **Data Isolation & Aggregation**:
+   - All queries filtered by `account_id` (already partially implemented)
+   - Cross-account portfolio view (aggregate metrics across accounts)
+   - Strategy linking: Allow strategies to span accounts (e.g., hedge across personal + IRA)
+
+4. **Account-Specific Features**:
+   - Account-level triage rules (different thresholds for IRA vs taxable)
+   - Account selector in UI (already exists in `AccountSelector.tsx`)
+   - Per-account P&L tracking and tax reporting
+
+**Technical Implementation**:
+- **Ingestion**: Modify `scripts/run-flex-ingestion.ts` to iterate over account configs
+- **Schema**: Already supports `account_id` FK in trades/positions (no migration needed)
+- **UI**: Leverage existing `AccountSelector` component in dashboard/triage
+- **Queries**: Ensure all queries respect `account_id` filter
+
+**Why This Helps**:
+- **Account Segregation**: Separate personal, retirement (IRA), institutional accounts
+- **Tax Optimization**: Track taxable vs tax-advantaged accounts separately
+- **Consolidated View**: See total portfolio across all IBKR accounts
+- **Foundation for #ENH-043**: Establishes multi-account pattern for multi-exchange support
+
+**Big Picture Impact**: Enables institutional-grade multi-account management. Foundation for later multi-exchange support (#ENH-043). Supports complex account structures (taxable brokerage + Roth IRA + SEP IRA, etc.).
+
+**Dependencies**: None (schema already multi-account ready)
+
+**Quick Win Potential**: Could be Tier 1 if prioritized - much of the infrastructure already exists (account selector, schema FK), just need ingestion loop and config.
+
+---
+
 #### #ENH-008-time: Time-Based Workflow & Memory System
 **Status**: ⏳ Partially absorbed into Phase 3
 **Priority**: Medium-High
@@ -1155,6 +1273,288 @@ Consider adding to PRD:
 
 ---
 
+#### #ENH-042: Validation Assessment Workflow (Phase 3.2A)
+**Status**: ✅ Complete (2026-01-05)
+**Priority**: High
+**Effort**: 4 hours
+**Phase**: 3.2A (MVP supplement)
+**Dependencies**: #ENH-036, #ENH-037
+**PRD Alignment**: Section 5.5 (Thesis Evaluation), Section 6.1 (Triggers)
+**Specification**: [docs/features/validation-assessment-workflow.md](features/validation-assessment-workflow.md)
+
+**Description**: Top-down evidence assessment workflow that complements bottom-up research discovery. Analyzes content (SEC filings, presentations, transcripts) against existing validation points to identify validation/invalidation evidence.
+
+**Problem Solved**:
+- Monitoring identifies new content (SEC filings, presentations) but lacks structured way to assess against validation points
+- Need targeted validation assessment distinct from comprehensive claim extraction (process-transcript)
+- Missing link between monitoring detection and validation status updates
+
+**Implemented Features**:
+- ✅ `/assess-validation-evidence` Claude Code skill
+- ✅ Database script: `scripts/assess-validation-evidence.ts` (437 lines)
+- ✅ Ticker-based thesis lookup: `ticker:GLXY` → auto-finds thesis
+- ✅ Fetches validation points from Supabase
+- ✅ Supports multiple content sources: URLs, files, text
+- ✅ LLM-powered cross-reference analysis
+- ✅ Structured markdown assessment report
+- ✅ Evidence categorization: strong/weak validation/invalidation
+- ✅ Confidence scoring: high/medium/low/none
+- ✅ Actionable recommendations for status updates
+- ✅ Integration with existing UI (ValidationPointsList, UpdateValidationStatusModal)
+- ✅ Real-world testing: Galaxy Digital SEC presentation assessment
+
+**Workflow**:
+```
+User discovers content → /assess-validation-evidence ticker:GLXY <source>
+→ Fetch validation points → Analyze content → Generate report
+→ Review evidence → Update statuses via UI → Record monitoring events
+```
+
+**Key Distinction from process-transcript**:
+- **process-transcript**: Bottom-up claim extraction (exhaustive, all assertions)
+- **assess-validation-evidence**: Top-down validation check (targeted, specific points)
+
+**Big Picture Impact**:
+- Completes monitoring loop: detection → assessment → status update → audit trail
+- Enables evidence-based validation tracking for thesis accountability
+- Bridges research intelligence with tactical decision making
+- Foundation for automated monitoring triggers (future Phase 3.2+)
+
+**Technical Implementation**:
+- Skill: `.claude/skills/assess-validation-evidence/`
+- Script: `scripts/assess-validation-evidence.ts` (437 lines)
+- Queries: `validation_points`, `macro_theses`, `asset_theses` tables
+- Output: Markdown report with summary, evidence sections, recommendations
+- UI: Reuses existing Phase 3.2A components
+
+**Files Changed**:
+- NEW: `.claude/skills/assess-validation-evidence/skill.json`
+- NEW: `.claude/skills/assess-validation-evidence/SKILL.md`
+- NEW: `scripts/assess-validation-evidence.ts`
+- NEW: `docs/features/validation-assessment-workflow.md`
+- NEW: `docs/features/phase3_2_continuation.md` (continuation roadmap)
+- MODIFIED: `CLAUDE.md` (documented new skill)
+- MODIFIED: `docs/terminology.md` (asset_views → asset_theses)
+- MODIFIED: `.claude/skills/create-view/skill.json` (terminology fix)
+- MODIFIED: `.claude/skills/read-views/skill.json` (terminology fix)
+
+---
+
+#### #ENH-042B: Assessment-to-Database Recording
+**Status**: 💡 Proposed (Tier 1 - Quick Win)
+**Priority**: High
+**Effort**: 1-2 days
+**Phase**: 3.2B
+**Dependencies**: #ENH-042
+**PRD Alignment**: Section 5.5 (Thesis Evaluation), Section 8 (Institutional Memory)
+
+**Description**: Extend assess-validation-evidence workflow to write assessment results directly to database with interactive user review and approval.
+
+**Problem**: Currently generates markdown reports but requires manual status updates via UI - creates gap in audit trail and adds friction.
+
+**Deliverables**:
+- Extend `assess-validation-evidence.ts` with database write capability
+- Add interactive review mode (approve/reject/modify per validation point)
+- Batch approval workflow for high-confidence assessments
+- Record to `validation_status_history` table
+- Update `validation_points.status` upon approval
+- Link monitoring events to status updates
+
+**Why This Helps**:
+- Eliminates manual data entry
+- Ensures complete audit trail
+- Enables trend analysis over time
+- Foundation for automated monitoring
+
+---
+
+#### #ENH-042C: Validation Status History UI
+**Status**: 💡 Proposed (Tier 1 - Quick Win)
+**Priority**: High
+**Effort**: 2-3 days
+**Phase**: 3.2B
+**Dependencies**: #ENH-042B
+**PRD Alignment**: Section 9 (Visualization), Section 8 (Institutional Memory)
+
+**Description**: Build UI to view validation point status history, evidence timeline, and monitoring activities.
+
+**Deliverables**:
+- Validation point detail page (`/macro-theses/[id]/validation/[pointId]`)
+- Status timeline component (chronological status changes)
+- Monitoring events log (table of all checks performed)
+- Evidence comparison view (side-by-side multi-assessment)
+- Integration with existing ValidationPointsList component
+
+**Why This Helps**:
+- Users can see full history of validation progress
+- Evidence accumulation visible over time
+- Audit trail accessible and queryable
+- Supports accountability and learning
+
+---
+
+#### #ENH-042D: Evidence Aggregation & Trend Analysis
+**Status**: 💡 Proposed (Tier 2 - Strategic)
+**Priority**: Medium
+**Effort**: 1 week
+**Phase**: 3.2C
+**Dependencies**: #ENH-042C
+**PRD Alignment**: Section 7 (Decision Support & Analytics)
+
+**Description**: Calculate evidence strength scores and visualize validation progress trends over time.
+
+**Deliverables**:
+- Evidence strength score (0-100) based on:
+  - Number of confirming data points
+  - Confidence levels over time
+  - Source credibility weighting
+  - Recency of evidence
+- Trend visualization (line chart with annotations)
+- Conflicting evidence detection
+- Forecast trajectory (is validation accelerating?)
+
+**Why This Helps**:
+- Quantitative assessment of thesis strength
+- Identify when confidence should change
+- Detect contradictory evidence automatically
+- Support conviction calibration
+
+---
+
+#### #ENH-042E: FRED Economic Data Integration
+**Status**: 💡 Proposed (Tier 1 - Quick Win)
+**Priority**: High
+**Effort**: 2-3 days
+**Phase**: 3.2D
+**Dependencies**: #ENH-042B
+**PRD Alignment**: Section 6.1 (Triggers - Automated Monitoring)
+
+**Description**: Automated monitoring of FRED economic data series against validation point thresholds.
+
+**Current State**:
+- OpenBB integration exists and tested
+- FRED API key configured
+- Test script working (`scripts/openbb/query_fred_monitoring.py`)
+
+**Deliverables**:
+- FRED monitoring spec support in database
+- Daily scheduled check script (`scripts/monitor-fred-validation.ts`)
+- GitHub Actions workflow (daily 10 AM ET)
+- Threshold evaluation and alert generation
+- Python-TypeScript bridge for OpenBB integration
+
+**Example Use Cases**:
+- "ICSA (initial claims) > 250,000" triggers invalidation of "Bullish US Employment" thesis
+- "CPI YoY > 3.5%" validates "Inflation persists" thesis
+- "UNRATE > 5.0%" triggers review of macro economic theses
+
+**Why This Helps**:
+- Automated economic data monitoring (zero manual effort)
+- Timely alerts on macro developments
+- Foundation for multi-source monitoring
+
+---
+
+#### #ENH-042F: IV30 & Price Data Integration
+**Status**: 💡 Proposed (Tier 2 - Strategic)
+**Priority**: Medium
+**Effort**: 3-4 days
+**Phase**: 3.2D
+**Dependencies**: #ENH-042B
+**PRD Alignment**: Section 6.1 (Triggers - Automated Monitoring)
+
+**Description**: Automated monitoring of price and IV data from existing `underlyings_iv_history` table.
+
+**Current State**:
+- IV/spot data ingested daily from Massive.com
+- Data stored in `underlyings_iv_history` table
+- Available for all tracked underlyings
+
+**Deliverables**:
+- Price/IV monitoring spec support
+- Daily check after Massive ingestion (GitHub Actions)
+- Threshold evaluation for spot, IV30, IV rank, IV percentile
+- Alert generation on threshold crossings
+
+**Example Use Cases**:
+- "BTC spot > $100,000" validates "Bullish BTC" thesis
+- "GLXY IV30 < 40" invalidates "High volatility persists" point
+- "SPY IV rank < 20 for 30 days" validates "Complacency returns"
+
+**Why This Helps**:
+- Leverages existing data pipeline
+- Market-based validation triggers
+- Complements fundamental analysis
+
+---
+
+#### #ENH-042G: News & SEC Filing Integration
+**Status**: 💡 Proposed (Tier 2 - Strategic)
+**Priority**: Medium
+**Effort**: 1-2 weeks
+**Phase**: 3.2D
+**Dependencies**: #ENH-042B
+**PRD Alignment**: Section 6.1 (Triggers), Phase 3.3 (News & Narratives)
+
+**Description**: Automated news monitoring with semantic relevance scoring and auto-assessment triggering.
+
+**Deliverables**:
+- News monitoring spec support
+- Finnhub integration (free tier)
+- SEC EDGAR RSS feed parsing
+- Claude relevance scoring (semantic + novelty + credibility)
+- Auto-trigger assessment on high-relevance news
+- Daily monitoring script with GitHub Actions
+
+**Relevance Scoring**:
+- Semantic relevance (0-1): Does this relate to validation point?
+- Novelty: Is this new information or rehash?
+- Source credibility: Weight by source tier
+- Confidence: low/medium/high
+
+**Why This Helps**:
+- Proactive intelligence gathering
+- Catches developments before user would notice
+- Semantic understanding prevents keyword noise
+- Auto-assessment reduces manual work
+
+---
+
+#### #ENH-042H: Master Monitoring Orchestration
+**Status**: 💡 Proposed (Tier 2 - Strategic)
+**Priority**: Medium
+**Effort**: 1 week
+**Phase**: 3.2E
+**Dependencies**: #ENH-042E, #ENH-042F, #ENH-042G
+**PRD Alignment**: Section 6.1 (Triggers - Automated Monitoring)
+
+**Description**: Unified monitoring orchestration script running all data source checks and generating summary reports.
+
+**Deliverables**:
+- Master monitoring script (`scripts/run-all-monitoring.ts`)
+- GitHub Actions daily workflow
+- Monitoring summary report
+- Alert aggregation and notification
+- Error handling and logging
+
+**Workflow**:
+```
+Daily 9 AM ET:
+  → FRED economic data monitoring
+  → Price/IV data monitoring (after Massive ingestion)
+  → News & SEC filing monitoring
+  → Generate summary report
+  → Send notifications if alerts exist
+```
+
+**Why This Helps**:
+- Single daily monitoring run
+- Consistent execution schedule
+- Centralized logging and error handling
+- User gets one summary instead of multiple alerts
+
+---
+
 #### #ENH-039: News & Narratives Integration
 **Status**: ⏳ Planned
 **Priority**: Medium
@@ -1275,6 +1675,47 @@ Consider adding to PRD:
 
 ---
 
+#### #ENH-042: Claim Detail Page Linking Workflow
+**Status**: 💡 Proposed
+**Priority**: Medium (Tier 1 Quick Win)
+**Effort**: 2-4 hours
+**PRD**: Section 5.4 (Contextual Mapping to Investment Hierarchy)
+**Phase**: Backlog
+**Source**: User request (2026-01-05)
+
+**Description**: Add ability to link claims to macro/asset theses directly from the claim detail page (`/research/claims/[id]`), using existing linking components.
+
+**Current State**:
+- Claim linking only available from the claims browser page (`/research/claims`)
+- Claim detail page shows linked theses but provides no way to add new links
+- Users must navigate back to claims browser to link a claim after viewing its details
+
+**Proposed Solution**:
+- Add "+" button or "Link to Thesis" button in appropriate section of claim detail page
+- Reuse existing `ConvertClaimToEntityDialog` component from claims browser
+- Pre-select the current claim in the dialog context
+- Support both "Link to Existing" and "Create New" modes
+
+**Technical Implementation**:
+- Component: Reuse `ConvertClaimToEntityDialog.tsx` (no changes needed)
+- Page: Update `src/app/research/claims/[id]/page.tsx`
+- Add button in "Linked Theses" section or similar location
+- Pass claim data as props to dialog
+
+**Why This Helps**:
+- **Improved UX**: Complete workflow without navigation back to claims browser
+- **Context preservation**: Users can link immediately after reviewing claim details
+- **Consistency**: Same linking workflow available in both locations
+- **Zero duplication**: Reuses existing, tested component
+
+**Files Changed** (estimated):
+- Modified: `src/app/research/claims/[id]/page.tsx` - Add link button and dialog integration
+- Unchanged: `src/components/research/ConvertClaimDialog.tsx` - Reuse as-is
+
+**Big Picture Impact**: Reduces friction in research workflow by enabling linking at point of review. Completes the claim detail page as a fully functional management interface.
+
+---
+
 ### Phase 2.7 Enhancement IDs (Complete 2025-12-31)
 
 - **#ENH-013**: ✅ Unified Macro Thesis Browser (UnifiedMacroThesisBrowser.tsx)
@@ -1297,7 +1738,7 @@ Consider adding to PRD:
 
 **Note**: #ENH-020 already assigned to Automated Tests. Strategy enhancements use #ENH-020-playbook to avoid collision.
 
-**Next Enhancement ID**: #ENH-042
+**Next Enhancement ID**: #ENH-045 (ENH-042A through ENH-042H allocated to Phase 3.2 sub-phases)
 
 **ID Format**: `#ENH-XXX` (zero-padded to 3 digits) or `#ENH-XXX-name` (for descriptive variants)
 
