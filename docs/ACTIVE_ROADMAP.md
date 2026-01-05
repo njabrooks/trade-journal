@@ -184,7 +184,7 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 
 ### Phase 3.2: Automated Monitoring 🚧
 
-**Status**: 🚧 In Progress (Phase 3.2A Complete, 3.2B+ In Planning)
+**Status**: 🚧 In Progress (Phase 3.2A-B Complete, 3.2C-E In Planning)
 
 #### Phase 3.2A: Validation Assessment Workflow ✅
 **Status**: ✅ Complete (2026-01-05)
@@ -206,24 +206,27 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 
 ---
 
-#### Phase 3.2B: Database Integration & Status History UI 💡
-**Status**: 💡 Planned (Tier 1 - Next Sprint)
+#### Phase 3.2B: Database Integration & Status History UI ✅
+**Status**: ✅ Complete (2026-01-05)
 **Enhancement IDs**: #ENH-042B, #ENH-042C
-**Effort**: 3-5 days
+**Effort**: 1 day (actual)
 **Dependencies**: #ENH-042 (Complete)
 
 **Deliverables**:
-- Assessment-to-database recording with interactive review
-- Validation point detail page with status timeline
-- Monitoring events log UI
-- Evidence comparison views
-- Batch approval workflow
+- ✅ Assessment-to-database recording via `dualWrite()` in assess-validation-evidence.ts
+- ✅ Validation point detail pages (`/macro-theses/[id]/validation/[pointId]`, `/asset-theses/[id]/validation/[pointId]`)
+- ✅ StatusTimeline component (301 lines) - Chronological status history with evidence
+- ✅ MonitoringEventsLog component (383 lines) - Audit trail of monitoring checks
+- ✅ ValidationPointDetail component (431 lines) - Full validation point display with context
+- ✅ Database dual-write support for validation status history
+- ⏸️ Interactive review mode in skill (deferred - auto-record for now)
+- ⏸️ Batch approval workflow (deferred - manual review via UI)
 
 **Why This Helps**:
-- Eliminates manual data entry gap
-- Complete audit trail visualization
-- Enables trend analysis
-- User accountability and learning
+- ✅ Complete audit trail visualization implemented
+- ✅ Enables trend analysis through status history
+- ✅ User accountability via timeline and monitoring log
+- ⏸️ Interactive approval workflow can be added later if needed
 
 ---
 
@@ -442,20 +445,27 @@ These items complement Phase 3 but remain separate:
 
 ### Tier 1 (Quick Wins)
 
-#### **Local-First Database Architecture Migration** (#ENH-041)
+#### **Local-First Database Architecture Migration** (#ENH-041) ✅
 - **Goal**: Migrate to hybrid local-first architecture (SQLite primary + Supabase backup)
 - **PRD Alignment**: Infrastructure optimization (not in PRD)
-- **Status**: 💡 Proposed (High Priority)
-- **Why High Priority**:
-  - **Cost Savings**: $300/year → $0/year (immediate ROI)
-  - **Performance**: Sub-millisecond queries vs network latency
-  - **Data Ownership**: Full control, offline-first capability
-  - **Future Optionality**: Maintains Supabase for future mobile/multi-device
-- **Implementation**: Phased migration (SQLite + dual connections + sync script)
-- **Effort**: 1-2 weeks (6 phases, can run in parallel validation)
-- **Dependencies**: None (schema already PostgreSQL-compatible via Drizzle)
-- **Risk**: Low (run both systems in parallel for 2-4 weeks before cutover)
-- **Reference**: [docs/archive/local-db-architecture-vs-supabase.md](archive/local-db-architecture-vs-supabase.md)
+- **Status**: ✅ Complete (2026-01-05)
+- **Actual Effort**: 1 week (completed in 5 git commits over 2 days)
+- **Benefits Achieved**:
+  - ✅ **Cost Savings**: $300/year → $0/year (immediate ROI)
+  - ✅ **Performance**: Sub-millisecond local SQLite queries
+  - ✅ **Data Ownership**: Full control, offline-first capability
+  - ✅ **Dual-Write Architecture**: Maintains both SQLite and PostgreSQL
+  - ✅ **Auto-Sync via Git**: Database file tracked in repo, `git pull` syncs data
+  - ✅ **GitHub Actions**: Automated ingestion writes to both databases
+  - ✅ **Claude Code Skills**: All skills use dual-write for consistency
+- **Implementation Completed**:
+  - ✅ Dual-mode database client (`DATABASE_MODE` env var)
+  - ✅ SQLite schema generation and migration
+  - ✅ PostgreSQL → SQLite data migration (2,916 rows)
+  - ✅ Dual-write library (`scripts/lib/dual-write-db.ts`)
+  - ✅ GitHub Actions dual-write workflows
+  - ✅ Auto-pull before dev server (`npm run dev`)
+- **Reference**: [docs/database-dual-write-architecture.md](database-dual-write-architecture.md), [docs/local-sqlite-setup.md](local-sqlite-setup.md)
 
 #### **Data Visualization Enhancements** (#ENH-040)
 - **Goal**: Leverage existing data sources to enhance detail pages with market context

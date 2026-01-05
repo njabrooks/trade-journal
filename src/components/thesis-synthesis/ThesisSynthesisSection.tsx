@@ -244,6 +244,8 @@ export function ThesisSynthesisSection({
             ) : (
               <ValidationPointsList
                 validationPoints={validationPoints}
+                thesisId={thesisId}
+                thesisType={thesisType}
                 onUpdateStatus={handleUpdateStatus}
                 onViewHistory={handleViewHistory}
                 monitoringSpecs={monitoringSpecs}
@@ -303,6 +305,8 @@ export function ThesisSynthesisSection({
             ) : (
               <ValidationPointsList
                 validationPoints={validationPoints}
+                thesisId={thesisId}
+                thesisType={thesisType}
                 onUpdateStatus={handleUpdateStatus}
                 onViewHistory={handleViewHistory}
                 monitoringSpecs={monitoringSpecs}

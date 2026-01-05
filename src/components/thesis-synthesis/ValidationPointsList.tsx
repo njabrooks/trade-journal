@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   CheckCircle2,
   XCircle,
@@ -17,6 +18,7 @@ import {
   PowerOff,
   Calendar,
   Plus,
+  ExternalLink,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +26,8 @@ import type { ValidationPoint, MonitoringSpec, MonitoringEvent } from '@/db/sche
 
 interface ValidationPointsListProps {
   validationPoints: ValidationPoint[];
+  thesisId: string;
+  thesisType: 'macro' | 'asset';
   onUpdateStatus?: (pointId: string) => void;
   onViewHistory?: (pointId: string) => void;
   // Monitoring props
@@ -39,6 +43,8 @@ interface ValidationPointsListProps {
 
 export function ValidationPointsList({
   validationPoints,
+  thesisId,
+  thesisType,
   onUpdateStatus,
   onViewHistory,
   monitoringSpecs = [],
@@ -331,6 +337,13 @@ export function ValidationPointsList({
                       History
                     </button>
                   )}
+                  <Link
+                    href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/validation/${point.id}`}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Details
+                  </Link>
                 </div>
               </div>
 
