@@ -4,17 +4,19 @@
  * Checks thesis monitoring configs against current data:
  * - Price/IV thresholds for asset theses (from underlyings_iv_history)
  * - FRED thresholds for macro theses (via OpenBB/direct API)
+ * - News/developments via Perplexity Search API (primary discovery layer)
  *
  * Usage:
  *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts
  *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts --dry-run
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts --news-only
  *
- * Spec: docs/features/thesis-synthesis-monitoring.md Section 3.1
+ * Spec: docs/features/thesis-synthesis-monitoring.md Section 3.1, 3.4
  */
 
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, isNotNull, sql } from 'drizzle-orm';
-import type { ExplicitThreshold, ThesisMonitoringSources } from '../src/db/schema.js';
+import type { ExplicitThreshold, ThesisMonitoringSources, ThesisSearchConfig } from '../src/db/schema.js';
 
 const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints } = schema;
 
@@ -34,7 +36,200 @@ interface MonitoringRunResult {
   configsChecked: number;
   thresholdsEvaluated: number;
   breaches: ThresholdCheckResult[];
+  newsResults: NewsCheckResult[];
   errors: string[];
+}
+
+// ============================================================================
+// Perplexity News Integration
+// ============================================================================
+
+interface PerplexitySearchResult {
+  content: string;
+  citations: string[];
+  model: string;
+}
+
+interface NewsCheckResult {
+  configId: string;
+  thesisId: string;
+  thesisType: 'macro' | 'asset';
+  thesisTitle: string;
+  ticker?: string;
+  query: string;
+  content: string;
+  citations: string[];
+  hasRelevantNews: boolean;
+  summary: string;
+}
+
+/**
+ * Search Perplexity for news related to a thesis
+ */
+async function searchPerplexity(query: string): Promise<PerplexitySearchResult | null> {
+  const apiKey = process.env.PERPLEXITY_API_KEY;
+  if (!apiKey) {
+    console.warn('PERPLEXITY_API_KEY not set, skipping news monitoring');
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'sonar',  // Search-optimized model
+        messages: [{ role: 'user', content: query }],
+        return_citations: true,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(`Perplexity API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`Response: ${errorText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return {
+      content: data.choices?.[0]?.message?.content || '',
+      citations: data.citations || [],
+      model: data.model || 'unknown',
+    };
+  } catch (error) {
+    console.error('Error calling Perplexity API:', error);
+    return null;
+  }
+}
+
+/**
+ * Build a thesis-specific query for Perplexity
+ */
+function buildThesisQuery(
+  ticker: string | null,
+  companyName: string | null,
+  searchConfig: ThesisSearchConfig,
+  thesisType: 'macro' | 'asset'
+): string {
+  const keywords = [
+    ...searchConfig.derivedKeywords,
+    ...searchConfig.additionalKeywords,
+  ].filter(k => k && k.trim().length > 0);
+
+  const exclusions = searchConfig.exclusions.filter(e => e && e.trim().length > 0);
+
+  // For asset theses with a ticker
+  if (ticker && thesisType === 'asset') {
+    const entityName = companyName || ticker;
+    const keywordStr = keywords.length > 0 ? keywords.join(', ') : 'earnings, SEC filings, analyst ratings, material events';
+    const exclusionStr = exclusions.length > 0 ? `\nExclude: ${exclusions.join(', ')}.` : '';
+
+    return `What are the latest news and developments for ${entityName} (${ticker}) in the last 24 hours?
+
+Focus on: ${keywordStr}, SEC filings, earnings, analyst ratings, regulatory news, material events.
+${exclusionStr}
+Provide specific facts with sources. Include any SEC filings (8-K, 10-Q, 10-K, Form 4) if found.
+If there is no significant news in the last 24 hours, say "No significant developments found."`;
+  }
+
+  // For macro theses (no ticker)
+  if (thesisType === 'macro') {
+    const keywordStr = keywords.length > 0 ? keywords.join(', ') : 'economic data, Fed policy, employment, inflation';
+    const exclusionStr = exclusions.length > 0 ? `\nExclude: ${exclusions.join(', ')}.` : '';
+
+    return `What are the latest developments in the last 24 hours related to: ${keywordStr}?
+${exclusionStr}
+Focus on: economic data releases, Fed announcements, policy changes, significant market movements.
+Provide specific facts with sources.
+If there are no significant developments, say "No significant developments found."`;
+  }
+
+  // Fallback
+  return `What are the latest financial news developments in the last 24 hours?`;
+}
+
+/**
+ * Check news for a thesis using Perplexity
+ */
+async function checkNewsForThesis(
+  config: typeof thesisMonitoringConfigs.$inferSelect,
+  thesisTitle: string
+): Promise<NewsCheckResult | null> {
+  const sources = config.sources as ThesisMonitoringSources;
+
+  // Check if news monitoring is enabled
+  if (!sources?.news?.enabled) {
+    return null;
+  }
+
+  // Check if Perplexity is in the providers list (or if list is empty, default to Perplexity)
+  const providers = sources.news.providers || [];
+  if (providers.length > 0 && !providers.includes('perplexity')) {
+    return null;
+  }
+
+  const searchConfig = (config.searchConfig as ThesisSearchConfig) || {
+    derivedKeywords: [],
+    additionalKeywords: [],
+    exclusions: [],
+  };
+
+  const query = buildThesisQuery(
+    config.ticker,
+    config.companyName,
+    searchConfig,
+    config.thesisType as 'macro' | 'asset'
+  );
+
+  console.log(`    🔍 Searching Perplexity...`);
+
+  const result = await searchPerplexity(query);
+  if (!result) {
+    return null;
+  }
+
+  // Simple relevance check: does the content contain meaningful news?
+  const content = result.content.toLowerCase();
+  const noNewsIndicators = [
+    'no significant developments',
+    'no major news',
+    'no notable developments',
+    'no significant news',
+    'could not find',
+    'no recent news',
+  ];
+
+  const hasRelevantNews = !noNewsIndicators.some(indicator => content.includes(indicator))
+    && result.content.length > 100
+    && result.citations.length > 0;
+
+  // Create a brief summary (first 200 chars or first sentence)
+  let summary = result.content;
+  if (summary.length > 200) {
+    const firstSentenceEnd = summary.indexOf('. ');
+    if (firstSentenceEnd > 50 && firstSentenceEnd < 300) {
+      summary = summary.substring(0, firstSentenceEnd + 1);
+    } else {
+      summary = summary.substring(0, 200) + '...';
+    }
+  }
+
+  return {
+    configId: config.id,
+    thesisId: config.thesisId,
+    thesisType: config.thesisType as 'macro' | 'asset',
+    thesisTitle,
+    ticker: config.ticker ?? undefined,
+    query,
+    content: result.content,
+    citations: result.citations,
+    hasRelevantNews,
+    summary,
+  };
 }
 
 async function getLatestPriceIvForTicker(ticker: string): Promise<{ spot?: number; iv30?: number; asOfDate?: string } | null> {
@@ -190,15 +385,19 @@ async function checkFredThresholds(
   return results;
 }
 
-async function runMonitoring(dryRun: boolean = false): Promise<MonitoringRunResult> {
+async function runMonitoring(dryRun: boolean = false, newsOnly: boolean = false): Promise<MonitoringRunResult> {
   const result: MonitoringRunResult = {
     configsChecked: 0,
     thresholdsEvaluated: 0,
     breaches: [],
+    newsResults: [],
     errors: [],
   };
 
   console.log('\n📊 Starting Daily Thesis Monitoring...\n');
+  if (newsOnly) {
+    console.log('📰 Running in NEWS-ONLY mode (skipping threshold checks)\n');
+  }
 
   // Fetch all enabled configs
   const configs = await db
@@ -233,20 +432,34 @@ async function runMonitoring(dryRun: boolean = false): Promise<MonitoringRunResu
     if (config.ticker) console.log(`    Ticker: ${config.ticker}`);
 
     try {
-      // Check price/IV thresholds (for asset theses)
-      const priceIvResults = await checkPriceIvThresholds(config, thesisTitle);
-      result.thresholdsEvaluated += priceIvResults.length;
-      for (const r of priceIvResults) {
-        console.log(`    ${r.message}`);
-        if (r.breached) result.breaches.push(r);
+      // Check price/IV thresholds (for asset theses) - skip if newsOnly
+      if (!newsOnly) {
+        const priceIvResults = await checkPriceIvThresholds(config, thesisTitle);
+        result.thresholdsEvaluated += priceIvResults.length;
+        for (const r of priceIvResults) {
+          console.log(`    ${r.message}`);
+          if (r.breached) result.breaches.push(r);
+        }
+
+        // Check FRED thresholds (for macro theses)
+        const fredResults = await checkFredThresholds(config, thesisTitle);
+        result.thresholdsEvaluated += fredResults.length;
+        for (const r of fredResults) {
+          console.log(`    ${r.message}`);
+          if (r.breached) result.breaches.push(r);
+        }
       }
 
-      // Check FRED thresholds (for macro theses)
-      const fredResults = await checkFredThresholds(config, thesisTitle);
-      result.thresholdsEvaluated += fredResults.length;
-      for (const r of fredResults) {
-        console.log(`    ${r.message}`);
-        if (r.breached) result.breaches.push(r);
+      // Check news via Perplexity
+      const newsResult = await checkNewsForThesis(config, thesisTitle);
+      if (newsResult) {
+        result.newsResults.push(newsResult);
+        if (newsResult.hasRelevantNews) {
+          console.log(`    📰 NEWS FOUND: ${newsResult.summary}`);
+          console.log(`    📎 Sources: ${newsResult.citations.length} citations`);
+        } else {
+          console.log(`    ✓ No significant news in last 24 hours`);
+        }
       }
 
       // Update lastChecked timestamp
@@ -273,6 +486,9 @@ async function runMonitoring(dryRun: boolean = false): Promise<MonitoringRunResu
   console.log(`  Configs checked: ${result.configsChecked}`);
   console.log(`  Thresholds evaluated: ${result.thresholdsEvaluated}`);
   console.log(`  Breaches found: ${result.breaches.length}`);
+  console.log(`  News checks: ${result.newsResults.length}`);
+  const newsWithContent = result.newsResults.filter(n => n.hasRelevantNews);
+  console.log(`  News with content: ${newsWithContent.length}`);
   console.log(`  Errors: ${result.errors.length}`);
 
   if (result.breaches.length > 0) {
@@ -285,6 +501,23 @@ async function runMonitoring(dryRun: boolean = false): Promise<MonitoringRunResu
     }
   }
 
+  if (newsWithContent.length > 0) {
+    console.log('\n📰 NEWS HIGHLIGHTS:');
+    for (const news of newsWithContent) {
+      console.log(`\n  • ${news.thesisTitle}${news.ticker ? ` (${news.ticker})` : ''}`);
+      console.log(`    ${news.summary}`);
+      if (news.citations.length > 0) {
+        console.log(`    Sources:`);
+        for (const citation of news.citations.slice(0, 3)) {
+          console.log(`      - ${citation}`);
+        }
+        if (news.citations.length > 3) {
+          console.log(`      ... and ${news.citations.length - 3} more`);
+        }
+      }
+    }
+  }
+
   if (dryRun) {
     console.log('\n[DRY RUN - no timestamps updated]');
   }
@@ -294,9 +527,10 @@ async function runMonitoring(dryRun: boolean = false): Promise<MonitoringRunResu
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
+  const newsOnly = process.argv.includes('--news-only');
 
   try {
-    const result = await runMonitoring(dryRun);
+    const result = await runMonitoring(dryRun, newsOnly);
 
     // Exit with error code if there were failures
     if (result.errors.length > 0) {

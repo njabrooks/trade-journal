@@ -1645,7 +1645,7 @@ export interface ThesisMonitoringSources {
   };
   news?: {
     enabled: boolean;
-    providers: ('finnhub' | 'yahoo' | 'google')[];
+    providers: ('perplexity' | 'finnhub' | 'yahoo' | 'google')[];
   };
   secFilings?: {
     enabled: boolean;
