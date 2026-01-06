@@ -14,13 +14,21 @@ export function EditAssetThesisButton({ thesis }: EditAssetThesisButtonProps) {
 
   return (
     <>
-      <button
+      <span
+        role="button"
+        tabIndex={0}
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen(true);
+          }
+        }}
+        className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors cursor-pointer"
       >
         <Pencil className="h-4 w-4" />
         Edit
-      </button>
+      </span>
 
       {isOpen && (
         <EditAssetThesisDialog thesis={thesis} onClose={() => setIsOpen(false)} />

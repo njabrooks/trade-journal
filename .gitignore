@@ -59,3 +59,7 @@ next-env.d.ts
 
 # Obsidian workspace (personal editor state)
 .obsidian/workspace.json
+
+# Supabase Local (Docker configuration)
+/supabase/.branches
+/supabase/.temp

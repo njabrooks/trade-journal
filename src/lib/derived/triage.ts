@@ -687,7 +687,14 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
 
   // Batch delete position records
   if (positionRecords.length > 0) {
-    const positionDeleteConditions = positionRecords.map((record) =>
+    // Filter out invalid records with null position_id (should never happen, but defensive)
+    const validPositionRecords = positionRecords.filter(r => r.positionId != null);
+
+    if (validPositionRecords.length < positionRecords.length) {
+      console.warn(`[Triage] Filtered out ${positionRecords.length - validPositionRecords.length} position records with null position_id`);
+    }
+
+    const positionDeleteConditions = validPositionRecords.map((record) =>
           and(
             eq(triageRecords.contextLevel, 'position'),
         eq(triageRecords.positionId, record.positionId!),
@@ -703,8 +710,10 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
         .where(or(...positionDeleteConditions));
     }
 
-    // Batch insert position records
-    await db.insert(triageRecords).values(positionRecords);
+    // Batch insert position records (only valid ones)
+    if (validPositionRecords.length > 0) {
+      await db.insert(triageRecords).values(validPositionRecords);
+    }
   }
 }
 
