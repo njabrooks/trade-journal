@@ -71,14 +71,12 @@ export function AssetThesisDetailSections({
         {/* Overview */}
         <AccordionItem value="overview">
           <AccordionTrigger className="px-4">
-            <div className="flex items-center gap-3 flex-1">
-              <span className="font-semibold">Overview</span>
-              <div onClick={(e) => e.stopPropagation()}>
-                <EditAssetThesisButton thesis={view} />
-              </div>
-            </div>
+            <span className="font-semibold">Overview</span>
           </AccordionTrigger>
           <AccordionContent className="px-4">
+            <div className="flex justify-end mb-2">
+              <EditAssetThesisButton thesis={view} />
+            </div>
             <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
               <div>
                 <dt className="text-xs font-medium text-slate-500">Underlying</dt>

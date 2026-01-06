@@ -1574,3 +1574,90 @@ export const monitoringEvents = pgTable(
 
 export type MonitoringEvent = typeof monitoringEvents.$inferSelect;
 export type NewMonitoringEvent = typeof monitoringEvents.$inferInsert;
+
+// Thesis Monitoring Configs - Phase 3.2: Thesis-level monitoring configuration
+// Replaces per-validation-point approach with thesis-level config + broad analysis
+export const thesisMonitoringConfigs = pgTable(
+  'thesis_monitoring_configs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    thesisId: uuid('thesis_id').notNull(),
+    thesisType: text('thesis_type').notNull(), // 'macro' | 'asset'
+
+    // Identity (for asset theses)
+    ticker: text('ticker'),                    // Auto-populated from underlying
+    companyName: text('company_name'),         // For news search accuracy
+
+    // Search configuration
+    searchConfig: jsonb('search_config').notNull().default({
+      derivedKeywords: [],
+      additionalKeywords: [],
+      exclusions: [],
+    }),
+
+    // Data sources to monitor
+    sources: jsonb('sources').notNull().default({
+      fred: { enabled: false, series: [] },
+      priceIv: { enabled: false },
+      news: { enabled: false, providers: [] },
+      secFilings: { enabled: false, filingTypes: [] },
+    }),
+
+    // Frequency
+    frequency: text('frequency').notNull().default('weekly'), // 'daily' | 'weekly'
+    lastChecked: timestamp('last_checked', { withTimezone: true }),
+    nextCheck: timestamp('next_check', { withTimezone: true }),
+
+    // Auto-derived threshold checks from explicit validation points
+    explicitThresholds: jsonb('explicit_thresholds').notNull().default([]),
+
+    // Enable/disable toggle
+    enabled: boolean('enabled').notNull().default(true),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    thesisIdx: index('idx_thesis_monitoring_configs_thesis').on(table.thesisId, table.thesisType),
+    tickerIdx: index('idx_thesis_monitoring_configs_ticker').on(table.ticker),
+    nextCheckIdx: index('idx_thesis_monitoring_configs_next_check').on(table.nextCheck),
+    enabledIdx: index('idx_thesis_monitoring_configs_enabled').on(table.enabled),
+  })
+);
+
+export type ThesisMonitoringConfig = typeof thesisMonitoringConfigs.$inferSelect;
+export type NewThesisMonitoringConfig = typeof thesisMonitoringConfigs.$inferInsert;
+
+// Type definitions for JSONB fields
+export interface ThesisSearchConfig {
+  derivedKeywords: string[];
+  additionalKeywords: string[];
+  exclusions: string[];
+}
+
+export interface ThesisMonitoringSources {
+  fred?: {
+    enabled: boolean;
+    series: string[];
+  };
+  priceIv?: {
+    enabled: boolean;
+  };
+  news?: {
+    enabled: boolean;
+    providers: ('finnhub' | 'yahoo' | 'google')[];
+  };
+  secFilings?: {
+    enabled: boolean;
+    filingTypes: ('8-K' | '10-Q' | '10-K' | 'Form4')[];
+  };
+}
+
+export interface ExplicitThreshold {
+  validationPointId: string;
+  source: 'fred' | 'price_iv';
+  metric: string;                     // e.g., "ICSA", "spot", "iv30"
+  operator: '>' | '<' | '>=' | '<=' | '==';
+  value: number;
+  description: string;                // Human-readable: "ICSA > 250,000"
+}
