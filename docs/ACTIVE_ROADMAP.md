@@ -262,19 +262,20 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 | Phase | Source | Status | Complexity |
 |-------|--------|--------|------------|
 | **A** | Price/IV + FRED thresholds | ✅ Complete | Low |
-| **B** | Finnhub News | 🎯 Next | Low |
-| **C** | SEC EDGAR RSS | Planned | Medium |
-| **D** | Earnings Calendar | Planned | Medium |
-| **E** | Additional news (Yahoo, Google) | Planned | Medium |
-| **F** | Perplexity API | Planned | Medium |
-| **G** | Analyst Ratings | Future | High |
+| **B** | Perplexity Search API (primary discovery) | 🎯 Next | Low |
+| **C** | SEC EDGAR RSS (contingency) | If needed | Medium |
+| **D** | Finnhub (contingency) | If needed | Low |
 
-**Phase B Implementation (Finnhub News)**:
-- Add FINNHUB_API_KEY to env (already configured)
-- Fetch company news via Finnhub API
-- Claude relevance scoring against validation points
-- Create triage records for high-relevance content
-- Effort: ~3-4 days
+**Architecture Decision**: Perplexity Search API replaces multiple free sources (Finnhub, Yahoo, Google, SEC EDGAR) with a single unified discovery layer at ~$1-3/month. See spec for coverage validation matrix and contingency plans.
+
+**Phase B Implementation (Perplexity)**:
+1. Add PERPLEXITY_API_KEY to env
+2. Implement `searchPerplexity()` function with batched queries
+3. Run coverage validation (SEC filings, news, analyst ratings)
+4. Claude relevance scoring against validation points
+5. Create triage records for high-relevance content
+6. Enable contingencies (Phase C/D) only if validation reveals gaps
+- Effort: ~1 week
 
 **Why This Helps**:
 - Automated monitoring across all data sources
@@ -619,10 +620,11 @@ These items complement Phase 3 but remain separate:
 - Phase 3.2A-B (Validation Assessment Workflow + Status UI) ✅
 
 **In Progress**:
-- **Phase 3.2D-B: Finnhub News Integration** 🎯
-  - Fetch company news via API
+- **Phase 3.2D-B: Perplexity Search API Integration** 🎯
+  - Primary discovery layer (~$1-3/month vs multi-source complexity)
+  - Coverage validation (SEC filings, news, analyst ratings)
   - Claude relevance scoring
-  - Triage record generation
+  - Contingency phases (SEC EDGAR, Finnhub) only if gaps found
   - See spec: Section 3.4 "Content Source Implementation Guide"
 
 **Strategic Horizon** (Tier 2 - Phase 3: Thesis Synthesis & Monitoring):
@@ -633,14 +635,13 @@ These items complement Phase 3 but remain separate:
 - **Phase 3.3**: 💡 News & Narratives (advanced features)
 - **Parallel**: Performance Attribution (#ENH-027), Claim Invalidation (#ENH-028)
 
-**Implementation Phases for Content Sources**:
-| Phase | Source | Status |
-|-------|--------|--------|
-| A | Price/IV + FRED | ✅ |
-| B | Finnhub News | 🎯 Next |
-| C | SEC EDGAR | Planned |
-| D | Earnings | Planned |
-| E-G | Additional sources | Future |
+**Simplified Content Source Architecture**:
+| Layer | Source | Status | Cost |
+|-------|--------|--------|------|
+| **Discovery** | Perplexity Search API | 🎯 Next | ~$1-3/mo |
+| **Quantitative** | Price/IV + FRED | ✅ | Free |
+| **Contingency** | SEC EDGAR RSS | If needed | Free |
+| **Contingency** | Finnhub | If needed | Free |
 
 **Long-Term Vision** (Tier 3+):
 - Phase 3.4: Learning & Feedback (outcomes, process adherence, thesis quality scoring)

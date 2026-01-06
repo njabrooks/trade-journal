@@ -890,18 +890,20 @@ For each active thesis (macro or asset), the system runs a **daily aggregation p
 │                    DAILY MONITORING PIPELINE                     │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │ News Sources │  │ Data Sources │  │ Filing Sources│          │
-│  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
-│  │ Yahoo News   │  │ FRED (macro) │  │ SEC EDGAR    │          │
-│  │ Google News  │  │ Price/IV     │  │ 8-K filings  │          │
-│  │ Finnhub      │  │ (Massive)    │  │ 10-Q/10-K    │          │
-│  │ Twitter/X    │  │              │  │ Form 4       │          │
-│  │ Perplexity   │  │              │  │              │          │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
-│         │                 │                 │                   │
-│         └────────────┬────┴────────────────┘                   │
-│                      ▼                                          │
+│  ┌───────────────────────┐     ┌──────────────────────┐        │
+│  │ PERPLEXITY SEARCH     │     │ STRUCTURED DATA      │        │
+│  │ (Primary Discovery)   │     │ (Quantitative)       │        │
+│  ├───────────────────────┤     ├──────────────────────┤        │
+│  │ • News (all sources)  │     │ • FRED (macro)       │        │
+│  │ • SEC filings         │     │ • Price/IV (Massive) │        │
+│  │ • Earnings coverage   │     │                      │        │
+│  │ • Analyst opinions    │     │                      │        │
+│  │ • Regulatory news     │     │                      │        │
+│  │ • Industry blogs      │     │                      │        │
+│  └──────────┬────────────┘     └──────────┬───────────┘        │
+│             │                             │                     │
+│             └──────────┬──────────────────┘                     │
+│                        ▼                                        │
 │         ┌────────────────────────┐                             │
 │         │ Relevance Filtering    │                             │
 │         │ (Claude scoring 0-1)   │                             │
@@ -918,17 +920,20 @@ For each active thesis (macro or asset), the system runs a **daily aggregation p
 │         │ Triage Record          │                             │
 │         └────────────────────────┘                             │
 │                                                                  │
+│  Note: SEC EDGAR RSS and Finnhub available as contingencies     │
+│  if Perplexity coverage validation reveals gaps.                │
+│                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 #### Source Configuration by Thesis Type
 
-| Thesis Type | Primary Sources | Watch Sources | Schedule |
-|-------------|-----------------|---------------|----------|
-| **Macro Thesis** (e.g., "US Economic Growth") | FRED data, Fed announcements | Employment reports, CPI releases | Daily + event-triggered |
-| **Asset Thesis - Equity** (e.g., "Bullish GLXY") | Yahoo/Google News, Finnhub | SEC filings (8-K, 10-Q), Form 4 | Daily + filing alerts |
-| **Asset Thesis - Crypto** (e.g., "Bullish BTC") | CoinDesk, Twitter/X, Perplexity | On-chain metrics, regulatory news | Daily |
-| **Asset Thesis - Macro Asset** (e.g., "Bullish Gold") | Bloomberg, FRED | Central bank announcements | Daily + event-triggered |
+| Thesis Type | Perplexity Query Focus | Structured Data | Schedule |
+|-------------|------------------------|-----------------|----------|
+| **Macro Thesis** (e.g., "US Economic Growth") | Fed announcements, employment news, inflation data | FRED (ICSA, UNRATE, CPI) | Daily 6 AM ET |
+| **Asset Thesis - Equity** (e.g., "Bullish GLW") | Company news, SEC filings, earnings, analyst ratings | Price/IV (Massive) | Daily 6 AM ET |
+| **Asset Thesis - Crypto** (e.g., "Bullish BTC") | Protocol news, regulatory, institutional adoption | Price (CoinGecko via Perplexity) | Daily 6 AM ET |
+| **Asset Thesis - Macro Asset** (e.g., "Bullish Gold") | Central bank, geopolitical, ETF flows | FRED (yields, dollar index) | Daily 6 AM ET |
 
 #### Thesis Triage Record Structure
 
@@ -1179,19 +1184,66 @@ This creates a **complete capture system**: nothing falls through the cracks whe
 
 #### Content Source Implementation Guide
 
-**Purpose**: Detailed implementation specifications for each content source in the monitoring pipeline. Sources are implemented incrementally, starting with highest-value, lowest-complexity options.
+**Purpose**: Detailed implementation specifications for each content source in the monitoring pipeline.
+
+##### Architecture: Perplexity + Structured Data
+
+**Key Insight**: Perplexity Search API provides superior coverage at minimal cost (~$1-3/month) compared to integrating multiple free sources. The architecture is:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    SIMPLIFIED MONITORING ARCHITECTURE            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────┐     ┌──────────────────────┐         │
+│  │ PERPLEXITY SEARCH    │     │ STRUCTURED DATA      │         │
+│  │ (Primary Discovery)  │     │ (Quantitative)       │         │
+│  ├──────────────────────┤     ├──────────────────────┤         │
+│  │ • News (all sources) │     │ • FRED (macro)       │         │
+│  │ • SEC filings*       │     │ • Price/IV (Massive) │         │
+│  │ • Earnings coverage  │     │                      │         │
+│  │ • Analyst opinions   │     │                      │         │
+│  │ • Regulatory news    │     │                      │         │
+│  │ • Industry blogs     │     │                      │         │
+│  └──────────┬───────────┘     └──────────┬───────────┘         │
+│             │                            │                      │
+│             └──────────┬─────────────────┘                      │
+│                        ▼                                        │
+│         ┌────────────────────────┐                             │
+│         │ Claude Analysis        │                             │
+│         │ (Relevance + Evidence) │                             │
+│         └───────────┬────────────┘                             │
+│                     ▼                                          │
+│         ┌────────────────────────┐                             │
+│         │ Thesis Triage Record   │                             │
+│         └────────────────────────┘                             │
+│                                                                  │
+│  * SEC filing coverage via Perplexity requires validation       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Why Perplexity over multiple free sources:**
+
+| Factor | Multiple Free Sources | Perplexity |
+|--------|----------------------|------------|
+| Integration complexity | 4-5 APIs to maintain | 1 API |
+| Coverage breadth | Source-specific gaps | Indexes everything |
+| Deduplication | Required across sources | Built-in |
+| Cost | Free but dev time | ~$1-3/month |
+| Non-consensus signals | Limited to indexed sources | Broad web coverage |
+| Citations/transparency | Varies by source | Always included |
 
 ##### Implementation Phases
 
 | Phase | Sources | Complexity | Value | Status |
 |-------|---------|------------|-------|--------|
-| **A** | Price/IV (existing), FRED API | Low | High | ✅ Skeleton built |
-| **B** | Finnhub News | Low | High | 🎯 Next |
-| **C** | SEC EDGAR RSS | Medium | High | Planned |
-| **D** | Earnings Calendar + Transcripts | Medium | Medium | Planned |
-| **E** | Additional news (Yahoo, Google) | Medium | Medium | Planned |
-| **F** | Perplexity API | Medium | Medium | Planned |
-| **G** | Analyst Ratings | High | Medium | Future |
+| **A** | Price/IV (existing), FRED API | Low | High | ✅ Built |
+| **B** | Perplexity Search API | Low | Very High | 🎯 Next |
+| **C** | SEC EDGAR RSS (contingency) | Medium | High | If needed |
+| **D** | Finnhub (contingency) | Low | Medium | If needed |
+
+**Phase B is the primary focus.** Phases C-D are contingencies if Perplexity validation reveals gaps.
 
 ---
 
@@ -1256,74 +1308,121 @@ const MACRO_SERIES = {
 
 ---
 
-##### Phase B: News API - Finnhub 🎯
+##### Phase B: Perplexity Search API 🎯
 
-**Finnhub** is the recommended starting point for news because:
-- Free tier: 60 calls/minute (plenty for daily monitoring)
-- Good coverage of financial news
-- Company-specific news filtering
-- Sentiment scores included
+**Perplexity Search API** is the primary discovery layer because:
+- **Breadth**: Indexes everything (Reuters, WSJ, SEC filings, niche blogs, crypto sources)
+- **Citations**: All results include source links for verification
+- **Cost**: $5/1,000 requests → ~$1-3/month with smart batching
+- **Non-consensus signals**: Catches early litigation, regulatory drafts, trade-press M&A chatter that filtered sources miss
 
 ```typescript
-// API Documentation: https://finnhub.io/docs/api/company-news
-// Rate Limit: 60 calls/minute (free tier)
-// API Key: FINNHUB_API_KEY in .env.local
+// API Documentation: https://docs.perplexity.ai/
+// Pricing: $5 per 1,000 search requests (no token costs)
+// API Key: PERPLEXITY_API_KEY in .env.local
 
-interface FinnhubNewsItem {
-  category: string;
-  datetime: number;        // Unix timestamp
-  headline: string;
-  id: number;
-  image: string;
-  related: string;         // Ticker symbols
-  source: string;
-  summary: string;
-  url: string;
+interface PerplexitySearchResult {
+  content: string;           // Synthesized answer with citations
+  citations: string[];       // Source URLs
+  model: string;
 }
 
-async function fetchFinnhubNews(ticker: string, fromDate: Date): Promise<FinnhubNewsItem[]> {
-  const from = fromDate.toISOString().split('T')[0];
-  const to = new Date().toISOString().split('T')[0];
+async function searchPerplexity(query: string): Promise<PerplexitySearchResult> {
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'sonar',  // Search-optimized model
+      messages: [{ role: 'user', content: query }],
+      return_citations: true,
+    }),
+  });
 
-  const url = `https://finnhub.io/api/v1/company-news?` +
-    `symbol=${ticker}&from=${from}&to=${to}&token=${process.env.FINNHUB_API_KEY}`;
-
-  const response = await fetch(url);
-  return response.json();
+  const data = await response.json();
+  return {
+    content: data.choices[0].message.content,
+    citations: data.citations || [],
+    model: data.model,
+  };
 }
+```
 
-// Also useful: Market-wide news
-async function fetchMarketNews(category: 'general' | 'forex' | 'crypto' | 'merger'): Promise<FinnhubNewsItem[]> {
-  const url = `https://finnhub.io/api/v1/news?` +
-    `category=${category}&token=${process.env.FINNHUB_API_KEY}`;
+**Query Batching Strategy** (Critical for Cost Control):
 
-  const response = await fetch(url);
-  return response.json();
+```typescript
+// ❌ NAÏVE (expensive): One query per ticker per keyword
+// 20 tickers × 3 keyword packs = 60 requests/day → $9/month
+
+// ✅ SMART (cheap): Batched OR queries
+// 3-5 total queries per day → $0.50-$1.50/month
+
+// Example batch query for all asset theses:
+const batchQuery = `
+  Latest news in the last 24 hours for:
+  - Corning (GLW): optical communications, display glass, solar
+  - Galaxy Digital (GLXY): crypto ETF, institutional custody, Bitcoin
+  - [other tickers...]
+
+  Focus on: earnings, SEC filings, analyst ratings, material events, regulatory news.
+  Exclude: routine price movements, general market commentary.
+`;
+
+// Example thesis-specific query:
+function buildThesisQuery(config: ThesisMonitoringConfig): string {
+  const keywords = [
+    ...config.searchConfig.derivedKeywords,
+    ...config.searchConfig.additionalKeywords,
+  ].join(', ');
+
+  const exclusions = config.searchConfig.exclusions.length > 0
+    ? `Exclude: ${config.searchConfig.exclusions.join(', ')}.`
+    : '';
+
+  return `
+    What are the latest news and developments for ${config.companyName} (${config.ticker})
+    in the last 24 hours?
+
+    Focus on: ${keywords}, SEC filings, earnings, analyst ratings, material events.
+    ${exclusions}
+
+    Provide specific facts with sources. Include any SEC filings (8-K, 10-Q, 10-K, Form 4).
+  `;
 }
 ```
 
 **Integration Pattern**:
+
 ```typescript
-async function monitorNewsForThesis(config: ThesisMonitoringConfig) {
-  // 1. Fetch recent news
-  const news = await fetchFinnhubNews(config.ticker, config.lastChecked || new Date(Date.now() - 24*60*60*1000));
+async function monitorThesisWithPerplexity(config: ThesisMonitoringConfig) {
+  // 1. Build targeted query
+  const query = buildThesisQuery(config);
 
-  // 2. Filter by keywords (optional pre-filter before Claude)
-  const relevant = news.filter(item =>
-    config.searchConfig.derivedKeywords.some(kw =>
-      item.headline.toLowerCase().includes(kw.toLowerCase()) ||
-      item.summary.toLowerCase().includes(kw.toLowerCase())
-    )
-  );
+  // 2. Search Perplexity
+  const result = await searchPerplexity(query);
 
-  // 3. Claude relevance scoring (if > threshold items)
-  if (relevant.length > 0) {
-    const scored = await scoreRelevance(relevant, config.validationPoints);
+  // 3. Claude relevance scoring (if content returned)
+  if (result.content && result.content.length > 100) {
+    const scored = await scoreRelevance([{
+      source: 'perplexity',
+      type: 'aggregated_news',
+      title: `Daily scan: ${config.ticker}`,
+      content: result.content,
+      citations: result.citations,
+      publishedAt: new Date(),
+    }], config.validationPoints);
 
-    // 4. For high-relevance items, run full assessment
-    const highRelevance = scored.filter(s => s.relevance > 0.7);
-    if (highRelevance.length > 0) {
-      // Run /assess-validation-evidence and create triage
+    // 4. For high-relevance items, create triage record
+    if (scored.relevance > 0.5) {
+      await createThesisTriageRecord({
+        thesis: config,
+        content: result,
+        assessment: scored,
+        triggerType: 'scheduled_monitoring',
+        triggerSource: 'perplexity_daily_scan',
+      });
     }
   }
 }
@@ -1331,9 +1430,59 @@ async function monitorNewsForThesis(config: ThesisMonitoringConfig) {
 
 ---
 
-##### Phase C: SEC EDGAR RSS
+##### Perplexity Coverage Validation
 
-**SEC EDGAR** provides real-time filing alerts via RSS feeds.
+**Before relying on Perplexity as the sole discovery layer**, validate coverage for each source type:
+
+| Source Type | Validation Test | Expected Coverage | Contingency if Gap |
+|-------------|-----------------|-------------------|-------------------|
+| **Major news** (WSJ, Reuters, Bloomberg) | Query recent GLW/GLXY news, verify WSJ/Reuters citations | High | None needed |
+| **SEC 8-K filings** | Query "SEC 8-K [ticker] [recent date]", verify EDGAR links | Medium-High* | Phase C: SEC EDGAR RSS |
+| **SEC 10-Q/10-K** | Query quarterly report filings | Medium-High* | Phase C: SEC EDGAR RSS |
+| **Form 4 (insider trades)** | Query "insider trading [ticker]" | Medium | Phase C: SEC EDGAR RSS |
+| **Earnings coverage** | Query post-earnings, verify coverage of call highlights | High | Manual transcript paste |
+| **Analyst ratings** | Query "analyst rating upgrade downgrade [ticker]" | Medium-High | Phase D: Finnhub ratings |
+| **Crypto news** | Query protocol/exchange news | High | None needed |
+| **Regulatory/litigation** | Query regulatory actions, lawsuits | High | None needed |
+| **Niche/trade press** | Query industry-specific topics | High (key advantage) | None needed |
+
+**\* SEC filings note**: Perplexity indexes SEC filings but may have latency. For time-sensitive 8-K alerts (material events), consider SEC EDGAR RSS as supplement.
+
+**Validation Procedure**:
+
+```bash
+# Run this validation script before production deployment
+DOTENV_CONFIG_PATH=.env.local npx tsx scripts/validate-perplexity-coverage.ts
+```
+
+```typescript
+// scripts/validate-perplexity-coverage.ts
+const validationTests = [
+  {
+    name: 'SEC 8-K coverage',
+    query: 'SEC 8-K filing Corning GLW January 2026',
+    expectedCitation: 'sec.gov',
+    threshold: 0.8,  // 80% of tests should return SEC citations
+  },
+  {
+    name: 'Major news coverage',
+    query: 'Corning GLW news Reuters WSJ January 2026',
+    expectedCitation: ['reuters.com', 'wsj.com'],
+    threshold: 0.9,
+  },
+  // ... more tests
+];
+
+// If any test fails threshold → enable corresponding contingency phase
+```
+
+---
+
+##### Phase C: SEC EDGAR RSS (Contingency)
+
+**When to enable**: If Perplexity validation shows <80% SEC filing coverage OR >4 hour latency on material filings.
+
+**SEC EDGAR** provides real-time filing alerts via RSS feeds:
 
 ```typescript
 // RSS Feeds:
@@ -1386,91 +1535,44 @@ ALTER TABLE underlyings ADD COLUMN sec_cik TEXT;
 
 ---
 
-##### Phase D: Earnings & Events
+##### Phase D: Finnhub (Contingency)
 
-**Earnings Calendar** (Finnhub)
+**When to enable**: If Perplexity validation shows gaps in real-time news or analyst ratings.
+
+**Finnhub** provides:
+- Company news (60 calls/minute free tier)
+- Analyst recommendations
+- Earnings calendar
+
 ```typescript
-// API: https://finnhub.io/api/v1/calendar/earnings
-async function getEarningsCalendar(from: string, to: string): Promise<EarningsEvent[]> {
-  const url = `https://finnhub.io/api/v1/calendar/earnings?` +
-    `from=${from}&to=${to}&token=${process.env.FINNHUB_API_KEY}`;
+// API Documentation: https://finnhub.io/docs/api/company-news
+// Rate Limit: 60 calls/minute (free tier)
+// API Key: FINNHUB_API_KEY in .env.local
+
+async function fetchFinnhubNews(ticker: string, fromDate: Date): Promise<FinnhubNewsItem[]> {
+  const from = fromDate.toISOString().split('T')[0];
+  const to = new Date().toISOString().split('T')[0];
+
+  const url = `https://finnhub.io/api/v1/company-news?` +
+    `symbol=${ticker}&from=${from}&to=${to}&token=${process.env.FINNHUB_API_KEY}`;
 
   const response = await fetch(url);
-  const data = await response.json();
-  return data.earningsCalendar;
+  return response.json();
 }
 
-// Pre-earnings alert: 1-2 days before, remind user to review thesis
-// Post-earnings: Fetch transcript, run assessment
-```
-
-**Earnings Transcripts** (requires paid API or scraping):
-- **FMP Premium** ($149/mo): Full transcripts via API
-- **Free alternative**: Manual paste into `/assess-validation-evidence`
-- **SEC 8-K**: Earnings releases filed as 8-K (partial, no call transcript)
-
----
-
-##### Phase E: Additional News Sources
-
-**Yahoo Finance News** (via unofficial API or scraping)
-```typescript
-// Note: No official API - use yahoofinancials package or web scraping
-// Alternatively, use Google Custom Search API
-
-// Google Custom Search (100 free queries/day)
-async function searchGoogleNews(query: string): Promise<NewsItem[]> {
-  const url = `https://www.googleapis.com/customsearch/v1?` +
-    `key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CSE_ID}` +
-    `&q=${encodeURIComponent(query)}&dateRestrict=d1`; // Last 24 hours
+// Also useful: Analyst recommendations
+async function fetchAnalystRatings(ticker: string): Promise<AnalystRating[]> {
+  const url = `https://finnhub.io/api/v1/stock/recommendation?` +
+    `symbol=${ticker}&token=${process.env.FINNHUB_API_KEY}`;
 
   const response = await fetch(url);
-  const data = await response.json();
-  return data.items || [];
+  return response.json();
 }
 ```
 
----
-
-##### Phase F: Perplexity API
-
-**Perplexity** for broader context and synthesis:
-```typescript
-// API: https://docs.perplexity.ai/
-// Use case: "What are the latest developments for [company]?"
-// Good for: Synthesizing multiple sources, catching obscure news
-
-async function queryPerplexity(question: string): Promise<string> {
-  const response = await fetch('https://api.perplexity.ai/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama-3.1-sonar-small-128k-online',
-      messages: [{ role: 'user', content: question }],
-    }),
-  });
-
-  const data = await response.json();
-  return data.choices[0].message.content;
-}
-
-// Usage: Daily summary query per thesis
-// "What are the latest news and developments for Corning Inc (GLW) in the last 24 hours?"
-```
-
----
-
-##### Phase G: Analyst Ratings (Future)
-
-**Sources**:
-- Finnhub: `GET /api/v1/stock/recommendation?symbol={ticker}`
-- TipRanks (paid)
-- Zacks (paid)
-
-**Use case**: Track rating changes as potential validation/invalidation evidence.
+**Use as supplement to Perplexity** when:
+- Need real-time news alerts (Perplexity may have latency)
+- Want structured analyst rating changes (easier to parse than natural language)
 
 ---
 
@@ -1587,27 +1689,40 @@ async function createThesisTriageRecord(params: {
 ##### Implementation Timeline
 
 ```
-Week 1: Phase B - Finnhub News
-├── Add FINNHUB_API_KEY to env
-├── Implement fetchFinnhubNews()
-├── Add relevance scoring with Claude
-├── Create triage records for high-relevance items
-└── Test with GLW thesis
+Week 1: Phase B - Perplexity Integration + Validation
+├── Day 1-2: Setup
+│   ├── Add PERPLEXITY_API_KEY to env
+│   ├── Implement searchPerplexity() function
+│   └── Add to daily-thesis-monitoring.ts
+│
+├── Day 3-4: Coverage Validation
+│   ├── Create validate-perplexity-coverage.ts script
+│   ├── Run validation tests for each source type
+│   ├── Document gaps (if any)
+│   └── Decision: Enable contingency phases or proceed
+│
+├── Day 5: Integration
+│   ├── Implement buildThesisQuery() with batching
+│   ├── Add Claude relevance scoring layer
+│   ├── Create triage records for high-relevance items
+│   └── Test with GLW thesis end-to-end
 
-Week 2: Phase C - SEC EDGAR
-├── Add SEC CIK to underlyings table
-├── Implement SEC RSS polling
-├── 8-K auto-assessment
-└── Filing type filtering
+Week 2: Polish + Contingencies (if needed)
+├── If SEC coverage gap → Implement Phase C (SEC EDGAR RSS)
+├── If analyst ratings gap → Implement Phase D (Finnhub)
+├── Add GitHub Action for daily monitoring
+└── Monitor cost and adjust batching
 
-Week 3: Phase D - Earnings
-├── Earnings calendar integration
-├── Pre-earnings thesis review alerts
-├── Post-earnings assessment trigger
-└── Manual transcript paste workflow
-
-Week 4+: Phases E-G as needed
+Week 3+: Iterate based on real usage
+├── Tune relevance thresholds
+├── Expand to additional theses
+└── Add UI for triage review
 ```
+
+**Cost Projection**:
+- Perplexity: ~$1-3/month (3-5 queries/day × 30 days = 90-150 requests)
+- Claude analysis: ~$1-2/month (relevance scoring on flagged items)
+- **Total**: ~$2-5/month for comprehensive monitoring
 
 ---
 
@@ -1909,3 +2024,4 @@ SCHEDULED JOBS (GitHub Actions)
 | 2026-01-06 | Claude + User | Consolidated as end-state spec: removed implementation roadmap (now in ACTIVE_ROADMAP.md), added workflow distinction table, merged monitoring specs from phase3_2_continuation.md, added validation-assessment-workflow reference |
 | 2026-01-06 | Claude + User | Added Section 3.4 Thesis Triage: extended PRD triage pattern to macro/asset theses with daily monitoring pipeline, multi-source aggregation (Yahoo News, Google News, Finnhub, Twitter, Perplexity, FRED, SEC EDGAR), ThesisTriageRecord schema, severity/urgency classification, and Layer 4 learning integration |
 | 2026-01-07 | Claude + User | **Major update**: (1) Section 2.4 UI/UX - Core Argument replaces Summary as primary display, with display priority and staleness indicators; (2) Section 3.1 rewritten - thesis-level monitoring config replaces per-validation-point specs, reducing configuration burden; (3) Updated conceptual model to reflect thesis-level monitoring approach |
+| 2026-01-07 | Claude + User | **Architecture simplification**: Perplexity Search API as primary discovery layer (~$1-3/month) replacing multi-source approach (Finnhub, SEC EDGAR, Google, Yahoo). Added coverage validation matrix, batching strategy, and contingency plans for SEC EDGAR/Finnhub if Perplexity gaps discovered. Updated pipeline diagrams and implementation timeline. |
