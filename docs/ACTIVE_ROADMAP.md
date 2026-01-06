@@ -308,30 +308,32 @@ Daily 9 AM ET:
 
 ---
 
-**Continuation Document**: [phase3_2_continuation.md](features/phase3_2_continuation.md)
-
-**Note**: Phase 3.2 absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept.
+**Note**: Phase 3.2 absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept. See [thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md) Section 3.4 "Thesis Triage" for the comprehensive monitoring inbox specification.
 
 ---
 
 ### Phase 3.3: News & Narratives 💡
 
-**Status**: 💡 Proposed (Tier 2 - Strategic)
+**Status**: 💡 Proposed (Tier 2 - Strategic) - **Partially absorbed into Thesis Triage**
 
 #### #ENH-039: News & Narratives Integration
 **Effort**: 2-3 weeks
 **Dependencies**: #ENH-038
 
-**Deliverables**:
-- Narrative tracking system
-- Cross-thesis intelligence ("affects 3 theses")
-- Source management and credibility scoring
-- Financial data provider API integrations
+**Note**: Core news monitoring functionality is now specified in Section 3.4 "Thesis Triage" of [thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md). This phase focuses on **advanced narrative features** beyond basic monitoring:
+
+**Remaining Deliverables** (not covered by Thesis Triage):
+- **Narrative tracking system** - Track emerging themes across multiple sources over time
+- **Cross-thesis intelligence** - "This development affects 3 theses" alerting
+- **Emerging narrative detection** - Spot new themes before they're obvious (not just monitoring known validation points)
+
+**Absorbed into Thesis Triage** (Section 3.4):
+- ~~Source management and credibility scoring~~ → Thesis Triage source configuration
+- ~~Financial data provider API integrations~~ → Thesis Triage multi-source pipeline
 
 **Why This Helps**:
 - **Beyond explicit monitoring**: Catch things you didn't know to watch for
 - **Cross-thesis insights**: See how developments ripple across portfolio
-- **Source quality**: Weight information by credibility
 - **Emerging narratives**: Spot new themes before they're obvious
 
 **Note**: Supersedes the original #ENH-031 (News/Narrative Monitoring) with a more comprehensive design.
@@ -613,8 +615,8 @@ These items complement Phase 3 but remain separate:
 
 **Strategic Horizon** (Tier 2 - Phase 3: Thesis Synthesis & Monitoring):
 - **Phase 3.1 (MVP)**: ✅ Thesis Articulation (#ENH-035) + Validation Points (#ENH-036) + Audit Trail (#ENH-037)
-- **Phase 3.2**: 💡 Automated Monitoring (#ENH-038)
-- **Phase 3.3**: News & Narratives (#ENH-039)
+- **Phase 3.2**: 🚧 Automated Monitoring (#ENH-038) - **Thesis Triage spec complete** (see Section 3.4)
+- **Phase 3.3**: 💡 News & Narratives (#ENH-039) - partially absorbed into Thesis Triage
 - **Parallel**: Performance Attribution (#ENH-027), Claim Invalidation (#ENH-028), Strategy Playbook (#ENH-020-playbook)
 
 **Long-Term Vision** (Tier 3+):

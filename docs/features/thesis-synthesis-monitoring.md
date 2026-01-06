@@ -1,7 +1,9 @@
 # Thesis Synthesis & Monitoring System
 
-**Status**: Requirements Draft
+**Purpose**: End-state specification for the thesis synthesis and monitoring system
+**Status**: Living Specification (implementation tracked in [ACTIVE_ROADMAP.md](../ACTIVE_ROADMAP.md))
 **Created**: 2026-01-03
+**Last Updated**: 2026-01-06
 **PRD Alignment**: Sections 5.5 (Thesis Evaluation), 5.7 (Role of AI), 6.1 (Triggers), 8 (Institutional Memory)
 
 ---
@@ -36,21 +38,28 @@ Build a system where:
 ## Conceptual Model
 
 ```
-LAYER 1: Evidence Collection (IMPLEMENTED)
-├── Research artifacts → Toulmin claims
+LAYER 1: Evidence Collection
+├── Research artifacts → Toulmin claims (bottom-up discovery)
 ├── Claims assigned to theses by user
 └── Output: Structured atomic insights with provenance
+    See: docs/features/research-workflow.md
 
-LAYER 2: Thesis Synthesis (THIS DOCUMENT)
+LAYER 2: Thesis Synthesis
 ├── Input: All claims linked to a thesis
 ├── Claude synthesizes → coherent investment thesis
 ├── Claude extracts → validation/invalidation points
 ├── User refines/approves
 └── Output: Articulated thesis + explicit success/failure criteria
+    Skill: /synthesize-thesis
 
-LAYER 3: Monitoring & Accountability (THIS DOCUMENT)
+LAYER 3: Monitoring & Accountability
 ├── Validation points → monitoring specifications
-├── Claude tracks → news, data, developments
+├── Two complementary workflows:
+│   ├── Top-down assessment: Evaluate new content against validation points
+│   │   Skill: /assess-validation-evidence
+│   │   See: docs/features/validation-assessment-workflow.md
+│   └── Automated monitoring: Scheduled checks of data sources
+│       Scripts: monitor-fred-validation.ts, monitor-price-iv-validation.ts, etc.
 ├── Status changes logged with timestamps
 ├── User actions tracked against stated criteria
 └── Output: Living scorecard + decision audit trail
@@ -61,6 +70,14 @@ LAYER 4: Learning (FUTURE)
 ├── Pattern identification
 └── Output: Feedback for improving future theses
 ```
+
+### Workflow Distinction
+
+| Workflow | Direction | Trigger | Use Case |
+|----------|-----------|---------|----------|
+| **Bottom-up discovery** (`/process-transcript`) | Content → Claims → Theses | New research arrives | Research ingestion |
+| **Top-down assessment** (`/assess-validation-evidence`) | Validation points + Content → Evidence | User identifies relevant content | Targeted validation check |
+| **Automated monitoring** (scheduled scripts) | Data sources → Threshold checks → Alerts | Cron schedule | Proactive surveillance |
 
 ---
 
@@ -398,14 +415,112 @@ interface MonitoringSpec {
 
 #### Data Sources
 
-**All of the above** (to be prioritized through testing):
+| Source Type | Examples | Use Case | Cost |
+|-------------|----------|----------|------|
+| **FRED Economic Data** | ICSA, UNRATE, CPI, Fed Funds | Macro thesis validation | Free (via OpenBB) |
+| **Price/IV Data** | Spot, IV30, IV rank, IV percentile | Asset thesis validation | Free (existing Massive ingestion) |
+| **News & SEC Filings** | Finnhub, SEC EDGAR RSS | Company-specific events | Free tier |
+| **Manual input** | User observation | Qualitative judgment | N/A |
 
-| Source Type | Examples | Use Case |
-|-------------|----------|----------|
-| Web search | Brave/Google API | General news, developments |
-| RSS feeds | Specific publications | Targeted monitoring |
-| APIs | CoinGecko, Bloomberg, etc. | Quantitative metrics |
-| Manual input | User observation | Qualitative judgment |
+#### Source-Specific Monitoring Specs
+
+##### FRED Economic Data Monitoring
+
+```typescript
+interface FREDMonitoringSpec {
+  validationPointId: string;
+  source: 'fred';
+  series: string[];        // e.g., ['ICSA', 'UNRATE']
+  threshold: {
+    condition: string;     // e.g., "ICSA > 250000"
+    operator: '>' | '<' | '==' | '>=' | '<=';
+    value: number;
+  };
+  frequency: 'daily' | 'weekly';
+}
+```
+
+**Implementation**: `scripts/monitor-fred-validation.ts`
+- Uses OpenBB integration (already configured with FRED API key)
+- Python-TypeScript bridge via subprocess
+- GitHub Actions cron: daily at 10 AM ET (after FRED releases)
+
+**Example Use Cases**:
+- "ICSA > 250,000" → triggers "Labor market deteriorating" invalidation point
+- "UNRATE > 5.0" → triggers "Recession risk rising" validation point
+
+##### Price/IV Data Monitoring
+
+```typescript
+interface PriceIVMonitoringSpec {
+  validationPointId: string;
+  source: 'price_iv';
+  underlying: string;      // Ticker
+  metric: 'spot' | 'iv30' | 'iv_rank' | 'iv_percentile';
+  threshold: {
+    condition: string;     // e.g., "BTC spot > 100000"
+    value: number;
+  };
+  frequency: 'daily';
+}
+```
+
+**Implementation**: `scripts/monitor-price-iv-validation.ts`
+- Queries existing `underlyings_iv_history` table
+- Runs after Massive.com daily ingestion
+- GitHub Actions: chains after `massive-ingestion.yml`
+
+**Example Use Cases**:
+- "BTC spot > 100000" → validates "Bullish BTC" thesis
+- "GLXY IV30 < 40" → invalidates "High volatility persists" point
+- "SPY IV rank < 20 for 30 days" → validates "Complacency returns" point
+
+##### News & SEC Filings Monitoring
+
+```typescript
+interface NewsMonitoringSpec {
+  validationPointId: string;
+  source: 'news';
+  keywords: string[];          // e.g., ["Galaxy Digital", "crypto regulation"]
+  sources: string[];           // e.g., ["finnhub", "sec_edgar"]
+  semanticDescription: string; // For LLM relevance scoring
+  frequency: 'daily' | 'weekly';
+}
+```
+
+**Implementation**: `scripts/monitor-news-validation.ts`
+- Finnhub API (free tier: 60 calls/min)
+- SEC EDGAR RSS feeds
+- Claude-powered relevance scoring
+
+**Relevance Scoring**:
+```typescript
+interface NewsRelevanceScore {
+  article: {
+    headline: string;
+    summary: string;
+    source: string;
+    publishedAt: Date;
+    url: string;
+  };
+  relevance: number;        // 0-1 score
+  confidence: 'low' | 'medium' | 'high';
+  reasoning: string;        // Why Claude scored it this way
+  suggestedAction: 'assess' | 'record_only' | 'ignore';
+}
+```
+
+**Auto-Assessment Trigger**: When relevance > 0.7 for a critical validation point, auto-run `/assess-validation-evidence` skill to generate preliminary assessment for user review.
+
+#### Source Credibility Weighting
+
+| Tier | Sources | Weight |
+|------|---------|--------|
+| Tier 1 | WSJ, Bloomberg, SEC filings, FRED | 1.0x |
+| Tier 2 | Reputable industry news (CoinDesk, etc.) | 0.8x |
+| Tier 3 | Aggregators, blogs | 0.5x |
+
+User can override via feedback loop.
 
 #### Execution Environment
 
@@ -538,6 +653,330 @@ This is the **commitment device**:
    - User's rationale if they diverged
 5. When strategy closes, system records outcome
 6. Analysis can answer: "Did following the process produce better results than deviating?"
+
+---
+
+### 3.4 Thesis Triage: The Monitoring Inbox
+
+**Purpose**: Extend the existing triage pattern (used for strategies/positions) to macro theses and asset theses. Create a unified inbox where automated monitoring surfaces actionable items for user review.
+
+**PRD Alignment**: Section 6 (Workflow & Triage Engine) - "Triage as inbox/task management layer"
+
+#### Conceptual Model
+
+```
+STRATEGY TRIAGE (Existing)
+├── Trigger: Position metrics (DTE, size, IV, P&L)
+├── Output: Triage records with severity/urgency
+└── User action: Review, adjust, close positions
+
+THESIS TRIAGE (New - This Section)
+├── Trigger: Monitoring pipeline detects relevant content
+├── Output: Thesis triage records with pre-analysis
+└── User action: Review AI synthesis, update validation point status
+```
+
+#### The Daily Monitoring Pipeline
+
+For each active thesis (macro or asset), the system runs a **daily aggregation pipeline**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DAILY MONITORING PIPELINE                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │ News Sources │  │ Data Sources │  │ Filing Sources│          │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤          │
+│  │ Yahoo News   │  │ FRED (macro) │  │ SEC EDGAR    │          │
+│  │ Google News  │  │ Price/IV     │  │ 8-K filings  │          │
+│  │ Finnhub      │  │ (Massive)    │  │ 10-Q/10-K    │          │
+│  │ Twitter/X    │  │              │  │ Form 4       │          │
+│  │ Perplexity   │  │              │  │              │          │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘          │
+│         │                 │                 │                   │
+│         └────────────┬────┴────────────────┘                   │
+│                      ▼                                          │
+│         ┌────────────────────────┐                             │
+│         │ Relevance Filtering    │                             │
+│         │ (Claude scoring 0-1)   │                             │
+│         └───────────┬────────────┘                             │
+│                     ▼                                          │
+│         ┌────────────────────────┐                             │
+│         │ /assess-validation-    │                             │
+│         │  evidence skill        │                             │
+│         │ (auto-triggered)       │                             │
+│         └───────────┬────────────┘                             │
+│                     ▼                                          │
+│         ┌────────────────────────┐                             │
+│         │ Generate Thesis        │                             │
+│         │ Triage Record          │                             │
+│         └────────────────────────┘                             │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Source Configuration by Thesis Type
+
+| Thesis Type | Primary Sources | Watch Sources | Schedule |
+|-------------|-----------------|---------------|----------|
+| **Macro Thesis** (e.g., "US Economic Growth") | FRED data, Fed announcements | Employment reports, CPI releases | Daily + event-triggered |
+| **Asset Thesis - Equity** (e.g., "Bullish GLXY") | Yahoo/Google News, Finnhub | SEC filings (8-K, 10-Q), Form 4 | Daily + filing alerts |
+| **Asset Thesis - Crypto** (e.g., "Bullish BTC") | CoinDesk, Twitter/X, Perplexity | On-chain metrics, regulatory news | Daily |
+| **Asset Thesis - Macro Asset** (e.g., "Bullish Gold") | Bloomberg, FRED | Central bank announcements | Daily + event-triggered |
+
+#### Thesis Triage Record Structure
+
+```typescript
+interface ThesisTriageRecord {
+  id: string;
+  createdAt: Date;
+
+  // Thesis context
+  thesisId: string;
+  thesisType: 'macro' | 'asset';
+  thesisTitle: string;
+
+  // Trigger source
+  triggerType: 'scheduled_monitoring' | 'filing_alert' | 'data_release' | 'manual';
+  triggerSource: string;           // e.g., "daily_news_scan", "sec_8k_alert", "fred_release"
+
+  // Aggregated content
+  contentSummary: {
+    totalItemsScanned: number;
+    relevantItemsFound: number;
+    sources: string[];             // Which sources contributed
+    dateRange: { from: Date; to: Date };
+  };
+
+  // AI analysis (from /assess-validation-evidence)
+  aiAnalysis: {
+    assessmentId: string;          // Link to full assessment report
+    summary: string;               // 2-3 sentence executive summary
+    validationPointsAffected: {
+      pointId: string;
+      pointStatement: string;
+      evidenceType: 'strong_validation' | 'weak_validation' | 'neutral' | 'weak_invalidation' | 'strong_invalidation';
+      confidence: 'high' | 'medium' | 'low';
+      recommendedAction: string;
+    }[];
+    keyFindings: string[];         // Bullet points
+    suggestedNextSteps: string[];
+  };
+
+  // Triage classification
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  urgency: 'immediate' | 'today' | 'this_week' | 'when_convenient';
+
+  // User action tracking
+  status: 'pending' | 'in_review' | 'actioned' | 'dismissed';
+  userNotes?: string;
+  actionsTaken?: {
+    timestamp: Date;
+    action: string;
+    validationPointUpdates?: { pointId: string; newStatus: string }[];
+  }[];
+
+  // Link to detailed assessment
+  assessmentReportPath?: string;   // Path to full markdown report
+}
+```
+
+#### Severity/Urgency Classification
+
+| Evidence Type | Importance | Severity | Urgency |
+|---------------|------------|----------|---------|
+| Strong invalidation | Critical | **critical** | immediate |
+| Strong invalidation | Significant | high | today |
+| Strong validation | Critical | high | today |
+| Weak invalidation | Critical | high | this_week |
+| Strong validation | Significant | medium | this_week |
+| Weak validation/invalidation | Supporting | low | when_convenient |
+| Neutral/No evidence | Any | info | when_convenient |
+
+#### User Workflow
+
+```
+1. USER OPENS TRIAGE DASHBOARD
+   ├── See unified inbox: Strategy triage + Thesis triage
+   ├── Filter by thesis, severity, urgency
+   └── Sort by most recent or most urgent
+
+2. USER SELECTS THESIS TRIAGE RECORD
+   ├── View executive summary (AI-generated)
+   ├── See affected validation points with evidence type
+   ├── Expand to view full assessment report
+   └── See source links for verification
+
+3. USER TAKES ACTION
+   ├── Option A: Accept AI recommendation
+   │   └── One-click update validation point status
+   ├── Option B: Modify and accept
+   │   └── Edit status/notes, then save
+   ├── Option C: Investigate further
+   │   └── Click source links, run manual /assess-validation-evidence
+   └── Option D: Dismiss
+       └── Mark as dismissed with optional note
+
+4. SYSTEM RECORDS
+   ├── All actions logged to audit trail
+   ├── Validation point status updated
+   └── Triage record marked as actioned
+```
+
+#### Implementation: Scheduled Jobs
+
+**Daily News Monitoring** (`scripts/daily-thesis-monitoring.ts`):
+```typescript
+// GitHub Actions: 6 AM ET daily
+async function runDailyThesisMonitoring() {
+  // 1. Load all active theses with their validation points
+  const theses = await loadActiveTheses();
+
+  for (const thesis of theses) {
+    // 2. Query all configured sources for this thesis
+    const content = await aggregateSources(thesis);
+
+    // 3. Filter by relevance (Claude scoring)
+    const relevant = await filterByRelevance(content, thesis.validationPoints);
+
+    if (relevant.length > 0) {
+      // 4. Run /assess-validation-evidence on relevant content
+      const assessment = await runAssessment(thesis, relevant);
+
+      // 5. Generate triage record
+      await createThesisTriageRecord({
+        thesis,
+        content: relevant,
+        assessment,
+        triggerType: 'scheduled_monitoring',
+        triggerSource: 'daily_news_scan'
+      });
+    }
+  }
+}
+```
+
+**Watch Scripts** (event-triggered):
+```typescript
+// SEC Filing Watcher - runs every 15 minutes
+async function watchSECFilings() {
+  const newFilings = await checkSECEdgarRSS();
+
+  for (const filing of newFilings) {
+    // Find asset theses for this ticker
+    const theses = await findThesesByTicker(filing.ticker);
+
+    for (const thesis of theses) {
+      // High-priority filing: auto-assess and create triage
+      if (filing.type === '8-K' || filing.type === '10-Q') {
+        const assessment = await runAssessment(thesis, [filing]);
+        await createThesisTriageRecord({
+          thesis,
+          content: [filing],
+          assessment,
+          triggerType: 'filing_alert',
+          triggerSource: `sec_${filing.type.toLowerCase()}`
+        });
+      }
+    }
+  }
+}
+
+// FRED Data Watcher - runs after FRED releases (10 AM ET)
+async function watchFREDReleases() {
+  const releases = await checkFREDReleases();
+
+  for (const release of releases) {
+    // Find macro theses that monitor this series
+    const theses = await findThesesByFREDSeries(release.series);
+
+    for (const thesis of theses) {
+      // Check if any thresholds are triggered
+      const triggered = await evaluateThresholds(thesis, release);
+
+      if (triggered.length > 0) {
+        await createThesisTriageRecord({
+          thesis,
+          content: [release],
+          assessment: { triggered },
+          triggerType: 'data_release',
+          triggerSource: `fred_${release.series}`
+        });
+      }
+    }
+  }
+}
+```
+
+#### Database Schema Addition
+
+```sql
+-- Thesis triage records (parallel to existing triage_records for strategies)
+CREATE TABLE thesis_triage_records (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  -- Thesis context
+  thesis_id UUID NOT NULL,
+  thesis_type TEXT NOT NULL CHECK (thesis_type IN ('macro', 'asset')),
+
+  -- Trigger
+  trigger_type TEXT NOT NULL,
+  trigger_source TEXT NOT NULL,
+
+  -- Content summary
+  content_summary JSONB NOT NULL,
+
+  -- AI analysis
+  ai_analysis JSONB NOT NULL,
+  assessment_report_path TEXT,
+
+  -- Classification
+  severity TEXT NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low', 'info')),
+  urgency TEXT NOT NULL CHECK (urgency IN ('immediate', 'today', 'this_week', 'when_convenient')),
+
+  -- User action
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in_review', 'actioned', 'dismissed')),
+  user_notes TEXT,
+  actions_taken JSONB DEFAULT '[]',
+
+  -- Timestamps
+  reviewed_at TIMESTAMPTZ,
+  actioned_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_thesis_triage_thesis ON thesis_triage_records(thesis_id, thesis_type);
+CREATE INDEX idx_thesis_triage_status ON thesis_triage_records(status);
+CREATE INDEX idx_thesis_triage_severity ON thesis_triage_records(severity, urgency);
+CREATE INDEX idx_thesis_triage_created ON thesis_triage_records(created_at DESC);
+```
+
+#### Hybrid Workflow: Automated + Manual
+
+The system supports both automated and manual triggers:
+
+| Trigger | Source | AI Analysis | User Action |
+|---------|--------|-------------|-------------|
+| **Automated - Scheduled** | Daily news scan | Full `/assess-validation-evidence` | Review and approve |
+| **Automated - Event** | SEC filing, FRED release | Full `/assess-validation-evidence` | Review and approve |
+| **Manual - User discovers content** | User browses internet | User triggers `/assess-validation-evidence` | Review and document |
+| **Manual - Quick note** | User observation | None (user writes directly) | Document immediately |
+
+For manual discoveries, user can:
+1. Run `/assess-validation-evidence` from Claude Code with the URL/content
+2. System creates triage record with the assessment
+3. User reviews in app and updates validation points
+
+This creates a **complete capture system**: nothing falls through the cracks whether discovered by automation or by the user browsing manually.
+
+#### Success Metrics
+
+- [ ] Automated monitoring catches 80%+ of relevant developments
+- [ ] Average daily triage review time < 10 minutes
+- [ ] False positive rate < 20% (manageable noise)
+- [ ] 100% of validation point status changes have linked triage records (full provenance)
+- [ ] User can trace any thesis status back to source content
 
 ---
 
@@ -752,326 +1191,6 @@ SCHEDULED JOBS (GitHub Actions)
 
 ---
 
-## Implementation Roadmap
-
-### MVP (Phase 1)
-
-**Goal**: Get the commitment device working without automation complexity.
-
-#### Deliverables
-
-1. **Thesis articulation generation** (Claude Code skill)
-   - Manual trigger
-   - Interactive refinement
-   - Version storage
-
-2. **Validation/invalidation point extraction** (same skill)
-   - Extract from articulation
-   - User refinement
-   - Push for specificity
-   - Store with provenance
-
-3. **Manual status tracking** (In-app UI)
-   - Update status with evidence
-   - Log all changes
-
-4. **Basic audit log** (Database + UI)
-   - Record status changes
-   - Record linked user actions
-   - Simple divergence tracking
-
-#### What MVP Skips
-
-- Automated monitoring/search
-- Scheduled checks
-- Sophisticated alerting
-- Outcome analysis
-
-#### Expected Outcome
-
-User can:
-1. Take a thesis with linked claims
-2. Have Claude synthesize into coherent articulation
-3. Extract explicit validation/invalidation points
-4. Manually update status as they observe developments
-5. Have full audit trail of status changes and decisions
-
----
-
-### Phase 2: Automated Monitoring
-
-**Goal**: Claude proactively monitors validation points.
-
-**Status**: 🚧 In Progress (Phase 3.2A Complete, 3.2B+ Planned)
-
-#### Phase 3.2A: Validation Assessment Workflow ✅ Complete
-
-**Delivered** (2026-01-05):
-1. ✅ `/assess-validation-evidence` Claude Code skill
-2. ✅ Top-down evidence assessment of SEC filings, presentations, transcripts
-3. ✅ Ticker-based thesis lookup (auto-find thesis by ticker)
-4. ✅ Structured markdown reports with evidence categorization
-5. ✅ Confidence scoring (high/medium/low/none)
-6. ✅ Real-world testing with Galaxy Digital SEC presentation
-
-**Documentation**: [validation-assessment-workflow.md](validation-assessment-workflow.md)
-
-**Enhancement ID**: #ENH-042
-
----
-
-#### Phase 3.2B: Database Integration & UI ⏳ Planned
-
-**Deliverables**:
-1. **Assessment-to-database recording** (#ENH-042B)
-   - Interactive review mode (approve/reject/modify)
-   - Write to `validation_status_history` table
-   - Batch approval workflow
-
-2. **Validation Status History UI** (#ENH-042C)
-   - Validation point detail page
-   - Status timeline component
-   - Monitoring events log
-   - Evidence comparison views
-
----
-
-#### Phase 3.2C-E: Multi-Source Automation ⏳ Planned
-
-**Phase 3.2D - Multi-Source Data Integration**:
-1. **FRED Economic Data** (#ENH-042E - Tier 1)
-   - Daily scheduled checks
-   - Threshold evaluation
-   - GitHub Actions integration
-
-2. **Price/IV Data** (#ENH-042F - Tier 2)
-   - Monitor existing `underlyings_iv_history` data
-   - Spot, IV30, IV rank monitoring
-   - Daily checks after Massive ingestion
-
-3. **News & SEC Filings** (#ENH-042G - Tier 2)
-   - Finnhub integration (free tier)
-   - SEC EDGAR RSS parsing
-   - Claude relevance scoring
-   - Auto-assessment triggering
-
-**Phase 3.2E - Master Orchestration** (#ENH-042H):
-- Unified monitoring script
-- GitHub Actions daily workflow
-- Summary reporting
-- Alert aggregation
-
-**Continuation Document**: [phase3_2_continuation.md](phase3_2_continuation.md)
-
----
-
-### Phase 3: News & Narratives Integration
-
-**Goal**: Proactive intelligence gathering beyond explicit monitoring.
-
-#### Architecture Overview
-
-**Multi-layer approach** combining keyword monitoring with narrative synthesis:
-
-```
-Layer 1: Keyword Monitoring (Explicit validation points)
-  ↓ Finnhub API + SEC EDGAR + RSS feeds
-  ↓ Daily searches for specific keywords
-  ↓ Store to validation_status_history
-
-Layer 2: Narrative Synthesis (Judgment-required points)
-  ↓ Claude Code skill analyzing aggregated news
-  ↓ Weekly synthesis identifying themes
-  ↓ Store to narrative_snapshots table
-
-Layer 3: Cross-thesis Intelligence
-  ↓ Identify developments affecting multiple theses
-  ↓ Suggest new validation points
-  ↓ Detect narrative shifts across portfolio
-```
-
-#### Deliverables
-
-1. **Keyword-based news monitoring**
-   - Integration with Finnhub (free tier) for company/topic news
-   - SEC EDGAR 8-K monitoring for material events
-   - RSS feed parsing for targeted sources (CoinDesk, FRED blog, etc.)
-   - Claude-powered relevance scoring (semantic understanding, not just keyword matching)
-   - Alert generation for critical developments
-
-2. **Narrative tracking & synthesis**
-   - New `narrative_snapshots` table for weekly narrative summaries
-   - Claude skill: `/monitor-narratives` (weekly synthesis of judgment-required points)
-   - Fields: narrative_summary, supporting_evidence JSONB, sentiment_shift, confidence
-   - Track emerging themes beyond explicit validation points
-   - Suggest new validation points based on narrative developments
-
-3. **Cross-thesis intelligence**
-   - "This development affects 3 of your theses" correlation detection
-   - Narrative shift detection (e.g., "Regulatory stance changed from neutral to hostile")
-   - Portfolio-wide narrative dashboard
-
-4. **Source management**
-   - Curated source lists by validation point type
-   - Source credibility scoring (weight trusted sources higher)
-   - API integrations:
-     - **Finnhub** (free) - Primary news/sentiment source
-     - **SEC EDGAR** (free) - Regulatory filings
-     - **RSS feeds** (free) - Targeted monitoring
-     - **Benzinga** ($200/mo) - Only if free sources insufficient
-   - Feedback loop for false positive reduction
-
-#### Implementation Pattern
-
-**Phase 3A: Manual + Structure** ($0/month)
-```typescript
-// User workflow
-1. Check Finnhub daily for validation point keywords
-2. Log relevant news to validation_status_history
-3. Weekly: Run /monitor-narratives skill for synthesis
-```
-
-**Phase 3B: Automated Keyword Monitoring** ($0/month)
-```typescript
-// scripts/monitor-news.ts (GitHub Actions daily)
-1. Load active monitoring_specs from database
-2. Query Finnhub, SEC EDGAR, RSS feeds for each spec
-3. Claude scores relevance (semantic + novelty + credibility)
-4. Store articles above threshold (0.7+)
-5. Generate alerts for critical importance
-```
-
-**Phase 3C: Narrative Synthesis** ($0/month)
-```typescript
-// /monitor-narratives skill (GitHub Actions weekly)
-1. Load previous week's news by thesis
-2. Claude synthesizes narrative changes
-3. Identify sentiment shifts
-4. Store to narrative_snapshots table
-5. Suggest new validation points if needed
-```
-
-#### Data Sources by Validation Point Type
-
-| Validation Point Type | Primary Source | Backup | Cost | Integration |
-|----------------------|----------------|--------|------|-------------|
-| Regulatory news | Finnhub (free) | SEC EDGAR 8-K | Free | Direct API |
-| Company-specific | Finnhub (free) | Yahoo Finance RSS | Free | Direct API |
-| Macro/Fed policy | FRED blog RSS | Manual | Free | RSS parser |
-| Crypto developments | CoinDesk RSS | Finnhub crypto | Free | RSS parser |
-| Enforcement actions | SEC EDGAR (free) | Finnhub | Free | OpenBB/Direct |
-| Insider trading | SEC Form 4 (free) | Finnhub | Free | OpenBB |
-| Sentiment shifts | Finnhub sentiment | Manual review | Free | Direct API |
-
-#### Relevance Scoring Design
-
-Claude's role in filtering noise:
-
-1. **Semantic relevance** (0-1 score)
-   - Does this actually relate to the validation point?
-   - Example: "SEC fines crypto exchange" → high relevance for "regulatory hostility" point
-   - Example: "BTC price prediction" → low relevance (noise)
-
-2. **Novelty assessment**
-   - Is this new information or rehash of known facts?
-   - Track article similarity to prevent duplicate alerts
-
-3. **Source credibility weighting**
-   - Tier 1 sources (WSJ, Bloomberg, official filings): 1.0x weight
-   - Tier 2 sources (reputable crypto news): 0.8x weight
-   - Tier 3 sources (aggregators, blogs): 0.5x weight
-   - User can override via feedback
-
-4. **Confidence scoring**
-   - Low (0.3-0.5): Potentially relevant, needs review
-   - Medium (0.5-0.7): Likely relevant, flag for attention
-   - High (0.7+): Definitely relevant, create alert
-
-**Alert thresholds** (TBD through testing):
-- Critical importance: relevance score > 0.6
-- Significant importance: relevance score > 0.7
-- Supporting importance: relevance score > 0.8
-
-#### Database Schema Additions
-
-```sql
--- Narrative snapshots (weekly synthesis for judgment-required points)
-CREATE TABLE narrative_snapshots (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  thesis_id UUID NOT NULL,
-  thesis_type TEXT NOT NULL CHECK (thesis_type IN ('macro', 'asset')),
-  snapshot_date DATE NOT NULL,
-
-  -- Synthesized narrative
-  narrative_summary TEXT NOT NULL,        -- "Regulatory narrative shifted from..."
-  supporting_evidence JSONB NOT NULL,     -- [{ source, headline, date, relevance_score, link }]
-  sentiment_shift TEXT,                   -- 'more_positive' | 'neutral' | 'more_negative'
-
-  -- Suggested actions
-  suggested_validation_points JSONB,      -- New validation points to consider
-  affected_validation_points JSONB,       -- Existing points this impacts
-
-  -- AI synthesis metadata
-  generated_by TEXT NOT NULL CHECK (generated_by IN ('claude', 'user')),
-  confidence TEXT NOT NULL CHECK (confidence IN ('low', 'medium', 'high')),
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-  UNIQUE (thesis_id, thesis_type, snapshot_date)
-);
-
-CREATE INDEX idx_narrative_snapshots_thesis ON narrative_snapshots(thesis_id, thesis_type);
-CREATE INDEX idx_narrative_snapshots_date ON narrative_snapshots(snapshot_date DESC);
-```
-
-#### Success Metrics
-
-**Phase 3 Success Criteria:**
-- [ ] Automated monitoring catches 80%+ of relevant developments before user would notice
-- [ ] False positive rate <20% (noise is manageable without overwhelming user)
-- [ ] User spends <10 minutes/week reviewing news monitoring results
-- [ ] Narrative synthesis surfaces at least 1 actionable insight per month
-- [ ] Cross-thesis correlation detection identifies portfolio-wide risks
-
-#### Cost Structure
-
-| Component | Source | Monthly Cost |
-|-----------|--------|--------------|
-| News API | Finnhub (free tier) | $0 |
-| RSS parsing | Built-in library | $0 |
-| SEC filings | EDGAR API (free) | $0 |
-| Compute | GitHub Actions | ~$0 (within free tier) |
-| **Total Phase 3** | | **$0/month** |
-
-Upgrade path if free tier insufficient:
-- Benzinga News API: $200/mo (only if monitoring >20 tickers with high news volume)
-
----
-
-### Phase 4: Learning & Feedback
-
-**Goal**: Close the loop with outcome analysis.
-
-#### Deliverables
-
-1. **Outcome recording**
-   - Strategy close → outcome capture
-   - Validation point accuracy assessment
-
-2. **Process adherence analysis**
-   - Did following process produce better results?
-   - Pattern detection in divergences
-
-3. **Thesis quality scoring**
-   - Which thesis patterns lead to success?
-   - Which validation point types are most predictive?
-
-4. **Feedback integration**
-   - Learnings inform future synthesis
-   - Improved validation point suggestions
-
----
-
 ## Open Questions
 
 ### To Resolve Through Testing
@@ -1126,9 +1245,15 @@ Upgrade path if free tier insufficient:
 
 ## Related Documents
 
+### End-State Specifications
+- **[Validation Assessment Workflow](validation-assessment-workflow.md)** - Top-down evidence assessment skill documentation
+- **[Research Workflow](research-workflow.md)** - Bottom-up claims extraction process
+
+### Task Tracking
+- **[ACTIVE_ROADMAP.md](../ACTIVE_ROADMAP.md)** - Implementation status and task breakdown (Phase 3.x)
+
+### Context
 - **[PRD v1.1](../PRD_v1.1.md)** - Product vision (Sections 5.5, 5.7, 6.1, 8)
-- **[Research Workflow](research-workflow.md)** - Current claims extraction process
-- **[Data Sources Strategy](../data-sources-strategy.md)** - Available data sources for validation point monitoring
 - **[FUTURE_ENHANCEMENTS.md](../FUTURE_ENHANCEMENTS.md)** - Enhancement registry
 - **[System Architecture](../system_architecture_transition_plan.md)** - Technical implementation context
 
@@ -1139,4 +1264,6 @@ Upgrade path if free tier insufficient:
 | Date | Author | Changes |
 |------|--------|---------|
 | 2026-01-03 | Claude + User | Initial requirements draft |
-| 2026-01-04 | Claude + User | Expanded Phase 3 (News & Narratives) with detailed implementation strategy, database schema, relevance scoring design, and cost structure |
+| 2026-01-04 | Claude + User | Expanded News & Narratives with detailed implementation strategy, database schema, relevance scoring design, and cost structure |
+| 2026-01-06 | Claude + User | Consolidated as end-state spec: removed implementation roadmap (now in ACTIVE_ROADMAP.md), added workflow distinction table, merged monitoring specs from phase3_2_continuation.md, added validation-assessment-workflow reference |
+| 2026-01-06 | Claude + User | Added Section 3.4 Thesis Triage: extended PRD triage pattern to macro/asset theses with daily monitoring pipeline, multi-source aggregation (Yahoo News, Google News, Finnhub, Twitter, Perplexity, FRED, SEC EDGAR), ThesisTriageRecord schema, severity/urgency classification, and Layer 4 learning integration |
