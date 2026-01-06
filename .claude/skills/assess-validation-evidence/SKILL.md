@@ -145,7 +145,7 @@ WHERE id = $1
 -- OR
 
 SELECT id, title, ticker, status, conviction
-FROM asset_views
+FROM asset_theses
 WHERE id = $1
 ```
 

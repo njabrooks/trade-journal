@@ -8,7 +8,7 @@ allowed-tools: Bash
 
 ## Purpose
 
-Query the `asset_views` table to retrieve and display asset-specific thesis data. Useful for:
+Query the `asset_theses` table to retrieve and display asset-specific thesis data. Useful for:
 - Cross-referencing research against existing asset views
 - Finding views for specific tickers (NVDA, TSMC, etc.)
 - Examining view-to-thesis linkages
@@ -16,7 +16,7 @@ Query the `asset_views` table to retrieve and display asset-specific thesis data
 
 ## Schema Reference
 
-The `asset_views` table has these key columns:
+The `asset_theses` table has these key columns:
 - `id` (uuid) - Primary key
 - `macro_thesis_id` (uuid) - Link to parent macro thesis (nullable)
 - `underlying_id` (uuid) - Link to underlying ticker (nullable)
@@ -49,7 +49,7 @@ SELECT
   u.ticker,
   av.created_at,
   av.updated_at
-FROM asset_views av
+FROM asset_theses av
 LEFT JOIN underlyings u ON av.underlying_id = u.id
 WHERE av.status = 'active'
 ORDER BY av.created_at DESC;
@@ -66,7 +66,7 @@ SELECT
   u.ticker,
   u.name as underlying_name,
   av.created_at
-FROM asset_views av
+FROM asset_theses av
 JOIN underlyings u ON av.underlying_id = u.id
 WHERE u.ticker = 'NVDA' AND av.status = 'active'
 ORDER BY av.created_at DESC;
@@ -82,7 +82,7 @@ SELECT
   mt.thesis_type,
   av.confidence_level,
   av.created_at
-FROM asset_views av
+FROM asset_theses av
 LEFT JOIN underlyings u ON av.underlying_id = u.id
 LEFT JOIN macro_theses mt ON av.macro_thesis_id = mt.id
 WHERE av.status = 'active' AND av.macro_thesis_id IS NOT NULL
@@ -95,7 +95,7 @@ SELECT
   u.ticker,
   av.confidence_level,
   COUNT(*) as count
-FROM asset_views av
+FROM asset_theses av
 JOIN underlyings u ON av.underlying_id = u.id
 WHERE av.status = 'active'
 GROUP BY u.ticker, av.confidence_level
@@ -118,7 +118,7 @@ SELECT
   u.name as underlying_name,
   mt.title as parent_thesis,
   av.notes
-FROM asset_views av
+FROM asset_theses av
 LEFT JOIN underlyings u ON av.underlying_id = u.id
 LEFT JOIN macro_theses mt ON av.macro_thesis_id = mt.id
 WHERE av.id = $1;

@@ -414,7 +414,7 @@ RETURNING id, ticker;
 SELECT id, title FROM macro_theses WHERE id = $1;
 
 -- Insert asset view
-INSERT INTO asset_views (
+INSERT INTO asset_theses (
   underlying_id,
   macro_thesis_id,
   title,

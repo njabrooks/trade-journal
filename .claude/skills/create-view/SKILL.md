@@ -8,7 +8,7 @@ allowed-tools: Read, Bash
 
 ## Purpose
 
-Create a new asset view record in the `asset_views` table. This adds an asset-specific thesis to your investment decision hierarchy, linked to a ticker and optionally to a parent macro thesis.
+Create a new asset view record in the `asset_theses` table. This adds an asset-specific thesis to your investment decision hierarchy, linked to a ticker and optionally to a parent macro thesis.
 
 Typical workflow:
 1. Process research and develop asset view collaboratively
@@ -126,7 +126,7 @@ WHERE id = $1;
 ### Step 3: Insert asset view
 
 ```sql
-INSERT INTO asset_views (
+INSERT INTO asset_theses (
   underlying_id,
   macro_thesis_id,
   title,
@@ -279,7 +279,7 @@ SELECT
   av.description,
   av.confidence_level,
   u.ticker
-FROM asset_views av
+FROM asset_theses av
 JOIN underlyings u ON av.underlying_id = u.id
 WHERE u.ticker = $1
   AND av.status = 'active'

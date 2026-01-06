@@ -104,7 +104,7 @@ Research Tables (research_artifacts, research_insights with claims_structure)
   ↓
 Claim Conversion (/src/app/api/research/convert-claim/)
   ↓
-Decision Hierarchy (macro_theses, asset_views)
+Decision Hierarchy (macro_theses, asset_theses)
   ↓
 React Frontend (ClaimsBrowser, ConvertClaimDialog)
 ```
@@ -222,7 +222,7 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`accounts`** - Broker accounts
 - **`underlyings`** - Ticker metadata (spot, IV30, ATR20, RV20, conid)
 - **`macro_theses`** - Cross-asset beliefs with conviction, status, and evidence linkage
-- **`asset_views`** - Asset-specific theses linked to underlyings and macro theses
+- **`asset_theses`** - Asset-specific theses linked to underlyings and macro theses
 - **`strategies`** - User-defined trading strategies with entry context
 - **`trades`** - Individual trade executions
 - **`positions`** - Current/closed positions with MTM data
@@ -247,7 +247,7 @@ Key tables (see `/src/db/schema.ts` for full schema):
   - `claims_structure` stores hierarchical Toulmin framework (main_claims + evidence_claims)
   - Each claim has: text, evidence, reasoning, backing, confidence, category, conversion status
 - **`prompts`** - AI prompts for research processing (versioned, activatable)
-- **Provenance tracking** - `macro_theses` and `asset_views` include source claim metadata for traceability
+- **Provenance tracking** - `macro_theses` and `asset_theses` include source claim metadata for traceability
 
 ## Terminology Reference
 
@@ -482,7 +482,7 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 - **Claims Browsing** → `/src/components/research/ClaimsBrowser.tsx` + `/src/app/research/[id]/page.tsx`
 - **Claim Conversion** → `/src/components/research/ConvertClaimDialog.tsx` + `/src/app/api/research/convert-claim/`
 - **Macro Theses** → `/src/app/theses/` + `/src/db/schema.ts` (macro_theses table)
-- **Asset Thesiss** → `/src/app/asset-theses/` + `/src/db/schema.ts` (asset_views table)
+- **Asset Theses** → `/src/app/asset-theses/` + `/src/db/schema.ts` (asset_theses table)
 - **Strategy Management** → `/src/lib/services/strategies.ts` + `/src/app/admin/strategies/`
 - **Triage Alerts** → `/src/lib/derived/triage.ts` + `/src/components/triage/`
 - **Trade Ingestion** → `/src/lib/ingestion/flex/trades.ts` + `/src/app/api/ingest/flex/trades/route.ts`

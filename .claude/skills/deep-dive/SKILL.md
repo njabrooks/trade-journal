@@ -116,7 +116,7 @@ SELECT
   av.target_price,
   u.ticker,
   mt.title as parent_thesis
-FROM asset_views av
+FROM asset_theses av
 JOIN underlyings u ON av.underlying_id = u.id
 LEFT JOIN macro_theses mt ON av.macro_thesis_id = mt.id
 WHERE u.ticker = $1

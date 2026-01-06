@@ -132,7 +132,7 @@ SELECT
   mt.title as parent_thesis_title,
   mt.id as parent_thesis_id,
   av.created_at
-FROM asset_views av
+FROM asset_theses av
 LEFT JOIN underlyings u ON av.underlying_id = u.id
 LEFT JOIN macro_theses mt ON av.macro_thesis_id = mt.id
 WHERE av.status = 'active'

@@ -16,7 +16,7 @@ import { eq, and, or } from 'drizzle-orm';
  * {
  *   mainClaimId: string;                     // UUID of the main_claims row
  *   targetType: 'macro_thesis' | 'asset_view';
- *   targetId: string;                        // UUID of macro_theses or asset_views row
+ *   targetId: string;                        // UUID of macro_theses or asset_theses row
  *   mappingType: 'supports' | 'refutes' | 'foundation';
  *   confidence?: 'high' | 'medium' | 'low';
  *   mappedBy: string;                        // Who created this mapping
