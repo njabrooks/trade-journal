@@ -244,38 +244,40 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 
 ---
 
-#### Phase 3.2D: Multi-Source Data Integration 🚧
-**Status**: 🚧 In Progress (Infrastructure Complete, Implementing Sources)
+#### Phase 3.2D: Multi-Source Data Integration ✅
+**Status**: ✅ Complete (Analysis Pipeline Implemented)
 **Enhancement IDs**: #ENH-042E, #ENH-042F, #ENH-042G
 **Effort**: 2-3 weeks total
 **Dependencies**: #ENH-042B (Complete)
 
-**Infrastructure Implemented**:
+**Implementation Complete**:
 - ✅ `thesis_monitoring_configs` table (thesis-level config, not per-validation-point)
-- ✅ `daily-thesis-monitoring.ts` script skeleton
+- ✅ `thesis_triage_records` table (schema migrated)
+- ✅ `daily-thesis-monitoring.ts` full implementation
 - ✅ Price/IV threshold checking from `underlyings_iv_history`
 - ✅ FRED API threshold checking
-- ✅ Breach detection and reporting
+- ✅ Perplexity Search API integration with dual-query approach
+- ✅ Claude relevance scoring and validation point matching
+- ✅ Triage record creation with severity/urgency classification
+- ✅ Tested end-to-end with GLW thesis
 
 **Phased Content Source Implementation** (see spec Section 3.4):
 
 | Phase | Source | Status | Complexity |
 |-------|--------|--------|------------|
 | **A** | Price/IV + FRED thresholds | ✅ Complete | Low |
-| **B** | Perplexity Search API (primary discovery) | 🎯 Next | Low |
+| **B** | Perplexity Search API + Analysis Pipeline | ✅ Complete | Low |
 | **C** | SEC EDGAR RSS (contingency) | If needed | Medium |
 | **D** | Finnhub (contingency) | If needed | Low |
 
 **Architecture Decision**: Perplexity Search API replaces multiple free sources (Finnhub, Yahoo, Google, SEC EDGAR) with a single unified discovery layer at ~$1-3/month. See spec for coverage validation matrix and contingency plans.
 
-**Phase B Implementation (Perplexity)**:
-1. Add PERPLEXITY_API_KEY to env
-2. Implement `searchPerplexity()` function with batched queries
-3. Run coverage validation (SEC filings, news, analyst ratings)
-4. Claude relevance scoring against validation points
-5. Create triage records for high-relevance content
-6. Enable contingencies (Phase C/D) only if validation reveals gaps
-- Effort: ~1 week
+**Implementation Details**:
+- Dual-query approach: wide ("Company TICKER news") + narrow (with keywords) per thesis
+- 20 results per query (10 wide + 10 narrow) for comprehensive coverage
+- Claude analysis with structured JSON output (summary, key findings, VP matching)
+- Severity/urgency classification based on VP importance + evidence type
+- ~$0.60/month cost for 20 theses
 
 **Why This Helps**:
 - Automated monitoring across all data sources
@@ -612,34 +614,37 @@ These items complement Phase 3 but remain separate:
 ## Quick Reference: Next Steps
 
 **Recently Completed**:
+- **Phase 3.2D (Multi-Source Data Integration)** ✅
+  - Perplexity Search API integration (dual-query approach)
+  - Claude relevance scoring and VP matching
+  - Triage record creation with severity/urgency
+  - `thesis_triage_records` table migrated
+  - End-to-end tested with GLW thesis
 - Phase 3.2D-A (Monitoring Infrastructure + Quantitative Sources) ✅
-  - `thesis_monitoring_configs` table
-  - `daily-thesis-monitoring.ts` skeleton
-  - Price/IV + FRED threshold checking
 - Phase 3.1 (Thesis Synthesis MVP) ✅
 - Phase 3.2A-B (Validation Assessment Workflow + Status UI) ✅
 
-**In Progress**:
-- **Phase 3.2D-B: Perplexity Search API Integration** 🎯
-  - Primary discovery layer (~$1-3/month vs multi-source complexity)
-  - Coverage validation (SEC filings, news, analyst ratings)
-  - Claude relevance scoring
-  - Contingency phases (SEC EDGAR, Finnhub) only if gaps found
-  - See spec: Section 3.4 "Content Source Implementation Guide"
+**Next Up**:
+- **Phase 3.2E: Master Orchestration** 🎯
+  - GitHub Actions daily workflow for `daily-thesis-monitoring.ts`
+  - Unified summary reporting
+  - Alert aggregation and notification
+  - Thesis triage UI integration
 
 **Strategic Horizon** (Tier 2 - Phase 3: Thesis Synthesis & Monitoring):
 - **Phase 3.1 (MVP)**: ✅ Complete
 - **Phase 3.2A-B**: ✅ Validation Assessment + Status UI
-- **Phase 3.2D**: 🚧 Content Sources (Phase A complete, B next)
-- **Phase 3.2E**: 💡 Master Orchestration (GitHub Actions)
+- **Phase 3.2D**: ✅ Content Sources (Perplexity + Analysis Pipeline)
+- **Phase 3.2E**: 🎯 Master Orchestration (GitHub Actions)
 - **Phase 3.3**: 💡 News & Narratives (advanced features)
 - **Parallel**: Performance Attribution (#ENH-027), Claim Invalidation (#ENH-028)
 
 **Simplified Content Source Architecture**:
 | Layer | Source | Status | Cost |
 |-------|--------|--------|------|
-| **Discovery** | Perplexity Search API | 🎯 Next | ~$1-3/mo |
-| **Quantitative** | Price/IV + FRED | ✅ | Free |
+| **Discovery** | Perplexity Search API | ✅ Complete | ~$0.60/mo |
+| **Analysis** | Claude Relevance Scoring | ✅ Complete | ~$1-2/mo |
+| **Quantitative** | Price/IV + FRED | ✅ Complete | Free |
 | **Contingency** | SEC EDGAR RSS | If needed | Free |
 | **Contingency** | Finnhub | If needed | Free |
 

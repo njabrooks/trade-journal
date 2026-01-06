@@ -4,30 +4,49 @@
  * Checks thesis monitoring configs against current data:
  * - Price/IV thresholds for asset theses (from underlyings_iv_history)
  * - FRED thresholds for macro theses (via direct FRED API)
- * - News/developments via Perplexity Search API (batched multi-query)
+ * - News/developments via Perplexity Search API (dual-query batching)
  *
  * Usage:
  *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts
  *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts --dry-run
  *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts --news-only
  *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts --verbose
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts --save-results
+ *   DOTENV_CONFIG_PATH=.env.local npx tsx scripts/daily-thesis-monitoring.ts --analyze
  *
- * Optimization Strategy (Strategy B):
+ * Flags:
+ *   --dry-run      Don't update database timestamps or create triage records
+ *   --news-only    Skip threshold checks, only run news monitoring
+ *   --verbose      Show detailed API request/response info
+ *   --save-results Save full results to JSON file for manual review
+ *   --analyze      Run Claude analysis pipeline to match results to validation points
+ *
+ * Dual-Query Strategy (Option B):
+ *   - Run BOTH wide (simple) and narrow (keyword-rich) queries per thesis
+ *   - Wide queries catch general news (M&A, regulatory, earnings)
+ *   - Narrow queries catch thesis-specific developments
  *   - Batch up to 5 queries per API call ($5/1K requests, no token cost)
- *   - Use recency filter to get only recent news (day/week)
- *   - Match results back to theses via keyword matching
- *   - Analyze snippets for validation point relevance
+ *   - Track coverage stats to optimize query strategy over time
  *
- * Cost estimate: 20 theses ÷ 5 per batch = 4 requests/day = ~$0.60/month
+ * Cost estimate: 20 theses × 2 queries ÷ 5 per batch = 8 requests/day = ~$1.20/month
+ * Results: Up to 20 results per query (40 per thesis), same API cost
  *
  * Spec: docs/features/thesis-synthesis-monitoring.md Section 3.4
  */
 
 import { db, closeDb, schema } from './lib/db.js';
-import { eq, sql } from 'drizzle-orm';
-import type { ExplicitThreshold, ThesisMonitoringSources, ThesisSearchConfig } from '../src/db/schema.js';
+import { eq, sql, inArray } from 'drizzle-orm';
+import type {
+  ExplicitThreshold,
+  ThesisMonitoringSources,
+  ThesisSearchConfig,
+  TriageContentSummary,
+  TriageAIAnalysis,
+  TriageMatchedResult,
+} from '../src/db/schema.js';
+import Anthropic from '@anthropic-ai/sdk';
 
-const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints } = schema;
+const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints, thesisTriageRecords } = schema;
 
 // ============================================================================
 // Types
@@ -65,8 +84,9 @@ interface ThesisSearchContext {
   thesisTitle: string;
   ticker?: string;
   companyName?: string;
-  query: string;
-  keywords: string[];  // For result matching
+  wideQuery: string;    // Simple discovery query
+  narrowQuery: string;  // Keyword-rich targeted query
+  keywords: string[];   // For result matching
   validationPointStatements: string[];  // For relevance scoring
 }
 
@@ -75,6 +95,7 @@ interface MatchedResult extends PerplexitySearchResult {
   matchScore: number;
   matchedKeywords: string[];
   isRecent: boolean;
+  queryType: 'wide' | 'narrow';  // Track which query found this result
 }
 
 interface NewsCheckResult {
@@ -83,10 +104,18 @@ interface NewsCheckResult {
   thesisType: 'macro' | 'asset';
   thesisTitle: string;
   ticker?: string;
-  query: string;
+  wideQuery: string;      // Simple discovery query
+  narrowQuery: string;    // Keyword-rich targeted query
   matchedResults: MatchedResult[];
   hasRelevantNews: boolean;
   summary: string;
+  // Coverage stats for analysis
+  coverage: {
+    wideOnlyCount: number;    // Results found ONLY by wide query
+    narrowOnlyCount: number;  // Results found ONLY by narrow query
+    overlapCount: number;     // Results found by BOTH queries
+    totalUnique: number;      // Total unique results
+  };
 }
 
 interface MonitoringRunResult {
@@ -207,50 +236,67 @@ async function searchPerplexityBatch(
 // ============================================================================
 
 /**
- * Build a search query optimized for Perplexity Search API
+ * Build BOTH wide and narrow search queries for Perplexity Search API
  *
- * Query Design Principles:
- * 1. SPECIFICITY: Include company name AND ticker for disambiguation
- * 2. KEYWORDS: Add 3-5 topic keywords to focus results
- * 3. RECENCY SIGNAL: Add "news" to bias toward recent content
- * 4. AVOID OVER-SPECIFICATION: Too many terms reduces recall
+ * Query Design Principles (Updated based on empirical testing):
  *
- * Examples:
- *   Asset thesis: "Corning GLW optical fiber AI infrastructure news"
- *   Macro thesis: "Fed interest rates inflation employment news"
+ * DUAL-QUERY APPROACH (Option B):
+ *   - Run BOTH wide (simple) and narrow (keyword-rich) queries
+ *   - Wide catches general company news (M&A, regulatory, earnings)
+ *   - Narrow catches thesis-specific developments
+ *   - Overlap analysis helps refine future query strategy
+ *
+ * Testing showed (test-perplexity-query-styles.ts):
+ *   - "Corning Inc GLW news" and "Corning Inc GLW optical display glass hemlock solar news"
+ *     both return 10 results but with only 4 overlapping articles
+ *   - Running both ensures we don't miss important news either way
+ *
+ * Cost impact: 2x queries per thesis, still ~$6/month for 20 theses
  */
-function buildSearchQuery(context: {
+function buildSearchQueries(context: {
   ticker?: string;
   companyName?: string;
   keywords: string[];
   thesisType: 'macro' | 'asset';
-}): string {
+}): { wide: string; narrow: string } {
   const { ticker, companyName, keywords, thesisType } = context;
 
-  // Filter out ticker and company name from keywords (they'll be added separately)
-  const tickerLower = ticker?.toLowerCase();
-  const companyLower = companyName?.toLowerCase();
-  const filteredKeywords = keywords.filter(k => {
-    const kLower = k.toLowerCase();
-    return kLower !== tickerLower && kLower !== companyLower;
-  });
-
-  // Take top 4 unique keywords
-  const topKeywords = filteredKeywords.slice(0, 4).join(' ');
-
   if (thesisType === 'asset' && ticker) {
-    // Asset thesis: "CompanyName TICKER keyword1 keyword2 news"
     const entity = companyName || ticker;
-    return `${entity} ${ticker} ${topKeywords} news`.trim().replace(/\s+/g, ' ');
+
+    // WIDE: Simple discovery query
+    const wide = `${entity} ${ticker} news`;
+
+    // NARROW: Add thesis-specific keywords
+    const filteredKeywords = keywords.filter(k =>
+      k && k.trim().length > 2 &&
+      k.toLowerCase() !== ticker.toLowerCase() &&
+      k.toLowerCase() !== (companyName?.toLowerCase() || '')
+    );
+    const topKeywords = filteredKeywords.slice(0, 4).join(' ');
+    const narrow = topKeywords
+      ? `${entity} ${ticker} ${topKeywords} news`
+      : wide;  // Fall back to wide if no keywords
+
+    return { wide, narrow };
   }
 
   if (thesisType === 'macro') {
-    // Macro thesis: "keyword1 keyword2 keyword3 news"
-    const macroKeywords = topKeywords || 'economic Fed policy market';
-    return `${macroKeywords} news`.trim().replace(/\s+/g, ' ');
+    // Macro thesis: Both queries need keywords, but narrow has more
+    const filteredKeywords = keywords.filter(k => k && k.trim().length > 0);
+
+    // WIDE: Top 2 keywords only
+    const wideKeywords = filteredKeywords.slice(0, 2).join(' ') || 'economic market';
+    const wide = `${wideKeywords} news`;
+
+    // NARROW: Top 5 keywords
+    const narrowKeywords = filteredKeywords.slice(0, 5).join(' ') || 'economic Fed policy market rates';
+    const narrow = `${narrowKeywords} news`;
+
+    return { wide, narrow };
   }
 
-  return 'financial markets news';
+  return { wide: 'financial markets news', narrow: 'financial markets news' };
 }
 
 /**
@@ -362,14 +408,15 @@ function scoreResultMatch(
 }
 
 /**
- * Match search results to theses
+ * Match search results to theses with query type tracking
  *
  * Since multi-query returns a flat array, we score each result
  * against each thesis and assign to the best match.
  */
 function matchResultsToTheses(
   results: PerplexitySearchResult[],
-  contexts: ThesisSearchContext[]
+  contexts: ThesisSearchContext[],
+  queryType: 'wide' | 'narrow'
 ): Map<string, MatchedResult[]> {
   const matchesByThesis = new Map<string, MatchedResult[]>();
 
@@ -398,6 +445,7 @@ function matchResultsToTheses(
         matchScore: bestMatch.score,
         matchedKeywords: bestMatch.keywords,
         isRecent: isRecentDate(result.date, 3),
+        queryType,  // Track which query found this
       };
       matchesByThesis.get(bestMatch.thesisId)!.push(matched);
     }
@@ -416,9 +464,13 @@ function matchResultsToTheses(
 // ============================================================================
 
 /**
- * Process news monitoring for a batch of theses
+ * Process news monitoring for a batch of theses using DUAL-QUERY approach
  *
- * This is the core optimization: batch up to 5 theses into a single API call
+ * Runs both WIDE (simple) and NARROW (keyword-rich) queries for each thesis
+ * to maximize coverage. Tracks which results came from which query type
+ * for analysis and optimization.
+ *
+ * Cost impact: 2x API calls, but still ~$6/month for 20 theses
  */
 async function checkNewsBatch(
   configs: Array<typeof thesisMonitoringConfigs.$inferSelect>,
@@ -439,12 +491,12 @@ async function checkNewsBatch(
     return { results: [], apiCalls: 0 };
   }
 
-  // Build search contexts for each config
+  // Build search contexts with BOTH wide and narrow queries
   const contexts: ThesisSearchContext[] = newsConfigs.map(config => {
     const thesisTitle = thesisTitles.get(config.thesisId) || 'Unknown';
     const keywords = extractKeywords(config, thesisTitle);
 
-    const query = buildSearchQuery({
+    const { wide, narrow } = buildSearchQueries({
       ticker: config.ticker ?? undefined,
       companyName: config.companyName ?? undefined,
       keywords,
@@ -458,94 +510,168 @@ async function checkNewsBatch(
       thesisTitle,
       ticker: config.ticker ?? undefined,
       companyName: config.companyName ?? undefined,
-      query,
+      wideQuery: wide,
+      narrowQuery: narrow,
       keywords,
       validationPointStatements: [],  // TODO: Load from validation_points table
     };
   });
 
-  // Batch into groups of 5
+  // Track results by thesis and query type
+  const wideResultsByThesis = new Map<string, MatchedResult[]>();
+  const narrowResultsByThesis = new Map<string, MatchedResult[]>();
+
+  for (const ctx of contexts) {
+    wideResultsByThesis.set(ctx.thesisId, []);
+    narrowResultsByThesis.set(ctx.thesisId, []);
+  }
+
+  // Batch into groups of 5 queries each
   const BATCH_SIZE = 5;
+
+  // =========================================================================
+  // Phase A: Run WIDE queries
+  // =========================================================================
+  console.log(`\n  🌐 Running WIDE queries (discovery-focused):`);
+
   for (let i = 0; i < contexts.length; i += BATCH_SIZE) {
     const batch = contexts.slice(i, i + BATCH_SIZE);
-    const queries = batch.map(ctx => ctx.query);
+    const queries = batch.map(ctx => ctx.wideQuery);
 
-    console.log(`\n  📡 API Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${queries.length} queries`);
+    console.log(`\n  📡 Wide Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${queries.length} queries`);
     for (const ctx of batch) {
-      console.log(`     - ${ctx.thesisTitle}: "${ctx.query}"`);
+      console.log(`     - ${ctx.thesisTitle}: "${ctx.wideQuery}"`);
     }
 
-    // Execute batch search
     const response = await searchPerplexityBatch(queries, {
-      maxResultsPerQuery: 5,
+      maxResultsPerQuery: 20,  // Max 20 per query, same API cost
       recencyFilter: 'day',
       maxTokensPerPage: 2048,
     });
     apiCalls++;
 
-    if (!response) {
-      // API call failed, create empty results
-      for (const ctx of batch) {
-        newsResults.push({
-          configId: ctx.configId,
-          thesisId: ctx.thesisId,
-          thesisType: ctx.thesisType,
-          thesisTitle: ctx.thesisTitle,
-          ticker: ctx.ticker,
-          query: ctx.query,
-          matchedResults: [],
-          hasRelevantNews: false,
-          summary: 'API call failed',
-        });
+    if (response) {
+      console.log(`     ✓ ${response.results.length} total results`);
+      const matches = matchResultsToTheses(response.results, batch, 'wide');
+      for (const [thesisId, results] of matches) {
+        wideResultsByThesis.set(thesisId, results);
       }
-      continue;
+    } else {
+      console.log(`     ❌ API call failed`);
     }
 
-    console.log(`     ✓ ${response.results.length} total results`);
+    // Rate limit delay
+    await new Promise(r => setTimeout(r, 300));
+  }
 
-    // Match results to theses
-    const matchesByThesis = matchResultsToTheses(response.results, batch);
+  // =========================================================================
+  // Phase B: Run NARROW queries
+  // =========================================================================
+  console.log(`\n  🎯 Running NARROW queries (thesis-specific):`);
 
-    // Create news results for each thesis in batch
+  for (let i = 0; i < contexts.length; i += BATCH_SIZE) {
+    const batch = contexts.slice(i, i + BATCH_SIZE);
+    const queries = batch.map(ctx => ctx.narrowQuery);
+
+    console.log(`\n  📡 Narrow Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${queries.length} queries`);
     for (const ctx of batch) {
-      const matches = matchesByThesis.get(ctx.thesisId) || [];
-      const recentMatches = matches.filter(m => m.isRecent);
+      console.log(`     - ${ctx.thesisTitle}: "${ctx.narrowQuery}"`);
+    }
 
-      const hasRelevantNews = recentMatches.length > 0 || matches.length >= 2;
+    const response = await searchPerplexityBatch(queries, {
+      maxResultsPerQuery: 20,  // Max 20 per query, same API cost
+      recencyFilter: 'day',
+      maxTokensPerPage: 2048,
+    });
+    apiCalls++;
 
-      let summary = 'No relevant results';
-      if (matches.length > 0) {
-        summary = matches.slice(0, 2).map(m => m.title).join(' | ');
-        if (summary.length > 150) {
-          summary = summary.substring(0, 147) + '...';
-        }
+    if (response) {
+      console.log(`     ✓ ${response.results.length} total results`);
+      const matches = matchResultsToTheses(response.results, batch, 'narrow');
+      for (const [thesisId, results] of matches) {
+        narrowResultsByThesis.set(thesisId, results);
       }
+    } else {
+      console.log(`     ❌ API call failed`);
+    }
 
-      newsResults.push({
-        configId: ctx.configId,
-        thesisId: ctx.thesisId,
-        thesisType: ctx.thesisType,
-        thesisTitle: ctx.thesisTitle,
-        ticker: ctx.ticker,
-        query: ctx.query,
-        matchedResults: matches,
-        hasRelevantNews,
-        summary,
-      });
+    // Rate limit delay
+    if (i + BATCH_SIZE < contexts.length) {
+      await new Promise(r => setTimeout(r, 300));
+    }
+  }
 
-      if (VERBOSE && matches.length > 0) {
-        console.log(`\n     [${ctx.thesisTitle}] ${matches.length} matched results:`);
-        for (const m of matches.slice(0, 3)) {
-          console.log(`       📄 ${m.title}`);
-          console.log(`          Score: ${m.matchScore} | Keywords: ${m.matchedKeywords.join(', ')}`);
-          console.log(`          Date: ${m.date || 'unknown'} | Recent: ${m.isRecent}`);
-        }
+  // =========================================================================
+  // Phase C: Merge and deduplicate results, compute coverage stats
+  // =========================================================================
+  console.log(`\n  📊 Computing coverage statistics...`);
+
+  for (const ctx of contexts) {
+    const wideResults = wideResultsByThesis.get(ctx.thesisId) || [];
+    const narrowResults = narrowResultsByThesis.get(ctx.thesisId) || [];
+
+    // Deduplicate by URL
+    const urlToResult = new Map<string, MatchedResult>();
+    const wideUrls = new Set<string>();
+    const narrowUrls = new Set<string>();
+
+    for (const r of wideResults) {
+      urlToResult.set(r.url, r);
+      wideUrls.add(r.url);
+    }
+
+    for (const r of narrowResults) {
+      if (!urlToResult.has(r.url)) {
+        urlToResult.set(r.url, r);
+      }
+      narrowUrls.add(r.url);
+    }
+
+    // Compute coverage stats
+    const overlap = [...wideUrls].filter(u => narrowUrls.has(u));
+    const wideOnly = [...wideUrls].filter(u => !narrowUrls.has(u));
+    const narrowOnly = [...narrowUrls].filter(u => !wideUrls.has(u));
+
+    const coverage = {
+      wideOnlyCount: wideOnly.length,
+      narrowOnlyCount: narrowOnly.length,
+      overlapCount: overlap.length,
+      totalUnique: urlToResult.size,
+    };
+
+    // Merge all results sorted by score
+    const allResults = [...urlToResult.values()].sort((a, b) => b.matchScore - a.matchScore);
+    const recentMatches = allResults.filter(m => m.isRecent);
+    const hasRelevantNews = recentMatches.length > 0 || allResults.length >= 2;
+
+    let summary = 'No relevant results';
+    if (allResults.length > 0) {
+      summary = allResults.slice(0, 2).map(m => m.title).join(' | ');
+      if (summary.length > 150) {
+        summary = summary.substring(0, 147) + '...';
       }
     }
 
-    // Small delay between batches to respect rate limits
-    if (i + BATCH_SIZE < contexts.length) {
-      await new Promise(r => setTimeout(r, 500));
+    newsResults.push({
+      configId: ctx.configId,
+      thesisId: ctx.thesisId,
+      thesisType: ctx.thesisType,
+      thesisTitle: ctx.thesisTitle,
+      ticker: ctx.ticker,
+      wideQuery: ctx.wideQuery,
+      narrowQuery: ctx.narrowQuery,
+      matchedResults: allResults,
+      hasRelevantNews,
+      summary,
+      coverage,
+    });
+
+    if (VERBOSE && allResults.length > 0) {
+      console.log(`\n     [${ctx.thesisTitle}] Coverage: ${coverage.totalUnique} unique (W:${coverage.wideOnlyCount} N:${coverage.narrowOnlyCount} O:${coverage.overlapCount})`);
+      for (const m of allResults.slice(0, 3)) {
+        console.log(`       📄 [${m.queryType.toUpperCase()}] ${m.title}`);
+        console.log(`          Score: ${m.matchScore} | Keywords: ${m.matchedKeywords.join(', ')}`);
+      }
     }
   }
 
@@ -865,11 +991,12 @@ async function runMonitoring(dryRun: boolean = false, newsOnly: boolean = false)
     console.log('\n📰 NEWS HIGHLIGHTS:');
     for (const news of newsWithContent) {
       console.log(`\n  • ${news.thesisTitle}${news.ticker ? ` (${news.ticker})` : ''}`);
-      console.log(`    Query: "${news.query}"`);
-      console.log(`    Matched: ${news.matchedResults.length} results`);
+      console.log(`    Wide Query: "${news.wideQuery}"`);
+      console.log(`    Narrow Query: "${news.narrowQuery}"`);
+      console.log(`    Coverage: ${news.coverage.totalUnique} unique (Wide-only: ${news.coverage.wideOnlyCount}, Narrow-only: ${news.coverage.narrowOnlyCount}, Overlap: ${news.coverage.overlapCount})`);
       if (news.matchedResults.length > 0) {
-        for (const r of news.matchedResults.slice(0, 2)) {
-          console.log(`    - ${r.title}`);
+        for (const r of news.matchedResults.slice(0, 3)) {
+          console.log(`    - [${r.queryType.toUpperCase()}] ${r.title}`);
           console.log(`      ${r.url}`);
           console.log(`      Score: ${r.matchScore} | Keywords: ${r.matchedKeywords.join(', ')}`);
         }
@@ -877,7 +1004,477 @@ async function runMonitoring(dryRun: boolean = false, newsOnly: boolean = false)
     }
   }
 
+  // Coverage analysis across all theses
+  const totalWideOnly = result.newsResults.reduce((sum, n) => sum + n.coverage.wideOnlyCount, 0);
+  const totalNarrowOnly = result.newsResults.reduce((sum, n) => sum + n.coverage.narrowOnlyCount, 0);
+  const totalOverlap = result.newsResults.reduce((sum, n) => sum + n.coverage.overlapCount, 0);
+  const totalUnique = result.newsResults.reduce((sum, n) => sum + n.coverage.totalUnique, 0);
+
+  console.log('\n📈 COVERAGE ANALYSIS:');
+  console.log(`  Total unique results: ${totalUnique}`);
+  console.log(`  Wide-only results: ${totalWideOnly} (${totalUnique > 0 ? ((totalWideOnly/totalUnique)*100).toFixed(1) : 0}%)`);
+  console.log(`  Narrow-only results: ${totalNarrowOnly} (${totalUnique > 0 ? ((totalNarrowOnly/totalUnique)*100).toFixed(1) : 0}%)`);
+  console.log(`  Overlap: ${totalOverlap} (${totalUnique > 0 ? ((totalOverlap/totalUnique)*100).toFixed(1) : 0}%)`);
+
+  if (totalWideOnly > totalNarrowOnly * 2) {
+    console.log(`\n  💡 Wide queries are finding significantly more unique results.`);
+    console.log(`     Consider simplifying narrow queries or reviewing wide-only results.`);
+  } else if (totalNarrowOnly > totalWideOnly * 2) {
+    console.log(`\n  💡 Narrow queries are finding significantly more unique results.`);
+    console.log(`     Thesis-specific keywords are highly effective.`);
+  }
+
   return result;
+}
+
+// ============================================================================
+// Analysis Pipeline: Claude Relevance Scoring & VP Matching
+// ============================================================================
+
+interface ValidationPointInfo {
+  id: string;
+  statement: string;
+  type: 'validation' | 'invalidation';
+  importance: string;
+  timeframe?: string;
+}
+
+interface AnalysisResult {
+  thesisId: string;
+  thesisTitle: string;
+  ticker?: string;
+  validationPoints: ValidationPointInfo[];
+  relevantResults: MatchedResult[];
+  aiAnalysis: TriageAIAnalysis;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  urgency: 'immediate' | 'today' | 'this_week' | 'when_convenient';
+}
+
+/**
+ * Load validation points for a thesis
+ */
+async function loadValidationPoints(thesisId: string, thesisType: 'macro' | 'asset'): Promise<ValidationPointInfo[]> {
+  const points = await db
+    .select({
+      id: validationPoints.id,
+      statement: validationPoints.statement,
+      type: validationPoints.type,
+      importance: validationPoints.importance,
+      timeframe: validationPoints.timeframe,
+    })
+    .from(validationPoints)
+    .where(eq(validationPoints.thesisId, thesisId));
+
+  return points.map(p => ({
+    id: p.id,
+    statement: p.statement,
+    type: p.type as 'validation' | 'invalidation',
+    importance: p.importance || 'significant',
+    timeframe: p.timeframe || undefined,
+  }));
+}
+
+/**
+ * Use Claude to analyze matched results against validation points
+ *
+ * Returns structured analysis with:
+ * - Summary of findings
+ * - Which validation points are affected
+ * - Key findings and recommended next steps
+ */
+async function analyzeResultsWithClaude(
+  thesisTitle: string,
+  ticker: string | undefined,
+  validationPoints: ValidationPointInfo[],
+  results: MatchedResult[]
+): Promise<TriageAIAnalysis> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.warn('ANTHROPIC_API_KEY not set, skipping Claude analysis');
+    return createFallbackAnalysis(results);
+  }
+
+  if (results.length === 0) {
+    return {
+      summary: 'No relevant news found for this thesis.',
+      validationPointsAffected: [],
+      keyFindings: [],
+      suggestedNextSteps: [],
+    };
+  }
+
+  const anthropic = new Anthropic({ apiKey });
+
+  // Build the prompt
+  const vpList = validationPoints.map((vp, i) =>
+    `VP-${i + 1} [${vp.type.toUpperCase()}] (${vp.importance}): ${vp.statement}`
+  ).join('\n');
+
+  const resultsList = results.slice(0, 10).map((r, i) =>
+    `[${i + 1}] ${r.title}\nURL: ${r.url}\nDate: ${r.date || 'unknown'}\nSnippet: ${r.snippet.substring(0, 500)}...`
+  ).join('\n\n');
+
+  const prompt = `You are analyzing news results for investment thesis monitoring.
+
+THESIS: ${thesisTitle}${ticker ? ` (${ticker})` : ''}
+
+VALIDATION POINTS TO CHECK:
+${vpList || 'No validation points defined yet.'}
+
+NEWS RESULTS TO ANALYZE:
+${resultsList}
+
+TASK: Analyze these news results and determine:
+1. A 2-3 sentence executive summary of what's happening
+2. Which validation points (if any) have relevant evidence
+3. Key findings (bullet points)
+4. Suggested next steps for the user
+
+For each affected validation point, classify the evidence as:
+- strong_validation: Clear evidence supporting the validation point
+- weak_validation: Some evidence that may support validation
+- neutral: Mentioned but no clear directional evidence
+- weak_invalidation: Some evidence that may challenge the thesis
+- strong_invalidation: Clear evidence that challenges the thesis
+
+Respond in JSON format:
+{
+  "summary": "Executive summary here",
+  "validationPointsAffected": [
+    {
+      "pointIndex": 1,
+      "evidenceType": "weak_validation",
+      "confidence": "medium",
+      "recommendedAction": "Monitor for confirmation"
+    }
+  ],
+  "keyFindings": ["Finding 1", "Finding 2"],
+  "suggestedNextSteps": ["Step 1", "Step 2"]
+}
+
+If no validation points are affected, return an empty array for validationPointsAffected.
+Only include validation points that have actual relevant evidence in the news results.`;
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const content = response.content[0];
+    if (content.type !== 'text') {
+      return createFallbackAnalysis(results);
+    }
+
+    // Parse JSON response
+    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return createFallbackAnalysis(results);
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    // Map point indices back to actual point IDs
+    const affected = (parsed.validationPointsAffected || []).map((vpa: {
+      pointIndex: number;
+      evidenceType: string;
+      confidence: string;
+      recommendedAction: string;
+    }) => {
+      const vp = validationPoints[vpa.pointIndex - 1];
+      if (!vp) return null;
+      return {
+        pointId: vp.id,
+        pointStatement: vp.statement,
+        evidenceType: vpa.evidenceType as TriageAIAnalysis['validationPointsAffected'][0]['evidenceType'],
+        confidence: vpa.confidence as 'high' | 'medium' | 'low',
+        recommendedAction: vpa.recommendedAction,
+      };
+    }).filter(Boolean);
+
+    return {
+      summary: parsed.summary || 'Analysis complete.',
+      validationPointsAffected: affected,
+      keyFindings: parsed.keyFindings || [],
+      suggestedNextSteps: parsed.suggestedNextSteps || [],
+    };
+  } catch (error) {
+    console.error('Claude analysis error:', error);
+    return createFallbackAnalysis(results);
+  }
+}
+
+/**
+ * Create fallback analysis when Claude is unavailable
+ */
+function createFallbackAnalysis(results: MatchedResult[]): TriageAIAnalysis {
+  return {
+    summary: `Found ${results.length} potentially relevant news items. Manual review recommended.`,
+    validationPointsAffected: [],
+    keyFindings: results.slice(0, 3).map(r => r.title),
+    suggestedNextSteps: ['Review news items manually', 'Check if any validation points are affected'],
+  };
+}
+
+/**
+ * Determine severity and urgency based on analysis
+ */
+function classifyTriage(
+  analysis: TriageAIAnalysis,
+  validationPoints: ValidationPointInfo[]
+): { severity: AnalysisResult['severity']; urgency: AnalysisResult['urgency'] } {
+  // Default to info/when_convenient
+  let severity: AnalysisResult['severity'] = 'info';
+  let urgency: AnalysisResult['urgency'] = 'when_convenient';
+
+  for (const affected of analysis.validationPointsAffected) {
+    const vp = validationPoints.find(p => p.id === affected.pointId);
+    const importance = vp?.importance || 'supporting';
+
+    // Classification based on evidence type and importance
+    if (affected.evidenceType === 'strong_invalidation') {
+      if (importance === 'critical') {
+        severity = 'critical';
+        urgency = 'immediate';
+        break;  // Can't get worse
+      } else {
+        severity = severity === 'critical' ? 'critical' : 'high';
+        urgency = urgency === 'immediate' ? 'immediate' : 'today';
+      }
+    } else if (affected.evidenceType === 'strong_validation' && importance === 'critical') {
+      severity = severity === 'critical' ? 'critical' : 'high';
+      urgency = urgency === 'immediate' ? 'immediate' : 'today';
+    } else if (affected.evidenceType === 'weak_invalidation' && importance === 'critical') {
+      severity = ['critical', 'high'].includes(severity) ? severity : 'high';
+      urgency = ['immediate', 'today'].includes(urgency) ? urgency : 'this_week';
+    } else if (['weak_validation', 'weak_invalidation'].includes(affected.evidenceType)) {
+      severity = ['critical', 'high', 'medium'].includes(severity) ? severity : 'medium';
+      urgency = ['immediate', 'today', 'this_week'].includes(urgency) ? urgency : 'this_week';
+    } else {
+      severity = severity === 'info' ? 'low' : severity;
+    }
+  }
+
+  // If we have results but no VP matches, still flag as low priority
+  if (analysis.validationPointsAffected.length === 0 && analysis.keyFindings.length > 0) {
+    severity = 'low';
+    urgency = 'when_convenient';
+  }
+
+  return { severity, urgency };
+}
+
+/**
+ * Create triage record in database
+ */
+async function createTriageRecord(
+  newsResult: NewsCheckResult,
+  validationPointsList: ValidationPointInfo[],
+  analysis: TriageAIAnalysis,
+  severity: AnalysisResult['severity'],
+  urgency: AnalysisResult['urgency']
+): Promise<string | null> {
+  const contentSummary: TriageContentSummary = {
+    totalItemsScanned: newsResult.coverage.totalUnique,
+    relevantItemsFound: newsResult.matchedResults.length,
+    sources: [...new Set(newsResult.matchedResults.map(r => new URL(r.url).hostname))],
+    dateRange: {
+      from: new Date().toISOString().split('T')[0],
+      to: new Date().toISOString().split('T')[0],
+    },
+  };
+
+  const matchedResults: TriageMatchedResult[] = newsResult.matchedResults.map(r => ({
+    url: r.url,
+    title: r.title,
+    snippet: r.snippet.substring(0, 500),
+    date: r.date,
+    queryType: r.queryType,
+    matchScore: r.matchScore,
+    matchedKeywords: r.matchedKeywords,
+  }));
+
+  try {
+    const [record] = await db.insert(thesisTriageRecords).values({
+      thesisId: newsResult.thesisId,
+      thesisType: newsResult.thesisType,
+      thesisTitle: newsResult.thesisTitle,
+      triggerType: 'scheduled_monitoring',
+      triggerSource: 'daily_news_scan',
+      contentSummary,
+      aiAnalysis: analysis,
+      matchedResults,
+      severity,
+      urgency,
+      status: 'pending',
+    }).returning({ id: thesisTriageRecords.id });
+
+    return record.id;
+  } catch (error) {
+    console.error('Error creating triage record:', error);
+    return null;
+  }
+}
+
+/**
+ * Run analysis pipeline for news results
+ *
+ * For each thesis with relevant news:
+ * 1. Load validation points
+ * 2. Run Claude analysis
+ * 3. Classify severity/urgency
+ * 4. Create triage record
+ */
+async function runAnalysisPipeline(
+  newsResults: NewsCheckResult[],
+  dryRun: boolean
+): Promise<{ analyzed: number; triageCreated: number; errors: string[] }> {
+  const stats = { analyzed: 0, triageCreated: 0, errors: [] as string[] };
+
+  // Filter to theses with relevant news
+  const relevantResults = newsResults.filter(nr => nr.hasRelevantNews && nr.matchedResults.length > 0);
+
+  if (relevantResults.length === 0) {
+    console.log('\n  No relevant news to analyze');
+    return stats;
+  }
+
+  console.log(`\n  🔬 Analyzing ${relevantResults.length} theses with relevant news...`);
+
+  for (const newsResult of relevantResults) {
+    try {
+      console.log(`\n     [${newsResult.thesisTitle}]`);
+
+      // Load validation points
+      const vps = await loadValidationPoints(newsResult.thesisId, newsResult.thesisType);
+      console.log(`     Validation points: ${vps.length}`);
+
+      // Run Claude analysis
+      console.log(`     Running Claude analysis...`);
+      const analysis = await analyzeResultsWithClaude(
+        newsResult.thesisTitle,
+        newsResult.ticker,
+        vps,
+        newsResult.matchedResults
+      );
+      stats.analyzed++;
+
+      // Classify severity/urgency
+      const { severity, urgency } = classifyTriage(analysis, vps);
+      console.log(`     Classification: ${severity}/${urgency}`);
+      console.log(`     Summary: ${analysis.summary.substring(0, 100)}...`);
+
+      if (analysis.validationPointsAffected.length > 0) {
+        console.log(`     Affected VPs: ${analysis.validationPointsAffected.length}`);
+        for (const vpa of analysis.validationPointsAffected.slice(0, 3)) {
+          console.log(`       - [${vpa.evidenceType}] ${vpa.pointStatement.substring(0, 60)}...`);
+        }
+      }
+
+      // Create triage record
+      if (!dryRun) {
+        const triageId = await createTriageRecord(newsResult, vps, analysis, severity, urgency);
+        if (triageId) {
+          stats.triageCreated++;
+          console.log(`     ✅ Created triage record: ${triageId.substring(0, 8)}...`);
+        }
+      } else {
+        console.log(`     [DRY-RUN] Would create triage record`);
+      }
+
+      // Rate limit for Claude API
+      await new Promise(r => setTimeout(r, 500));
+
+    } catch (error) {
+      const errMsg = `Analysis error for ${newsResult.thesisTitle}: ${error}`;
+      console.error(`     ❌ ${errMsg}`);
+      stats.errors.push(errMsg);
+    }
+  }
+
+  return stats;
+}
+
+// ============================================================================
+// Result Storage for Manual Review
+// ============================================================================
+
+interface SavedMonitoringResult {
+  timestamp: string;
+  configsChecked: number;
+  apiCallsMade: number;
+  coverageAnalysis: {
+    totalUnique: number;
+    wideOnly: number;
+    narrowOnly: number;
+    overlap: number;
+  };
+  theses: Array<{
+    thesisId: string;
+    thesisTitle: string;
+    ticker?: string;
+    thesisType: string;
+    wideQuery: string;
+    narrowQuery: string;
+    coverage: {
+      wideOnlyCount: number;
+      narrowOnlyCount: number;
+      overlapCount: number;
+      totalUnique: number;
+    };
+    results: Array<{
+      title: string;
+      url: string;
+      snippet: string;
+      date?: string;
+      queryType: string;
+      matchScore: number;
+      matchedKeywords: string[];
+    }>;
+  }>;
+}
+
+async function saveResultsToJson(result: MonitoringRunResult): Promise<string> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `monitoring-results-${timestamp}.json`;
+  const outputPath = path.join(process.cwd(), 'scripts', filename);
+
+  const savedResult: SavedMonitoringResult = {
+    timestamp: new Date().toISOString(),
+    configsChecked: result.configsChecked,
+    apiCallsMade: result.apiCallsMade,
+    coverageAnalysis: {
+      totalUnique: result.newsResults.reduce((sum, n) => sum + n.coverage.totalUnique, 0),
+      wideOnly: result.newsResults.reduce((sum, n) => sum + n.coverage.wideOnlyCount, 0),
+      narrowOnly: result.newsResults.reduce((sum, n) => sum + n.coverage.narrowOnlyCount, 0),
+      overlap: result.newsResults.reduce((sum, n) => sum + n.coverage.overlapCount, 0),
+    },
+    theses: result.newsResults.map(news => ({
+      thesisId: news.thesisId,
+      thesisTitle: news.thesisTitle,
+      ticker: news.ticker,
+      thesisType: news.thesisType,
+      wideQuery: news.wideQuery,
+      narrowQuery: news.narrowQuery,
+      coverage: news.coverage,
+      results: news.matchedResults.map(r => ({
+        title: r.title,
+        url: r.url,
+        snippet: r.snippet,
+        date: r.date,
+        queryType: r.queryType,
+        matchScore: r.matchScore,
+        matchedKeywords: r.matchedKeywords,
+      })),
+    })),
+  };
+
+  fs.writeFileSync(outputPath, JSON.stringify(savedResult, null, 2));
+  return outputPath;
 }
 
 // ============================================================================
@@ -889,10 +1486,35 @@ let VERBOSE = false;
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const newsOnly = process.argv.includes('--news-only');
+  const saveResults = process.argv.includes('--save-results');
+  const runAnalysis = process.argv.includes('--analyze');
   VERBOSE = process.argv.includes('--verbose');
 
   try {
     const result = await runMonitoring(dryRun, newsOnly);
+
+    // Save results to JSON if requested
+    if (saveResults && result.newsResults.length > 0) {
+      const outputPath = await saveResultsToJson(result);
+      console.log(`\n💾 Results saved to: ${outputPath}`);
+    }
+
+    // Run analysis pipeline if requested
+    if (runAnalysis && result.newsResults.length > 0) {
+      console.log('\n' + '='.repeat(60));
+      console.log('🔬 ANALYSIS PIPELINE');
+      console.log('='.repeat(60));
+
+      const analysisStats = await runAnalysisPipeline(result.newsResults, dryRun);
+
+      console.log('\n📊 ANALYSIS SUMMARY:');
+      console.log(`  Theses analyzed: ${analysisStats.analyzed}`);
+      console.log(`  Triage records created: ${analysisStats.triageCreated}`);
+      if (analysisStats.errors.length > 0) {
+        console.log(`  Analysis errors: ${analysisStats.errors.length}`);
+        result.errors.push(...analysisStats.errors);
+      }
+    }
 
     if (result.errors.length > 0) {
       console.error('\n❌ Monitoring completed with errors');

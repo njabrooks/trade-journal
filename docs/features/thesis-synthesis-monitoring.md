@@ -1395,54 +1395,62 @@ for (let i = 0; i < contexts.length; i += BATCH_SIZE) {
 
 ##### Query Design Principles
 
-**Building effective search queries** is critical for relevance. The query structure:
+**DISCOVERY-FIRST APPROACH** (Updated 2026-01-06 based on empirical testing):
 
-```
-[Company Name] [TICKER] [keyword1] [keyword2] [keyword3] [keyword4] news
-```
+Perplexity Search API uses **semantic relevance ranking**, not boolean AND matching. Testing (`test-perplexity-query-styles.ts`) revealed:
 
-**Principles**:
+| Query Style | Results | Overlap with Simple |
+|-------------|---------|---------------------|
+| `"Corning Inc GLW news"` (simple) | 10 | - |
+| `"Corning Inc GLW optical display glass hemlock solar news"` (complex) | 10 | **Only 4/10** |
 
-| Principle | Why | Example |
-|-----------|-----|---------|
-| **Include company name AND ticker** | Disambiguation (e.g., "Apple" vs "AAPL") | "Corning Inc GLW" |
-| **3-5 topic keywords** | Focus results on relevant themes | "optical fiber AI infrastructure" |
-| **Add "news"** | Bias toward recent, newsworthy content | "...news" |
-| **Avoid over-specification** | Too many terms reduces recall | Max 4 keywords |
+**Key Finding**: More keywords don't filter results—they **shift relevance ranking** toward those topics. Complex queries may miss important general news (M&A, regulatory, earnings surprises).
+
+**Recommended Approach**:
+
+| Thesis Type | Query Strategy | Example |
+|-------------|----------------|---------|
+| **Asset thesis** | Simple: Company + ticker + "news" | `"Corning Inc GLW news"` |
+| **Macro thesis** | 2-3 keywords + "news" (no ticker to anchor) | `"Fed interest rates policy news"` |
+
+**Why Simple Queries for Asset Theses**:
+- Cast wide net for ALL company news
+- Let result-matching algorithm filter by thesis relevance
+- Catch unexpected developments (litigation, regulatory, M&A)
+- Keywords used for **scoring**, not **discovery**
 
 **Query Examples**:
 
 ```typescript
-// Asset thesis for GLW:
-"Corning Inc GLW optical display glass hemlock solar news"
+// Asset thesis for GLW (SIMPLE):
+"Corning Inc GLW news"
 
-// Macro thesis for Fed policy:
-"Fed interest rates inflation employment policy news"
+// Macro thesis for Fed policy (needs keywords):
+"Fed interest rates policy news"
 
-// Crypto asset thesis:
-"Galaxy Digital GLXY crypto ETF institutional Bitcoin news"
+// Crypto asset thesis (SIMPLE):
+"Galaxy Digital GLXY news"
 ```
 
-##### Keyword Sources
+##### Keyword Sources (for Result Matching, NOT Query Building)
 
-Keywords for queries come from multiple sources, prioritized:
+Keywords are used to **score and match** results back to theses, not to build queries:
 
-| Source | Priority | Example |
-|--------|----------|---------|
-| **Ticker** | 1 (always included) | "GLW" |
-| **Company name** | 2 (always included) | "Corning Inc" |
-| **derivedKeywords** | 3 (from validation points) | ["optical", "revenue", "display"] |
-| **additionalKeywords** | 4 (user-specified) | ["Hemlock", "Gorilla Glass"] |
-| **Thesis title words** | 5 (auto-extracted) | ["bullish", "medium", "term"] |
+| Source | Purpose | Example |
+|--------|---------|---------|
+| **Ticker** | High-weight matching (score +10) | "GLW" |
+| **Company name** | High-weight matching (score +8) | "Corning Inc" |
+| **derivedKeywords** | Medium-weight matching (score +2 each) | ["optical", "revenue", "display"] |
+| **additionalKeywords** | Medium-weight matching | ["Hemlock", "Gorilla Glass"] |
 
-**Keyword extraction from validation points**:
+**Keyword extraction from validation points** (used for matching):
 
 ```typescript
 // Validation point: "Optical segment revenue >$5.4B"
-// Derived keywords: ["optical", "segment", "revenue"]
+// Derived keywords for matching: ["optical", "segment", "revenue"]
 
 // Validation point: "Major customer loss (Apple, Samsung)"
-// Derived keywords: ["customer", "loss", "apple", "samsung"]
+// Derived keywords for matching: ["customer", "loss", "apple", "samsung"]
 ```
 
 ##### Result-to-Thesis Matching
@@ -2181,3 +2189,5 @@ SCHEDULED JOBS (GitHub Actions)
 | 2026-01-07 | Claude + User | **Major update**: (1) Section 2.4 UI/UX - Core Argument replaces Summary as primary display, with display priority and staleness indicators; (2) Section 3.1 rewritten - thesis-level monitoring config replaces per-validation-point specs, reducing configuration burden; (3) Updated conceptual model to reflect thesis-level monitoring approach |
 | 2026-01-07 | Claude + User | **Architecture simplification**: Perplexity Search API as primary discovery layer (~$1-3/month) replacing multi-source approach (Finnhub, SEC EDGAR, Google, Yahoo). Added coverage validation matrix, batching strategy, and contingency plans for SEC EDGAR/Finnhub if Perplexity gaps discovered. Updated pipeline diagrams and implementation timeline. |
 | 2026-01-06 | Claude + User | **Phase B Implemented**: Perplexity Search API integration complete in `daily-thesis-monitoring.ts`. Using Search API (not Sonar) with multi-query batching (5 queries per call), recency filtering, and result-to-thesis matching via scoring. Cost: ~$0.60/month for 20 theses. Added detailed query design documentation including keyword sourcing, query structure, and scoring algorithm. |
+| 2026-01-06 | Claude + User | **Query Design Update**: Empirical testing (`test-perplexity-query-styles.ts`) revealed complex queries shift ranking rather than filter. Simple queries ("Company TICKER news") for asset theses catch more general news. Keywords now used for result-matching scoring, not query building. Updated spec Section 3.4 and `daily-thesis-monitoring.ts`. |
+| 2026-01-06 | Claude + User | **Analysis Pipeline Complete**: Full implementation of Claude relevance scoring, validation point matching, and triage record creation in `daily-thesis-monitoring.ts`. Tested with GLW thesis - 8 unique results (dual-query), AI analysis, VP matching, triage record ce75989d created with low/when_convenient classification. Schema `thesis_triage_records` migrated. |

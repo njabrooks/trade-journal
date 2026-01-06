@@ -1628,6 +1628,91 @@ export const thesisMonitoringConfigs = pgTable(
 export type ThesisMonitoringConfig = typeof thesisMonitoringConfigs.$inferSelect;
 export type NewThesisMonitoringConfig = typeof thesisMonitoringConfigs.$inferInsert;
 
+// ============================================================================
+// Thesis Triage Records
+// Monitoring inbox for thesis-level alerts (Layer 3: Monitoring & Accountability)
+// ============================================================================
+
+export const thesisTriageRecords = pgTable(
+  'thesis_triage_records',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+
+    // Thesis context
+    thesisId: uuid('thesis_id').notNull(),
+    thesisType: text('thesis_type').notNull(),  // 'macro' | 'asset'
+    thesisTitle: text('thesis_title').notNull(),
+
+    // Trigger source
+    triggerType: text('trigger_type').notNull(),  // 'scheduled_monitoring' | 'filing_alert' | 'data_release' | 'manual'
+    triggerSource: text('trigger_source').notNull(),  // e.g., "daily_news_scan"
+
+    // Aggregated content summary
+    contentSummary: jsonb('content_summary').notNull().default({}),
+
+    // AI analysis results
+    aiAnalysis: jsonb('ai_analysis').notNull().default({}),
+
+    // Raw matched results (for audit)
+    matchedResults: jsonb('matched_results').notNull().default([]),
+
+    // Triage classification
+    severity: text('severity').notNull(),  // 'critical' | 'high' | 'medium' | 'low' | 'info'
+    urgency: text('urgency').notNull(),  // 'immediate' | 'today' | 'this_week' | 'when_convenient'
+
+    // User action tracking
+    status: text('status').notNull().default('pending'),  // 'pending' | 'in_review' | 'actioned' | 'dismissed'
+    userNotes: text('user_notes'),
+    actionsTaken: jsonb('actions_taken').default([]),
+
+    // Link to full assessment report
+    assessmentReportPath: text('assessment_report_path'),
+  },
+  (table) => ({
+    thesisIdx: index('idx_thesis_triage_thesis').on(table.thesisId, table.thesisType),
+    statusIdx: index('idx_thesis_triage_status').on(table.status),
+    severityIdx: index('idx_thesis_triage_severity').on(table.severity, table.urgency),
+    createdIdx: index('idx_thesis_triage_created').on(table.createdAt),
+  })
+);
+
+export type ThesisTriageRecord = typeof thesisTriageRecords.$inferSelect;
+export type NewThesisTriageRecord = typeof thesisTriageRecords.$inferInsert;
+
+// Type definitions for Triage JSONB fields
+export interface TriageContentSummary {
+  totalItemsScanned: number;
+  relevantItemsFound: number;
+  sources: string[];
+  dateRange: { from: string; to: string };
+}
+
+export interface TriageAIAnalysis {
+  assessmentId?: string;
+  summary: string;
+  validationPointsAffected: {
+    pointId: string;
+    pointStatement: string;
+    evidenceType: 'strong_validation' | 'weak_validation' | 'neutral' | 'weak_invalidation' | 'strong_invalidation';
+    confidence: 'high' | 'medium' | 'low';
+    recommendedAction: string;
+  }[];
+  keyFindings: string[];
+  suggestedNextSteps: string[];
+}
+
+export interface TriageMatchedResult {
+  url: string;
+  title: string;
+  snippet: string;
+  date?: string;
+  queryType: 'wide' | 'narrow';
+  matchScore: number;
+  matchedKeywords: string[];
+}
+
 // Type definitions for JSONB fields
 export interface ThesisSearchConfig {
   derivedKeywords: string[];
