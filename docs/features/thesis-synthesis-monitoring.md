@@ -1239,11 +1239,11 @@ This creates a **complete capture system**: nothing falls through the cracks whe
 | Phase | Sources | Complexity | Value | Status |
 |-------|---------|------------|-------|--------|
 | **A** | Price/IV (existing), FRED API | Low | High | ✅ Built |
-| **B** | Perplexity Search API | Low | Very High | 🎯 Next |
+| **B** | Perplexity Search API | Low | Very High | ✅ Built |
 | **C** | SEC EDGAR RSS (contingency) | Medium | High | If needed |
 | **D** | Finnhub (contingency) | Low | Medium | If needed |
 
-**Phase B is the primary focus.** Phases C-D are contingencies if Perplexity validation reveals gaps.
+**Phase B is complete.** Phases C-D are contingencies if Perplexity coverage proves insufficient.
 
 ---
 
@@ -1308,69 +1308,224 @@ const MACRO_SERIES = {
 
 ---
 
-##### Phase B: Perplexity Search API 🎯
+##### Phase B: Perplexity Search API ✅ IMPLEMENTED
 
-**Perplexity Search API** is the primary discovery layer because:
+**Status**: Fully implemented in `scripts/daily-thesis-monitoring.ts`
+
+**Perplexity Search API** (not Sonar) is the primary discovery layer because:
+- **Raw results**: Returns URLs, titles, snippets (2K tokens each), dates - not LLM summaries
 - **Breadth**: Indexes everything (Reuters, WSJ, SEC filings, niche blogs, crypto sources)
-- **Citations**: All results include source links for verification
-- **Cost**: $5/1,000 requests → ~$1-3/month with smart batching
-- **Non-consensus signals**: Catches early litigation, regulatory drafts, trade-press M&A chatter that filtered sources miss
+- **Multi-query**: Up to 5 queries per single API call → 5x efficiency
+- **Recency filter**: Built-in `search_recency_filter: 'day'` for last 24 hours
+- **Cost**: $5/1,000 requests (flat, no token costs) → ~$0.60/month with batching
+- **Non-consensus signals**: Catches early litigation, regulatory drafts, trade-press M&A chatter
 
 ```typescript
-// API Documentation: https://docs.perplexity.ai/
-// Pricing: $5 per 1,000 search requests (no token costs)
+// API Documentation: https://docs.perplexity.ai/api-reference/search-post
+// Endpoint: POST https://api.perplexity.ai/search
+// Pricing: $5 per 1,000 requests (NO token costs)
 // API Key: PERPLEXITY_API_KEY in .env.local
 
 interface PerplexitySearchResult {
-  content: string;           // Synthesized answer with citations
-  citations: string[];       // Source URLs
-  model: string;
+  url: string;               // Source link
+  title: string;             // Page title
+  snippet: string;           // 2K tokens of extracted content
+  date?: string;             // Publication date
+  lastUpdated?: string;      // Modification timestamp
 }
 
-async function searchPerplexity(query: string): Promise<PerplexitySearchResult> {
-  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+interface PerplexityBatchOptions {
+  maxResultsPerQuery?: number;    // 1-20, default 5
+  maxTokensPerPage?: number;      // Content per result, default 2048
+  recencyFilter?: 'day' | 'week' | 'month' | 'year';
+  country?: string;               // ISO 3166-1 alpha-2 (e.g., 'US')
+}
+
+async function searchPerplexityBatch(
+  queries: string[],  // Up to 5 queries per call
+  options: PerplexityBatchOptions = {}
+): Promise<{ results: PerplexitySearchResult[]; id: string }> {
+  const response = await fetch('https://api.perplexity.ai/search', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'sonar',  // Search-optimized model
-      messages: [{ role: 'user', content: query }],
-      return_citations: true,
+      query: queries.length === 1 ? queries[0] : queries,  // String or array
+      max_results: options.maxResultsPerQuery * queries.length,
+      max_tokens_per_page: options.maxTokensPerPage || 2048,
+      search_recency_filter: options.recencyFilter || 'day',
+      country: options.country || 'US',
     }),
   });
 
   const data = await response.json();
-  return {
-    content: data.choices[0].message.content,
-    citations: data.citations || [],
-    model: data.model,
-  };
+  return { results: data.results, id: data.id };
 }
 ```
 
-**Query Batching Strategy** (Critical for Cost Control):
+**Multi-Query Batching Strategy** (Strategy B - Implemented):
 
 ```typescript
-// ❌ NAÏVE (expensive): One query per ticker per keyword
-// 20 tickers × 3 keyword packs = 60 requests/day → $9/month
+// ✅ IMPLEMENTED: Batch up to 5 theses per API call
+// 20 theses ÷ 5 per batch = 4 requests/day → ~$0.60/month
 
-// ✅ SMART (cheap): Batched OR queries
-// 3-5 total queries per day → $0.50-$1.50/month
+// Flow:
+// 1. Group theses into batches of 5
+// 2. Build keyword-based query for each thesis
+// 3. Execute single API call with query array
+// 4. Match results back to theses via scoring
 
-// Example batch query for all asset theses:
-const batchQuery = `
-  Latest news in the last 24 hours for:
-  - Corning (GLW): optical communications, display glass, solar
-  - Galaxy Digital (GLXY): crypto ETF, institutional custody, Bitcoin
-  - [other tickers...]
+const BATCH_SIZE = 5;
+for (let i = 0; i < contexts.length; i += BATCH_SIZE) {
+  const batch = contexts.slice(i, i + BATCH_SIZE);
+  const queries = batch.map(ctx => ctx.query);
 
-  Focus on: earnings, SEC filings, analyst ratings, material events, regulatory news.
-  Exclude: routine price movements, general market commentary.
-`;
+  // Single API call for 5 theses
+  const response = await searchPerplexityBatch(queries, {
+    maxResultsPerQuery: 5,
+    recencyFilter: 'day',
+  });
 
-// Example thesis-specific query:
+  // Match flat results back to theses
+  const matches = matchResultsToTheses(response.results, batch);
+}
+```
+
+##### Query Design Principles
+
+**Building effective search queries** is critical for relevance. The query structure:
+
+```
+[Company Name] [TICKER] [keyword1] [keyword2] [keyword3] [keyword4] news
+```
+
+**Principles**:
+
+| Principle | Why | Example |
+|-----------|-----|---------|
+| **Include company name AND ticker** | Disambiguation (e.g., "Apple" vs "AAPL") | "Corning Inc GLW" |
+| **3-5 topic keywords** | Focus results on relevant themes | "optical fiber AI infrastructure" |
+| **Add "news"** | Bias toward recent, newsworthy content | "...news" |
+| **Avoid over-specification** | Too many terms reduces recall | Max 4 keywords |
+
+**Query Examples**:
+
+```typescript
+// Asset thesis for GLW:
+"Corning Inc GLW optical display glass hemlock solar news"
+
+// Macro thesis for Fed policy:
+"Fed interest rates inflation employment policy news"
+
+// Crypto asset thesis:
+"Galaxy Digital GLXY crypto ETF institutional Bitcoin news"
+```
+
+##### Keyword Sources
+
+Keywords for queries come from multiple sources, prioritized:
+
+| Source | Priority | Example |
+|--------|----------|---------|
+| **Ticker** | 1 (always included) | "GLW" |
+| **Company name** | 2 (always included) | "Corning Inc" |
+| **derivedKeywords** | 3 (from validation points) | ["optical", "revenue", "display"] |
+| **additionalKeywords** | 4 (user-specified) | ["Hemlock", "Gorilla Glass"] |
+| **Thesis title words** | 5 (auto-extracted) | ["bullish", "medium", "term"] |
+
+**Keyword extraction from validation points**:
+
+```typescript
+// Validation point: "Optical segment revenue >$5.4B"
+// Derived keywords: ["optical", "segment", "revenue"]
+
+// Validation point: "Major customer loss (Apple, Samsung)"
+// Derived keywords: ["customer", "loss", "apple", "samsung"]
+```
+
+##### Result-to-Thesis Matching
+
+Since multi-query returns a **flat array** (not grouped by query), we score each result against each thesis:
+
+```typescript
+function scoreResultMatch(result, context): { score: number; keywords: string[] } {
+  let score = 0;
+  const searchText = `${result.title} ${result.snippet} ${result.url}`.toLowerCase();
+
+  // Ticker match: +10 points
+  if (searchText.includes(context.ticker.toLowerCase())) score += 10;
+
+  // Company name match: +8 points
+  if (searchText.includes(context.companyName.toLowerCase())) score += 8;
+
+  // Each keyword match: +2 points (max 5 keywords)
+  for (const keyword of context.keywords.slice(0, 5)) {
+    if (searchText.includes(keyword.toLowerCase())) score += 2;
+  }
+
+  // Recency bonus (within 3 days): +3 points
+  if (isRecentDate(result.date, 3)) score += 3;
+
+  return { score, keywords: matchedKeywords };
+}
+
+// Minimum score threshold: 5 (at least ticker OR 2+ keywords)
+```
+
+##### Configuring a Thesis for Monitoring
+
+**1. In the database** (`thesis_monitoring_configs` table):
+
+```sql
+INSERT INTO thesis_monitoring_configs (
+  thesis_id, thesis_type, ticker, company_name,
+  search_config, sources, enabled
+) VALUES (
+  'uuid-of-thesis', 'asset', 'GLW', 'Corning Inc',
+  '{
+    "derivedKeywords": ["optical", "display", "glass"],
+    "additionalKeywords": ["Hemlock", "Gorilla Glass", "solar"],
+    "exclusions": []
+  }',
+  '{
+    "news": { "enabled": true, "providers": ["perplexity"] },
+    "priceIv": { "enabled": true },
+    "secFilings": { "enabled": true }
+  }',
+  true
+);
+```
+
+**2. Generated query**: `"Corning Inc GLW optical display glass hemlock solar news"`
+
+**3. Result**: API returns URLs, titles, snippets matching this query
+
+##### Cost Breakdown
+
+| Theses | Batches/Day | Requests/Month | Cost/Month |
+|--------|-------------|----------------|------------|
+| 5 | 1 | 30 | $0.15 |
+| 10 | 2 | 60 | $0.30 |
+| 20 | 4 | 120 | $0.60 |
+| 50 | 10 | 300 | $1.50 |
+
+**vs. Alternative approaches**:
+- Sonar (LLM summaries): $5/1K + $1-15/1M tokens → ~$3-10/month
+- Multiple free APIs: $0 but 4-5 integrations to maintain
+
+---
+
+##### OLD: Query Building (Deprecated)
+
+**Note**: The following was the original Sonar-based approach. Keeping for reference but **do not use**.
+
+```typescript
+// DEPRECATED: Sonar approach (LLM summaries)
+// Now using Search API (raw results) instead
+
+// Example thesis-specific query (old style):
 function buildThesisQuery(config: ThesisMonitoringConfig): string {
   const keywords = [
     ...config.searchConfig.derivedKeywords,
@@ -2025,3 +2180,4 @@ SCHEDULED JOBS (GitHub Actions)
 | 2026-01-06 | Claude + User | Added Section 3.4 Thesis Triage: extended PRD triage pattern to macro/asset theses with daily monitoring pipeline, multi-source aggregation (Yahoo News, Google News, Finnhub, Twitter, Perplexity, FRED, SEC EDGAR), ThesisTriageRecord schema, severity/urgency classification, and Layer 4 learning integration |
 | 2026-01-07 | Claude + User | **Major update**: (1) Section 2.4 UI/UX - Core Argument replaces Summary as primary display, with display priority and staleness indicators; (2) Section 3.1 rewritten - thesis-level monitoring config replaces per-validation-point specs, reducing configuration burden; (3) Updated conceptual model to reflect thesis-level monitoring approach |
 | 2026-01-07 | Claude + User | **Architecture simplification**: Perplexity Search API as primary discovery layer (~$1-3/month) replacing multi-source approach (Finnhub, SEC EDGAR, Google, Yahoo). Added coverage validation matrix, batching strategy, and contingency plans for SEC EDGAR/Finnhub if Perplexity gaps discovered. Updated pipeline diagrams and implementation timeline. |
+| 2026-01-06 | Claude + User | **Phase B Implemented**: Perplexity Search API integration complete in `daily-thesis-monitoring.ts`. Using Search API (not Sonar) with multi-query batching (5 queries per call), recency filtering, and result-to-thesis matching via scoring. Cost: ~$0.60/month for 20 theses. Added detailed query design documentation including keyword sourcing, query structure, and scoring algorithm. |
