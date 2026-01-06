@@ -1175,6 +1175,442 @@ For manual discoveries, user can:
 
 This creates a **complete capture system**: nothing falls through the cracks whether discovered by automation or by the user browsing manually.
 
+---
+
+#### Content Source Implementation Guide
+
+**Purpose**: Detailed implementation specifications for each content source in the monitoring pipeline. Sources are implemented incrementally, starting with highest-value, lowest-complexity options.
+
+##### Implementation Phases
+
+| Phase | Sources | Complexity | Value | Status |
+|-------|---------|------------|-------|--------|
+| **A** | Price/IV (existing), FRED API | Low | High | ✅ Skeleton built |
+| **B** | Finnhub News | Low | High | 🎯 Next |
+| **C** | SEC EDGAR RSS | Medium | High | Planned |
+| **D** | Earnings Calendar + Transcripts | Medium | Medium | Planned |
+| **E** | Additional news (Yahoo, Google) | Medium | Medium | Planned |
+| **F** | Perplexity API | Medium | Medium | Planned |
+| **G** | Analyst Ratings | High | Medium | Future |
+
+---
+
+##### Phase A: Quantitative Data Sources ✅
+
+**Already Implemented** in `daily-thesis-monitoring.ts`:
+
+**1. Price/IV Data** (existing `underlyings_iv_history` table)
+```typescript
+// Source: Massive.com daily ingestion (already running)
+// Data: spot, iv30, atr20, rv20
+// Schedule: Daily after Massive ingestion (~4:30 PM ET)
+// Implementation: Query underlyings_iv_history for latest values
+
+async function checkPriceIvThresholds(config: ThesisMonitoringConfig) {
+  const latest = await db.select()
+    .from(underlyingsIvHistory)
+    .where(eq(underlyingsIvHistory.ticker, config.ticker))
+    .orderBy(desc(underlyingsIvHistory.asOfDate))
+    .limit(1);
+
+  // Evaluate explicit thresholds from config
+  for (const threshold of config.explicitThresholds) {
+    if (threshold.source === 'price_iv') {
+      const value = threshold.metric === 'spot' ? latest.spot : latest.iv30;
+      if (evaluateThreshold(threshold, value)) {
+        // Threshold breached!
+      }
+    }
+  }
+}
+```
+
+**2. FRED Economic Data** (direct API)
+```typescript
+// Source: FRED API (free, 120 requests/minute)
+// API Key: FRED_API_KEY in .env.local
+// Data: Any FRED series (ICSA, UNRATE, CPI, Fed Funds, etc.)
+// Schedule: Daily at 10 AM ET (after FRED releases)
+
+async function getFredLatestValue(series: string): Promise<number | null> {
+  const url = `https://api.stlouisfed.org/fred/series/observations?` +
+    `series_id=${series}&api_key=${process.env.FRED_API_KEY}` +
+    `&file_type=json&sort_order=desc&limit=1`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+  return parseFloat(data.observations[0].value);
+}
+
+// Common macro thesis series:
+const MACRO_SERIES = {
+  'ICSA': 'Initial Claims (Weekly)',
+  'UNRATE': 'Unemployment Rate (Monthly)',
+  'CPIAUCSL': 'CPI All Items (Monthly)',
+  'FEDFUNDS': 'Fed Funds Rate (Daily)',
+  'DGS10': '10-Year Treasury Yield (Daily)',
+  'T10Y2Y': 'Yield Curve 10Y-2Y (Daily)',
+  'BAMLH0A0HYM2': 'HY Credit Spread (Daily)',
+};
+```
+
+---
+
+##### Phase B: News API - Finnhub 🎯
+
+**Finnhub** is the recommended starting point for news because:
+- Free tier: 60 calls/minute (plenty for daily monitoring)
+- Good coverage of financial news
+- Company-specific news filtering
+- Sentiment scores included
+
+```typescript
+// API Documentation: https://finnhub.io/docs/api/company-news
+// Rate Limit: 60 calls/minute (free tier)
+// API Key: FINNHUB_API_KEY in .env.local
+
+interface FinnhubNewsItem {
+  category: string;
+  datetime: number;        // Unix timestamp
+  headline: string;
+  id: number;
+  image: string;
+  related: string;         // Ticker symbols
+  source: string;
+  summary: string;
+  url: string;
+}
+
+async function fetchFinnhubNews(ticker: string, fromDate: Date): Promise<FinnhubNewsItem[]> {
+  const from = fromDate.toISOString().split('T')[0];
+  const to = new Date().toISOString().split('T')[0];
+
+  const url = `https://finnhub.io/api/v1/company-news?` +
+    `symbol=${ticker}&from=${from}&to=${to}&token=${process.env.FINNHUB_API_KEY}`;
+
+  const response = await fetch(url);
+  return response.json();
+}
+
+// Also useful: Market-wide news
+async function fetchMarketNews(category: 'general' | 'forex' | 'crypto' | 'merger'): Promise<FinnhubNewsItem[]> {
+  const url = `https://finnhub.io/api/v1/news?` +
+    `category=${category}&token=${process.env.FINNHUB_API_KEY}`;
+
+  const response = await fetch(url);
+  return response.json();
+}
+```
+
+**Integration Pattern**:
+```typescript
+async function monitorNewsForThesis(config: ThesisMonitoringConfig) {
+  // 1. Fetch recent news
+  const news = await fetchFinnhubNews(config.ticker, config.lastChecked || new Date(Date.now() - 24*60*60*1000));
+
+  // 2. Filter by keywords (optional pre-filter before Claude)
+  const relevant = news.filter(item =>
+    config.searchConfig.derivedKeywords.some(kw =>
+      item.headline.toLowerCase().includes(kw.toLowerCase()) ||
+      item.summary.toLowerCase().includes(kw.toLowerCase())
+    )
+  );
+
+  // 3. Claude relevance scoring (if > threshold items)
+  if (relevant.length > 0) {
+    const scored = await scoreRelevance(relevant, config.validationPoints);
+
+    // 4. For high-relevance items, run full assessment
+    const highRelevance = scored.filter(s => s.relevance > 0.7);
+    if (highRelevance.length > 0) {
+      // Run /assess-validation-evidence and create triage
+    }
+  }
+}
+```
+
+---
+
+##### Phase C: SEC EDGAR RSS
+
+**SEC EDGAR** provides real-time filing alerts via RSS feeds.
+
+```typescript
+// RSS Feeds:
+// - Company filings: https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type={type}&dateb=&owner=include&count=40&output=atom
+// - All recent filings: https://www.sec.gov/cgi-bin/browse-edgar?action=getcurrent&type=&company=&dateb=&owner=include&count=40&output=atom
+
+// Key filing types to monitor:
+// 8-K  - Material events (earnings, leadership changes, acquisitions)
+// 10-Q - Quarterly reports
+// 10-K - Annual reports
+// Form 4 - Insider trading
+
+import Parser from 'rss-parser';
+
+interface SECFiling {
+  ticker: string;
+  cik: string;
+  filingType: string;
+  title: string;
+  link: string;
+  filedAt: Date;
+}
+
+async function checkSECFilings(ticker: string, cik: string): Promise<SECFiling[]> {
+  const parser = new Parser();
+  const url = `https://www.sec.gov/cgi-bin/browse-edgar?` +
+    `action=getcompany&CIK=${cik}&type=8-K&dateb=&owner=include&count=10&output=atom`;
+
+  const feed = await parser.parseURL(url);
+
+  return feed.items.map(item => ({
+    ticker,
+    cik,
+    filingType: extractFilingType(item.title),
+    title: item.title,
+    link: item.link,
+    filedAt: new Date(item.pubDate),
+  }));
+}
+
+// Schedule: Every 15 minutes during market hours
+// Trigger: New 8-K or 10-Q → immediate triage record
+```
+
+**CIK Lookup**: SEC uses CIK numbers, not tickers. Store mapping in `underlyings` table:
+```sql
+ALTER TABLE underlyings ADD COLUMN sec_cik TEXT;
+-- Example: GLW → 0000024741
+```
+
+---
+
+##### Phase D: Earnings & Events
+
+**Earnings Calendar** (Finnhub)
+```typescript
+// API: https://finnhub.io/api/v1/calendar/earnings
+async function getEarningsCalendar(from: string, to: string): Promise<EarningsEvent[]> {
+  const url = `https://finnhub.io/api/v1/calendar/earnings?` +
+    `from=${from}&to=${to}&token=${process.env.FINNHUB_API_KEY}`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+  return data.earningsCalendar;
+}
+
+// Pre-earnings alert: 1-2 days before, remind user to review thesis
+// Post-earnings: Fetch transcript, run assessment
+```
+
+**Earnings Transcripts** (requires paid API or scraping):
+- **FMP Premium** ($149/mo): Full transcripts via API
+- **Free alternative**: Manual paste into `/assess-validation-evidence`
+- **SEC 8-K**: Earnings releases filed as 8-K (partial, no call transcript)
+
+---
+
+##### Phase E: Additional News Sources
+
+**Yahoo Finance News** (via unofficial API or scraping)
+```typescript
+// Note: No official API - use yahoofinancials package or web scraping
+// Alternatively, use Google Custom Search API
+
+// Google Custom Search (100 free queries/day)
+async function searchGoogleNews(query: string): Promise<NewsItem[]> {
+  const url = `https://www.googleapis.com/customsearch/v1?` +
+    `key=${process.env.GOOGLE_API_KEY}&cx=${process.env.GOOGLE_CSE_ID}` +
+    `&q=${encodeURIComponent(query)}&dateRestrict=d1`; // Last 24 hours
+
+  const response = await fetch(url);
+  const data = await response.json();
+  return data.items || [];
+}
+```
+
+---
+
+##### Phase F: Perplexity API
+
+**Perplexity** for broader context and synthesis:
+```typescript
+// API: https://docs.perplexity.ai/
+// Use case: "What are the latest developments for [company]?"
+// Good for: Synthesizing multiple sources, catching obscure news
+
+async function queryPerplexity(question: string): Promise<string> {
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-sonar-small-128k-online',
+      messages: [{ role: 'user', content: question }],
+    }),
+  });
+
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// Usage: Daily summary query per thesis
+// "What are the latest news and developments for Corning Inc (GLW) in the last 24 hours?"
+```
+
+---
+
+##### Phase G: Analyst Ratings (Future)
+
+**Sources**:
+- Finnhub: `GET /api/v1/stock/recommendation?symbol={ticker}`
+- TipRanks (paid)
+- Zacks (paid)
+
+**Use case**: Track rating changes as potential validation/invalidation evidence.
+
+---
+
+##### AI Analysis Layer
+
+All content flows through Claude for relevance scoring and evidence assessment:
+
+```typescript
+interface ContentItem {
+  source: 'finnhub' | 'sec' | 'fred' | 'google' | 'perplexity';
+  type: 'news' | 'filing' | 'data_release' | 'transcript';
+  title: string;
+  content: string;
+  url?: string;
+  publishedAt: Date;
+  rawData?: unknown;
+}
+
+interface RelevanceScore {
+  item: ContentItem;
+  relevance: number;              // 0-1
+  confidence: 'low' | 'medium' | 'high';
+  reasoning: string;
+  affectedValidationPoints: string[];  // Point IDs
+  suggestedAction: 'full_assessment' | 'record_only' | 'ignore';
+}
+
+async function scoreContentRelevance(
+  content: ContentItem[],
+  thesis: ThesisWithValidationPoints
+): Promise<RelevanceScore[]> {
+  // Claude prompt: Given thesis + validation points + content items,
+  // score each item's relevance and identify affected VPs
+
+  const prompt = `
+You are analyzing content for relevance to an investment thesis.
+
+THESIS: ${thesis.title}
+VALIDATION POINTS:
+${thesis.validationPoints.map(vp => `- ${vp.id}: ${vp.statement}`).join('\n')}
+
+CONTENT TO ANALYZE:
+${content.map((c, i) => `[${i}] ${c.title}\n${c.content.slice(0, 500)}...`).join('\n\n')}
+
+For each content item, provide:
+1. Relevance score (0-1)
+2. Which validation points it might affect
+3. Recommended action (full_assessment / record_only / ignore)
+
+Respond in JSON format.
+`;
+
+  // Call Claude API
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 2000,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return parseScores(response.content);
+}
+```
+
+---
+
+##### Triage Record Generation
+
+When relevant content is found, create a thesis triage record:
+
+```typescript
+async function createThesisTriageRecord(params: {
+  thesis: Thesis;
+  content: ContentItem[];
+  assessment: AssessmentResult;
+  triggerType: string;
+  triggerSource: string;
+}): Promise<void> {
+  const { thesis, content, assessment, triggerType, triggerSource } = params;
+
+  // Determine severity based on validation point importance + evidence type
+  const severity = calculateSeverity(assessment);
+  const urgency = calculateUrgency(assessment);
+
+  await db.insert(thesisTriageRecords).values({
+    thesisId: thesis.id,
+    thesisType: thesis.type,
+    triggerType,
+    triggerSource,
+    contentSummary: {
+      totalItemsScanned: content.length,
+      relevantItemsFound: assessment.relevantItems.length,
+      sources: [...new Set(content.map(c => c.source))],
+      dateRange: { from: content[0].publishedAt, to: content[content.length-1].publishedAt },
+    },
+    aiAnalysis: {
+      summary: assessment.executiveSummary,
+      validationPointsAffected: assessment.affectedPoints,
+      keyFindings: assessment.keyFindings,
+      suggestedNextSteps: assessment.suggestedActions,
+    },
+    severity,
+    urgency,
+    status: 'pending',
+  });
+
+  // Also store full assessment report as markdown file
+  const reportPath = await storeAssessmentReport(assessment);
+  // Update record with report path
+}
+```
+
+---
+
+##### Implementation Timeline
+
+```
+Week 1: Phase B - Finnhub News
+├── Add FINNHUB_API_KEY to env
+├── Implement fetchFinnhubNews()
+├── Add relevance scoring with Claude
+├── Create triage records for high-relevance items
+└── Test with GLW thesis
+
+Week 2: Phase C - SEC EDGAR
+├── Add SEC CIK to underlyings table
+├── Implement SEC RSS polling
+├── 8-K auto-assessment
+└── Filing type filtering
+
+Week 3: Phase D - Earnings
+├── Earnings calendar integration
+├── Pre-earnings thesis review alerts
+├── Post-earnings assessment trigger
+└── Manual transcript paste workflow
+
+Week 4+: Phases E-G as needed
+```
+
+---
+
 #### Success Metrics
 
 - [ ] Automated monitoring catches 80%+ of relevant developments

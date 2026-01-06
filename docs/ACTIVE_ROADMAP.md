@@ -244,32 +244,37 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 
 ---
 
-#### Phase 3.2D: Multi-Source Data Integration 💡
-**Status**: 💡 Planned (Tier 1-2)
+#### Phase 3.2D: Multi-Source Data Integration 🚧
+**Status**: 🚧 In Progress (Infrastructure Complete, Implementing Sources)
 **Enhancement IDs**: #ENH-042E, #ENH-042F, #ENH-042G
 **Effort**: 2-3 weeks total
-**Dependencies**: #ENH-042B
+**Dependencies**: #ENH-042B (Complete)
 
-**Sprint Breakdown**:
+**Infrastructure Implemented**:
+- ✅ `thesis_monitoring_configs` table (thesis-level config, not per-validation-point)
+- ✅ `daily-thesis-monitoring.ts` script skeleton
+- ✅ Price/IV threshold checking from `underlyings_iv_history`
+- ✅ FRED API threshold checking
+- ✅ Breach detection and reporting
 
-**FRED Economic Data** (#ENH-042E - Tier 1):
-- FRED monitoring spec support
-- Daily scheduled checks (GitHub Actions)
-- Threshold evaluation and alerts
-- Effort: 2-3 days
+**Phased Content Source Implementation** (see spec Section 3.4):
 
-**Price/IV Data** (#ENH-042F - Tier 2):
-- Leverage existing `underlyings_iv_history` table
-- Monitor spot, IV30, IV rank, IV percentile
-- Daily checks after Massive ingestion
-- Effort: 3-4 days
+| Phase | Source | Status | Complexity |
+|-------|--------|--------|------------|
+| **A** | Price/IV + FRED thresholds | ✅ Complete | Low |
+| **B** | Finnhub News | 🎯 Next | Low |
+| **C** | SEC EDGAR RSS | Planned | Medium |
+| **D** | Earnings Calendar | Planned | Medium |
+| **E** | Additional news (Yahoo, Google) | Planned | Medium |
+| **F** | Perplexity API | Planned | Medium |
+| **G** | Analyst Ratings | Future | High |
 
-**News & SEC Filings** (#ENH-042G - Tier 2):
-- Finnhub integration (free tier)
-- SEC EDGAR RSS parsing
-- Claude relevance scoring
-- Auto-assessment triggering
-- Effort: 1-2 weeks
+**Phase B Implementation (Finnhub News)**:
+- Add FINNHUB_API_KEY to env (already configured)
+- Fetch company news via Finnhub API
+- Claude relevance scoring against validation points
+- Create triage records for high-relevance content
+- Effort: ~3-4 days
 
 **Why This Helps**:
 - Automated monitoring across all data sources
@@ -283,22 +288,25 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 **Status**: 💡 Planned (Tier 2)
 **Enhancement ID**: #ENH-042H
 **Effort**: 1 week
-**Dependencies**: #ENH-042E, #ENH-042F, #ENH-042G
+**Dependencies**: Phase 3.2D (Content Sources)
 
 **Deliverables**:
-- Master monitoring script (`scripts/run-all-monitoring.ts`)
-- GitHub Actions daily workflow
+- GitHub Actions daily workflow for `daily-thesis-monitoring.ts`
 - Unified summary reporting
 - Alert aggregation and notification
+- `thesis_triage_records` table and UI
 
 **Workflow**:
 ```
-Daily 9 AM ET:
-  → FRED economic data
-  → Price/IV data (after Massive)
-  → News & SEC filings
-  → Generate summary
-  → Notify if alerts
+Daily 6 AM ET:
+  → Load active thesis monitoring configs
+  → For each thesis:
+      → Check Price/IV thresholds (Phase A)
+      → Check FRED thresholds (Phase A)
+      → Fetch Finnhub news (Phase B)
+      → Score relevance with Claude
+      → Create triage records if relevant
+  → Generate summary email/notification
 ```
 
 **Why This Helps**:
@@ -308,7 +316,7 @@ Daily 9 AM ET:
 
 ---
 
-**Note**: Phase 3.2 absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept. See [thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md) Section 3.4 "Thesis Triage" for the comprehensive monitoring inbox specification.
+**Note**: Phase 3.2 absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept. See [thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md) Section 3.4 "Thesis Triage" and "Content Source Implementation Guide" for comprehensive specifications.
 
 ---
 
@@ -603,21 +611,36 @@ These items complement Phase 3 but remain separate:
 ## Quick Reference: Next Steps
 
 **Recently Completed**:
+- Phase 3.2D-A (Monitoring Infrastructure + Quantitative Sources) ✅
+  - `thesis_monitoring_configs` table
+  - `daily-thesis-monitoring.ts` skeleton
+  - Price/IV + FRED threshold checking
 - Phase 3.1 (Thesis Synthesis MVP) ✅
-- Phase 2.9 (Claims-Aware Triage UI) ✅
-- Phase 2.8 (AI-Generated Thesis Summaries) ✅
+- Phase 3.2A-B (Validation Assessment Workflow + Status UI) ✅
 
-**Recently Abandoned**:
-- Phase 2.10 (Strategy Provenance Chain) ❌ - Redundant with existing HierarchyBreadcrumb
-
-**Tier 1 Quick Wins** (ready to work on):
-- (None currently - consider promoting from Tier 2 backlog)
+**In Progress**:
+- **Phase 3.2D-B: Finnhub News Integration** 🎯
+  - Fetch company news via API
+  - Claude relevance scoring
+  - Triage record generation
+  - See spec: Section 3.4 "Content Source Implementation Guide"
 
 **Strategic Horizon** (Tier 2 - Phase 3: Thesis Synthesis & Monitoring):
-- **Phase 3.1 (MVP)**: ✅ Thesis Articulation (#ENH-035) + Validation Points (#ENH-036) + Audit Trail (#ENH-037)
-- **Phase 3.2**: 🚧 Automated Monitoring (#ENH-038) - **Thesis Triage spec complete** (see Section 3.4)
-- **Phase 3.3**: 💡 News & Narratives (#ENH-039) - partially absorbed into Thesis Triage
-- **Parallel**: Performance Attribution (#ENH-027), Claim Invalidation (#ENH-028), Strategy Playbook (#ENH-020-playbook)
+- **Phase 3.1 (MVP)**: ✅ Complete
+- **Phase 3.2A-B**: ✅ Validation Assessment + Status UI
+- **Phase 3.2D**: 🚧 Content Sources (Phase A complete, B next)
+- **Phase 3.2E**: 💡 Master Orchestration (GitHub Actions)
+- **Phase 3.3**: 💡 News & Narratives (advanced features)
+- **Parallel**: Performance Attribution (#ENH-027), Claim Invalidation (#ENH-028)
+
+**Implementation Phases for Content Sources**:
+| Phase | Source | Status |
+|-------|--------|--------|
+| A | Price/IV + FRED | ✅ |
+| B | Finnhub News | 🎯 Next |
+| C | SEC EDGAR | Planned |
+| D | Earnings | Planned |
+| E-G | Additional sources | Future |
 
 **Long-Term Vision** (Tier 3+):
 - Phase 3.4: Learning & Feedback (outcomes, process adherence, thesis quality scoring)
