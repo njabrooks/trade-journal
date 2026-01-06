@@ -65,26 +65,62 @@ interface NewsCheckResult {
 
 /**
  * Search Perplexity for news related to a thesis
+ *
+ * API Reference: https://docs.perplexity.ai/api-reference/chat-completions-post
+ *
+ * Model options:
+ * - sonar: Lightweight search ($1/1M tokens + $5-12/1K requests)
+ * - sonar-pro: Advanced search ($3/$15/1M tokens + $6-14/1K requests)
+ *
+ * Key parameters:
+ * - search_recency_filter: 'day' | 'week' | 'month' | 'year'
+ * - search_mode: 'web' | 'academic' | 'sec' (prioritize SEC filings)
+ * - search_domain_filter: array of domains (prefix with '-' to exclude)
+ * - temperature: 0.1 for factual, deterministic responses
  */
-async function searchPerplexity(query: string): Promise<PerplexitySearchResult | null> {
+interface PerplexitySearchOptions {
+  searchMode?: 'web' | 'academic' | 'sec';
+  recencyFilter?: 'day' | 'week' | 'month' | 'year';
+  domainFilter?: string[];  // e.g., ['sec.gov', 'reuters.com'] or ['-twitter.com']
+}
+
+async function searchPerplexity(
+  query: string,
+  options: PerplexitySearchOptions = {}
+): Promise<PerplexitySearchResult | null> {
   const apiKey = process.env.PERPLEXITY_API_KEY;
   if (!apiKey) {
     console.warn('PERPLEXITY_API_KEY not set, skipping news monitoring');
     return null;
   }
 
+  const {
+    searchMode = 'web',
+    recencyFilter = 'day',  // Default to last 24 hours
+    domainFilter,
+  } = options;
+
   try {
+    const requestBody: Record<string, unknown> = {
+      model: 'sonar',  // Cost-effective search model
+      messages: [{ role: 'user', content: query }],
+      temperature: 0.1,  // Factual, deterministic responses
+      search_recency_filter: recencyFilter,
+      search_mode: searchMode,
+    };
+
+    // Add domain filter if specified
+    if (domainFilter && domainFilter.length > 0) {
+      requestBody.search_domain_filter = domainFilter;
+    }
+
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'sonar',  // Search-optimized model
-        messages: [{ role: 'user', content: query }],
-        return_citations: true,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -154,6 +190,12 @@ If there are no significant developments, say "No significant developments found
 
 /**
  * Check news for a thesis using Perplexity
+ *
+ * For asset theses with SEC filing monitoring enabled, we make two calls:
+ * 1. General news with search_mode: 'web'
+ * 2. SEC-focused search with search_mode: 'sec'
+ *
+ * Results are combined for comprehensive coverage.
  */
 async function checkNewsForThesis(
   config: typeof thesisMonitoringConfigs.$inferSelect,
@@ -185,15 +227,74 @@ async function checkNewsForThesis(
     config.thesisType as 'macro' | 'asset'
   );
 
-  console.log(`    🔍 Searching Perplexity...`);
+  console.log(`    🔍 Searching Perplexity (web + recency:day)...`);
 
-  const result = await searchPerplexity(query);
+  if (VERBOSE) {
+    console.log(`\n    [QUERY]\n    ${query.replace(/\n/g, '\n    ')}\n`);
+  }
+
+  // Primary search: web mode with 24h recency filter
+  const result = await searchPerplexity(query, {
+    searchMode: 'web',
+    recencyFilter: 'day',
+  });
+
   if (!result) {
     return null;
   }
 
+  if (VERBOSE) {
+    console.log(`    [RESPONSE - ${result.citations.length} citations]`);
+    console.log(`    ${result.content.substring(0, 500).replace(/\n/g, '\n    ')}${result.content.length > 500 ? '...' : ''}`);
+    if (result.citations.length > 0) {
+      console.log(`\n    [CITATIONS]`);
+      for (const c of result.citations.slice(0, 5)) {
+        console.log(`    - ${c}`);
+      }
+    }
+    console.log('');
+  }
+
+  let combinedContent = result.content;
+  let combinedCitations = [...result.citations];
+
+  // For asset theses with SEC filings enabled, also do an SEC-focused search
+  if (config.ticker && sources.secFilings?.enabled) {
+    console.log(`    🔍 Searching Perplexity (SEC mode)...`);
+
+    const secQuery = `What are the most recent SEC filings for ${config.companyName || config.ticker} (${config.ticker})? Include 8-K, 10-Q, 10-K, and Form 4 filings from the past week.`;
+
+    if (VERBOSE) {
+      console.log(`\n    [SEC QUERY]\n    ${secQuery}\n`);
+    }
+
+    const secResult = await searchPerplexity(secQuery, {
+      searchMode: 'sec',
+      recencyFilter: 'week',  // SEC filings may take a few days to appear
+    });
+
+    if (secResult && secResult.content.length > 100) {
+      if (VERBOSE) {
+        console.log(`    [SEC RESPONSE - ${secResult.citations.length} citations]`);
+        console.log(`    ${secResult.content.substring(0, 500).replace(/\n/g, '\n    ')}${secResult.content.length > 500 ? '...' : ''}`);
+        if (secResult.citations.length > 0) {
+          console.log(`\n    [SEC CITATIONS]`);
+          for (const c of secResult.citations.slice(0, 5)) {
+            console.log(`    - ${c}`);
+          }
+        }
+        console.log('');
+      }
+      combinedContent += '\n\n--- SEC FILINGS ---\n' + secResult.content;
+      combinedCitations = [...combinedCitations, ...secResult.citations];
+    }
+  }
+
+  // Deduplicate citations
+  combinedCitations = [...new Set(combinedCitations)];
+
   // Simple relevance check: does the content contain meaningful news?
-  const content = result.content.toLowerCase();
+  const content = combinedContent.toLowerCase();
   const noNewsIndicators = [
     'no significant developments',
     'no major news',
@@ -201,14 +302,16 @@ async function checkNewsForThesis(
     'no significant news',
     'could not find',
     'no recent news',
+    'no filings found',
+    'no sec filings',
   ];
 
   const hasRelevantNews = !noNewsIndicators.some(indicator => content.includes(indicator))
-    && result.content.length > 100
-    && result.citations.length > 0;
+    && combinedContent.length > 100
+    && combinedCitations.length > 0;
 
   // Create a brief summary (first 200 chars or first sentence)
-  let summary = result.content;
+  let summary = result.content;  // Use original (non-SEC) content for summary
   if (summary.length > 200) {
     const firstSentenceEnd = summary.indexOf('. ');
     if (firstSentenceEnd > 50 && firstSentenceEnd < 300) {
@@ -225,8 +328,8 @@ async function checkNewsForThesis(
     thesisTitle,
     ticker: config.ticker ?? undefined,
     query,
-    content: result.content,
-    citations: result.citations,
+    content: combinedContent,
+    citations: combinedCitations,
     hasRelevantNews,
     summary,
   };
@@ -525,9 +628,13 @@ async function runMonitoring(dryRun: boolean = false, newsOnly: boolean = false)
   return result;
 }
 
+// Global verbose flag
+let VERBOSE = false;
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const newsOnly = process.argv.includes('--news-only');
+  VERBOSE = process.argv.includes('--verbose');
 
   try {
     const result = await runMonitoring(dryRun, newsOnly);
