@@ -69,7 +69,8 @@ Get the thesis with all linked claims AND other theses in the hierarchy (for dep
 **For Asset Thesis:**
 
 ```sql
-WITH thesis_data AS (
+-- Query 1: Get thesis data with parent macro theses
+WITH thesis_base AS (
   SELECT
     at.id,
     at.title,
@@ -82,14 +83,22 @@ WITH thesis_data AS (
     at.positioning_context,
     at.regime_context,
     u.ticker,
-    u.spot,
-    mt.id as parent_macro_thesis_id,
-    mt.title as parent_macro_thesis_title,
-    mt.description as parent_macro_thesis_description
+    u.spot
   FROM asset_theses at
   LEFT JOIN underlyings u ON at.underlying_id = u.id
-  LEFT JOIN macro_theses mt ON at.macro_thesis_id = mt.id
   WHERE at.id = '[THESIS_ID]' OR u.ticker = '[TICKER]'
+),
+-- Parent macro theses via join table (can be multiple)
+parent_macro_theses AS (
+  SELECT
+    mt.id as macro_thesis_id,
+    mt.title as macro_thesis_title,
+    mt.description as macro_thesis_description,
+    mt.confidence_level as macro_thesis_confidence,
+    mt.status as macro_thesis_status
+  FROM asset_thesis_related_macro_theses atrm
+  JOIN macro_theses mt ON atrm.macro_thesis_id = mt.id
+  WHERE atrm.asset_thesis_id = (SELECT id FROM thesis_base)
 ),
 linked_claims AS (
   SELECT
@@ -105,14 +114,10 @@ linked_claims AS (
     mc.time_horizon,
     mc.relevant_tickers,
     ctm.mapping_type,
-    ctm.confidence as mapping_confidence,
-    ri.title as source_title,
-    ra.source_type
+    ctm.confidence as mapping_confidence
   FROM claim_thesis_mappings ctm
   INNER JOIN main_claims mc ON ctm.main_claim_id = mc.id
-  LEFT JOIN research_insights ri ON mc.source_insight_id = ri.id
-  LEFT JOIN research_artifacts ra ON ri.research_artifact_id = ra.id
-  WHERE ctm.asset_thesis_id = (SELECT id FROM thesis_data)
+  WHERE ctm.asset_thesis_id = (SELECT id FROM thesis_base)
   ORDER BY
     CASE ctm.mapping_type
       WHEN 'foundation' THEN 1
@@ -121,43 +126,73 @@ linked_claims AS (
     END,
     mc.created_at DESC
 ),
+-- Sibling asset theses (share any parent macro thesis)
 sibling_theses AS (
-  -- Other asset theses under same macro thesis (for dependency discovery)
-  SELECT
+  SELECT DISTINCT
     at.id,
     at.title,
     at.description,
     u.ticker,
     'asset' as thesis_type
-  FROM asset_theses at
+  FROM asset_thesis_related_macro_theses atrm
+  JOIN asset_theses at ON atrm.asset_thesis_id = at.id
   LEFT JOIN underlyings u ON at.underlying_id = u.id
-  WHERE at.macro_thesis_id = (SELECT parent_macro_thesis_id FROM thesis_data)
-    AND at.id != (SELECT id FROM thesis_data)
+  WHERE atrm.macro_thesis_id IN (SELECT macro_thesis_id FROM parent_macro_theses)
+    AND at.id != (SELECT id FROM thesis_base)
     AND at.status = 'active'
 ),
 prior_articulation AS (
-  SELECT
-    ta.*
+  SELECT ta.*
   FROM thesis_articulations ta
-  WHERE ta.thesis_id = (SELECT id FROM thesis_data)
+  WHERE ta.thesis_id = (SELECT id FROM thesis_base)
     AND ta.thesis_type = 'asset'
   ORDER BY ta.version DESC
   LIMIT 1
 )
 SELECT
-  td.*,
+  tb.*,
+  json_agg(DISTINCT pmt.*) FILTER (WHERE pmt.macro_thesis_id IS NOT NULL) as parent_macro_theses,
   json_agg(DISTINCT lc.*) FILTER (WHERE lc.id IS NOT NULL) as claims,
   json_agg(DISTINCT st.*) FILTER (WHERE st.id IS NOT NULL) as sibling_theses,
   (SELECT row_to_json(pa.*) FROM prior_articulation pa) as prior_articulation
-FROM thesis_data td
+FROM thesis_base tb
+LEFT JOIN parent_macro_theses pmt ON TRUE
 LEFT JOIN linked_claims lc ON TRUE
 LEFT JOIN sibling_theses st ON TRUE
-GROUP BY td.id, td.title, td.description, td.narrative, td.confidence_level,
-         td.time_horizon, td.direction, td.fundamental_context,
-         td.positioning_context, td.regime_context, td.ticker, td.spot,
-         td.parent_macro_thesis_id, td.parent_macro_thesis_title,
-         td.parent_macro_thesis_description;
+GROUP BY tb.id, tb.title, tb.description, tb.narrative, tb.confidence_level,
+         tb.time_horizon, tb.direction, tb.fundamental_context,
+         tb.positioning_context, tb.regime_context, tb.ticker, tb.spot;
 ```
+
+**Query 2: Get claims for each parent macro thesis** (run separately for each parent)
+
+```sql
+SELECT
+  mc.id,
+  mc.title as claim_title,
+  mc.claim,
+  mc.evidence,
+  mc.reasoning,
+  mc.backing,
+  mc.qualifier,
+  mc.rebuttal,
+  mc.category,
+  mc.time_horizon,
+  ctm.mapping_type,
+  ctm.confidence as mapping_confidence
+FROM claim_thesis_mappings ctm
+INNER JOIN main_claims mc ON ctm.main_claim_id = mc.id
+WHERE ctm.macro_thesis_id = '[MACRO_THESIS_ID]'
+ORDER BY
+  CASE ctm.mapping_type
+    WHEN 'foundation' THEN 1
+    WHEN 'supports' THEN 2
+    WHEN 'refutes' THEN 3
+  END,
+  mc.created_at DESC;
+```
+
+**IMPORTANT**: Asset theses link to macro theses via the `asset_thesis_related_macro_theses` join table (many-to-many relationship), NOT via a direct `macro_thesis_id` foreign key. Always use the join table to discover parent macro theses.
 
 Execute via:
 ```bash
@@ -274,27 +309,62 @@ Using the loaded data, synthesize a draft articulation. Follow this structure:
 
 **Objective**: Identify when this thesis logically depends on other theses.
 
+**CRITICAL**: The query in Step 1 returns `parent_macro_theses` array. These are **explicit compositional dependencies** that MUST be analyzed.
+
+**For each parent macro thesis**:
+1. **Fetch its claims** using Query 2 from Step 1
+2. **Analyze the claims** - do they provide cross-asset context for this thesis?
+3. **Determine dependency type** - does this thesis require the macro thesis to be true?
+4. **Auto-create dependent validation point** - invalidation of parent macro thesis should trigger thesis review
+
 **Check for**:
-1. **Parent macro thesis**: Does the asset thesis assume the macro thesis is correct?
-2. **Sibling theses**: Does this thesis assume related asset theses succeed/fail?
+1. **Parent macro thesis** (from query): Does the asset thesis assume the macro thesis is correct?
+   - If parent macro thesis exists, it should ALMOST ALWAYS be a `depends_on` relationship
+   - Run Query 2 to fetch parent macro thesis claims for context
+2. **Sibling theses** (from query): Does this thesis assume related asset theses succeed/fail?
 3. **Implied theses**: Does the evidence imply beliefs not yet formalized as theses?
 
 **Relationship types**:
-- `depends_on`: This thesis requires the other to be true
+- `depends_on`: This thesis requires the other to be true (most parent macro relationships)
 - `supports`: This thesis provides evidence for the other
 - `contradicts`: This thesis is in tension with the other
 
 **Example output**:
 ```
-Referenced Theses:
-1. "AI Infrastructure Build-Out" (macro) - DEPENDS_ON
-   Notes: NVDA dominance thesis assumes AI infrastructure spending continues at current trajectory
+Parent Macro Theses Found: 1
+├── "Bullish AI Infrastructure" (macro, HIGH confidence, 15 claims)
+│   └── Relationship: DEPENDS_ON
+│   └── Notes: GLW optical growth thesis is derivative of AI infrastructure buildout
+│   └── Key macro claims relevant to this thesis:
+│       - "Hardware Investment Era" - explicitly names Corning as beneficiary
+│       - "AI compute demand will perpetually exceed supply (3+ years)"
+│   └── Recommended: Create dependent invalidation point
 
-2. "Hyperscaler Vertical Integration" (asset: GOOGL) - CONTRADICTS
-   Notes: If Google's TPU thesis plays out aggressively, NVDA share thesis is threatened
+Sibling Asset Theses: 2
+├── "Bullish NVDA" (asset, shares "Bullish AI Infrastructure" parent)
+└── "Bullish VRT" (asset, shares "Bullish AI Infrastructure" parent)
 ```
 
-**Present to user**: "I notice this thesis appears to depend on [X]. Does that match your thinking?"
+**Present to user**: "I found [N] parent macro thesis(es) linked to this asset thesis. [Macro thesis title] has [N] claims that provide cross-asset context. I recommend creating a dependent invalidation point. Does this match your thinking?"
+
+**Auto-generated Dependent Validation Point**:
+For each parent macro thesis with `depends_on` relationship, automatically propose an invalidation point:
+```typescript
+{
+  type: 'invalidation',
+  statement: '"[MACRO_THESIS_TITLE]" macro thesis is invalidated or downgraded to low confidence',
+  rationale: '[ASSET_THESIS] is a derivative bet on [MACRO_THESIS]; if parent fails, child assumption collapses',
+  category: 'explicit',
+  importance: 'critical',
+  dependentThesisId: '[MACRO_THESIS_ID]',
+  dependentThesisType: 'macro',
+  dependentThesisCondition: 'invalidated',
+  responseProtocol: {
+    description: 'Immediate thesis re-evaluation. If macro thesis invalidated, reassess position.',
+    escalation: 'exit'
+  }
+}
+```
 
 ---
 
