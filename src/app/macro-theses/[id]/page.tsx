@@ -8,7 +8,8 @@ import { EditMacroThesisButton } from '@/components/theses/EditMacroThesisButton
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
 import { LinkedAssetThesesSection } from '@/components/theses/LinkedAssetThesesSection';
 import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
-import { ThesisSynthesisSection } from '@/components/thesis-synthesis';
+import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
+import { ValidationPointsList } from '@/components/thesis-synthesis/ValidationPointsList';
 import { notFound } from 'next/navigation';
 
 interface ThesisDetailPageProps {
@@ -117,22 +118,90 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
           </dl>
         </div>
 
-        {/* Summary (formerly Description) */}
-        {thesis.description ? (
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <h3 className="text-base font-semibold mb-3">Summary</h3>
-            <p className="text-sm text-slate-700 whitespace-pre-wrap">{thesis.description}</p>
+        {/* Core Argument - Primary thesis overview */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold">
+              Core Argument
+              {articulation && (
+                <span className="ml-2 text-xs font-normal text-slate-500">
+                  v{articulation.version} • {new Date(articulation.createdAt).toLocaleDateString()}
+                </span>
+              )}
+              {!articulation && thesis.description && (
+                <span className="ml-2 text-xs font-normal text-amber-600">
+                  (legacy description)
+                </span>
+              )}
+            </h3>
           </div>
-        ) : null}
 
-        {/* Thesis Synthesis - Articulation & Validation Points */}
-        <ThesisSynthesisSection
-          thesisId={id}
-          thesisType="macro"
-          articulation={articulation}
-          validationPoints={validationPoints}
-          claimCount={claimsWithSources.length}
-        />
+          {/* Priority 1: Show articulation */}
+          {articulation ? (
+            <ThesisArticulationDisplay
+              articulation={articulation}
+              claimCount={claimsWithSources.length}
+            />
+          ) : thesis.description ? (
+            /* Priority 2: Show legacy description with upgrade prompt */
+            <div className="space-y-4">
+              <p className="text-sm text-slate-700 whitespace-pre-wrap">{thesis.description}</p>
+              <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-xs text-blue-700">
+                  💡 Run{' '}
+                  <code className="px-1 bg-blue-100 rounded font-mono">/synthesize-thesis</code>
+                  {' '}to create a full articulation with key drivers, assumptions, and validation points.
+                </p>
+              </div>
+            </div>
+          ) : (
+            /* Priority 3: No content */
+            <div className="text-center py-4">
+              <p className="text-sm text-slate-500 mb-2">
+                No articulation exists yet for this thesis.
+              </p>
+              <p className="text-xs text-slate-400">
+                Use{' '}
+                <code className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">
+                  /synthesize-thesis
+                </code>{' '}
+                to generate a Core Argument with key drivers, assumptions, and validation points.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Validation Points - Separate section for accountability */}
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-base font-semibold mb-3">
+            Validation Points ({validationPoints.length})
+            {validationPoints.length > 0 && (
+              <span className="ml-2 text-xs font-normal text-slate-400">
+                {validationPoints.filter(p => p.type === 'validation').length} validation •{' '}
+                {validationPoints.filter(p => p.type === 'invalidation').length} invalidation
+              </span>
+            )}
+          </h3>
+          {validationPoints.length === 0 ? (
+            <div className="text-center py-4">
+              <p className="text-sm text-slate-500 mb-2">
+                No validation points defined yet.
+              </p>
+              <p className="text-xs text-slate-400">
+                Validation points are created when you run{' '}
+                <code className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">
+                  /synthesize-thesis
+                </code>
+              </p>
+            </div>
+          ) : (
+            <ValidationPointsList
+              validationPoints={validationPoints}
+              thesisId={id}
+              thesisType="macro"
+            />
+          )}
+        </div>
 
         {/* Main Claims - UnifiedClaimsBrowser */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">

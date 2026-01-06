@@ -11,7 +11,8 @@ import { EditAssetThesisButton } from '@/components/asset-theses/EditAssetThesis
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
 import { LinkedMacroThesesSection } from '@/components/asset-theses/LinkedMacroThesesSection';
 import { LinkedStrategiesSection } from '@/components/asset-theses/LinkedStrategiesSection';
-import { ThesisSynthesisSection } from '@/components/thesis-synthesis';
+import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
+import { ValidationPointsList } from '@/components/thesis-synthesis/ValidationPointsList';
 import type { ThesisArticulation, ValidationPoint } from '@/db/schema';
 import type { getAssetThesisById, getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
 import type { MacroThesisListItem } from '@/db/queries/macroTheses';
@@ -38,19 +39,27 @@ export function AssetThesisDetailSections({
   validationPoints,
 }: AssetThesisDetailSectionsProps) {
   const currentClaimCount = claimsWithSources?.length ?? 0;
-  const newClaims = currentClaimCount - (view.aiSummaryClaimCount ?? 0);
-  const daysOld = view.aiSummaryGeneratedAt
+  const articulationClaimCount = articulation
+    ? ((articulation.claimIdsUsed as string[]) || []).length
+    : 0;
+  const newClaimsSinceArticulation = currentClaimCount - articulationClaimCount;
+
+  // Legacy summary staleness (for fallback display)
+  const newClaimsSinceSummary = currentClaimCount - (view.aiSummaryClaimCount ?? 0);
+  const summaryDaysOld = view.aiSummaryGeneratedAt
     ? Math.floor((Date.now() - new Date(view.aiSummaryGeneratedAt).getTime()) / (1000 * 60 * 60 * 24))
     : 0;
 
   // Determine which sections should be expanded by default
-  const defaultExpanded: string[] = ['overview'];
-  if (view.aiSummary || view.description) defaultExpanded.push('summary');
-  if (articulation) defaultExpanded.push('articulation');
+  const defaultExpanded: string[] = ['overview', 'core-argument'];
+  if (validationPoints.length > 0) defaultExpanded.push('validation-points');
 
   const [expandedSections, setExpandedSections] = useState<string[]>(defaultExpanded);
 
-  const hasSummary = view.aiSummary || view.description;
+  // Determine what content to show in Core Argument section
+  const hasCoreArgument = !!articulation;
+  const hasLegacySummary = !!view.aiSummary;
+  const hasDescription = !!view.description;
 
   return (
     <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
@@ -135,76 +144,146 @@ export function AssetThesisDetailSections({
           </AccordionContent>
         </AccordionItem>
 
-        {/* Summary Section */}
-        {hasSummary && (
-          <AccordionItem value="summary">
-            <AccordionTrigger className="px-4">
-              <div className="flex items-center gap-3 flex-1">
-                <span className="font-semibold">Summary</span>
-                {view.aiSummary && view.aiSummaryGeneratedAt && (
-                  <span className="text-xs text-slate-500">
-                    {new Date(view.aiSummaryGeneratedAt).toLocaleDateString()} • {view.aiSummaryClaimCount} claims
-                  </span>
-                )}
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4">
-              {/* AI Summary */}
-              {view.aiSummary && (
-                <div className="mb-4">
-                  <div className="text-sm whitespace-pre-wrap text-slate-900">
-                    {view.aiSummary}
-                  </div>
-
-                  {/* Staleness warning */}
-                  {newClaims >= 3 && (
-                    <div className="mt-2 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-                      ⚠️ {newClaims} new claims added since generation — consider regenerating with /generate-summary
-                    </div>
-                  )}
-                  {newClaims < 3 && daysOld >= 30 && (
-                    <div className="mt-2 px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-                      ⚠️ Summary is {daysOld} days old — consider regenerating with /generate-summary
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Manual Description */}
-              {view.description && (
-                <div>
-                  <span className="text-xs font-medium text-slate-500 block mb-2">
-                    MANUAL DESCRIPTION
-                  </span>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                    {view.description}
-                  </p>
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        )}
-
-        {/* Thesis Articulation */}
-        <AccordionItem value="articulation">
+        {/* Core Argument Section - Primary thesis overview */}
+        <AccordionItem value="core-argument">
           <AccordionTrigger className="px-4">
             <div className="flex items-center gap-3 flex-1">
-              <span className="font-semibold">Thesis Articulation</span>
-              {validationPoints.length > 0 && (
+              <span className="font-semibold">Core Argument</span>
+              {hasCoreArgument && articulation && (
                 <span className="text-xs text-slate-500">
-                  {validationPoints.length} validation points
+                  v{articulation.version} • {new Date(articulation.createdAt).toLocaleDateString()}
+                </span>
+              )}
+              {!hasCoreArgument && hasLegacySummary && (
+                <span className="text-xs text-amber-600">
+                  (legacy summary)
                 </span>
               )}
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4">
-            <ThesisSynthesisSection
-              thesisId={view.id}
-              thesisType="asset"
-              articulation={articulation}
-              validationPoints={validationPoints}
-              claimCount={claimsWithSources.length}
-            />
+            {/* Priority 1: Show articulation Core Argument */}
+            {hasCoreArgument && articulation && (
+              <ThesisArticulationDisplay
+                articulation={articulation}
+                claimCount={currentClaimCount}
+              />
+            )}
+
+            {/* Priority 2: Show legacy ai_summary with upgrade prompt */}
+            {!hasCoreArgument && hasLegacySummary && (
+              <div className="space-y-4">
+                <div className="text-sm whitespace-pre-wrap text-slate-900">
+                  {view.aiSummary}
+                </div>
+
+                {/* Staleness warning for legacy summary */}
+                {newClaimsSinceSummary >= 3 && (
+                  <div className="px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                    ⚠️ {newClaimsSinceSummary} new claims added since generation
+                  </div>
+                )}
+                {newClaimsSinceSummary < 3 && summaryDaysOld >= 30 && (
+                  <div className="px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                    ⚠️ Summary is {summaryDaysOld} days old
+                  </div>
+                )}
+
+                {/* Upgrade prompt */}
+                <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-xs text-blue-700">
+                    💡 This is a legacy summary. Run{' '}
+                    <code className="px-1 bg-blue-100 rounded font-mono">/synthesize-thesis</code>
+                    {' '}to create a full articulation with key drivers, assumptions, and validation points.
+                  </p>
+                </div>
+
+                {/* Also show manual description if exists */}
+                {hasDescription && (
+                  <div className="pt-3 border-t border-slate-200">
+                    <span className="text-xs font-medium text-slate-500 block mb-2">
+                      MANUAL DESCRIPTION
+                    </span>
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                      {view.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Priority 3: Show description only */}
+            {!hasCoreArgument && !hasLegacySummary && hasDescription && (
+              <div className="space-y-4">
+                <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                  {view.description}
+                </p>
+
+                {/* Create articulation prompt */}
+                <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-xs text-blue-700">
+                    💡 Run{' '}
+                    <code className="px-1 bg-blue-100 rounded font-mono">/synthesize-thesis</code>
+                    {' '}to create an articulation with key drivers, assumptions, and validation points.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Priority 4: No content - show create prompt */}
+            {!hasCoreArgument && !hasLegacySummary && !hasDescription && (
+              <div className="text-center py-4">
+                <p className="text-sm text-slate-500 mb-2">
+                  No articulation exists yet for this thesis.
+                </p>
+                <p className="text-xs text-slate-400">
+                  Use{' '}
+                  <code className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">
+                    /synthesize-thesis
+                  </code>{' '}
+                  to generate a Core Argument with key drivers, assumptions, and validation points.
+                </p>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Validation Points - Separate section for accountability */}
+        <AccordionItem value="validation-points">
+          <AccordionTrigger className="px-4">
+            <div className="flex items-center gap-3 flex-1">
+              <span className="font-semibold">Validation Points</span>
+              <span className="text-xs text-slate-500">
+                ({validationPoints.length})
+              </span>
+              {validationPoints.length > 0 && (
+                <span className="text-xs text-slate-400">
+                  {validationPoints.filter(p => p.type === 'validation').length} validation •{' '}
+                  {validationPoints.filter(p => p.type === 'invalidation').length} invalidation
+                </span>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4">
+            {validationPoints.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-slate-500 mb-2">
+                  No validation points defined yet.
+                </p>
+                <p className="text-xs text-slate-400">
+                  Validation points are created when you run{' '}
+                  <code className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">
+                    /synthesize-thesis
+                  </code>
+                </p>
+              </div>
+            ) : (
+              <ValidationPointsList
+                validationPoints={validationPoints}
+                thesisId={view.id}
+                thesisType="asset"
+              />
+            )}
           </AccordionContent>
         </AccordionItem>
 
