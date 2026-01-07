@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { mainClaims, claimThesisMappings, macroTheses, assetTheses } from '@/db/schema';
 import { eq, and, or } from 'drizzle-orm';
+import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
 
 /**
  * POST /api/research/link-claim-to-thesis
@@ -152,12 +153,19 @@ export async function POST(request: NextRequest) {
       .set({ updatedAt: new Date() })
       .where(eq(mainClaims.id, mainClaimId));
 
+    // Compute thesis triage after claim is linked
+    // This creates/updates triage records for lifecycle events (rule #1: needs articulation, rule #2: new claims)
+    const thesisType = targetType === 'macro_thesis' ? 'macro' : 'asset';
+    const triageResult = await computeThesisTriageForThesis(targetId, thesisType as 'macro' | 'asset');
+    console.log(`Thesis triage computed for ${thesisType}/${targetId}:`, triageResult);
+
     return NextResponse.json({
       success: true,
       mappingId: mapping.id,
       mappingType: mapping.mappingType,
       confidence: mapping.confidence,
       message: `Main claim linked to ${targetType} successfully`,
+      triageCreated: triageResult.triageCreated,
     });
   } catch (error: any) {
     console.error('Error linking claim to thesis/view:', error);

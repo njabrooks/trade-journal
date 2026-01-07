@@ -80,8 +80,14 @@ export const macroTheses = pgTable(
     outcomeNotes: text('outcome_notes'),
     actualOutcomeDate: date('actual_outcome_date'),
 
-    // Workflow lifecycle status (for triage orchestration)
-    lifecycleStatus: text('lifecycle_status').default('created'), // 'created' | 'claims_linked' | 'synthesized' | 'validated' | 'monitoring' | 'closed'
+    // Workflow status (user-controlled intent)
+    workflowStatus: text('workflow_status').default('developing'), // 'developing' | 'monitoring' | 'paused' | 'validated' | 'invalidated' | 'abandoned'
+
+    // Track claims count when articulation was last generated (for triage rule #2)
+    claimsCountAtLastArticulation: integer('claims_count_at_last_articulation').default(0),
+
+    // DEPRECATED: Use workflowStatus instead. Kept temporarily for migration safety.
+    lifecycleStatus: text('lifecycle_status').default('created'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -95,7 +101,7 @@ export const macroTheses = pgTable(
     nextReviewIdx: index('idx_macro_theses_next_review').on(table.nextReviewDueAt),
     directionIdx: index('idx_macro_theses_direction').on(table.direction),
     positionDatesIdx: index('idx_macro_theses_position_dates').on(table.positionStartDate, table.positionEndDate),
-    lifecycleIdx: index('idx_macro_theses_lifecycle').on(table.lifecycleStatus),
+    workflowIdx: index('idx_macro_theses_workflow').on(table.workflowStatus),
   })
 );
 
@@ -146,8 +152,14 @@ export const assetTheses = pgTable(
     actualOutcomeDate: date('actual_outcome_date'),
     actualPrice: numeric('actual_price'),
 
-    // Workflow lifecycle status (for triage orchestration)
-    lifecycleStatus: text('lifecycle_status').default('created'), // 'created' | 'claims_linked' | 'synthesized' | 'validated' | 'monitoring' | 'closed'
+    // Workflow status (user-controlled intent)
+    workflowStatus: text('workflow_status').default('developing'), // 'developing' | 'monitoring' | 'paused' | 'validated' | 'invalidated' | 'abandoned'
+
+    // Track claims count when articulation was last generated (for triage rule #2)
+    claimsCountAtLastArticulation: integer('claims_count_at_last_articulation').default(0),
+
+    // DEPRECATED: Use workflowStatus instead. Kept temporarily for migration safety.
+    lifecycleStatus: text('lifecycle_status').default('created'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -161,7 +173,7 @@ export const assetTheses = pgTable(
     nextReviewIdx: index('idx_asset_theses_next_review').on(table.nextReviewDueAt),
     directionIdx: index('idx_asset_theses_direction').on(table.direction),
     positionDatesIdx: index('idx_asset_theses_position_dates').on(table.positionStartDate, table.positionEndDate),
-    lifecycleIdx: index('idx_asset_theses_lifecycle').on(table.lifecycleStatus),
+    workflowIdx: index('idx_asset_theses_workflow').on(table.workflowStatus),
   })
 );
 
@@ -1682,6 +1694,9 @@ export const thesisTriageRecords = pgTable(
     lifecycleStage: text('lifecycle_stage'),  // 'synthesis' | 'monitoring' | etc.
     suggestedSkill: text('suggested_skill'),  // e.g., '/synthesize-thesis', '/assess-validation-evidence'
     actionRequired: text('action_required'),  // Human-readable action description
+
+    // Triage rule that created this record (for filtering and analytics)
+    triageRule: text('triage_rule'),  // 'thesis_needs_articulation' | 'thesis_new_claims_available' | 'thesis_monitoring_content' | 'thesis_data_trigger'
 
     // Completion tracking
     completedAt: timestamp('completed_at', { withTimezone: true }),

@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { researchInsights, macroTheses, assetTheses, underlyings, mainClaims, claimThesisMappings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure, MainClaim } from '@/types/claims';
+import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -176,12 +177,19 @@ export async function POST(request: NextRequest) {
       })
       .where(eq(researchInsights.id, insightId));
 
+    // Compute thesis triage after claim is linked
+    // This creates triage records for lifecycle events (rule #1: needs articulation, rule #2: new claims)
+    const thesisType = conversionType === 'macro_thesis' ? 'macro' : 'asset';
+    const triageResult = await computeThesisTriageForThesis(createdId, thesisType);
+    console.log(`Thesis triage computed for ${thesisType}/${createdId}:`, triageResult);
+
     return NextResponse.json({
       success: true,
       id: createdId,
       type: conversionType,
       claimId: createdMainClaim.id,
       relationshipType,
+      triageCreated: triageResult.triageCreated,
     });
   } catch (error) {
     console.error('Error converting claim:', error);

@@ -1,7 +1,7 @@
 # Triage as Workflow Orchestration Layer
 
 **Purpose**: Design specification for triage as the universal workflow management layer across all object types
-**Status**: Partially Implemented
+**Status**: Phase 2.5 Implemented (Event-Driven Triage)
 **Created**: 2026-01-07
 **Last Updated**: 2026-01-07
 **PRD Alignment**: Section 6 (Workflow & Triage Engine), Section 8 (Institutional Memory)
@@ -44,57 +44,91 @@ AUTOMATION BOUNDARY
 ### Completed ✅
 
 **Phase 1 (Foundation):**
-- `lifecycle_status` field on `macro_theses` and `asset_theses` tables
 - `thesis_triage_records` table with JSONB fields for content/analysis
-- Lifecycle stage visible in triage inbox with color-coded badges
+- Triage inbox UI with filtering by severity, thesis type
 
 **Phase 2 (Monitoring Integration):**
 - `daily-thesis-monitoring.ts` creates triage records with Perplexity search results
 - Claude AI analysis stored in `ai_analysis` JSONB field
-- Triage inbox UI with filtering by severity, thesis type, lifecycle stage
 - Expandable detail view showing AI analysis, key findings, matched results
 - Suggested skill commands displayed and copyable
 
-**Scripts Created:**
+**Phase 2.5 (Event-Driven Triage) - NEW:**
+- Renamed `lifecycle_status` → `workflow_status` with values: `developing` | `monitoring` | `paused` | `validated` | `invalidated` | `abandoned`
+- Added `claims_count_at_last_articulation` field to track rule #2
+- Added `triage_rule` field to `thesis_triage_records` for categorizing triage types
+- Created `src/lib/derived/thesisTriage.ts` with:
+  - `computeThesisTriageForThesis()` - compute triage for single thesis
+  - `computeThesisTriageForAll()` - reconciliation job for all theses
+  - `onArticulationCreated()` - hook for articulation events
+- Hooked triage computation into:
+  - `/api/research/convert-claim` - when claim creates new thesis
+  - `/api/research/link-claim-to-thesis` - when claim linked to existing thesis
+
+**Scripts:**
 - `scripts/daily-thesis-monitoring.ts` - Automated news monitoring → triage records
 - `scripts/generate-lifecycle-triage.ts` - Batch creation of lifecycle triage records
 
 ### Not Yet Built ❌
 
-**Event-Driven State Machine:**
-The lifecycle transitions are currently **manual/batch**. The system does NOT automatically:
-- Detect when claims are linked and update lifecycle_status
-- Create triage records when lifecycle stage changes
-- Transition theses through stages based on detected conditions
-
-**Transition Logic Decision (Pending Implementation):**
-
-| Transition | Approach | Detection Logic |
-|------------|----------|-----------------|
-| created → claims_linked | **Automatic** | Detect when ≥3 claims linked via `main_claims.thesis_id` |
-| claims_linked → synthesized | **User-confirmed** | User marks complete after `/synthesize-thesis` |
-| synthesized → validated | **User-confirmed** | User confirms V&I points extracted |
-| validated → monitoring | **Automatic** | Detect when `thesis_monitoring_configs` record exists |
-| monitoring → closed | **User-confirmed** | User explicitly closes thesis |
-
 **Phase 3 (Journal Integration):**
-- `journal_entries` table not yet created
+- `journal_entries` table exists but not yet populated
 - No audit logging of triage completions, skill invocations, status changes
 
 **Phase 4 (Strategy/Position Lifecycle):**
 - Strategy/position triage not yet unified with thesis triage
 - Existing position triage (`triage_records` table) remains separate
 
-### Next Steps (Data/Logic Layer)
+### Next Steps
 
-1. **Build event-driven lifecycle detection:**
-   - Option A: PostgreSQL triggers on `main_claims`, `thesis_monitoring_configs`
-   - Option B: API middleware that checks state after mutations
-   - Option C: Background job that periodically reconciles state
+1. **Triage UI Updates** - Display thesis lifecycle triage alongside monitoring triage
+2. **Articulation hook** - Call `onArticulationCreated()` when articulation is saved
+3. **Background reconciliation** - Schedule `computeThesisTriageForAll()` to catch missed updates
 
-2. **Auto-create triage records on lifecycle transition**
+---
 
-3. **Update lifecycle_status when conditions met**
+## Key Design Decision: Evolution State vs Workflow Status
+
+A critical insight emerged during implementation: thesis lifecycle is **not strictly linear**. Claims can be added continuously, articulations can be regenerated, and monitoring runs indefinitely. This led to separating two concepts:
+
+### 1. Evolution State (Computed)
+
+What artifacts exist for a thesis - computed on demand, not stored:
+
+```typescript
+interface ThesisEvolutionState {
+  claimCount: number;              // From claim_thesis_mappings
+  hasArticulation: boolean;        // From thesis_articulations
+  hasValidationPoints: boolean;    // From validation_points
+  hasMonitoringConfig: boolean;    // From thesis_monitoring_configs
+}
+```
+
+### 2. Workflow Status (User-Controlled)
+
+User's explicit intent for the thesis - stored in `workflow_status` field:
+
+| Status | Meaning |
+|--------|---------|
+| `developing` | Building thesis, adding claims, refining articulation |
+| `monitoring` | Active V&I point monitoring |
+| `paused` | Temporarily inactive |
+| `validated` | Closed - thesis proved correct |
+| `invalidated` | Closed - thesis proved wrong |
+| `abandoned` | Closed - no longer relevant |
+
+### Triage Rules
+
+Triage is triggered by **evolution state changes**, not workflow status:
+
+| # | Trigger | Triage Rule | Resolved By |
+|---|---------|-------------|-------------|
+| 1 | Thesis exists, no articulation | `thesis_needs_articulation` | Articulation generated |
+| 2 | ≥3 claims since last articulation | `thesis_new_claims_available` | New articulation OR dismiss |
+| 3 | Articulation generated | *(no triage)* | V&I points created in same session |
+| 4 | Monitoring finds content | `thesis_monitoring_content` | User assesses content |
+| 5 | Data threshold breached | `thesis_data_trigger` | User reviews V&I status |
+| 6 | User self-discovery | *(no triage)* | Journal entry only |
 
 ---
 
