@@ -4,6 +4,7 @@ import { TriageFilters } from "@/components/triage/TriageFilters";
 import { TriageTableRow } from "@/components/triage/TriageTableRow";
 import { TriageBulkActions } from "@/components/triage/TriageBulkActions";
 import { SortableHeader } from "@/components/triage/SortableHeader";
+import { ThesisTriageSection } from "@/components/triage/ThesisTriageSection";
 import { getPrimaryAccount, getAccounts } from "@/db/queries/accounts";
 import { getTriageQueue, getTriageQueueCounts } from "@/db/queries/triage";
 import { formatDateFull } from "@/lib/formatters";
@@ -141,42 +142,52 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   return (
     <DashboardShell
       activeNav="triage"
-      title={
-        <div className="flex items-center gap-4">
-          <span>Triage Queue</span>
-          {queue.snapshotDate && (
-            <span className="text-sm font-normal text-muted-foreground">
-              Latest snapshot: {formatDateFull(queue.snapshotDate)}
-            </span>
-          )}
-        </div>
-      }
+      title="Triage Inbox"
+      subtitle="Unified workflow queue for theses, strategies, and positions"
     >
-      <div className="border-b bg-white px-6 py-4 -mx-4 -mt-4">
-        <div className="flex flex-wrap items-center gap-3 mb-3">
-          {accounts.length > 1 && (
-            <AccountSelector
-              accounts={accounts}
-              selectedAccountId={selectedAccountId}
-              basePath="/triage"
-            />
-          )}
+      {/* Thesis Workflow Section */}
+      <div className="mb-6">
+        <ThesisTriageSection />
+      </div>
+
+      {/* Position/Strategy Triage Section */}
+      <div className="rounded-lg border bg-white">
+        <div className="border-b px-4 py-3">
+          <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+            Position & Strategy Triage
+            {queue.snapshotDate && (
+              <span className="text-sm font-normal text-slate-500">
+                Latest snapshot: {formatDateFull(queue.snapshotDate)}
+              </span>
+            )}
+          </h2>
         </div>
-        <TriageFilters
-          severityFilter={severityFilter}
-          contextFilter={contextFilter}
-          triggerFilter={triggerFilter}
-          strategyFilter={strategyFilter}
-          allSeverities={allSeverities}
-          allContexts={allContexts}
-          allTriggers={allTriggers}
-          allStrategies={allStrategies}
-          severityCounts={severityCounts}
-          contextCounts={contextCounts}
-          triggerCounts={triggerCounts}
-          strategyCounts={strategyCounts}
-          totalFlags={queue.records.length}
-        />
+        <div className="px-4 py-4">
+          <div className="flex flex-wrap items-center gap-3 mb-3">
+            {accounts.length > 1 && (
+              <AccountSelector
+                accounts={accounts}
+                selectedAccountId={selectedAccountId}
+                basePath="/triage"
+              />
+            )}
+          </div>
+          <TriageFilters
+            severityFilter={severityFilter}
+            contextFilter={contextFilter}
+            triggerFilter={triggerFilter}
+            strategyFilter={strategyFilter}
+            allSeverities={allSeverities}
+            allContexts={allContexts}
+            allTriggers={allTriggers}
+            allStrategies={allStrategies}
+            severityCounts={severityCounts}
+            contextCounts={contextCounts}
+            triggerCounts={triggerCounts}
+            strategyCounts={strategyCounts}
+            totalFlags={queue.records.length}
+          />
+        </div>
       </div>
 
       <TriagePageClient records={queue.records} />

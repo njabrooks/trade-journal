@@ -80,6 +80,9 @@ export const macroTheses = pgTable(
     outcomeNotes: text('outcome_notes'),
     actualOutcomeDate: date('actual_outcome_date'),
 
+    // Workflow lifecycle status (for triage orchestration)
+    lifecycleStatus: text('lifecycle_status').default('created'), // 'created' | 'claims_linked' | 'synthesized' | 'validated' | 'monitoring' | 'closed'
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
@@ -92,6 +95,7 @@ export const macroTheses = pgTable(
     nextReviewIdx: index('idx_macro_theses_next_review').on(table.nextReviewDueAt),
     directionIdx: index('idx_macro_theses_direction').on(table.direction),
     positionDatesIdx: index('idx_macro_theses_position_dates').on(table.positionStartDate, table.positionEndDate),
+    lifecycleIdx: index('idx_macro_theses_lifecycle').on(table.lifecycleStatus),
   })
 );
 
@@ -142,6 +146,9 @@ export const assetTheses = pgTable(
     actualOutcomeDate: date('actual_outcome_date'),
     actualPrice: numeric('actual_price'),
 
+    // Workflow lifecycle status (for triage orchestration)
+    lifecycleStatus: text('lifecycle_status').default('created'), // 'created' | 'claims_linked' | 'synthesized' | 'validated' | 'monitoring' | 'closed'
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
@@ -154,6 +161,7 @@ export const assetTheses = pgTable(
     nextReviewIdx: index('idx_asset_theses_next_review').on(table.nextReviewDueAt),
     directionIdx: index('idx_asset_theses_direction').on(table.direction),
     positionDatesIdx: index('idx_asset_theses_position_dates').on(table.positionStartDate, table.positionEndDate),
+    lifecycleIdx: index('idx_asset_theses_lifecycle').on(table.lifecycleStatus),
   })
 );
 
@@ -1669,17 +1677,76 @@ export const thesisTriageRecords = pgTable(
 
     // Link to full assessment report
     assessmentReportPath: text('assessment_report_path'),
+
+    // Lifecycle orchestration fields
+    lifecycleStage: text('lifecycle_stage'),  // 'synthesis' | 'monitoring' | etc.
+    suggestedSkill: text('suggested_skill'),  // e.g., '/synthesize-thesis', '/assess-validation-evidence'
+    actionRequired: text('action_required'),  // Human-readable action description
+
+    // Completion tracking
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    completedBy: text('completed_by'),  // 'user' or skill name
   },
   (table) => ({
     thesisIdx: index('idx_thesis_triage_thesis').on(table.thesisId, table.thesisType),
     statusIdx: index('idx_thesis_triage_status').on(table.status),
     severityIdx: index('idx_thesis_triage_severity').on(table.severity, table.urgency),
     createdIdx: index('idx_thesis_triage_created').on(table.createdAt),
+    lifecycleIdx: index('idx_thesis_triage_lifecycle').on(table.lifecycleStage),
   })
 );
 
 export type ThesisTriageRecord = typeof thesisTriageRecords.$inferSelect;
 export type NewThesisTriageRecord = typeof thesisTriageRecords.$inferInsert;
+
+// ============================================================================
+// Journal Entries (Decision Log)
+// Comprehensive audit trail of all actions across all object types
+// Renamed from blotter_entries to align with PRD terminology
+// ============================================================================
+
+export const journalEntries = pgTable(
+  'journal_entries',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    timestamp: timestamp('timestamp', { withTimezone: true }).notNull().defaultNow(),
+
+    // Object context (polymorphic)
+    objectType: text('object_type').notNull(),  // 'macro_thesis' | 'asset_thesis' | 'strategy' | 'position' | 'claim' | 'validation_point'
+    objectId: uuid('object_id').notNull(),
+    objectTitle: text('object_title'),
+
+    // Action details
+    actionType: text('action_type').notNull(),  // 'status_change' | 'skill_invoked' | 'claim_linked' | 'triage_completed' | etc.
+    actionDescription: text('action_description').notNull(),
+
+    // Linkage to other entities
+    triageRecordId: uuid('triage_record_id'),  // References thesis_triage_records or triage_records
+    skillInvoked: text('skill_invoked'),  // e.g., '/synthesize-thesis'
+
+    // State change tracking
+    previousState: jsonb('previous_state'),
+    newState: jsonb('new_state'),
+
+    // User rationale (for divergence tracking)
+    rationale: text('rationale'),
+
+    // Provenance
+    source: text('source').notNull(),  // 'user' | 'skill' | 'automation'
+
+    // Additional metadata
+    metadata: jsonb('metadata').default({}),
+  },
+  (table) => ({
+    objectIdx: index('idx_journal_object').on(table.objectType, table.objectId),
+    timestampIdx: index('idx_journal_timestamp').on(table.timestamp),
+    actionTypeIdx: index('idx_journal_action_type').on(table.actionType),
+    sourceIdx: index('idx_journal_source').on(table.source),
+  })
+);
+
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type NewJournalEntry = typeof journalEntries.$inferInsert;
 
 // Type definitions for Triage JSONB fields
 export interface TriageContentSummary {

@@ -47,7 +47,7 @@ npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psq
 - **CLAUDE.md** (this file) - Quick reference, common commands, file navigation
 - **[Terminology Guide](docs/terminology.md)** - Authoritative term definitions (PRD-aligned)
 - **[Research Workflow](docs/features/research-workflow.md)** - Complete research workflow guide
-- **[Documentation Best Practices](docs/DOCUMENTATION_BEST_PRACTICES.md)** - How to document work and link to big picture
+- **[Documentation Best Practices](DOCUMENTATION_BEST_PRACTICES.md)** - How to document work and link to big picture
 
 **For Architects** (system design and vision):
 - **[PRD v1.1](docs/PRD_v1.1.md)** - Product vision and requirements (locked)

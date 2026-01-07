@@ -1,6 +1,6 @@
 import { and, desc, asc, eq, sql, ne, or, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { strategies, triageRecords } from "@/db/schema";
+import { strategies, triageRecords, thesisTriageRecords } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
 
 export interface TriageQueueFilters {
@@ -526,4 +526,217 @@ export async function getTriageQueueCounts(
       strategyRows.map((row) => [row.value ?? '', row.count])
     ),
   };
+}
+
+// ============================================================================
+// Thesis Triage Records (for macro/asset theses workflow orchestration)
+// ============================================================================
+
+export interface ThesisTriageFilters {
+  status?: string[];  // 'pending' | 'in_review' | 'actioned' | 'dismissed'
+  severity?: string[];  // 'critical' | 'high' | 'medium' | 'low' | 'info'
+  thesisType?: string[];  // 'macro' | 'asset'
+  lifecycleStage?: string[];  // 'created' | 'claims_linked' | 'synthesized' | 'validated' | 'monitoring'
+}
+
+export interface ThesisTriageQueueRecord {
+  id: string;
+  createdAt: Date;
+  thesisId: string;
+  thesisType: string;
+  thesisTitle: string;
+  triggerType: string;
+  triggerSource: string;
+  severity: string;
+  urgency: string;
+  status: string;
+  lifecycleStage: string | null;
+  suggestedSkill: string | null;
+  actionRequired: string | null;
+  userNotes: string | null;
+  completedAt: Date | null;
+}
+
+/**
+ * Get thesis triage queue with optional filters
+ */
+export async function getThesisTriageQueue(
+  filters: ThesisTriageFilters = {}
+): Promise<ThesisTriageQueueRecord[]> {
+  const conditions = [];
+
+  // By default, only show non-completed records
+  if (!filters.status || filters.status.length === 0) {
+    conditions.push(ne(thesisTriageRecords.status, 'actioned'));
+    conditions.push(ne(thesisTriageRecords.status, 'dismissed'));
+  } else {
+    conditions.push(inArray(thesisTriageRecords.status, filters.status));
+  }
+
+  if (filters.severity && filters.severity.length > 0) {
+    conditions.push(inArray(thesisTriageRecords.severity, filters.severity));
+  }
+
+  if (filters.thesisType && filters.thesisType.length > 0) {
+    conditions.push(inArray(thesisTriageRecords.thesisType, filters.thesisType));
+  }
+
+  if (filters.lifecycleStage && filters.lifecycleStage.length > 0) {
+    conditions.push(inArray(thesisTriageRecords.lifecycleStage, filters.lifecycleStage));
+  }
+
+  const rows = await db
+    .select({
+      id: thesisTriageRecords.id,
+      createdAt: thesisTriageRecords.createdAt,
+      thesisId: thesisTriageRecords.thesisId,
+      thesisType: thesisTriageRecords.thesisType,
+      thesisTitle: thesisTriageRecords.thesisTitle,
+      triggerType: thesisTriageRecords.triggerType,
+      triggerSource: thesisTriageRecords.triggerSource,
+      severity: thesisTriageRecords.severity,
+      urgency: thesisTriageRecords.urgency,
+      status: thesisTriageRecords.status,
+      lifecycleStage: thesisTriageRecords.lifecycleStage,
+      suggestedSkill: thesisTriageRecords.suggestedSkill,
+      actionRequired: thesisTriageRecords.actionRequired,
+      userNotes: thesisTriageRecords.userNotes,
+      completedAt: thesisTriageRecords.completedAt,
+    })
+    .from(thesisTriageRecords)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(
+      // Sort by urgency (immediate first), then severity, then creation date
+      sql`CASE ${thesisTriageRecords.urgency}
+        WHEN 'immediate' THEN 1
+        WHEN 'today' THEN 2
+        WHEN 'this_week' THEN 3
+        WHEN 'when_convenient' THEN 4
+        ELSE 5
+      END`,
+      sql`CASE ${thesisTriageRecords.severity}
+        WHEN 'critical' THEN 1
+        WHEN 'high' THEN 2
+        WHEN 'medium' THEN 3
+        WHEN 'low' THEN 4
+        WHEN 'info' THEN 5
+        ELSE 6
+      END`,
+      desc(thesisTriageRecords.createdAt)
+    );
+
+  return rows;
+}
+
+/**
+ * Get counts for thesis triage filtering
+ */
+export async function getThesisTriageQueueCounts(): Promise<{
+  status: Record<string, number>;
+  severity: Record<string, number>;
+  thesisType: Record<string, number>;
+  lifecycleStage: Record<string, number>;
+  total: number;
+}> {
+  // Base condition: exclude completed records for counts
+  const baseConditions = [
+    ne(thesisTriageRecords.status, 'actioned'),
+    ne(thesisTriageRecords.status, 'dismissed'),
+  ];
+
+  const [statusRows, severityRows, typeRows, lifecycleRows, totalRow] = await Promise.all([
+    // Status counts (including all statuses for transparency)
+    db
+      .select({
+        value: thesisTriageRecords.status,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(thesisTriageRecords)
+      .groupBy(thesisTriageRecords.status),
+
+    // Severity counts
+    db
+      .select({
+        value: thesisTriageRecords.severity,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(thesisTriageRecords)
+      .where(and(...baseConditions))
+      .groupBy(thesisTriageRecords.severity),
+
+    // Thesis type counts
+    db
+      .select({
+        value: thesisTriageRecords.thesisType,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(thesisTriageRecords)
+      .where(and(...baseConditions))
+      .groupBy(thesisTriageRecords.thesisType),
+
+    // Lifecycle stage counts
+    db
+      .select({
+        value: thesisTriageRecords.lifecycleStage,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(thesisTriageRecords)
+      .where(and(...baseConditions))
+      .groupBy(thesisTriageRecords.lifecycleStage),
+
+    // Total pending count
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(thesisTriageRecords)
+      .where(and(...baseConditions)),
+  ]);
+
+  return {
+    status: Object.fromEntries(
+      statusRows.map((row) => [row.value ?? '', row.count])
+    ),
+    severity: Object.fromEntries(
+      severityRows.map((row) => [row.value ?? '', row.count])
+    ),
+    thesisType: Object.fromEntries(
+      typeRows.map((row) => [row.value ?? '', row.count])
+    ),
+    lifecycleStage: Object.fromEntries(
+      lifecycleRows.map((row) => [row.value ?? '', row.count])
+    ),
+    total: totalRow[0]?.count ?? 0,
+  };
+}
+
+/**
+ * Update thesis triage record status
+ */
+export async function updateThesisTriageStatus(
+  id: string,
+  update: {
+    status?: string;
+    userNotes?: string;
+    completedBy?: string;
+  }
+): Promise<void> {
+  const updateData: Record<string, unknown> = {
+    updatedAt: new Date(),
+  };
+
+  if (update.status) {
+    updateData.status = update.status;
+    if (update.status === 'actioned' || update.status === 'dismissed') {
+      updateData.completedAt = new Date();
+      updateData.completedBy = update.completedBy || 'user';
+    }
+  }
+
+  if (update.userNotes !== undefined) {
+    updateData.userNotes = update.userNotes;
+  }
+
+  await db
+    .update(thesisTriageRecords)
+    .set(updateData)
+    .where(eq(thesisTriageRecords.id, id));
 }
