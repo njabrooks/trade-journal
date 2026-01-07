@@ -9,7 +9,7 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/njb/Desktop/trade-journal && set -a && source .env.local && set +a && /opt/homebrew/bin/npx tsx scripts/run-flex-ingestion.ts >> /tmp/flex-ingestion.log 2>&1</string>
+        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/run-flex-ingestion.ts >> /tmp/flex-ingestion.log 2>&1</string>
     </array>
 
     <!-- Run at 4 AM, 6 AM, and noon (matching GitHub Actions schedule) -->

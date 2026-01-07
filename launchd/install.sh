@@ -17,6 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 
 PLISTS=(
+    "com.trade-journal.supabase-start.plist"
     "com.trade-journal.flex-ingestion.plist"
     "com.trade-journal.massive-ingestion.plist"
     "com.trade-journal.push-to-remote.plist"
@@ -50,6 +51,7 @@ show_status() {
 
     echo ""
     echo "Log files:"
+    echo "  /tmp/supabase-start.log"
     echo "  /tmp/flex-ingestion.log"
     echo "  /tmp/massive-ingestion.log"
     echo "  /tmp/push-to-remote.log"
@@ -89,6 +91,7 @@ install_jobs() {
     echo "═══════════════════════════════════════════════════════════"
     echo ""
     echo "Schedule:"
+    echo "  Supabase start:    On login (30s delay for Docker)"
     echo "  Flex ingestion:    4:00 AM, 6:00 AM, 12:00 PM"
     echo "  Massive ingestion: 4:30 PM"
     echo "  Push to remote:    11:00 PM"

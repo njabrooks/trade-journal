@@ -2,33 +2,24 @@
 /**
  * Standalone script to run Flex ingestion
  * Can be run locally or in CI/CD (e.g., GitHub Actions)
- * 
+ *
  * Usage:
  *   tsx scripts/run-flex-ingestion.ts
  *   tsx scripts/run-flex-ingestion.ts --config-id <uuid>
  */
 
-// Check required environment variables before importing modules
-function checkEnvironment() {
-  const required = ['DATABASE_URL_POOLER'];
-  const missing: string[] = [];
+// Load environment FIRST before any other imports
+import 'dotenv/config';
+import { config } from 'dotenv';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-  for (const key of required) {
-    if (!process.env[key]) {
-      missing.push(key);
-    }
-  }
+// Also load .env.local explicitly (dotenv/config only loads .env by default)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+config({ path: resolve(__dirname, '..', '.env.local') });
 
-  if (missing.length > 0) {
-    console.error('❌ Missing required environment variables:');
-    missing.forEach(key => console.error(`   - ${key}`));
-    console.error('\nPlease set these in your GitHub repository secrets or .env.local');
-    process.exit(1);
-  }
-}
-
-checkEnvironment();
-
+// Now import application modules (after env is loaded)
 import { db } from '../src/db';
 import { flexQueryConfigs } from '../src/db/schema';
 import { eq } from 'drizzle-orm';

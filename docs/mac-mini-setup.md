@@ -6,9 +6,10 @@ This guide covers setting up the trade-journal system on Mac Mini as the primary
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    MAC MINI (Primary - Always On)           │
+│         MAC MINI (Primary - Always On)                      │
+│         Tailscale IP: 100.75.22.47                          │
 ├─────────────────────────────────────────────────────────────┤
-│  Local Supabase @ 127.0.0.1:54322                          │
+│  Local Supabase @ :54322 (source of truth)                  │
 │                                                             │
 │  Scheduled Jobs (launchd):                                  │
 │  ├── Flex ingestion: 4 AM, 6 AM, 12 PM                     │
@@ -19,14 +20,23 @@ This guide covers setting up the trade-journal system on Mac Mini as the primary
 │  ├── Ingestion → Derived computations → User edits         │
 │  └── Claude skills → Research uploads                       │
 └─────────────────────────────────────────────────────────────┘
+                    ▲
+                    │ Tailscale (works anywhere)
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      MACBOOK PRO                            │
+├─────────────────────────────────────────────────────────────┤
+│  npm run dev → connects to Mac Mini's DB via Tailscale     │
+│  Works: home, coffee shop, travel                           │
+└─────────────────────────────────────────────────────────────┘
                               │
-                              │ Daily backup (11 PM)
+                              │ Nightly backup (11 PM)
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              REMOTE SUPABASE (Backup + Travel)              │
+│              REMOTE SUPABASE (Backup Only)                  │
 ├─────────────────────────────────────────────────────────────┤
 │  Mirror of local (pushed nightly)                          │
-│  Used when: Mac Mini down OR traveling                     │
+│  Used when: Mac Mini down (disaster recovery)              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -35,6 +45,7 @@ This guide covers setting up the trade-journal system on Mac Mini as the primary
 - macOS (Apple Silicon recommended)
 - Homebrew installed
 - Git access to the repository
+- Tailscale account (free) - https://tailscale.com
 
 ## Step 1: Install Docker Desktop
 
@@ -151,7 +162,45 @@ Check status:
 ./launchd/install.sh --status
 ```
 
-## Step 8: Verify Setup
+## Step 8: Install Tailscale
+
+Tailscale creates a private mesh VPN between your devices, allowing the MacBook Pro to connect to Mac Mini's database from anywhere (home, coffee shop, travel).
+
+1. **Download Tailscale Mac app** on Mac Mini:
+   - https://tailscale.com/download/mac
+   - Or Mac App Store: https://apps.apple.com/app/tailscale/id1475387142
+
+2. **Install and login** - click menu bar icon → Log in
+
+3. **Get Mac Mini's Tailscale IP:**
+   ```bash
+   tailscale ip -4
+   ```
+   (Will be something like `100.x.x.x`)
+
+4. **Install Tailscale on MacBook Pro** (same steps)
+
+5. **Configure MacBook Pro's `.env.local`** to use Mac Mini's Tailscale IP:
+   ```bash
+   DATABASE_URL_POOLER=postgresql://postgres:postgres@100.75.22.47:54322/postgres
+   DATABASE_URL_DIRECT=postgresql://postgres:postgres@100.75.22.47:54322/postgres
+   NEXT_PUBLIC_SUPABASE_URL_LOCAL=http://100.75.22.47:54321
+   SUPABASE_STUDIO_URL=http://100.75.22.47:54323
+   ```
+
+6. **Test connection from MacBook Pro:**
+   ```bash
+   ping 100.75.22.47
+   psql "postgresql://postgres:postgres@100.75.22.47:54322/postgres" -c "SELECT 1;"
+   ```
+
+**Benefits:**
+- Works alongside other VPNs (only routes Tailscale traffic)
+- Stable IP that never changes
+- Low latency (peer-to-peer when on same network)
+- Works from anywhere with internet
+
+## Step 9: Verify Setup
 
 ### Test local database connection:
 
@@ -266,18 +315,42 @@ launchctl list | grep trade-journal
 ./launchd/install.sh
 ```
 
-## When Traveling
+## Working from MacBook Pro
 
-When away from Mac Mini, switch to remote Supabase:
+With Tailscale configured, the MacBook Pro connects to Mac Mini's database from anywhere — no configuration changes needed.
 
-1. Edit `.env.local` on your laptop:
+**MacBook Pro `.env.local`:**
+```bash
+DATABASE_URL_POOLER=postgresql://postgres:postgres@100.75.22.47:54322/postgres
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@100.75.22.47:54322/postgres
+NEXT_PUBLIC_SUPABASE_URL_LOCAL=http://100.75.22.47:54321
+SUPABASE_STUDIO_URL=http://100.75.22.47:54323
+```
+
+**Workflow:**
+1. Ensure Tailscale is connected on both machines
+2. `git pull` to get latest code
+3. `npm run dev` — connects to Mac Mini's DB via Tailscale
+4. Code, test, commit, push
+
+**Access Points from MacBook Pro:**
+| Service | URL |
+|---------|-----|
+| Database | `100.75.22.47:54322` |
+| Supabase Studio | http://100.75.22.47:54323 |
+| App (on Mac Mini) | http://100.75.22.47:3000 |
+
+## Fallback: Remote Supabase
+
+If Mac Mini is down, switch MacBook Pro to remote Supabase:
+
+1. Edit `.env.local` on MacBook Pro:
    ```bash
-   # Comment out local, uncomment remote
-   # DATABASE_URL_POOLER=postgresql://postgres:postgres@127.0.0.1:54322/postgres
    DATABASE_URL_POOLER=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+   DATABASE_URL_DIRECT=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
    ```
 
-2. When back, restore from remote if needed:
+2. When Mac Mini is back, restore from remote if needed:
    ```bash
    npx tsx scripts/restore-from-remote.ts --confirm
    ```

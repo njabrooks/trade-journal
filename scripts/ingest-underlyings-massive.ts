@@ -23,10 +23,12 @@
 // Load environment variables from .env.local BEFORE any other imports
 // This ensures env vars are available when db/index.ts is loaded
 import { config } from 'dotenv';
-import { resolve } from 'path';
-// Load .env.local explicitly (dotenv/config only loads .env by default)
-const envPath = resolve(process.cwd(), '.env.local');
-config({ path: envPath, override: false }); // override: false means existing env vars take precedence
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+// Load .env.local explicitly using script directory (works in launchd)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+config({ path: resolve(__dirname, '..', '.env.local') });
 
 import { db } from '../src/db';
 import { underlyings, optionsChainSnapshots } from '../src/db/schema';

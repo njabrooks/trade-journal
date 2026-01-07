@@ -3,29 +3,20 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.trade-journal.push-to-remote</string>
+    <string>com.trade-journal.supabase-start</string>
 
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx tsx scripts/push-to-remote.ts >> /tmp/push-to-remote.log 2>&1</string>
+        <string>sleep 30 && cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx supabase start >> /tmp/supabase-start.log 2>&1</string>
     </array>
 
-    <!-- Run at 11 PM local time (end of day backup) -->
-    <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key>
-        <integer>23</integer>
-        <key>Minute</key>
-        <integer>0</integer>
-    </dict>
-
     <key>StandardOutPath</key>
-    <string>/tmp/push-to-remote.log</string>
+    <string>/tmp/supabase-start.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/tmp/push-to-remote.log</string>
+    <string>/tmp/supabase-start.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
@@ -33,7 +24,12 @@
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
     </dict>
 
+    <!-- Run once at login -->
     <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Don't restart if it exits -->
+    <key>KeepAlive</key>
     <false/>
 </dict>
 </plist>
