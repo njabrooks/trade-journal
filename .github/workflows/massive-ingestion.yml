@@ -1,24 +1,14 @@
-name: Massive Underlyings Ingestion
+name: Massive Underlyings Ingestion (DISABLED - Using Local Mac Mini)
+
+# DISABLED: Ingestion now runs locally on Mac Mini via launchd
+# This workflow is kept for emergency use only (manual trigger)
+# See launchd/install.sh for local setup
 
 on:
-  schedule:
-    # Run daily at 4:30 PM ET / 8:30 PM UTC (30 minutes after market close)
-    # This captures end-of-day prices and IV data as soon as it's available
-    # 
-    # Timing considerations:
-    # - Market closes at 4:00 PM ET
-    # - Daily Market Summary returns normal close (4 PM), not after-hours
-    # - Free tier cannot fetch today's data before market close
-    # - EOD data is finalized ~4:05-4:15 PM ET (safe to assume by 4:30 PM)
-    # - Options chain snapshot can be fetched after close (EOD prices)
-    #
-    # Running at 4:30 PM ET ensures:
-    # - EOD data is available (after 4:15 PM finalization)
-    # - Data arrives BEFORE Flex ingestion runs (Flex runs every 6 hours: 12 AM, 6 AM, 12 PM, 6 PM)
-    # - State codes computed during Flex ingestion will have latest IV data
-    # - Triage computed after Flex will have complete data
-    - cron: '30 20 * * *'  # 4:30 PM ET (8:30 PM UTC during DST, 9:30 PM UTC standard time)
-  workflow_dispatch: # Allow manual trigger from GitHub UI
+  # schedule:
+  #   # Run daily at 4:30 PM ET / 8:30 PM UTC (30 minutes after market close)
+  #   - cron: '30 20 * * *'
+  workflow_dispatch: # Manual trigger only (emergency backup)
 
 jobs:
   ingest:

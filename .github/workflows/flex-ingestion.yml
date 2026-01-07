@@ -1,14 +1,16 @@
-name: Flex Ingestion
+name: Flex Ingestion (DISABLED - Using Local Mac Mini)
+
+# DISABLED: Ingestion now runs locally on Mac Mini via launchd
+# This workflow is kept for emergency use only (manual trigger)
+# See launchd/install.sh for local setup
 
 on:
-  schedule:
-    # Run at 4 AM, 6 AM, and noon GMT
-    # This ensures we update positions when IBKR calculates fields
-    # (avg_price and unrealized_pnl which default to 0 initially)
-    - cron: '0 4 * * *'   # 4:00 AM GMT
-    - cron: '0 6 * * *'   # 6:00 AM GMT
-    - cron: '0 12 * * *'  # 12:00 PM GMT (noon)
-  workflow_dispatch: # Allow manual trigger from GitHub UI
+  # schedule:
+  #   # Run at 4 AM, 6 AM, and noon GMT
+  #   - cron: '0 4 * * *'
+  #   - cron: '0 6 * * *'
+  #   - cron: '0 12 * * *'
+  workflow_dispatch: # Manual trigger only (emergency backup)
 
 jobs:
   ingest:
