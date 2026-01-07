@@ -276,28 +276,96 @@ See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 - **Strategy** (tactical execution) vs **Thesis/View** (long-lived belief)
 - **Triage** (evaluation process) vs **Action Items** (user-facing queue)
 
-## Automated Data Ingestion (GitHub Actions)
+## Data Ingestion Architecture (Local-First)
 
-Two scheduled workflows (`.github/workflows/`):
+**Primary**: Ingestion runs locally on Mac Mini via launchd scheduled jobs.
+**Backup**: Remote Supabase is synced daily for disaster recovery and travel access.
 
-1. **`flex-ingestion.yml`** - IBKR trades/positions
-   - Cron: `0 4,6,12 * * *` (4 AM, 6 AM, 12 PM GMT)
-   - Runs: `npx tsx scripts/run-flex-ingestion.ts`
-   - Env vars: `IBKR_FLEX_TOKEN`, `IBKR_FLEX_POSITIONS_QUERY_ID`, `IBKR_FLEX_TRADES_QUERY_ID`
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    MAC MINI (Primary - Always On)           │
+├─────────────────────────────────────────────────────────────┤
+│  Local Supabase @ 127.0.0.1:54322                          │
+│                                                             │
+│  Scheduled Jobs (launchd):                                  │
+│  ├── Flex ingestion: 4 AM, 6 AM, 12 PM                     │
+│  ├── Massive ingestion: 4:30 PM                            │
+│  └── Push to remote: 11 PM                                 │
+│                                                             │
+│  All activity happens here:                                 │
+│  ├── Ingestion → Derived computations → User edits         │
+│  └── Claude skills → Research uploads                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ Daily backup (11 PM)
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│              REMOTE SUPABASE (Backup + Travel)              │
+├─────────────────────────────────────────────────────────────┤
+│  Mirror of local (pushed nightly)                          │
+│  Used when: Mac Mini down OR traveling                     │
+└─────────────────────────────────────────────────────────────┘
+```
 
-2. **`massive-ingestion.yml`** - IV & spot prices
-   - Cron: `30 20 * * *` (4:30 PM ET / 8:30 PM UTC)
-   - Runs: `npx tsx scripts/ingest-underlyings-massive.ts`
-   - Env vars: `MASSIVE_API_KEY`
+### Local Scheduled Jobs (launchd)
+
+Install on Mac Mini:
+```bash
+./launchd/install.sh           # Install all jobs
+./launchd/install.sh --status  # Check status
+./launchd/install.sh --remove  # Remove all jobs
+```
+
+Jobs installed:
+- `com.trade-journal.flex-ingestion` - 4 AM, 6 AM, 12 PM
+- `com.trade-journal.massive-ingestion` - 4:30 PM
+- `com.trade-journal.push-to-remote` - 11 PM
+
+Logs: `/tmp/flex-ingestion.log`, `/tmp/massive-ingestion.log`, `/tmp/push-to-remote.log`
+
+### Sync Scripts
+
+```bash
+# Push local → remote (daily backup, runs automatically at 11 PM)
+set -a && source .env.local && set +a && npx tsx scripts/push-to-remote.ts
+
+# Restore remote → local (disaster recovery only)
+set -a && source .env.local && set +a && npx tsx scripts/restore-from-remote.ts --dry-run
+set -a && source .env.local && set +a && npx tsx scripts/restore-from-remote.ts --confirm
+```
+
+### GitHub Actions (Emergency Backup)
+
+GitHub Actions workflows are **disabled by default** (schedule commented out).
+They can be triggered manually from GitHub UI for emergency use:
+- `.github/workflows/flex-ingestion.yml` - Manual trigger only
+- `.github/workflows/massive-ingestion.yml` - Manual trigger only
+
+### Switching Between Local and Remote
+
+To use remote Supabase (e.g., when traveling):
+1. Edit `.env.local`
+2. Comment out local URLs, uncomment remote URLs:
+```bash
+# LOCAL (comment out when traveling)
+# DATABASE_URL_POOLER=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+# REMOTE (uncomment when traveling)
+DATABASE_URL_POOLER=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+```
 
 ## Environment Variables
 
 Required in `.env.local`:
 
 ```bash
-# Database (Supabase)
-DATABASE_URL_POOLER=<supabase-pooler-url>
-DATABASE_URL_DIRECT=<supabase-direct-url>
+# Database - Local Supabase (primary)
+DATABASE_URL_POOLER=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
+# Database - Remote Supabase (for sync scripts)
+DATABASE_URL_REMOTE=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+
 USE_DIRECT_CONNECTION=false
 
 # IBKR Flex API

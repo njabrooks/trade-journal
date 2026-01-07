@@ -63,3 +63,7 @@ next-env.d.ts
 # Supabase Local (Docker configuration)
 /supabase/.branches
 /supabase/.temp
+
+# Test output files
+scripts/*-results*.json
+scripts/test-output-*.json
