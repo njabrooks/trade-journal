@@ -46,7 +46,7 @@ import type {
 } from '../src/db/schema.js';
 import Anthropic from '@anthropic-ai/sdk';
 
-const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints, thesisTriageRecords } = schema;
+const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints, thesisTriageRecords, thesisArticulations } = schema;
 
 // ============================================================================
 // Types
@@ -854,16 +854,40 @@ async function runMonitoring(dryRun: boolean = false, newsOnly: boolean = false)
   }
 
   // Fetch all enabled configs
-  const configs = await db
+  const allConfigs = await db
     .select()
     .from(thesisMonitoringConfigs)
     .where(eq(thesisMonitoringConfigs.enabled, true));
 
-  console.log(`\nFound ${configs.length} enabled monitoring configs`);
+  console.log(`\nFound ${allConfigs.length} enabled monitoring configs`);
+
+  if (allConfigs.length === 0) {
+    console.log('No configs to process');
+    return result;
+  }
+
+  // Filter to only theses with articulations (monitoring only makes sense after articulation)
+  const thesesWithArticulations = await db
+    .selectDistinct({ thesisId: thesisArticulations.thesisId, thesisType: thesisArticulations.thesisType })
+    .from(thesisArticulations);
+
+  const articulatedThesisKeys = new Set(
+    thesesWithArticulations.map(t => `${t.thesisType}:${t.thesisId}`)
+  );
+
+  const configs = allConfigs.filter(c =>
+    articulatedThesisKeys.has(`${c.thesisType}:${c.thesisId}`)
+  );
+
+  const skippedCount = allConfigs.length - configs.length;
+  if (skippedCount > 0) {
+    console.log(`  Skipping ${skippedCount} theses without articulations (monitoring requires articulation first)`);
+  }
+  console.log(`  Processing ${configs.length} theses with articulations`);
   result.configsChecked = configs.length;
 
   if (configs.length === 0) {
-    console.log('No configs to process');
+    console.log('No articulated theses to monitor');
     return result;
   }
 
@@ -1302,6 +1326,7 @@ async function createTriageRecord(
       thesisTitle: newsResult.thesisTitle,
       triggerType: 'scheduled_monitoring',
       triggerSource: 'daily_news_scan',
+      triageRule: 'thesis_monitoring_content',
       contentSummary,
       aiAnalysis: analysis,
       matchedResults,
