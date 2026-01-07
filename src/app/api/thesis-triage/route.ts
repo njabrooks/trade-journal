@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getThesisTriageQueue, getThesisTriageQueueCounts, type ThesisTriageFilters } from '@/db/queries/triage';
+import { getThesisTriageQueueFull, getThesisTriageQueueCounts, type ThesisTriageFilters } from '@/db/queries/triage';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,9 +28,9 @@ export async function GET(request: NextRequest) {
       filters.lifecycleStage = lifecycleStage;
     }
 
-    // Fetch data in parallel
+    // Fetch data in parallel - use Full version to get JSONB fields
     const [records, counts] = await Promise.all([
-      getThesisTriageQueue(filters),
+      getThesisTriageQueueFull(filters),
       getThesisTriageQueueCounts(),
     ]);
 

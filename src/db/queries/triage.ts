@@ -557,6 +557,12 @@ export interface ThesisTriageQueueRecord {
   completedAt: Date | null;
 }
 
+export interface ThesisTriageQueueRecordFull extends ThesisTriageQueueRecord {
+  contentSummary: unknown;
+  aiAnalysis: unknown;
+  matchedResults: unknown;
+}
+
 /**
  * Get thesis triage queue with optional filters
  */
@@ -602,6 +608,80 @@ export async function getThesisTriageQueue(
       actionRequired: thesisTriageRecords.actionRequired,
       userNotes: thesisTriageRecords.userNotes,
       completedAt: thesisTriageRecords.completedAt,
+    })
+    .from(thesisTriageRecords)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(
+      // Sort by urgency (immediate first), then severity, then creation date
+      sql`CASE ${thesisTriageRecords.urgency}
+        WHEN 'immediate' THEN 1
+        WHEN 'today' THEN 2
+        WHEN 'this_week' THEN 3
+        WHEN 'when_convenient' THEN 4
+        ELSE 5
+      END`,
+      sql`CASE ${thesisTriageRecords.severity}
+        WHEN 'critical' THEN 1
+        WHEN 'high' THEN 2
+        WHEN 'medium' THEN 3
+        WHEN 'low' THEN 4
+        WHEN 'info' THEN 5
+        ELSE 6
+      END`,
+      desc(thesisTriageRecords.createdAt)
+    );
+
+  return rows;
+}
+
+/**
+ * Get thesis triage queue with JSONB fields (contentSummary, aiAnalysis, matchedResults)
+ */
+export async function getThesisTriageQueueFull(
+  filters: ThesisTriageFilters = {}
+): Promise<ThesisTriageQueueRecordFull[]> {
+  const conditions = [];
+
+  // By default, only show non-completed records
+  if (!filters.status || filters.status.length === 0) {
+    conditions.push(ne(thesisTriageRecords.status, 'actioned'));
+    conditions.push(ne(thesisTriageRecords.status, 'dismissed'));
+  } else {
+    conditions.push(inArray(thesisTriageRecords.status, filters.status));
+  }
+
+  if (filters.severity && filters.severity.length > 0) {
+    conditions.push(inArray(thesisTriageRecords.severity, filters.severity));
+  }
+
+  if (filters.thesisType && filters.thesisType.length > 0) {
+    conditions.push(inArray(thesisTriageRecords.thesisType, filters.thesisType));
+  }
+
+  if (filters.lifecycleStage && filters.lifecycleStage.length > 0) {
+    conditions.push(inArray(thesisTriageRecords.lifecycleStage, filters.lifecycleStage));
+  }
+
+  const rows = await db
+    .select({
+      id: thesisTriageRecords.id,
+      createdAt: thesisTriageRecords.createdAt,
+      thesisId: thesisTriageRecords.thesisId,
+      thesisType: thesisTriageRecords.thesisType,
+      thesisTitle: thesisTriageRecords.thesisTitle,
+      triggerType: thesisTriageRecords.triggerType,
+      triggerSource: thesisTriageRecords.triggerSource,
+      severity: thesisTriageRecords.severity,
+      urgency: thesisTriageRecords.urgency,
+      status: thesisTriageRecords.status,
+      lifecycleStage: thesisTriageRecords.lifecycleStage,
+      suggestedSkill: thesisTriageRecords.suggestedSkill,
+      actionRequired: thesisTriageRecords.actionRequired,
+      userNotes: thesisTriageRecords.userNotes,
+      completedAt: thesisTriageRecords.completedAt,
+      contentSummary: thesisTriageRecords.contentSummary,
+      aiAnalysis: thesisTriageRecords.aiAnalysis,
+      matchedResults: thesisTriageRecords.matchedResults,
     })
     .from(thesisTriageRecords)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
