@@ -382,7 +382,7 @@ export default function AccountsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {account.createdAt
-                      ? new Date(account.createdAt).toLocaleDateString()
+                      ? new Date(account.createdAt).toLocaleDateString('en-GB')
                       : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-right">

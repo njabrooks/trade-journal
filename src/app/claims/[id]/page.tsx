@@ -140,7 +140,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
             <div>
               <dt className="text-xs font-medium text-slate-500">Created</dt>
               <dd className="mt-0.5 text-sm text-slate-900">
-                {new Date(claim.createdAt).toLocaleDateString()}
+                {new Date(claim.createdAt).toLocaleDateString('en-GB')}
               </dd>
             </div>
             {claim.relevantTickers && claim.relevantTickers.length > 0 && (
@@ -304,14 +304,14 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                   <div>
                     <dt className="text-xs font-medium text-slate-500">Published</dt>
                     <dd className="mt-0.5 text-sm text-slate-900">
-                      {new Date(artifact.publishedDate).toLocaleDateString()}
+                      {new Date(artifact.publishedDate).toLocaleDateString('en-GB')}
                     </dd>
                   </div>
                 )}
                 <div>
                   <dt className="text-xs font-medium text-slate-500">Ingested</dt>
                   <dd className="mt-0.5 text-sm text-slate-900">
-                    {new Date(artifact.ingestedAt).toLocaleDateString()}
+                    {new Date(artifact.ingestedAt).toLocaleDateString('en-GB')}
                   </dd>
                 </div>
               </dl>

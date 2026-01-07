@@ -125,7 +125,7 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
               Core Argument
               {articulation && (
                 <span className="ml-2 text-xs font-normal text-slate-500">
-                  v{articulation.version} • {new Date(articulation.createdAt).toLocaleDateString()}
+                  v{articulation.version} • {new Date(articulation.createdAt).toLocaleDateString('en-GB')}
                 </span>
               )}
               {!articulation && thesis.description && (

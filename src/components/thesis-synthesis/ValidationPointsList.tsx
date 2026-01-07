@@ -105,7 +105,7 @@ export function ValidationPointsList({
   const formatNextCheck = (date: Date | null | undefined) => {
     if (!date) return 'On demand';
     const dateObj = new Date(date);
-    return dateObj.toLocaleDateString();
+    return dateObj.toLocaleDateString('en-GB');
   };
 
   const getDataSourceIcon = (source: string) => {
@@ -647,7 +647,7 @@ export function ValidationPointsList({
                       Timeframe: {point.timeframe.replace('_', ' ')}
                     </span>
                     <span>
-                      Created: {new Date(point.createdAt).toLocaleDateString()}
+                      Created: {new Date(point.createdAt).toLocaleDateString('en-GB')}
                     </span>
                   </div>
                 </div>

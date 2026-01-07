@@ -243,11 +243,11 @@ export function ValidationPointDetail({
             Timeframe: {validationPoint.timeframe.replace('_', ' ')}
           </span>
           <span>
-            Created: {new Date(validationPoint.createdAt).toLocaleDateString()}
+            Created: {new Date(validationPoint.createdAt).toLocaleDateString('en-GB')}
           </span>
           {validationPoint.updatedAt !== validationPoint.createdAt && (
             <span>
-              Updated: {new Date(validationPoint.updatedAt).toLocaleDateString()}
+              Updated: {new Date(validationPoint.updatedAt).toLocaleDateString('en-GB')}
             </span>
           )}
         </div>

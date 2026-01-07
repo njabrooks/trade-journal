@@ -68,7 +68,7 @@ export function MonitoringSpecsList({
   const formatNextCheck = (date: Date | null | undefined) => {
     if (!date) return 'On demand';
     const dateObj = new Date(date);
-    return dateObj.toLocaleDateString();
+    return dateObj.toLocaleDateString('en-GB');
   };
 
   const getDataSourceIcon = (source: string) => {

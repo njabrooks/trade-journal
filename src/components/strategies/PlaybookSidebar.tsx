@@ -54,7 +54,7 @@ export function PlaybookSidebar({
                   label="Opened"
                   value={
                     strategy.openedAt
-                      ? new Date(strategy.openedAt).toLocaleDateString()
+                      ? new Date(strategy.openedAt).toLocaleDateString('en-GB')
                       : "—"
                   }
                 />

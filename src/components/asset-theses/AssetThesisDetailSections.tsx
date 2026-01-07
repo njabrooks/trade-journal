@@ -149,7 +149,7 @@ export function AssetThesisDetailSections({
               <span className="font-semibold">Core Argument</span>
               {hasCoreArgument && articulation && (
                 <span className="text-xs text-slate-500">
-                  v{articulation.version} • {new Date(articulation.createdAt).toLocaleDateString()}
+                  v{articulation.version} • {new Date(articulation.createdAt).toLocaleDateString('en-GB')}
                 </span>
               )}
               {!hasCoreArgument && hasLegacySummary && (

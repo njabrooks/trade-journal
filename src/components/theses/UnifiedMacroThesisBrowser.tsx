@@ -644,13 +644,13 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                                 <div>
                                   <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Created:</span>
                                   <span className="ml-2 text-sm text-slate-600">
-                                    {new Date(thesis.createdAt).toLocaleDateString()}
+                                    {new Date(thesis.createdAt).toLocaleDateString('en-GB')}
                                   </span>
                                 </div>
                                 <div>
                                   <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Updated:</span>
                                   <span className="ml-2 text-sm text-slate-600">
-                                    {new Date(thesis.updatedAt).toLocaleDateString()}
+                                    {new Date(thesis.updatedAt).toLocaleDateString('en-GB')}
                                   </span>
                                 </div>
                                 <div>

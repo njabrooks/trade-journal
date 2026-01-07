@@ -263,7 +263,7 @@ export function ManualCheckDialog({
                           <div className="flex-1">
                             <h4 className="font-medium text-slate-900">{item.title}</h4>
                             <p className="text-xs text-slate-500 mt-1">
-                              {item.source} • {new Date(item.date).toLocaleDateString()}
+                              {item.source} • {new Date(item.date).toLocaleDateString('en-GB')}
                             </p>
                           </div>
                           {item.link && (

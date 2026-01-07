@@ -1213,7 +1213,7 @@ function StrategiesPageContent() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {strategy.openedAt
-                                ? new Date(strategy.openedAt).toLocaleDateString()
+                                ? new Date(strategy.openedAt).toLocaleDateString('en-GB')
                                 : '-'}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm flex items-center gap-3">

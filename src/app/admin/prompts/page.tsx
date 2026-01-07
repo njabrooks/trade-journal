@@ -439,7 +439,7 @@ function PromptCard({
           <div className="text-sm text-muted-foreground">
             <span className="font-medium">Usage:</span> {prompt.usageCount || 0} times
             {prompt.lastUsedAt && (
-              <> • Last used: {new Date(prompt.lastUsedAt).toLocaleDateString()}</>
+              <> • Last used: {new Date(prompt.lastUsedAt).toLocaleDateString('en-GB')}</>
             )}
           </div>
           <div className="text-xs text-muted-foreground font-mono bg-slate-50 p-2 rounded mt-2 line-clamp-3">

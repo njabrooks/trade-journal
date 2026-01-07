@@ -953,7 +953,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                                 )}
                                 <div>
                                   <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Created:</span>
-                                  <span className="ml-2 text-sm text-slate-600">{new Date(claim.createdAt).toLocaleDateString()}</span>
+                                  <span className="ml-2 text-sm text-slate-600">{new Date(claim.createdAt).toLocaleDateString('en-GB')}</span>
                                 </div>
                               </div>
                             </div>

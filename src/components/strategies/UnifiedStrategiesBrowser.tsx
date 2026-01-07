@@ -674,7 +674,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                                   <div>
                                     <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Opened:</span>
                                     <span className="ml-2 text-sm text-slate-600">
-                                      {new Date(strategy.openedAt).toLocaleDateString()}
+                                      {new Date(strategy.openedAt).toLocaleDateString('en-GB')}
                                     </span>
                                   </div>
                                 )}

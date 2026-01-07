@@ -425,7 +425,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
 
                         {/* Ingested */}
                         <td className="px-4 py-3 text-center text-xs text-slate-600">
-                          {new Date(artifact.ingestedAt).toLocaleDateString()}
+                          {new Date(artifact.ingestedAt).toLocaleDateString('en-GB')}
                         </td>
 
                         {/* Actions */}
@@ -501,14 +501,14 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                                   <div>
                                     <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Published:</span>
                                     <span className="ml-2 text-sm text-slate-600">
-                                      {new Date(artifact.publishedDate).toLocaleDateString()}
+                                      {new Date(artifact.publishedDate).toLocaleDateString('en-GB')}
                                     </span>
                                   </div>
                                 )}
                                 <div>
                                   <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Created:</span>
                                   <span className="ml-2 text-sm text-slate-600">
-                                    {new Date(artifact.createdAt).toLocaleDateString()}
+                                    {new Date(artifact.createdAt).toLocaleDateString('en-GB')}
                                   </span>
                                 </div>
                                 <div>

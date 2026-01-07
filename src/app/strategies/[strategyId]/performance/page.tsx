@@ -198,7 +198,7 @@ export default async function PerformancePage({ params }: PerformancePageProps) 
                   detail.recentTrades.map((trade) => (
                     <tr key={trade.id}>
                       <td className="py-2 pr-4 text-xs text-slate-500">
-                        {trade.tradeDate ? new Date(trade.tradeDate).toLocaleDateString() : "—"}
+                        {trade.tradeDate ? new Date(trade.tradeDate).toLocaleDateString('en-GB') : "—"}
                       </td>
                       <td className="py-2 pr-4 font-medium">{trade.side}</td>
                       <td className="py-2 pr-4">{trade.quantity}</td>
