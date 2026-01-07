@@ -1,8 +1,9 @@
 # Triage as Workflow Orchestration Layer
 
 **Purpose**: Design specification for triage as the universal workflow management layer across all object types
-**Status**: Design Draft
+**Status**: Partially Implemented
 **Created**: 2026-01-07
+**Last Updated**: 2026-01-07
 **PRD Alignment**: Section 6 (Workflow & Triage Engine), Section 8 (Institutional Memory)
 
 ---
@@ -35,6 +36,65 @@ AUTOMATION BOUNDARY
 - User agency in every substantive decision
 - Clear audit trail (user invoked skill X, received Y, decided Z)
 - No silent background AI processing that could fail unexpectedly
+
+---
+
+## Implementation Progress
+
+### Completed ✅
+
+**Phase 1 (Foundation):**
+- `lifecycle_status` field on `macro_theses` and `asset_theses` tables
+- `thesis_triage_records` table with JSONB fields for content/analysis
+- Lifecycle stage visible in triage inbox with color-coded badges
+
+**Phase 2 (Monitoring Integration):**
+- `daily-thesis-monitoring.ts` creates triage records with Perplexity search results
+- Claude AI analysis stored in `ai_analysis` JSONB field
+- Triage inbox UI with filtering by severity, thesis type, lifecycle stage
+- Expandable detail view showing AI analysis, key findings, matched results
+- Suggested skill commands displayed and copyable
+
+**Scripts Created:**
+- `scripts/daily-thesis-monitoring.ts` - Automated news monitoring → triage records
+- `scripts/generate-lifecycle-triage.ts` - Batch creation of lifecycle triage records
+
+### Not Yet Built ❌
+
+**Event-Driven State Machine:**
+The lifecycle transitions are currently **manual/batch**. The system does NOT automatically:
+- Detect when claims are linked and update lifecycle_status
+- Create triage records when lifecycle stage changes
+- Transition theses through stages based on detected conditions
+
+**Transition Logic Decision (Pending Implementation):**
+
+| Transition | Approach | Detection Logic |
+|------------|----------|-----------------|
+| created → claims_linked | **Automatic** | Detect when ≥3 claims linked via `main_claims.thesis_id` |
+| claims_linked → synthesized | **User-confirmed** | User marks complete after `/synthesize-thesis` |
+| synthesized → validated | **User-confirmed** | User confirms V&I points extracted |
+| validated → monitoring | **Automatic** | Detect when `thesis_monitoring_configs` record exists |
+| monitoring → closed | **User-confirmed** | User explicitly closes thesis |
+
+**Phase 3 (Journal Integration):**
+- `journal_entries` table not yet created
+- No audit logging of triage completions, skill invocations, status changes
+
+**Phase 4 (Strategy/Position Lifecycle):**
+- Strategy/position triage not yet unified with thesis triage
+- Existing position triage (`triage_records` table) remains separate
+
+### Next Steps (Data/Logic Layer)
+
+1. **Build event-driven lifecycle detection:**
+   - Option A: PostgreSQL triggers on `main_claims`, `thesis_monitoring_configs`
+   - Option B: API middleware that checks state after mutations
+   - Option C: Background job that periodically reconciles state
+
+2. **Auto-create triage records on lifecycle transition**
+
+3. **Update lifecycle_status when conditions met**
 
 ---
 
@@ -727,3 +787,4 @@ ALTER TABLE asset_theses ADD COLUMN IF NOT EXISTS lifecycle_status TEXT
 | Date | Author | Changes |
 |------|--------|---------|
 | 2026-01-07 | Claude + User | Initial design specification |
+| 2026-01-07 | Claude + User | Added Implementation Progress section; Phase 1-2 complete, documented event-driven state machine as next step |

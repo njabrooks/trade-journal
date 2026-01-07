@@ -1308,6 +1308,7 @@ async function createTriageRecord(
       severity,
       urgency,
       status: 'pending',
+      lifecycleStage: 'monitoring',
       suggestedSkill: '/assess-validation-evidence',
       actionRequired: 'Review news findings and assess impact on thesis validation points',
     }).returning({ id: thesisTriageRecords.id });
