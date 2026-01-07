@@ -279,15 +279,18 @@ See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 ## Data Ingestion Architecture (Local-First)
 
 **Primary**: Ingestion runs locally on Mac Mini via launchd scheduled jobs.
-**Backup**: Remote Supabase is synced daily for disaster recovery and travel access.
+**Development**: MacBook Pro connects to Mac Mini via Tailscale from anywhere.
+**Backup**: Remote Supabase is synced nightly for disaster recovery.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    MAC MINI (Primary - Always On)           │
+│         MAC MINI (Primary - Always On)                      │
+│         Tailscale IP: 100.75.22.47                          │
 ├─────────────────────────────────────────────────────────────┤
-│  Local Supabase @ 127.0.0.1:54322                          │
+│  Local Supabase @ :54322 (source of truth)                  │
 │                                                             │
 │  Scheduled Jobs (launchd):                                  │
+│  ├── Supabase start: On login (30s delay for Docker)       │
 │  ├── Flex ingestion: 4 AM, 6 AM, 12 PM                     │
 │  ├── Massive ingestion: 4:30 PM                            │
 │  └── Push to remote: 11 PM                                 │
@@ -296,14 +299,23 @@ See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 │  ├── Ingestion → Derived computations → User edits         │
 │  └── Claude skills → Research uploads                       │
 └─────────────────────────────────────────────────────────────┘
+                    ▲
+                    │ Tailscale (works anywhere)
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      MACBOOK PRO                            │
+├─────────────────────────────────────────────────────────────┤
+│  npm run dev → connects to Mac Mini's DB via Tailscale     │
+│  Works: home, coffee shop, travel                           │
+└─────────────────────────────────────────────────────────────┘
                               │
-                              │ Daily backup (11 PM)
+                              │ Nightly backup (11 PM)
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              REMOTE SUPABASE (Backup + Travel)              │
+│              REMOTE SUPABASE (Backup Only)                  │
 ├─────────────────────────────────────────────────────────────┤
 │  Mirror of local (pushed nightly)                          │
-│  Used when: Mac Mini down OR traveling                     │
+│  Used when: Mac Mini down (disaster recovery)              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -317,11 +329,36 @@ Install on Mac Mini:
 ```
 
 Jobs installed:
+- `com.trade-journal.supabase-start` - On login (30s delay for Docker)
 - `com.trade-journal.flex-ingestion` - 4 AM, 6 AM, 12 PM
 - `com.trade-journal.massive-ingestion` - 4:30 PM
 - `com.trade-journal.push-to-remote` - 11 PM
 
-Logs: `/tmp/flex-ingestion.log`, `/tmp/massive-ingestion.log`, `/tmp/push-to-remote.log`
+Logs: `/tmp/supabase-start.log`, `/tmp/flex-ingestion.log`, `/tmp/massive-ingestion.log`, `/tmp/push-to-remote.log`
+
+### MacBook Pro Development (via Tailscale)
+
+MacBook Pro connects to Mac Mini's database via Tailscale mesh VPN, enabling development from anywhere.
+
+**MacBook Pro `.env.local`:**
+```bash
+DATABASE_URL_POOLER=postgresql://postgres:postgres@100.75.22.47:54322/postgres
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@100.75.22.47:54322/postgres
+```
+
+**Mac Mini `.env.local`:**
+```bash
+DATABASE_URL_POOLER=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+DATABASE_URL_DIRECT=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+```
+
+**Development workflow:**
+1. Ensure Tailscale connected (menu bar icon on both machines)
+2. `git pull` on MacBook Pro
+3. `npm run dev` — runs locally, connects to Mac Mini's DB
+4. Code, test, commit, push
+
+**Claude Code skills** work on both machines — they read `DATABASE_URL_POOLER` from the local `.env.local`.
 
 ### Sync Scripts
 
@@ -341,17 +378,20 @@ They can be triggered manually from GitHub UI for emergency use:
 - `.github/workflows/flex-ingestion.yml` - Manual trigger only
 - `.github/workflows/massive-ingestion.yml` - Manual trigger only
 
-### Switching Between Local and Remote
+### Fallback: Remote Supabase
 
-To use remote Supabase (e.g., when traveling):
-1. Edit `.env.local`
-2. Comment out local URLs, uncomment remote URLs:
+With Tailscale, MacBook Pro can connect to Mac Mini from anywhere. Remote Supabase is only needed if Mac Mini is down.
+
+To switch MacBook Pro to remote Supabase (disaster recovery):
 ```bash
-# LOCAL (comment out when traveling)
-# DATABASE_URL_POOLER=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-
-# REMOTE (uncomment when traveling)
+# In MacBook Pro .env.local:
 DATABASE_URL_POOLER=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+DATABASE_URL_DIRECT=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+```
+
+When Mac Mini is back, restore if needed:
+```bash
+npx tsx scripts/restore-from-remote.ts --confirm
 ```
 
 ## Environment Variables
