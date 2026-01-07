@@ -547,6 +547,7 @@ export interface ThesisTriageQueueRecord {
   thesisTitle: string;
   triggerType: string;
   triggerSource: string;
+  triageRule: string | null;  // thesis_needs_articulation | thesis_new_claims_available | thesis_monitoring_content | thesis_data_trigger
   severity: string;
   urgency: string;
   status: string;
@@ -600,6 +601,7 @@ export async function getThesisTriageQueue(
       thesisTitle: thesisTriageRecords.thesisTitle,
       triggerType: thesisTriageRecords.triggerType,
       triggerSource: thesisTriageRecords.triggerSource,
+      triageRule: thesisTriageRecords.triageRule,
       severity: thesisTriageRecords.severity,
       urgency: thesisTriageRecords.urgency,
       status: thesisTriageRecords.status,
@@ -671,6 +673,7 @@ export async function getThesisTriageQueueFull(
       thesisTitle: thesisTriageRecords.thesisTitle,
       triggerType: thesisTriageRecords.triggerType,
       triggerSource: thesisTriageRecords.triggerSource,
+      triageRule: thesisTriageRecords.triageRule,
       severity: thesisTriageRecords.severity,
       urgency: thesisTriageRecords.urgency,
       status: thesisTriageRecords.status,
@@ -819,4 +822,185 @@ export async function updateThesisTriageStatus(
     .update(thesisTriageRecords)
     .set(updateData)
     .where(eq(thesisTriageRecords.id, id));
+}
+
+// ============================================================================
+// Unified Triage Queue (combines position/strategy + thesis triage)
+// ============================================================================
+
+import {
+  UnifiedTriageRecord,
+  UnifiedTriageFilters,
+  UnifiedTriageResult,
+  UnifiedTriageFilterCounts,
+  TriageObjectType,
+  mapPositionTriageToUnified,
+  mapThesisTriageToUnified,
+} from "@/types/triage";
+
+/**
+ * Get unified triage queue combining position/strategy and thesis triage records
+ */
+export async function getUnifiedTriageQueue(
+  accountId: string,
+  filters: UnifiedTriageFilters = {}
+): Promise<UnifiedTriageResult> {
+  // Determine which sources to query based on objectType filter
+  const queryPositions = !filters.objectType ||
+    filters.objectType.includes("position") ||
+    filters.objectType.includes("strategy");
+  const queryTheses = !filters.objectType ||
+    filters.objectType.includes("asset_thesis") ||
+    filters.objectType.includes("macro_thesis");
+
+  const results: UnifiedTriageRecord[] = [];
+
+  // Query position/strategy triage
+  if (queryPositions) {
+    const positionFilters: TriageQueueFilters = {};
+
+    // Map status filter to severity (position/strategy uses "severity")
+    if (filters.status && filters.status.length > 0) {
+      positionFilters.severity = filters.status;
+    }
+
+    // Map trigger filter to recommendedAction
+    if (filters.trigger && filters.trigger.length > 0) {
+      positionFilters.recommendedAction = filters.trigger;
+    }
+
+    const positionResult = await getTriageQueue(accountId, positionFilters);
+
+    // Map and filter by object type if specified
+    for (const record of positionResult.records) {
+      const unified = mapPositionTriageToUnified(record);
+
+      // Apply objectType filter
+      if (filters.objectType && filters.objectType.length > 0) {
+        if (!filters.objectType.includes(unified.objectType)) {
+          continue;
+        }
+      }
+
+      results.push(unified);
+    }
+  }
+
+  // Query thesis triage
+  if (queryTheses) {
+    const thesisFilters: ThesisTriageFilters = {};
+
+    // Map status filter
+    if (filters.status && filters.status.length > 0) {
+      thesisFilters.status = filters.status;
+    }
+
+    // Map objectType filter to thesisType
+    if (filters.objectType && filters.objectType.length > 0) {
+      const thesisTypes: string[] = [];
+      if (filters.objectType.includes("macro_thesis")) {
+        thesisTypes.push("macro");
+      }
+      if (filters.objectType.includes("asset_thesis")) {
+        thesisTypes.push("asset");
+      }
+      if (thesisTypes.length > 0) {
+        thesisFilters.thesisType = thesisTypes;
+      }
+    }
+
+    const thesisRecords = await getThesisTriageQueueFull(thesisFilters);
+
+    for (const record of thesisRecords) {
+      const unified = mapThesisTriageToUnified(record);
+
+      // Apply trigger filter (thesis uses triageRule/triggerType as trigger)
+      if (filters.trigger && filters.trigger.length > 0) {
+        if (!filters.trigger.includes(unified.trigger)) {
+          continue;
+        }
+      }
+
+      results.push(unified);
+    }
+  }
+
+  // Sort by date (newest first) by default
+  const sortColumn = filters.sort ?? "date";
+  const sortDirection = filters.direction ?? "desc";
+
+  results.sort((a, b) => {
+    let aVal: string | number | Date;
+    let bVal: string | number | Date;
+
+    switch (sortColumn) {
+      case "title":
+        aVal = a.title.toLowerCase();
+        bVal = b.title.toLowerCase();
+        break;
+      case "trigger":
+        aVal = a.trigger.toLowerCase();
+        bVal = b.trigger.toLowerCase();
+        break;
+      case "status":
+        aVal = a.status.toLowerCase();
+        bVal = b.status.toLowerCase();
+        break;
+      case "objectType":
+        aVal = a.objectType;
+        bVal = b.objectType;
+        break;
+      case "date":
+      default:
+        aVal = a.date.getTime();
+        bVal = b.date.getTime();
+        break;
+    }
+
+    if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+    if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  // Compute filter counts
+  const counts = computeUnifiedFilterCounts(results);
+
+  return {
+    records: results,
+    counts,
+    totalCount: results.length,
+  };
+}
+
+/**
+ * Compute filter counts from unified records
+ */
+function computeUnifiedFilterCounts(
+  records: UnifiedTriageRecord[]
+): UnifiedTriageFilterCounts {
+  const objectType: Record<TriageObjectType, number> = {
+    position: 0,
+    strategy: 0,
+    asset_thesis: 0,
+    macro_thesis: 0,
+  };
+  const status: Record<string, number> = {};
+  const trigger: Record<string, number> = {};
+
+  for (const record of records) {
+    // Object type counts
+    objectType[record.objectType]++;
+
+    // Status counts
+    if (record.status) {
+      status[record.status] = (status[record.status] ?? 0) + 1;
+    }
+
+    // Trigger counts
+    if (record.trigger) {
+      trigger[record.trigger] = (trigger[record.trigger] ?? 0) + 1;
+    }
+  }
+
+  return { objectType, status, trigger };
 }

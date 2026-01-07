@@ -1,31 +1,14 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { AccountSelector } from "@/components/layout/AccountSelector";
-import { TriageFilters } from "@/components/triage/TriageFilters";
-import { TriageTableRow } from "@/components/triage/TriageTableRow";
-import { TriageBulkActions } from "@/components/triage/TriageBulkActions";
-import { SortableHeader } from "@/components/triage/SortableHeader";
-import { ThesisTriageSection } from "@/components/triage/ThesisTriageSection";
+import { UnifiedTriageBrowser } from "@/components/triage/UnifiedTriageBrowser";
 import { getPrimaryAccount, getAccounts } from "@/db/queries/accounts";
-import { getTriageQueue, getTriageQueueCounts } from "@/db/queries/triage";
-import { formatDateFull } from "@/lib/formatters";
-import { ALL_SEVERITIES, ALL_CONTEXTS, ALL_TRIGGERS } from "@/lib/constants/triage";
-import { TriagePageClient } from "./TriagePageClient";
+import { getUnifiedTriageQueue } from "@/db/queries/triage";
 
 interface TriagePageProps {
   searchParams?: Promise<{
     accountId?: string;
-    severity?: string | string[];
-    contextLevel?: string | string[];
-    context?: string | string[]; // Legacy support
-    recommendedAction?: string | string[];
-    strategyKey?: string | string[];
-    trigger?: string | string[]; // Legacy support
-    strategy?: string | string[]; // Legacy support
-    sort?: string;
-    direction?: string;
   }>;
 }
-
 
 export default async function TriagePage({ searchParams }: TriagePageProps) {
   const accounts = await getAccounts();
@@ -35,8 +18,8 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
     return (
       <DashboardShell
         activeNav="triage"
-        title="Triage Queue"
-        subtitle="Create an account to populate triage records."
+        title="Triage Inbox"
+        subtitle="Unified workflow queue for theses, strategies, and positions"
       >
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
           No accounts found. Head to <a href="/admin/accounts" className="text-blue-600 underline">Admin &gt; Accounts</a> to add one.
@@ -46,7 +29,7 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   }
 
   const params = await searchParams;
-  
+
   // Get selected account from URL params, default to primary account
   const selectedAccountId = params?.accountId || primaryAccount?.id || null;
   const account = selectedAccountId
@@ -57,8 +40,8 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
     return (
       <DashboardShell
         activeNav="triage"
-        title="Triage Queue"
-        subtitle="Create an account to populate triage records."
+        title="Triage Inbox"
+        subtitle="Unified workflow queue for theses, strategies, and positions"
       >
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
           No accounts found. Head to <a href="/admin/accounts" className="text-blue-600 underline">Admin &gt; Accounts</a> to add one.
@@ -66,78 +49,9 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
       </DashboardShell>
     );
   }
-  
-  // Parse multi-select filters (can be string or string[])
-  const severityParam = params?.severity;
-  const severityFilter = Array.isArray(severityParam)
-    ? severityParam
-    : severityParam && severityParam !== "all"
-    ? [severityParam]
-    : [];
-  
-  const contextParam = params?.contextLevel || params?.context;
-  const contextFilter = Array.isArray(contextParam)
-    ? contextParam
-    : contextParam && contextParam !== "all"
-    ? [contextParam]
-    : [];
-  
-  // URL uses "recommendedAction" and "strategyKey" to match query function
-  const triggerParam = params?.recommendedAction || params?.trigger;
-  const triggerFilter = Array.isArray(triggerParam) 
-    ? triggerParam 
-    : triggerParam 
-    ? [triggerParam] 
-    : [];
-  
-  const strategyParam = params?.strategyKey || params?.strategy;
-  const strategyFilter = Array.isArray(strategyParam)
-    ? strategyParam
-    : strategyParam
-    ? [strategyParam]
-    : [];
 
-  const sortParam = params?.sort;
-  const directionParam = params?.direction as "asc" | "desc" | undefined;
-
-  // Get counts using SQL aggregation (replaces double-query pattern)
-  const counts = await getTriageQueueCounts(account.id);
-
-  // Use all available options (not just ones that exist in records)
-  const allSeverities = [...ALL_SEVERITIES];
-  const allContexts = [...ALL_CONTEXTS];
-  const allTriggers = [...ALL_TRIGGERS];
-
-  // Strategies are dynamic - extract from counts
-  const allStrategies = Object.keys(counts.strategyKey).sort();
-
-  // Map counts to the expected format (include zero counts for all options)
-  const severityCounts: Record<string, number> = {};
-  allSeverities.forEach((severity) => {
-    severityCounts[severity] = counts.severity[severity] ?? 0;
-  });
-
-  const contextCounts: Record<string, number> = {};
-  allContexts.forEach((context) => {
-    contextCounts[context] = counts.contextLevel[context] ?? 0;
-  });
-
-  const triggerCounts: Record<string, number> = {};
-  allTriggers.forEach((trigger) => {
-    triggerCounts[trigger] = counts.recommendedAction[trigger] ?? 0;
-  });
-
-  const strategyCounts = counts.strategyKey;
-
-  // Now get filtered records
-  const queue = await getTriageQueue(account.id, {
-    severity: severityFilter.length > 0 ? severityFilter : undefined,
-    contextLevel: contextFilter.length > 0 ? contextFilter : undefined,
-    recommendedAction: triggerFilter.length > 0 ? triggerFilter : undefined,
-    strategyKey: strategyFilter.length > 0 ? strategyFilter : undefined,
-    sort: sortParam,
-    direction: directionParam,
-  });
+  // Fetch unified triage queue (position/strategy + thesis triage combined)
+  const { records, counts } = await getUnifiedTriageQueue(account.id);
 
   return (
     <DashboardShell
@@ -145,55 +59,19 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
       title="Triage Inbox"
       subtitle="Unified workflow queue for theses, strategies, and positions"
     >
-      {/* Thesis Workflow Section */}
-      <div className="mb-6">
-        <ThesisTriageSection />
-      </div>
-
-      {/* Position/Strategy Triage Section */}
-      <div className="rounded-lg border bg-white">
-        <div className="border-b px-4 py-3">
-          <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-            Position & Strategy Triage
-            {queue.snapshotDate && (
-              <span className="text-sm font-normal text-slate-500">
-                Latest snapshot: {formatDateFull(queue.snapshotDate)}
-              </span>
-            )}
-          </h2>
-        </div>
-        <div className="px-4 py-4">
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            {accounts.length > 1 && (
-              <AccountSelector
-                accounts={accounts}
-                selectedAccountId={selectedAccountId}
-                basePath="/triage"
-              />
-            )}
-          </div>
-          <TriageFilters
-            severityFilter={severityFilter}
-            contextFilter={contextFilter}
-            triggerFilter={triggerFilter}
-            strategyFilter={strategyFilter}
-            allSeverities={allSeverities}
-            allContexts={allContexts}
-            allTriggers={allTriggers}
-            allStrategies={allStrategies}
-            severityCounts={severityCounts}
-            contextCounts={contextCounts}
-            triggerCounts={triggerCounts}
-            strategyCounts={strategyCounts}
-            totalFlags={queue.records.length}
+      {/* Account Selector */}
+      {accounts.length > 1 && (
+        <div className="mb-4">
+          <AccountSelector
+            accounts={accounts}
+            selectedAccountId={selectedAccountId}
+            basePath="/triage"
           />
         </div>
-      </div>
+      )}
 
-      <TriagePageClient records={queue.records} />
+      {/* Unified Triage Browser */}
+      <UnifiedTriageBrowser records={records} counts={counts} />
     </DashboardShell>
   );
 }
-
-
-

@@ -121,14 +121,14 @@ User's explicit intent for the thesis - stored in `workflow_status` field:
 
 Triage is triggered by **evolution state changes**, not workflow status:
 
-| # | Trigger | Triage Rule | Resolved By |
-|---|---------|-------------|-------------|
-| 1 | Thesis exists, no articulation | `thesis_needs_articulation` | Articulation generated |
-| 2 | ≥3 claims since last articulation | `thesis_new_claims_available` | New articulation OR dismiss |
-| 3 | Articulation generated | *(no triage)* | V&I points created in same session |
-| 4 | Monitoring finds content | `thesis_monitoring_content` | User assesses content |
-| 5 | Data threshold breached | `thesis_data_trigger` | User reviews V&I status |
-| 6 | User self-discovery | *(no triage)* | Journal entry only |
+| #   | Trigger                           | Triage Rule                   | Resolved By                        |
+| --- | --------------------------------- | ----------------------------- | ---------------------------------- |
+| 1   | Thesis exists, no articulation    | `thesis_needs_articulation`   | Articulation generated             |
+| 2   | ≥3 claims since last articulation | `thesis_new_claims_available` | New articulation OR dismiss        |
+| 3   | Articulation generated            | *(no triage)*                 | V&I points created in same session |
+| 4   | Monitoring finds content          | `thesis_content_monitoring`   | User assesses content              |
+| 5   | Data threshold breached           | `thesis_data_monitoring`      | User reviews V&I status            |
+| 6   | User self-discovery               | *(no triage)*                 | Journal entry only                 |
 
 ---
 
@@ -291,13 +291,13 @@ interface UnifiedTriageRecord {
 
 #### Layer 3: Monitoring Stage
 
-| Object | Trigger | Triage Type | Suggested Skill |
-|--------|---------|-------------|-----------------|
-| Macro/Asset Thesis | Perplexity search output | `thesis_monitoring_content` | `/assess-validation-evidence` |
-| Macro/Asset Thesis | FRED data release | `thesis_data_trigger` | `/assess-validation-evidence` |
-| Macro/Asset Thesis | Price/IV threshold breach | `thesis_price_trigger` | `/assess-validation-evidence` |
-| Macro/Asset Thesis | User-discovered content | `thesis_manual_assessment` | `/assess-validation-evidence` |
-| Macro/Asset Thesis | V&I point triggered | `thesis_validation_triggered` | Review thesis status |
+| Object             | Trigger                   | Triage Type                   | Suggested Skill               |
+| ------------------ | ------------------------- | ----------------------------- | ----------------------------- |
+| Macro/Asset Thesis | Perplexity search output  | `thesis_content_monitoring`   | `/assess-validation-evidence` |
+| Macro/Asset Thesis | FRED data release         | `thesis_data_monitoring`      | `/assess-validation-evidence` |
+| Macro/Asset Thesis | Price/IV threshold breach | `thesis_price_monitoring`     | `/assess-validation-evidence` |
+| Macro/Asset Thesis | User-discovered content   | `thesis_manual_assessment`    | `/assess-validation-evidence` |
+| Macro/Asset Thesis | V&I point triggered       | `thesis_validation_triggered` | Review thesis status          |
 
 #### Strategy/Position (Existing Patterns)
 
@@ -365,7 +365,7 @@ When automated monitoring detects relevant content, it creates a triage record. 
 │       ▼                                                                  │
 │  IF relevant content found:                                             │
 │    SCRIPT creates triage record:                                        │
-│      type: thesis_monitoring_content                                    │
+│      type: thesis_content_monitoring                                    │
 │      action: "New content found for thesis [X]. Review and assess."     │
 │      suggestedSkill: /assess-validation-evidence                        │
 │      contentSummary: { sources, headlines, snippets }                   │
