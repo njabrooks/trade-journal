@@ -334,7 +334,7 @@ Jobs installed:
 - `com.trade-journal.massive-ingestion` - 21:30 UTC (4:30 PM ET)
 - `com.trade-journal.push-to-remote` - 07:00 UTC
 
-Logs: `~/logs/supabase-start.log`, `~/logs/flex-ingestion.log`, `~/logs/massive-ingestion.log`, `~/logs/push-to-remote.log`
+Logs (in project `logs/` directory): `logs/flex-ingestion.log`, `logs/massive-ingestion.log`, `logs/push-to-remote.log`, `logs/supabase-start.log`
 
 ### MacBook Pro Development (via Tailscale)
 

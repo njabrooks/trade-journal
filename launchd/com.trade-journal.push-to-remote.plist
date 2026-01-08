@@ -9,7 +9,7 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx tsx scripts/push-to-remote.ts >> /Users/twotrees/logs/push-to-remote.log 2>&1</string>
+        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx tsx scripts/push-to-remote.ts >> /Users/twotrees/Desktop/trade-journal/logs/push-to-remote.log 2>&1</string>
     </array>
 
     <!-- Run at 7 AM UTC (daily backup) -->
@@ -22,10 +22,10 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/Users/twotrees/logs/push-to-remote.log</string>
+    <string>/Users/twotrees/Desktop/trade-journal/logs/push-to-remote.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/twotrees/logs/push-to-remote.log</string>
+    <string>/Users/twotrees/Desktop/trade-journal/logs/push-to-remote.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

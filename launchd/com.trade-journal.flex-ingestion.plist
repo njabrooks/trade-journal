@@ -9,7 +9,7 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/run-flex-ingestion.ts >> /Users/twotrees/logs/flex-ingestion.log 2>&1</string>
+        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/run-flex-ingestion.ts >> /Users/twotrees/Desktop/trade-journal/logs/flex-ingestion.log 2>&1</string>
     </array>
 
     <!-- Run at 4 AM, 6 AM, 8 AM, and noon UTC -->
@@ -42,10 +42,10 @@
     </array>
 
     <key>StandardOutPath</key>
-    <string>/Users/twotrees/logs/flex-ingestion.log</string>
+    <string>/Users/twotrees/Desktop/trade-journal/logs/flex-ingestion.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/twotrees/logs/flex-ingestion.log</string>
+    <string>/Users/twotrees/Desktop/trade-journal/logs/flex-ingestion.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

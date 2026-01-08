@@ -67,3 +67,6 @@ next-env.d.ts
 # Test output files
 scripts/*-results*.json
 scripts/test-output-*.json
+
+# Launchd job logs
+logs/

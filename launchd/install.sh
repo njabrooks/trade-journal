@@ -50,11 +50,11 @@ show_status() {
     done
 
     echo ""
-    echo "Log files:"
-    echo "  ~/logs/supabase-start.log"
-    echo "  ~/logs/flex-ingestion.log"
-    echo "  ~/logs/massive-ingestion.log"
-    echo "  ~/logs/push-to-remote.log"
+    echo "Log files (in trade-journal/logs/):"
+    echo "  logs/supabase-start.log"
+    echo "  logs/flex-ingestion.log"
+    echo "  logs/massive-ingestion.log"
+    echo "  logs/push-to-remote.log"
     echo ""
 }
 
@@ -68,8 +68,8 @@ install_jobs() {
     # Create LaunchAgents directory if it doesn't exist
     mkdir -p "$LAUNCH_AGENTS_DIR"
 
-    # Create logs directory if it doesn't exist
-    mkdir -p "$HOME/logs"
+    # Create logs directory if it doesn't exist (in project directory)
+    mkdir -p "$SCRIPT_DIR/../logs"
 
     for plist in "${PLISTS[@]}"; do
         label="${plist%.plist}"
@@ -99,10 +99,10 @@ install_jobs() {
     echo "  Massive ingestion: 21:30 UTC (4:30 PM ET)"
     echo "  Push to remote:    07:00 UTC"
     echo ""
-    echo "To check logs:"
-    echo "  tail -f ~/logs/flex-ingestion.log"
-    echo "  tail -f ~/logs/massive-ingestion.log"
-    echo "  tail -f ~/logs/push-to-remote.log"
+    echo "To check logs (in trade-journal/logs/):"
+    echo "  tail -f logs/flex-ingestion.log"
+    echo "  tail -f logs/massive-ingestion.log"
+    echo "  tail -f logs/push-to-remote.log"
     echo ""
     echo "To manually trigger a job:"
     echo "  launchctl start com.trade-journal.flex-ingestion"
