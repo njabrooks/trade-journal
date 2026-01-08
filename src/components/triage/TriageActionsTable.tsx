@@ -20,8 +20,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_DTE": ["MONITOR", "DISMISS"],
   
   // Strategy-level triggers
-  "CONFIRM_STRATEGIES": ["UPDATE"],
-  "PROVIDE_STRATEGY_METADATA": ["UPDATE"],
+  "LINK_STRATEGY_TO_THESIS": ["UPDATE"],  // Confirmation now requires asset thesis linkage
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "STATE_CODE_CHANGE": ["MONITOR", "DISMISS"],
