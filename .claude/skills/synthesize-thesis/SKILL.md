@@ -590,16 +590,18 @@ Due to shell escaping issues with complex JSONB data containing quotes, parenthe
 
 ```typescript
 import { db, closeDb, schema } from './lib/db.js';
+import { onArticulationCreated } from '../src/lib/derived/thesisTriage.js';
 
 const { thesisArticulations, validationPoints } = schema;
 
 async function main() {
   const thesisId = '[THESIS_ID]';
+  const thesisType = 'asset' as const; // or 'macro' as const
 
   // Insert articulation
   const [articulation] = await db.insert(thesisArticulations).values({
     thesisId,
-    thesisType: 'asset', // or 'macro'
+    thesisType,
     version: 1, // Will auto-increment if using proper version logic
     coreArgument: `[CORE_ARGUMENT_TEXT]`,
 
@@ -653,11 +655,16 @@ async function main() {
 
   console.log('✅ Articulation created:', articulation.id);
 
+  // Notify triage system about the new articulation
+  // This updates claims_count_at_last_articulation and resolves pending triage records
+  await onArticulationCreated(thesisId, thesisType);
+  console.log('✅ Triage system notified');
+
   // Insert validation points
   const points = await db.insert(validationPoints).values([
     {
       thesisId,
-      thesisType: 'asset',
+      thesisType,
       articulationId: articulation.id,
       type: 'validation', // or 'invalidation'
       statement: '[STATEMENT]',

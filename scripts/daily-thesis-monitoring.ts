@@ -947,6 +947,20 @@ async function runMonitoring(dryRun: boolean = false, newsOnly: boolean = false)
         result.errors.push(errorMsg);
       }
     }
+
+    // Create REVIEW_DATA triage records for breaches
+    if (result.breaches.length > 0) {
+      console.log(`\n  📝 Creating REVIEW_DATA triage records for ${result.breaches.length} breaches...`);
+      let triageCreated = 0;
+      for (const breach of result.breaches) {
+        const triageId = await createDataTriageRecord(breach, dryRun);
+        if (triageId) {
+          triageCreated++;
+          console.log(`     ✅ Created triage for ${breach.thesisTitle}: ${triageId.substring(0, 8)}...`);
+        }
+      }
+      console.log(`  Created ${triageCreated} REVIEW_DATA triage records`);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -1290,6 +1304,94 @@ function classifyTriage(
 }
 
 /**
+ * Create REVIEW_DATA triage record for threshold breach
+ */
+async function createDataTriageRecord(
+  breach: ThresholdCheckResult,
+  dryRun: boolean
+): Promise<string | null> {
+  if (dryRun) {
+    console.log(`     [DRY-RUN] Would create REVIEW_DATA triage for ${breach.thesisTitle}`);
+    return null;
+  }
+
+  // Build content summary for data breach
+  const contentSummary: TriageContentSummary = {
+    totalItemsScanned: 1,
+    relevantItemsFound: 1,
+    sources: [breach.threshold.source === 'fred' ? 'FRED' : 'IBKR/Massive'],
+    dateRange: {
+      from: new Date().toISOString().split('T')[0],
+      to: new Date().toISOString().split('T')[0],
+    },
+  };
+
+  // Build AI analysis summary for the breach
+  const aiAnalysis: TriageAIAnalysis = {
+    summary: `Threshold breach detected: ${breach.threshold.description}. Current value: ${breach.currentValue.toFixed(2)}`,
+    validationPointsAffected: [],
+    keyFindings: [
+      `${breach.threshold.metric} ${breach.threshold.operator} ${breach.threshold.value} threshold breached`,
+      `Current value: ${breach.currentValue.toFixed(2)}`,
+      breach.threshold.linkedValidationPointId
+        ? 'Linked to a validation point - may indicate thesis invalidation/validation'
+        : 'Review against thesis assumptions',
+    ],
+    suggestedNextSteps: [
+      'Review the threshold breach against thesis assumptions',
+      'Check if this changes your confidence in the thesis',
+      'Consider updating the thesis or adjusting positions',
+    ],
+  };
+
+  // Determine severity based on threshold type
+  // Uses position/strategy severity values: urgent, attention, monitor, info, pending, complete
+  let severity: 'urgent' | 'attention' | 'monitor' | 'info' | 'pending' | 'complete' = 'attention';
+  let urgency: 'immediate' | 'today' | 'this_week' | 'when_convenient' = 'today';
+
+  // If linked to a critical validation point, escalate
+  if (breach.threshold.linkedValidationPointId) {
+    severity = 'urgent';
+    urgency = 'immediate';
+  }
+
+  try {
+    const [record] = await db.insert(thesisTriageRecords).values({
+      thesisId: breach.thesisId,
+      thesisType: breach.thesisType,
+      thesisTitle: breach.thesisTitle,
+      triggerType: 'scheduled_monitoring',
+      triggerSource: 'daily_threshold_check',
+      triageRule: 'REVIEW_DATA',
+      contentSummary,
+      aiAnalysis,
+      matchedResults: [{
+        url: breach.threshold.source === 'fred'
+          ? `https://fred.stlouisfed.org/series/${breach.threshold.metric}`
+          : '#',
+        title: `${breach.threshold.metric}: ${breach.currentValue.toFixed(2)}`,
+        snippet: breach.message,
+        date: new Date().toISOString(),
+        queryType: 'threshold_check' as 'wide',
+        matchScore: 100,
+        matchedKeywords: [breach.threshold.metric],
+      }],
+      severity,
+      urgency,
+      status: 'pending',
+      lifecycleStage: 'monitoring',
+      suggestedSkill: '/deep-dive',
+      actionRequired: `Review threshold breach: ${breach.threshold.description}`,
+    }).returning({ id: thesisTriageRecords.id });
+
+    return record.id;
+  } catch (error) {
+    console.error(`Error creating REVIEW_DATA triage record for ${breach.thesisTitle}:`, error);
+    return null;
+  }
+}
+
+/**
  * Create triage record in database
  */
 async function createTriageRecord(
@@ -1326,13 +1428,13 @@ async function createTriageRecord(
       thesisTitle: newsResult.thesisTitle,
       triggerType: 'scheduled_monitoring',
       triggerSource: 'daily_news_scan',
-      triageRule: 'thesis_monitoring_content',
+      triageRule: 'REVIEW_CONTENT',
       contentSummary,
       aiAnalysis: analysis,
       matchedResults,
       severity,
       urgency,
-      status: 'pending',
+      status: 'attention',
       lifecycleStage: 'monitoring',
       suggestedSkill: '/assess-validation-evidence',
       actionRequired: 'Review news findings and assess impact on thesis validation points',
