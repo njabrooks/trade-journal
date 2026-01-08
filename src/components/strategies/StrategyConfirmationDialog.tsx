@@ -7,7 +7,7 @@ import { Loader2, Search, Plus, LinkIcon } from 'lucide-react';
 interface Strategy {
   id: string;
   strategyKey: string;
-  underlyingTicker: string;
+  underlyingTicker?: string | null;
   label?: string | null;
   status: string;
   isAuto?: boolean;
@@ -87,7 +87,7 @@ export function StrategyConfirmationDialog({
       setSearchQuery('');
       setError(null);
       setCreateFormData({
-        ticker: strategy.underlyingTicker,
+        ticker: strategy.underlyingTicker || '',
         direction: 'bullish',
         timeHorizon: 'medium_term',
         confidenceLevel: 'medium',
@@ -121,12 +121,16 @@ export function StrategyConfirmationDialog({
     let filtered = assetTheses;
 
     // First filter by underlying ticker (prioritize matches)
-    const matchingTicker = filtered.filter(
-      (t) => t.underlyingTicker?.toLowerCase() === strategy.underlyingTicker.toLowerCase()
-    );
-    const otherTheses = filtered.filter(
-      (t) => t.underlyingTicker?.toLowerCase() !== strategy.underlyingTicker.toLowerCase()
-    );
+    const matchingTicker = strategy.underlyingTicker
+      ? filtered.filter(
+          (t) => t.underlyingTicker?.toLowerCase() === strategy.underlyingTicker?.toLowerCase()
+        )
+      : [];
+    const otherTheses = strategy.underlyingTicker
+      ? filtered.filter(
+          (t) => t.underlyingTicker?.toLowerCase() !== strategy.underlyingTicker?.toLowerCase()
+        )
+      : filtered;
 
     // Put matching ticker theses first
     filtered = [...matchingTicker, ...otherTheses];
@@ -249,9 +253,11 @@ export function StrategyConfirmationDialog({
   }
 
   // Count how many theses match the strategy's ticker
-  const matchingTickerCount = assetTheses.filter(
-    (t) => t.underlyingTicker?.toLowerCase() === strategy.underlyingTicker.toLowerCase()
-  ).length;
+  const matchingTickerCount = strategy.underlyingTicker
+    ? assetTheses.filter(
+        (t) => t.underlyingTicker?.toLowerCase() === strategy.underlyingTicker?.toLowerCase()
+      ).length
+    : 0;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
@@ -281,7 +287,7 @@ export function StrategyConfirmationDialog({
               </div>
               <div>
                 <span className="text-slate-500">Underlying:</span>{' '}
-                <span className="font-mono font-medium text-slate-900">{strategy.underlyingTicker}</span>
+                <span className="font-mono font-medium text-slate-900">{strategy.underlyingTicker || '-'}</span>
               </div>
               <div>
                 <span className="text-slate-500">Status:</span>{' '}
@@ -368,7 +374,7 @@ export function StrategyConfirmationDialog({
                   />
                 </div>
 
-                {matchingTickerCount > 0 && (
+                {matchingTickerCount > 0 && strategy.underlyingTicker && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs text-blue-700">
                     {matchingTickerCount} thesis{matchingTickerCount !== 1 ? 'es' : ''} found for {strategy.underlyingTicker}
                   </div>
@@ -393,7 +399,9 @@ export function StrategyConfirmationDialog({
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-2">
                     {filteredTheses.map((thesis) => {
-                      const isMatchingTicker = thesis.underlyingTicker?.toLowerCase() === strategy.underlyingTicker.toLowerCase();
+                      const isMatchingTicker = strategy.underlyingTicker
+                        ? thesis.underlyingTicker?.toLowerCase() === strategy.underlyingTicker.toLowerCase()
+                        : false;
                       return (
                         <button
                           key={thesis.id}
