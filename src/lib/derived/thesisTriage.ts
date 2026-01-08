@@ -25,7 +25,7 @@ import {
   claimThesisMappings,
   NewThesisTriageRecord,
 } from '@/db/schema';
-import { eq, and, desc, sql, count, isNotNull } from 'drizzle-orm';
+import { eq, ne, and, desc, sql, count, isNotNull } from 'drizzle-orm';
 
 // Threshold for rule #2: new claims available
 const NEW_CLAIMS_THRESHOLD = 3;
@@ -351,6 +351,7 @@ async function getExistingPendingTriage(
   thesisId: string,
   thesisType: 'macro' | 'asset'
 ) {
+  // Get all non-complete triage records (status can be urgent, attention, monitor, info, pending)
   return db
     .select()
     .from(thesisTriageRecords)
@@ -358,7 +359,7 @@ async function getExistingPendingTriage(
       and(
         eq(thesisTriageRecords.thesisId, thesisId),
         eq(thesisTriageRecords.thesisType, thesisType),
-        eq(thesisTriageRecords.status, 'pending')
+        ne(thesisTriageRecords.status, 'complete')
       )
     );
 }
