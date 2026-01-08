@@ -86,8 +86,18 @@ export function StrategyConfirmationDialog({
       setMode('select');
       setSearchQuery('');
       setError(null);
+
+      // Try to get ticker from underlyingTicker, or extract from strategyKey (e.g., "LLY-STK" -> "LLY")
+      let ticker = strategy.underlyingTicker || '';
+      if (!ticker && strategy.strategyKey) {
+        const keyParts = strategy.strategyKey.split('-');
+        if (keyParts.length >= 1) {
+          ticker = keyParts[0].toUpperCase();
+        }
+      }
+
       setCreateFormData({
-        ticker: strategy.underlyingTicker || '',
+        ticker,
         direction: 'bullish',
         timeHorizon: 'medium_term',
         confidenceLevel: 'medium',
@@ -191,13 +201,26 @@ export function StrategyConfirmationDialog({
 
     // If creating new thesis, create it first
     if (mode === 'create') {
+      if (!createFormData.ticker) {
+        setError('Ticker is required to create an asset thesis');
+        return;
+      }
+
       setSubmitting(true);
       setError(null);
       try {
-        const createResponse = await fetch('/api/asset-theses', {
+        // Use /api/asset-theses/create which auto-generates title from ticker/direction/timeHorizon
+        const createResponse = await fetch('/api/asset-theses/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(createFormData),
+          body: JSON.stringify({
+            ticker: createFormData.ticker,
+            direction: createFormData.direction,
+            timeHorizon: createFormData.timeHorizon,
+            confidenceLevel: createFormData.confidenceLevel,
+            status: createFormData.status,
+            description: createFormData.description || null,
+          }),
         });
 
         if (!createResponse.ok) {
@@ -206,7 +229,7 @@ export function StrategyConfirmationDialog({
         }
 
         const newThesis = await createResponse.json();
-        assetThesisId = newThesis.id;
+        assetThesisId = newThesis.viewId; // Note: /create endpoint returns viewId, not id
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to create asset thesis');
         setSubmitting(false);
@@ -462,8 +485,22 @@ export function StrategyConfirmationDialog({
             ) : (
               /* Create New Form */
               <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs text-blue-700">
-                  Creating new thesis for <strong>{createFormData.ticker}</strong>
+                {/* Ticker Input */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Ticker <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={createFormData.ticker}
+                    onChange={(e) => setCreateFormData({ ...createFormData, ticker: e.target.value.toUpperCase() })}
+                    placeholder="e.g., LLY"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={submitting}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    The underlying ticker for this asset thesis
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
