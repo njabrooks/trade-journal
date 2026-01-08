@@ -938,7 +938,27 @@ export function TriageActionButtons({
     setShowConfirmationDialog(false);
   };
 
-  const handleConfirmationDialogSuccess = () => {
+  const handleConfirmationDialogSuccess = async () => {
+    // Create blotter record for the UPDATE action via triage action API
+    try {
+      const response = await fetch("/api/triage/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          triageId,
+          actionType: "UPDATE",
+          strategyId,
+          notes: "Strategy confirmed and linked to asset thesis",
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to create blotter record for strategy confirmation");
+      }
+    } catch (error) {
+      console.error("Error creating blotter record:", error);
+    }
+
     setShowConfirmationDialog(false);
     setShowActionForm(false);
     setSelectedAction(null);
