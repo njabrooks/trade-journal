@@ -1,9 +1,9 @@
 # Triage as Workflow Orchestration Layer
 
 **Purpose**: Design specification for triage as the universal workflow management layer across all object types
-**Status**: Phase 2.5 Implemented (Event-Driven Triage)
+**Status**: Phase 2.5 Complete, Skills Consolidated
 **Created**: 2026-01-07
-**Last Updated**: 2026-01-07
+**Last Updated**: 2026-01-08
 **PRD Alignment**: Section 6 (Workflow & Triage Engine), Section 8 (Institutional Memory)
 
 ---
@@ -20,11 +20,11 @@ AUTOMATION BOUNDARY
 
     AUTOMATED (Scripts/Cron)          │  USER-INITIATED (Claude Code Skills)
     ─────────────────────────────────────────────────────────────────────────
-    Cron jobs                         │  /synthesize-thesis
-    Perplexity search execution       │  /assess-validation-evidence
-    FRED data fetch                   │  /deep-dive
-    Flex ingestion                    │  /process-transcript
-    Massive IV ingestion              │
+    Cron jobs                         │  /process-transcript
+    Perplexity search execution       │  /finalize-for-upload
+    FRED data fetch                   │  /synthesize-thesis
+    Flex ingestion                    │  /synthesize-claims
+    Massive IV ingestion              │  /assess-validation-evidence
                                       │
     OUTPUT: Raw data + triage record  │  OUTPUT: Analysis + decision
     (trigger surfaced)                │  (user in the loop)
@@ -53,7 +53,7 @@ AUTOMATION BOUNDARY
 - Expandable detail view showing AI analysis, key findings, matched results
 - Suggested skill commands displayed and copyable
 
-**Phase 2.5 (Event-Driven Triage) - NEW:**
+**Phase 2.5 (Event-Driven Triage):**
 - Renamed `lifecycle_status` → `workflow_status` with values: `developing` | `monitoring` | `paused` | `validated` | `invalidated` | `abandoned`
 - Added `claims_count_at_last_articulation` field to track rule #2
 - Added `triage_rule` field to `thesis_triage_records` for categorizing triage types
@@ -64,10 +64,28 @@ AUTOMATION BOUNDARY
 - Hooked triage computation into:
   - `/api/research/convert-claim` - when claim creates new thesis
   - `/api/research/link-claim-to-thesis` - when claim linked to existing thesis
+  - `/synthesize-thesis` skill - calls `onArticulationCreated()` after saving articulation
+- Triage rules implemented: `NEEDS_RESEARCH`, `PRODUCE_CORE_ARGUMENT`, `UPDATE_CORE_ARGUMENT`
+- Triage records auto-resolved when conditions change (e.g., articulation created resolves PRODUCE_CORE_ARGUMENT)
+
+**Phase 2.6 (Strategy Triage Integration):**
+- Strategy confirmation dialog creates blotter record on thesis/view linkage
+- `LINK_STRATEGY_TO_THESIS` trigger added to TriageActionsTable for strategy confirmation workflow
+- Asset thesis creation flow fixed in confirmation dialog (underlying_id handling)
+
+**Skills Consolidation (2026-01-08):**
+- Deleted 7 defunct skills (now handled by web UI):
+  - `create-thesis`, `create-view` - replaced by ConvertClaimToEntityDialog
+  - `upload-artifact`, `upload-insight` - subsumed by finalize-for-upload
+  - `read-theses`, `read-views` - replaced by web UI browsing
+  - `validate-templates` - obsolete Obsidian workflow
+- Archived 2 skills (prefix `archived-`): `deep-dive`, `generate-summary`
+- Active skills (5): `process-transcript`, `finalize-for-upload`, `synthesize-thesis`, `synthesize-claims`, `assess-validation-evidence`
 
 **Scripts:**
 - `scripts/daily-thesis-monitoring.ts` - Automated news monitoring → triage records
 - `scripts/generate-lifecycle-triage.ts` - Batch creation of lifecycle triage records
+- `scripts/recalculate-thesis-triage.ts` - Reconciliation script (exists but not scheduled)
 
 ### Not Yet Built ❌
 
@@ -79,11 +97,16 @@ AUTOMATION BOUNDARY
 - Strategy/position triage not yet unified with thesis triage
 - Existing position triage (`triage_records` table) remains separate
 
+**Research-Level Triage (Deferred):**
+- Triage for unconfirmed claims (SYNC_CLAIMS trigger type)
+- Would surface claims awaiting conversion to thesis/view
+- Deferred for later implementation
+
 ### Next Steps
 
-1. **Triage UI Updates** - Display thesis lifecycle triage alongside monitoring triage
-2. **Articulation hook** - Call `onArticulationCreated()` when articulation is saved
-3. **Background reconciliation** - Schedule `computeThesisTriageForAll()` to catch missed updates
+1. **Background reconciliation** - Schedule `computeThesisTriageForAll()` via launchd to catch missed updates
+2. **Triage UI polish** - Ensure thesis lifecycle triage displays clearly alongside monitoring triage
+3. **Journal integration** - Begin logging triage completions and skill invocations to journal_entries
 
 ---
 
@@ -518,22 +541,28 @@ Users can create triage records manually for:
 
 ## Skill Touchpoints
 
-### Skills by Lifecycle Stage
+### Active Skills (5)
 
-| Lifecycle Stage | Primary Skill | When Invoked | Output |
-|-----------------|---------------|--------------|--------|
-| Evidence Collection | `/process-transcript` | New research artifact | Toulmin claims |
-| Evidence Collection | `/synthesize-claims` | Cross-reference claims | Mapping recommendations |
-| Evidence Collection | `/deep-dive` | Exploratory research | New claims/insights |
-| Thesis Synthesis | `/synthesize-thesis` | After sufficient claims | Articulation + V&I points |
-| Monitoring | `/assess-validation-evidence` | Relevant content found | Evidence assessment |
-| Monitoring | `/generate-summary` | Quick summary needed | Summary update |
+| Skill | Lifecycle Stage | When Invoked | Output |
+|-------|-----------------|--------------|--------|
+| `/process-transcript` | Evidence Collection | New research artifact (transcript, article) | Toulmin claims in markdown audit |
+| `/finalize-for-upload` | Evidence Collection | After audit review | Uploads artifact + claims to database |
+| `/synthesize-claims` | Evidence Collection | Cross-reference existing claims | Mapping recommendations |
+| `/synthesize-thesis` | Thesis Synthesis | After sufficient claims linked | Articulation + V&I points |
+| `/assess-validation-evidence` | Monitoring | Relevant content found for thesis | Evidence assessment against V&I points |
+
+### Archived Skills (2)
+
+| Skill | Reason Archived |
+|-------|-----------------|
+| `/archived-deep-dive` | Interactive research guide - functional but rarely used |
+| `/archived-generate-summary` | AI summary generation - may be revived for thesis summaries |
 
 ### Skill Invocation Rules
 
 1. **User initiates**: All skill invocations are user-triggered (never automatic)
 2. **Triage suggests**: Triage records include `suggestedSkill` field
-3. **Audit logged**: Every skill invocation is logged to journal
+3. **Hooks execute**: Skills call triage hooks (e.g., `onArticulationCreated()`) after database writes
 4. **Output reviewed**: User reviews and approves skill output before system state changes
 
 ---
@@ -822,3 +851,4 @@ ALTER TABLE asset_theses ADD COLUMN IF NOT EXISTS lifecycle_status TEXT
 |------|--------|---------|
 | 2026-01-07 | Claude + User | Initial design specification |
 | 2026-01-07 | Claude + User | Added Implementation Progress section; Phase 1-2 complete, documented event-driven state machine as next step |
+| 2026-01-08 | Claude + User | Phase 2.5 complete: triage hooks integrated into all thesis creation/linking paths; onArticulationCreated() hooked into synthesize-thesis skill; strategy confirmation dialog creates blotter records; skills consolidated (7 deleted, 2 archived, 5 active) |
