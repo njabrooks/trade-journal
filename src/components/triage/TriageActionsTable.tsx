@@ -88,12 +88,8 @@ export function TriageActionsTable({
   const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
   const availableActions = getAvailableActions(recommendedAction, severity ?? null);
 
-  // Auto-select if only one action is available
-  useEffect(() => {
-    if (availableActions.length === 1 && !selectedAction) {
-      setSelectedAction(availableActions[0]);
-    }
-  }, [availableActions, selectedAction]);
+  // Note: We intentionally don't auto-select even if only one action is available,
+  // as this causes dialogs to open immediately on row expand (bad UX).
 
   if (availableActions.length === 0) {
     return (
