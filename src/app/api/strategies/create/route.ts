@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
 
     // Create the strategy
     // Note: Using placeholder strategyTemplateId - in production, this should be provided or looked up
+    // Note: thesis, exitCriteria, profitRules, defenseRules, timeRules, entryContext removed - these now come from linked asset thesis
     const [createdStrategy] = await db
       .insert(strategies)
       .values({
@@ -84,8 +85,6 @@ export async function POST(request: NextRequest) {
         status,
         openedAt: new Date(),
         assetThesisId: assetThesisId || null, // Inherits macro thesis through asset thesis
-        thesis: rationale || null,
-        exitCriteria: exitStrategy || null,
         timeHorizon: timeHorizon || null,
         createdAt: new Date(),
         updatedAt: new Date(),

@@ -486,18 +486,14 @@ export const strategies = pgTable(
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull(),
     closedAt: timestamp('closed_at', { withTimezone: true }),
     status: text('status').notNull().default('open'),
-    // Entry context
+    // Entry metrics (computed during confirmation)
     entrySpot: numeric('entry_spot'),
     entryIv30: numeric('entry_iv30'),
     netPremium: numeric('net_premium'),
     entryNotional: numeric('entry_notional'),
     timeHorizon: text('time_horizon'),
-    thesis: text('thesis'),
-    entryContext: text('entry_context'),
-    profitRules: text('profit_rules'),
-    defenseRules: text('defense_rules'),
-    timeRules: text('time_rules'),
-    exitCriteria: text('exit_criteria'),
+    // Note: thesis, profitRules, defenseRules, timeRules, exitCriteria, entryContext removed
+    // These now come from linked asset_thesis via assetThesisId
     // Aggregated metrics
     totalAbsNotional: numeric('total_abs_notional'),
     totalUnrealizedPnl: numeric('total_unrealized_pnl'),
@@ -1696,7 +1692,8 @@ export const thesisTriageRecords = pgTable(
     actionRequired: text('action_required'),  // Human-readable action description
 
     // Triage rule that created this record (for filtering and analytics)
-    triageRule: text('triage_rule'),  // 'thesis_needs_articulation' | 'thesis_new_claims_available' | 'thesis_monitoring_content' | 'thesis_data_trigger'
+    // Uses UPPER_SNAKE_CASE to match position/strategy triage patterns
+    triageRule: text('triage_rule'),  // 'NEEDS_RESEARCH' | 'PRODUCE_CORE_ARGUMENT' | 'UPDATE_CORE_ARGUMENT' | 'REVIEW_CONTENT' | 'REVIEW_DATA'
 
     // Completion tracking
     completedAt: timestamp('completed_at', { withTimezone: true }),

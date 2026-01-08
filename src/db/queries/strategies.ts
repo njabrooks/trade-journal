@@ -244,11 +244,6 @@ export interface StrategyDetail {
     status: string;
     openedAt: Date | null;
     closedAt: Date | null;
-    thesis: string | null;
-    profitRules: string | null;
-    defenseRules: string | null;
-    timeRules: string | null;
-    exitCriteria: string | null;
     accountLabel: string | null;
     accountBrokerId: string | null;
     underlyingTicker: string | null;
@@ -327,11 +322,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         status: strategies.status,
         openedAt: strategies.openedAt,
         closedAt: strategies.closedAt,
-        thesis: strategies.thesis,
-        profitRules: strategies.profitRules,
-        defenseRules: strategies.defenseRules,
-        timeRules: strategies.timeRules,
-        exitCriteria: strategies.exitCriteria,
         accountLabel: accounts.label,
         accountBrokerId: accounts.brokerAccountId,
         templateLabel: strategyTemplates.label,
@@ -552,11 +542,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         status: strategyRow.status,
         openedAt: strategyRow.openedAt,
         closedAt: strategyRow.closedAt,
-        thesis: strategyRow.thesis,
-        profitRules: strategyRow.profitRules,
-        defenseRules: strategyRow.defenseRules,
-        timeRules: strategyRow.timeRules,
-        exitCriteria: strategyRow.exitCriteria,
         accountLabel: strategyRow.accountLabel,
         accountBrokerId: strategyRow.accountBrokerId,
         underlyingTicker: strategyRow.underlyingTicker,

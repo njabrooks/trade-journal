@@ -37,12 +37,9 @@ export interface CreateStrategyInput {
   netPremium?: number;
   entryNotional?: number;
   timeHorizon?: string;
-  thesis?: string;
-  entryContext?: string;
-  profitRules?: string;
-  defenseRules?: string;
-  timeRules?: string;
-  exitCriteria?: string;
+  // Note: thesis, entryContext, profitRules, defenseRules, timeRules, exitCriteria removed
+  // These now come from linked asset_thesis via assetThesisId
+  assetThesisId?: string;
   isAuto?: boolean;
   autoSource?: string;
 }
@@ -174,12 +171,6 @@ export async function createStrategy(input: CreateStrategyInput): Promise<string
       netPremium: input.netPremium?.toString() ?? null,
       entryNotional: input.entryNotional?.toString() ?? null,
       timeHorizon: input.timeHorizon ?? null,
-      thesis: input.thesis ?? null,
-      entryContext: input.entryContext ?? null,
-      profitRules: input.profitRules ?? null,
-      defenseRules: input.defenseRules ?? null,
-      timeRules: input.timeRules ?? null,
-      exitCriteria: input.exitCriteria ?? null,
       isAuto: input.isAuto ?? false,
       autoSource: input.autoSource ?? null,
       autoDerivedLabel: input.label ?? null,
@@ -222,12 +213,8 @@ export async function updateStrategy(
         : new Date(updates.closedAt)
       : null;
   }
-  if (updates.thesis !== undefined) updateData.thesis = updates.thesis;
-  if (updates.entryContext !== undefined) updateData.entryContext = updates.entryContext;
-  if (updates.profitRules !== undefined) updateData.profitRules = updates.profitRules;
-  if (updates.defenseRules !== undefined) updateData.defenseRules = updates.defenseRules;
-  if (updates.timeRules !== undefined) updateData.timeRules = updates.timeRules;
-  if (updates.exitCriteria !== undefined) updateData.exitCriteria = updates.exitCriteria;
+  // Note: thesis, entryContext, profitRules, defenseRules, timeRules, exitCriteria removed
+  // These now come from linked asset_thesis via assetThesisId
   if (updates.entrySpot !== undefined) updateData.entrySpot = updates.entrySpot?.toString() ?? null;
   if (updates.entryIv30 !== undefined) updateData.entryIv30 = updates.entryIv30?.toString() ?? null;
   if (updates.netPremium !== undefined)
@@ -263,26 +250,18 @@ export async function updateStrategy(
   if (updates.strategyType !== undefined) {
     updateData.strategyType = updates.strategyType ?? null;
   }
-  if (updates.thesis !== undefined) {
-    updateData.thesis = updates.thesis ?? null;
-  }
-  if (updates.profitRules !== undefined) {
-    updateData.profitRules = updates.profitRules ?? null;
-  }
-  if (updates.defenseRules !== undefined) {
-    updateData.defenseRules = updates.defenseRules ?? null;
-  }
-  if (updates.timeRules !== undefined) {
-    updateData.timeRules = updates.timeRules ?? null;
+  // Handle assetThesisId update (for linking strategy to thesis)
+  if ((updates as any).assetThesisId !== undefined) {
+    updateData.assetThesisId = (updates as any).assetThesisId ?? null;
   }
 
   updateData.updatedAt = new Date();
 
   await db.update(strategies).set(updateData).where(eq(strategies.id, strategyId));
 
-  // If strategy was confirmed, resolve all CONFIRM_STRATEGIES triage records
+  // If strategy was confirmed, resolve all LINK_STRATEGY_TO_THESIS triage records
   if (updates.confirm) {
-    // Resolve all CONFIRM_STRATEGIES triage records for this strategy to "complete"
+    // Resolve all LINK_STRATEGY_TO_THESIS triage records for this strategy to "complete"
     await db
       .update(triageRecords)
       .set({
@@ -292,7 +271,7 @@ export async function updateStrategy(
       .where(
         and(
           eq(triageRecords.strategyId, strategyId),
-          eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGIES')
+          eq(triageRecords.recommendedAction, 'LINK_STRATEGY_TO_THESIS')
         )
       );
 

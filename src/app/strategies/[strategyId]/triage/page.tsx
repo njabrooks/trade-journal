@@ -206,12 +206,6 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
           }}
           currentStateCode={detail.currentStateCode}
           currentPlaybookItem={detail.currentPlaybookItem}
-          strategyMetadata={{
-            thesis: strategy.thesis,
-            profitRules: strategy.profitRules,
-            defenseRules: strategy.defenseRules,
-            timeRules: strategy.timeRules,
-          }}
         />
       </div>
     </DashboardShell>

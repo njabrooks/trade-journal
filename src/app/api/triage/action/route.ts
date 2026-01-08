@@ -76,52 +76,9 @@ export async function POST(request: NextRequest) {
         severityOverride = "pending";
       }
     } else if (actionType === "UPDATE") {
-      // For PROVIDE_STRATEGY_METADATA, only set to 'complete' if all required fields are filled
-      if (triage.recommendedAction === "PROVIDE_STRATEGY_METADATA" && triage.strategyId) {
-        // Fetch the strategy to check if all required fields are filled
-        // Note: Strategy should already be updated by the time this API is called
-        const strategyResult = await db
-          .select({
-            strategyType: strategies.strategyType,
-            thesis: strategies.thesis,
-            profitRules: strategies.profitRules,
-            defenseRules: strategies.defenseRules,
-            timeRules: strategies.timeRules,
-          })
-          .from(strategies)
-          .where(eq(strategies.id, triage.strategyId))
-          .limit(1);
-
-        const strategy = strategyResult[0];
-        if (strategy) {
-          // Check if all required fields are filled (not null and not empty string)
-          const allFieldsFilled =
-            strategy.strategyType &&
-            strategy.strategyType.trim() !== "" &&
-            strategy.thesis &&
-            strategy.thesis.trim() !== "" &&
-            strategy.profitRules &&
-            strategy.profitRules.trim() !== "" &&
-            strategy.defenseRules &&
-            strategy.defenseRules.trim() !== "" &&
-            strategy.timeRules &&
-            strategy.timeRules.trim() !== "";
-
-          if (allFieldsFilled) {
-            severityOverride = "complete";
-          } else {
-            // Don't set override if fields are still missing - let triage recompute handle it
-            // This ensures the trigger will remain active until all fields are filled
-            severityOverride = null;
-          }
-        } else {
-          // Strategy not found, keep current severity (don't override)
-          severityOverride = null;
-        }
-      } else {
-        // For other UPDATE actions (like CONFIRM_STRATEGIES), set to 'complete'
-        severityOverride = "complete";
-      }
+      // For UPDATE actions (like LINK_STRATEGY_TO_THESIS), set to 'complete'
+      // The strategy confirmation dialog handles validation before calling this API
+      severityOverride = "complete";
     }
 
     // Handle TRADE action with multiple positions

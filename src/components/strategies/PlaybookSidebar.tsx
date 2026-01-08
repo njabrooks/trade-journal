@@ -22,19 +22,12 @@ interface PlaybookSidebarProps {
     category: string;
     checklistItems: Array<{ order: number; type: string; text: string }> | null;
   } | null;
-  strategyMetadata: {
-    thesis: string | null;
-    profitRules: string | null;
-    defenseRules: string | null;
-    timeRules: string | null;
-  };
 }
 
 export function PlaybookSidebar({
   strategy,
   currentStateCode,
   currentPlaybookItem,
-  strategyMetadata,
 }: PlaybookSidebarProps) {
   return (
     <div className="sticky top-6 h-fit w-[28rem] self-start">
@@ -105,33 +98,6 @@ export function PlaybookSidebar({
             </AccordionItem>
           )}
 
-          {(strategyMetadata.thesis ||
-            strategyMetadata.profitRules ||
-            strategyMetadata.defenseRules ||
-            strategyMetadata.timeRules) && (
-            <AccordionItem value="strategy-rules" className="border-b">
-              <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:no-underline">
-                Strategy Rules
-              </AccordionTrigger>
-              <AccordionContent className="px-4 pb-4 space-y-3">
-                {strategyMetadata.thesis && (
-                  <RuleBlock title="Thesis" body={strategyMetadata.thesis} />
-                )}
-                {strategyMetadata.profitRules && (
-                  <RuleBlock title="Profit Rules" body={strategyMetadata.profitRules} />
-                )}
-                {strategyMetadata.defenseRules && (
-                  <RuleBlock
-                    title="Defense Rules"
-                    body={strategyMetadata.defenseRules}
-                  />
-                )}
-                {strategyMetadata.timeRules && (
-                  <RuleBlock title="Time Rules" body={strategyMetadata.timeRules} />
-                )}
-              </AccordionContent>
-            </AccordionItem>
-          )}
         </Accordion>
       </div>
     </div>
@@ -147,14 +113,4 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function RuleBlock({ title, body }: { title: string; body: string }) {
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
-        {title}
-      </p>
-      <p className="text-xs text-slate-600 whitespace-pre-line">{body}</p>
-    </div>
-  );
-}
 

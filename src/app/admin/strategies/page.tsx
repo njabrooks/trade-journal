@@ -59,10 +59,6 @@ function StrategiesPageContent() {
   const [editingMetadataId, setEditingMetadataId] = useState<string | null>(null);
   const [metadataValues, setMetadataValues] = useState<{
     strategyType: string;
-    thesis: string;
-    profitRules: string;
-    defenseRules: string;
-    timeRules: string;
   } | null>(null);
   const [editingStrategyTypeId, setEditingStrategyTypeId] = useState<string | null>(null);
   const [editingStrategyType, setEditingStrategyType] = useState<string>('');
@@ -445,10 +441,6 @@ function StrategiesPageContent() {
     setEditingMetadataId(strategy.id);
     setMetadataValues({
       strategyType: strategy.strategyType || '',
-      thesis: strategy.thesis || '',
-      profitRules: strategy.profitRules || '',
-      defenseRules: strategy.defenseRules || '',
-      timeRules: strategy.timeRules || '',
     });
   };
 
@@ -469,26 +461,22 @@ function StrategiesPageContent() {
         body: JSON.stringify({
           id: editingMetadataId,
           strategyType: metadataValues.strategyType || null,
-          thesis: metadataValues.thesis || null,
-          profitRules: metadataValues.profitRules || null,
-          defenseRules: metadataValues.defenseRules || null,
-          timeRules: metadataValues.timeRules || null,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to update strategy metadata');
+      if (!response.ok) throw new Error('Failed to update strategy type');
 
       // If strategyType changed, trigger state code recomputation
       if (strategyTypeChanged && metadataValues.strategyType) {
         // The backend will handle state code recomputation automatically
-        setSuccess('Strategy metadata updated. State code will be recomputed automatically.');
+        setSuccess('Strategy type updated. State code will be recomputed automatically.');
       } else {
-        setSuccess('Strategy metadata updated successfully');
+        setSuccess('Strategy type updated successfully');
       }
 
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update strategy metadata');
+      setError(err instanceof Error ? err.message : 'Failed to update strategy type');
     } finally {
       setEditingMetadataId(null);
       setMetadataValues(null);
@@ -1356,16 +1344,16 @@ function StrategiesPageContent() {
         </div>
       )}
 
-      {/* Strategy Metadata Edit Modal */}
+      {/* Strategy Type Edit Modal */}
       {editingMetadataId && metadataValues && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg p-6 max-w-3xl w-full mx-4 my-8">
-            <h2 className="text-xl font-semibold mb-4">Edit Strategy Metadata</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4">Edit Strategy Type</h2>
             <p className="text-sm text-gray-600 mb-6">
-              Update strategy metadata. Changing the strategy type will trigger state code recomputation.
+              Changing the strategy type will trigger state code recomputation.
             </p>
-            
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+
+            <div className="space-y-4">
               <div>
                 <label htmlFor="metadataStrategyType" className="block text-sm font-medium mb-2">
                   Strategy Type *
@@ -1393,79 +1381,10 @@ function StrategiesPageContent() {
                 </p>
               </div>
 
-              <div>
-                <label htmlFor="metadataThesis" className="block text-sm font-medium mb-2">
-                  Thesis
-                </label>
-                <textarea
-                  id="metadataThesis"
-                  value={metadataValues.thesis}
-                  onChange={(e) =>
-                    setMetadataValues((prev) =>
-                      prev ? { ...prev, thesis: e.target.value } : prev
-                    )
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  rows={3}
-                  placeholder="Entry thesis and reasoning..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="metadataProfitRules" className="block text-sm font-medium mb-2">
-                    Profit Rules
-                  </label>
-                  <textarea
-                    id="metadataProfitRules"
-                    value={metadataValues.profitRules}
-                    onChange={(e) =>
-                      setMetadataValues((prev) =>
-                        prev ? { ...prev, profitRules: e.target.value } : prev
-                      )
-                    }
-                    className="w-full border rounded px-3 py-2"
-                    rows={3}
-                    placeholder="When to take profits..."
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="metadataDefenseRules" className="block text-sm font-medium mb-2">
-                    Defense Rules
-                  </label>
-                  <textarea
-                    id="metadataDefenseRules"
-                    value={metadataValues.defenseRules}
-                    onChange={(e) =>
-                      setMetadataValues((prev) =>
-                        prev ? { ...prev, defenseRules: e.target.value } : prev
-                      )
-                    }
-                    className="w-full border rounded px-3 py-2"
-                    rows={3}
-                    placeholder="How to defend the position..."
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="metadataTimeRules" className="block text-sm font-medium mb-2">
-                  Time Rules
-                </label>
-                <textarea
-                  id="metadataTimeRules"
-                  value={metadataValues.timeRules}
-                  onChange={(e) =>
-                    setMetadataValues((prev) =>
-                      prev ? { ...prev, timeRules: e.target.value } : prev
-                    )
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  rows={2}
-                  placeholder="Time-based exit criteria..."
-                />
-              </div>
+              <p className="text-xs text-gray-500 bg-blue-50 p-3 rounded">
+                Note: Strategy thesis and rules now come from the linked asset thesis.
+                Use the triage workflow to link strategies to asset theses.
+              </p>
             </div>
 
             <div className="flex gap-2 justify-end mt-6 pt-4 border-t">
@@ -1480,7 +1399,7 @@ function StrategiesPageContent() {
                 disabled={!metadataValues.strategyType}
                 className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
               >
-                Save Metadata
+                Save
               </button>
             </div>
           </div>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { formatPosition } from "@/lib/formatters";
 import { TradeDetailsCard } from "@/components/blotter/TradeDetailsCard";
 import { TriagePositionsTable } from "@/components/triage/TriagePositionsTable";
+import { StrategyConfirmationDialog } from "@/components/strategies/StrategyConfirmationDialog";
 import type { BlotterEntry } from "@/db/queries/blotter";
 
 interface TriageActionButtonsProps {
@@ -59,8 +60,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_DTE": ["MONITOR", "DISMISS"],
   
   // Strategy-level triggers
-  "CONFIRM_STRATEGIES": ["UPDATE"],
-  "PROVIDE_STRATEGY_METADATA": ["UPDATE"],
+  "LINK_STRATEGY_TO_THESIS": ["UPDATE"],  // Confirmation now requires asset thesis linkage
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "STATE_CODE_CHANGE": ["MONITOR", "DISMISS"],
@@ -131,6 +131,9 @@ export function TriageActionButtons({
   });
   const [loadingStrategy, setLoadingStrategy] = useState(false);
 
+  // Strategy confirmation dialog state (for LINK_STRATEGY_TO_THESIS)
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
+
   // Quantity change form state
   const [tradeReason, setTradeReason] = useState("");
   const [tradeStage, setTradeStage] = useState<string>("");
@@ -150,7 +153,7 @@ export function TriageActionButtons({
 
   const availableActions = getAvailableActions(recommendedAction, severity ?? null);
 
-  // Load strategy data and types when UPDATE action is selected for CONFIRM_STRATEGIES or PROVIDE_STRATEGY_METADATA
+  // Load strategy data and types when UPDATE action is selected for strategy confirmation
   useEffect(() => {
     if (
       selectedAction === "UPDATE" &&
@@ -160,6 +163,15 @@ export function TriageActionButtons({
     ) {
       loadStrategyData();
       loadStrategyTypes();
+    }
+    // For LINK_STRATEGY_TO_THESIS, open the new confirmation dialog
+    if (
+      selectedAction === "UPDATE" &&
+      recommendedAction === "LINK_STRATEGY_TO_THESIS" &&
+      strategyId
+    ) {
+      loadStrategyData();
+      setShowConfirmationDialog(true);
     }
   }, [selectedAction, recommendedAction, strategyId]);
 
@@ -923,6 +935,18 @@ export function TriageActionButtons({
       timeRules: "",
     });
     setStrategyData(null);
+    setShowConfirmationDialog(false);
+  };
+
+  const handleConfirmationDialogSuccess = () => {
+    setShowConfirmationDialog(false);
+    setShowActionForm(false);
+    setSelectedAction(null);
+    setStrategyData(null);
+    router.refresh();
+    if (onActionComplete) {
+      onActionComplete();
+    }
   };
 
   const updateTradePosition = (index: number, field: keyof TradePosition, value: any) => {
@@ -967,14 +991,18 @@ export function TriageActionButtons({
   };
 
   const getActionDescription = (action: ActionType): string => {
+    if (action === "UPDATE" && recommendedAction === "LINK_STRATEGY_TO_THESIS") {
+      return "Confirm this strategy by selecting a strategy type and linking to an asset thesis.";
+    }
+
     if (action === "UPDATE" && recommendedAction === "CONFIRM_STRATEGIES") {
       return "Confirm this auto-derived strategy and set its metadata. This will link it to playbook items and enable state code computation.";
     }
-    
+
     if (action === "UPDATE" && recommendedAction === "PROVIDE_STRATEGY_METADATA") {
       return "Complete the required strategy metadata fields. This will link the strategy to playbook items and enable state code computation.";
     }
-    
+
     switch (action) {
       case "TRADE":
         return "Record a trade decision (close, adjust, hedge, roll, reduce, add, etc.)";
@@ -990,6 +1018,41 @@ export function TriageActionButtons({
   const isActionDisabled = (action: ActionType): boolean => {
     return !availableActions.includes(action);
   };
+
+  // Render strategy confirmation dialog (for LINK_STRATEGY_TO_THESIS)
+  if (showConfirmationDialog && recommendedAction === "LINK_STRATEGY_TO_THESIS") {
+    // Show loading state while strategy data is being fetched
+    if (loadingStrategy || !strategyData) {
+      return (
+        <div className="text-sm text-slate-600 py-4">
+          Loading strategy data...
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <StrategyConfirmationDialog
+          strategy={{
+            id: strategyData.id,
+            strategyKey: strategyData.strategyKey,
+            underlyingTicker: strategyData.underlyingTicker,
+            label: strategyData.label || strategyData.autoDerivedLabel,
+            status: strategyData.status,
+            isAuto: strategyData.isAuto,
+            strategyType: strategyData.strategyType,
+            assetThesisId: strategyData.assetThesisId,
+          }}
+          isOpen={showConfirmationDialog}
+          onClose={handleCancel}
+          onSuccess={handleConfirmationDialogSuccess}
+        />
+        <div className="text-sm text-slate-600">
+          Opening confirmation dialog...
+        </div>
+      </>
+    );
+  }
 
   // Render strategy metadata form (for PROVIDE_STRATEGY_METADATA)
   if (showActionForm && selectedAction === "UPDATE" && recommendedAction === "PROVIDE_STRATEGY_METADATA") {

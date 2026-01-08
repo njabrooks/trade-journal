@@ -417,10 +417,7 @@ export async function computeStrategyTriageForDate(
           isAuto: strategies.isAuto,
           strategyType: strategies.strategyType,
           confirmedAt: strategies.confirmedAt,
-          thesis: strategies.thesis,
-          profitRules: strategies.profitRules,
-          defenseRules: strategies.defenseRules,
-          timeRules: strategies.timeRules,
+          assetThesisId: strategies.assetThesisId,
           status: strategies.status,
         })
       .from(strategies)
@@ -457,11 +454,11 @@ export async function computeStrategyTriageForDate(
     // Skip merged strategies - they're no longer active and shouldn't generate triage records
     if (strategyRow?.status === 'merged') continue;
 
-    // 1. CONFIRM_STRATEGIES - Unconfirmed auto-derived strategies
+    // 1. LINK_STRATEGY_TO_THESIS - Unconfirmed auto-derived strategies need thesis link
     if (strategyRow?.isAuto && !strategyRow.confirmedAt) {
       const computedSeverity = 'urgent';
-      const recommendedAction = 'CONFIRM_STRATEGIES';
-      
+      const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
+
       // Check for active override
       const overrideSeverity = await checkSeverityOverride(
         null,
@@ -469,7 +466,7 @@ export async function computeStrategyTriageForDate(
         recommendedAction,
         snapshotDate
       );
-      
+
       records.push({
         snapshotDate,
         accountId: metric.accountId,
@@ -479,46 +476,37 @@ export async function computeStrategyTriageForDate(
         unrealizedPnl: metric.totalUnrealizedPnl,
         severity: overrideSeverity || computedSeverity,
         recommendedAction,
-        notes: 'Strategy needs confirmation: review and confirm strategy metadata',
+        notes: 'Strategy needs confirmation: select strategy type and link to asset thesis',
         ruleSet: 'strategy_workflow',
         symbol: strategyKey,
       });
     }
-    // 2. PROVIDE_STRATEGY_METADATA - Confirmed but missing required fields
-    else if (strategyRow?.confirmedAt) {
-      const missingFields: string[] = [];
-      if (!strategyRow.strategyType) missingFields.push('strategy_type');
-      if (!strategyRow.thesis) missingFields.push('thesis');
-      if (!strategyRow.profitRules) missingFields.push('profit_rules');
-      if (!strategyRow.defenseRules) missingFields.push('defense_rules');
-      if (!strategyRow.timeRules) missingFields.push('time_rules');
+    // 2. LINK_STRATEGY_TO_THESIS (soft) - Confirmed but missing asset thesis link
+    else if (strategyRow?.confirmedAt && !strategyRow.assetThesisId) {
+      const computedSeverity = 'attention';
+      const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
 
-      if (missingFields.length > 0) {
-        const computedSeverity = 'attention';
-        const recommendedAction = 'PROVIDE_STRATEGY_METADATA';
-        
-        // Check for active override
-        const overrideSeverity = await checkSeverityOverride(
-          null,
-          metric.strategyId,
-          recommendedAction,
-          snapshotDate
-        );
-        
-        records.push({
-          snapshotDate,
-          accountId: metric.accountId,
-          contextLevel: 'strategy',
-          strategyId: metric.strategyId,
-          absNotional: metric.totalAbsNotional,
-          unrealizedPnl: metric.totalUnrealizedPnl,
-          severity: overrideSeverity || computedSeverity,
-          recommendedAction,
-          notes: `Strategy confirmed but missing: ${missingFields.join(', ')}`,
-          ruleSet: 'strategy_workflow',
-          symbol: strategyKey,
-        });
-      }
+      // Check for active override
+      const overrideSeverity = await checkSeverityOverride(
+        null,
+        metric.strategyId,
+        recommendedAction,
+        snapshotDate
+      );
+
+      records.push({
+        snapshotDate,
+        accountId: metric.accountId,
+        contextLevel: 'strategy',
+        strategyId: metric.strategyId,
+        absNotional: metric.totalAbsNotional,
+        unrealizedPnl: metric.totalUnrealizedPnl,
+        severity: overrideSeverity || computedSeverity,
+        recommendedAction,
+        notes: 'Strategy confirmed but missing asset thesis link',
+        ruleSet: 'strategy_workflow',
+        symbol: strategyKey,
+      });
     }
 
     // 3. REVIEW_SIZE - Size vs NAV check (merged REDUCE_SIZE and REVIEW_SIZE)
