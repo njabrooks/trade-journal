@@ -9,23 +9,23 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/ingest-underlyings-massive.ts >> /tmp/massive-ingestion.log 2>&1</string>
+        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/ingest-underlyings-massive.ts >> /Users/twotrees/logs/massive-ingestion.log 2>&1</string>
     </array>
 
-    <!-- Run at 4:30 PM local time (after market close) -->
+    <!-- Run at 4:30 PM ET (after market close) = 21:30 UTC -->
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>16</integer>
+        <integer>21</integer>
         <key>Minute</key>
         <integer>30</integer>
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/tmp/massive-ingestion.log</string>
+    <string>/Users/twotrees/logs/massive-ingestion.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/tmp/massive-ingestion.log</string>
+    <string>/Users/twotrees/logs/massive-ingestion.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

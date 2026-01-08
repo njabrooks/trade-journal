@@ -2,9 +2,9 @@
 # Install launchd jobs for trade-journal scheduled tasks
 #
 # This script installs scheduled jobs to:
-# - Run Flex ingestion at 4 AM, 6 AM, 12 PM
-# - Run Massive ingestion at 4:30 PM
-# - Push to remote backup at 11 PM
+# - Run Flex ingestion at 4 AM, 6 AM, 8 AM, 12 PM UTC
+# - Run Massive ingestion at 21:30 UTC (4:30 PM ET, after market close)
+# - Push to remote backup at 7 AM UTC
 #
 # Usage:
 #   ./launchd/install.sh           # Install all jobs
@@ -51,10 +51,10 @@ show_status() {
 
     echo ""
     echo "Log files:"
-    echo "  /tmp/supabase-start.log"
-    echo "  /tmp/flex-ingestion.log"
-    echo "  /tmp/massive-ingestion.log"
-    echo "  /tmp/push-to-remote.log"
+    echo "  ~/logs/supabase-start.log"
+    echo "  ~/logs/flex-ingestion.log"
+    echo "  ~/logs/massive-ingestion.log"
+    echo "  ~/logs/push-to-remote.log"
     echo ""
 }
 
@@ -67,6 +67,9 @@ install_jobs() {
 
     # Create LaunchAgents directory if it doesn't exist
     mkdir -p "$LAUNCH_AGENTS_DIR"
+
+    # Create logs directory if it doesn't exist
+    mkdir -p "$HOME/logs"
 
     for plist in "${PLISTS[@]}"; do
         label="${plist%.plist}"
@@ -90,16 +93,16 @@ install_jobs() {
     echo -e "  ${GREEN}Installation complete!${NC}"
     echo "═══════════════════════════════════════════════════════════"
     echo ""
-    echo "Schedule:"
+    echo "Schedule (UTC):"
     echo "  Supabase start:    On login (30s delay for Docker)"
-    echo "  Flex ingestion:    4:00 AM, 6:00 AM, 12:00 PM"
-    echo "  Massive ingestion: 4:30 PM"
-    echo "  Push to remote:    11:00 PM"
+    echo "  Flex ingestion:    04:00, 06:00, 08:00, 12:00 UTC"
+    echo "  Massive ingestion: 21:30 UTC (4:30 PM ET)"
+    echo "  Push to remote:    07:00 UTC"
     echo ""
     echo "To check logs:"
-    echo "  tail -f /tmp/flex-ingestion.log"
-    echo "  tail -f /tmp/massive-ingestion.log"
-    echo "  tail -f /tmp/push-to-remote.log"
+    echo "  tail -f ~/logs/flex-ingestion.log"
+    echo "  tail -f ~/logs/massive-ingestion.log"
+    echo "  tail -f ~/logs/push-to-remote.log"
     echo ""
     echo "To manually trigger a job:"
     echo "  launchctl start com.trade-journal.flex-ingestion"

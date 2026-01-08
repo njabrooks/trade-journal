@@ -289,11 +289,11 @@ See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 ├─────────────────────────────────────────────────────────────┤
 │  Local Supabase @ :54322 (source of truth)                  │
 │                                                             │
-│  Scheduled Jobs (launchd):                                  │
+│  Scheduled Jobs (launchd, all times UTC):                   │
 │  ├── Supabase start: On login (30s delay for Docker)       │
-│  ├── Flex ingestion: 4 AM, 6 AM, 12 PM                     │
-│  ├── Massive ingestion: 4:30 PM                            │
-│  └── Push to remote: 11 PM                                 │
+│  ├── Flex ingestion: 04:00, 06:00, 08:00, 12:00 UTC        │
+│  ├── Massive ingestion: 21:30 UTC (4:30 PM ET)             │
+│  └── Push to remote: 07:00 UTC                             │
 │                                                             │
 │  All activity happens here:                                 │
 │  ├── Ingestion → Derived computations → User edits         │
@@ -309,7 +309,7 @@ See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 │  Works: home, coffee shop, travel                           │
 └─────────────────────────────────────────────────────────────┘
                               │
-                              │ Nightly backup (11 PM)
+                              │ Daily backup (07:00 UTC)
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              REMOTE SUPABASE (Backup Only)                  │
@@ -330,11 +330,11 @@ Install on Mac Mini:
 
 Jobs installed:
 - `com.trade-journal.supabase-start` - On login (30s delay for Docker)
-- `com.trade-journal.flex-ingestion` - 4 AM, 6 AM, 12 PM
-- `com.trade-journal.massive-ingestion` - 4:30 PM
-- `com.trade-journal.push-to-remote` - 11 PM
+- `com.trade-journal.flex-ingestion` - 04:00, 06:00, 08:00, 12:00 UTC
+- `com.trade-journal.massive-ingestion` - 21:30 UTC (4:30 PM ET)
+- `com.trade-journal.push-to-remote` - 07:00 UTC
 
-Logs: `/tmp/supabase-start.log`, `/tmp/flex-ingestion.log`, `/tmp/massive-ingestion.log`, `/tmp/push-to-remote.log`
+Logs: `~/logs/supabase-start.log`, `~/logs/flex-ingestion.log`, `~/logs/massive-ingestion.log`, `~/logs/push-to-remote.log`
 
 ### MacBook Pro Development (via Tailscale)
 
@@ -363,7 +363,7 @@ DATABASE_URL_DIRECT=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 ### Sync Scripts
 
 ```bash
-# Push local → remote (daily backup, runs automatically at 11 PM)
+# Push local → remote (daily backup, runs automatically at 07:00 UTC)
 set -a && source .env.local && set +a && npx tsx scripts/push-to-remote.ts
 
 # Restore remote → local (disaster recovery only)

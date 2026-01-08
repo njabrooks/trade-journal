@@ -9,10 +9,10 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/run-flex-ingestion.ts >> /tmp/flex-ingestion.log 2>&1</string>
+        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/run-flex-ingestion.ts >> /Users/twotrees/logs/flex-ingestion.log 2>&1</string>
     </array>
 
-    <!-- Run at 4 AM, 6 AM, and noon (matching GitHub Actions schedule) -->
+    <!-- Run at 4 AM, 6 AM, 8 AM, and noon UTC -->
     <key>StartCalendarInterval</key>
     <array>
         <dict>
@@ -29,6 +29,12 @@
         </dict>
         <dict>
             <key>Hour</key>
+            <integer>8</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
             <integer>12</integer>
             <key>Minute</key>
             <integer>0</integer>
@@ -36,10 +42,10 @@
     </array>
 
     <key>StandardOutPath</key>
-    <string>/tmp/flex-ingestion.log</string>
+    <string>/Users/twotrees/logs/flex-ingestion.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/tmp/flex-ingestion.log</string>
+    <string>/Users/twotrees/logs/flex-ingestion.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

@@ -9,23 +9,23 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx tsx scripts/push-to-remote.ts >> /tmp/push-to-remote.log 2>&1</string>
+        <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx tsx scripts/push-to-remote.ts >> /Users/twotrees/logs/push-to-remote.log 2>&1</string>
     </array>
 
-    <!-- Run at 11 PM local time (end of day backup) -->
+    <!-- Run at 7 AM UTC (daily backup) -->
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>23</integer>
+        <integer>7</integer>
         <key>Minute</key>
         <integer>0</integer>
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/tmp/push-to-remote.log</string>
+    <string>/Users/twotrees/logs/push-to-remote.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/tmp/push-to-remote.log</string>
+    <string>/Users/twotrees/logs/push-to-remote.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
