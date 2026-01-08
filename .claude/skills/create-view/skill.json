@@ -1,5 +1,0 @@
-{
-  "name": "mcp-create-view",
-  "description": "Create a new asset thesis in Supabase database from markdown file. Use when creating asset-specific theses about underlyings (stocks, commodities, etc.) from finalized research. Links to ticker and optionally to parent macro thesis. (Note: Database table is asset_theses, schema export is assetTheses)",
-  "instructions": "SKILL.md"
-}

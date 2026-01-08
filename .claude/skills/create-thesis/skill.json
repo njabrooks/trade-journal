@@ -1,5 +1,0 @@
-{
-  "name": "mcp-create-thesis",
-  "description": "Create a new macro thesis in Supabase database from markdown file. Use when creating high-level cross-asset beliefs (secular, cyclical, structural) from finalized research. Creates thesis directly in hierarchy.",
-  "instructions": "SKILL.md"
-}

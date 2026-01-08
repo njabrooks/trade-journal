@@ -1,5 +1,0 @@
-{
-  "name": "mcp-read-views",
-  "description": "Query and display asset theses from Supabase database. Use when you need to read asset-specific theses, filter by ticker/underlying, or examine thesis-to-macro-thesis relationships for research cross-referencing. (Note: Database table is asset_theses, schema export is assetTheses)",
-  "instructions": "SKILL.md"
-}

@@ -1,5 +1,0 @@
-{
-  "name": "validate-templates",
-  "description": "Interactive validation and modification of Obsidian markdown templates. Validates files against schemas, enforces naming conventions, and allows targeted modifications via natural language requests.",
-  "instructions": "SKILL.md"
-}
