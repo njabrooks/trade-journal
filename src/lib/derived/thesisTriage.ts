@@ -4,13 +4,16 @@
  * Computes triage records for thesis lifecycle events.
  * Called after mutations that affect thesis evolution state.
  *
- * Rules implemented:
- * #1: Thesis exists with no articulation → thesis_needs_articulation
- * #2: ≥3 claims added since last articulation → thesis_new_claims_available
+ * Trigger Rules (UPPER_SNAKE_CASE to match position/strategy triggers):
+ * - NEEDS_RESEARCH: <3 claims, no articulation → status: 'info'
+ * - PRODUCE_CORE_ARGUMENT: ≥3 claims, no articulation → status: 'attention'
+ * - UPDATE_CORE_ARGUMENT: ≥3 new claims since last articulation → status: 'info'
  *
- * Rules #4-5 (monitoring content, data triggers) are handled by:
- * - scripts/daily-thesis-monitoring.ts
- * - Future: data threshold monitoring scripts
+ * Monitoring triggers (handled by scripts/daily-thesis-monitoring.ts):
+ * - REVIEW_CONTENT: News/content found for thesis → status: 'attention'
+ * - REVIEW_DATA: Data threshold breached → status: 'urgent'
+ *
+ * Status values match position/strategy triage: urgent, attention, monitor, info, pending, complete
  */
 
 import { db } from '@/db';
@@ -66,75 +69,121 @@ export async function computeThesisTriageForThesis(
   // Check for existing pending triage records
   const existingTriage = await getExistingPendingTriage(thesisId, thesisType);
 
-  // Rule #1: Thesis needs articulation
+  // No articulation exists - determine if NEEDS_RESEARCH or PRODUCE_CORE_ARGUMENT
   if (!evolutionState.hasArticulation) {
-    // Check if we already have a pending triage for this
-    const existingNeedsArticulation = existingTriage.find(
+    // Check for existing pending triage for either rule
+    const existingNeedsResearch = existingTriage.find(
+      (t) => t.triageRule === 'NEEDS_RESEARCH'
+    );
+    const existingProduceCoreArgument = existingTriage.find(
+      (t) => t.triageRule === 'PRODUCE_CORE_ARGUMENT'
+    );
+    // Also check legacy rule names for migration compatibility
+    const existingLegacy = existingTriage.find(
       (t) => t.triageRule === 'thesis_needs_articulation'
     );
 
-    if (!existingNeedsArticulation) {
-      // Create new triage record
-      await createTriageRecord({
-        thesisId,
-        thesisType,
-        thesisTitle: thesis.title,
-        triageRule: 'thesis_needs_articulation',
-        triggerType: 'lifecycle_transition',
-        triggerSource: 'computeThesisTriageForThesis',
-        severity: 'medium',
-        urgency: 'this_week',
-        lifecycleStage: 'synthesis',
-        suggestedSkill: '/synthesize-thesis',
-        actionRequired:
-          'Generate claims from research and create thesis articulation',
-        contentSummary: {
-          currentClaimCount: evolutionState.claimCount,
-          hasArticulation: false,
-        },
-      });
-      result.triageCreated = 'thesis_needs_articulation';
-    }
-  } else {
-    // Articulation exists - resolve any pending "needs articulation" triage
-    const existingNeedsArticulation = existingTriage.find(
-      (t) => t.triageRule === 'thesis_needs_articulation'
-    );
-    if (existingNeedsArticulation) {
-      await resolveTriageRecord(existingNeedsArticulation.id, 'articulation_created');
-      result.existingTriageResolved = true;
-    }
+    if (evolutionState.claimCount < NEW_CLAIMS_THRESHOLD) {
+      // NEEDS_RESEARCH: <3 claims, no articulation
+      // Resolve any existing PRODUCE_CORE_ARGUMENT if claim count dropped (edge case)
+      if (existingProduceCoreArgument) {
+        await resolveTriageRecord(existingProduceCoreArgument.id, 'claim_count_below_threshold');
+      }
 
-    // Rule #2: New claims available since last articulation
-    const claimsSinceArticulation =
-      evolutionState.claimCount - (thesis.claimsCountAtLastArticulation ?? 0);
-
-    if (claimsSinceArticulation >= NEW_CLAIMS_THRESHOLD) {
-      // Check if we already have a pending triage for this
-      const existingNewClaims = existingTriage.find(
-        (t) => t.triageRule === 'thesis_new_claims_available'
-      );
-
-      if (!existingNewClaims) {
+      if (!existingNeedsResearch && !existingLegacy) {
         await createTriageRecord({
           thesisId,
           thesisType,
           thesisTitle: thesis.title,
-          triageRule: 'thesis_new_claims_available',
+          triageRule: 'NEEDS_RESEARCH',
           triggerType: 'lifecycle_transition',
           triggerSource: 'computeThesisTriageForThesis',
-          severity: 'low',
+          status: 'info',
+          urgency: 'when_convenient',
+          lifecycleStage: 'research',
+          suggestedSkill: '/process-transcript',
+          actionRequired:
+            `Thesis has ${evolutionState.claimCount} claim(s). Link at least ${NEW_CLAIMS_THRESHOLD} claims before generating core argument.`,
+          contentSummary: {
+            currentClaimCount: evolutionState.claimCount,
+            requiredClaimCount: NEW_CLAIMS_THRESHOLD,
+            hasArticulation: false,
+          },
+        });
+        result.triageCreated = 'NEEDS_RESEARCH';
+      }
+    } else {
+      // PRODUCE_CORE_ARGUMENT: ≥3 claims, no articulation
+      // Resolve any existing NEEDS_RESEARCH since we now have enough claims
+      if (existingNeedsResearch) {
+        await resolveTriageRecord(existingNeedsResearch.id, 'sufficient_claims_linked');
+        result.existingTriageResolved = true;
+      }
+
+      if (!existingProduceCoreArgument && !existingLegacy) {
+        await createTriageRecord({
+          thesisId,
+          thesisType,
+          thesisTitle: thesis.title,
+          triageRule: 'PRODUCE_CORE_ARGUMENT',
+          triggerType: 'lifecycle_transition',
+          triggerSource: 'computeThesisTriageForThesis',
+          status: 'attention',
+          urgency: 'this_week',
+          lifecycleStage: 'synthesis',
+          suggestedSkill: '/synthesize-thesis',
+          actionRequired:
+            `Thesis has ${evolutionState.claimCount} claims. Ready to generate core argument and validation points.`,
+          contentSummary: {
+            currentClaimCount: evolutionState.claimCount,
+            hasArticulation: false,
+          },
+        });
+        result.triageCreated = 'PRODUCE_CORE_ARGUMENT';
+      }
+    }
+  } else {
+    // Articulation exists - resolve any pending "needs articulation" type triage
+    const articulationTriage = existingTriage.filter(
+      (t) => t.triageRule === 'NEEDS_RESEARCH' ||
+             t.triageRule === 'PRODUCE_CORE_ARGUMENT' ||
+             t.triageRule === 'thesis_needs_articulation'
+    );
+    for (const triage of articulationTriage) {
+      await resolveTriageRecord(triage.id, 'articulation_created');
+      result.existingTriageResolved = true;
+    }
+
+    // UPDATE_CORE_ARGUMENT: ≥3 new claims since last articulation
+    const claimsSinceArticulation =
+      evolutionState.claimCount - (thesis.claimsCountAtLastArticulation ?? 0);
+
+    if (claimsSinceArticulation >= NEW_CLAIMS_THRESHOLD) {
+      // Check for existing pending triage (new and legacy names)
+      const existingUpdateCoreArgument = existingTriage.find(
+        (t) => t.triageRule === 'UPDATE_CORE_ARGUMENT' || t.triageRule === 'thesis_new_claims_available'
+      );
+
+      if (!existingUpdateCoreArgument) {
+        await createTriageRecord({
+          thesisId,
+          thesisType,
+          thesisTitle: thesis.title,
+          triageRule: 'UPDATE_CORE_ARGUMENT',
+          triggerType: 'lifecycle_transition',
+          triggerSource: 'computeThesisTriageForThesis',
+          status: 'info',
           urgency: 'when_convenient',
           lifecycleStage: 'synthesis',
           suggestedSkill: '/synthesize-thesis',
-          actionRequired: `${claimsSinceArticulation} new claims available since last articulation. Consider regenerating thesis synthesis.`,
+          actionRequired: `${claimsSinceArticulation} new claims since last articulation. Consider updating the core argument.`,
           contentSummary: {
             currentClaimCount: evolutionState.claimCount,
             claimsAtLastArticulation: thesis.claimsCountAtLastArticulation ?? 0,
             newClaimCount: claimsSinceArticulation,
           },
         });
-        result.triageCreated = 'thesis_new_claims_available';
+        result.triageCreated = 'UPDATE_CORE_ARGUMENT';
       }
     }
   }
@@ -183,7 +232,7 @@ export async function computeThesisTriageForAll(): Promise<{
 /**
  * Called when an articulation is created to:
  * 1. Update claims_count_at_last_articulation on the thesis
- * 2. Resolve any "new claims available" triage
+ * 2. Resolve any pending articulation-related triage
  */
 export async function onArticulationCreated(
   thesisId: string,
@@ -211,17 +260,20 @@ export async function onArticulationCreated(
       .where(eq(assetTheses.id, thesisId));
   }
 
-  // Resolve any pending "new claims available" triage
+  // Resolve any pending articulation-related triage (new and legacy names)
   const existingTriage = await getExistingPendingTriage(thesisId, thesisType);
-  const existingNewClaims = existingTriage.find(
-    (t) => t.triageRule === 'thesis_new_claims_available'
+  const articulationTriage = existingTriage.filter(
+    (t) => t.triageRule === 'UPDATE_CORE_ARGUMENT' ||
+           t.triageRule === 'PRODUCE_CORE_ARGUMENT' ||
+           t.triageRule === 'NEEDS_RESEARCH' ||
+           t.triageRule === 'thesis_new_claims_available' ||
+           t.triageRule === 'thesis_needs_articulation'
   );
-  if (existingNewClaims) {
-    await resolveTriageRecord(existingNewClaims.id, 'new_articulation_created');
+  for (const triage of articulationTriage) {
+    await resolveTriageRecord(triage.id, 'articulation_created');
   }
 
-  // Recompute triage (will resolve "needs articulation" if applicable)
-  await computeThesisTriageForThesis(thesisId, thesisType);
+  console.log(`onArticulationCreated: Resolved ${articulationTriage.length} triage records for ${thesisType}/${thesisId}`);
 }
 
 // ============================================================================
@@ -318,7 +370,8 @@ interface CreateTriageParams {
   triageRule: string;
   triggerType: string;
   triggerSource: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  // Status matches position/strategy triage severity values
+  status: 'urgent' | 'attention' | 'monitor' | 'info' | 'pending' | 'complete';
   urgency: 'immediate' | 'today' | 'this_week' | 'when_convenient';
   lifecycleStage: string;
   suggestedSkill: string;
@@ -333,9 +386,10 @@ async function createTriageRecord(params: CreateTriageParams): Promise<void> {
     thesisTitle: params.thesisTitle,
     triggerType: params.triggerType,
     triggerSource: params.triggerSource,
-    severity: params.severity,
+    // Map status to severity field for DB compatibility, and set status field
+    severity: params.status as 'critical' | 'high' | 'medium' | 'low' | 'info',
     urgency: params.urgency,
-    status: 'pending',
+    status: params.status,
     lifecycleStage: params.lifecycleStage,
     suggestedSkill: params.suggestedSkill,
     actionRequired: params.actionRequired,
@@ -359,7 +413,7 @@ async function resolveTriageRecord(
   await db
     .update(thesisTriageRecords)
     .set({
-      status: 'actioned',
+      status: 'complete',
       completedAt: new Date(),
       completedBy: 'system',
       userNotes: `Auto-resolved: ${reason}`,

@@ -12,6 +12,9 @@ import {
   ArrowUp,
   ArrowDown,
   Layers,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type {
@@ -29,12 +32,19 @@ interface UnifiedTriageBrowserProps {
 type ObjectTypeFilter = 'all' | TriageObjectType;
 type SortColumn = 'title' | 'objectType' | 'trigger' | 'status' | 'date';
 type SortDirection = 'asc' | 'desc';
-type GroupBy = 'none' | 'severity';
+type GroupBy = 'none' | 'status';
+type QuickFilter = 'needs_action' | 'all';
+
+// Statuses that require action (shown in "Needs Action" view)
+const ACTION_STATUSES = ['urgent', 'attention'];
 
 export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserProps) {
   const router = useRouter();
   const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Quick filter state (default to "Needs Action")
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('needs_action');
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,8 +53,8 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
   const [triggerFilter, setTriggerFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Sort states
-  const [sortColumn, setSortColumn] = useState<SortColumn>('date');
+  // Sort states (default to status/severity order)
+  const [sortColumn, setSortColumn] = useState<SortColumn>('status');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Group by state
@@ -89,12 +99,18 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
   const filteredAndSortedRecords = useMemo(() => {
     let result = [...records];
 
+    // Quick filter (applied first)
+    if (quickFilter === 'needs_action') {
+      result = result.filter((r) => ACTION_STATUSES.includes(r.status));
+    }
+    // 'all' shows everything
+
     // Object type filter
     if (objectTypeFilter !== 'all') {
       result = result.filter((r) => r.objectType === objectTypeFilter);
     }
 
-    // Status filter
+    // Status filter (additional to quick filter)
     if (statusFilter !== 'all') {
       result = result.filter((r) => r.status === statusFilter);
     }
@@ -158,13 +174,13 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
     });
 
     return result;
-  }, [records, objectTypeFilter, statusFilter, triggerFilter, searchQuery, sortColumn, sortDirection]);
+  }, [records, quickFilter, objectTypeFilter, statusFilter, triggerFilter, searchQuery, sortColumn, sortDirection]);
 
-  // Group records by severity
+  // Group records by status
   const groupedRecords = useMemo(() => {
-    if (groupBy !== 'severity') return null;
+    if (groupBy !== 'status') return null;
 
-    // Define severity groups in order
+    // Define status groups in order
     const severityGroups = [
       { key: 'urgent', label: 'Urgent', statuses: ['urgent', 'critical', 'immediate'] },
       { key: 'attention', label: 'Needs Attention', statuses: ['attention', 'high', 'today'] },
@@ -231,12 +247,16 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
       <Fragment key={record.id}>
         {/* Main Row */}
         <tr className="border-b hover:bg-slate-50 transition-colors">
-          {/* Title */}
+          {/* Title with Direction Icon */}
           <td className="px-4 py-3">
             <button
               onClick={() => setExpandedRecord(isExpanded ? null : record.id)}
-              className="text-slate-900 font-medium hover:text-blue-600 transition-colors text-left"
+              className="text-slate-900 font-medium hover:text-blue-600 transition-colors text-left flex items-center gap-1.5"
             >
+              {/* Direction indicator for thesis records */}
+              {record.direction && (
+                <DirectionIcon direction={record.direction} />
+              )}
               {record.title}
             </button>
           </td>
@@ -250,9 +270,9 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
 
           {/* Trigger */}
           <td className="px-4 py-3">
-            <span className="text-slate-600 text-xs">
+            <Badge className={getTriggerBadgeColor(record.trigger)}>
               {formatTriggerLabel(record.trigger)}
-            </span>
+            </Badge>
           </td>
 
           {/* Status */}
@@ -336,8 +356,26 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
 
   return (
     <div className="space-y-4">
-      {/* Search and Filter Bar */}
+      {/* Quick Filters and Controls Bar */}
       <div className="flex items-center gap-2">
+        {/* Quick Filter Buttons */}
+        <Button
+          variant={quickFilter === 'needs_action' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setQuickFilter('needs_action')}
+        >
+          Needs Action
+        </Button>
+        <Button
+          variant={quickFilter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setQuickFilter('all')}
+        >
+          All Triage
+        </Button>
+
+        <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
+
         <Button
           variant="outline"
           size="sm"
@@ -349,15 +387,16 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
           {showFilters && <span className="text-xs text-slate-500">(ESC to close)</span>}
         </Button>
         <Button
-          variant={groupBy === 'severity' ? 'default' : 'outline'}
+          variant={groupBy === 'status' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setGroupBy(groupBy === 'severity' ? 'none' : 'severity')}
+          onClick={() => setGroupBy(groupBy === 'status' ? 'none' : 'status')}
           className="gap-2"
         >
           <Layers className="h-4 w-4" />
-          Group by Severity
+          Group by Status
         </Button>
-        <div className="text-sm text-slate-600">
+
+        <div className="ml-auto text-sm text-slate-600">
           Showing {filteredAndSortedRecords.length} of {records.length} triage items
         </div>
       </div>
@@ -514,7 +553,7 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
                 </tr>
               </thead>
               <tbody>
-                {groupBy === 'severity' && groupedRecords ? (
+                {groupBy === 'status' && groupedRecords ? (
                   // Grouped rendering
                   groupedRecords.map((group) => (
                     <Fragment key={group.key}>
@@ -546,6 +585,23 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
       </section>
     </div>
   );
+}
+
+// Helper components
+
+/**
+ * Direction indicator icon for thesis records
+ * Shows TrendingUp (green) for bullish, TrendingDown (red) for bearish, Minus (gray) for neutral
+ */
+function DirectionIcon({ direction }: { direction: string }) {
+  if (direction === 'bullish') {
+    return <TrendingUp className="h-4 w-4 text-emerald-600 flex-shrink-0" />;
+  }
+  if (direction === 'bearish') {
+    return <TrendingDown className="h-4 w-4 text-rose-600 flex-shrink-0" />;
+  }
+  // Neutral
+  return <Minus className="h-4 w-4 text-slate-400 flex-shrink-0" />;
 }
 
 // Helper functions
@@ -590,6 +646,12 @@ function getStatusBadgeColor(status: string): string {
   return colors[status] ?? 'bg-slate-100 text-slate-700';
 }
 
+function getTriggerBadgeColor(trigger: string): string {
+  // Use a consistent neutral style for triggers - they describe the action, not severity
+  // Using a cyan/teal color to differentiate from status (warm colors) and type (cool colors)
+  return 'bg-cyan-50 text-cyan-700 border border-cyan-200';
+}
+
 function getObjectTypeBadgeColor(objectType: TriageObjectType): string {
   const colors: Record<TriageObjectType, string> = {
     position: 'bg-blue-100 text-blue-700',
@@ -618,28 +680,10 @@ function formatStatusLabel(status: string): string {
 }
 
 function formatTriggerLabel(trigger: string): string {
-  // Action-oriented labels for thesis triage rules
-  const thesisTriggerLabels: Record<string, string> = {
-    thesis_needs_articulation: 'Generate Articulation',
-    thesis_new_claims_available: 'Review New Claims',
-    thesis_monitoring_content: 'Assess Content',
-    thesis_data_trigger: 'Review V&I Status',
-    thesis_validation_triggered: 'Validation Triggered',
-    thesis_manual_assessment: 'Manual Assessment',
-  };
-
-  if (thesisTriggerLabels[trigger]) {
-    return thesisTriggerLabels[trigger];
-  }
-
-  // Position/strategy triggers - already action-oriented
-  // CONFIRM_STRATEGY, STATE_CODE_CHANGE, REVIEW_SIZE, QUANTITY_CHANGE, etc.
+  // All triggers use UPPER_SNAKE_CASE format, display with spaces
+  // Just replace underscores with spaces to maintain caps consistency
   return trigger
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase())
-    .replace(/Dte/g, 'DTE')
-    .replace(/Itm/g, 'ITM')
-    .replace(/Iv/g, 'IV');
+    .replace(/_/g, ' ');
 }
 
 function formatDate(date: Date): string {

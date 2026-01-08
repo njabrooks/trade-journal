@@ -51,7 +51,8 @@ export default async function TriagePage({ searchParams }: TriagePageProps) {
   }
 
   // Fetch unified triage queue (position/strategy + thesis triage combined)
-  const { records, counts } = await getUnifiedTriageQueue(account.id);
+  // includeAll: true to fetch all records including dismissed (UI filters client-side)
+  const { records, counts } = await getUnifiedTriageQueue(account.id, { includeAll: true });
 
   return (
     <DashboardShell

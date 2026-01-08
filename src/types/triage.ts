@@ -23,7 +23,7 @@ export type TriageStatus = string;
 export interface UnifiedTriageRecord {
   // Core identification
   id: string;
-  title: string; // symbol (position/strategy) or thesisTitle (thesis)
+  title: string; // symbol (position/strategy) or displayTitle (thesis - ticker or stripped title)
   objectType: TriageObjectType;
   objectId: string; // positionId, strategyId, or thesisId
 
@@ -31,6 +31,9 @@ export interface UnifiedTriageRecord {
   trigger: string; // recommendedAction (position/strategy) or triageRule (thesis)
   status: TriageStatus; // severity (position/strategy) or status (thesis)
   date: Date; // snapshotDate (position/strategy) or createdAt (thesis)
+
+  // Direction indicator (bullish/bearish/neutral) for thesis records
+  direction?: string | null;
 
   // For navigation/linking
   strategyId?: string | null;
@@ -51,6 +54,7 @@ export interface UnifiedTriageFilters {
   trigger?: string[];
   sort?: "date" | "title" | "trigger" | "status" | "objectType";
   direction?: "asc" | "desc";
+  includeAll?: boolean;  // If true, include dismissed/complete records (for "All Triage" view)
 }
 
 /**
@@ -109,12 +113,15 @@ export function mapThesisTriageToUnified(record: ThesisTriageQueueRecordFull): U
 
   return {
     id: record.id,
-    title: record.thesisTitle,
+    // Use displayTitle (ticker for asset, stripped title for macro) instead of full thesisTitle
+    title: record.displayTitle,
     objectType,
     objectId: record.thesisId,
     trigger,
     status: record.status,
     date: record.createdAt,
+    // Direction for visual indicator (bullish/bearish/neutral)
+    direction: record.direction,
     thesisType: record.thesisType as "macro" | "asset",
     thesisTriageRecord: record,
   };

@@ -1,6 +1,6 @@
 import { and, desc, asc, eq, sql, ne, or, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { strategies, triageRecords, thesisTriageRecords } from "@/db/schema";
+import { strategies, triageRecords, thesisTriageRecords, macroTheses, assetTheses, underlyings } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
 
 export interface TriageQueueFilters {
@@ -537,8 +537,10 @@ export interface ThesisTriageFilters {
   severity?: string[];  // 'critical' | 'high' | 'medium' | 'low' | 'info'
   thesisType?: string[];  // 'macro' | 'asset'
   lifecycleStage?: string[];  // 'created' | 'claims_linked' | 'synthesized' | 'validated' | 'monitoring'
+  includeAll?: boolean;  // If true, include dismissed/complete records (for "All Triage" view)
 }
 
+// Base record without display fields (from simple query)
 export interface ThesisTriageQueueRecord {
   id: string;
   createdAt: Date;
@@ -547,7 +549,7 @@ export interface ThesisTriageQueueRecord {
   thesisTitle: string;
   triggerType: string;
   triggerSource: string;
-  triageRule: string | null;  // thesis_needs_articulation | thesis_new_claims_available | thesis_monitoring_content | thesis_data_trigger
+  triageRule: string | null;  // NEEDS_RESEARCH | PRODUCE_CORE_ARGUMENT | UPDATE_CORE_ARGUMENT | REVIEW_CONTENT | REVIEW_DATA
   severity: string;
   urgency: string;
   status: string;
@@ -558,7 +560,13 @@ export interface ThesisTriageQueueRecord {
   completedAt: Date | null;
 }
 
+// Full record with display fields (from joined query) and JSONB fields
 export interface ThesisTriageQueueRecordFull extends ThesisTriageQueueRecord {
+  // Display fields (joined from thesis tables)
+  ticker: string | null;        // For asset theses: underlying ticker (e.g., "GLW")
+  direction: string | null;     // 'bullish' | 'bearish' | 'neutral'
+  displayTitle: string;         // Ticker for asset theses, stripped title for macro theses
+  // JSONB fields
   contentSummary: unknown;
   aiAnalysis: unknown;
   matchedResults: unknown;
@@ -638,16 +646,25 @@ export async function getThesisTriageQueue(
 
 /**
  * Get thesis triage queue with JSONB fields (contentSummary, aiAnalysis, matchedResults)
+ * Also includes ticker and direction from joined thesis tables for display
  */
 export async function getThesisTriageQueueFull(
   filters: ThesisTriageFilters = {}
 ): Promise<ThesisTriageQueueRecordFull[]> {
   const conditions = [];
 
-  // By default, only show non-completed records
-  if (!filters.status || filters.status.length === 0) {
-    conditions.push(ne(thesisTriageRecords.status, 'actioned'));
+  // By default, only show non-completed records (using new status values)
+  // Unless includeAll is true (for "All Triage" view)
+  if (filters.includeAll) {
+    // Include all records - no status exclusion
+    if (filters.status && filters.status.length > 0) {
+      conditions.push(inArray(thesisTriageRecords.status, filters.status));
+    }
+  } else if (!filters.status || filters.status.length === 0) {
+    conditions.push(ne(thesisTriageRecords.status, 'complete'));
     conditions.push(ne(thesisTriageRecords.status, 'dismissed'));
+    // Also exclude legacy values for backwards compatibility
+    conditions.push(ne(thesisTriageRecords.status, 'actioned'));
   } else {
     conditions.push(inArray(thesisTriageRecords.status, filters.status));
   }
@@ -664,6 +681,7 @@ export async function getThesisTriageQueueFull(
     conditions.push(inArray(thesisTriageRecords.lifecycleStage, filters.lifecycleStage));
   }
 
+  // Join to thesis tables to get ticker and direction
   const rows = await db
     .select({
       id: thesisTriageRecords.id,
@@ -685,30 +703,88 @@ export async function getThesisTriageQueueFull(
       contentSummary: thesisTriageRecords.contentSummary,
       aiAnalysis: thesisTriageRecords.aiAnalysis,
       matchedResults: thesisTriageRecords.matchedResults,
+      // Joined fields for display
+      ticker: underlyings.ticker,
+      assetDirection: assetTheses.direction,
+      macroDirection: macroTheses.direction,
     })
     .from(thesisTriageRecords)
+    // Left join to asset_theses and underlyings for asset thesis records
+    .leftJoin(
+      assetTheses,
+      and(
+        eq(thesisTriageRecords.thesisId, assetTheses.id),
+        eq(thesisTriageRecords.thesisType, 'asset')
+      )
+    )
+    .leftJoin(
+      underlyings,
+      eq(assetTheses.underlyingId, underlyings.id)
+    )
+    // Left join to macro_theses for macro thesis records
+    .leftJoin(
+      macroTheses,
+      and(
+        eq(thesisTriageRecords.thesisId, macroTheses.id),
+        eq(thesisTriageRecords.thesisType, 'macro')
+      )
+    )
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(
-      // Sort by urgency (immediate first), then severity, then creation date
-      sql`CASE ${thesisTriageRecords.urgency}
-        WHEN 'immediate' THEN 1
-        WHEN 'today' THEN 2
-        WHEN 'this_week' THEN 3
-        WHEN 'when_convenient' THEN 4
-        ELSE 5
-      END`,
-      sql`CASE ${thesisTriageRecords.severity}
-        WHEN 'critical' THEN 1
-        WHEN 'high' THEN 2
-        WHEN 'medium' THEN 3
-        WHEN 'low' THEN 4
-        WHEN 'info' THEN 5
+      // Sort by status priority (attention > monitor > info > pending)
+      sql`CASE ${thesisTriageRecords.status}
+        WHEN 'urgent' THEN 1
+        WHEN 'attention' THEN 2
+        WHEN 'monitor' THEN 3
+        WHEN 'info' THEN 4
+        WHEN 'pending' THEN 5
         ELSE 6
       END`,
       desc(thesisTriageRecords.createdAt)
     );
 
-  return rows;
+  // Transform rows to include computed display fields
+  return rows.map(row => {
+    const direction = row.thesisType === 'asset' ? row.assetDirection : row.macroDirection;
+
+    // Compute displayTitle: ticker for asset, stripped title for macro
+    let displayTitle: string;
+    if (row.thesisType === 'asset' && row.ticker) {
+      displayTitle = row.ticker;
+    } else {
+      // Strip "Bullish " or "Bearish " prefix from title
+      displayTitle = row.thesisTitle
+        .replace(/^Bullish\s+/i, '')
+        .replace(/^Bearish\s+/i, '')
+        .replace(/^Neutral\s+/i, '');
+    }
+
+    return {
+      id: row.id,
+      createdAt: row.createdAt,
+      thesisId: row.thesisId,
+      thesisType: row.thesisType,
+      thesisTitle: row.thesisTitle,
+      triggerType: row.triggerType,
+      triggerSource: row.triggerSource,
+      triageRule: row.triageRule,
+      severity: row.severity,
+      urgency: row.urgency,
+      status: row.status,
+      lifecycleStage: row.lifecycleStage,
+      suggestedSkill: row.suggestedSkill,
+      actionRequired: row.actionRequired,
+      userNotes: row.userNotes,
+      completedAt: row.completedAt,
+      contentSummary: row.contentSummary,
+      aiAnalysis: row.aiAnalysis,
+      matchedResults: row.matchedResults,
+      // Display fields
+      ticker: row.ticker,
+      direction: direction,
+      displayTitle,
+    };
+  });
 }
 
 /**
@@ -889,6 +965,11 @@ export async function getUnifiedTriageQueue(
   // Query thesis triage
   if (queryTheses) {
     const thesisFilters: ThesisTriageFilters = {};
+
+    // Pass through includeAll flag for "All Triage" view
+    if (filters.includeAll) {
+      thesisFilters.includeAll = true;
+    }
 
     // Map status filter
     if (filters.status && filters.status.length > 0) {
