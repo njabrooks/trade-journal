@@ -9,19 +9,21 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>sleep 30 &amp;&amp; cd /Users/twotrees/Desktop/trade-journal &amp;&amp; /opt/homebrew/bin/npx supabase start >> /Users/twotrees/Desktop/trade-journal/logs/supabase-start.log 2>&amp;1</string>
+        <string>sleep 30 &amp;&amp; cd /Users/twotrees/Projects/trade-journal &amp;&amp; /opt/homebrew/bin/npx supabase start >> /Users/twotrees/Projects/trade-journal/logs/supabase-start.log 2>&amp;1</string>
     </array>
 
     <key>StandardOutPath</key>
-    <string>/Users/twotrees/Desktop/trade-journal/logs/supabase-start.log</string>
+    <string>/Users/twotrees/Projects/trade-journal/logs/supabase-start.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/twotrees/Desktop/trade-journal/logs/supabase-start.log</string>
+    <string>/Users/twotrees/Projects/trade-journal/logs/supabase-start.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/twotrees</string>
     </dict>
 
     <!-- Run once at login -->

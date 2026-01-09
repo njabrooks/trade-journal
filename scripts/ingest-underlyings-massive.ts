@@ -1,23 +1,30 @@
 #!/usr/bin/env tsx
 /**
  * Ingest underlying spot prices and IV30 from Massive.com API
- * 
+ *
  * This script:
  * 1. Gets list of all active underlyings from database
- * 2. Fetches latest spot price from Massive for each ticker
- * 3. Attempts to fetch IV30 (may require paid tier)
- * 4. Upserts into underlyings_iv_history table
- * 
- * Run via GitHub Actions on a schedule (daily recommended)
- * 
+ * 2. Fetches latest spot price from Yahoo Finance (primary) or Massive (fallback)
+ * 3. Fetches options chain from Massive for IV30 calculation
+ * 4. Upserts into underlyings_iv_history and options_chain_snapshots tables
+ *
+ * Scheduled to run daily at 21:30 UTC (4:30 PM ET, after market close)
+ *
+ * Trading Day Logic:
+ * - If no date specified, automatically determines the last trading day
+ * - Before 21:00 UTC: uses previous calendar day (market not closed yet)
+ * - After 21:00 UTC: uses today (market closed, EOD data available)
+ * - Weekends: automatically adjusts to Friday
+ * - Holidays: not auto-detected; specify date manually if needed
+ *
  * Environment variables required:
  * - MASSIVE_API_KEY: Your Massive.com API key
  * - DATABASE_URL_POOLER: Database connection string
- * 
+ *
  * Usage:
- *   npx tsx scripts/ingest-underlyings-massive.ts
- *   npx tsx scripts/ingest-underlyings-massive.ts 2025-12-17
- *   npx tsx scripts/ingest-underlyings-massive.ts 2025-12-17 TSLA AAPL
+ *   npx tsx scripts/ingest-underlyings-massive.ts           # Auto-detect trading day
+ *   npx tsx scripts/ingest-underlyings-massive.ts 2025-12-17              # Specific date
+ *   npx tsx scripts/ingest-underlyings-massive.ts 2025-12-17 TSLA AAPL    # Specific date + tickers
  */
 
 // Load environment variables from .env.local BEFORE any other imports
@@ -668,10 +675,57 @@ async function storeOptionsChainSnapshot(
 }
 
 /**
+ * Calculate the last US trading day
+ *
+ * Logic:
+ * - Job is scheduled to run at 21:30 UTC (4:30 PM ET, after market close)
+ * - If running before 21:00 UTC, market hasn't closed yet, so use previous trading day
+ * - If running after 21:00 UTC, market has closed, so use today
+ * - Skip weekends: Saturday/Sunday → use Friday
+ *
+ * Note: This doesn't handle NYSE holidays. For holidays, manually specify the date
+ * or the script will attempt to fetch data that doesn't exist (which is handled gracefully).
+ */
+function getLastTradingDay(): string {
+  const now = new Date();
+  const utcHour = now.getUTCHours();
+
+  // Start with today's date
+  let tradingDay = new Date(now);
+
+  // If it's before 21:00 UTC (4 PM ET), market hasn't closed yet
+  // Use the previous calendar day
+  if (utcHour < 21) {
+    tradingDay.setUTCDate(tradingDay.getUTCDate() - 1);
+    console.log(`[Trading Day] Current time ${utcHour}:00 UTC is before market close (21:00 UTC)`);
+    console.log(`[Trading Day] Using previous day as trading day`);
+  } else {
+    console.log(`[Trading Day] Current time ${utcHour}:00 UTC is after market close`);
+    console.log(`[Trading Day] Using today as trading day`);
+  }
+
+  // Skip weekends
+  const dayOfWeek = tradingDay.getUTCDay(); // 0 = Sunday, 6 = Saturday
+  if (dayOfWeek === 0) {
+    // Sunday → use Friday (go back 2 days)
+    tradingDay.setUTCDate(tradingDay.getUTCDate() - 2);
+    console.log(`[Trading Day] Adjusted for Sunday → Friday`);
+  } else if (dayOfWeek === 6) {
+    // Saturday → use Friday (go back 1 day)
+    tradingDay.setUTCDate(tradingDay.getUTCDate() - 1);
+    console.log(`[Trading Day] Adjusted for Saturday → Friday`);
+  }
+
+  const result = tradingDay.toISOString().split('T')[0]!;
+  console.log(`[Trading Day] Calculated trading day: ${result}`);
+  return result;
+}
+
+/**
  * Main ingestion function
  */
 async function ingestUnderlyingsFromMassive(date?: string, tickers?: string[]): Promise<void> {
-  const targetDate = date || new Date().toISOString().split('T')[0]!; // Today in YYYY-MM-DD
+  const targetDate = date || getLastTradingDay();
   
   console.log(`🚀 Starting Massive ingestion for date: ${targetDate}\n`);
 

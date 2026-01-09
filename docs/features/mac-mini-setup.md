@@ -11,10 +11,11 @@ This guide covers setting up the trade-journal system on Mac Mini as the primary
 ├─────────────────────────────────────────────────────────────┤
 │  Local Supabase @ :54322 (source of truth)                  │
 │                                                             │
-│  Scheduled Jobs (launchd):                                  │
-│  ├── Flex ingestion: 4 AM, 6 AM, 12 PM                     │
-│  ├── Massive ingestion: 4:30 PM                            │
-│  └── Push to remote: 11 PM                                 │
+│  Scheduled Jobs (launchd, all times UTC):                   │
+│  ├── Supabase start: On login (30s delay for Docker)       │
+│  ├── Flex ingestion: 04:00, 06:00, 08:00, 12:00 UTC        │
+│  ├── Massive ingestion: 21:30 UTC (4:30 PM ET)             │
+│  └── Push to remote: 07:00 UTC                             │
 │                                                             │
 │  All activity happens here:                                 │
 │  ├── Ingestion → Derived computations → User edits         │
@@ -30,7 +31,7 @@ This guide covers setting up the trade-journal system on Mac Mini as the primary
 │  Works: home, coffee shop, travel                           │
 └─────────────────────────────────────────────────────────────┘
                               │
-                              │ Nightly backup (11 PM)
+                              │ Daily backup (07:00 UTC)
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              REMOTE SUPABASE (Backup Only)                  │
@@ -77,7 +78,7 @@ Verify the tools are available:
 ## Step 3: Clone and Setup Project
 
 ```bash
-cd ~/Desktop
+cd ~/Projects
 git clone <repository-url> trade-journal
 cd trade-journal
 npm install
@@ -113,7 +114,7 @@ MASSIVE_API_BASE_URL=https://api.massive.com
 ## Step 5: Start Local Supabase
 
 ```bash
-cd ~/Desktop/trade-journal
+cd ~/Projects/trade-journal
 npx supabase start
 ```
 
@@ -148,13 +149,14 @@ This pulls all data from remote Supabase to your local instance.
 ./launchd/install.sh
 ```
 
-This installs three scheduled jobs:
+This installs four scheduled jobs:
 
-| Job | Schedule | Description |
-|-----|----------|-------------|
-| `com.trade-journal.flex-ingestion` | 4 AM, 6 AM, 12 PM | IBKR Flex data ingestion |
-| `com.trade-journal.massive-ingestion` | 4:30 PM | Massive.com IV/spot data |
-| `com.trade-journal.push-to-remote` | 11 PM | Backup local → remote |
+| Job | Schedule (UTC) | Description |
+|-----|----------------|-------------|
+| `com.trade-journal.supabase-start` | On login (30s delay) | Start Supabase after Docker loads |
+| `com.trade-journal.flex-ingestion` | 04:00, 06:00, 08:00, 12:00 | IBKR Flex data ingestion |
+| `com.trade-journal.massive-ingestion` | 21:30 (4:30 PM ET) | Massive.com IV/spot data |
+| `com.trade-journal.push-to-remote` | 07:00 | Backup local → remote |
 
 Check status:
 
@@ -221,9 +223,10 @@ npx tsx scripts/push-to-remote.ts --dry-run
 ### Check launchd job logs:
 
 ```bash
-tail -f /tmp/flex-ingestion.log
-tail -f /tmp/massive-ingestion.log
-tail -f /tmp/push-to-remote.log
+tail -f logs/flex-ingestion.log
+tail -f logs/massive-ingestion.log
+tail -f logs/push-to-remote.log
+tail -f logs/supabase-start.log
 ```
 
 ## Managing Scheduled Jobs
@@ -246,6 +249,7 @@ git pull
 
 ### Manually trigger a job
 ```bash
+launchctl start com.trade-journal.supabase-start
 launchctl start com.trade-journal.flex-ingestion
 launchctl start com.trade-journal.massive-ingestion
 launchctl start com.trade-journal.push-to-remote
