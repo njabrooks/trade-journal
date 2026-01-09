@@ -868,6 +868,19 @@ export async function getThesisTriageQueueCounts(): Promise<{
 }
 
 /**
+ * Get a single thesis triage record by ID
+ */
+export async function getThesisTriageById(id: string) {
+  const [record] = await db
+    .select()
+    .from(thesisTriageRecords)
+    .where(eq(thesisTriageRecords.id, id))
+    .limit(1);
+
+  return record ?? null;
+}
+
+/**
  * Update thesis triage record status
  */
 export async function updateThesisTriageStatus(

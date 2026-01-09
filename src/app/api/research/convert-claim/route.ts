@@ -4,6 +4,7 @@ import { researchInsights, macroTheses, assetTheses, underlyings, mainClaims, cl
 import { eq } from 'drizzle-orm';
 import type { ClaimsStructure, MainClaim } from '@/types/claims';
 import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
+import { logToJournal } from '@/lib/workflow';
 
 export async function POST(request: NextRequest) {
   try {
@@ -146,6 +147,31 @@ export async function POST(request: NextRequest) {
       mappedBy: 'conversion', // Indicate this was created during claim conversion
       notes: `Original claim converted to ${conversionType}`,
       mappedAt: new Date(),
+    });
+
+    // Log claim conversion to journal for provenance tracking
+    await logToJournal({
+      objectType: conversionType === 'macro_thesis' ? 'macro_thesis' : 'asset_thesis',
+      objectId: createdId,
+      objectTitle: data.title,
+      actionType: 'claim_converted',
+      actionDescription: `Claim converted to new ${conversionType === 'macro_thesis' ? 'macro thesis' : 'asset thesis'}: "${claim.claim.substring(0, 100)}${claim.claim.length > 100 ? '...' : ''}"`,
+      previousState: {},
+      newState: {
+        thesisId: createdId,
+        thesisType: conversionType,
+        claimId: createdMainClaim.id,
+        relationshipType,
+      },
+      source: 'user',
+      metadata: {
+        sourceInsightId: insightId,
+        sourceClaimId: claimId,
+        mainClaimId: createdMainClaim.id,
+        claimCategory: claim.type,
+        claimQualifier: claim.qualifier,
+        relevantTickers: claim.relevant_tickers,
+      },
     });
 
     // Update the claim with converted_to metadata

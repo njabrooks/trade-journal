@@ -10,6 +10,7 @@ import {
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc, ne } from 'drizzle-orm';
 import { detectStateCodeChangeFromStored } from '@/lib/derived/stateCode';
+import { logToJournal } from '@/lib/workflow';
 
 // Triage rule configuration
 export const TRIAGE_RULES_V1 = {
@@ -626,11 +627,116 @@ export async function computeStrategyTriageForDate(
 }
 
 /**
+ * Checks if new severity is more severe than old severity
+ * Used to detect escalations for journal logging
+ */
+function isMoreSevere(newSeverity: string | null, oldSeverity: string | null): boolean {
+  const severityOrder = ['info', 'attention', 'urgent'];
+  const newIndex = severityOrder.indexOf(newSeverity || '');
+  const oldIndex = severityOrder.indexOf(oldSeverity || '');
+  return newIndex > oldIndex && newIndex >= 0 && oldIndex >= 0;
+}
+
+/**
+ * Logs new triage detections to the journal
+ * Compares against previous day's records to identify truly new triggers
+ */
+async function logNewTriageDetections(
+  records: NewTriageRecord[],
+  previousRecordsMap: Map<string, { severity: string | null; recommendedAction: string | null }>
+): Promise<void> {
+  for (const rec of records) {
+    // Skip records with override severities (user has already taken action)
+    if (['monitor', 'complete', 'pending', 'dismissed'].includes(rec.severity || '')) {
+      continue;
+    }
+
+    const entityId = rec.contextLevel === 'strategy' ? rec.strategyId : rec.positionId;
+    const key = `${rec.contextLevel}:${entityId}:${rec.recommendedAction}`;
+    const previousRec = previousRecordsMap.get(key);
+
+    // Determine if this is a new detection or escalation
+    const isNew = !previousRec;
+    const isEscalation = previousRec && isMoreSevere(rec.severity ?? null, previousRec.severity);
+
+    if (isNew || isEscalation) {
+      try {
+        await logToJournal({
+          objectType: rec.contextLevel === 'strategy' ? 'strategy' : 'position',
+          objectId: entityId!,
+          objectTitle: rec.symbol || 'Unknown',
+          actionType: isNew ? 'triage_detected' : 'triage_escalated',
+          actionDescription: isNew
+            ? `System detected ${rec.recommendedAction}${rec.notes ? `: ${rec.notes}` : ''}`
+            : `Trigger ${rec.recommendedAction} escalated from ${previousRec?.severity} to ${rec.severity}`,
+          previousState: previousRec
+            ? { severity: previousRec.severity, recommendedAction: previousRec.recommendedAction }
+            : {},
+          newState: {
+            severity: rec.severity,
+            recommendedAction: rec.recommendedAction,
+            contextLevel: rec.contextLevel,
+          },
+          source: 'automation',
+          metadata: {
+            trigger: rec.recommendedAction,
+            snapshotDate: rec.snapshotDate,
+            ruleSet: rec.ruleSet,
+            ...(rec.dte !== undefined && rec.dte !== null && { dte: rec.dte }),
+            ...(rec.sigmaToStrike && { sigmaToStrike: rec.sigmaToStrike }),
+            ...(rec.isItm !== null && { isItm: rec.isItm }),
+            ...(rec.flagAssignment && { flagAssignment: rec.flagAssignment }),
+          },
+        });
+      } catch (error) {
+        // Log error but don't fail the entire operation
+        console.error(`[Triage] Failed to log journal entry for ${rec.recommendedAction}:`, error);
+      }
+    }
+  }
+}
+
+/**
  * Upserts triage records into the database
  * Batches operations for better performance
+ * Also logs new detections and escalations to the journal
  */
 export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<void> {
   if (records.length === 0) return;
+
+  // Get snapshot date from records (all records should have same date)
+  const snapshotDate = records[0].snapshotDate;
+
+  // Get previous snapshot date for comparison (to detect new vs continued triggers)
+  const previousDateResult = await db
+    .selectDistinct({ snapshotDate: triageRecords.snapshotDate })
+    .from(triageRecords)
+    .where(sql`${triageRecords.snapshotDate} < ${snapshotDate}`)
+    .orderBy(desc(triageRecords.snapshotDate))
+    .limit(1);
+
+  const previousDate = previousDateResult[0]?.snapshotDate ?? null;
+
+  // Build map of previous day's records for comparison
+  const previousRecordsMap = new Map<string, { severity: string | null; recommendedAction: string | null }>();
+  if (previousDate) {
+    const previousRecords = await db
+      .select({
+        contextLevel: triageRecords.contextLevel,
+        positionId: triageRecords.positionId,
+        strategyId: triageRecords.strategyId,
+        severity: triageRecords.severity,
+        recommendedAction: triageRecords.recommendedAction,
+      })
+      .from(triageRecords)
+      .where(eq(triageRecords.snapshotDate, previousDate));
+
+    for (const rec of previousRecords) {
+      const entityId = rec.contextLevel === 'strategy' ? rec.strategyId : rec.positionId;
+      const key = `${rec.contextLevel}:${entityId}:${rec.recommendedAction}`;
+      previousRecordsMap.set(key, { severity: rec.severity, recommendedAction: rec.recommendedAction });
+    }
+  }
 
   // Separate strategy and position records for batch processing
   const strategyRecords: NewTriageRecord[] = [];
@@ -703,6 +809,9 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
       await db.insert(triageRecords).values(validPositionRecords);
     }
   }
+
+  // Log new detections and escalations to journal (after successful upsert)
+  await logNewTriageDetections([...strategyRecords, ...positionRecords], previousRecordsMap);
 }
 
 /**

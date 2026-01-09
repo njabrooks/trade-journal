@@ -26,6 +26,7 @@ import {
   NewThesisTriageRecord,
 } from '@/db/schema';
 import { eq, ne, and, desc, sql, count, isNotNull } from 'drizzle-orm';
+import { logToJournal } from '@/lib/workflow';
 
 // Threshold for rule #2: new claims available
 const NEW_CLAIMS_THRESHOLD = 3;
@@ -233,13 +234,22 @@ export async function computeThesisTriageForAll(): Promise<{
  * Called when an articulation is created to:
  * 1. Update claims_count_at_last_articulation on the thesis
  * 2. Resolve any pending articulation-related triage
+ * 3. Log the articulation creation to journal
  */
 export async function onArticulationCreated(
   thesisId: string,
   thesisType: 'macro' | 'asset'
 ): Promise<void> {
+  // Get thesis data for journal logging
+  const thesis = await getThesis(thesisId, thesisType);
+  if (!thesis) {
+    console.warn(`onArticulationCreated: Thesis not found: ${thesisType}/${thesisId}`);
+    return;
+  }
+
   // Get current claim count
   const evolutionState = await getThesisEvolutionState(thesisId, thesisType);
+  const previousClaimsCount = thesis.claimsCountAtLastArticulation ?? 0;
 
   // Update thesis with current claim count
   if (thesisType === 'macro') {
@@ -259,6 +269,24 @@ export async function onArticulationCreated(
       })
       .where(eq(assetTheses.id, thesisId));
   }
+
+  // Log articulation creation to journal
+  await logToJournal({
+    objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+    objectId: thesisId,
+    objectTitle: thesis.title,
+    actionType: 'articulation_created',
+    actionDescription: `Thesis articulation created/updated with ${evolutionState.claimCount} claims`,
+    skillInvoked: '/synthesize-thesis',
+    previousState: {
+      claimsCountAtLastArticulation: previousClaimsCount,
+    },
+    newState: {
+      claimsCountAtLastArticulation: evolutionState.claimCount,
+      hasArticulation: true,
+    },
+    source: 'skill',
+  });
 
   // Resolve any pending articulation-related triage (new and legacy names)
   const existingTriage = await getExistingPendingTriage(thesisId, thesisType);
@@ -380,7 +408,7 @@ interface CreateTriageParams {
   contentSummary: Record<string, unknown>;
 }
 
-async function createTriageRecord(params: CreateTriageParams): Promise<void> {
+async function createTriageRecord(params: CreateTriageParams): Promise<string> {
   const newRecord: NewThesisTriageRecord = {
     thesisId: params.thesisId,
     thesisType: params.thesisType,
@@ -400,17 +428,55 @@ async function createTriageRecord(params: CreateTriageParams): Promise<void> {
     matchedResults: [],
   };
 
-  await db.insert(thesisTriageRecords).values(newRecord);
+  const [inserted] = await db
+    .insert(thesisTriageRecords)
+    .values(newRecord)
+    .returning({ id: thesisTriageRecords.id });
+
+  // Log triage creation to journal
+  await logToJournal({
+    objectType: params.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+    objectId: params.thesisId,
+    objectTitle: params.thesisTitle,
+    actionType: 'triage_created',
+    actionDescription: `Triage created: ${params.triageRule}. ${params.actionRequired}`,
+    triageRecordId: inserted.id,
+    newState: {
+      triageRule: params.triageRule,
+      status: params.status,
+      urgency: params.urgency,
+      lifecycleStage: params.lifecycleStage,
+      suggestedSkill: params.suggestedSkill,
+    },
+    source: 'automation',
+    metadata: params.contentSummary,
+  });
 
   console.log(
     `Created thesis triage: ${params.triageRule} for ${params.thesisType}/${params.thesisId}`
   );
+
+  return inserted.id;
 }
 
 async function resolveTriageRecord(
   triageId: string,
   reason: string
 ): Promise<void> {
+  // Fetch triage record first for journal context
+  const [triageRecord] = await db
+    .select()
+    .from(thesisTriageRecords)
+    .where(eq(thesisTriageRecords.id, triageId))
+    .limit(1);
+
+  if (!triageRecord) {
+    console.warn(`Triage record not found for resolution: ${triageId}`);
+    return;
+  }
+
+  const previousStatus = triageRecord.status;
+
   await db
     .update(thesisTriageRecords)
     .set({
@@ -421,6 +487,26 @@ async function resolveTriageRecord(
       updatedAt: new Date(),
     })
     .where(eq(thesisTriageRecords.id, triageId));
+
+  // Log resolution to journal
+  await logToJournal({
+    objectType: triageRecord.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+    objectId: triageRecord.thesisId,
+    objectTitle: triageRecord.thesisTitle,
+    actionType: 'triage_resolved',
+    actionDescription: `Triage auto-resolved: ${triageRecord.triageRule}. Reason: ${reason}`,
+    triageRecordId: triageId,
+    previousState: {
+      status: previousStatus,
+      triageRule: triageRecord.triageRule,
+    },
+    newState: {
+      status: 'complete',
+      completedBy: 'system',
+      resolutionReason: reason,
+    },
+    source: 'automation',
+  });
 
   console.log(`Resolved thesis triage: ${triageId} (${reason})`);
 }

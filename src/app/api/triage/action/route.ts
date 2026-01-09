@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { blotterActions, triageRecords, strategies, positions, underlyings } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { matchTriageActionToTradeBlotter } from "@/lib/derived/blotter";
+import { logToJournal } from "@/lib/workflow";
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,6 +29,19 @@ export async function POST(request: NextRequest) {
     }
 
     const triage = triageRecord[0];
+
+    // Fetch strategy key for journal context
+    let strategyKey: string | null = null;
+    if (strategyId || triage.strategyId) {
+      const strategyResult = await db
+        .select({ strategyKey: strategies.strategyKey })
+        .from(strategies)
+        .where(eq(strategies.id, strategyId || triage.strategyId!))
+        .limit(1);
+      strategyKey = strategyResult[0]?.strategyKey ?? null;
+    }
+
+    const previousSeverity = triage.severity;
 
     // Generate blotter ID
     const blotterId = `${triage.snapshotDate}_${triage.strategyId ?? "unknown"}_${Date.now()}`;
@@ -265,6 +279,36 @@ export async function POST(request: NextRequest) {
           .where(eq(triageRecords.id, triageId));
       }
 
+      // Log to journal for unified audit trail
+      await logToJournal({
+        objectType: 'strategy',
+        objectId: strategyId || triage.strategyId || triageId, // Fallback to triageId if no strategy
+        objectTitle: strategyKey || triage.symbol || 'Unknown Strategy',
+        actionType: 'triage_trade_action',
+        actionDescription: `User recorded TRADE action for ${triage.recommendedAction || 'triage'} trigger. ${tradePositions.length} position(s) affected.`,
+        triageRecordId: triageId,
+        previousState: {
+          severity: previousSeverity,
+          recommendedAction: triage.recommendedAction,
+        },
+        newState: {
+          severity: severityOverride,
+          actionType: actionType,
+          tradeReason,
+          tradeStage,
+          positionsCount: tradePositions.length,
+        },
+        rationale: notes || undefined,
+        source: 'user',
+        metadata: {
+          blotterIds: insertedBlotterActions.map(a => a.id),
+          tradePositions: tradePositions.map((tp: { positionId: string; quantity: number }) => ({
+            positionId: tp.positionId,
+            quantity: tp.quantity,
+          })),
+        },
+      });
+
       return NextResponse.json({
         success: true,
         message: "Trade Action recorded in blotter",
@@ -352,6 +396,49 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(triageRecords.id, triageId));
     }
+
+    // Log to journal for unified audit trail
+    const actionTypeMap: Record<string, string> = {
+      TRADE: 'triage_trade_action',
+      MONITOR: 'triage_monitored',
+      DISMISS: 'triage_dismissed',
+      UPDATE: 'triage_updated',
+      ROLL: 'triage_roll_action',
+      CLOSE: 'triage_close_action',
+      REDUCE_SIZE: 'triage_size_action',
+      REVIEW: 'triage_reviewed',
+      MARK_REVIEWED: 'triage_reviewed',
+      CONFIRM_STRATEGY: 'triage_strategy_confirmed',
+      REVIEW_STATE_CODE: 'triage_state_code_reviewed',
+      MANAGE_ASSIGNMENT: 'triage_assignment_managed',
+    };
+
+    await logToJournal({
+      objectType: triage.strategyId ? 'strategy' : 'position',
+      objectId: triage.strategyId || triage.positionId || triageId,
+      objectTitle: strategyKey || triage.symbol || 'Unknown',
+      actionType: actionTypeMap[actionType] || 'triage_action',
+      actionDescription: `User ${actionType.toLowerCase().replace('_', ' ')} triage: ${triage.recommendedAction || 'general'}${notes ? `. Notes: ${notes}` : ''}`,
+      triageRecordId: triageId,
+      previousState: {
+        severity: previousSeverity,
+        recommendedAction: triage.recommendedAction,
+      },
+      newState: {
+        severity: severityOverride || previousSeverity,
+        actionType: actionType,
+        actionClass,
+        monitorDays: monitorDaysValue,
+        overrideExpiresDate,
+      },
+      rationale: notes || undefined,
+      source: 'user',
+      metadata: {
+        blotterId,
+        blotterActionId: insertedBlotterAction?.id,
+        positionId: positionId || triage.positionId,
+      },
+    });
 
     return NextResponse.json({
       success: true,

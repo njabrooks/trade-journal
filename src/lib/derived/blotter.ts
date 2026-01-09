@@ -18,6 +18,7 @@ import {
 import { and, eq, sql, isNull, isNotNull, gte, lte, inArray, or, ne, desc, like } from 'drizzle-orm';
 import { upsertTriageRecords } from '@/lib/derived/triage';
 import { TRIAGE_RULES_V1 } from '@/lib/derived/triage';
+import { logToJournal } from '@/lib/workflow';
 
 interface TradeAggregation {
   strategyId: string | null;
@@ -214,6 +215,29 @@ export async function computeTradeBlotterEntriesForDate(
       // Attempt to match with existing triage TRADE action
       if (newEntry && newEntry.length > 0) {
         await matchTradeBlotterToTriageAction(newEntry[0].id, agg);
+
+        // Log trade ingestion to journal for unified audit trail
+        await logToJournal({
+          objectType: agg.strategyId ? 'strategy' : 'position',
+          objectId: agg.strategyId || newEntry[0].id, // Use blotter ID if no strategy
+          objectTitle: strategyKey || agg.symbol,
+          actionType: 'trade_ingested',
+          actionDescription: `Trade ingested: ${agg.netQuantity > 0 ? 'BUY' : 'SELL'} ${Math.abs(agg.netQuantity)} ${agg.symbol} (${agg.tradeIds.length} execution${agg.tradeIds.length > 1 ? 's' : ''})`,
+          previousState: {},
+          newState: {
+            qtyChange: agg.netQuantity,
+            premiumChange: agg.netPremium,
+            tradeCount: agg.tradeIds.length,
+            conid: agg.conid,
+          },
+          source: 'automation',
+          metadata: {
+            blotterId,
+            blotterActionId: newEntry[0].id,
+            tradeIds: agg.tradeIds,
+            tradeDate,
+          },
+        });
       }
 
       created++;
@@ -856,7 +880,7 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
       if (existingQc[0].severity === 'complete') {
         continue;
       }
-      // If severity is 'pending', we'll update it with new trade data below
+      // If severity is 'attention' (unprocessed), we'll update it with new trade data below
       // (delete the old one and create a new one with updated unmatchedTradeExecutions)
     }
     
@@ -965,7 +989,7 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
       strategyId: strategyId,
       symbol: strategy.strategyKey ?? 'Strategy',
       recommendedAction: 'QUANTITY_CHANGE',
-      severity: 'pending',
+      severity: 'attention', // System detection - surfaces unmatched trades for user review
       ruleSet: TRIAGE_RULES_V1.ruleSet,
       // Store full trade execution details for matching
       unmatchedTradeExecutions: unmatchedTradeExecutions as any,
@@ -1218,6 +1242,11 @@ async function linkBlotterActions(
       id: blotterActions.id,
       source: blotterActions.source,
       actionDetail: blotterActions.actionDetail,
+      strategyId: blotterActions.strategyId,
+      ticker: blotterActions.ticker,
+      strategyKey: blotterActions.strategyKey,
+      qtyChange: blotterActions.qtyChange,
+      reasonCode: blotterActions.reasonCode,
     })
     .from(blotterActions)
     .where(
@@ -1260,6 +1289,34 @@ async function linkBlotterActions(
         .where(eq(blotterActions.id, tradeAction.id));
     }
   });
+
+  // Log reconciliation to journal for unified audit trail
+  if (tradeAction && tradeEntry) {
+    await logToJournal({
+      objectType: tradeAction.strategyId ? 'strategy' : 'position',
+      objectId: tradeAction.strategyId || tradeAction.id,
+      objectTitle: tradeAction.strategyKey || tradeAction.ticker || 'Unknown',
+      actionType: 'trade_reconciled',
+      actionDescription: `Trade action matched to ingested trade: ${tradeAction.ticker || 'unknown'} (${tradeAction.reasonCode || 'TRADE'})`,
+      previousState: {
+        tradeActionStatus: 'pending',
+        tradeEntryLinked: false,
+      },
+      newState: {
+        tradeActionStatus: 'complete',
+        tradeEntryLinked: true,
+        linkedTriageActionId: tradeAction.id,
+        linkedTradeEntryId: tradeEntry.id,
+      },
+      source: 'automation',
+      metadata: {
+        triageActionId: tradeAction.id,
+        tradeEntryId: tradeEntry.id,
+        qtyChange: tradeAction.qtyChange,
+        reasonCode: tradeAction.reasonCode,
+      },
+    });
+  }
 }
 
 /**

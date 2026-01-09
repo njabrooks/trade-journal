@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { mainClaims, claimThesisMappings, macroTheses, assetTheses } from '@/db/schema';
 import { eq, and, or } from 'drizzle-orm';
 import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
+import { logToJournal } from '@/lib/workflow';
 
 /**
  * POST /api/research/link-claim-to-thesis
@@ -84,7 +85,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Main claim not found' }, { status: 404 });
     }
 
-    // Verify target exists
+    // Verify target exists and get its title for journal logging
+    let targetTitle: string = 'Unknown';
     if (targetType === 'macro_thesis') {
       const [thesis] = await db
         .select()
@@ -95,6 +97,7 @@ export async function POST(request: NextRequest) {
       if (!thesis) {
         return NextResponse.json({ error: 'Macro thesis not found' }, { status: 404 });
       }
+      targetTitle = thesis.title;
     } else {
       const [view] = await db
         .select()
@@ -105,6 +108,7 @@ export async function POST(request: NextRequest) {
       if (!view) {
         return NextResponse.json({ error: 'Asset view not found' }, { status: 404 });
       }
+      targetTitle = view.title;
     }
 
     // Check if this mapping already exists
@@ -152,6 +156,30 @@ export async function POST(request: NextRequest) {
       .update(mainClaims)
       .set({ updatedAt: new Date() })
       .where(eq(mainClaims.id, mainClaimId));
+
+    // Log claim linkage to journal for provenance tracking
+    await logToJournal({
+      objectType: targetType === 'macro_thesis' ? 'macro_thesis' : 'asset_thesis',
+      objectId: targetId,
+      objectTitle: targetTitle,
+      actionType: 'claim_linked',
+      actionDescription: `Claim linked (${mappingType}): "${mainClaim.claim.substring(0, 100)}${mainClaim.claim.length > 100 ? '...' : ''}"`,
+      previousState: {},
+      newState: {
+        mappingId: mapping.id,
+        mappingType,
+        confidence: confidence || null,
+      },
+      source: 'user',
+      metadata: {
+        mainClaimId,
+        mappedBy,
+        claimTitle: mainClaim.title,
+        claimCategory: mainClaim.category,
+        sourceInsightId: mainClaim.sourceInsightId,
+        notes: notes || null,
+      },
+    });
 
     // Compute thesis triage after claim is linked
     // This creates/updates triage records for lifecycle events (rule #1: needs articulation, rule #2: new claims)
