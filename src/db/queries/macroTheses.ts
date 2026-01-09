@@ -18,6 +18,7 @@ export interface MacroThesisListItem {
   updatedAt: Date;
   assetViewCount: number;
   strategyCount: number;
+  claimCount: number;
   linkedAssetTheses: Array<{ id: string; title: string; ticker: string | null }>;
   linkedStrategies: Array<{ id: string; label: string | null; status: string }>;
 }
@@ -75,6 +76,20 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
 
   const strategyMap = new Map(
     strategyCounts.map((c) => [c.macroThesisId, Number(c.count)])
+  );
+
+  // Count claims linked to each macro thesis
+  const claimCounts = await db
+    .select({
+      macroThesisId: claimThesisMappings.macroThesisId,
+      count: count(),
+    })
+    .from(claimThesisMappings)
+    .where(inArray(claimThesisMappings.macroThesisId, thesisIds))
+    .groupBy(claimThesisMappings.macroThesisId);
+
+  const claimMap = new Map(
+    claimCounts.map((c) => [c.macroThesisId, Number(c.count)])
   );
 
   // Fetch all linked asset theses (via junction table)
@@ -137,6 +152,7 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     ...thesis,
     assetViewCount: assetViewMap.get(thesis.id) ?? 0,
     strategyCount: strategyMap.get(thesis.id) ?? 0,
+    claimCount: claimMap.get(thesis.id) ?? 0,
     linkedAssetTheses: assetThesesByThesisId.get(thesis.id) ?? [],
     linkedStrategies: strategiesByThesisId.get(thesis.id) ?? [],
   }));
