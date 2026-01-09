@@ -542,12 +542,12 @@ Each new source follows pattern:
 
 ### Immediate Next Actions
 
-1. **Phase 1.1**: Create V&I status update API with journal logging
-2. **Phase 1.2**: Add journal logging to monitoring script
-3. **Phase 1.3**: Create launchd cron job for monitoring
+1. ~~**Phase 1.1**: Create V&I status update API with journal logging~~ ✅ (2026-01-09)
+2. ~~**Phase 1.2**: Add journal logging to monitoring script~~ ✅ (2026-01-09)
+3. ~~**Phase 1.3**: Create launchd cron job for monitoring~~ ✅ (2026-01-09)
 4. **Phase 2.2**: Wire up auto-triggering for explicit thresholds
 
-Once Phase 1-2 complete, the core flow works. Phase 3-4 enhance the UX. Phase 5 is ongoing as needs arise.
+Once Phase 1 complete, the core flow works. Phase 3-4 enhance the UX. Phase 5 is ongoing as needs arise.
 
 ---
 

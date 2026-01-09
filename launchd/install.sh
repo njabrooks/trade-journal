@@ -4,6 +4,7 @@
 # This script installs scheduled jobs to:
 # - Run Flex ingestion at 4 AM, 6 AM, 8 AM, 12 PM UTC
 # - Run Massive ingestion at 21:30 UTC (4:30 PM ET, after market close)
+# - Run Thesis monitoring at 22:00 UTC (after market data available)
 # - Push to remote backup at 7 AM UTC
 #
 # Usage:
@@ -20,6 +21,7 @@ PLISTS=(
     "com.trade-journal.supabase-start.plist"
     "com.trade-journal.flex-ingestion.plist"
     "com.trade-journal.massive-ingestion.plist"
+    "com.trade-journal.thesis-monitoring.plist"
     "com.trade-journal.push-to-remote.plist"
 )
 
@@ -54,6 +56,7 @@ show_status() {
     echo "  logs/supabase-start.log"
     echo "  logs/flex-ingestion.log"
     echo "  logs/massive-ingestion.log"
+    echo "  logs/thesis-monitoring.log"
     echo "  logs/push-to-remote.log"
     echo ""
 }
@@ -94,14 +97,16 @@ install_jobs() {
     echo "═══════════════════════════════════════════════════════════"
     echo ""
     echo "Schedule (UTC):"
-    echo "  Supabase start:    On login (30s delay for Docker)"
-    echo "  Flex ingestion:    04:00, 06:00, 08:00, 12:00 UTC"
-    echo "  Massive ingestion: 21:30 UTC (4:30 PM ET)"
-    echo "  Push to remote:    07:00 UTC"
+    echo "  Supabase start:     On login (30s delay for Docker)"
+    echo "  Flex ingestion:     04:00, 06:00, 08:00, 12:00 UTC"
+    echo "  Massive ingestion:  21:30 UTC (4:30 PM ET)"
+    echo "  Thesis monitoring:  22:00 UTC (after market data)"
+    echo "  Push to remote:     07:00 UTC"
     echo ""
     echo "To check logs (in trade-journal/logs/):"
     echo "  tail -f logs/flex-ingestion.log"
     echo "  tail -f logs/massive-ingestion.log"
+    echo "  tail -f logs/thesis-monitoring.log"
     echo "  tail -f logs/push-to-remote.log"
     echo ""
     echo "To manually trigger a job:"
