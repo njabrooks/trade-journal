@@ -435,11 +435,11 @@ Research-to-thesis linkages now logged:
 - [x] Include: thesis context, trigger source, matched results count
 - [x] Added `logToJournal` helper to `scripts/lib/db.ts` for script-compatible journal logging
 
-**1.3 Monitoring Cron Job**
-- [ ] Create `launchd/com.trade-journal.thesis-monitoring.plist`
-- [ ] Schedule: Daily at 6:00 AM UTC (after market close)
-- [ ] Add to `launchd/install.sh`
-- [ ] Log output to `logs/thesis-monitoring.log`
+**1.3 Monitoring Cron Job** ✅ COMPLETE (2026-01-09)
+- [x] Create `launchd/com.trade-journal.thesis-monitoring.plist`
+- [x] Schedule: Daily at 22:00 UTC (after massive ingestion at 21:30)
+- [x] Add to `launchd/install.sh`
+- [x] Log output to `logs/thesis-monitoring.log`
 
 ---
 
