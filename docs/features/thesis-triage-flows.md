@@ -290,14 +290,16 @@ The unified journal system is fully operational. All decision events across all 
 
 ### Feature Work Remaining
 
-These are enhancements to the monitoring and validation systems, not core journal infrastructure:
+These are UI/UX enhancements (Phase 3+):
 
 | Component | Status | Impact |
 |-----------|--------|--------|
-| Monitoring cron schedule | ❌ | Manual script runs only (no automated news monitoring) |
-| Monitoring script journal logging | ❌ | Script creates records directly, bypassing journal |
-| V&I point status updates | ❌ | No automated updates from evidence assessment |
-| `/assess-validation-evidence` integration | ❌ | Skill needs to update V&I points and log to journal |
+| ~~Monitoring cron schedule~~ | ✅ | Daily at 08:00 UTC with `--analyze` |
+| ~~Monitoring script journal logging~~ | ✅ | All triage creation logged to journal |
+| ~~V&I auto-triggering~~ | ✅ | Threshold breaches auto-update V&I status |
+| News Archive UI | ❌ | Historical news not visible in app (Phase 3.1) |
+| V&I status update UI | ❌ | Manual V&I updates from triage view (Phase 3.3) |
+| `/assess-validation-evidence` integration | ❌ | Skill needs V&I update integration (Phase 4) |
 
 ---
 
@@ -478,7 +480,7 @@ Define which sources support auto-triggering in `synthesize-thesis` skill:
   - Log to journal: `vi_auto_triggered`
 - [x] Still create triage record for user visibility
 
-**2.5 Adding New Data Sources**
+**2.5 Adding New Data Sources** 🔜 DEFERRED
 
 When adding a new data source (e.g., Glassnode):
 1. Implement data fetch in `daily-thesis-monitoring.ts`
@@ -486,23 +488,33 @@ When adding a new data source (e.g., Glassnode):
 3. Update `synthesize-thesis` skill to recognize new source
 4. Existing V&I points using that source will auto-enable
 
+*Deferred: Will add new data sources as thesis needs dictate.*
+
 ---
 
-#### Phase 3: Judgment-Based Content Assessment
+#### Phase 3: UI/UX Enhancements
 
-**3.1 Enhance Triage Record Display**
+**3.1 News Archive System**
+- [ ] Create `thesis_news_items` table to store fetched news independently
+  - Schema: `id`, `thesis_id`, `thesis_type`, `url` (unique per thesis), `title`, `snippet`, `source_domain`, `published_date`, `fetched_at`, `match_score`, `matched_keywords[]`, `query_type`, `triage_record_id` (nullable)
+- [ ] Update `daily-thesis-monitoring.ts` to persist news items
+- [ ] Create `GET /api/theses/[id]/news` endpoint
+- [ ] Build NewsArchive UI component for thesis detail page
+- [ ] Add "News & Developments" section to asset thesis detail page
+
+**3.2 Enhance Triage Record Display**
 - [ ] Thesis detail page: Section showing pending monitoring triage
 - [ ] Display `aiAnalysis.summary`, `keyFindings`, `validationPointsAffected`
 - [ ] Show matched articles with snippets and links
 - [ ] Action buttons: "Confirm Read" / "Update V&I Status"
 
-**3.2 V&I Status Update UI**
+**3.3 V&I Status Update UI**
 - [ ] From triage view, allow user to select which V&I points to update
 - [ ] Pre-populate with Claude's recommendations from `aiAnalysis.validationPointsAffected`
 - [ ] User provides reason/notes, confirms update
-- [ ] Calls V&I status update API
+- [ ] Calls V&I status update API (already exists from Phase 1.1)
 
-**3.3 Triage Resolution Flow**
+**3.4 Triage Resolution Flow**
 - [ ] "Confirm Read" → Status changes to `actioned`, no V&I changes
 - [ ] "Update V&I" → Opens V&I update dialog, then marks triage as `actioned`
 - [ ] "Dismiss" → Status changes to `dismissed`, logs reason
@@ -543,6 +555,8 @@ Each new source follows pattern:
 
 ### Immediate Next Actions
 
+#### Completed ✅
+
 1. ~~**Phase 1.1**: Create V&I status update API with journal logging~~ ✅ (2026-01-09)
 2. ~~**Phase 1.2**: Add journal logging to monitoring script~~ ✅ (2026-01-09)
 3. ~~**Phase 1.3**: Create launchd cron job for monitoring~~ ✅ (2026-01-09)
@@ -553,13 +567,22 @@ Each new source follows pattern:
 **Phase 1-2 COMPLETE!** The core auto-triggering flow now works end-to-end:
 - User creates explicit V&I points via `/synthesize-thesis` with supported data sources
 - Monitoring config auto-created with thresholds linked to V&I points
-- Daily monitoring script checks thresholds
+- Daily monitoring script (08:00 UTC) checks thresholds + fetches news + runs Claude analysis
 - On breach: triage record created + V&I status auto-updated to "triggered" + journal logged
+- On relevant news: REVIEW_CONTENT triage created with AI analysis
 
-**Next phases** (UX enhancements):
-- Phase 3: Judgment-based content assessment UI
-- Phase 4: Perplexity/news integration
-- Phase 5: Future data sources (Glassnode, etc.)
+#### Up Next: Phase 3 (UI/UX Enhancements)
+
+1. **Phase 3.1**: News Archive System - persist news items, display on thesis detail page
+2. **Phase 3.2**: Enhance triage record display with AI analysis
+3. **Phase 3.3**: V&I status update UI from triage view
+4. **Phase 3.4**: Triage resolution flow (Confirm Read / Update V&I / Dismiss)
+
+#### Deferred
+
+- **Phase 2.5**: Adding new data sources (Glassnode, etc.) - add as thesis needs dictate
+- **Phase 4**: Manual content assessment via `/assess-validation-evidence` skill
+- **Phase 5**: Future data source expansion
 
 ---
 
