@@ -458,17 +458,17 @@ Define which sources support auto-triggering in `synthesize-thesis` skill:
 | Glassnode | On-chain metrics | 🔜 Future | Add when needed |
 | Custom APIs | Varies | 🔜 Future | Per-thesis configuration |
 
-**2.2 Synthesize-Thesis Validation**
-- [ ] When user defines explicit V&I point, skill must ask for data source
-- [ ] Validate data source is in supported registry above
-- [ ] If supported: Auto-create `thesis_monitoring_configs` entry with threshold + `linkedValidationPointId`
-- [ ] If not supported: Warn user "This metric requires manual monitoring until [source] is integrated"
-- [ ] Store data source in `validation_points.explicit_details.dataSource`
+**2.2 Synthesize-Thesis Validation** ✅ COMPLETE (2026-01-09)
+- [x] When user defines explicit V&I point, skill must ask for data source (Step 6.5)
+- [x] Validate data source is in supported registry above (auto-trigger registry added)
+- [x] If supported: Auto-create `thesis_monitoring_configs` entry with threshold + `linkedValidationPointId` (Step 7.5)
+- [x] If not supported: Warn user "This metric requires manual monitoring until [source] is integrated"
+- [x] Store data source in `validation_points.explicit_details.dataSource`
 
-**2.3 Link Thresholds to V&I Points**
-- [ ] `thesis_monitoring_configs.explicit_thresholds[].linkedValidationPointId` already exists
-- [ ] `synthesize-thesis` skill populates this when creating explicit V&I points
-- [ ] Query: When threshold breached, lookup linked V&I point
+**2.3 Link Thresholds to V&I Points** ✅ COMPLETE (2026-01-09)
+- [x] `thesis_monitoring_configs.explicit_thresholds[].linkedValidationPointId` already exists (in schema)
+- [x] `synthesize-thesis` skill populates this when creating explicit V&I points (Step 7.5)
+- [ ] Query: When threshold breached, lookup linked V&I point → **see 2.4**
 
 **2.4 Auto-Update V&I Status on Breach**
 - [ ] In `daily-thesis-monitoring.ts` `createDataTriageRecord()`:
@@ -545,9 +545,11 @@ Each new source follows pattern:
 1. ~~**Phase 1.1**: Create V&I status update API with journal logging~~ ✅ (2026-01-09)
 2. ~~**Phase 1.2**: Add journal logging to monitoring script~~ ✅ (2026-01-09)
 3. ~~**Phase 1.3**: Create launchd cron job for monitoring~~ ✅ (2026-01-09)
-4. **Phase 2.2**: Wire up auto-triggering for explicit thresholds
+4. ~~**Phase 2.2**: Synthesize-thesis skill asks for data source, validates, auto-creates monitoring config~~ ✅ (2026-01-09)
+5. ~~**Phase 2.3**: Link thresholds to V&I points via `linkedValidationPointId`~~ ✅ (2026-01-09)
+6. **Phase 2.4**: Auto-update V&I status on breach (monitoring script calls V&I API)
 
-Once Phase 1 complete, the core flow works. Phase 3-4 enhance the UX. Phase 5 is ongoing as needs arise.
+Once Phase 1-2 complete, the core auto-triggering flow works. Phase 3-4 enhance the UX. Phase 5 is ongoing as needs arise.
 
 ---
 

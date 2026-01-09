@@ -578,6 +578,78 @@ Would you like to add thresholds, or keep this as a judgment call reviewed month
 
 ---
 
+### Step 6.5: Validate Auto-Trigger Data Sources
+
+For each **explicit** validation/invalidation point, validate whether the data source supports **automatic triggering** via the daily monitoring script.
+
+#### Auto-Trigger Supported Sources Registry
+
+| Source | Supported Metrics | Auto-Trigger | Notes |
+|--------|-------------------|--------------|-------|
+| `fred` | Fed funds, yields, CPI, unemployment, spreads (34 series) | ✅ Yes | Daily via `daily-thesis-monitoring.ts` |
+| `price_iv` | Spot price, IV30 | ✅ Yes | Daily via Massive.com ingestion |
+| `perplexity` | News content | ❌ No | Judgment-required |
+| `manual` | Any custom metric | ❌ No | Requires manual review |
+| `sec_edgar` | SEC filings | ❌ No | Judgment-required |
+| `glassnode` | On-chain metrics | 🔜 Future | Not yet integrated |
+
+#### For Each Explicit V&I Point
+
+1. **Ask user for specific data source**:
+   ```
+   For the point: "Initial jobless claims exceed 250,000"
+
+   What data source should we use for monitoring?
+   A) FRED - ICSA series (✅ Auto-trigger supported)
+   B) Manual check (❌ Requires manual monitoring)
+   ```
+
+2. **If supported source (fred or price_iv)**:
+   - Record the source and metric in `validation_points.explicit_details.dataSource`
+   - Prepare to auto-create monitoring config in Step 7.5
+   - Confirm with user:
+     ```
+     ✅ This point will be automatically monitored daily.
+     When ICSA > 250,000, the V&I point status will auto-update to "triggered"
+     and a triage record will be created for your review.
+     ```
+
+3. **If unsupported source**:
+   - Warn user:
+     ```
+     ⚠️ This metric requires manual monitoring.
+     The data source "[source]" is not yet integrated for automatic triggering.
+
+     Options:
+     A) Keep as manual review (you'll need to update status yourself)
+     B) Find a proxy metric that IS supported (e.g., use FRED series instead)
+     C) Request integration of this data source in Phase 5
+     ```
+   - Still create the V&I point, but without auto-trigger linkage
+
+#### Supported FRED Series (Quick Reference)
+
+| Category | Series | Description |
+|----------|--------|-------------|
+| Fed Funds | `FEDFUNDS` | Federal Funds Effective Rate |
+| Yields | `DGS10`, `DGS2`, `DGS30` | Treasury yields |
+| Yield Curve | `T10Y2Y`, `T10Y3M` | Yield spreads |
+| Labor | `ICSA`, `UNRATE`, `PAYEMS` | Jobless claims, unemployment, payrolls |
+| Inflation | `CPIAUCSL`, `PCEPILFE` | CPI, Core PCE |
+| Credit | `BAMLH0A0HYM2` | HY credit spreads |
+| GDP | `GDP` | Gross Domestic Product |
+
+For full series list, run: `python scripts/openbb/fetch_macro_indicators.py --list-series`
+
+#### Price/IV Metrics (Massive.com)
+
+| Metric | Field | Automation |
+|--------|-------|------------|
+| Spot price | `spot` | Daily via `ingest-underlyings-massive.ts` |
+| IV30 | `iv30` | Daily via `ingest-underlyings-massive.ts` |
+
+---
+
 ### Step 7: Store Articulation and Validation Points
 
 Once user approves, store to database.
@@ -732,7 +804,7 @@ rm scripts/insert-thesis-articulation-temp.ts
 | `evidenceGaps` | `string[]` |
 | `claimIdsUsed` | `string[]` (UUIDs) |
 | `referencedTheses` | `[{ thesisId: string, thesisType: string, title: string, relationship: string, notes?: string }]` |
-| `explicitDetails` | `{ metric: string, threshold: string, dataSources: string[], monitoringFrequency: string }` |
+| `explicitDetails` | `{ metric: string, threshold: string, dataSources: string[], monitoringFrequency: string, dataSource?: 'fred' \| 'price_iv', operator?: string, value?: number }` |
 | `judgmentDetails` | `{ observableProxies: string[], judgmentCriteria: string, reviewFrequency: string }` |
 | `responseProtocol` | `{ description: string, escalation?: string }` |
 | `linkedClaimIds` | `string[]` (UUIDs) |
@@ -742,6 +814,175 @@ rm scripts/insert-thesis-articulation-temp.ts
 2. ❌ Using plain strings for keyDrivers/keyAssumptions (must be objects)
 3. ❌ Using raw SQL with complex escaping (use TypeScript script instead)
 4. ❌ Forgetting to close the database connection (`await closeDb()`)
+
+---
+
+### Step 7.5: Auto-Create Monitoring Config for Explicit V&I Points
+
+For explicit V&I points with auto-trigger supported sources (from Step 6.5), automatically create or update the `thesis_monitoring_configs` entry.
+
+**Add to the TypeScript script after validation points insertion:**
+
+```typescript
+// Step 7.5: Auto-create monitoring config for explicit V&I points with auto-trigger sources
+const { thesisMonitoringConfigs, underlyings } = schema;
+
+// Collect explicit thresholds from inserted validation points
+const explicitThresholds = points
+  .filter(p => p.category === 'explicit' && p.explicitDetails)
+  .map(p => {
+    const details = p.explicitDetails as {
+      metric: string;
+      threshold: string;
+      dataSources: string[];
+      dataSource?: string;  // Auto-trigger source: 'fred' | 'price_iv'
+      operator?: string;
+      value?: number;
+    };
+
+    // Only include if dataSource is auto-trigger supported
+    if (!details.dataSource || !['fred', 'price_iv'].includes(details.dataSource)) {
+      return null;
+    }
+
+    return {
+      validationPointId: p.id,
+      source: details.dataSource as 'fred' | 'price_iv',
+      metric: details.metric,
+      operator: (details.operator || '>') as '>' | '<' | '>=' | '<=' | '==',
+      value: details.value || 0,
+      description: `${details.metric} ${details.operator || '>'} ${details.value}`,
+    };
+  })
+  .filter(Boolean);
+
+if (explicitThresholds.length > 0) {
+  // Check if monitoring config already exists for this thesis
+  const [existingConfig] = await db
+    .select()
+    .from(thesisMonitoringConfigs)
+    .where(
+      sql`${thesisMonitoringConfigs.thesisId} = ${thesisId}
+          AND ${thesisMonitoringConfigs.thesisType} = ${thesisType}`
+    )
+    .limit(1);
+
+  // Determine sources to enable
+  const hasFred = explicitThresholds.some(t => t?.source === 'fred');
+  const hasPriceIv = explicitThresholds.some(t => t?.source === 'price_iv');
+
+  // Get ticker for asset theses
+  let ticker: string | null = null;
+  if (thesisType === 'asset') {
+    const [thesis] = await db
+      .select({ ticker: underlyings.ticker })
+      .from(schema.assetTheses)
+      .leftJoin(underlyings, eq(schema.assetTheses.underlyingId, underlyings.id))
+      .where(eq(schema.assetTheses.id, thesisId))
+      .limit(1);
+    ticker = thesis?.ticker || null;
+  }
+
+  if (existingConfig) {
+    // Update existing config
+    const existingSources = existingConfig.sources as {
+      fred?: { enabled: boolean; series: string[] };
+      priceIv?: { enabled: boolean };
+      news?: { enabled: boolean; providers: string[] };
+      secFilings?: { enabled: boolean; filingTypes: string[] };
+    };
+
+    // Merge new thresholds with existing
+    const existingThresholds = existingConfig.explicitThresholds as Array<{
+      validationPointId: string;
+      source: string;
+      metric: string;
+      operator: string;
+      value: number;
+      description: string;
+    }>;
+
+    // Filter out any thresholds for the same validation points (replace with new)
+    const newPointIds = new Set(explicitThresholds.map(t => t?.validationPointId));
+    const filteredExisting = existingThresholds.filter(t => !newPointIds.has(t.validationPointId));
+    const mergedThresholds = [...filteredExisting, ...explicitThresholds];
+
+    // Get FRED series from new thresholds
+    const newFredSeries = explicitThresholds
+      .filter(t => t?.source === 'fred')
+      .map(t => t?.metric);
+    const existingFredSeries = existingSources.fred?.series || [];
+    const mergedFredSeries = [...new Set([...existingFredSeries, ...newFredSeries])];
+
+    await db
+      .update(thesisMonitoringConfigs)
+      .set({
+        sources: {
+          ...existingSources,
+          fred: { enabled: hasFred || existingSources.fred?.enabled, series: mergedFredSeries },
+          priceIv: { enabled: hasPriceIv || existingSources.priceIv?.enabled },
+        },
+        explicitThresholds: mergedThresholds,
+        updatedAt: new Date(),
+      })
+      .where(eq(thesisMonitoringConfigs.id, existingConfig.id));
+
+    console.log(`✅ Updated monitoring config with ${explicitThresholds.length} auto-trigger thresholds`);
+  } else {
+    // Create new monitoring config
+    const fredSeries = explicitThresholds
+      .filter(t => t?.source === 'fred')
+      .map(t => t?.metric);
+
+    await db.insert(thesisMonitoringConfigs).values({
+      thesisId,
+      thesisType,
+      ticker,
+      sources: {
+        fred: { enabled: hasFred, series: fredSeries },
+        priceIv: { enabled: hasPriceIv },
+        news: { enabled: false, providers: [] },
+        secFilings: { enabled: false, filingTypes: [] },
+      },
+      explicitThresholds,
+      frequency: 'daily',
+      enabled: true,
+    });
+
+    console.log(`✅ Created monitoring config with ${explicitThresholds.length} auto-trigger thresholds`);
+  }
+}
+```
+
+**Updated explicitDetails Structure:**
+
+When creating validation points with auto-trigger supported sources, include the `dataSource`, `operator`, and `value` fields:
+
+```typescript
+explicitDetails: {
+  metric: 'ICSA',                    // The specific metric/series
+  threshold: 'ICSA > 250,000',       // Human-readable description
+  dataSources: ['FRED'],             // General data source list (for display)
+  dataSource: 'fred',                // Auto-trigger source: 'fred' | 'price_iv'
+  operator: '>',                     // Comparison operator
+  value: 250000,                     // Numeric threshold value
+  monitoringFrequency: 'daily'
+}
+```
+
+**For price_iv metrics:**
+
+```typescript
+explicitDetails: {
+  metric: 'spot',                    // 'spot' or 'iv30'
+  threshold: 'Spot price < $50',
+  dataSources: ['Massive.com'],
+  dataSource: 'price_iv',
+  operator: '<',
+  value: 50,
+  monitoringFrequency: 'daily'
+}
+```
 
 ---
 
@@ -763,9 +1004,16 @@ Generated: [TIMESTAMP]
 - Significant: [N]
 - Supporting: [N]
 
+**Auto-Triggered Monitoring**:
+- [X] points with auto-trigger sources (fred/price_iv) are now monitored daily
+- Thresholds: [list threshold descriptions]
+- When breached, V&I status auto-updates and triage record is created
+- [Y] points require manual monitoring (unsupported data sources)
+
 **Next Steps**:
 - View articulation at /theses/[ID] or /asset-theses/[ID]
-- Monitor validation points manually (Phase 3.2 will add automation)
+- Auto-triggered points will create triage records when thresholds breach
+- Manually review judgment-required points on [frequency] basis
 - Re-synthesize when new claims are added with /synthesize-thesis [TICKER]
 
 **Note**: These validation/invalidation points are your commitment device.
