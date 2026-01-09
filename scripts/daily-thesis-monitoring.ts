@@ -34,7 +34,7 @@
  * Spec: docs/features/thesis-synthesis-monitoring.md Section 3.4
  */
 
-import { db, closeDb, schema } from './lib/db.js';
+import { db, closeDb, schema, logToJournal } from './lib/db.js';
 import { eq, sql, inArray } from 'drizzle-orm';
 import type {
   ExplicitThreshold,
@@ -1384,6 +1384,32 @@ async function createDataTriageRecord(
       actionRequired: `Review threshold breach: ${breach.threshold.description}`,
     }).returning({ id: thesisTriageRecords.id });
 
+    // Log to journal
+    await logToJournal({
+      objectType: breach.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: breach.thesisId,
+      objectTitle: breach.thesisTitle,
+      actionType: 'monitoring_triage_created',
+      actionDescription: `Monitoring triage created: REVIEW_DATA - ${breach.threshold.description}`,
+      triageRecordId: record.id,
+      newState: {
+        triageRule: 'REVIEW_DATA',
+        triggerSource: 'daily_threshold_check',
+        severity,
+        urgency,
+        metric: breach.threshold.metric,
+        currentValue: breach.currentValue,
+        thresholdValue: breach.threshold.value,
+        operator: breach.threshold.operator,
+      },
+      source: 'automation',
+      metadata: {
+        configId: breach.configId,
+        dataSource: breach.threshold.source,
+        linkedValidationPointId: breach.threshold.linkedValidationPointId,
+      },
+    });
+
     return record.id;
   } catch (error) {
     console.error(`Error creating REVIEW_DATA triage record for ${breach.thesisTitle}:`, error);
@@ -1439,6 +1465,33 @@ async function createTriageRecord(
       suggestedSkill: '/assess-validation-evidence',
       actionRequired: 'Review news findings and assess impact on thesis validation points',
     }).returning({ id: thesisTriageRecords.id });
+
+    // Log to journal
+    await logToJournal({
+      objectType: newsResult.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: newsResult.thesisId,
+      objectTitle: newsResult.thesisTitle,
+      actionType: 'monitoring_triage_created',
+      actionDescription: `Monitoring triage created: REVIEW_CONTENT - ${newsResult.matchedResults.length} news items found`,
+      triageRecordId: record.id,
+      newState: {
+        triageRule: 'REVIEW_CONTENT',
+        triggerSource: 'daily_news_scan',
+        severity,
+        urgency,
+        matchedResultsCount: newsResult.matchedResults.length,
+        validationPointsAffected: analysis.validationPointsAffected.length,
+      },
+      source: 'automation',
+      metadata: {
+        configId: newsResult.configId,
+        ticker: newsResult.ticker,
+        wideQuery: newsResult.wideQuery,
+        narrowQuery: newsResult.narrowQuery,
+        coverage: newsResult.coverage,
+        aiSummary: analysis.summary,
+      },
+    });
 
     return record.id;
   } catch (error) {

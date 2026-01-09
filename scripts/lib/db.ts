@@ -60,3 +60,31 @@ export async function closeDb(): Promise<void> {
 
 // Re-export schema for convenience
 export { schema };
+
+/**
+ * Log an action to the journal (script-compatible version)
+ *
+ * This is a copy of the logToJournal function from src/lib/workflow/lifecycleDetection.ts
+ * that uses the script's db connection instead of the app's db connection.
+ */
+export async function logToJournal(entry: {
+  objectType: string;
+  objectId: string;
+  objectTitle?: string;
+  actionType: string;
+  actionDescription: string;
+  triageRecordId?: string;
+  skillInvoked?: string;
+  previousState?: Record<string, unknown>;
+  newState?: Record<string, unknown>;
+  rationale?: string;
+  source: 'user' | 'skill' | 'automation';
+  metadata?: Record<string, unknown>;
+}): Promise<string> {
+  const result = await db
+    .insert(schema.journalEntries)
+    .values(entry)
+    .returning({ id: schema.journalEntries.id });
+
+  return result[0].id;
+}
