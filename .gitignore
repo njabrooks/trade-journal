@@ -70,3 +70,6 @@ scripts/test-output-*.json
 
 # Launchd job logs
 logs/
+
+# Research workspace (local research files)
+research-workspace/
