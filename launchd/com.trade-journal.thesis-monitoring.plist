@@ -12,11 +12,11 @@
         <string>cd /Users/twotrees/Desktop/trade-journal && /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/daily-thesis-monitoring.ts >> /Users/twotrees/Desktop/trade-journal/logs/thesis-monitoring.log 2>&1</string>
     </array>
 
-    <!-- Run at 22:00 UTC (after massive ingestion at 21:30) -->
+    <!-- Run at 08:00 UTC (morning triage before market open) -->
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>22</integer>
+        <integer>8</integer>
         <key>Minute</key>
         <integer>0</integer>
     </dict>

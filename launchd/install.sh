@@ -4,7 +4,7 @@
 # This script installs scheduled jobs to:
 # - Run Flex ingestion at 4 AM, 6 AM, 8 AM, 12 PM UTC
 # - Run Massive ingestion at 21:30 UTC (4:30 PM ET, after market close)
-# - Run Thesis monitoring at 22:00 UTC (after market data available)
+# - Run Thesis monitoring at 08:00 UTC (morning triage before market open)
 # - Push to remote backup at 7 AM UTC
 #
 # Usage:
@@ -100,7 +100,7 @@ install_jobs() {
     echo "  Supabase start:     On login (30s delay for Docker)"
     echo "  Flex ingestion:     04:00, 06:00, 08:00, 12:00 UTC"
     echo "  Massive ingestion:  21:30 UTC (4:30 PM ET)"
-    echo "  Thesis monitoring:  22:00 UTC (after market data)"
+    echo "  Thesis monitoring:  08:00 UTC (morning triage)"
     echo "  Push to remote:     07:00 UTC"
     echo ""
     echo "To check logs (in trade-journal/logs/):"
