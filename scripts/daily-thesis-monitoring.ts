@@ -46,7 +46,7 @@ import type {
 } from '../src/db/schema.js';
 import Anthropic from '@anthropic-ai/sdk';
 
-const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints, thesisTriageRecords, thesisArticulations } = schema;
+const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints, validationStatusHistory, thesisTriageRecords, thesisArticulations } = schema;
 
 // ============================================================================
 // Types
@@ -1410,10 +1410,120 @@ async function createDataTriageRecord(
       },
     });
 
+    // Phase 2.4: Auto-update V&I status if threshold has linkedValidationPointId
+    if (breach.threshold.linkedValidationPointId) {
+      await autoTriggerValidationPoint(breach, record.id);
+    }
+
     return record.id;
   } catch (error) {
     console.error(`Error creating REVIEW_DATA triage record for ${breach.thesisTitle}:`, error);
     return null;
+  }
+}
+
+/**
+ * Phase 2.4: Auto-trigger validation point status update
+ * When a threshold with linkedValidationPointId is breached, automatically:
+ * 1. Update the validation point status to 'triggered'
+ * 2. Create validation_status_history entry
+ * 3. Log to journal with vi_auto_triggered action type
+ */
+async function autoTriggerValidationPoint(
+  breach: ThresholdCheckResult,
+  triageRecordId: string
+): Promise<void> {
+  const validationPointId = breach.threshold.linkedValidationPointId;
+  if (!validationPointId) return;
+
+  try {
+    // 1. Fetch current validation point
+    const [currentPoint] = await db
+      .select()
+      .from(validationPoints)
+      .where(eq(validationPoints.id, validationPointId))
+      .limit(1);
+
+    if (!currentPoint) {
+      console.warn(`     ⚠ Validation point ${validationPointId} not found, skipping auto-trigger`);
+      return;
+    }
+
+    // Skip if already triggered
+    if (currentPoint.status === 'triggered') {
+      console.log(`     ℹ️ V&I point already triggered, skipping`);
+      return;
+    }
+
+    const previousStatus = currentPoint.status;
+
+    // 2. Create validation_status_history entry
+    await db.insert(validationStatusHistory).values({
+      validationPointId,
+      previousStatus,
+      newStatus: 'triggered',
+      evidence: {
+        source: breach.threshold.source === 'fred' ? 'FRED' : 'IBKR/Massive',
+        summary: `Automated threshold breach: ${breach.threshold.description}. Current value: ${breach.currentValue.toFixed(2)}`,
+        link: breach.threshold.source === 'fred'
+          ? `https://fred.stlouisfed.org/series/${breach.threshold.metric}`
+          : null,
+      },
+      confidence: 'high', // Auto-triggered from reliable data source
+      assessedBy: 'claude',
+      userActionRequired: true,
+      userActionTaken: null,
+      userActionTimestamp: null,
+    });
+
+    // 3. Update validation_points.status
+    await db
+      .update(validationPoints)
+      .set({
+        status: 'triggered',
+        updatedAt: new Date(),
+      })
+      .where(eq(validationPoints.id, validationPointId));
+
+    // 4. Log to journal with vi_auto_triggered
+    const statementPreview = currentPoint.statement.length > 50
+      ? `${currentPoint.statement.slice(0, 50)}...`
+      : currentPoint.statement;
+
+    await logToJournal({
+      objectType: breach.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: breach.thesisId,
+      objectTitle: breach.thesisTitle,
+      actionType: 'vi_auto_triggered',
+      actionDescription: `V&I point auto-triggered: "${statementPreview}" (${breach.threshold.description})`,
+      triageRecordId,
+      previousState: {
+        status: previousStatus,
+        validationPointId,
+        validationType: currentPoint.type,
+      },
+      newState: {
+        status: 'triggered',
+        confidence: 'high',
+        evidenceSource: breach.threshold.source === 'fred' ? 'FRED' : 'IBKR/Massive',
+        currentValue: breach.currentValue,
+        thresholdValue: breach.threshold.value,
+        operator: breach.threshold.operator,
+      },
+      source: 'automation',
+      metadata: {
+        validationPointId,
+        validationType: currentPoint.type,
+        importance: currentPoint.importance,
+        metric: breach.threshold.metric,
+        dataSource: breach.threshold.source,
+        configId: breach.configId,
+      },
+    });
+
+    console.log(`     🎯 Auto-triggered V&I point: ${statementPreview}`);
+  } catch (error) {
+    console.error(`     ❌ Error auto-triggering V&I point ${validationPointId}:`, error);
   }
 }
 

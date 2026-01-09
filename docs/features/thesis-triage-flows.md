@@ -392,6 +392,7 @@ Research-to-thesis linkages now logged:
 
 **Validation/Invalidation:**
 - `vi_status_changed` - V&I point status changed (not_triggered → monitoring → triggered/superseded)
+- `vi_auto_triggered` - V&I point auto-triggered by monitoring script threshold breach (Phase 2.4)
 
 **Monitoring:**
 - `monitoring_triage_created` - Automated monitoring created triage record (REVIEW_DATA or REVIEW_CONTENT)
@@ -468,14 +469,14 @@ Define which sources support auto-triggering in `synthesize-thesis` skill:
 **2.3 Link Thresholds to V&I Points** ✅ COMPLETE (2026-01-09)
 - [x] `thesis_monitoring_configs.explicit_thresholds[].linkedValidationPointId` already exists (in schema)
 - [x] `synthesize-thesis` skill populates this when creating explicit V&I points (Step 7.5)
-- [ ] Query: When threshold breached, lookup linked V&I point → **see 2.4**
+- [x] Query: When threshold breached, lookup linked V&I point → **implemented in 2.4**
 
-**2.4 Auto-Update V&I Status on Breach**
-- [ ] In `daily-thesis-monitoring.ts` `createDataTriageRecord()`:
+**2.4 Auto-Update V&I Status on Breach** ✅ COMPLETE (2026-01-09)
+- [x] In `daily-thesis-monitoring.ts` `createDataTriageRecord()`:
   - If `threshold.linkedValidationPointId` exists AND data source is reliable
-  - Call V&I status update API to change status to `triggered`
+  - Call `autoTriggerValidationPoint()` to change status to `triggered`
   - Log to journal: `vi_auto_triggered`
-- [ ] Still create triage record for user visibility
+- [x] Still create triage record for user visibility
 
 **2.5 Adding New Data Sources**
 
@@ -547,9 +548,18 @@ Each new source follows pattern:
 3. ~~**Phase 1.3**: Create launchd cron job for monitoring~~ ✅ (2026-01-09)
 4. ~~**Phase 2.2**: Synthesize-thesis skill asks for data source, validates, auto-creates monitoring config~~ ✅ (2026-01-09)
 5. ~~**Phase 2.3**: Link thresholds to V&I points via `linkedValidationPointId`~~ ✅ (2026-01-09)
-6. **Phase 2.4**: Auto-update V&I status on breach (monitoring script calls V&I API)
+6. ~~**Phase 2.4**: Auto-update V&I status on breach (monitoring script auto-triggers V&I)~~ ✅ (2026-01-09)
 
-Once Phase 1-2 complete, the core auto-triggering flow works. Phase 3-4 enhance the UX. Phase 5 is ongoing as needs arise.
+**Phase 1-2 COMPLETE!** The core auto-triggering flow now works end-to-end:
+- User creates explicit V&I points via `/synthesize-thesis` with supported data sources
+- Monitoring config auto-created with thresholds linked to V&I points
+- Daily monitoring script checks thresholds
+- On breach: triage record created + V&I status auto-updated to "triggered" + journal logged
+
+**Next phases** (UX enhancements):
+- Phase 3: Judgment-based content assessment UI
+- Phase 4: Perplexity/news integration
+- Phase 5: Future data sources (Glassnode, etc.)
 
 ---
 
