@@ -11,6 +11,8 @@ import { EditAssetThesisButton } from '@/components/asset-theses/EditAssetThesis
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
 import { LinkedMacroThesesSection } from '@/components/asset-theses/LinkedMacroThesesSection';
 import { LinkedStrategiesSection } from '@/components/asset-theses/LinkedStrategiesSection';
+import { NewsArchiveSection } from '@/components/asset-theses/NewsArchiveSection';
+import { TriageAlertSection } from '@/components/asset-theses/TriageAlertSection';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { ValidationPointsList } from '@/components/thesis-synthesis/ValidationPointsList';
 import type { ThesisArticulation, ValidationPoint } from '@/db/schema';
@@ -139,6 +141,19 @@ export function AssetThesisDetailSections({
                 </div>
               )}
             </dl>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Triage Alerts - Pending monitoring items requiring attention */}
+        <AccordionItem value="triage-alerts">
+          <AccordionTrigger className="px-4">
+            <div className="flex items-center gap-3 flex-1">
+              <span className="font-semibold">Triage Alerts</span>
+              <span className="text-xs text-amber-600">Action Required</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4">
+            <TriageAlertSection thesisId={view.id} thesisType="asset" />
           </AccordionContent>
         </AccordionItem>
 
@@ -282,6 +297,19 @@ export function AssetThesisDetailSections({
                 thesisType="asset"
               />
             )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* News Archive - Monitoring Results */}
+        <AccordionItem value="news-archive">
+          <AccordionTrigger className="px-4">
+            <div className="flex items-center gap-3 flex-1">
+              <span className="font-semibold">News Archive</span>
+              <span className="text-xs text-slate-400">Monitoring</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4">
+            <NewsArchiveSection thesisId={view.id} thesisType="asset" />
           </AccordionContent>
         </AccordionItem>
 

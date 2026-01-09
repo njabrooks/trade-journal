@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
       filters.lifecycleStage = lifecycleStage;
     }
 
+    const thesisId = searchParams.get('thesisId');
+    if (thesisId) {
+      filters.thesisId = thesisId;
+    }
+
     // Fetch data in parallel - use Full version to get JSONB fields
     const [records, counts] = await Promise.all([
       getThesisTriageQueueFull(filters),

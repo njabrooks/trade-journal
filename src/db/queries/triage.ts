@@ -538,6 +538,7 @@ export interface ThesisTriageFilters {
   thesisType?: string[];  // 'macro' | 'asset'
   lifecycleStage?: string[];  // 'created' | 'claims_linked' | 'synthesized' | 'validated' | 'monitoring'
   includeAll?: boolean;  // If true, include dismissed/complete records (for "All Triage" view)
+  thesisId?: string;  // Filter to specific thesis
 }
 
 // Base record without display fields (from simple query)
@@ -679,6 +680,10 @@ export async function getThesisTriageQueueFull(
 
   if (filters.lifecycleStage && filters.lifecycleStage.length > 0) {
     conditions.push(inArray(thesisTriageRecords.lifecycleStage, filters.lifecycleStage));
+  }
+
+  if (filters.thesisId) {
+    conditions.push(eq(thesisTriageRecords.thesisId, filters.thesisId));
   }
 
   // Join to thesis tables to get ticker and direction

@@ -46,7 +46,7 @@ import type {
 } from '../src/db/schema.js';
 import Anthropic from '@anthropic-ai/sdk';
 
-const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints, validationStatusHistory, thesisTriageRecords, thesisArticulations } = schema;
+const { thesisMonitoringConfigs, underlyingsIvHistory, macroTheses, assetTheses, validationPoints, validationStatusHistory, thesisTriageRecords, thesisArticulations, thesisNewsItems } = schema;
 
 // ============================================================================
 // Types
@@ -676,6 +676,86 @@ async function checkNewsBatch(
   }
 
   return { results: newsResults, apiCalls };
+}
+
+// ============================================================================
+// News Archive Persistence
+// ============================================================================
+
+/**
+ * Persist news items to thesis_news_items table for historical archive.
+ * Uses ON CONFLICT to update existing items (by thesis + URL).
+ */
+async function persistNewsItems(
+  newsResults: NewsCheckResult[],
+  triageRecordIds: Map<string, string>  // thesisId -> triageRecordId
+): Promise<{ inserted: number; updated: number; errors: number }> {
+  const stats = { inserted: 0, updated: 0, errors: 0 };
+
+  for (const newsResult of newsResults) {
+    const triageRecordId = triageRecordIds.get(newsResult.thesisId) || null;
+
+    for (const result of newsResult.matchedResults) {
+      try {
+        // Extract source domain from URL
+        let sourceDomain: string | null = null;
+        try {
+          sourceDomain = new URL(result.url).hostname;
+        } catch {
+          // Invalid URL, skip domain extraction
+        }
+
+        // Parse published date if available
+        let publishedDate: string | null = null;
+        if (result.date) {
+          try {
+            const parsed = new Date(result.date);
+            if (!isNaN(parsed.getTime())) {
+              publishedDate = parsed.toISOString().split('T')[0];
+            }
+          } catch {
+            // Invalid date, skip
+          }
+        }
+
+        // Use ON CONFLICT to upsert (insert or update)
+        await db
+          .insert(thesisNewsItems)
+          .values({
+            thesisId: newsResult.thesisId,
+            thesisType: newsResult.thesisType,
+            url: result.url,
+            title: result.title,
+            snippet: result.snippet?.substring(0, 2000) || null,
+            sourceDomain,
+            publishedDate,
+            matchScore: result.matchScore,
+            matchedKeywords: result.matchedKeywords,
+            queryType: result.queryType,
+            triageRecordId,
+          })
+          .onConflictDoUpdate({
+            target: [thesisNewsItems.thesisId, thesisNewsItems.thesisType, thesisNewsItems.url],
+            set: {
+              title: result.title,
+              snippet: result.snippet?.substring(0, 2000) || null,
+              matchScore: result.matchScore,
+              matchedKeywords: result.matchedKeywords,
+              queryType: result.queryType,
+              triageRecordId,
+              updatedAt: new Date(),
+            },
+          });
+
+        stats.inserted++;
+      } catch (error) {
+        console.error(`Error persisting news item ${result.url}:`, error);
+        stats.errors++;
+      }
+    }
+  }
+
+  return stats;
 }
 
 // ============================================================================
@@ -1622,8 +1702,8 @@ async function createTriageRecord(
 async function runAnalysisPipeline(
   newsResults: NewsCheckResult[],
   dryRun: boolean
-): Promise<{ analyzed: number; triageCreated: number; errors: string[] }> {
-  const stats = { analyzed: 0, triageCreated: 0, errors: [] as string[] };
+): Promise<{ analyzed: number; triageCreated: number; errors: string[]; triageRecordIds: Map<string, string> }> {
+  const stats = { analyzed: 0, triageCreated: 0, errors: [] as string[], triageRecordIds: new Map<string, string>() };
 
   // Filter to theses with relevant news
   const relevantResults = newsResults.filter(nr => nr.hasRelevantNews && nr.matchedResults.length > 0);
@@ -1670,6 +1750,7 @@ async function runAnalysisPipeline(
         const triageId = await createTriageRecord(newsResult, vps, analysis, severity, urgency);
         if (triageId) {
           stats.triageCreated++;
+          stats.triageRecordIds.set(newsResult.thesisId, triageId);
           console.log(`     ✅ Created triage record: ${triageId.substring(0, 8)}...`);
         }
       } else {
@@ -1793,12 +1874,14 @@ async function main() {
     }
 
     // Run analysis pipeline if requested
+    let triageRecordIds = new Map<string, string>();
     if (runAnalysis && result.newsResults.length > 0) {
       console.log('\n' + '='.repeat(60));
       console.log('🔬 ANALYSIS PIPELINE');
       console.log('='.repeat(60));
 
       const analysisStats = await runAnalysisPipeline(result.newsResults, dryRun);
+      triageRecordIds = analysisStats.triageRecordIds;
 
       console.log('\n📊 ANALYSIS SUMMARY:');
       console.log(`  Theses analyzed: ${analysisStats.analyzed}`);
@@ -1806,6 +1889,16 @@ async function main() {
       if (analysisStats.errors.length > 0) {
         console.log(`  Analysis errors: ${analysisStats.errors.length}`);
         result.errors.push(...analysisStats.errors);
+      }
+    }
+
+    // Persist news items to archive (always, regardless of analysis)
+    if (result.newsResults.length > 0 && !dryRun) {
+      console.log('\n📰 Persisting news items to archive...');
+      const archiveStats = await persistNewsItems(result.newsResults, triageRecordIds);
+      console.log(`  News items saved: ${archiveStats.inserted}`);
+      if (archiveStats.errors > 0) {
+        console.log(`  Archive errors: ${archiveStats.errors}`);
       }
     }
 

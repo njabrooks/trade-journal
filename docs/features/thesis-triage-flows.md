@@ -297,7 +297,7 @@ These are UI/UX enhancements (Phase 3+):
 | ~~Monitoring cron schedule~~ | ✅ | Daily at 08:00 UTC with `--analyze` |
 | ~~Monitoring script journal logging~~ | ✅ | All triage creation logged to journal |
 | ~~V&I auto-triggering~~ | ✅ | Threshold breaches auto-update V&I status |
-| News Archive UI | ❌ | Historical news not visible in app (Phase 3.1) |
+| ~~News Archive UI~~ | ✅ | Historical news visible on thesis detail page (Phase 3.1) |
 | V&I status update UI | ❌ | Manual V&I updates from triage view (Phase 3.3) |
 | `/assess-validation-evidence` integration | ❌ | Skill needs V&I update integration (Phase 4) |
 
@@ -494,30 +494,70 @@ When adding a new data source (e.g., Glassnode):
 
 #### Phase 3: UI/UX Enhancements
 
-**3.1 News Archive System**
-- [ ] Create `thesis_news_items` table to store fetched news independently
+**3.1 News Archive System** ✅
+- [x] Create `thesis_news_items` table to store fetched news independently
   - Schema: `id`, `thesis_id`, `thesis_type`, `url` (unique per thesis), `title`, `snippet`, `source_domain`, `published_date`, `fetched_at`, `match_score`, `matched_keywords[]`, `query_type`, `triage_record_id` (nullable)
-- [ ] Update `daily-thesis-monitoring.ts` to persist news items
-- [ ] Create `GET /api/theses/[id]/news` endpoint
-- [ ] Build NewsArchive UI component for thesis detail page
-- [ ] Add "News & Developments" section to asset thesis detail page
+  - Migration: `migrations/create_thesis_news_items.sql`
+  - Drizzle: `src/db/schema.ts` (thesisNewsItems table)
+- [x] Update `daily-thesis-monitoring.ts` to persist news items
+  - Added `persistNewsItems()` function with ON CONFLICT upsert
+  - Links news items to triage records when analysis runs
+- [x] Create `GET /api/theses/[id]/news` endpoint (macro theses)
+- [x] Create `GET /api/asset-theses/[id]/news` endpoint (asset theses)
+  - Query file: `src/db/queries/thesisNewsItems.ts`
+  - Returns news items with optional triage record join
+- [x] Build NewsArchive UI component for thesis detail page
+  - Component: `src/components/asset-theses/NewsArchiveSection.tsx`
+  - Shows news items with source, date, matched keywords
+  - Displays triage severity/status badges when analysis exists
+- [x] Add "News Archive" section to asset thesis detail page
+  - Added to `AssetThesisDetailSections.tsx` as accordion section
 
-**3.2 Enhance Triage Record Display**
-- [ ] Thesis detail page: Section showing pending monitoring triage
-- [ ] Display `aiAnalysis.summary`, `keyFindings`, `validationPointsAffected`
-- [ ] Show matched articles with snippets and links
-- [ ] Action buttons: "Confirm Read" / "Update V&I Status"
+**3.2 Enhance Triage Record Display** ✅
+- [x] Thesis detail page: Section showing pending monitoring triage
+  - Component: `src/components/asset-theses/TriageAlertSection.tsx`
+  - Fetches via `/api/thesis-triage?thesisId=` with thesisId filter
+  - Added to `AssetThesisDetailSections.tsx` as "Triage Alerts" accordion
+- [x] Display `aiAnalysis.summary`, `keyFindings`, `validationPointsAffected`
+  - Summary shown in expanded alert view
+  - Key findings with bullet points and Lightbulb icon
+  - Validation points affected with evidence type badges (strong/weak validation/invalidation)
+  - Suggested next steps numbered list
+- [x] Show matched articles with snippets and links
+  - Up to 5 articles shown with external links
+  - Snippet preview with line clamping
+  - "N more articles" indicator when >5 results
+- [x] Action buttons: "Confirm Read" / "Dismiss"
+  - "Confirm Read" → PATCH status to `actioned`
+  - "Dismiss" → PATCH status to `dismissed`
+  - Loading state during action processing
 
-**3.3 V&I Status Update UI**
-- [ ] From triage view, allow user to select which V&I points to update
-- [ ] Pre-populate with Claude's recommendations from `aiAnalysis.validationPointsAffected`
-- [ ] User provides reason/notes, confirms update
-- [ ] Calls V&I status update API (already exists from Phase 1.1)
+**3.3 V&I Status Update UI** ✅
+- [x] From triage view, allow user to select which V&I points to update
+  - "Update V&I Status" button shown when `aiAnalysis.validationPointsAffected` exists
+  - Opens `UpdateVIStatusDialog` modal
+- [x] Pre-populate with Claude's recommendations from `aiAnalysis.validationPointsAffected`
+  - Status pre-set based on evidence type (strong → triggered, weak → monitoring)
+  - Confidence pre-populated from AI analysis
+  - Notes pre-filled with recommended action
+- [x] User provides reason/notes, confirms update
+  - Can select/deselect individual points
+  - Can modify status, confidence, notes per point
+  - Evidence source auto-built from matched results
+- [x] Calls V&I status update API (Phase 1.1)
+  - PATCH `/api/validation-points/[id]` for each selected point
+  - On success, triage record marked as 'actioned'
+  - Journal entries created for each V&I status change
 
-**3.4 Triage Resolution Flow**
-- [ ] "Confirm Read" → Status changes to `actioned`, no V&I changes
-- [ ] "Update V&I" → Opens V&I update dialog, then marks triage as `actioned`
-- [ ] "Dismiss" → Status changes to `dismissed`, logs reason
+**3.4 Triage Resolution Flow** ✅
+- [x] "Confirm Read" → Status changes to `actioned`, no V&I changes
+  - Button in TriageAlertSection calls PATCH with status='actioned'
+- [x] "Update V&I" → Opens V&I update dialog, then marks triage as `actioned`
+  - Opens UpdateVIStatusDialog with pre-populated recommendations
+  - On success, auto-marks triage as 'actioned' via handleVIUpdateSuccess
+- [x] "Dismiss" → Status changes to `dismissed`, logs reason
+  - Button in TriageAlertSection calls PATCH with status='dismissed'
+  - User notes recorded for audit trail
 
 ---
 
@@ -571,12 +611,14 @@ Each new source follows pattern:
 - On breach: triage record created + V&I status auto-updated to "triggered" + journal logged
 - On relevant news: REVIEW_CONTENT triage created with AI analysis
 
-#### Up Next: Phase 3 (UI/UX Enhancements)
+#### ~~Phase 3 (UI/UX Enhancements)~~ ✅ COMPLETE
 
-1. **Phase 3.1**: News Archive System - persist news items, display on thesis detail page
-2. **Phase 3.2**: Enhance triage record display with AI analysis
-3. **Phase 3.3**: V&I status update UI from triage view
-4. **Phase 3.4**: Triage resolution flow (Confirm Read / Update V&I / Dismiss)
+1. ~~**Phase 3.1**: News Archive System~~ ✅ - news items persisted, displayed on thesis detail page
+2. ~~**Phase 3.2**: Enhance triage record display~~ ✅ - AI analysis, matched articles, action buttons on thesis detail page
+3. ~~**Phase 3.3**: V&I status update UI~~ ✅ - UpdateVIStatusDialog with pre-populated recommendations from triage
+4. ~~**Phase 3.4**: Triage resolution flow~~ ✅ - Confirm Read / Update V&I / Dismiss all functional
+
+#### Up Next: Phase 4 (Manual Content Assessment)
 
 #### Deferred
 

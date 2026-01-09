@@ -1712,6 +1712,49 @@ export type ThesisTriageRecord = typeof thesisTriageRecords.$inferSelect;
 export type NewThesisTriageRecord = typeof thesisTriageRecords.$inferInsert;
 
 // ============================================================================
+// Thesis News Items (News Archive)
+// Historical archive of news items fetched by monitoring script for each thesis
+// ============================================================================
+
+export const thesisNewsItems = pgTable(
+  'thesis_news_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+
+    // Thesis linkage
+    thesisId: uuid('thesis_id').notNull(),
+    thesisType: text('thesis_type').notNull(),  // 'macro' | 'asset'
+
+    // News item data
+    url: text('url').notNull(),
+    title: text('title').notNull(),
+    snippet: text('snippet'),
+    sourceDomain: text('source_domain'),
+    publishedDate: date('published_date'),
+
+    // Fetch metadata
+    fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow().notNull(),
+    matchScore: integer('match_score'),
+    matchedKeywords: text('matched_keywords').array(),
+    queryType: text('query_type'),  // 'wide' | 'narrow'
+
+    // Optional link to triage record (if analysis created one)
+    triageRecordId: uuid('triage_record_id').references(() => thesisTriageRecords.id, { onDelete: 'set null' }),
+  },
+  (table) => ({
+    thesisIdx: index('idx_thesis_news_items_thesis').on(table.thesisId, table.thesisType),
+    fetchedAtIdx: index('idx_thesis_news_items_fetched_at').on(table.fetchedAt),
+    publishedDateIdx: index('idx_thesis_news_items_published_date').on(table.publishedDate),
+    // Unique constraint handled by database migration
+  })
+);
+
+export type ThesisNewsItem = typeof thesisNewsItems.$inferSelect;
+export type NewThesisNewsItem = typeof thesisNewsItems.$inferInsert;
+
+// ============================================================================
 // Journal Entries (Decision Log)
 // Comprehensive audit trail of all actions across all object types
 // Renamed from blotter_entries to align with PRD terminology
