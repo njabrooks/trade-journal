@@ -659,7 +659,7 @@ See [Completed Enhancements](#completed-enhancements) for Phase 3.2A details.
 - Versioned storage for belief evolution tracking
 - Interactive refinement workflow
 
-See [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.md) for the comprehensive design.
+See [Thesis Synthesis & Monitoring System](260107-thesis-synthesis-monitoring.md) for the comprehensive design.
 
 ---
 
@@ -950,7 +950,7 @@ See [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.
 - Version history queryable by thesis_id + thesis_type
 - Designed for comparison and evolution tracking from the start
 
-See [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.md) Section 2.1 for schema design.
+See [Thesis Synthesis & Monitoring System](260107-thesis-synthesis-monitoring.md) Section 2.1 for schema design.
 
 ---
 
@@ -1199,7 +1199,7 @@ Consider adding to PRD:
 
 **Status**: Requirements Complete (2026-01-03)
 **PRD Alignment**: Sections 5.5 (Thesis Evaluation), 5.7 (Role of AI), 6.1 (Triggers), 8 (Institutional Memory)
-**Specification**: [docs/features/thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md)
+**Specification**: [docs/features/thesis-synthesis-monitoring.md](260107-thesis-synthesis-monitoring.md)
 
 **Overview**: Transform atomic research claims into articulated investment theses with explicit validation/invalidation criteria, then monitor those criteria over time to ensure accountability and enable learning.
 
@@ -1280,7 +1280,7 @@ Consider adding to PRD:
 **Phase**: 3.2A (MVP supplement)
 **Dependencies**: #ENH-036, #ENH-037
 **PRD Alignment**: Section 5.5 (Thesis Evaluation), Section 6.1 (Triggers)
-**Specification**: [docs/features/validation-assessment-workflow.md](features/validation-assessment-workflow.md)
+**Specification**: [docs/features/validation-assessment-workflow.md](260105-validation-assessment-workflow.md)
 
 **Description**: Top-down evidence assessment workflow that complements bottom-up research discovery. Analyzes content (SEC filings, presentations, transcripts) against existing validation points to identify validation/invalidation evidence.
 

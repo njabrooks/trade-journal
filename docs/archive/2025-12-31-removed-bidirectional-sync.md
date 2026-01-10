@@ -171,7 +171,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
 ## Related Documentation
 
-- [Research Workflow Guide](../features/research-workflow.md) - Updated to reflect new workflow
+- [Research Workflow Guide](251231-research-workflow.md) - Updated to reflect new workflow
 - [CLAUDE.md](../../CLAUDE.md) - Updated research workflow section
 - [PRD v1.1](../PRD_v1.1.md) - System vision (unchanged)
 - [Terminology Guide](../terminology.md) - Term definitions (unchanged)

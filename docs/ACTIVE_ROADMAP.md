@@ -116,7 +116,7 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 
 **Status**: 🎯 Requirements Complete (2026-01-03)
 
-**Specification**: [docs/features/thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md)
+**Specification**: [docs/features/thesis-synthesis-monitoring.md](260107-thesis-synthesis-monitoring.md)
 
 **Note**: This phase consolidates and supersedes several previously planned items:
 - #ENH-022 (AI Summary Generation) → absorbed into #ENH-035
@@ -196,7 +196,7 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 - ✅ Structured markdown assessment reports
 - ✅ Evidence categorization and confidence scoring
 - ✅ Real-world testing (Galaxy Digital SEC presentation)
-- ✅ Documentation: [validation-assessment-workflow.md](features/validation-assessment-workflow.md)
+- ✅ Documentation: [validation-assessment-workflow.md](260105-validation-assessment-workflow.md)
 
 **Why This Helps**:
 - Top-down validation check complements bottom-up research discovery
@@ -319,7 +319,7 @@ Daily 6 AM ET:
 
 ---
 
-**Note**: Phase 3.2 absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept. See [thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md) Section 3.4 "Thesis Triage" and "Content Source Implementation Guide" for comprehensive specifications.
+**Note**: Phase 3.2 absorbs and extends the original Phase 3.0 "Thesis Review Triggers" (#ENH-026) concept. See [thesis-synthesis-monitoring.md](260107-thesis-synthesis-monitoring.md) Section 3.4 "Thesis Triage" and "Content Source Implementation Guide" for comprehensive specifications.
 
 ---
 
@@ -331,7 +331,7 @@ Daily 6 AM ET:
 **Effort**: 2-3 weeks
 **Dependencies**: #ENH-038
 
-**Note**: Core news monitoring functionality is now specified in Section 3.4 "Thesis Triage" of [thesis-synthesis-monitoring.md](features/thesis-synthesis-monitoring.md). This phase focuses on **advanced narrative features** beyond basic monitoring:
+**Note**: Core news monitoring functionality is now specified in Section 3.4 "Thesis Triage" of [thesis-synthesis-monitoring.md](260107-thesis-synthesis-monitoring.md). This phase focuses on **advanced narrative features** beyond basic monitoring:
 
 **Remaining Deliverables** (not covered by Thesis Triage):
 - **Narrative tracking system** - Track emerging themes across multiple sources over time
@@ -651,6 +651,6 @@ These items complement Phase 3 but remain separate:
 **Long-Term Vision** (Tier 3+):
 - Phase 3.4: Learning & Feedback (outcomes, process adherence, thesis quality scoring)
 
-**Full Specification**: [Thesis Synthesis & Monitoring System](features/thesis-synthesis-monitoring.md)
+**Full Specification**: [Thesis Synthesis & Monitoring System](260107-thesis-synthesis-monitoring.md)
 
 See [Implementation Completion Log](archive/implementation_completion_log.md) for Phases 1.0-2.7.

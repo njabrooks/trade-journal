@@ -46,7 +46,7 @@ npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psq
 **For Developers** (quick reference and navigation):
 - **CLAUDE.md** (this file) - Quick reference, common commands, file navigation
 - **[Terminology Guide](docs/terminology.md)** - Authoritative term definitions (PRD-aligned)
-- **[Research Workflow](docs/features/research-workflow.md)** - Complete research workflow guide
+- **[Research Workflow](251231-research-workflow.md)** - Complete research workflow guide
 - **[Documentation Best Practices](DOCUMENTATION_BEST_PRACTICES.md)** - How to document work and link to big picture
 
 **For Architects** (system design and vision):
@@ -495,7 +495,7 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 /finalize-for-upload path/to/audit        # Upload to Supabase (one-way)
 ```
 
-**Full Guide**: See **[docs/features/research-workflow.md](docs/features/research-workflow.md)** for:
+**Full Guide**: See **[docs/features/research-workflow.md](251231-research-workflow.md)** for:
 - Detailed workflow stages and Toulmin framework explanation
 - Claims structure specification (main claims + evidence claims)
 - UI features (filtering, search, conversion, promotion)
@@ -586,7 +586,7 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 
 ## Quick Navigation for Specific Features
 
-- **Research Workflow** → [docs/features/research-workflow.md](docs/features/research-workflow.md) (full guide) + `/src/lib/research/` + `/.claude/skills/`
+- **Research Workflow** → [docs/features/research-workflow.md](251231-research-workflow.md) (full guide) + `/src/lib/research/` + `/.claude/skills/`
 - **Claims Browsing** → `/src/components/research/ClaimsBrowser.tsx` + `/src/app/research/[id]/page.tsx`
 - **Claim Conversion** → `/src/components/research/ConvertClaimDialog.tsx` + `/src/app/api/research/convert-claim/`
 - **Macro Theses** → `/src/app/theses/` + `/src/db/schema.ts` (macro_theses table)
