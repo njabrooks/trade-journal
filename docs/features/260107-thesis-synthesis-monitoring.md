@@ -2165,8 +2165,8 @@ SCHEDULED JOBS (GitHub Actions)
 ## Related Documents
 
 ### End-State Specifications
-- **[Validation Assessment Workflow](validation-assessment-workflow.md)** - Top-down evidence assessment skill documentation
-- **[Research Workflow](research-workflow.md)** - Bottom-up claims extraction process
+- **[Validation Assessment Workflow](260105-validation-assessment-workflow.md)** - Top-down evidence assessment skill documentation
+- **[Research Workflow](251231-research-workflow.md)** - Bottom-up claims extraction process
 
 ### Task Tracking
 - **[ACTIVE_ROADMAP.md](../ACTIVE_ROADMAP.md)** - Implementation status and task breakdown (Phase 3.x)

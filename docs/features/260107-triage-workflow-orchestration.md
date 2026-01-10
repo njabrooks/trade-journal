@@ -839,7 +839,7 @@ ALTER TABLE asset_theses ADD COLUMN IF NOT EXISTS lifecycle_status TEXT
 ## Related Documents
 
 - **[Thesis Synthesis & Monitoring](thesis-synthesis-monitoring.md)** - Technical implementation details
-- **[Validation Assessment Workflow](validation-assessment-workflow.md)** - /assess-validation-evidence skill
+- **[Validation Assessment Workflow](260105-validation-assessment-workflow.md)** - /assess-validation-evidence skill
 - **[Research Workflow](research-workflow.md)** - Evidence collection layer
 - **[PRD v1.1](../PRD_v1.1.md)** - Section 6 (Workflow & Triage Engine)
 

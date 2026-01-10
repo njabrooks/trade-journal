@@ -2,7 +2,7 @@
 
 **Status:** ✅ Implemented (Phase 3.2A + assess-validation-evidence skill)
 **Created:** 2026-01-05
-**Related:** [Thesis Synthesis & Monitoring](./thesis-synthesis-monitoring.md), [Research Workflow](./research-workflow.md)
+**Related:** [Thesis Synthesis & Monitoring](260107-thesis-synthesis-monitoring.md), [Research Workflow](251231-research-workflow.md)
 
 ## Overview
 
@@ -286,9 +286,9 @@ User review is intentional:
 
 ## Related Documentation
 
-- [Thesis Synthesis & Monitoring](./thesis-synthesis-monitoring.md) - Overall Phase 3.2 context
-- [Research Workflow](./research-workflow.md) - Bottom-up discovery workflow
-- [Data Sources Strategy](./data-sources-strategy.md) - Multi-source monitoring
+- [Thesis Synthesis & Monitoring](260107-thesis-synthesis-monitoring.md) - Overall Phase 3.2 context
+- [Research Workflow](251231-research-workflow.md) - Bottom-up discovery workflow
+- [Data Sources Strategy](260104-data-sources-strategy.md) - Multi-source monitoring
 - [CLAUDE.md](../../CLAUDE.md) - Skills reference
 
 ## Example Use Cases

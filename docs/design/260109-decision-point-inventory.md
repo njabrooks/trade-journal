@@ -5,7 +5,7 @@
 **Status**: Sections 1-5 refined with discussion insights; Sections 6-10 pending review
 **Created**: 2026-01-09
 **Last Updated**: 2026-01-10
-**Related**: [triage-ux-redesign-brief.md](./triage-ux-redesign-brief.md)
+**Related**: [triage-ux-redesign-brief.md](260109-triage-ux-redesign-brief.md)
 
 ### Revision History
 - **2026-01-10**: Added refinements from detailed review session (Stages 1-5):
