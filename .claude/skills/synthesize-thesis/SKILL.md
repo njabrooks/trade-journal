@@ -66,6 +66,80 @@ set +a
 
 Get the thesis with all linked claims AND other theses in the hierarchy (for dependency discovery).
 
+**For Macro Thesis:**
+
+```sql
+-- Get macro thesis with linked claims and child asset theses
+SELECT
+  mt.id,
+  mt.title,
+  mt.description,
+  mt.confidence_level,
+  mt.status,
+  mt.time_horizon,
+  mt.thesis_type,
+  mt.direction
+FROM macro_theses mt
+WHERE mt.id = '[THESIS_ID]'
+   OR LOWER(mt.title) LIKE '%[SEARCH_TERM]%';
+```
+
+Then get linked claims:
+
+```sql
+SELECT
+  mc.id,
+  mc.title as claim_title,
+  mc.claim,
+  mc.evidence,
+  mc.reasoning,
+  mc.backing,
+  mc.qualifier,
+  mc.rebuttal,
+  mc.category,
+  mc.time_horizon,
+  mc.relevant_tickers,
+  ctm.mapping_type,
+  ctm.confidence as mapping_confidence
+FROM claim_thesis_mappings ctm
+INNER JOIN main_claims mc ON ctm.main_claim_id = mc.id
+WHERE ctm.macro_thesis_id = '[MACRO_THESIS_ID]'
+ORDER BY
+  CASE ctm.mapping_type
+    WHEN 'foundation' THEN 1
+    WHEN 'supports' THEN 2
+    WHEN 'refutes' THEN 3
+  END,
+  mc.created_at DESC;
+```
+
+Then get child asset theses:
+
+```sql
+SELECT DISTINCT
+  at.id,
+  at.title,
+  at.description,
+  at.confidence_level,
+  at.status,
+  u.ticker
+FROM asset_thesis_related_macro_theses atrm
+JOIN asset_theses at ON atrm.asset_thesis_id = at.id
+LEFT JOIN underlyings u ON at.underlying_id = u.id
+WHERE atrm.macro_thesis_id = '[MACRO_THESIS_ID]';
+```
+
+And check for prior articulation:
+
+```sql
+SELECT ta.*
+FROM thesis_articulations ta
+WHERE ta.thesis_id = '[MACRO_THESIS_ID]'
+  AND ta.thesis_type = 'macro'
+ORDER BY ta.version DESC
+LIMIT 1;
+```
+
 **For Asset Thesis:**
 
 ```sql
@@ -686,144 +760,109 @@ When creating V&I points, ask the user:
 
 ### Step 7: Store Articulation and Validation Points
 
-Once user approves, store to database.
+Once user approves, store to database using the **permanent reusable script**.
 
-**IMPORTANT: Use TypeScript Script for Complex Insertions**
+**IMPORTANT: Use the Permanent Script**
 
-Due to shell escaping issues with complex JSONB data containing quotes, parentheses, and special characters, **always use a temporary TypeScript script** for insertions rather than raw SQL via psql.
+A permanent script exists at `scripts/insert-thesis-articulation.ts` that handles:
+- Articulation insertion with auto-incrementing version
+- Validation points insertion
+- **Triage resolution via `onArticulationCreated()`** (cannot be forgotten!)
+- Proper database cleanup
 
-**Create a temporary script** (e.g., `scripts/insert-thesis-articulation-temp.ts`):
+**Step 7.1: Create JSON Input File**
 
-```typescript
-import { db, closeDb, schema } from './lib/db.js';
-import { onArticulationCreated } from '../src/lib/derived/thesisTriage.js';
+Create a JSON file with the articulation data (e.g., `articulation-data.json`):
 
-const { thesisArticulations, validationPoints } = schema;
-
-async function main() {
-  const thesisId = '[THESIS_ID]';
-  const thesisType = 'asset' as const; // or 'macro' as const
-
-  // Insert articulation
-  const [articulation] = await db.insert(thesisArticulations).values({
-    thesisId,
-    thesisType,
-    version: 1, // Will auto-increment if using proper version logic
-    coreArgument: `[CORE_ARGUMENT_TEXT]`,
-
-    // IMPORTANT: keyDrivers must be array of objects with 'driver' and 'detail' keys
-    keyDrivers: [
+```json
+{
+  "thesisId": "[THESIS_UUID]",
+  "thesisType": "macro",
+  "articulation": {
+    "coreArgument": "The core thesis statement...",
+    "keyDrivers": [
       {
-        driver: "Driver title here",
-        detail: "Detailed explanation of the driver",
-        supporting_claims: ["claim-uuid-1", "claim-uuid-2"]
-      },
-      // ... more drivers
-    ],
-
-    // IMPORTANT: keyAssumptions must be array of objects with 'assumption' and 'detail' keys
-    keyAssumptions: [
-      {
-        assumption: "Assumption title here",
-        detail: "Detailed explanation of the assumption"
-      },
-      // ... more assumptions
-    ],
-
-    // timeframe is an object
-    timeframe: {
-      horizon: "medium_term", // immediate | short_term | medium_term | long_term | secular
-      expectedResolution: "Q4 2026 - Q2 2027",
-      keyMilestones: [
-        "May 2025: Nasdaq uplisting (COMPLETED)",
-        "H1 2026: First phase online"
-      ]
-    },
-
-    confidenceLevel: 'high', // low | medium | high | very_high
-    confidenceRationale: `[RATIONALE_TEXT]`,
-    evidenceGaps: ["Gap 1", "Gap 2"],
-    claimIdsUsed: ["uuid-1", "uuid-2"], // Array of claim UUIDs
-    generatedBy: 'claude',
-    userEdits: '[USER_EDIT_NOTES]',
-
-    // IMPORTANT: referencedTheses uses 'title' not 'thesisTitle'
-    referencedTheses: [
-      {
-        thesisId: "uuid-of-referenced-thesis",
-        thesisType: "macro", // or 'asset'
-        title: "Referenced Thesis Title", // Use 'title' not 'thesisTitle'
-        relationship: "depends_on", // depends_on | supports | contradicts
-        notes: "Explanation of the dependency"
+        "driver": "Driver title",
+        "detail": "Explanation",
+        "supporting_claims": ["claim-uuid-1"]
       }
-    ]
-  }).returning();
-
-  console.log('✅ Articulation created:', articulation.id);
-
-  // Notify triage system about the new articulation
-  // This updates claims_count_at_last_articulation and resolves pending triage records
-  await onArticulationCreated(thesisId, thesisType);
-  console.log('✅ Triage system notified');
-
-  // Insert validation points
-  const points = await db.insert(validationPoints).values([
-    {
-      thesisId,
-      thesisType,
-      articulationId: articulation.id,
-      type: 'validation', // or 'invalidation'
-      statement: '[STATEMENT]',
-      rationale: '[RATIONALE]',
-      category: 'explicit', // or 'judgment_required'
-      importance: 'critical', // critical | significant | supporting
-      timeframe: 'medium_term', // immediate | medium_term | secular
-      explicitDetails: {
-        metric: 'Metric name',
-        threshold: 'Threshold description',
-        dataSources: ['Source 1', 'Source 2'],
-        monitoringFrequency: 'quarterly' // daily | weekly | monthly | quarterly | on_demand
-      },
-      // OR for judgment_required:
-      // judgmentDetails: {
-      //   observableProxies: ['Proxy 1', 'Proxy 2'],
-      //   judgmentCriteria: 'How to judge',
-      //   reviewFrequency: 'monthly'
-      // },
-      responseProtocol: {
-        description: 'What to do when triggered',
-        escalation: 'review_thesis' // review_thesis | reduce_exposure | exit | increase_exposure
-      },
-      // For dependent thesis points:
-      // dependentThesisId: 'uuid',
-      // dependentThesisType: 'macro',
-      // dependentThesisCondition: 'invalidated',
-      linkedClaimIds: ['claim-uuid-1'],
-      status: 'not_triggered' // or 'triggered' if already validated
+    ],
+    "keyAssumptions": [
+      {
+        "assumption": "Assumption title",
+        "detail": "Explanation"
+      }
+    ],
+    "timeframe": {
+      "horizon": "long_term",
+      "expectedResolution": "2027-2030",
+      "keyMilestones": ["Q2 2025: Milestone 1"]
     },
-    // ... more validation points
-  ]).returning();
-
-  console.log(`✅ Inserted ${points.length} validation points`);
-
-  await closeDb();
-  process.exit(0);
+    "confidenceLevel": "high",
+    "confidenceRationale": "Rationale for confidence level...",
+    "evidenceGaps": ["Gap 1", "Gap 2"],
+    "claimIdsUsed": ["claim-uuid-1", "claim-uuid-2"],
+    "referencedTheses": []
+  },
+  "validationPoints": [
+    {
+      "type": "validation",
+      "statement": "What would prove the thesis right",
+      "rationale": "Why this matters",
+      "category": "explicit",
+      "importance": "critical",
+      "timeframe": "medium_term",
+      "explicitDetails": {
+        "metric": "Metric name",
+        "threshold": "Threshold description",
+        "dataSources": ["Source 1"],
+        "monitoringFrequency": "quarterly"
+      },
+      "responseProtocol": {
+        "description": "What to do when triggered",
+        "escalation": "review_thesis"
+      },
+      "linkedClaimIds": ["claim-uuid-1"]
+    },
+    {
+      "type": "invalidation",
+      "statement": "What would prove the thesis wrong",
+      "rationale": "Why this matters",
+      "category": "judgment_required",
+      "importance": "critical",
+      "timeframe": "medium_term",
+      "judgmentDetails": {
+        "observableProxies": ["Proxy 1", "Proxy 2"],
+        "judgmentCriteria": "How to judge",
+        "reviewFrequency": "quarterly"
+      },
+      "responseProtocol": {
+        "description": "What to do when triggered",
+        "escalation": "exit"
+      },
+      "linkedClaimIds": []
+    }
+  ]
 }
-
-main().catch((e) => {
-  console.error('Error:', e);
-  process.exit(1);
-});
 ```
 
-**Execute the script:**
+**Step 7.2: Execute the Permanent Script**
+
 ```bash
-DOTENV_CONFIG_PATH=.env.local npx tsx scripts/insert-thesis-articulation-temp.ts
+npx tsx scripts/insert-thesis-articulation.ts --input articulation-data.json
 ```
 
-**Clean up after successful insertion:**
+The script will:
+1. Auto-determine the next version number
+2. Insert the articulation
+3. Insert all validation points
+4. **Call `onArticulationCreated()` to resolve triage records** ← This is automatic!
+5. Output confirmation with IDs
+
+**Step 7.3: Clean Up**
+
 ```bash
-rm scripts/insert-thesis-articulation-temp.ts
+rm articulation-data.json
 ```
 
 ---
@@ -846,285 +885,23 @@ rm scripts/insert-thesis-articulation-temp.ts
 **Common Mistakes to Avoid:**
 1. ❌ Using `thesisTitle` instead of `title` in referencedTheses
 2. ❌ Using plain strings for keyDrivers/keyAssumptions (must be objects)
-3. ❌ Using raw SQL with complex escaping (use TypeScript script instead)
-4. ❌ Forgetting to close the database connection (`await closeDb()`)
+3. ❌ Writing a temp script instead of using `scripts/insert-thesis-articulation.ts`
+4. ❌ Invalid JSON syntax (trailing commas, unquoted keys)
+5. ❌ Using `short_term` for validation point timeframe (valid values: `immediate`, `medium_term`, `secular`)
+6. ❌ Referencing `mt.narrative` for macro theses (column doesn't exist; use `mt.description` instead)
 
 ---
 
-### Step 7.5: Auto-Create Monitoring Config for Explicit V&I Points
+### Step 7.5: Auto-Trigger Monitoring (Optional)
 
-For explicit V&I points with auto-trigger supported sources (from Step 6.5), automatically create or update the `thesis_monitoring_configs` entry.
+If any validation points have FRED or price_iv data sources configured in `explicitDetails.dataSource`, you can optionally set up auto-triggering.
 
-**Add to the TypeScript script after validation points insertion:**
+**This is a future enhancement.** Currently, monitoring configs must be created manually or via the daily monitoring script. The validation points are stored with the data source information; a future version of `insert-thesis-articulation.ts` will auto-create monitoring configs.
 
-```typescript
-// Step 7.5: Auto-create monitoring config for explicit V&I points with auto-trigger sources
-const { thesisMonitoringConfigs, underlyings } = schema;
-
-// Collect explicit thresholds from inserted validation points
-const explicitThresholds = points
-  .filter(p => p.category === 'explicit' && p.explicitDetails)
-  .map(p => {
-    const details = p.explicitDetails as {
-      metric: string;
-      threshold: string;
-      dataSources: string[];
-      dataSource?: string;  // Auto-trigger source: 'fred' | 'price_iv'
-      operator?: string;
-      value?: number;
-    };
-
-    // Only include if dataSource is auto-trigger supported
-    if (!details.dataSource || !['fred', 'price_iv'].includes(details.dataSource)) {
-      return null;
-    }
-
-    return {
-      validationPointId: p.id,
-      source: details.dataSource as 'fred' | 'price_iv',
-      metric: details.metric,
-      operator: (details.operator || '>') as '>' | '<' | '>=' | '<=' | '==',
-      value: details.value || 0,
-      description: `${details.metric} ${details.operator || '>'} ${details.value}`,
-    };
-  })
-  .filter(Boolean);
-
-if (explicitThresholds.length > 0) {
-  // Check if monitoring config already exists for this thesis
-  const [existingConfig] = await db
-    .select()
-    .from(thesisMonitoringConfigs)
-    .where(
-      sql`${thesisMonitoringConfigs.thesisId} = ${thesisId}
-          AND ${thesisMonitoringConfigs.thesisType} = ${thesisType}`
-    )
-    .limit(1);
-
-  // Determine sources to enable
-  const hasFred = explicitThresholds.some(t => t?.source === 'fred');
-  const hasPriceIv = explicitThresholds.some(t => t?.source === 'price_iv');
-
-  // Get ticker for asset theses
-  let ticker: string | null = null;
-  if (thesisType === 'asset') {
-    const [thesis] = await db
-      .select({ ticker: underlyings.ticker })
-      .from(schema.assetTheses)
-      .leftJoin(underlyings, eq(schema.assetTheses.underlyingId, underlyings.id))
-      .where(eq(schema.assetTheses.id, thesisId))
-      .limit(1);
-    ticker = thesis?.ticker || null;
-  }
-
-  if (existingConfig) {
-    // Update existing config
-    const existingSources = existingConfig.sources as {
-      fred?: { enabled: boolean; series: string[] };
-      priceIv?: { enabled: boolean };
-      news?: { enabled: boolean; providers: string[] };
-      secFilings?: { enabled: boolean; filingTypes: string[] };
-    };
-
-    // Merge new thresholds with existing
-    const existingThresholds = existingConfig.explicitThresholds as Array<{
-      validationPointId: string;
-      source: string;
-      metric: string;
-      operator: string;
-      value: number;
-      description: string;
-    }>;
-
-    // Filter out any thresholds for the same validation points (replace with new)
-    const newPointIds = new Set(explicitThresholds.map(t => t?.validationPointId));
-    const filteredExisting = existingThresholds.filter(t => !newPointIds.has(t.validationPointId));
-    const mergedThresholds = [...filteredExisting, ...explicitThresholds];
-
-    // Get FRED series from new thresholds
-    const newFredSeries = explicitThresholds
-      .filter(t => t?.source === 'fred')
-      .map(t => t?.metric);
-    const existingFredSeries = existingSources.fred?.series || [];
-    const mergedFredSeries = [...new Set([...existingFredSeries, ...newFredSeries])];
-
-    await db
-      .update(thesisMonitoringConfigs)
-      .set({
-        sources: {
-          ...existingSources,
-          fred: { enabled: hasFred || existingSources.fred?.enabled, series: mergedFredSeries },
-          priceIv: { enabled: hasPriceIv || existingSources.priceIv?.enabled },
-        },
-        explicitThresholds: mergedThresholds,
-        updatedAt: new Date(),
-      })
-      .where(eq(thesisMonitoringConfigs.id, existingConfig.id));
-
-    console.log(`✅ Updated monitoring config with ${explicitThresholds.length} auto-trigger thresholds`);
-  } else {
-    // Create new monitoring config
-    const fredSeries = explicitThresholds
-      .filter(t => t?.source === 'fred')
-      .map(t => t?.metric);
-
-    await db.insert(thesisMonitoringConfigs).values({
-      thesisId,
-      thesisType,
-      ticker,
-      sources: {
-        fred: { enabled: hasFred, series: fredSeries },
-        priceIv: { enabled: hasPriceIv },
-        news: { enabled: false, providers: [] },
-        secFilings: { enabled: false, filingTypes: [] },
-      },
-      explicitThresholds,
-      frequency: 'daily',
-      enabled: true,
-    });
-
-    console.log(`✅ Created monitoring config with ${explicitThresholds.length} auto-trigger thresholds`);
-  }
-}
-```
-
-**Updated explicitDetails Structure:**
-
-When creating validation points with auto-trigger supported sources, include the `dataSource`, `operator`, and `value` fields:
-
-```typescript
-explicitDetails: {
-  metric: 'ICSA',                    // The specific metric/series
-  threshold: 'ICSA > 250,000',       // Human-readable description
-  dataSources: ['FRED'],             // General data source list (for display)
-  dataSource: 'fred',                // Auto-trigger source: 'fred' | 'price_iv'
-  operator: '>',                     // Comparison operator
-  value: 250000,                     // Numeric threshold value
-  monitoringFrequency: 'daily'
-}
-```
-
-**For price_iv metrics:**
-
-```typescript
-explicitDetails: {
-  metric: 'spot',                    // 'spot' or 'iv30'
-  threshold: 'Spot price < $50',
-  dataSources: ['Massive.com'],
-  dataSource: 'price_iv',
-  operator: '<',
-  value: 50,
-  monitoringFrequency: 'daily'
-}
-```
-
----
-
-### Step 7.6: Create FRED Indicator Linkages
-
-For FRED-based V&I points, also create entries in `thesis_fred_indicators` for richer historical analysis and enhanced threshold support.
-
-**Add to the TypeScript script after monitoring config creation:**
-
-```typescript
-// Step 7.6: Create thesis_fred_indicators entries for FRED-based V&I points
-const { thesisFredIndicators } = schema;
-
-// Get all FRED-based explicit thresholds
-const fredIndicators = points
-  .filter(p => p.category === 'explicit' && p.explicitDetails)
-  .map(p => {
-    const details = p.explicitDetails as {
-      metric: string;
-      threshold: string;
-      dataSource?: string;
-      operator?: string;
-      value?: number;
-    };
-
-    if (details.dataSource !== 'fred') return null;
-
-    return {
-      thesisId,
-      thesisType,
-      seriesId: details.metric,                    // FRED series ID (e.g., 'DGS10')
-      priority: 1,                                  // Explicit V&I points are high priority
-      relevanceNotes: details.threshold,           // Human-readable description
-      thresholdOperator: details.operator || '>',
-      thresholdValue: details.value?.toString(),
-      linkedValidationPointId: p.id,
-      linkedValidationPointType: thesisType,
-      autoUpdateViStatus: true,                    // Auto-update V&I status on breach
-      breachSeverity: p.importance === 'critical' ? 'critical' : 'medium',
-      breachMessageTemplate: `${details.metric} has ${details.operator} ${details.value}: V&I point "${p.statement}" triggered`,
-      enabled: true,
-    };
-  })
-  .filter(Boolean);
-
-if (fredIndicators.length > 0) {
-  // Insert with ON CONFLICT update (in case series already linked)
-  for (const indicator of fredIndicators) {
-    await db
-      .insert(thesisFredIndicators)
-      .values(indicator)
-      .onConflictDoUpdate({
-        target: [
-          thesisFredIndicators.thesisId,
-          thesisFredIndicators.thesisType,
-          thesisFredIndicators.seriesId
-        ],
-        set: {
-          priority: indicator.priority,
-          thresholdOperator: indicator.thresholdOperator,
-          thresholdValue: indicator.thresholdValue,
-          linkedValidationPointId: indicator.linkedValidationPointId,
-          autoUpdateViStatus: indicator.autoUpdateViStatus,
-          updatedAt: new Date(),
-        },
-      });
-  }
-
-  console.log(`✅ Created/updated ${fredIndicators.length} FRED indicator linkages`);
-}
-```
-
-**For enhanced thresholds (trend, velocity, composite):**
-
-```typescript
-// Trend-based threshold (e.g., "DGS10 up 50bps in 20 days")
-{
-  thesisId,
-  thesisType,
-  seriesId: 'DGS10',
-  priority: 2,
-  relevanceNotes: '10Y yield trend signals rate pressure',
-  trendPeriodDays: 20,
-  trendChangeThreshold: '0.5',  // 50bps
-  linkedValidationPointId: p.id,
-  autoUpdateViStatus: true,
-  enabled: true,
-}
-
-// Composite threshold (e.g., "Both 10Y-2Y and 10Y-3M spreads inverted")
-{
-  thesisId,
-  thesisType,
-  seriesId: 'T10Y2Y',  // Primary series
-  priority: 1,
-  relevanceNotes: 'Yield curve inversion signals recession',
-  compositeConfig: {
-    conditions: [
-      { seriesId: 'T10Y2Y', operator: '<', value: 0 },
-      { seriesId: 'T10Y3M', operator: '<', value: 0 }
-    ],
-    logic: 'AND'
-  },
-  linkedValidationPointId: p.id,
-  autoUpdateViStatus: true,
-  enabled: true,
-}
-```
+For now, if you want auto-triggered V&I points:
+1. Include `dataSource: 'fred'` or `dataSource: 'price_iv'` in `explicitDetails`
+2. Include `operator` and `value` for the threshold
+3. Manually create monitoring config via SQL or the triage UI
 
 ---
 
