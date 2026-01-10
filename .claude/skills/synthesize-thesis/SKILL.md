@@ -627,19 +627,53 @@ For each **explicit** validation/invalidation point, validate whether the data s
      ```
    - Still create the V&I point, but without auto-trigger linkage
 
-#### Supported FRED Series (Quick Reference)
+#### FRED Data Context
+
+Before suggesting FRED-based V&I points, load available FRED series from the database:
+
+```sql
+-- Get all available FRED series with metadata
+SELECT series_id, title, frequency, units, category, observation_end
+FROM fred_series_metadata
+ORDER BY category, series_id;
+```
+
+**Full FRED Indicators Reference:** See `docs/reference/fred-indicators-by-thesis.md` for:
+- Complete mapping of 100+ FRED series to all 22 active macro theses
+- Priority-ranked suggestions (top 5 per thesis)
+- Cross-cutting indicators that apply to multiple thesis themes
+- Category groupings (interest_rates, inflation, labor, credit, liquidity, currency, housing, fiscal, sentiment)
+
+#### Common FRED Series by Category
 
 | Category | Series | Description |
 |----------|--------|-------------|
-| Fed Funds | `FEDFUNDS` | Federal Funds Effective Rate |
-| Yields | `DGS10`, `DGS2`, `DGS30` | Treasury yields |
-| Yield Curve | `T10Y2Y`, `T10Y3M` | Yield spreads |
-| Labor | `ICSA`, `UNRATE`, `PAYEMS` | Jobless claims, unemployment, payrolls |
-| Inflation | `CPIAUCSL`, `PCEPILFE` | CPI, Core PCE |
-| Credit | `BAMLH0A0HYM2` | HY credit spreads |
-| GDP | `GDP` | Gross Domestic Product |
+| Interest Rates | `DGS2`, `DGS10`, `DGS30`, `FEDFUNDS`, `DFEDTARU` | Treasury yields, fed funds |
+| Yield Curve | `T10Y2Y`, `T10Y3M` | Yield spreads (recession predictors) |
+| Inflation | `CPIAUCSL`, `CPILFESL`, `PCEPILFE` | CPI, Core CPI, Core PCE |
+| Breakeven | `T5YIE`, `T10YIE` | Inflation expectations |
+| Labor | `ICSA`, `UNRATE`, `PAYEMS` | Claims, unemployment, payrolls |
+| Credit | `BAMLH0A0HYM2`, `TEDRATE` | HY spreads, TED spread |
+| Liquidity | `WALCL`, `RRPONTSYD`, `M2SL` | Fed balance sheet, RRP, M2 |
+| Currency | `DTWEXBGS` | Trade-weighted dollar |
+| Output | `GDPC1`, `INDPRO` | Real GDP, Industrial Production |
 
-For full series list, run: `python scripts/openbb/fetch_macro_indicators.py --list-series`
+#### Enhanced Threshold Types
+
+Beyond simple level triggers, you can configure advanced thresholds in `thesis_fred_indicators`:
+
+| Type | Example | Use When |
+|------|---------|----------|
+| **Simple** | DGS10 > 5.0% | Absolute level matters (e.g., "rates above 5%") |
+| **Trend** | DGS10 up 50bps in 20 days | Direction matters (e.g., "yields rising fast") |
+| **Percent Trend** | DGS10 up 10% in 5 days | Relative change matters |
+| **Velocity** | Rate of change accelerating | Second derivative matters |
+| **Composite** | T10Y2Y < 0 AND T10Y3M < 0 | Multiple conditions must align |
+
+When creating V&I points, ask the user:
+- "What level/change would validate this?" → Choose threshold type
+- "Is it the absolute level or the direction that matters?" → Simple vs Trend
+- "Do multiple indicators need to align?" → Consider Composite
 
 #### Price/IV Metrics (Massive.com)
 
@@ -981,6 +1015,114 @@ explicitDetails: {
   operator: '<',
   value: 50,
   monitoringFrequency: 'daily'
+}
+```
+
+---
+
+### Step 7.6: Create FRED Indicator Linkages
+
+For FRED-based V&I points, also create entries in `thesis_fred_indicators` for richer historical analysis and enhanced threshold support.
+
+**Add to the TypeScript script after monitoring config creation:**
+
+```typescript
+// Step 7.6: Create thesis_fred_indicators entries for FRED-based V&I points
+const { thesisFredIndicators } = schema;
+
+// Get all FRED-based explicit thresholds
+const fredIndicators = points
+  .filter(p => p.category === 'explicit' && p.explicitDetails)
+  .map(p => {
+    const details = p.explicitDetails as {
+      metric: string;
+      threshold: string;
+      dataSource?: string;
+      operator?: string;
+      value?: number;
+    };
+
+    if (details.dataSource !== 'fred') return null;
+
+    return {
+      thesisId,
+      thesisType,
+      seriesId: details.metric,                    // FRED series ID (e.g., 'DGS10')
+      priority: 1,                                  // Explicit V&I points are high priority
+      relevanceNotes: details.threshold,           // Human-readable description
+      thresholdOperator: details.operator || '>',
+      thresholdValue: details.value?.toString(),
+      linkedValidationPointId: p.id,
+      linkedValidationPointType: thesisType,
+      autoUpdateViStatus: true,                    // Auto-update V&I status on breach
+      breachSeverity: p.importance === 'critical' ? 'critical' : 'medium',
+      breachMessageTemplate: `${details.metric} has ${details.operator} ${details.value}: V&I point "${p.statement}" triggered`,
+      enabled: true,
+    };
+  })
+  .filter(Boolean);
+
+if (fredIndicators.length > 0) {
+  // Insert with ON CONFLICT update (in case series already linked)
+  for (const indicator of fredIndicators) {
+    await db
+      .insert(thesisFredIndicators)
+      .values(indicator)
+      .onConflictDoUpdate({
+        target: [
+          thesisFredIndicators.thesisId,
+          thesisFredIndicators.thesisType,
+          thesisFredIndicators.seriesId
+        ],
+        set: {
+          priority: indicator.priority,
+          thresholdOperator: indicator.thresholdOperator,
+          thresholdValue: indicator.thresholdValue,
+          linkedValidationPointId: indicator.linkedValidationPointId,
+          autoUpdateViStatus: indicator.autoUpdateViStatus,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  console.log(`✅ Created/updated ${fredIndicators.length} FRED indicator linkages`);
+}
+```
+
+**For enhanced thresholds (trend, velocity, composite):**
+
+```typescript
+// Trend-based threshold (e.g., "DGS10 up 50bps in 20 days")
+{
+  thesisId,
+  thesisType,
+  seriesId: 'DGS10',
+  priority: 2,
+  relevanceNotes: '10Y yield trend signals rate pressure',
+  trendPeriodDays: 20,
+  trendChangeThreshold: '0.5',  // 50bps
+  linkedValidationPointId: p.id,
+  autoUpdateViStatus: true,
+  enabled: true,
+}
+
+// Composite threshold (e.g., "Both 10Y-2Y and 10Y-3M spreads inverted")
+{
+  thesisId,
+  thesisType,
+  seriesId: 'T10Y2Y',  // Primary series
+  priority: 1,
+  relevanceNotes: 'Yield curve inversion signals recession',
+  compositeConfig: {
+    conditions: [
+      { seriesId: 'T10Y2Y', operator: '<', value: 0 },
+      { seriesId: 'T10Y3M', operator: '<', value: 0 }
+    ],
+    logic: 'AND'
+  },
+  linkedValidationPointId: p.id,
+  autoUpdateViStatus: true,
+  enabled: true,
 }
 ```
 

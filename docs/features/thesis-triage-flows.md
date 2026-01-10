@@ -339,6 +339,10 @@ These are UI/UX enhancements (Phase 3+):
 | `blotter_actions` | Trade-level aggregations (strategy/position triage also writes here) |
 | `thesis_articulations` | Triggers resolution of synthesis triage |
 | `claim_thesis_mappings` | Triggers lifecycle triage on claim linking |
+| `fred_series_metadata` | Reference data for FRED series (title, frequency, units, category) |
+| `fred_observations` | Historical FRED time-series data with computed changes |
+| `thesis_fred_indicators` | Links theses to FRED indicators with threshold configs |
+| `fred_threshold_breaches` | Audit trail of FRED threshold breaches |
 
 ---
 
@@ -576,7 +580,61 @@ When adding a new data source (e.g., Glassnode):
 
 ---
 
-#### Phase 5: Future Data Source Expansion
+#### Phase 5: FRED Historical Data & Enhanced Thresholds
+
+**5.1 FRED Historical Data Storage** ✅ (2026-01-10)
+- [x] Create `fred_series_metadata` table for series reference data
+  - Stores title, frequency, units, category, observation range
+  - Auto-populated on first fetch, periodically updated
+- [x] Create `fred_observations` table for historical time-series
+  - Unique on (series_id, observation_date)
+  - Computed change fields: 1d, 5d, 20d (absolute and percent)
+  - Supports trend-based threshold calculations
+- [x] Create `fred_threshold_breaches` audit table
+  - Full audit trail of all threshold breaches
+  - Snapshots threshold config at breach time
+  - Links to triage records and V&I point changes
+
+**5.2 Thesis-FRED Indicator Linkage** ✅ (2026-01-10)
+- [x] Create `thesis_fred_indicators` table
+  - Links theses to relevant FRED indicators with priority (1-5)
+  - Stores relevance notes for context
+  - Unique on (thesis_id, thesis_type, series_id)
+- [x] Support multiple threshold types:
+  - **Simple**: `operator` + `value` (existing pattern)
+  - **Trend**: `trend_period_days` + `trend_change_threshold`
+  - **Velocity**: `velocity_threshold`, `acceleration_threshold`
+  - **Composite**: Multi-series conditions with AND/OR logic
+- [x] Track breach state: `last_breach_at`, `consecutive_breach_days`
+- [x] Link to V&I points: `linked_validation_point_id`, `auto_update_vi_status`
+
+**5.3 Enhanced Threshold Logic**
+
+New threshold types beyond simple comparisons:
+
+| Type | Example | Configuration |
+|------|---------|---------------|
+| **Simple** | DGS10 > 5.0% | `operator: '>'`, `value: 5.0` |
+| **Trend** | DGS10 up 50bps in 20 days | `trend_period_days: 20`, `trend_change_threshold: 0.5` |
+| **Percent Trend** | DGS10 up 10% in 5 days | `trend_period_days: 5`, `trend_pct_change_threshold: 10` |
+| **Velocity** | Rate of change accelerating | `velocity_threshold: 0.05` |
+| **Composite** | T10Y2Y < 0 AND T10Y3M < 0 | `composite_config: { conditions: [...], logic: 'AND' }` |
+
+**5.4 Auto-Discovery in Synthesize-Thesis** 🔜 IN PROGRESS
+- [ ] Skill queries `fred_series_metadata` for available series
+- [ ] When user defines V&I point with economic indicator, suggest matching FRED series
+- [ ] Auto-populate `thesis_fred_indicators` based on thesis theme
+- [ ] Reference: `docs/reference/fred-indicators-by-thesis.md`
+
+**5.5 FRED Ingestion Script** 🔜 PENDING
+- [ ] Create `scripts/ingest-fred-historical.ts`
+- [ ] Backfill historical data for all configured series
+- [ ] Compute change fields on insert
+- [ ] Add to launchd schedule (weekly backfill, daily updates)
+
+---
+
+#### Phase 6: Future Data Source Expansion
 
 **Potential additions (as thesis needs dictate):**
 - [ ] Glassnode (Bitcoin on-chain metrics)
@@ -618,13 +676,16 @@ Each new source follows pattern:
 3. ~~**Phase 3.3**: V&I status update UI~~ ✅ - UpdateVIStatusDialog with pre-populated recommendations from triage
 4. ~~**Phase 3.4**: Triage resolution flow~~ ✅ - Confirm Read / Update V&I / Dismiss all functional
 
-#### Up Next: Phase 4 (Manual Content Assessment)
+#### Up Next: Phase 5.4/5.5 (FRED Integration Completion)
+
+1. **Phase 5.4**: Update `synthesize-thesis` skill for FRED auto-discovery
+2. **Phase 5.5**: Implement FRED historical data ingestion script
 
 #### Deferred
 
 - **Phase 2.5**: Adding new data sources (Glassnode, etc.) - add as thesis needs dictate
 - **Phase 4**: Manual content assessment via `/assess-validation-evidence` skill
-- **Phase 5**: Future data source expansion
+- **Phase 6**: Future data source expansion
 
 ---
 

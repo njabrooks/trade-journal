@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trade-journal.fred-ingestion</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>cd /Users/njb/Projects/trade-journal && source .env.local && /opt/homebrew/bin/npx tsx scripts/ingest-fred-historical.ts >> logs/fred-ingestion.log 2>&1</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/njb/Projects/trade-journal</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <!-- Run at 06:00 UTC daily (before market open) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>6</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/njb/Projects/trade-journal/logs/fred-ingestion.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/njb/Projects/trade-journal/logs/fred-ingestion.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>Nice</key>
+    <integer>10</integer>
+</dict>
+</plist>

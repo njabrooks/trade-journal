@@ -1755,6 +1755,198 @@ export type ThesisNewsItem = typeof thesisNewsItems.$inferSelect;
 export type NewThesisNewsItem = typeof thesisNewsItems.$inferInsert;
 
 // ============================================================================
+// FRED Series Metadata (Reference Table)
+// Stores metadata about FRED series for display and validation
+// ============================================================================
+
+export const fredSeriesMetadata = pgTable('fred_series_metadata', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  seriesId: text('series_id').notNull().unique(),    // FRED series ID (e.g., 'DGS10', 'UNRATE')
+  title: text('title').notNull(),                     // Full series title from FRED
+  frequency: text('frequency'),                       // 'daily' | 'weekly' | 'monthly' | 'quarterly'
+  units: text('units'),                               // 'percent', 'billions_of_dollars', etc.
+  seasonalAdjustment: text('seasonal_adjustment'),    // 'sa' | 'nsa' | 'saar'
+  lastUpdated: timestamp('last_updated', { withTimezone: true }),
+  observationStart: date('observation_start'),        // Earliest available observation
+  observationEnd: date('observation_end'),            // Latest available observation
+  notes: text('notes'),                               // FRED series notes/description
+  category: text('category'),                         // 'interest_rates' | 'inflation' | 'labor' | etc.
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type FredSeriesMetadata = typeof fredSeriesMetadata.$inferSelect;
+export type NewFredSeriesMetadata = typeof fredSeriesMetadata.$inferInsert;
+
+// ============================================================================
+// FRED Observations (Historical Data)
+// Stores historical time-series data from FRED API
+// ============================================================================
+
+export const fredObservations = pgTable(
+  'fred_observations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    seriesId: text('series_id').notNull(),            // FRED series ID (e.g., 'DGS10')
+    observationDate: date('observation_date').notNull(),
+    value: numeric('value'),                          // NULL for missing data marked as '.'
+
+    // Computed fields for threshold logic
+    value1dChange: numeric('value_1d_change'),        // 1-day change
+    value1dPctChange: numeric('value_1d_pct_change'), // 1-day percent change
+    value5dChange: numeric('value_5d_change'),        // 5-day change
+    value20dChange: numeric('value_20d_change'),      // 20-day change
+
+    // Data quality
+    isPreliminary: boolean('is_preliminary').default(false),
+
+    // Fetch metadata
+    fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueSeriesDate: unique().on(table.seriesId, table.observationDate),
+    seriesIdx: index('idx_fred_obs_series').on(table.seriesId),
+    dateIdx: index('idx_fred_obs_date').on(table.observationDate),
+  })
+);
+
+export type FredObservation = typeof fredObservations.$inferSelect;
+export type NewFredObservation = typeof fredObservations.$inferInsert;
+
+// ============================================================================
+// Thesis FRED Indicators (Linkage Table)
+// Links theses to relevant FRED indicators with threshold configurations
+// ============================================================================
+
+export const thesisFredIndicators = pgTable(
+  'thesis_fred_indicators',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    // Thesis linkage (polymorphic)
+    thesisId: uuid('thesis_id').notNull(),
+    thesisType: text('thesis_type').notNull(),        // 'macro' | 'asset'
+
+    // FRED series linkage
+    seriesId: text('series_id').notNull(),
+
+    // Indicator configuration
+    priority: integer('priority').notNull().default(5),  // 1-5, lower = more important
+    relevanceNotes: text('relevance_notes'),
+
+    // Simple threshold config
+    thresholdOperator: text('threshold_operator'),    // '>' | '>=' | '<' | '<=' | '=' | 'between' | 'outside'
+    thresholdValue: numeric('threshold_value'),
+    thresholdValueUpper: numeric('threshold_value_upper'),
+
+    // Enhanced threshold: Trend-based
+    trendPeriodDays: integer('trend_period_days'),
+    trendChangeThreshold: numeric('trend_change_threshold'),
+    trendPctChangeThreshold: numeric('trend_pct_change_threshold'),
+
+    // Enhanced threshold: Velocity/acceleration
+    velocityThreshold: numeric('velocity_threshold'),
+    accelerationThreshold: numeric('acceleration_threshold'),
+
+    // Enhanced threshold: Composite (multi-series)
+    compositeConfig: jsonb('composite_config'),       // { conditions: [...], logic: 'AND|OR' }
+
+    // Threshold breach behavior
+    breachSeverity: text('breach_severity').default('medium'),
+    breachMessageTemplate: text('breach_message_template'),
+
+    // Link to validation point
+    linkedValidationPointId: uuid('linked_validation_point_id'),
+    linkedValidationPointType: text('linked_validation_point_type'),
+    autoUpdateViStatus: boolean('auto_update_vi_status').default(false),
+
+    // Status
+    enabled: boolean('enabled').notNull().default(true),
+    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+    lastBreachAt: timestamp('last_breach_at', { withTimezone: true }),
+    lastBreachValue: numeric('last_breach_value'),
+    consecutiveBreachDays: integer('consecutive_breach_days').default(0),
+
+    // Timestamps
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueThesisSeries: unique().on(table.thesisId, table.thesisType, table.seriesId),
+    thesisIdx: index('idx_thesis_fred_thesis').on(table.thesisId, table.thesisType),
+    seriesIdx: index('idx_thesis_fred_series').on(table.seriesId),
+    enabledIdx: index('idx_thesis_fred_enabled').on(table.enabled),
+  })
+);
+
+export type ThesisFredIndicator = typeof thesisFredIndicators.$inferSelect;
+export type NewThesisFredIndicator = typeof thesisFredIndicators.$inferInsert;
+
+// TypeScript interface for composite config JSONB
+export interface FredCompositeCondition {
+  seriesId: string;
+  operator: '>' | '>=' | '<' | '<=' | '=' | 'between' | 'outside';
+  value: number;
+  valueUpper?: number;
+}
+
+export interface FredCompositeConfig {
+  conditions: FredCompositeCondition[];
+  logic: 'AND' | 'OR';
+}
+
+// ============================================================================
+// FRED Threshold Breaches (Audit Trail)
+// Records all threshold breaches for audit and pattern analysis
+// ============================================================================
+
+export const fredThresholdBreaches = pgTable(
+  'fred_threshold_breaches',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    // Link to indicator config
+    indicatorId: uuid('indicator_id').notNull().references(() => thesisFredIndicators.id, { onDelete: 'cascade' }),
+
+    // Thesis context (denormalized)
+    thesisId: uuid('thesis_id').notNull(),
+    thesisType: text('thesis_type').notNull(),
+    seriesId: text('series_id').notNull(),
+
+    // Breach details
+    breachDate: date('breach_date').notNull(),
+    breachValue: numeric('breach_value').notNull(),
+    thresholdConfig: jsonb('threshold_config').notNull(),  // Snapshot at breach time
+    breachType: text('breach_type').notNull(),             // 'simple' | 'trend' | 'velocity' | 'composite'
+
+    // Impact
+    severity: text('severity').notNull(),
+    breachMessage: text('breach_message'),
+
+    // Action taken
+    autoUpdatedViStatus: boolean('auto_updated_vi_status').default(false),
+    viPointId: uuid('vi_point_id'),
+    viStatusBefore: text('vi_status_before'),
+    viStatusAfter: text('vi_status_after'),
+
+    // Linkage to triage
+    triageRecordId: uuid('triage_record_id'),
+
+    // Timestamps
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    indicatorIdx: index('idx_fred_breach_indicator').on(table.indicatorId),
+    thesisIdx: index('idx_fred_breach_thesis').on(table.thesisId, table.thesisType),
+    dateIdx: index('idx_fred_breach_date').on(table.breachDate),
+  })
+);
+
+export type FredThresholdBreach = typeof fredThresholdBreaches.$inferSelect;
+export type NewFredThresholdBreach = typeof fredThresholdBreaches.$inferInsert;
+
+// ============================================================================
 // Journal Entries (Decision Log)
 // Comprehensive audit trail of all actions across all object types
 // Renamed from blotter_entries to align with PRD terminology
