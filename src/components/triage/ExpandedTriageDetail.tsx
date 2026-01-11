@@ -16,8 +16,13 @@ import {
   TrendingDown,
   Minus,
   Target,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import type { UnifiedTriageRecord } from '@/types/triage';
 
 // Import existing triage components for position/strategy
@@ -248,12 +253,62 @@ function ThesisDetail({
   record: UnifiedTriageRecord;
   onDismiss: () => void;
 }) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionResult, setExecutionResult] = useState<{
+    success: boolean;
+    error?: string;
+    output?: string;
+  } | null>(null);
+
   const thesisRecord = record.thesisTriageRecord;
   const isMacro = record.objectType === 'macro_thesis';
 
   // Get suggested skill command
   const suggestedSkill = thesisRecord?.suggestedSkill;
+
+  // Handler for executing synthesize-thesis skill
+  async function handleRunSynthesizeThesis() {
+    setIsExecuting(true);
+    setExecutionResult(null);
+
+    const thesisTitle = thesisRecord?.thesisTitle || record.title || 'thesis';
+
+    // Use toast.promise for persistent notification that survives UI changes
+    toast.promise(
+      (async () => {
+        const res = await fetch('/api/skills/synthesize-thesis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            thesisId: record.objectId,
+            thesisType: isMacro ? 'macro' : 'asset',
+          }),
+        });
+        const data = await res.json();
+        setExecutionResult(data);
+        setIsExecuting(false);
+
+        if (!data.success) {
+          throw new Error(data.error || 'Skill execution failed');
+        }
+
+        // Refresh the triage list to show resolved record
+        setTimeout(() => {
+          router.refresh();
+        }, 1500);
+
+        return data;
+      })(),
+      {
+        loading: `Synthesizing "${thesisTitle}"... This may take several minutes.`,
+        success: `Articulation created for "${thesisTitle}"`,
+        error: (err) => `Failed: ${err.message}`,
+        duration: 10000, // Keep success/error visible for 10 seconds
+      }
+    );
+  }
 
   // Construct the thesis URL
   const thesisUrl = isMacro
@@ -627,6 +682,37 @@ function ThesisDetail({
         </div>
       )}
 
+      {/* Execution Result Feedback */}
+      {executionResult && (
+        <div className={`rounded-lg p-3 flex items-start gap-3 ${
+          executionResult.success
+            ? 'bg-emerald-50 border border-emerald-200'
+            : 'bg-rose-50 border border-rose-200'
+        }`}>
+          {executionResult.success ? (
+            <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+          )}
+          <div>
+            <p className={`text-sm font-semibold ${
+              executionResult.success ? 'text-emerald-800' : 'text-rose-800'
+            }`}>
+              {executionResult.success
+                ? 'Thesis Articulation Created'
+                : 'Execution Failed'}
+            </p>
+            <p className={`text-xs mt-1 ${
+              executionResult.success ? 'text-emerald-600' : 'text-rose-600'
+            }`}>
+              {executionResult.success
+                ? 'The articulation and validation points have been saved. Page will refresh shortly.'
+                : executionResult.error || 'An unknown error occurred.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex items-center gap-2 pt-2 border-t">
         <Link href={thesisUrl}>
@@ -635,17 +721,48 @@ function ThesisDetail({
             View {isMacro ? 'Thesis' : 'Asset Thesis'}
           </Button>
         </Link>
-        {suggestedSkill && (
+
+        {/* Synthesize Thesis - Direct Execution */}
+        {suggestedSkill === '/synthesize-thesis' && (
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-1"
+            onClick={handleRunSynthesizeThesis}
+            disabled={isExecuting || executionResult?.success}
+          >
+            {isExecuting ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Synthesizing...
+              </>
+            ) : executionResult?.success ? (
+              <>
+                <CheckCircle className="h-3 w-3" />
+                Done
+              </>
+            ) : (
+              <>
+                <Play className="h-3 w-3" />
+                Synthesize Thesis
+              </>
+            )}
+          </Button>
+        )}
+
+        {/* Other Skills - Copy to Clipboard */}
+        {suggestedSkill && suggestedSkill !== '/synthesize-thesis' && (
           <Button
             variant="default"
             size="sm"
             className="gap-1"
             onClick={copySkillToClipboard}
           >
-            <Play className="h-3 w-3" />
-            {copied ? 'Copied!' : 'Run Skill'}
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copied ? 'Copied!' : 'Copy Skill'}
           </Button>
         )}
+
         <Button
           variant="outline"
           size="sm"

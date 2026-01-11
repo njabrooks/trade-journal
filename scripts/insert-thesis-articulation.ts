@@ -19,19 +19,17 @@
  */
 
 import * as fs from 'fs';
+import { db, closeDb, schema, logToJournal } from './lib/db.js';
+import { desc, eq, and, sql } from 'drizzle-orm';
 
-// Use dynamic imports to ensure dotenv loads first
-async function loadDependencies() {
-  const { config } = await import('dotenv');
-  config({ path: '.env.local' });
-
-  const { db, closePool } = await import('../src/db/index.js');
-  const { onArticulationCreated } = await import('../src/lib/derived/thesisTriage.js');
-  const { thesisArticulations, validationPoints: validationPointsTable } = await import('../src/db/schema.js');
-  const { desc, eq, and } = await import('drizzle-orm');
-
-  return { db, closePool, onArticulationCreated, thesisArticulations, validationPointsTable, desc, eq, and };
-}
+const {
+  thesisArticulations,
+  validationPoints: validationPointsTable,
+  macroTheses,
+  assetTheses,
+  thesisTriageRecords,
+  claimThesisMappings,
+} = schema;
 
 // ============================================================================
 // Types
@@ -110,7 +108,7 @@ async function main() {
 
   let inputData: ArticulationInput;
 
-  // Parse input source BEFORE loading DB dependencies (avoids connection if just showing usage)
+  // Parse input source
   if (args.includes('--stdin')) {
     // Read from stdin
     const chunks: Buffer[] = [];
@@ -134,9 +132,6 @@ async function main() {
     console.error('  cat <file.json> | npx tsx scripts/insert-thesis-articulation.ts --stdin');
     process.exit(1);
   }
-
-  // Load dependencies (this loads dotenv first, then DB)
-  const { db, closePool, onArticulationCreated, thesisArticulations, validationPointsTable, desc, eq, and } = await loadDependencies();
 
   const { thesisId, thesisType, articulation, validationPoints } = inputData;
 
@@ -225,21 +220,124 @@ async function main() {
   }
 
   // -------------------------------------------------------------------------
-  // Step 4: Notify triage system (THIS IS THE CRITICAL STEP)
+  // Step 4: Update thesis and resolve triage (inline implementation)
   // -------------------------------------------------------------------------
-  console.log('\nNotifying triage system...');
-  await onArticulationCreated(thesisId, thesisType);
-  console.log('✅ Triage system notified (claims count updated, triage records resolved)');
+  console.log('\nUpdating thesis and resolving triage...');
+
+  // Get thesis for logging
+  const thesisTable = thesisType === 'macro' ? macroTheses : assetTheses;
+  const [thesis] = await db
+    .select({
+      id: thesisTable.id,
+      title: thesisTable.title,
+      claimsCountAtLastArticulation: thesisTable.claimsCountAtLastArticulation,
+    })
+    .from(thesisTable)
+    .where(eq(thesisTable.id, thesisId))
+    .limit(1);
+
+  if (!thesis) {
+    console.warn(`Thesis not found: ${thesisType}/${thesisId}`);
+  } else {
+    // Get current claim count from claim_thesis_mappings
+    const claimCountResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(claimThesisMappings)
+      .where(
+        thesisType === 'macro'
+          ? eq(claimThesisMappings.macroThesisId, thesisId)
+          : eq(claimThesisMappings.assetThesisId, thesisId)
+      );
+    const currentClaimCount = claimCountResult[0]?.count ?? 0;
+    const previousClaimsCount = thesis.claimsCountAtLastArticulation ?? 0;
+
+    // Update thesis with current claim count
+    await db
+      .update(thesisTable)
+      .set({
+        claimsCountAtLastArticulation: currentClaimCount,
+        updatedAt: new Date(),
+      })
+      .where(eq(thesisTable.id, thesisId));
+    console.log(`✅ Updated ${thesisType} thesis claims count: ${previousClaimsCount} → ${currentClaimCount}`);
+
+    // Log articulation creation to journal
+    await logToJournal({
+      objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: thesisId,
+      objectTitle: thesis.title,
+      actionType: 'articulation_created',
+      actionDescription: `Thesis articulation created/updated with ${currentClaimCount} claims`,
+      skillInvoked: '/synthesize-thesis',
+      previousState: {
+        claimsCountAtLastArticulation: previousClaimsCount,
+      },
+      newState: {
+        claimsCountAtLastArticulation: currentClaimCount,
+        hasArticulation: true,
+      },
+      source: 'skill',
+    });
+    console.log('✅ Journal entry created');
+  }
+
+  // Resolve any attention/info articulation-related triage records
+  const pendingTriage = await db
+    .select()
+    .from(thesisTriageRecords)
+    .where(
+      and(
+        eq(thesisTriageRecords.thesisId, thesisId),
+        eq(thesisTriageRecords.thesisType, thesisType),
+        sql`${thesisTriageRecords.status} IN ('attention', 'info')`
+      )
+    );
+
+  const articulationTriage = pendingTriage.filter(
+    (t) =>
+      t.triageRule === 'UPDATE_CORE_ARGUMENT' ||
+      t.triageRule === 'PRODUCE_CORE_ARGUMENT' ||
+      t.triageRule === 'NEEDS_RESEARCH' ||
+      t.triageRule === 'thesis_new_claims_available' ||
+      t.triageRule === 'thesis_needs_articulation'
+  );
+
+  for (const triage of articulationTriage) {
+    await db
+      .update(thesisTriageRecords)
+      .set({
+        status: 'complete',
+        completedAt: new Date(),
+        completedBy: 'articulation_created',
+      })
+      .where(eq(thesisTriageRecords.id, triage.id));
+
+    // Log triage resolution
+    await logToJournal({
+      objectType: triage.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: triage.thesisId,
+      objectTitle: thesis?.title,
+      actionType: 'triage_resolved',
+      actionDescription: `Triage record resolved: ${triage.triageRule}`,
+      triageRecordId: triage.id,
+      skillInvoked: '/synthesize-thesis',
+      previousState: { status: 'pending' },
+      newState: { status: 'complete', completedBy: 'articulation_created' },
+      source: 'skill',
+    });
+  }
+  console.log(`✅ Resolved ${articulationTriage.length} triage records`);
 
   // -------------------------------------------------------------------------
   // Step 5: Cleanup
   // -------------------------------------------------------------------------
-  await closePool();
+  await closeDb();
 
   console.log('\n✅ Thesis articulation upload complete!');
   console.log(`   Articulation ID: ${insertedArticulation.id}`);
   console.log(`   Version: ${nextVersion}`);
   console.log(`   Validation Points: ${validationPoints.length}`);
+  console.log(`   Triage Records Resolved: ${articulationTriage.length}`);
 
   process.exit(0);
 }
