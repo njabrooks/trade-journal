@@ -192,10 +192,9 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
     const groups: Array<{ key: string; label: string; records: UnifiedTriageRecord[] }> = [];
 
     for (const group of severityGroups) {
+      // Group by status only (status = severity for thesis triage)
       const groupRecords = filteredAndSortedRecords.filter((r) =>
-        group.statuses.includes(r.status) ||
-        // Also check thesis urgency
-        (r.thesisTriageRecord?.urgency && group.statuses.includes(r.thesisTriageRecord.urgency))
+        group.statuses.includes(r.status)
       );
 
       if (groupRecords.length > 0) {
