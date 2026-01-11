@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { claimThesisMappings, mainClaims, macroTheses, assetTheses } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
 
 /**
  * POST /api/main-claims/link-to-entity
@@ -145,6 +146,10 @@ export async function POST(request: NextRequest) {
       .insert(claimThesisMappings)
       .values(linkValues)
       .returning();
+
+    // Compute triage for the linked thesis/view
+    const thesisType = entityType === 'thesis' ? 'macro' : 'asset';
+    await computeThesisTriageForThesis(entityId, thesisType);
 
     return NextResponse.json({
       success: true,
