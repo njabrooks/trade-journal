@@ -14,7 +14,7 @@
 
 import 'dotenv/config';
 import { db, closeDb, schema } from './lib/db.js';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, ne, and, inArray } from 'drizzle-orm';
 
 const { macroTheses, assetTheses, thesisTriageRecords } = schema;
 
@@ -65,11 +65,17 @@ interface ThesisInfo {
   lifecycleStatus: string | null;
 }
 
-async function getExistingPendingTriageIds(): Promise<Set<string>> {
+async function getExistingActiveTriageIds(): Promise<Set<string>> {
   const existing = await db
     .select({ thesisId: thesisTriageRecords.thesisId })
     .from(thesisTriageRecords)
-    .where(eq(thesisTriageRecords.status, 'pending'));
+    .where(
+      and(
+        ne(thesisTriageRecords.status, 'complete'),
+        ne(thesisTriageRecords.status, 'dismissed'),
+        ne(thesisTriageRecords.status, 'actioned')
+      )
+    );
 
   return new Set(existing.map(r => r.thesisId));
 }
@@ -94,8 +100,24 @@ async function getAllTheses(): Promise<ThesisInfo[]> {
   ];
 }
 
+// Map severity to status (they're merged in thesis triage)
+function severityToStatus(severity: string): 'urgent' | 'attention' | 'info' {
+  switch (severity) {
+    case 'critical':
+    case 'high':
+      return 'urgent';
+    case 'medium':
+      return 'attention';
+    case 'low':
+    case 'info':
+    default:
+      return 'info';
+  }
+}
+
 async function createTriageRecord(thesis: ThesisInfo, config: typeof LIFECYCLE_CONFIG[string]): Promise<string | null> {
   try {
+    const status = severityToStatus(config.severity);
     const [record] = await db.insert(thesisTriageRecords).values({
       thesisId: thesis.id,
       thesisType: thesis.type,
@@ -104,7 +126,7 @@ async function createTriageRecord(thesis: ThesisInfo, config: typeof LIFECYCLE_C
       triggerSource: 'lifecycle_check',
       severity: config.severity,
       urgency: config.urgency,
-      status: 'pending',
+      status,  // Aligned with lifecycle triggers: status = severity level
       lifecycleStage: thesis.lifecycleStatus,
       suggestedSkill: config.suggestedSkill,
       actionRequired: config.actionRequired,
@@ -134,9 +156,9 @@ async function main() {
   const theses = await getAllTheses();
   console.log(`Found ${theses.length} theses (${theses.filter(t => t.type === 'macro').length} macro, ${theses.filter(t => t.type === 'asset').length} asset)\n`);
 
-  // Get existing pending triage records
-  const existingPendingIds = await getExistingPendingTriageIds();
-  console.log(`Existing pending triage records: ${existingPendingIds.size}\n`);
+  // Get existing active triage records (not complete/dismissed/actioned)
+  const existingActiveIds = await getExistingActiveTriageIds();
+  console.log(`Existing active triage records: ${existingActiveIds.size}\n`);
 
   // Group theses by lifecycle stage
   const byStage: Record<string, ThesisInfo[]> = {};
@@ -152,7 +174,7 @@ async function main() {
     const needsAction = LIFECYCLE_CONFIG[stage] ? '⚡' : (stage === 'monitoring' ? '👁️' : '✅');
     console.log(`  ${needsAction} ${stage}: ${items.length} theses`);
     for (const thesis of items) {
-      const hasPending = existingPendingIds.has(thesis.id);
+      const hasPending = existingActiveIds.has(thesis.id);
       const marker = hasPending ? '📋' : '  ';
       console.log(`     ${marker} ${thesis.title} (${thesis.type})${hasPending ? ' [has pending triage]' : ''}`);
     }
@@ -171,7 +193,7 @@ async function main() {
     if (!config) continue;
 
     // Skip if already has pending triage
-    if (existingPendingIds.has(thesis.id)) {
+    if (existingActiveIds.has(thesis.id)) {
       stats.skipped++;
       continue;
     }

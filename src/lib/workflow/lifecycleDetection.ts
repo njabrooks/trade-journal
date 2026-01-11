@@ -268,6 +268,7 @@ export async function applyLifecycleTransition(
       matchedResults: [],
       severity: toStage === 'monitoring' ? 'info' : 'medium',
       urgency: toStage === 'monitoring' ? 'when_convenient' : 'this_week',
+      status: toStage === 'monitoring' ? 'info' : 'attention',  // Aligned with lifecycle triggers
       lifecycleStage: toStage,
       suggestedSkill,
       actionRequired,

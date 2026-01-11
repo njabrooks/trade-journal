@@ -1458,7 +1458,7 @@ async function createDataTriageRecord(
       }],
       severity,
       urgency,
-      status: 'pending',
+      status: severity,  // Aligned with lifecycle triggers: status = severity
       lifecycleStage: 'monitoring',
       suggestedSkill: '/deep-dive',
       actionRequired: `Review threshold breach: ${breach.threshold.description}`,
