@@ -9,7 +9,7 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Projects/trade-journal &amp;&amp; /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/ingest-underlyings-massive.ts >> /Users/twotrees/Projects/trade-journal/logs/massive-ingestion.log 2>&amp;1</string>
+        <string>cd /Users/twotrees/Projects/trade-journal &amp;&amp; git pull --ff-only &amp;&amp; /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/ingest-underlyings-massive.ts >> /Users/twotrees/Projects/trade-journal/logs/massive-ingestion.log 2>&amp;1</string>
     </array>
 
     <!-- Run at 4:30 PM ET (after market close) = 21:30 UTC -->

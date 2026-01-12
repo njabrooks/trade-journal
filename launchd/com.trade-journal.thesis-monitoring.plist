@@ -9,7 +9,7 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Projects/trade-journal &amp;&amp; /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/daily-thesis-monitoring.ts --analyze >> /Users/twotrees/Projects/trade-journal/logs/thesis-monitoring.log 2>&amp;1</string>
+        <string>cd /Users/twotrees/Projects/trade-journal &amp;&amp; git pull --ff-only &amp;&amp; /opt/homebrew/bin/npx dotenv -e .env.local -- npx tsx scripts/daily-thesis-monitoring.ts --analyze >> /Users/twotrees/Projects/trade-journal/logs/thesis-monitoring.log 2>&amp;1</string>
     </array>
 
     <!-- Run at 08:00 UTC (morning triage before market open) -->

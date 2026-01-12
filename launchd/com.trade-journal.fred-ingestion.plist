@@ -9,16 +9,18 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/njb/Projects/trade-journal && source .env.local && /opt/homebrew/bin/npx tsx scripts/ingest-fred-historical.ts >> logs/fred-ingestion.log 2>&1</string>
+        <string>cd /Users/twotrees/Projects/trade-journal &amp;&amp; git pull --ff-only &amp;&amp; source .env.local &amp;&amp; /opt/homebrew/bin/npx tsx scripts/ingest-fred-historical.ts >> /Users/twotrees/Projects/trade-journal/logs/fred-ingestion.log 2>&amp;1</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/njb/Projects/trade-journal</string>
+    <string>/Users/twotrees/Projects/trade-journal</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
         <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/twotrees</string>
     </dict>
 
     <!-- Run at 06:00 UTC daily (before market open) -->
@@ -31,10 +33,10 @@
     </dict>
 
     <key>StandardOutPath</key>
-    <string>/Users/njb/Projects/trade-journal/logs/fred-ingestion.log</string>
+    <string>/Users/twotrees/Projects/trade-journal/logs/fred-ingestion.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/njb/Projects/trade-journal/logs/fred-ingestion.log</string>
+    <string>/Users/twotrees/Projects/trade-journal/logs/fred-ingestion.log</string>
 
     <key>RunAtLoad</key>
     <false/>

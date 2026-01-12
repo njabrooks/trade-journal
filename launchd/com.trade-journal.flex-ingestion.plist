@@ -9,7 +9,7 @@
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>cd /Users/twotrees/Projects/trade-journal &amp;&amp; set -a &amp;&amp; source .env.local &amp;&amp; set +a &amp;&amp; ./node_modules/.bin/tsx scripts/run-flex-ingestion.ts >> /Users/twotrees/Projects/trade-journal/logs/flex-ingestion.log 2>&amp;1</string>
+        <string>cd /Users/twotrees/Projects/trade-journal &amp;&amp; git pull --ff-only &amp;&amp; set -a &amp;&amp; source .env.local &amp;&amp; set +a &amp;&amp; ./node_modules/.bin/tsx scripts/run-flex-ingestion.ts >> /Users/twotrees/Projects/trade-journal/logs/flex-ingestion.log 2>&amp;1</string>
     </array>
 
     <!-- Run at 4 AM, 6 AM, 8 AM, and noon UTC -->
