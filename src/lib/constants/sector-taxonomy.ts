@@ -59,6 +59,7 @@ export const INDUSTRIES: TaxonomyItem[] = [
   { value: 'Industry - Quantum Computing', label: 'Quantum Computing', description: 'Quantum Computing - Technology' },
   { value: 'Industry - Genomics', label: 'Genomics', description: 'Genomics - Technology' },
   { value: 'Industry - Robotics', label: 'Robotics', description: 'Robotics - Technology' },
+  { value: 'Industry - Space Exploration', label: 'Space Exploration', description: 'Space Exploration - Technology' },
   
   // Financial Industries
   { value: 'Industry - Banking', label: 'Banking' },
