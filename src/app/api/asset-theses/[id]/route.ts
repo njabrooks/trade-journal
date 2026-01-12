@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAssetThesisById, deleteAssetThesis, updateAssetThesis } from '@/db/queries/assetTheses';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
 export async function GET(
   request: NextRequest,
@@ -44,6 +45,18 @@ export async function PATCH(
     // Validate and update
     await updateAssetThesis(viewId, body);
 
+    // Log to journal
+    await logToJournal({
+      objectType: 'asset_thesis',
+      objectId: viewId,
+      objectTitle: existing.title,
+      actionType: 'THESIS_UPDATED',
+      actionDescription: `Updated asset thesis: ${existing.title}`,
+      previousState: { title: existing.title, status: existing.status, confidenceLevel: existing.confidenceLevel },
+      newState: body,
+      source: 'user',
+    });
+
     // Return updated asset thesis
     const updated = await getAssetThesisById(viewId);
     return NextResponse.json(updated);
@@ -73,6 +86,18 @@ export async function DELETE(
     }
 
     await deleteAssetThesis(viewId);
+
+    // Log to journal
+    await logToJournal({
+      objectType: 'asset_thesis',
+      objectId: viewId,
+      objectTitle: existing.title,
+      actionType: 'THESIS_DELETED',
+      actionDescription: `Deleted asset thesis: ${existing.title}`,
+      previousState: { title: existing.title, status: existing.status, confidenceLevel: existing.confidenceLevel },
+      source: 'user',
+    });
+
     return NextResponse.json({ success: true, message: 'Asset view deleted successfully' });
   } catch (error) {
     console.error('Error deleting asset thesis:', error);

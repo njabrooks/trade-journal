@@ -7,6 +7,7 @@ import {
 } from '@/db/queries/assetTheses';
 import { db } from '@/db';
 import { assetThesisRelatedMacroTheses } from '@/db/schema';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,6 +82,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Log to journal
+    await logToJournal({
+      objectType: 'asset_thesis',
+      objectId: id,
+      objectTitle: title,
+      actionType: 'THESIS_CREATED',
+      actionDescription: `Created asset thesis: ${title}`,
+      newState: { title, timeHorizon, confidenceLevel, status: status ?? 'active', underlyingId },
+      source: 'user',
+    });
+
     return NextResponse.json({ success: true, id, message: 'Asset view created successfully' });
   } catch (error) {
     console.error('Error creating asset thesis:', error);
@@ -110,6 +122,19 @@ export async function PATCH(request: NextRequest) {
     }
 
     await updateAssetThesis(id, updates);
+
+    // Log to journal
+    await logToJournal({
+      objectType: 'asset_thesis',
+      objectId: id,
+      objectTitle: existing.title,
+      actionType: 'THESIS_UPDATED',
+      actionDescription: `Updated asset thesis: ${existing.title}`,
+      previousState: { title: existing.title, status: existing.status, confidenceLevel: existing.confidenceLevel },
+      newState: updates,
+      source: 'user',
+    });
+
     return NextResponse.json({ success: true, message: 'Asset view updated successfully' });
   } catch (error) {
     console.error('Error updating asset thesis:', error);

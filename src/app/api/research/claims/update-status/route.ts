@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { mainClaims } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -22,6 +23,19 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Fetch existing claim for logging
+    const [existing] = await db
+      .select({ id: mainClaims.id, claim: mainClaims.claim, status: mainClaims.status })
+      .from(mainClaims)
+      .where(eq(mainClaims.id, claimId));
+
+    if (!existing) {
+      return NextResponse.json(
+        { error: 'Claim not found' },
+        { status: 404 }
+      );
+    }
+
     // Update the status
     await db
       .update(mainClaims)
@@ -30,6 +44,18 @@ export async function PATCH(request: NextRequest) {
         updatedAt: new Date(),
       })
       .where(eq(mainClaims.id, claimId));
+
+    // Log to journal
+    await logToJournal({
+      objectType: 'claim',
+      objectId: claimId,
+      objectTitle: existing.claim?.slice(0, 100),
+      actionType: 'CLAIM_STATUS_CHANGED',
+      actionDescription: `Changed claim status from ${existing.status} to ${status}`,
+      previousState: { status: existing.status },
+      newState: { status },
+      source: 'user',
+    });
 
     return NextResponse.json(
       { success: true, message: 'Claim status updated successfully' },

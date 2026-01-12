@@ -5,6 +5,7 @@ import {
   createMacroThesis,
   updateMacroThesis,
 } from '@/db/queries/macroTheses';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,6 +57,17 @@ export async function POST(request: NextRequest) {
       notes,
     });
 
+    // Log to journal
+    await logToJournal({
+      objectType: 'macro_thesis',
+      objectId: id,
+      objectTitle: title,
+      actionType: 'THESIS_CREATED',
+      actionDescription: `Created macro thesis: ${title}`,
+      newState: { title, thesisType, timeHorizon, confidenceLevel, status: status ?? 'active' },
+      source: 'user',
+    });
+
     return NextResponse.json({ success: true, id, message: 'Macro thesis created successfully' });
   } catch (error) {
     console.error('Error creating macro thesis:', error);
@@ -85,6 +97,19 @@ export async function PATCH(request: NextRequest) {
     }
 
     await updateMacroThesis(id, updates);
+
+    // Log to journal
+    await logToJournal({
+      objectType: 'macro_thesis',
+      objectId: id,
+      objectTitle: existing.title,
+      actionType: 'THESIS_UPDATED',
+      actionDescription: `Updated macro thesis: ${existing.title}`,
+      previousState: { title: existing.title, status: existing.status, confidenceLevel: existing.confidenceLevel },
+      newState: updates,
+      source: 'user',
+    });
+
     return NextResponse.json({ success: true, message: 'Macro thesis updated successfully' });
   } catch (error) {
     console.error('Error updating macro thesis:', error);

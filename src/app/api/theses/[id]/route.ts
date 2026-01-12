@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMacroThesisById, deleteMacroThesis, updateMacroThesis } from '@/db/queries/macroTheses';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
 export async function PATCH(
   request: NextRequest,
@@ -18,6 +19,18 @@ export async function PATCH(
 
     // Validate and update
     await updateMacroThesis(thesisId, body);
+
+    // Log to journal
+    await logToJournal({
+      objectType: 'macro_thesis',
+      objectId: thesisId,
+      objectTitle: existing.title,
+      actionType: 'THESIS_UPDATED',
+      actionDescription: `Updated macro thesis: ${existing.title}`,
+      previousState: { title: existing.title, status: existing.status, confidenceLevel: existing.confidenceLevel },
+      newState: body,
+      source: 'user',
+    });
 
     // Return updated thesis
     const updated = await getMacroThesisById(thesisId);
@@ -48,6 +61,18 @@ export async function DELETE(
     }
 
     await deleteMacroThesis(thesisId);
+
+    // Log to journal
+    await logToJournal({
+      objectType: 'macro_thesis',
+      objectId: thesisId,
+      objectTitle: existing.title,
+      actionType: 'THESIS_DELETED',
+      actionDescription: `Deleted macro thesis: ${existing.title}`,
+      previousState: { title: existing.title, status: existing.status, thesisType: existing.thesisType },
+      source: 'user',
+    });
+
     return NextResponse.json({ success: true, message: 'Macro thesis deleted successfully' });
   } catch (error) {
     console.error('Error deleting macro thesis:', error);
