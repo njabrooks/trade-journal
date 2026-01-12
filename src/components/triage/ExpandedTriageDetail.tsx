@@ -30,6 +30,7 @@ import { TriagePositionsTable } from './TriagePositionsTable';
 import { TriageActionsTable } from './TriageActionsTable';
 import { TriageActionButtons } from './TriageActionButtons';
 import { ClaimsContext } from './ClaimsContext';
+import { ThesisSignalTriageCard } from './ThesisSignalTriageCard';
 
 interface ExpandedTriageDetailProps {
   record: UnifiedTriageRecord;
@@ -363,9 +364,18 @@ function ThesisDetail({
 
   // Determine triage rule context
   const triageRule = thesisRecord?.triageRule;
-  const isMonitoringContent = triageRule === 'thesis_monitoring_content';
-  const isNeedsArticulation = triageRule === 'thesis_needs_articulation';
-  const isNewClaimsAvailable = triageRule === 'thesis_new_claims_available';
+  const isMonitoringContent = triageRule === 'thesis_monitoring_content' || triageRule === 'REVIEW_CONTENT';
+  const isNeedsArticulation = triageRule === 'thesis_needs_articulation' || triageRule === 'NEEDS_RESEARCH' || triageRule === 'PRODUCE_CORE_ARGUMENT';
+  const isNewClaimsAvailable = triageRule === 'thesis_new_claims_available' || triageRule === 'UPDATE_CORE_ARGUMENT';
+  const isSignalTriggered = triageRule === 'SIGNAL_TRIGGERED';
+
+  // Parse signal-specific content summary
+  const signalContentSummary = isSignalTriggered ? (thesisRecord?.contentSummary as {
+    triggeredSignalCount?: number;
+    totalSignalCount?: number;
+    triggeredSignalIds?: string[];
+    currentConviction?: 'high' | 'medium' | 'low';
+  } | undefined) : undefined;
 
   const copySkillToClipboard = () => {
     if (suggestedSkill) {
@@ -648,6 +658,24 @@ function ThesisDetail({
         </div>
       )}
 
+      {/* Signal Triggered - Thesis-Level Assessment */}
+      {isSignalTriggered && signalContentSummary && (
+        <ThesisSignalTriageCard
+          thesisId={record.objectId}
+          thesisType={isMacro ? 'macro' : 'asset'}
+          thesisTitle={thesisRecord?.thesisTitle || record.title || 'Thesis'}
+          triggeredSignalCount={signalContentSummary.triggeredSignalCount ?? 0}
+          totalSignalCount={signalContentSummary.totalSignalCount ?? 0}
+          triggeredSignalIds={signalContentSummary.triggeredSignalIds ?? []}
+          currentConviction={signalContentSummary.currentConviction}
+          onActionComplete={() => {
+            // Refresh the page to show updated triage
+            router.refresh();
+            onDismiss();
+          }}
+        />
+      )}
+
       {/* Suggested Skill */}
       {suggestedSkill && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
@@ -828,6 +856,13 @@ function formatTriageRule(rule: string | null | undefined): string {
     thesis_data_trigger: 'Review V&I Status',
     thesis_validation_triggered: 'Validation Triggered',
     thesis_manual_assessment: 'Manual Assessment',
+    // New thesis triage rules
+    NEEDS_RESEARCH: 'Needs Research',
+    PRODUCE_CORE_ARGUMENT: 'Generate Articulation',
+    UPDATE_CORE_ARGUMENT: 'Review New Claims',
+    REVIEW_CONTENT: 'Assess Content',
+    REVIEW_RECOMMENDED_SIGNALS: 'Review Signals',
+    SIGNAL_TRIGGERED: 'Assess Signal Impact',
   };
   return ruleLabels[rule] ?? rule.replace(/thesis_/g, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }

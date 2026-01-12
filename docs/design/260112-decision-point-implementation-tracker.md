@@ -24,7 +24,7 @@
 |-------|-------|--------|---------|-----------|
 | **Phase 0** | UX component audit & consolidation | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 1** | Terminology & schema foundation | Complete | 2026-01-12 | 2026-01-12 |
-| **Phase 2** | Signal framework core | In Progress | 2026-01-12 | - |
+| **Phase 2** | Signal framework core | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 3** | AI integration | Not Started | - | - |
 | **Phase 4** | Triage consolidation | Not Started | - | - |
 | **Phase 5** | Journal logging completion | Not Started | - | - |
@@ -147,9 +147,11 @@
 - [x] Add "Accept as Explicit" (⚡) button to batch review UI
 
 ### 2.3 Thesis-Level Triage Consolidation (DP-5.3)
-- [ ] Modify `thesisTriage.ts` for consolidation logic
-- [ ] Create `src/components/triage/ThesisSignalTriageCard.tsx`
-- [ ] Add "Strengthens/Weakens/No Change" assessment UI
+- [x] Modify `thesisTriage.ts` for consolidation logic (added SIGNAL_TRIGGERED rule)
+- [x] Create `src/components/triage/ThesisSignalTriageCard.tsx` (displays triggered signals with assessment UI)
+- [x] Create `src/app/api/signals/assess-impact/route.ts` (records assessment, updates thesis confidence, resolves triage)
+- [x] Integrate ThesisSignalTriageCard in ExpandedTriageDetail.tsx
+- [x] Add "Strengthens/Weakens/No Change" assessment buttons with optional conviction update
 
 ---
 
@@ -292,3 +294,4 @@
 | 2026-01-12 | 1 | Phase 1 complete | Full signals rename: DB tables, schema.ts, API routes, queries, components, page routes, skills |
 | 2026-01-12 | 2.1 | Phase 2.1 complete | Signal batch review: triage rule, API endpoint, SignalBatchReview component, skill docs |
 | 2026-01-12 | 2.2 | Phase 2.2 complete | Signal config UI: SignalConfigForm with data sources (FRED/IV/Price), criteria builder, acceptance flow integration |
+| 2026-01-12 | 2.3 | Phase 2.3 complete | Thesis-level triage consolidation: SIGNAL_TRIGGERED rule, ThesisSignalTriageCard, assess-impact API, assessment UI |

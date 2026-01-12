@@ -1,0 +1,439 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  AlertTriangle,
+  CheckCircle,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ExternalLink,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Zap,
+  Shield,
+} from 'lucide-react';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import type { Signal } from '@/db/schema';
+
+interface ThesisSignalTriageCardProps {
+  thesisId: string;
+  thesisType: 'macro' | 'asset';
+  thesisTitle: string;
+  triggeredSignalCount: number;
+  totalSignalCount: number;
+  triggeredSignalIds: string[];
+  currentConviction?: 'high' | 'medium' | 'low';
+  onActionComplete?: () => void;
+}
+
+// Impact assessment type
+type ImpactAssessment = 'strengthens' | 'weakens' | 'no_change';
+
+export function ThesisSignalTriageCard({
+  thesisId,
+  thesisType,
+  thesisTitle,
+  triggeredSignalCount,
+  totalSignalCount,
+  triggeredSignalIds,
+  currentConviction,
+  onActionComplete,
+}: ThesisSignalTriageCardProps) {
+  const [signals, setSignals] = useState<Signal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const [selectedAssessment, setSelectedAssessment] = useState<ImpactAssessment | null>(null);
+  const [assessmentNotes, setAssessmentNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [convictionUpdate, setConvictionUpdate] = useState<'increase' | 'decrease' | 'maintain' | null>(null);
+
+  const isMacro = thesisType === 'macro';
+  const thesisUrl = isMacro
+    ? `/macro-theses/${thesisId}`
+    : `/asset-theses/${thesisId}`;
+
+  // Load all signals for this thesis
+  useEffect(() => {
+    async function loadSignals() {
+      try {
+        const response = await fetch(
+          `/api/signals/batch-review?thesisId=${thesisId}&thesisType=${thesisType}&includeAll=true`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          // API returns recommended only, let's fetch all signals directly
+          const allSignalsResponse = await fetch(
+            `/api/validation-points/${thesisId}?thesisType=${thesisType}`
+          );
+          if (allSignalsResponse.ok) {
+            const allData = await allSignalsResponse.json();
+            setSignals(allData.signals || allData || []);
+          } else {
+            setSignals(data.signals || []);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading signals:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadSignals();
+  }, [thesisId, thesisType]);
+
+  // Handle assessment submission
+  async function handleSubmitAssessment() {
+    if (!selectedAssessment) {
+      toast.error('Please select an impact assessment');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const response = await fetch('/api/signals/assess-impact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          thesisId,
+          thesisType,
+          assessment: selectedAssessment,
+          notes: assessmentNotes,
+          convictionUpdate,
+          triggeredSignalIds,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Assessment recorded');
+        onActionComplete?.();
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to record assessment');
+      }
+    } catch (error) {
+      console.error('Error submitting assessment:', error);
+      toast.error('Failed to submit assessment');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // Get signal status styling
+  const getSignalStatusConfig = (status: string, type: string) => {
+    const isConfirmation = type === 'confirmation';
+
+    if (status === 'triggered') {
+      return {
+        icon: isConfirmation
+          ? <TrendingUp className="h-4 w-4 text-emerald-600" />
+          : <AlertTriangle className="h-4 w-4 text-amber-600" />,
+        bgColor: isConfirmation ? 'bg-emerald-50' : 'bg-amber-50',
+        borderColor: isConfirmation ? 'border-emerald-200' : 'border-amber-200',
+        badgeColor: isConfirmation ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700',
+        label: 'Triggered',
+      };
+    }
+
+    return {
+      icon: <Shield className="h-4 w-4 text-slate-400" />,
+      bgColor: 'bg-slate-50',
+      borderColor: 'border-slate-200',
+      badgeColor: 'bg-slate-100 text-slate-600',
+      label: status === 'monitoring' ? 'Monitoring' : 'Not Triggered',
+    };
+  };
+
+  // Sort signals: triggered first, then by importance
+  const sortedSignals = [...signals].sort((a, b) => {
+    // Triggered signals first
+    const aTriggered = triggeredSignalIds.includes(a.id);
+    const bTriggered = triggeredSignalIds.includes(b.id);
+    if (aTriggered && !bTriggered) return -1;
+    if (!aTriggered && bTriggered) return 1;
+
+    // Then by importance
+    const importanceOrder = { critical: 0, significant: 1, supporting: 2 };
+    return (importanceOrder[a.importance as keyof typeof importanceOrder] ?? 2) -
+           (importanceOrder[b.importance as keyof typeof importanceOrder] ?? 2);
+  });
+
+  // Determine warning vs confirmation triggered
+  const triggeredSignals = signals.filter(s => triggeredSignalIds.includes(s.id));
+  const warningsTriggered = triggeredSignals.filter(s => s.type === 'warning').length;
+  const confirmationsTriggered = triggeredSignals.filter(s => s.type === 'confirmation').length;
+
+  return (
+    <div className="space-y-4">
+      {/* Signal Summary Header */}
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-amber-500" />
+            <h3 className="text-sm font-semibold text-slate-800">Signal Summary</h3>
+          </div>
+          <Badge
+            className={`${
+              warningsTriggered > 0
+                ? 'bg-amber-100 text-amber-800'
+                : 'bg-emerald-100 text-emerald-800'
+            }`}
+          >
+            {triggeredSignalCount} of {totalSignalCount} triggered
+          </Badge>
+        </div>
+
+        {/* Breakdown */}
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-emerald-600" />
+            <span className="text-slate-600">
+              Confirmations: <span className="font-medium text-slate-900">{confirmationsTriggered}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="text-slate-600">
+              Warnings: <span className="font-medium text-slate-900">{warningsTriggered}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Current Conviction */}
+        {currentConviction && (
+          <div className="mt-3 pt-3 border-t border-slate-200">
+            <span className="text-xs text-slate-500 uppercase tracking-wide">Current Conviction</span>
+            <Badge
+              className={`ml-2 ${
+                currentConviction === 'high' ? 'bg-emerald-100 text-emerald-700' :
+                currentConviction === 'medium' ? 'bg-amber-100 text-amber-700' :
+                'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {currentConviction}
+            </Badge>
+          </div>
+        )}
+      </div>
+
+      {/* Signals List - Expandable */}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors"
+        >
+          <span className="text-sm font-medium text-slate-700">
+            View All Signals ({signals.length})
+          </span>
+          {expanded ? (
+            <ChevronUp className="h-4 w-4 text-slate-500" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-slate-500" />
+          )}
+        </button>
+
+        {expanded && (
+          <div className="divide-y divide-slate-100">
+            {loading ? (
+              <div className="p-4 text-center">
+                <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-400" />
+              </div>
+            ) : sortedSignals.length === 0 ? (
+              <div className="p-4 text-center text-sm text-slate-500">
+                No signals defined for this thesis
+              </div>
+            ) : (
+              sortedSignals.map((signal) => {
+                const isTriggered = triggeredSignalIds.includes(signal.id);
+                const config = getSignalStatusConfig(signal.status, signal.type);
+
+                return (
+                  <div
+                    key={signal.id}
+                    className={`px-4 py-3 ${config.bgColor} ${isTriggered ? 'border-l-4 ' + config.borderColor : ''}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5">{config.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium ${isTriggered ? 'text-slate-900' : 'text-slate-700'}`}>
+                          {signal.statement}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <Badge className={config.badgeColor}>{config.label}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {signal.type === 'confirmation' ? 'Confirmation' : 'Warning'}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {signal.importance}
+                          </Badge>
+                        </div>
+                        {signal.rationale && (
+                          <p className="text-xs text-slate-500 mt-2 line-clamp-2">
+                            {signal.rationale}
+                          </p>
+                        )}
+                      </div>
+                      <Link
+                        href={`${thesisUrl}/signals/${signal.id}`}
+                        className="text-blue-600 hover:text-blue-800 shrink-0"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Impact Assessment UI */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-4">
+        <h4 className="text-sm font-semibold text-indigo-800">Impact Assessment</h4>
+        <p className="text-xs text-indigo-700">
+          Based on the triggered signals, how does this affect your thesis?
+        </p>
+
+        {/* Assessment Buttons */}
+        <div className="flex gap-2">
+          <Button
+            variant={selectedAssessment === 'strengthens' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedAssessment('strengthens')}
+            className={`flex-1 gap-1 ${
+              selectedAssessment === 'strengthens'
+                ? 'bg-emerald-600 hover:bg-emerald-700'
+                : 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+            }`}
+          >
+            <TrendingUp className="h-4 w-4" />
+            Strengthens
+          </Button>
+          <Button
+            variant={selectedAssessment === 'weakens' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedAssessment('weakens')}
+            className={`flex-1 gap-1 ${
+              selectedAssessment === 'weakens'
+                ? 'bg-amber-600 hover:bg-amber-700'
+                : 'text-amber-700 border-amber-300 hover:bg-amber-50'
+            }`}
+          >
+            <TrendingDown className="h-4 w-4" />
+            Weakens
+          </Button>
+          <Button
+            variant={selectedAssessment === 'no_change' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedAssessment('no_change')}
+            className={`flex-1 gap-1 ${
+              selectedAssessment === 'no_change'
+                ? 'bg-slate-600 hover:bg-slate-700'
+                : 'text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Minus className="h-4 w-4" />
+            No Change
+          </Button>
+        </div>
+
+        {/* Conviction Update (optional) */}
+        {selectedAssessment && selectedAssessment !== 'no_change' && (
+          <div className="pt-3 border-t border-indigo-200">
+            <label className="text-xs font-medium text-indigo-700 block mb-2">
+              Update Conviction? (optional)
+            </label>
+            <div className="flex gap-2">
+              <Button
+                variant={convictionUpdate === 'increase' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setConvictionUpdate(convictionUpdate === 'increase' ? null : 'increase')}
+                className="flex-1 text-xs"
+              >
+                Increase
+              </Button>
+              <Button
+                variant={convictionUpdate === 'maintain' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setConvictionUpdate(convictionUpdate === 'maintain' ? null : 'maintain')}
+                className="flex-1 text-xs"
+              >
+                Maintain
+              </Button>
+              <Button
+                variant={convictionUpdate === 'decrease' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setConvictionUpdate(convictionUpdate === 'decrease' ? null : 'decrease')}
+                className="flex-1 text-xs"
+              >
+                Decrease
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {selectedAssessment && (
+          <div>
+            <label className="text-xs font-medium text-indigo-700 block mb-2">
+              Notes (optional)
+            </label>
+            <textarea
+              value={assessmentNotes}
+              onChange={(e) => setAssessmentNotes(e.target.value)}
+              placeholder="Add context about this assessment..."
+              className="w-full px-3 py-2 text-sm border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              rows={2}
+            />
+          </div>
+        )}
+
+        {/* Submit */}
+        {selectedAssessment && (
+          <Button
+            onClick={handleSubmitAssessment}
+            disabled={submitting}
+            className="w-full"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Record Assessment
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
+      {/* Link to thesis and strategies */}
+      <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+        <Link href={thesisUrl}>
+          <Button variant="outline" size="sm" className="gap-1">
+            <ExternalLink className="h-3 w-3" />
+            View {isMacro ? 'Thesis' : 'Asset Thesis'}
+          </Button>
+        </Link>
+        {!isMacro && (
+          <Link href={`${thesisUrl}#strategies`}>
+            <Button variant="outline" size="sm" className="gap-1">
+              <ExternalLink className="h-3 w-3" />
+              View Linked Strategies
+            </Button>
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -9,6 +9,7 @@
  * - PRODUCE_CORE_ARGUMENT: ≥3 claims, no articulation → status: 'attention'
  * - UPDATE_CORE_ARGUMENT: ≥3 new claims since last articulation → status: 'info'
  * - REVIEW_RECOMMENDED_SIGNALS: ≥1 signals with status='recommended' → status: 'attention'
+ * - SIGNAL_TRIGGERED: ≥1 explicit signals triggered for thesis → status: 'attention' (consolidates all)
  *
  * Monitoring triggers (handled by scripts/daily-thesis-monitoring.ts):
  * - REVIEW_CONTENT: News/content found for thesis → status: 'attention'
@@ -228,7 +229,96 @@ export async function computeThesisTriageForThesis(
     result.existingTriageResolved = true;
   }
 
+  // SIGNAL_TRIGGERED: ≥1 explicit signals have fired for this thesis
+  // Creates ONE thesis-level triage record consolidating all triggered signals
+  const existingSignalTriggered = existingTriage.find(
+    (t) => t.triageRule === 'SIGNAL_TRIGGERED'
+  );
+
+  if (evolutionState.triggeredSignalCount > 0) {
+    // Has triggered signals - create or update thesis-level triage
+    if (!existingSignalTriggered) {
+      // Determine severity based on signal importance
+      // We'll need to check if any critical signals are triggered
+      const severity = await determineTriggeredSignalSeverity(
+        evolutionState.triggeredSignalIds
+      );
+
+      await createTriageRecord({
+        thesisId,
+        thesisType,
+        thesisTitle: thesis.title,
+        triageRule: 'SIGNAL_TRIGGERED',
+        triggerType: 'signal_trigger',
+        triggerSource: 'computeThesisTriageForThesis',
+        status: severity === 'critical' ? 'urgent' : 'attention',
+        urgency: severity === 'critical' ? 'immediate' : 'this_week',
+        lifecycleStage: 'monitoring',
+        suggestedSkill: null,
+        actionRequired: `${evolutionState.triggeredSignalCount} of ${evolutionState.totalSignalCount} signal(s) triggered. Review thesis conviction and assess impact.`,
+        contentSummary: {
+          triggeredSignalCount: evolutionState.triggeredSignalCount,
+          totalSignalCount: evolutionState.totalSignalCount,
+          triggeredSignalIds: evolutionState.triggeredSignalIds,
+          currentConviction: thesis.confidenceLevel,
+        },
+      });
+      if (!result.triageCreated) {
+        result.triageCreated = 'SIGNAL_TRIGGERED';
+      }
+    } else {
+      // Update existing triage with latest signal counts if changed
+      const existingSummary = existingSignalTriggered.contentSummary as {
+        triggeredSignalCount?: number;
+      } | undefined;
+      const existingCount = existingSummary?.triggeredSignalCount ?? 0;
+
+      if (existingCount !== evolutionState.triggeredSignalCount) {
+        await db
+          .update(thesisTriageRecords)
+          .set({
+            actionRequired: `${evolutionState.triggeredSignalCount} of ${evolutionState.totalSignalCount} signal(s) triggered. Review thesis conviction and assess impact.`,
+            contentSummary: {
+              triggeredSignalCount: evolutionState.triggeredSignalCount,
+              totalSignalCount: evolutionState.totalSignalCount,
+              triggeredSignalIds: evolutionState.triggeredSignalIds,
+              currentConviction: thesis.confidenceLevel,
+            },
+            updatedAt: new Date(),
+          })
+          .where(eq(thesisTriageRecords.id, existingSignalTriggered.id));
+      }
+    }
+  } else if (existingSignalTriggered) {
+    // No triggered signals left - resolve existing triage
+    await resolveTriageRecord(existingSignalTriggered.id, 'all_triggered_signals_resolved');
+    result.existingTriageResolved = true;
+  }
+
   return result;
+}
+
+/**
+ * Determine severity for triggered signals based on their importance.
+ * If any critical signal is triggered, return 'critical'.
+ */
+async function determineTriggeredSignalSeverity(
+  triggeredSignalIds: string[]
+): Promise<'critical' | 'significant' | 'supporting'> {
+  if (triggeredSignalIds.length === 0) return 'supporting';
+
+  const triggeredSignals = await db
+    .select({ importance: signals.importance })
+    .from(signals)
+    .where(sql`${signals.id} = ANY(${triggeredSignalIds})`);
+
+  const hasCritical = triggeredSignals.some(s => s.importance === 'critical');
+  if (hasCritical) return 'critical';
+
+  const hasSignificant = triggeredSignals.some(s => s.importance === 'significant');
+  if (hasSignificant) return 'significant';
+
+  return 'supporting';
 }
 
 /**
@@ -351,7 +441,10 @@ interface ThesisEvolutionState {
   claimCount: number;
   hasArticulation: boolean;
   hasSignals: boolean;
+  totalSignalCount: number;
   recommendedSignalCount: number;
+  triggeredSignalCount: number;
+  triggeredSignalIds: string[];
   hasMonitoringConfig: boolean;
 }
 
@@ -386,11 +479,12 @@ async function getThesisEvolutionState(
     )
     .limit(1);
 
-  // Check for signals and count recommended ones
+  // Check for signals and count recommended/triggered ones
   const signalCounts = await db
     .select({
       total: count(),
       recommended: sql<number>`count(*) filter (where ${signals.status} = 'recommended')`,
+      triggered: sql<number>`count(*) filter (where ${signals.status} = 'triggered')`,
     })
     .from(signals)
     .where(
@@ -400,11 +494,30 @@ async function getThesisEvolutionState(
       )
     );
 
+  // Get IDs of triggered signals for detailed triage info
+  let triggeredSignalIds: string[] = [];
+  if ((signalCounts[0]?.triggered ?? 0) > 0) {
+    const triggeredSignals = await db
+      .select({ id: signals.id })
+      .from(signals)
+      .where(
+        and(
+          eq(signals.thesisId, thesisId),
+          eq(signals.thesisType, thesisType),
+          eq(signals.status, 'triggered')
+        )
+      );
+    triggeredSignalIds = triggeredSignals.map(s => s.id);
+  }
+
   return {
     claimCount: claimCountResult[0]?.count ?? 0,
     hasArticulation: articulation.length > 0,
     hasSignals: (signalCounts[0]?.total ?? 0) > 0,
+    totalSignalCount: signalCounts[0]?.total ?? 0,
     recommendedSignalCount: signalCounts[0]?.recommended ?? 0,
+    triggeredSignalCount: signalCounts[0]?.triggered ?? 0,
+    triggeredSignalIds,
     hasMonitoringConfig: false, // TODO: implement when monitoring is integrated
   };
 }
