@@ -17,6 +17,7 @@ import {
   Minus,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type {
   UnifiedTriageRecord,
   UnifiedTriageFilterCounts,
@@ -38,6 +39,23 @@ type TypeFilter = 'all' | 'macro_thesis' | 'asset_thesis' | 'positions_strategie
 
 // Statuses that require action (shown in "Needs Action" view)
 const ACTION_STATUSES = ['urgent', 'attention'];
+
+// Get detail page URL for a triage record (returns null if no detail page exists)
+function getDetailUrl(record: UnifiedTriageRecord): string | null {
+  switch (record.objectType) {
+    case 'macro_thesis':
+      return `/macro-theses/${record.objectId}`;
+    case 'asset_thesis':
+      return `/asset-theses/${record.objectId}`;
+    case 'strategy':
+      return `/strategies/${record.objectId}`;
+    case 'position':
+      // Positions don't have a dedicated page, link to strategy if available
+      return record.strategyId ? `/strategies/${record.strategyId}` : null;
+    default:
+      return null;
+  }
+}
 
 export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserProps) {
   const router = useRouter();
@@ -253,6 +271,7 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
   // Render a single record row (extracted for reuse in grouped and flat rendering)
   const renderRecordRow = (record: UnifiedTriageRecord) => {
     const isExpanded = expandedRecord === record.id;
+    const detailUrl = getDetailUrl(record);
 
     return (
       <Fragment key={record.id}>
@@ -260,16 +279,29 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
         <tr className="border-b hover:bg-slate-50 transition-colors">
           {/* Title with Direction Icon */}
           <td className="px-4 py-3">
-            <button
-              onClick={() => setExpandedRecord(isExpanded ? null : record.id)}
-              className="text-slate-900 font-medium hover:text-blue-600 transition-colors text-left flex items-center gap-1.5"
-            >
-              {/* Direction indicator for thesis records */}
-              {record.direction && (
-                <DirectionIcon direction={record.direction} />
-              )}
-              {record.title}
-            </button>
+            {detailUrl ? (
+              <Link
+                href={detailUrl}
+                className="text-slate-900 font-medium hover:text-blue-600 transition-colors text-left flex items-center gap-1.5"
+              >
+                {/* Direction indicator for thesis records */}
+                {record.direction && (
+                  <DirectionIcon direction={record.direction} />
+                )}
+                {record.title}
+              </Link>
+            ) : (
+              <button
+                onClick={() => setExpandedRecord(isExpanded ? null : record.id)}
+                className="text-slate-900 font-medium hover:text-blue-600 transition-colors text-left flex items-center gap-1.5"
+              >
+                {/* Direction indicator for thesis records */}
+                {record.direction && (
+                  <DirectionIcon direction={record.direction} />
+                )}
+                {record.title}
+              </button>
+            )}
           </td>
 
           {/* Object Type */}
