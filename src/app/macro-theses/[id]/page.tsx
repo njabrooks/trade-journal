@@ -10,6 +10,7 @@ import { LinkedAssetThesesSection } from '@/components/theses/LinkedAssetThesesS
 import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { ValidationPointsList } from '@/components/thesis-synthesis/ValidationPointsList';
+import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { notFound } from 'next/navigation';
 
 interface ThesisDetailPageProps {
@@ -134,6 +135,13 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
                 </span>
               )}
             </h3>
+            <SynthesizeButton
+              thesisId={id}
+              thesisType="macro"
+              claimCount={claimsWithSources.length}
+              hasArticulation={!!articulation}
+              articulationClaimCount={articulation?.claimIdsUsed ? (articulation.claimIdsUsed as string[]).length : undefined}
+            />
           </div>
 
           {/* Priority 1: Show articulation */}

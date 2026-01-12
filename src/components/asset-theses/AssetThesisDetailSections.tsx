@@ -15,6 +15,7 @@ import { NewsArchiveSection } from '@/components/asset-theses/NewsArchiveSection
 import { TriageAlertSection } from '@/components/asset-theses/TriageAlertSection';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { ValidationPointsList } from '@/components/thesis-synthesis/ValidationPointsList';
+import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import type { ThesisArticulation, ValidationPoint } from '@/db/schema';
 import type { getAssetThesisById, getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
 import type { MacroThesisListItem } from '@/db/queries/macroTheses';
@@ -175,6 +176,17 @@ export function AssetThesisDetailSections({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4">
+            {/* Synthesize Button - shown when synthesis is recommended */}
+            <div className="flex justify-end mb-3">
+              <SynthesizeButton
+                thesisId={view.id}
+                thesisType="asset"
+                claimCount={currentClaimCount}
+                hasArticulation={hasCoreArgument}
+                articulationClaimCount={articulationClaimCount}
+              />
+            </div>
+
             {/* Priority 1: Show articulation Core Argument */}
             {hasCoreArgument && articulation && (
               <ThesisArticulationDisplay
