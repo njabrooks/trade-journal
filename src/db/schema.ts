@@ -684,7 +684,7 @@ export const triageRecords = pgTable(
       .references(() => accounts.id, { onDelete: 'cascade' }),
     contextLevel: text('context_level').notNull(), // 'position' | 'strategy' | 'underlying' | 'account'
     positionId: uuid('position_id').references(() => positions.id, {
-      onDelete: 'set null',
+      onDelete: 'cascade',
     }),
     strategyId: uuid('strategy_id').references(() => strategies.id, {
       onDelete: 'set null',
