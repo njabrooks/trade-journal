@@ -24,7 +24,7 @@ import { desc, eq, and, sql } from 'drizzle-orm';
 
 const {
   thesisArticulations,
-  validationPoints: validationPointsTable,
+  signals: signalsTable,
   macroTheses,
   assetTheses,
   thesisTriageRecords,
@@ -67,36 +67,41 @@ interface ArticulationInput {
     }>;
     userEdits?: string | null;
   };
-  validationPoints: Array<{
-    type: 'validation' | 'invalidation';
-    statement: string;
-    rationale: string;
-    category: 'explicit' | 'judgment_required';
-    importance: 'critical' | 'significant' | 'supporting';
-    timeframe: 'immediate' | 'medium_term' | 'secular';
-    explicitDetails?: {
-      metric: string;
-      threshold: string;
-      dataSources: string[];
-      monitoringFrequency: string;
-      dataSource?: 'fred' | 'price_iv';
-      operator?: string;
-      value?: number;
-    };
-    judgmentDetails?: {
-      observableProxies: string[];
-      judgmentCriteria: string;
-      reviewFrequency: string;
-    };
-    responseProtocol: {
-      description: string;
-      escalation?: 'review_thesis' | 'reduce_exposure' | 'exit' | 'increase_exposure';
-    };
-    linkedClaimIds: string[];
-    dependentThesisId?: string;
-    dependentThesisType?: 'macro' | 'asset';
-    dependentThesisCondition?: 'invalidated' | 'confidence_drops' | 'status_changes';
-  }>;
+  // Support both old (validationPoints) and new (signals) field names
+  signals?: Array<SignalInput>;
+  validationPoints?: Array<SignalInput>; // Legacy support
+}
+
+interface SignalInput {
+  type: 'confirmation' | 'warning' | 'validation' | 'invalidation'; // Support both old and new type values
+  statement: string;
+  rationale: string;
+  category: 'explicit' | 'judgment_required';
+  importance: 'critical' | 'significant' | 'supporting';
+  timeframe: 'immediate' | 'medium_term' | 'secular';
+  status?: 'not_triggered' | 'recommended'; // Default: 'recommended' for AI-generated signals
+  explicitDetails?: {
+    metric: string;
+    threshold: string;
+    dataSources: string[];
+    monitoringFrequency: string;
+    dataSource?: 'fred' | 'price_iv';
+    operator?: string;
+    value?: number;
+  };
+  judgmentDetails?: {
+    observableProxies: string[];
+    judgmentCriteria: string;
+    reviewFrequency: string;
+  };
+  responseProtocol: {
+    description: string;
+    escalation?: 'review_thesis' | 'reduce_exposure' | 'exit' | 'increase_exposure';
+  };
+  linkedClaimIds: string[];
+  dependentThesisId?: string;
+  dependentThesisType?: 'macro' | 'asset';
+  dependentThesisCondition?: 'invalidated' | 'confidence_drops' | 'status_changes';
 }
 
 // ============================================================================
@@ -133,7 +138,9 @@ async function main() {
     process.exit(1);
   }
 
-  const { thesisId, thesisType, articulation, validationPoints } = inputData;
+  const { thesisId, thesisType, articulation } = inputData;
+  // Support both old (validationPoints) and new (signals) field names
+  const signals = inputData.signals || inputData.validationPoints || [];
 
   console.log(`\nInserting articulation for ${thesisType} thesis: ${thesisId}`);
 
@@ -181,42 +188,54 @@ async function main() {
   console.log(`✅ Articulation created: ${insertedArticulation.id}`);
 
   // -------------------------------------------------------------------------
-  // Step 3: Insert validation points
+  // Step 3: Insert signals
   // -------------------------------------------------------------------------
-  if (validationPoints.length > 0) {
-    const pointsToInsert = validationPoints.map((vp) => ({
+  // Helper to convert old type values to new ones
+  const normalizeType = (type: string): 'confirmation' | 'warning' => {
+    if (type === 'validation') return 'confirmation';
+    if (type === 'invalidation') return 'warning';
+    return type as 'confirmation' | 'warning';
+  };
+
+  if (signals.length > 0) {
+    const signalsToInsert = signals.map((sig) => ({
       thesisId,
       thesisType,
       articulationId: insertedArticulation.id,
-      type: vp.type,
-      statement: vp.statement,
-      rationale: vp.rationale,
-      category: vp.category,
-      importance: vp.importance,
-      timeframe: vp.timeframe,
-      explicitDetails: vp.explicitDetails || null,
-      judgmentDetails: vp.judgmentDetails || null,
-      responseProtocol: vp.responseProtocol,
-      linkedClaimIds: vp.linkedClaimIds,
-      dependentThesisId: vp.dependentThesisId || null,
-      dependentThesisType: vp.dependentThesisType || null,
-      dependentThesisCondition: vp.dependentThesisCondition || null,
-      status: 'not_triggered' as const,
+      type: normalizeType(sig.type),
+      statement: sig.statement,
+      rationale: sig.rationale,
+      category: sig.category,
+      importance: sig.importance,
+      timeframe: sig.timeframe,
+      explicitDetails: sig.explicitDetails || null,
+      judgmentDetails: sig.judgmentDetails || null,
+      responseProtocol: sig.responseProtocol,
+      linkedClaimIds: sig.linkedClaimIds,
+      dependentThesisId: sig.dependentThesisId || null,
+      dependentThesisType: sig.dependentThesisType || null,
+      dependentThesisCondition: sig.dependentThesisCondition || null,
+      // Default to 'recommended' for AI-generated signals (user must review before they become active)
+      status: (sig.status || 'recommended') as 'not_triggered' | 'monitoring' | 'triggered' | 'superseded' | 'recommended',
     }));
 
-    const insertedPoints = await db
-      .insert(validationPointsTable)
-      .values(pointsToInsert)
+    const insertedSignals = await db
+      .insert(signalsTable)
+      .values(signalsToInsert)
       .returning();
 
-    console.log(`✅ Inserted ${insertedPoints.length} validation points`);
+    console.log(`✅ Inserted ${insertedSignals.length} signals`);
 
     // Count by type
-    const validationCount = insertedPoints.filter((p) => p.type === 'validation').length;
-    const invalidationCount = insertedPoints.filter((p) => p.type === 'invalidation').length;
-    console.log(`   - ${validationCount} validation, ${invalidationCount} invalidation`);
+    const confirmationCount = insertedSignals.filter((s) => s.type === 'confirmation').length;
+    const warningCount = insertedSignals.filter((s) => s.type === 'warning').length;
+    const recommendedCount = insertedSignals.filter((s) => s.status === 'recommended').length;
+    console.log(`   - ${confirmationCount} confirmation, ${warningCount} warning`);
+    if (recommendedCount > 0) {
+      console.log(`   - ${recommendedCount} with 'recommended' status (pending user review)`);
+    }
   } else {
-    console.log('ℹ️  No validation points to insert');
+    console.log('ℹ️  No signals to insert');
   }
 
   // -------------------------------------------------------------------------
@@ -329,6 +348,74 @@ async function main() {
   console.log(`✅ Resolved ${articulationTriage.length} triage records`);
 
   // -------------------------------------------------------------------------
+  // Step 4b: Create REVIEW_RECOMMENDED_SIGNALS triage if needed
+  // -------------------------------------------------------------------------
+  const recommendedSignalsInserted = signals.filter((s) => !s.status || s.status === 'recommended');
+  if (recommendedSignalsInserted.length > 0) {
+    // Check if triage record already exists
+    const existingReviewTriage = await db
+      .select()
+      .from(thesisTriageRecords)
+      .where(
+        and(
+          eq(thesisTriageRecords.thesisId, thesisId),
+          eq(thesisTriageRecords.thesisType, thesisType),
+          eq(thesisTriageRecords.triageRule, 'REVIEW_RECOMMENDED_SIGNALS'),
+          sql`${thesisTriageRecords.status} != 'complete'`
+        )
+      )
+      .limit(1);
+
+    if (existingReviewTriage.length === 0) {
+      // Create new triage record for signal review
+      const [newTriage] = await db
+        .insert(thesisTriageRecords)
+        .values({
+          thesisId,
+          thesisType,
+          thesisTitle: thesis?.title || 'Unknown',
+          triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
+          triggerType: 'signal_recommendation',
+          triggerSource: 'insert-thesis-articulation',
+          severity: 'medium',
+          urgency: 'this_week',
+          status: 'attention',
+          lifecycleStage: 'monitoring',
+          suggestedSkill: null,
+          actionRequired: `${recommendedSignalsInserted.length} AI-recommended signal(s) need review. Accept, modify, or reject each signal.`,
+          contentSummary: {
+            recommendedSignalCount: recommendedSignalsInserted.length,
+            totalSignalCount: signals.length,
+          },
+          aiAnalysis: {},
+          matchedResults: [],
+        })
+        .returning();
+
+      // Log triage creation
+      await logToJournal({
+        objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+        objectId: thesisId,
+        objectTitle: thesis?.title,
+        actionType: 'triage_created',
+        actionDescription: `Triage created: REVIEW_RECOMMENDED_SIGNALS. ${recommendedSignalsInserted.length} signal(s) need review.`,
+        triageRecordId: newTriage.id,
+        skillInvoked: '/synthesize-thesis',
+        newState: {
+          triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
+          status: 'attention',
+          urgency: 'this_week',
+        },
+        source: 'skill',
+      });
+
+      console.log(`✅ Created REVIEW_RECOMMENDED_SIGNALS triage record`);
+    } else {
+      console.log(`ℹ️  REVIEW_RECOMMENDED_SIGNALS triage already exists`);
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // Step 5: Cleanup
   // -------------------------------------------------------------------------
   await closeDb();
@@ -336,8 +423,15 @@ async function main() {
   console.log('\n✅ Thesis articulation upload complete!');
   console.log(`   Articulation ID: ${insertedArticulation.id}`);
   console.log(`   Version: ${nextVersion}`);
-  console.log(`   Validation Points: ${validationPoints.length}`);
+  console.log(`   Signals: ${signals.length}`);
   console.log(`   Triage Records Resolved: ${articulationTriage.length}`);
+
+  // Notify about recommended signals needing review
+  const recommendedSignals = signals.filter((s) => !s.status || s.status === 'recommended');
+  if (recommendedSignals.length > 0) {
+    console.log(`\n⚠️  ${recommendedSignals.length} signal(s) have 'recommended' status and need user review.`);
+    console.log('   A triage record will be created for batch review.');
+  }
 
   process.exit(0);
 }

@@ -8,6 +8,7 @@
  * - NEEDS_RESEARCH: <3 claims, no articulation → status: 'info'
  * - PRODUCE_CORE_ARGUMENT: ≥3 claims, no articulation → status: 'attention'
  * - UPDATE_CORE_ARGUMENT: ≥3 new claims since last articulation → status: 'info'
+ * - REVIEW_RECOMMENDED_SIGNALS: ≥1 signals with status='recommended' → status: 'attention'
  *
  * Monitoring triggers (handled by scripts/daily-thesis-monitoring.ts):
  * - REVIEW_CONTENT: News/content found for thesis → status: 'attention'
@@ -23,6 +24,7 @@ import {
   thesisArticulations,
   thesisTriageRecords,
   claimThesisMappings,
+  signals,
   NewThesisTriageRecord,
 } from '@/db/schema';
 import { eq, ne, and, desc, sql, count, isNotNull } from 'drizzle-orm';
@@ -189,6 +191,43 @@ export async function computeThesisTriageForThesis(
     }
   }
 
+  // REVIEW_RECOMMENDED_SIGNALS: ≥1 signals with status='recommended' need user review
+  // This is independent of articulation state - can happen anytime after synthesis
+  const existingReviewSignals = existingTriage.find(
+    (t) => t.triageRule === 'REVIEW_RECOMMENDED_SIGNALS'
+  );
+
+  if (evolutionState.recommendedSignalCount > 0) {
+    // Has recommended signals - create triage if not exists
+    if (!existingReviewSignals) {
+      await createTriageRecord({
+        thesisId,
+        thesisType,
+        thesisTitle: thesis.title,
+        triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
+        triggerType: 'signal_recommendation',
+        triggerSource: 'computeThesisTriageForThesis',
+        status: 'attention',
+        urgency: 'this_week',
+        lifecycleStage: 'monitoring',
+        suggestedSkill: null,
+        actionRequired: `${evolutionState.recommendedSignalCount} AI-recommended signal(s) need review. Accept, modify, or reject each signal.`,
+        contentSummary: {
+          recommendedSignalCount: evolutionState.recommendedSignalCount,
+          totalSignalCount: evolutionState.hasSignals ? 'multiple' : 0,
+        },
+      });
+      // Don't overwrite triageCreated if already set (e.g., by UPDATE_CORE_ARGUMENT)
+      if (!result.triageCreated) {
+        result.triageCreated = 'REVIEW_RECOMMENDED_SIGNALS';
+      }
+    }
+  } else if (existingReviewSignals) {
+    // No recommended signals left - resolve existing triage
+    await resolveTriageRecord(existingReviewSignals.id, 'all_signals_reviewed');
+    result.existingTriageResolved = true;
+  }
+
   return result;
 }
 
@@ -311,7 +350,8 @@ export async function onArticulationCreated(
 interface ThesisEvolutionState {
   claimCount: number;
   hasArticulation: boolean;
-  hasValidationPoints: boolean;
+  hasSignals: boolean;
+  recommendedSignalCount: number;
   hasMonitoringConfig: boolean;
 }
 
@@ -346,14 +386,26 @@ async function getThesisEvolutionState(
     )
     .limit(1);
 
-  // TODO: Check for validation points and monitoring config
-  // These can be added when those features are fully integrated
+  // Check for signals and count recommended ones
+  const signalCounts = await db
+    .select({
+      total: count(),
+      recommended: sql<number>`count(*) filter (where ${signals.status} = 'recommended')`,
+    })
+    .from(signals)
+    .where(
+      and(
+        eq(signals.thesisId, thesisId),
+        eq(signals.thesisType, thesisType)
+      )
+    );
 
   return {
     claimCount: claimCountResult[0]?.count ?? 0,
     hasArticulation: articulation.length > 0,
-    hasValidationPoints: false, // TODO: implement
-    hasMonitoringConfig: false, // TODO: implement
+    hasSignals: (signalCounts[0]?.total ?? 0) > 0,
+    recommendedSignalCount: signalCounts[0]?.recommended ?? 0,
+    hasMonitoringConfig: false, // TODO: implement when monitoring is integrated
   };
 }
 
@@ -403,7 +455,7 @@ interface CreateTriageParams {
   status: 'urgent' | 'attention' | 'monitor' | 'info' | 'pending' | 'complete';
   urgency: 'immediate' | 'today' | 'this_week' | 'when_convenient';
   lifecycleStage: string;
-  suggestedSkill: string;
+  suggestedSkill: string | null;
   actionRequired: string;
   contentSummary: Record<string, unknown>;
 }

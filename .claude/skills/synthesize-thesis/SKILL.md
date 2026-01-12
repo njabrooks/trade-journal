@@ -1,6 +1,6 @@
 ---
 name: synthesize-thesis
-description: Synthesize linked claims into a coherent thesis articulation with explicit validation/invalidation criteria. Creates versioned articulations with provenance tracking. Use when thesis has accumulated claims and needs formal articulation.
+description: Synthesize linked claims into a coherent thesis articulation with explicit confirmation/warning signals. Creates versioned articulations with provenance tracking. Use when thesis has accumulated claims and needs formal articulation.
 allowed-tools: Bash, Read, Write
 ---
 
@@ -8,13 +8,14 @@ allowed-tools: Bash, Read, Write
 
 ## Purpose
 
-Transform a collection of linked claims into a **thesis articulation** - a coherent, synthesized investment thesis with explicit validation/invalidation criteria. This skill:
+Transform a collection of linked claims into a **thesis articulation** - a coherent, synthesized investment thesis with explicit confirmation/warning signals. This skill:
 
 1. **Synthesizes claims** into a unified core argument with key drivers and assumptions
-2. **Extracts validation/invalidation points** - explicit, measurable criteria for thesis success/failure
+2. **Extracts signals** - confirmation and warning signals with measurable criteria for thesis success/failure
 3. **Discovers compositional dependencies** - identifies when thesis depends on other theses
 4. **Pushes for specificity** - challenges vague criteria with observable proxies
 5. **Creates versioned storage** - tracks how articulations evolve over time
+6. **Outputs `recommended` status** - signals default to `recommended` status for user review via batch review UI
 
 This is **Layer 2** of the Thesis Synthesis & Monitoring System (see `docs/features/thesis-synthesis-monitoring.md`).
 
@@ -812,6 +813,7 @@ Create a JSON file with the articulation data (e.g., `articulation-data.json`):
       "category": "explicit",
       "importance": "critical",
       "timeframe": "medium_term",
+      "status": "recommended",
       "explicitDetails": {
         "metric": "Metric name",
         "threshold": "Threshold description",
@@ -831,6 +833,7 @@ Create a JSON file with the articulation data (e.g., `articulation-data.json`):
       "category": "judgment_required",
       "importance": "critical",
       "timeframe": "medium_term",
+      "status": "recommended",
       "judgmentDetails": {
         "observableProxies": ["Proxy 1", "Proxy 2"],
         "judgmentCriteria": "How to judge",
@@ -844,6 +847,18 @@ Create a JSON file with the articulation data (e.g., `articulation-data.json`):
     }
   ]
 }
+
+**IMPORTANT: Signal Status Workflow**
+
+AI-generated signals default to `status: "recommended"`. This means:
+1. Signals are NOT active until the user reviews and accepts them
+2. A triage record (`REVIEW_RECOMMENDED_SIGNALS`) is automatically created for the thesis
+3. User reviews signals in the batch review UI at `/triage` → expand thesis → "Review Signals"
+4. User can Accept, Reject, or Modify each signal
+5. Accepted signals transition to `status: "not_triggered"` (active, monitoring)
+6. Rejected signals are deleted
+
+This workflow ensures the user explicitly approves each signal before it becomes part of the monitoring system.
 ```
 
 **Step 7.2: Execute the Permanent Script**
@@ -914,28 +929,38 @@ Display to user:
 
 Version: [N]
 Claims Synthesized: [COUNT]
-Validation Points: [X validation, Y invalidation]
+Signals: [X confirmation, Y warning]
 Dependencies: [N theses referenced]
 Generated: [TIMESTAMP]
 
-**Validation Points Summary**:
+**Signals Summary**:
 - Critical: [N] ([list types])
 - Significant: [N]
 - Supporting: [N]
 
-**Auto-Triggered Monitoring**:
-- [X] points with auto-trigger sources (fred/price_iv) are now monitored daily
+**Signal Review Required**:
+⚠️ All [N] signals have 'recommended' status and need your review.
+A triage record has been created. Go to /triage to review and accept/reject signals.
+
+Signals are NOT active until you review them:
+- Accept: Signal becomes active (status → 'not_triggered')
+- Reject: Signal is deleted
+- Modify: Edit statement/rationale/importance before accepting
+
+**Auto-Triggered Monitoring** (after signals are accepted):
+- [X] signals with auto-trigger sources (fred/price_iv) will be monitored daily
 - Thresholds: [list threshold descriptions]
-- When breached, V&I status auto-updates and triage record is created
-- [Y] points require manual monitoring (unsupported data sources)
+- When breached, signal status auto-updates and triage record is created
+- [Y] signals require manual monitoring (unsupported data sources)
 
 **Next Steps**:
-- View articulation at /theses/[ID] or /asset-theses/[ID]
-- Auto-triggered points will create triage records when thresholds breach
-- Manually review judgment-required points on [frequency] basis
-- Re-synthesize when new claims are added with /synthesize-thesis [TICKER]
+1. Review signals in /triage → expand thesis → "Review Signals"
+2. Accept, modify, or reject each signal
+3. Once accepted, signals become part of your monitoring system
+4. View articulation at /macro-theses/[ID] or /asset-theses/[ID]
+5. Re-synthesize when new claims are added with /synthesize-thesis [TICKER]
 
-**Note**: These validation/invalidation points are your commitment device.
+**Note**: These confirmation/warning signals are your commitment device.
 When they trigger, you've stated in advance what action you'll take.
 The system will track whether you follow through.
 ```

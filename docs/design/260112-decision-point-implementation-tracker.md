@@ -24,7 +24,7 @@
 |-------|-------|--------|---------|-----------|
 | **Phase 0** | UX component audit & consolidation | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 1** | Terminology & schema foundation | Complete | 2026-01-12 | 2026-01-12 |
-| **Phase 2** | Signal framework core | Not Started | - | - |
+| **Phase 2** | Signal framework core | In Progress | 2026-01-12 | - |
 | **Phase 3** | AI integration | Not Started | - | - |
 | **Phase 4** | Triage consolidation | Not Started | - | - |
 | **Phase 5** | Journal logging completion | Not Started | - | - |
@@ -134,9 +134,11 @@
 ## Phase 2: Signal Framework Core
 
 ### 2.1 Signal Batch Review (DP-5.1)
-- [ ] Add triage rule: `REVIEW_RECOMMENDED_SIGNALS` in `thesisTriage.ts`
-- [ ] Create `src/components/signals/SignalBatchReview.tsx`
-- [ ] Update `/synthesize-thesis` skill to output `recommended` status
+- [x] Add triage rule: `REVIEW_RECOMMENDED_SIGNALS` in `thesisTriage.ts`
+- [x] Update `scripts/insert-thesis-articulation.ts` to create triage record when recommended signals inserted
+- [x] Create `/api/signals/batch-review/route.ts` API endpoint (GET + POST)
+- [x] Create `src/components/signals/SignalBatchReview.tsx` component
+- [x] Update `/synthesize-thesis` skill to output `recommended` status and document workflow
 
 ### 2.2 Signal Configuration UI (DP-5.2)
 - [ ] Create `src/components/signals/SignalConfigForm.tsx`
@@ -288,3 +290,4 @@
 | 2026-01-12 | 0 | Added DELETE to EditAssetThesisDialog | Consistency with EditMacroThesisDialog |
 | 2026-01-12 | 0 | Created SynthesizeButton component | Added to macro & asset thesis detail pages |
 | 2026-01-12 | 1 | Phase 1 complete | Full signals rename: DB tables, schema.ts, API routes, queries, components, page routes, skills |
+| 2026-01-12 | 2.1 | Phase 2.1 complete | Signal batch review: triage rule, API endpoint, SignalBatchReview component, skill docs |
