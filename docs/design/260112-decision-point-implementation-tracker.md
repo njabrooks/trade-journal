@@ -25,7 +25,7 @@
 | **Phase 0** | UX component audit & consolidation | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 1** | Terminology & schema foundation | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 2** | Signal framework core | Complete | 2026-01-12 | 2026-01-12 |
-| **Phase 3** | AI integration | Not Started | - | - |
+| **Phase 3** | AI integration | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 4** | Triage consolidation | Not Started | - | - |
 | **Phase 5** | Journal logging completion | Not Started | - | - |
 
@@ -73,7 +73,7 @@
 - [x] Shows when thesis has ≥3 claims and no/stale articulation
 
 **Signal List Actions:**
-- [ ] Add "Convert to Explicit" action placeholder (implemented in Phase 2)
+- [x] Add "Convert to Explicit" action placeholder (implemented in Phase 3 as "Make Explicit" button)
 
 ---
 
@@ -158,14 +158,15 @@
 ## Phase 3: AI Integration
 
 ### 3.1 AI-Assisted Judgment (DP-5.4)
-- [ ] Create `src/components/signals/AssessEvidenceModal.tsx`
-- [ ] Create `src/app/api/skills/assess-validation-evidence/route.ts`
-- [ ] Add "Assess Evidence" button to thesis detail pages
-- [ ] Implement recommendation review UI (accept/modify/reject)
+- [x] Create `src/components/signals/AssessEvidenceModal.tsx`
+- [x] Create `src/app/api/skills/assess-validation-evidence/route.ts` (direct Anthropic API, not CLI)
+- [x] Add "Assess Evidence" button to thesis detail pages (via SignalsSection wrapper)
+- [x] Implement recommendation review UI (select/deselect assessments with evidence, apply selected)
 
 ### 3.2 Upgrade Judgment to Explicit (DP-5.5)
-- [ ] Add "Convert to Explicit" action to SignalsList
-- [ ] Integrate with SignalConfigForm
+- [x] Add "Convert to Explicit" action to ValidationPointsList ("Make Explicit" button with ⚡ icon)
+- [x] Create `src/components/signals/SignalsSection.tsx` wrapper (integrates list + config form dialog)
+- [x] Integrate with SignalConfigForm in 'upgrade' mode
 
 ---
 
@@ -295,3 +296,4 @@
 | 2026-01-12 | 2.1 | Phase 2.1 complete | Signal batch review: triage rule, API endpoint, SignalBatchReview component, skill docs |
 | 2026-01-12 | 2.2 | Phase 2.2 complete | Signal config UI: SignalConfigForm with data sources (FRED/IV/Price), criteria builder, acceptance flow integration |
 | 2026-01-12 | 2.3 | Phase 2.3 complete | Thesis-level triage consolidation: SIGNAL_TRIGGERED rule, ThesisSignalTriageCard, assess-impact API, assessment UI |
+| 2026-01-12 | 3 | Phase 3 complete | AI integration: assess-validation-evidence API, AssessEvidenceModal, SignalsSection wrapper, "Make Explicit" action |

@@ -19,6 +19,7 @@ import {
   Calendar,
   Plus,
   ExternalLink,
+  Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ interface ValidationPointsListProps {
   thesisType: 'macro' | 'asset';
   onUpdateStatus?: (pointId: string) => void;
   onViewHistory?: (pointId: string) => void;
+  onConvertToExplicit?: (point: ValidationPoint) => void;
   // Monitoring props
   monitoringSpecs?: Array<{
     spec: MonitoringSpec & { lastCheckEvent?: MonitoringEvent | null };
@@ -47,6 +49,7 @@ export function ValidationPointsList({
   thesisType,
   onUpdateStatus,
   onViewHistory,
+  onConvertToExplicit,
   monitoringSpecs = [],
   onCreateSpec,
   onEditSpec,
@@ -321,6 +324,17 @@ export function ValidationPointsList({
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
+                  {/* Convert to Explicit - only for judgment-based signals */}
+                  {onConvertToExplicit && point.category === 'judgment_required' && point.status !== 'superseded' && (
+                    <button
+                      onClick={() => onConvertToExplicit(point)}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded"
+                      title="Convert to explicit signal with data-driven triggers"
+                    >
+                      <Zap className="w-3 h-3" />
+                      Make Explicit
+                    </button>
+                  )}
                   {onUpdateStatus && point.status !== 'superseded' && (
                     <button
                       onClick={() => onUpdateStatus(point.id)}

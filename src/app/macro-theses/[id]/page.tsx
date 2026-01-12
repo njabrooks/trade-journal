@@ -9,8 +9,8 @@ import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser
 import { LinkedAssetThesesSection } from '@/components/theses/LinkedAssetThesesSection';
 import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
-import { ValidationPointsList } from '@/components/thesis-synthesis/ValidationPointsList';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
+import { SignalsSection } from '@/components/signals/SignalsSection';
 import { notFound } from 'next/navigation';
 
 interface ThesisDetailPageProps {
@@ -179,36 +179,14 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
           )}
         </div>
 
-        {/* Validation Points - Separate section for accountability */}
+        {/* Signals - Separate section for accountability */}
         <div className="bg-white rounded-lg border border-slate-200 p-4">
-          <h3 className="text-base font-semibold mb-3">
-            Validation Points ({validationPoints.length})
-            {validationPoints.length > 0 && (
-              <span className="ml-2 text-xs font-normal text-slate-400">
-                {validationPoints.filter(p => p.type === 'validation').length} validation •{' '}
-                {validationPoints.filter(p => p.type === 'invalidation').length} invalidation
-              </span>
-            )}
-          </h3>
-          {validationPoints.length === 0 ? (
-            <div className="text-center py-4">
-              <p className="text-sm text-slate-500 mb-2">
-                No validation points defined yet.
-              </p>
-              <p className="text-xs text-slate-400">
-                Validation points are created when you run{' '}
-                <code className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">
-                  /synthesize-thesis
-                </code>
-              </p>
-            </div>
-          ) : (
-            <ValidationPointsList
-              validationPoints={validationPoints}
-              thesisId={id}
-              thesisType="macro"
-            />
-          )}
+          <SignalsSection
+            signals={validationPoints}
+            thesisId={id}
+            thesisType="macro"
+            thesisTitle={thesis.title}
+          />
         </div>
 
         {/* Main Claims - UnifiedClaimsBrowser */}
