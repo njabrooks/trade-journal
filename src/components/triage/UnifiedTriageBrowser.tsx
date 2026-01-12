@@ -33,7 +33,8 @@ type ObjectTypeFilter = 'all' | TriageObjectType;
 type SortColumn = 'title' | 'objectType' | 'trigger' | 'status' | 'date';
 type SortDirection = 'asc' | 'desc';
 type GroupBy = 'none' | 'status';
-type QuickFilter = 'needs_action' | 'all';
+type BaseFilter = 'needs_action' | 'all';
+type TypeFilter = 'all' | 'macro_thesis' | 'asset_thesis' | 'positions_strategies';
 
 // Statuses that require action (shown in "Needs Action" view)
 const ACTION_STATUSES = ['urgent', 'attention'];
@@ -43,8 +44,9 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
   const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Quick filter state (default to "Needs Action")
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>('needs_action');
+  // Quick filter states (two-tier: base filter + type filter)
+  const [baseFilter, setBaseFilter] = useState<BaseFilter>('needs_action');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,11 +101,21 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
   const filteredAndSortedRecords = useMemo(() => {
     let result = [...records];
 
-    // Quick filter (applied first)
-    if (quickFilter === 'needs_action') {
+    // Base filter (applied first)
+    if (baseFilter === 'needs_action') {
       result = result.filter((r) => ACTION_STATUSES.includes(r.status));
     }
     // 'all' shows everything
+
+    // Type filter (applied on top of base filter)
+    if (typeFilter === 'macro_thesis') {
+      result = result.filter((r) => r.objectType === 'macro_thesis');
+    } else if (typeFilter === 'asset_thesis') {
+      result = result.filter((r) => r.objectType === 'asset_thesis');
+    } else if (typeFilter === 'positions_strategies') {
+      result = result.filter((r) => r.objectType === 'position' || r.objectType === 'strategy');
+    }
+    // 'all' shows all types
 
     // Object type filter
     if (objectTypeFilter !== 'all') {
@@ -174,7 +186,7 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
     });
 
     return result;
-  }, [records, quickFilter, objectTypeFilter, statusFilter, triggerFilter, searchQuery, sortColumn, sortDirection]);
+  }, [records, baseFilter, typeFilter, objectTypeFilter, statusFilter, triggerFilter, searchQuery, sortColumn, sortDirection]);
 
   // Group records by status
   const groupedRecords = useMemo(() => {
@@ -357,24 +369,7 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
     <div className="space-y-4">
       {/* Quick Filters and Controls Bar */}
       <div className="flex items-center gap-2">
-        {/* Quick Filter Buttons */}
-        <Button
-          variant={quickFilter === 'needs_action' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setQuickFilter('needs_action')}
-        >
-          Needs Action
-        </Button>
-        <Button
-          variant={quickFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setQuickFilter('all')}
-        >
-          All Triage
-        </Button>
-
-        <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
-
+        {/* Filters and Group By Controls */}
         <Button
           variant="outline"
           size="sm"
@@ -393,6 +388,56 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
         >
           <Layers className="h-4 w-4" />
           Group by Status
+        </Button>
+
+        <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
+
+        {/* Base Filter Buttons */}
+        <Button
+          variant={baseFilter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setBaseFilter('all')}
+        >
+          All Triage
+        </Button>
+        <Button
+          variant={baseFilter === 'needs_action' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setBaseFilter('needs_action')}
+        >
+          Needs Action
+        </Button>
+
+        <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
+
+        {/* Type Filter Buttons (layered on top of base filter) */}
+        <Button
+          variant={typeFilter === 'all' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setTypeFilter('all')}
+        >
+          All Types
+        </Button>
+        <Button
+          variant={typeFilter === 'macro_thesis' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setTypeFilter('macro_thesis')}
+        >
+          Macro Theses
+        </Button>
+        <Button
+          variant={typeFilter === 'asset_thesis' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setTypeFilter('asset_thesis')}
+        >
+          Asset Theses
+        </Button>
+        <Button
+          variant={typeFilter === 'positions_strategies' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setTypeFilter('positions_strategies')}
+        >
+          Positions & Strategies
         </Button>
 
         <div className="ml-auto text-sm text-slate-600">
