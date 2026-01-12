@@ -7,6 +7,7 @@ import { formatPosition } from "@/lib/formatters";
 import { TradeDetailsCard } from "@/components/blotter/TradeDetailsCard";
 import { TriagePositionsTable } from "@/components/triage/TriagePositionsTable";
 import { StrategyConfirmationDialog } from "@/components/strategies/StrategyConfirmationDialog";
+import { TradeMetadataForm, type TradeMetadataFormData } from "@/components/triage/TradeMetadataForm";
 import type { BlotterEntry } from "@/db/queries/blotter";
 
 interface TriageActionButtonsProps {
@@ -1201,229 +1202,123 @@ export function TriageActionButtons({
     );
   }
 
-  // Render quantity change form (for QUANTITY_CHANGE) - uses TradeDetailsCard in edit mode
+  // Render quantity change form (for QUANTITY_CHANGE) - uses TradeMetadataForm (compulsory completion)
   if (showActionForm && selectedAction === "TRADE" && recommendedAction === "QUANTITY_CHANGE") {
-    // Create mock entry for TradeDetailsCard
-    const mockEntry: BlotterEntry = {
-      id: "",
-      actionDate: "",
-      createdAt: null,
-      strategyId: null,
-      strategyKey: null,
-      actionClass: null,
-      actionDetail: null,
-      reasonCode: null,
-      legScope: null,
-      qtyChange: null,
-      premiumChange: null,
-      realizedPnl: null,
-      followUpRequired: null,
-      followUpDate: null,
-      completed: null,
-      source: null,
-      tradeCount: null,
-      tradeIds: null,
-      conid: null,
-      linkedBlotterActionId: null,
-      linkedTradeBlotterIds: null,
-      linkedTradeReason: null,
-      linkedTradeStage: null,
-      linkedNotes: null,
-      linkedCreatedAt: null,
-      linkedTradeEntries: null,
-      notes: null,
-      severityOverride: null,
-      monitorDays: null,
-      overrideExpiresDate: null,
-      ticker: null,
-      tradeStage: null,
-      tradeReason: null,
-      tradeDetails: tradeDetails,
-      positionDetails: null,
-      parsedNotes: null,
+    // Handler for TradeMetadataForm submission - updates state and calls handleConfirm
+    const handleTradeMetadataSubmit = async (formData: TradeMetadataFormData) => {
+      // Update state variables that handleConfirm reads
+      setTradeStage(formData.tradeStage);
+      setTradeReason(formData.tradeReason);
+      setSelectedTradeIds(formData.selectedTradeIds);
+      setTradeQuantities(formData.tradeQuantities);
+
+      // Store additional notes if provided
+      if (formData.additionalNotes) {
+        setNotes(formData.additionalNotes);
+      }
+
+      // Call the existing handleConfirm logic
+      // Note: We need to call it after state updates are applied, so we replicate the logic here
+      setLoading(true);
+      setError(null);
+
+      try {
+        // For QUANTITY_CHANGE, use trade details with selected trades and edited quantities
+        if (!tradeDetails || tradeDetails.length === 0) {
+          throw new Error("No trade details available");
+        }
+
+        const selectedTrades = tradeDetails.filter(t => formData.selectedTradeIds.has(t.id));
+
+        if (selectedTrades.length === 0) {
+          throw new Error("At least one trade execution must be selected");
+        }
+
+        // Map trade details to positions by matching symbol
+        const positionsResponse = await fetch(`/api/positions?strategyId=${strategyId}`);
+        if (!positionsResponse.ok) {
+          throw new Error("Failed to load positions for trade action");
+        }
+        const positionsData = await positionsResponse.json();
+        const positionsList = Array.isArray(positionsData) ? positionsData : [positionsData];
+
+        // Match trades to positions by symbol and create trade positions
+        const matchedPositions: Array<{ positionId: string; quantity: number }> = [];
+        for (const trade of selectedTrades) {
+          const position = positionsList.find((p: any) => p.symbol === trade.symbol);
+          if (position && position.id) {
+            const quantity = formData.tradeQuantities?.get(trade.id) ?? trade.quantity;
+            matchedPositions.push({
+              positionId: position.id,
+              quantity: quantity,
+            });
+          }
+        }
+
+        if (matchedPositions.length === 0) {
+          throw new Error("Could not match trades to positions");
+        }
+
+        // Build notes with trade reason and additional notes
+        let notesParts = [formData.tradeReason];
+        if (formData.additionalNotes) {
+          notesParts.push(formData.additionalNotes);
+        }
+
+        // Call triage action API
+        const response = await fetch("/api/triage/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            triageId,
+            actionType: "TRADE",
+            strategyId,
+            positionId,
+            tradeReason: formData.tradeReason,
+            tradeStage: formData.tradeStage,
+            tradePositions: matchedPositions,
+            notes: notesParts.join("\n\n"),
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to record trade");
+        }
+
+        // Reset form state
+        setShowActionForm(false);
+        setSelectedAction(null);
+        setTradeDetails(null);
+        setSelectedTradeIds(new Set());
+        setTradeQuantities(new Map());
+        setTradeStage("");
+        setTradeReason("");
+        setNotes("");
+        setError(null);
+
+        // Notify parent and refresh
+        router.refresh();
+        onActionComplete?.();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setLoading(false);
+      }
     };
 
+    // Get action date from first trade
+    const actionDate = tradeDetails?.[0]?.tradeDate || new Date().toISOString().split('T')[0];
+
     return (
-      <div className="space-y-4">
-        {loadingPositions ? (
-          <div className="text-sm text-slate-500 py-4">Loading trade executions...</div>
-        ) : (
-          tradeDetails && tradeDetails.length > 0 ? (
-            <div className="space-y-4">
-              {/* Trade Execution Details with checkboxes and editable quantities */}
-              <TradeDetailsCard
-                entry={mockEntry}
-                editMode={true}
-                selectedTradeIds={selectedTradeIds}
-                onTradeSelect={(tradeId, selected) => {
-                  const newSelected = new Set(selectedTradeIds);
-                  if (selected) {
-                    newSelected.add(tradeId);
-                  } else {
-                    newSelected.delete(tradeId);
-                  }
-                  setSelectedTradeIds(newSelected);
-                }}
-                tradeQuantities={tradeQuantities}
-                onQuantityChange={(tradeId, quantity) => {
-                  const newQuantities = new Map(tradeQuantities);
-                  newQuantities.set(tradeId, quantity);
-                  setTradeQuantities(newQuantities);
-                }}
-                onSelectAll={() => {
-                  if (tradeDetails) {
-                    setSelectedTradeIds(new Set(tradeDetails.map(t => t.id)));
-                  }
-                }}
-                onDeselectAll={() => {
-                  setSelectedTradeIds(new Set());
-                }}
-              />
-
-              <div className="bg-white rounded-md border border-slate-200 p-3">
-                <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                  Trade Stage *
-                </label>
-                <select
-                  value={tradeStage}
-                  onChange={(e) => setTradeStage(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value="">Select trade stage...</option>
-                  <option value="open">Open</option>
-                  <option value="close">Close</option>
-                  <option value="assignment">Assignment</option>
-                  <option value="hedge">Hedge</option>
-                  <option value="roll">Roll</option>
-                  <option value="reduce">Reduce</option>
-                  <option value="add">Add</option>
-                </select>
-                <p className="mt-1.5 text-xs text-slate-500">
-                  {tradeStage === "assignment" 
-                    ? "For assignments, record both the option assignment and resulting stock purchase separately if needed."
-                    : "Auto-detected from quantity change pattern (editable)"}
-                </p>
-              </div>
-
-              <div className="bg-white rounded-md border border-slate-200 p-3">
-                <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                  Trade Reason *
-                </label>
-                <textarea
-                  value={tradeReason}
-                  onChange={(e) => setTradeReason(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  rows={3}
-                  placeholder="Explain why this trade was made..."
-                  required
-                />
-              </div>
-
-              {/* Optional metadata fields for opening trades */}
-              {tradeStage === "open" && (
-                <>
-                  <div className="bg-white rounded-md border border-slate-200 p-3">
-                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                      Thesis (Optional)
-                    </label>
-                    <textarea
-                      value={quantityChangeMetadata.thesis}
-                      onChange={(e) =>
-                        setQuantityChangeMetadata({ ...quantityChangeMetadata, thesis: e.target.value })
-                      }
-                      className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows={2}
-                      placeholder="Entry thesis and reasoning..."
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white rounded-md border border-slate-200 p-3">
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                        Profit Rules (Optional)
-                      </label>
-                      <textarea
-                        value={quantityChangeMetadata.profitRules}
-                        onChange={(e) =>
-                          setQuantityChangeMetadata({
-                            ...quantityChangeMetadata,
-                            profitRules: e.target.value,
-                          })
-                        }
-                        className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={2}
-                        placeholder="When to take profits..."
-                      />
-                    </div>
-
-                    <div className="bg-white rounded-md border border-slate-200 p-3">
-                      <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                        Defense Rules (Optional)
-                      </label>
-                      <textarea
-                        value={quantityChangeMetadata.defenseRules}
-                        onChange={(e) =>
-                          setQuantityChangeMetadata({
-                            ...quantityChangeMetadata,
-                            defenseRules: e.target.value,
-                          })
-                        }
-                        className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={2}
-                        placeholder="How to defend the position..."
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-white rounded-md border border-slate-200 p-3">
-                    <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                      Time Rules (Optional)
-                    </label>
-                    <textarea
-                      value={quantityChangeMetadata.timeRules}
-                      onChange={(e) =>
-                        setQuantityChangeMetadata({
-                          ...quantityChangeMetadata,
-                          timeRules: e.target.value,
-                        })
-                      }
-                      className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows={2}
-                      placeholder="Time-based exit criteria..."
-                    />
-                  </div>
-                </>
-              )}
-
-              {error && (
-                <div className="bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
-                  <div className="text-xs text-rose-600 font-medium">{error}</div>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2 border-t border-slate-200">
-                <button
-                  onClick={handleConfirm}
-                  disabled={loading || selectedTradeIds.size === 0 || !tradeReason || !tradeStage}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loading ? "Recording..." : "Record Trade"}
-                </button>
-                <button
-                  onClick={handleCancel}
-                  disabled={loading}
-                  className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm text-slate-500 py-4">No trade executions found</div>
-          )
-        )}
-      </div>
+      <TradeMetadataForm
+        tradeDetails={tradeDetails}
+        loadingTrades={loadingPositions}
+        actionDate={actionDate}
+        onSubmit={handleTradeMetadataSubmit}
+        isSubmitting={loading}
+        error={error}
+      />
     );
   }
 

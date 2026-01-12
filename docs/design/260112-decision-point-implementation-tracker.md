@@ -26,7 +26,7 @@
 | **Phase 1** | Terminology & schema foundation | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 2** | Signal framework core | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 3** | AI integration | Complete | 2026-01-12 | 2026-01-12 |
-| **Phase 4** | Triage consolidation | Not Started | - | - |
+| **Phase 4** | Triage consolidation | In Progress | 2026-01-12 | - |
 | **Phase 5** | Journal logging completion | Not Started | - | - |
 
 ---
@@ -173,23 +173,25 @@
 ## Phase 4: Triage Consolidation
 
 ### 4.1 Position Risk Alert Consolidation
-- [ ] Modify `src/lib/derived/triage.ts` for consolidation
-- [ ] Create `src/components/triage/PositionRiskCard.tsx`
-- [ ] Update triage UI to show combined risk view
+- [x] Database consolidation already complete (one record per position with highest-priority action)
+- [x] All risk flags stored in `triage_records` (flagSigma05, flagSigma10, flagAssignment, isItm, etc.)
+- [ ] Add risk flags to `TriageQueueRecord` interface (deferred - UI enhancement)
+- [ ] Create `src/components/triage/PositionRiskCard.tsx` (deferred - UI enhancement)
+- [ ] Update triage UI to show combined risk view (deferred - UI enhancement)
 
 ### 4.2 Strategy Confirmation Simplification
-- [ ] Create/update `src/components/triage/StrategyConfirmationDialog.tsx`
-- [ ] Merge type selection + thesis linking into dialog
-- [ ] Update `src/app/api/strategies/confirm/route.ts`
+- [x] `StrategyConfirmationDialog.tsx` already implemented (623 lines)
+- [x] Strategy type selection integrated
+- [x] Asset thesis linking integrated (select existing or create new)
+- [x] API endpoints working correctly
 
 ### 4.3 Trade Journaling Simplification (DP-8.1)
-- [ ] Create `src/components/triage/TradeMetadataForm.tsx`
-- [ ] Add triage rule: `TRADE_METADATA_CAPTURE`
-- [ ] Implement compulsory completion (required fields: stage, reason)
-- [ ] Keep old QUANTITY_CHANGE code during transition
+- [x] Create `src/components/triage/TradeMetadataForm.tsx`
+- [x] Implement compulsory completion (no cancel button, required fields: stage, reason)
+- [x] Integrate with TriageActionButtons for QUANTITY_CHANGE
+- [x] Uses existing QUANTITY_CHANGE triage rule (no new rule needed)
 - [ ] Test thoroughly
-- [ ] Cut over to new form
-- [ ] Remove old workflow from `blotter.ts`
+- [ ] Remove old inline form code (deferred - strangler fig complete)
 
 ---
 
@@ -297,3 +299,7 @@
 | 2026-01-12 | 2.2 | Phase 2.2 complete | Signal config UI: SignalConfigForm with data sources (FRED/IV/Price), criteria builder, acceptance flow integration |
 | 2026-01-12 | 2.3 | Phase 2.3 complete | Thesis-level triage consolidation: SIGNAL_TRIGGERED rule, ThesisSignalTriageCard, assess-impact API, assessment UI |
 | 2026-01-12 | 3 | Phase 3 complete | AI integration: assess-validation-evidence API, AssessEvidenceModal, SignalsSection wrapper, "Make Explicit" action |
+| 2026-01-12 | 4.1 | Position consolidation verified | Already implemented at DB level (one record per position with all flags) |
+| 2026-01-12 | 4.2 | Strategy confirmation verified | StrategyConfirmationDialog already has type selection + thesis linking |
+| 2026-01-12 | 4.3 | TradeMetadataForm created | Compulsory completion (no cancel button), required stage+reason fields |
+| 2026-01-12 | 4.3 | Integrated with TriageActionButtons | QUANTITY_CHANGE now uses TradeMetadataForm |
