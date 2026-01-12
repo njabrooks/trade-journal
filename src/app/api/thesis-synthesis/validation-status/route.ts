@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { validationPoints, validationStatusHistory } from '@/db/schema';
+import { signals, signalStatusHistory } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      validationPointId,
+      signalId,
+      validationPointId, // Legacy support
       newStatus,
       evidence,
       confidence,
       userActionTaken,
     } = body;
 
+    const resolvedSignalId = signalId || validationPointId;
+
     // Validate required fields
-    if (!validationPointId || !newStatus || !evidence || !confidence) {
+    if (!resolvedSignalId || !newStatus || !evidence || !confidence) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -30,25 +33,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current status
-    const [currentPoint] = await db
+    const [currentSignal] = await db
       .select()
-      .from(validationPoints)
-      .where(eq(validationPoints.id, validationPointId))
+      .from(signals)
+      .where(eq(signals.id, resolvedSignalId))
       .limit(1);
 
-    if (!currentPoint) {
+    if (!currentSignal) {
       return NextResponse.json(
-        { error: 'Validation point not found' },
+        { error: 'Signal not found' },
         { status: 404 }
       );
     }
 
     // Insert status history record
     const [historyRecord] = await db
-      .insert(validationStatusHistory)
+      .insert(signalStatusHistory)
       .values({
-        validationPointId,
-        previousStatus: currentPoint.status,
+        signalId: resolvedSignalId,
+        previousStatus: currentSignal.status,
         newStatus,
         evidence: {
           source: evidence.source,
@@ -63,52 +66,53 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // Update the validation point status
-    const [updatedPoint] = await db
-      .update(validationPoints)
+    // Update the signal status
+    const [updatedSignal] = await db
+      .update(signals)
       .set({
         status: newStatus,
         updatedAt: new Date(),
       })
-      .where(eq(validationPoints.id, validationPointId))
+      .where(eq(signals.id, resolvedSignalId))
       .returning();
 
     return NextResponse.json({
       success: true,
       historyRecord,
-      validationPoint: updatedPoint,
+      signal: updatedSignal,
+      validationPoint: updatedSignal, // Legacy support
     });
   } catch (error) {
-    console.error('Error updating validation status:', error);
+    console.error('Error updating signal status:', error);
     return NextResponse.json(
-      { error: 'Failed to update validation status' },
+      { error: 'Failed to update signal status' },
       { status: 500 }
     );
   }
 }
 
-// GET endpoint to fetch status history for a validation point
+// GET endpoint to fetch status history for a signal
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const validationPointId = searchParams.get('validationPointId');
+    const signalId = searchParams.get('signalId') || searchParams.get('validationPointId'); // Legacy support
 
-    if (!validationPointId) {
+    if (!signalId) {
       return NextResponse.json(
-        { error: 'validationPointId is required' },
+        { error: 'signalId is required' },
         { status: 400 }
       );
     }
 
     const history = await db
       .select()
-      .from(validationStatusHistory)
-      .where(eq(validationStatusHistory.validationPointId, validationPointId))
-      .orderBy(validationStatusHistory.timestamp);
+      .from(signalStatusHistory)
+      .where(eq(signalStatusHistory.signalId, signalId))
+      .orderBy(signalStatusHistory.timestamp);
 
     return NextResponse.json({ history });
   } catch (error) {
-    console.error('Error fetching validation status history:', error);
+    console.error('Error fetching signal status history:', error);
     return NextResponse.json(
       { error: 'Failed to fetch status history' },
       { status: 500 }

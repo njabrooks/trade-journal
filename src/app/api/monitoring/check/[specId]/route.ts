@@ -37,7 +37,7 @@ export async function POST(
     for (const [dataSource, result] of Object.entries(checkResults.results)) {
       const event = await createMonitoringEvent({
         monitoringSpecId: spec.id,
-        validationPointId: spec.validationPointId,
+        signalId: spec.signalId,
         checkedBy: 'user', // Phase 3.2A: all checks are manual
         dataSource: dataSource as DataSource,
         queryParams: {

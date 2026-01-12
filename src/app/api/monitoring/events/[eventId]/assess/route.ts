@@ -3,9 +3,9 @@ import {
   getMonitoringEventById,
   updateMonitoringEventAssessment,
 } from '@/db/queries/monitoring';
-import { getValidationPointById } from '@/db/queries/thesisSynthesis';
+import { getSignalById } from '@/db/queries/thesisSynthesis';
 import { db } from '@/db';
-import { validationStatusHistory, validationPoints } from '@/db/schema';
+import { signalStatusHistory, signals } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -27,7 +27,7 @@ export async function POST(
       return NextResponse.json({ error: 'Monitoring event not found' }, { status: 404 });
     }
 
-    const { event, validationPoint } = eventData;
+    const { event, validationPoint: signal } = eventData;
 
     // Parse request body
     const body = await request.json();
@@ -65,10 +65,10 @@ export async function POST(
 
       // Create status history entry
       const [statusHistory] = await db
-        .insert(validationStatusHistory)
+        .insert(signalStatusHistory)
         .values({
-          validationPointId: validationPoint.id,
-          previousStatus: validationPoint.status,
+          signalId: signal.id,
+          previousStatus: signal.status,
           newStatus,
           evidence,
           confidence,
@@ -80,14 +80,14 @@ export async function POST(
 
       statusHistoryRecord = statusHistory;
 
-      // Update validation point status
+      // Update signal status
       await db
-        .update(validationPoints)
+        .update(signals)
         .set({
           status: newStatus,
           updatedAt: new Date(),
         })
-        .where(eq(validationPoints.id, validationPoint.id));
+        .where(eq(signals.id, signal.id));
     }
 
     // Update monitoring event with assessment

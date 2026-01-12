@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { thesisArticulations, validationPoints, validationStatusHistory } from '@/db/schema';
+import { thesisArticulations, signals, signalStatusHistory } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 /**
@@ -44,108 +44,130 @@ export async function getArticulationHistory(
 }
 
 /**
- * Get active validation points for a thesis (excludes superseded)
+ * Get active signals for a thesis (excludes superseded)
+ * Note: Legacy alias getActiveValidationPoints also exported for backwards compatibility
  */
-export async function getActiveValidationPoints(
+export async function getActiveSignals(
   thesisId: string,
   thesisType: 'macro' | 'asset'
 ) {
   return db
     .select()
-    .from(validationPoints)
+    .from(signals)
     .where(
       and(
-        eq(validationPoints.thesisId, thesisId),
-        eq(validationPoints.thesisType, thesisType)
+        eq(signals.thesisId, thesisId),
+        eq(signals.thesisType, thesisType)
       )
     )
-    .orderBy(validationPoints.createdAt);
+    .orderBy(signals.createdAt);
 }
 
+// Legacy alias
+export const getActiveValidationPoints = getActiveSignals;
+
 /**
- * Get all validation points for a thesis (including superseded)
+ * Get all signals for a thesis (including superseded)
  */
-export async function getAllValidationPoints(
+export async function getAllSignals(
   thesisId: string,
   thesisType: 'macro' | 'asset'
 ) {
   return db
     .select()
-    .from(validationPoints)
+    .from(signals)
     .where(
       and(
-        eq(validationPoints.thesisId, thesisId),
-        eq(validationPoints.thesisType, thesisType)
+        eq(signals.thesisId, thesisId),
+        eq(signals.thesisType, thesisType)
       )
     )
-    .orderBy(validationPoints.createdAt);
+    .orderBy(signals.createdAt);
 }
 
+// Legacy alias
+export const getAllValidationPoints = getAllSignals;
+
 /**
- * Get validation point by ID
+ * Get signal by ID
  */
-export async function getValidationPointById(id: string) {
-  const [point] = await db
+export async function getSignalById(id: string) {
+  const [signal] = await db
     .select()
-    .from(validationPoints)
-    .where(eq(validationPoints.id, id))
+    .from(signals)
+    .where(eq(signals.id, id))
     .limit(1);
 
-  return point || null;
+  return signal || null;
 }
 
+// Legacy alias
+export const getValidationPointById = getSignalById;
+
 /**
- * Get status history for a validation point
+ * Get status history for a signal
  */
-export async function getValidationStatusHistory(validationPointId: string) {
+export async function getSignalStatusHistory(signalId: string) {
   return db
     .select()
-    .from(validationStatusHistory)
-    .where(eq(validationStatusHistory.validationPointId, validationPointId))
-    .orderBy(desc(validationStatusHistory.timestamp));
+    .from(signalStatusHistory)
+    .where(eq(signalStatusHistory.signalId, signalId))
+    .orderBy(desc(signalStatusHistory.timestamp));
 }
 
+// Legacy alias
+export const getValidationStatusHistory = getSignalStatusHistory;
+
 /**
- * Get validation points that need attention (triggered or monitoring)
+ * Get signals that need attention (triggered or monitoring)
  */
-export async function getValidationPointsNeedingAttention(
+export async function getSignalsNeedingAttention(
   thesisId?: string,
   thesisType?: 'macro' | 'asset'
 ) {
-  const baseQuery = db.select().from(validationPoints);
+  const baseQuery = db.select().from(signals);
 
   if (thesisId && thesisType) {
     return baseQuery
       .where(
         and(
-          eq(validationPoints.thesisId, thesisId),
-          eq(validationPoints.thesisType, thesisType)
+          eq(signals.thesisId, thesisId),
+          eq(signals.thesisType, thesisType)
         )
       )
-      .orderBy(validationPoints.updatedAt);
+      .orderBy(signals.updatedAt);
   }
 
-  // Get all triggered/monitoring points across all theses
-  return baseQuery.orderBy(desc(validationPoints.updatedAt));
+  // Get all triggered/monitoring signals across all theses
+  return baseQuery.orderBy(desc(signals.updatedAt));
 }
 
+// Legacy alias
+export const getValidationPointsNeedingAttention = getSignalsNeedingAttention;
+
 /**
- * Summary stats for validation points
+ * Summary stats for signals
  */
-export async function getValidationPointsStats(
+export async function getSignalsStats(
   thesisId: string,
   thesisType: 'macro' | 'asset'
 ) {
-  const points = await getActiveValidationPoints(thesisId, thesisType);
+  const signalsList = await getActiveSignals(thesisId, thesisType);
 
   return {
-    total: points.length,
-    validation: points.filter((p) => p.type === 'validation').length,
-    invalidation: points.filter((p) => p.type === 'invalidation').length,
-    triggered: points.filter((p) => p.status === 'triggered').length,
-    monitoring: points.filter((p) => p.status === 'monitoring').length,
-    critical: points.filter((p) => p.importance === 'critical').length,
-    explicit: points.filter((p) => p.category === 'explicit').length,
-    judgmentRequired: points.filter((p) => p.category === 'judgment_required').length,
+    total: signalsList.length,
+    confirmation: signalsList.filter((s) => s.type === 'confirmation').length,
+    warning: signalsList.filter((s) => s.type === 'warning').length,
+    triggered: signalsList.filter((s) => s.status === 'triggered').length,
+    monitoring: signalsList.filter((s) => s.status === 'monitoring').length,
+    critical: signalsList.filter((s) => s.importance === 'critical').length,
+    explicit: signalsList.filter((s) => s.category === 'explicit').length,
+    judgmentRequired: signalsList.filter((s) => s.category === 'judgment_required').length,
+    // Legacy field names for backwards compatibility
+    validation: signalsList.filter((s) => s.type === 'confirmation').length,
+    invalidation: signalsList.filter((s) => s.type === 'warning').length,
   };
 }
+
+// Legacy alias
+export const getValidationPointsStats = getSignalsStats;

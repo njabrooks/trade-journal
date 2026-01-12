@@ -1,5 +1,5 @@
 {
   "name": "assess-validation-evidence",
-  "description": "Assess content (SEC filings, presentations, transcripts) against existing validation points to identify evidence of validation/invalidation. Cross-references content with thesis validation points and generates evidence assessment report.",
+  "description": "Assess content (SEC filings, presentations, transcripts) against existing thesis signals to identify evidence of confirmation/warning. Cross-references content with thesis signals (confirmation and warning triggers) and generates evidence assessment report.",
   "instructions": "SKILL.md"
 }

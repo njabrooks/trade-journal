@@ -804,9 +804,9 @@ Create a JSON file with the articulation data (e.g., `articulation-data.json`):
     "claimIdsUsed": ["claim-uuid-1", "claim-uuid-2"],
     "referencedTheses": []
   },
-  "validationPoints": [
+  "signals": [
     {
-      "type": "validation",
+      "type": "confirmation",
       "statement": "What would prove the thesis right",
       "rationale": "Why this matters",
       "category": "explicit",
@@ -825,7 +825,7 @@ Create a JSON file with the articulation data (e.g., `articulation-data.json`):
       "linkedClaimIds": ["claim-uuid-1"]
     },
     {
-      "type": "invalidation",
+      "type": "warning",
       "statement": "What would prove the thesis wrong",
       "rationale": "Why this matters",
       "category": "judgment_required",

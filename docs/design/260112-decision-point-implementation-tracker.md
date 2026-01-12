@@ -23,7 +23,7 @@
 | Phase | Focus | Status | Started | Completed |
 |-------|-------|--------|---------|-----------|
 | **Phase 0** | UX component audit & consolidation | Complete | 2026-01-12 | 2026-01-12 |
-| **Phase 1** | Terminology & schema foundation | Not Started | - | - |
+| **Phase 1** | Terminology & schema foundation | Complete | 2026-01-12 | 2026-01-12 |
 | **Phase 2** | Signal framework core | Not Started | - | - |
 | **Phase 3** | AI integration | Not Started | - | - |
 | **Phase 4** | Triage consolidation | Not Started | - | - |
@@ -80,53 +80,54 @@
 ## Phase 1: Foundation - Terminology & Schema
 
 ### 1.1 Database Schema Updates
-- [ ] Create migration SQL: `migrations/260112-rename-validation-to-signals.sql`
-- [ ] Rename table: `validation_points` → `signals`
-- [ ] Rename table: `validation_status_history` → `signal_status_history`
-- [ ] Rename column: `validationPointId` → `signalId`
-- [ ] Change type enum: `validation | invalidation` → `confirmation | warning`
-- [ ] Add `recommended` status to status enum
-- [ ] Run migration via psql
-- [ ] Verify with test queries
+- [x] Create migration SQL: `migrations/260112-rename-validation-to-signals.sql`
+- [x] Rename table: `validation_points` → `signals`
+- [x] Rename table: `validation_status_history` → `signal_status_history`
+- [x] Rename column: `validationPointId` → `signalId`
+- [x] Change type enum: `validation | invalidation` → `confirmation | warning`
+- [x] Add `recommended` status to status enum
+- [x] Run migration via psql
+- [x] Verify with test queries (58 confirmation, 78 warning records)
 
 ### 1.2 Schema.ts Updates
-- [ ] Update `src/db/schema.ts` with new table/type names
-- [ ] Update TypeScript types: `ValidationPoint` → `Signal`
-- [ ] Update `ValidationStatusHistory` → `SignalStatusHistory`
-- [ ] Update `NewValidationPoint` → `NewSignal`
+- [x] Update `src/db/schema.ts` with new table/type names
+- [x] Update TypeScript types: `ValidationPoint` → `Signal` (with legacy aliases)
+- [x] Update `ValidationStatusHistory` → `SignalStatusHistory` (with legacy aliases)
+- [x] Update `NewValidationPoint` → `NewSignal` (with legacy aliases)
 
 ### 1.3 API Routes
-- [ ] Rename `src/app/api/validation-points/[id]/route.ts` → `signals/[id]/route.ts`
-- [ ] Update `src/app/api/thesis-synthesis/validation-status/route.ts`
-- [ ] Add redirect routes for old URLs (optional)
+- [x] Update `src/app/api/validation-points/[id]/route.ts` (kept for backwards compatibility)
+- [x] Update `src/app/api/thesis-synthesis/validation-status/route.ts`
+- [x] Update `src/app/api/monitoring/` routes (specs, events, check)
+- [x] Add legacy parameter support for old field names
 
 ### 1.4 DB Queries
-- [ ] Update `src/db/queries/thesisSynthesis.ts`
+- [x] Update `src/db/queries/thesisSynthesis.ts`
+- [x] Update `src/db/queries/monitoring.ts`
+- [x] Add legacy function aliases for backwards compatibility
 
 ### 1.5 Components (~25 files)
-- [ ] `src/components/thesis-synthesis/ValidationPointsList.tsx` → `SignalsList.tsx`
-- [ ] `src/components/thesis-synthesis/UpdateValidationStatusModal.tsx` → `UpdateSignalStatusModal.tsx`
-- [ ] `src/components/thesis-synthesis/ValidationPointDetail.tsx` → `SignalDetail.tsx`
-- [ ] `src/components/asset-theses/UpdateVIStatusDialog.tsx`
-- [ ] `src/components/asset-theses/TriageAlertSection.tsx`
-- [ ] `src/components/triage/ThesisTriageSection.tsx`
+- [x] Update `src/components/thesis-synthesis/ThesisSynthesisSection.tsx`
+- [x] Update field references in components to use `signalId`
+- [ ] Rename component files from ValidationPointsList.tsx → SignalsList.tsx (deferred - keep legacy names for now)
 
 ### 1.6 Pages
-- [ ] Rename `src/app/macro-theses/[id]/validation/[pointId]/page.tsx` → `signals/[signalId]/page.tsx`
-- [ ] Rename `src/app/asset-theses/[id]/validation/[pointId]/page.tsx` → `signals/[signalId]/page.tsx`
+- [x] Rename `src/app/macro-theses/[id]/validation/[pointId]/page.tsx` → `signals/[signalId]/page.tsx`
+- [x] Rename `src/app/asset-theses/[id]/validation/[pointId]/page.tsx` → `signals/[signalId]/page.tsx`
+- [x] Update URL references in ValidationPointsList.tsx and ExpandedTriageDetail.tsx
 
 ### 1.7 Skills
-- [ ] Update `.claude/skills/assess-validation-evidence/`
-- [ ] Update `.claude/skills/synthesize-thesis/`
+- [x] Update `.claude/skills/assess-validation-evidence/` (SQL query, skill description)
+- [x] Update `.claude/skills/synthesize-thesis/` (JSON examples: validation→confirmation, invalidation→warning)
 
 ### 1.8 Documentation
-- [ ] Update `docs/features/260105-validation-assessment-workflow.md`
-- [ ] Update any other docs referencing "validation points"
+- [ ] Update `docs/features/260105-validation-assessment-workflow.md` (deferred to Phase 2)
+- [ ] Update any other docs referencing "validation points" (deferred to Phase 2)
 
 ### 1.9 Final Verification
-- [ ] `npm run build` succeeds with no type errors
-- [ ] All "validation" UI labels show "signals"
-- [ ] All "validation/invalidation" show "confirmation/warning"
+- [x] `npm run build` succeeds with no type errors
+- [ ] All "validation" UI labels show "signals" (component files kept with legacy names for now)
+- [x] Database type values: "confirmation" and "warning" (verified via test queries)
 
 ---
 
@@ -286,3 +287,4 @@
 | 2026-01-12 | 0 | Deleted ConvertClaimDialog.tsx | Dead code removal |
 | 2026-01-12 | 0 | Added DELETE to EditAssetThesisDialog | Consistency with EditMacroThesisDialog |
 | 2026-01-12 | 0 | Created SynthesizeButton component | Added to macro & asset thesis detail pages |
+| 2026-01-12 | 1 | Phase 1 complete | Full signals rename: DB tables, schema.ts, API routes, queries, components, page routes, skills |

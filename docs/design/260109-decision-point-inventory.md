@@ -2,12 +2,22 @@
 
 **Purpose**: Comprehensive enumeration of all decision points across the trade-journal application, following the template from the UX Redesign Brief.
 
-**Status**: Sections 1-5 refined with discussion insights; Sections 6-10 pending review
+**Status**: Sections 1-5 fully refined; Sections 6-10 pending review
 **Created**: 2026-01-09
-**Last Updated**: 2026-01-10
+**Last Updated**: 2026-01-12
 **Related**: [triage-ux-redesign-brief.md](260109-triage-ux-redesign-brief.md)
 
 ### Revision History
+- **2026-01-12**: Complete redesign of Section 5 (Signals):
+  - Restructured from 7 decision points to 5, focused on user workflows
+  - DP-5.1: Review Recommended Signals (batch review post-synthesis)
+  - DP-5.2: Configure Explicit Trigger (data source + criteria builder)
+  - DP-5.3: Respond to Signal Trigger - now thesis-level, not per-signal
+  - DP-5.4: AI-Assisted Judgment Update (Claude analyzes content, user confirms)
+  - DP-5.5: Upgrade Judgment to Explicit (convert with data source)
+  - Added wireframes for triage cards and configuration flows
+  - Documented data source status (FRED ✅, IV ✅, TradingView ❌ future)
+  - Clarified judgment vs explicit category distinction
 - **2026-01-10**: Added refinements from detailed review session (Stages 1-5):
   - Stage 1: Added design philosophy, consolidation note
   - Stage 2: Archived DP-2.1-2.3, simplified statuses, added relationship types
@@ -23,12 +33,13 @@
 2. [Claim Management](#2-claim-management)
 3. [Thesis Management (Linking)](#3-thesis-management-linking)
 4. [Thesis Lifecycle](#4-thesis-lifecycle)
-5. [V&I Monitoring](#5-vi-monitoring)
+5. [Signals](#5-signals)
 6. [Strategy Management](#6-strategy-management)
 7. [Position Management](#7-position-management)
-8. [Trade Reconciliation](#8-trade-reconciliation)
+8. [Trade Journaling](#8-trade-journaling)
 9. [Pattern Analysis](#9-pattern-analysis)
 10. [Proposed Triage Architecture](#10-proposed-triage-architecture)
+11. [Journal Logging Requirements](#11-journal-logging-requirements)
 
 ---
 
@@ -249,7 +260,7 @@
 
 > **Architectural Decision**: Target prices and exit strategies belong at **strategy level** (tactical), not thesis level (belief). Rationale: Multiple strategies can manifest one thesis (stock vs options vs spreads). Theses are long-lived beliefs; strategies are tactical implementations with specific entry/exit points.
 
-> **Problematic Fields**: `horizon` and `confidence` fields feel like "checkbox completion rather than meaningful input." They appear across the app and may not earn their keep as manual user inputs. **Better approach**: Auto-calculate a "strength" indicator based on linked claims, evidence quality, and V&I states rather than requiring subjective user input.
+> **Problematic Fields**: `horizon` and `confidence` fields feel like "checkbox completion rather than meaningful input." They appear across the app and may not earn their keep as manual user inputs. **Better approach**: Auto-calculate a "strength" indicator based on linked claims, evidence quality, and signal states rather than requiring subjective user input.
 
 > **Required Linking**: Asset theses **must** be linked to at least one macro thesis. An unlinked asset thesis should surface as a triage item.
 
@@ -320,7 +331,7 @@
 | **Decision Point** | Change Thesis Status |
 | **Stage** | Thesis Management |
 | **Trigger** | User action on thesis detail page OR lifecycle event |
-| **Context Needed** | Current status, linked strategies/positions, V&I point states |
+| **Context Needed** | Current status, linked strategies/positions, signal states |
 | **Available Actions** | Set status: active ↔ under_review → retired / superseded |
 | **Downstream Effects** | May affect downstream strategies; should warn if active positions exist |
 | **Complexity** | Quick (status only) / Medium (if downstream impact review) |
@@ -334,14 +345,14 @@
 |-------|-------------|
 | **Decision Point** | Update Thesis Direction or Confidence |
 | **Stage** | Thesis Management |
-| **Trigger** | User edit OR V&I point trigger response |
+| **Trigger** | User edit OR signal trigger response |
 | **Context Needed** | Current values, recent evidence (claims, monitoring results) |
 | **Available Actions** | Change: direction (bullish/bearish/neutral), confidence (high/medium/low/exploratory) |
 | **Downstream Effects** | Signals conviction change; may trigger strategy review triage |
 | **Complexity** | Quick |
 | **Current Location** | Edit dialogs on thesis pages |
 | **Triage Suitable?** | Yes - could surface as "Review conviction for [Thesis]" |
-| **Recommended UX** | Triage item after V&I trigger; inline edit on detail page |
+| **Recommended UX** | Triage item after signal trigger; inline edit on detail page |
 
 ### DP-3.7: Delete Thesis
 
@@ -392,7 +403,7 @@
 | **Trigger** | Automatic: thesis has ≥3 claims, no articulation exists |
 | **Context Needed** | Claim count, claim summaries, thesis title |
 | **Available Actions** | (1) Dismiss, (2) Monitor, (3) Run `/synthesize-thesis` |
-| **Downstream Effects** | Creates articulation with V&I points (core argument, key drivers, assumptions, gaps, dependencies); advances lifecycle stage |
+| **Downstream Effects** | Creates articulation with signals (core argument, key drivers, assumptions, gaps, dependencies); advances lifecycle stage |
 | **Complexity** | Quick (dismiss) / Medium (synthesis review) |
 | **Current Location** | Thesis Triage queue, `PRODUCE_CORE_ARGUMENT` rule |
 | **Triage Suitable?** | Yes - actionable with clear next step |
@@ -407,7 +418,7 @@
 | **Trigger** | Automatic: ≥3 new claims linked since last articulation |
 | **Context Needed** | Claims at last articulation, new claims delta, articulation date |
 | **Available Actions** | (1) Dismiss, (2) Monitor, (3) Re-run `/synthesize-thesis` |
-| **Downstream Effects** | Updated articulation, potentially new V&I points; **should keep articulation history for reference** *(future: allow targeted tweaks vs full re-synthesis)* |
+| **Downstream Effects** | Updated articulation, potentially new signals; **should keep articulation history for reference** *(future: allow targeted tweaks vs full re-synthesis)* |
 | **Complexity** | Quick (dismiss) / Medium (re-synthesis) |
 | **Current Location** | Thesis Triage queue, `UPDATE_CORE_ARGUMENT` rule |
 | **Triage Suitable?** | Yes - informational with optional action |
@@ -420,9 +431,9 @@
 | **Decision Point** | Review News/Content Monitoring Results |
 | **Stage** | Thesis Lifecycle |
 | **Trigger** | Automatic: monitoring finds relevant results for thesis |
-| **Context Needed** | AI analysis summary, validation points affected, matched results with snippets/URLs, content summary |
+| **Context Needed** | AI analysis summary, signals affected, matched results with snippets/URLs, content summary |
 | **Available Actions** | (1) Dismiss, (2) Monitor, (3) Run `/assess-validation-evidence`, (4) Click through to sources |
-| **Downstream Effects** | May trigger V&I status updates; informs thesis conviction |
+| **Downstream Effects** | May trigger signal status updates; informs thesis conviction |
 | **Complexity** | Medium - requires reading matched content |
 | **Current Location** | Thesis Triage queue, `REVIEW_CONTENT` rule |
 | **Triage Suitable?** | Partial - summary in triage, full results may need detail view |
@@ -435,9 +446,9 @@
 | **Decision Point** | Review Data Threshold Breach |
 | **Stage** | Thesis Lifecycle |
 | **Trigger** | Automatic: data feed monitoring detects threshold breach |
-| **Context Needed** | Metric name, threshold, current value, V&I point affected |
+| **Context Needed** | Metric name, threshold, current value, signal affected |
 | **Available Actions** | Same as REVIEW_CONTENT |
-| **Downstream Effects** | Often triggers V&I status → "triggered" |
+| **Downstream Effects** | Often triggers signal status → "triggered" |
 | **Complexity** | Quick - data is quantitative |
 | **Current Location** | Thesis Triage queue, `REVIEW_DATA` rule |
 | **Triage Suitable?** | Yes - clear signal with specific metric |
@@ -445,124 +456,363 @@
 
 ---
 
-## 5. V&I Monitoring
+## 5. Signals
 
-> ⚠️ **UNTESTED/THEORETICAL**: This entire workflow is in design phase only - not yet validated through user testing. Implementation details are theoretical and need validation.
+> ⚠️ **DESIGN PHASE**: This workflow has been significantly redesigned based on review. Implementation details need validation through user testing.
 
-> **Goal**: Evolve thesis/strategy conviction over time based on changing events. V&I points provide a structured framework for tracking what would validate or invalidate a thesis, and status changes must be **directly linked to the news flow or data flow** that led to the change.
+> **Terminology**: "Validation/Invalidation Points" have been renamed to **Signals** for clarity:
+> - **Green Signals** = confirmation (thesis on track)
+> - **Red Signals** = warning (thesis undermined)
 
-> **Status Lifecycle Questions (Open)**:
-> - Current states: `not_triggered` → `monitoring` → `triggered` / `superseded`
-> - **What happens after trigger?** Does thesis status change? Does it prompt action?
-> - **Is intermediate "monitoring" state needed?** Or just not_triggered → triggered?
-> - **What does "superseded" mean?** When is it used vs archived/retired?
+> **Goal**: Evolve thesis conviction over time based on changing events. Signals provide a structured framework for tracking what would confirm or undermine a thesis.
 
-> **Underused Fields**: `importance` (critical/significant/supporting) - questionable value. May overlap with explicit vs judgment categorization. `response_protocol` field may also be redundant.
+> **Key Design Decisions (from review)**:
+> - Signals are **AI-generated during synthesis** with status `recommended`
+> - User **reviews and confirms** (not creates) signals
+> - Two categories: **Judgment-based** (manual assessment) vs **Explicit** (data-triggered)
+> - Explicit triggers require **data source + criteria configuration** (FRED, TradingView, IV data)
+> - Triage operates at **thesis level**, not per-signal (prevents triage overload)
+> - News/semantic monitoring supports **judgment-based** signals (not precise enough for explicit triggers)
 
-### DP-5.1: Create Validation Point
+> **Data Source Status**:
+> - ✅ **FRED**: Integrated with historical data. Focus on common series (GDP, CPI, unemployment, fed funds)
+> - ✅ **IV Data**: Integrated. IV30, IV Rank, IV Percentile thresholds
+> - ⚠️ **Price Feeds**: Partial integration
+> - ❌ **TradingView**: Future - webhooks for price targets + indicator triggers
+> - ℹ️ **News/Semantic**: Supports judgment-based signals, not explicit triggers
 
-| Field | Description |
-|-------|-------------|
-| **Decision Point** | Create V&I Point |
-| **Stage** | V&I Monitoring |
-| **Trigger** | During `/synthesize-thesis` *(primary - not typically manual)* |
-| **Context Needed** | Thesis context, existing V&I points |
-| **Available Actions** | Set: statement, type (validation/invalidation), ~~importance~~ *(questionable value)*, category (explicit/judgment_required), timeframe, metrics/thresholds (if explicit), observable proxies (if judgment), ~~response_protocol~~ *(may be redundant)* |
-| **Downstream Effects** | V&I point created; enables monitoring configuration |
-| **Complexity** | Medium to Deep - requires careful formulation |
-| **Current Location** | Via synthesis skill; ValidationPointsList on asset thesis page |
-| **Triage Suitable?** | No - requires thoughtful input |
-| **Recommended UX** | Dedicated form within thesis detail page; AI-assisted during synthesis |
+> **Implementation Pattern**: Uses existing headless Claude CLI pattern via API endpoints (see `/api/skills/synthesize-thesis/route.ts`). Claude analyzes content, returns recommendations as JSON, user confirms in UI before changes persist.
 
-### DP-5.2: Update V&I Point Status [STATUS LIFECYCLE TBD]
+### DP-5.1: Review Recommended Signals
 
 | Field | Description |
 |-------|-------------|
-| **Decision Point** | Change V&I Point Status |
-| **Stage** | V&I Monitoring |
-| **Trigger** | User clicks "Update Status" OR monitoring result suggests status change |
-| **Context Needed** | Current status, V&I statement, recent monitoring events, thesis context |
-| **Available Actions** | Set status: not_triggered → monitoring → triggered (or superseded) *(lifecycle needs validation - see open questions above)* |
-| **Downstream Effects** | Records to validation_status_history; may trigger thesis review; journals the change; **status change must be linked to triggering news/data** |
-| **Complexity** | Medium - requires evidence documentation |
-| **Current Location** | UpdateValidationStatusModal |
-| **Triage Suitable?** | Partial - status selection is quick, evidence entry less so |
-| **Recommended UX** | Triage surfaces "V&I point may be triggered"; modal for evidence entry |
+| **Decision Point** | Review Recommended Signals |
+| **Stage** | Signals |
+| **Trigger** | Automatic: `/synthesize-thesis` completes, creates signals with status `recommended` |
+| **Context Needed** | Thesis title/description, full list of recommended signals (statements, AI-suggested category), thesis conviction/direction |
+| **Available Actions** | For each signal: (1) Reject, (2) Accept as judgment-based, (3) Accept as explicit → triggers inline data config (DP-5.2), (4) Edit statement before accepting |
+| **Downstream Effects** | Rejected: marked rejected/hidden. Accepted: status → `confirmed`, category set (judgment/explicit). If explicit: requires DP-5.2 completion before confirmation. Thesis lifecycle advances. |
+| **Complexity** | Medium - batch review with potential data configuration |
+| **Current Location** | **DESIGN PHASE** - currently signals auto-created without review step |
+| **Triage Suitable?** | Yes - surfaces as single triage item: "Review [N] recommended signals for [Thesis]" |
+| **Recommended UX** | Triage card links to dedicated review screen or modal. Checklist-style interface with accept/reject per item. Inline expansion for editing or configuring explicit triggers. Bulk actions: "Accept all as judgment" for speed. |
 
-### DP-5.3: Provide V&I Status Evidence [REQUIRED]
+**Signal Lifecycle:**
 
-| Field | Description |
-|-------|-------------|
-| **Decision Point** | Document Evidence for Status Change |
-| **Stage** | V&I Monitoring |
-| **Trigger** | During V&I status update *(mandatory step)* |
-| **Context Needed** | V&I statement, monitoring results if available |
-| **Available Actions** | Enter: source **(required)**, summary **(required)**, link **(should be required - mandatory link to triggering news/data)**, confidence level (low/medium/high), action taken (if triggered) |
-| **Downstream Effects** | Evidence persisted to history; enables audit trail; **provides provenance for status change** |
-| **Complexity** | Medium |
-| **Current Location** | UpdateValidationStatusModal |
-| **Triage Suitable?** | No - requires text input |
-| **Recommended UX** | Pre-fill from monitoring results when available |
+```
+recommended (AI-generated)
+    ├── Reject → (deleted or status: rejected)
+    │
+    ├── Accept as Judgment-based
+    │   └── No data config needed
+    │   └── User manually assesses over time
+    │   └── Status: confirmed, category: judgment
+    │
+    └── Accept as Explicit/Data-based
+        └── REQUIRES: data source selection + trigger criteria (DP-5.2)
+        └── e.g., "FRED:GDP > 3% for 3 consecutive quarters"
+        └── e.g., "TradingView:AAPL price < $150"
+        └── Status: confirmed, category: explicit
+```
 
-### DP-5.4: Create Monitoring Spec [DESIGN PHASE]
+**Design Considerations:**
+- AI could pre-suggest which points are likely explicit vs judgment based on language
+- Consider "Accept all as judgment" shortcut for users who trust AI recommendations
+- Should show thesis context alongside signals
 
-| Field | Description |
-|-------|-------------|
-| **Decision Point** | Configure Monitoring for V&I Point |
-| **Stage** | V&I Monitoring |
-| **Trigger** | User clicks "Create Spec" next to V&I point |
-| **Context Needed** | V&I point statement, type, importance |
-| **Available Actions** | Set: keywords, semantic description, sources (FRED/news/price_iv/SEC), exclusions, frequency (daily/weekly/monthly), alert threshold, enabled |
-| **Downstream Effects** | MonitoringSpec created; scheduled for automated checks |
-| **Complexity** | Medium - configuration form |
-| **Current Location** | MonitoringSpecForm |
-| **Triage Suitable?** | No - requires form completion |
-| **Recommended UX** | AI-suggested defaults based on V&I statement; inline form on V&I detail |
+**Open Questions:**
+- What happens if user only partially reviews? Can they save progress and return?
+- Should rejected signals be soft-deleted (recoverable) or hard-deleted?
 
-### DP-5.5: Run Manual Monitoring Check [DESIGN PHASE]
+### DP-5.2: Configure Explicit Trigger
 
 | Field | Description |
 |-------|-------------|
-| **Decision Point** | Execute Manual Monitoring Check |
-| **Stage** | V&I Monitoring |
-| **Trigger** | User clicks "Run" on monitoring spec |
-| **Context Needed** | Spec configuration, last check date |
-| **Available Actions** | (1) Run check, (2) View results, (3) Rate relevance of each result (0-10), (4) Complete assessment |
-| **Downstream Effects** | Creates monitoring_events; updates spec lastCheck; may inform V&I status decision |
-| **Complexity** | Medium - requires result review |
-| **Current Location** | ManualCheckDialog |
-| **Triage Suitable?** | Partial - trigger is quick, result review less so |
-| **Recommended UX** | "Run check" as triage action; results in expanded detail or modal |
+| **Decision Point** | Configure Explicit Signal |
+| **Stage** | Signals |
+| **Trigger** | User selects "Accept as explicit" for a signal during DP-5.1 review |
+| **Context Needed** | signal statement, available data sources, example trigger criteria patterns |
+| **Available Actions** | (1) Select data source (FRED, TradingView, IV data), (2) Define trigger criteria (metric, operator, threshold, duration if applicable), (3) Set check frequency (daily/weekly/monthly), (4) Cancel → reverts to accept/reject choice |
+| **Downstream Effects** | Creates monitoring configuration linked to signal. Enables automated checks. signal status → `confirmed`, category → `explicit`. |
+| **Complexity** | Medium - requires understanding of data sources and threshold logic |
+| **Current Location** | **DESIGN PHASE** - MonitoringSpecForm exists but not integrated into signal acceptance flow |
+| **Triage Suitable?** | No - requires dedicated form with multiple inputs |
+| **Recommended UX** | Inline expansion within DP-5.1 review screen. Guided form: Step 1 → Select source, Step 2 → Configure criteria, Step 3 → Confirm. Show preview of what will trigger. |
 
-### DP-5.6: Assess Monitoring Results [DESIGN PHASE]
+**Data Source Configuration Patterns:**
+
+| Source | Status | Example Criteria |
+|--------|--------|------------------|
+| **FRED** | ✅ Integrated | `GDP growth > 3%` for `3 consecutive quarters` |
+| **IV Data** | ✅ Integrated | `IV30 > 50` or `IV Rank > 80%` |
+| **Price Feed** | ⚠️ Partial | `AAPL price < $150` |
+| **TradingView** | ❌ Future | Webhook-based: `RSI(14) > 70`, price alerts, custom indicators |
+
+**Criteria Builder Wireframe:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Data Source:  [FRED ▼]                                      │
+├─────────────────────────────────────────────────────────────┤
+│ Metric:       [GDP Growth Rate ▼]                           │
+│ Condition:    [Greater than ▼]  [3] [% ▼]                   │
+│ Duration:     [3] consecutive [quarters ▼]                  │
+├─────────────────────────────────────────────────────────────┤
+│ Check every:  [Weekly ▼]                                    │
+├─────────────────────────────────────────────────────────────┤
+│ Preview: "Triggers when GDP Growth Rate exceeds 3% for      │
+│           3 consecutive quarters"                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**TradingView Integration Model (Future):**
+
+```
+┌─────────────────────┐         ┌─────────────────────┐
+│    TradingView      │         │     Our App         │
+├─────────────────────┤         ├─────────────────────┤
+│ User creates alert  │         │                     │
+│ with webhook URL    │ ──────► │ Webhook endpoint    │
+│ (price, indicator)  │         │ receives trigger    │
+│                     │         │                     │
+│ Alert fires when    │         │ Matches to signal      │
+│ condition met       │         │ point, creates      │
+│                     │         │ triage item         │
+└─────────────────────┘         └─────────────────────┘
+```
+
+**Design Considerations:**
+- Different data sources need different criteria builders
+- AI could suggest data source + criteria based on signal statement language
+- For FRED, pre-populate common series (GDP, CPI, unemployment, fed funds rate)
+- Need clear "I can't find a data source for this" escape hatch → convert to judgment-based
+
+### DP-5.3: Respond to Signal Trigger (Thesis Level)
 
 | Field | Description |
 |-------|-------------|
-| **Decision Point** | Assess Monitoring Check Results |
-| **Stage** | V&I Monitoring |
-| **Trigger** | After monitoring check completes |
-| **Context Needed** | Results per data source, relevance scores, V&I point context |
-| **Available Actions** | (1) Enter overall assessment, (2) Optionally update V&I status with evidence |
-| **Downstream Effects** | Assessment saved to monitoring_event; may cascade to V&I status update |
-| **Complexity** | Medium |
-| **Current Location** | ManualCheckDialog (results stage) |
-| **Triage Suitable?** | No - requires text entry and judgment |
-| **Recommended UX** | Structured assessment form with optional status update toggle |
+| **Decision Point** | Review Thesis After Signal Trigger |
+| **Stage** | Signals |
+| **Trigger** | Automatic: Any explicit signal triggers for a thesis → creates **thesis-level** triage record (not per-signal) |
+| **Context Needed** | Thesis overview, ALL signals (with triggered ones highlighted), current conviction, linked strategies |
+| **Available Actions** | (1) Assess impact: strengthens/weakens/no change, (2) Add reasoning notes (free text), (3) Update thesis conviction, (4) Update thesis status (validated/invalidated/under_review), (5) Monitor (snooze for N days), (6) Navigate to strategies to consider changes, (7) Close thesis if invalidated |
+| **Downstream Effects** | Assessment recorded in journal/history. Conviction/status changes cascade to linked strategies. May trigger strategy-level triage. Monitor action defers re-surfacing. |
+| **Complexity** | Medium - holistic thesis review, not just single trigger |
+| **Current Location** | **DESIGN PHASE** - no automated trigger → triage flow exists |
+| **Triage Suitable?** | Yes - thesis-level triage card with drill-down to signal details |
+| **Recommended UX** | Single triage card per thesis (not per trigger). Shows thesis + summary of what fired. Expands to full signal list with triggered items highlighted. Capture decision + reasoning inline. |
 
-### DP-5.7: View V&I Status History [DESIGN PHASE]
+**Triage Card Wireframe:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🔴 URGENT    Thesis Signal Activity                            │
+├─────────────────────────────────────────────────────────────┤
+│ "US enters prolonged stagflation"                           │
+│ Conviction: High | Direction: Bearish | Status: Active      │
+│                                                             │
+│ Signal Summary: 2 of 5 signals triggered             │
+│                                                             │
+│ ▼ View Signals                                           │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ✅ TRIGGERED: CPI > 4% for 2 quarters (5.2%)           │ │
+│ │ ✅ TRIGGERED: GDP < 1% for 2 quarters (0.8%)           │ │
+│ │ ⬜ Watching: Fed holds rates above 4%                   │ │
+│ │ ⬜ Watching: Unemployment rises above 5%                │ │
+│ │ ⬜ Not triggered: Consumer sentiment < 60               │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ How does this affect your thesis?                           │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐         │
+│ │ Strengthens  │ │ Weakens      │ │ No Change    │         │
+│ └──────────────┘ └──────────────┘ └──────────────┘         │
+│                                                             │
+│ [Add your reasoning...]                                     │
+│                                                             │
+│ ┌─────────┐ ┌─────────┐ ┌──────────────────────┐           │
+│ │ Confirm │ │ Monitor │ │ Update Thesis Status │           │
+│ └─────────┘ └─────────┘ └──────────────────────┘           │
+│                                                             │
+│ ▼ Linked Strategies (3)                                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Architectural Points:**
+- One triage record per thesis, regardless of how many signals trigger
+- Triage consolidates multiple triggers into single review
+- User sees full signal picture, not isolated data points
+- Decision captured at thesis level with reasoning
+
+**Trigger Consolidation Logic:**
+- First trigger on thesis → create triage record
+- Subsequent triggers on same thesis → update existing triage record (don't create new)
+- After user resolves triage → new triggers create fresh triage record
+- Monitor (snooze) action defers re-surfacing for N days
+
+### DP-5.4: AI-Assisted Judgment Update
 
 | Field | Description |
 |-------|-------------|
-| **Decision Point** | Review V&I Point History |
-| **Stage** | V&I Monitoring |
-| **Trigger** | User navigates to Status History tab |
-| **Context Needed** | All status changes with evidence, confidence, timestamps |
-| **Available Actions** | Read-only review; navigate to related monitoring events |
-| **Downstream Effects** | None - informational |
-| **Complexity** | Quick |
-| **Current Location** | ValidationPointDetail → StatusTimeline |
-| **Triage Suitable?** | No - exploration/audit activity |
-| **Recommended UX** | Timeline visualization on V&I detail page |
+| **Decision Point** | Update Thesis/Signal Based on New Content |
+| **Stage** | Signals |
+| **Trigger** | User-initiated: User has consumed content (transcript, article, research) and wants to assess its impact on a thesis |
+| **Context Needed** | Content source (transcript/article/link), thesis with all signals, current conviction levels |
+| **Available Actions** | (1) Provide content to Claude for analysis, (2) Review Claude's recommended impact, (3) Accept/modify recommendations, (4) Record judgment on thesis conviction + signal status changes |
+| **Downstream Effects** | Updates thesis conviction. Updates signal statuses. Creates evidence record with source link. Journal entry with reasoning. |
+| **Complexity** | Medium - AI does heavy lifting, user confirms |
+| **Current Location** | **PARTIAL** - `/assess-validation-evidence` skill exists but not integrated into app UI |
+| **Triage Suitable?** | No - user-initiated workflow from thesis page or via skill |
+| **Recommended UX** | "Assess New Evidence" button on thesis page. User provides content → Claude analyzes → presents recommendations → user confirms/adjusts → records. |
+
+**AI-Assisted Assessment Flow:**
+
+```
+User has content to assess
+(transcript, article, link)
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Assess Evidence Against Thesis                              │
+├─────────────────────────────────────────────────────────────┤
+│ Thesis: "US enters prolonged stagflation"                   │
+│                                                             │
+│ Provide content for analysis:                               │
+│ ○ Paste transcript                                          │
+│ ○ Enter article URL                                         │
+│ ○ Upload document                                           │
+│                                                             │
+│ [Transcript text area or URL input...]                      │
+│                                                             │
+│ [Cancel]                           [Analyze with Claude]    │
+└─────────────────────────────────────────────────────────────┘
+         │
+         ▼ Claude analyzes content against thesis + signals
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Claude's Assessment                                         │
+├─────────────────────────────────────────────────────────────┤
+│ Source: "Fed Chair Powell testimony - Jan 2026"             │
+│                                                             │
+│ THESIS IMPACT:                                              │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ Recommendation: STRENGTHENS thesis                      │ │
+│ │                                                         │ │
+│ │ "Powell's comments about persistent inflation despite   │ │
+│ │ slowing growth align directly with the stagflation      │ │
+│ │ thesis. His reluctance to cut rates suggests the Fed    │ │
+│ │ sees this dynamic continuing."                          │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ SIGNAL IMPACT:                                           │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ✓ "Fed holds rates above 4%"                            │ │
+│ │   Status: not_triggered → monitoring                    │ │
+│ │   "Powell signaled no near-term cuts planned"           │ │
+│ │                                                         │ │
+│ │ ─ "CPI remains elevated" (no change)                    │ │
+│ │ ─ "GDP growth stalls" (no change)                       │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ Your Judgment:                                              │
+│ Thesis conviction: [Strengthens ▼] [Accept recommendation]  │
+│                                                             │
+│ signal updates:       [Accept all ▼] or adjust individually    │
+│                                                             │
+│ Additional notes: [Optional reasoning...]                   │
+│                                                             │
+│ [Back]                                   [Record Judgment]  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Workflow Principles:**
+
+| Step | Actor | Action |
+|------|-------|--------|
+| 1. Provide content | User | Paste transcript, URL, or upload |
+| 2. Analyze | Claude | Review against thesis + all signals |
+| 3. Recommend | Claude | Suggest thesis impact + signal status changes |
+| 4. Review | User | Evaluate recommendations |
+| 5. Decide | User | Accept, modify, or reject recommendations |
+| 6. Record | System | Persist judgment with evidence link |
+
+**Implementation Note:**
+> Uses existing headless Claude CLI pattern via `/api/skills/assess-validation-evidence`. Claude analyzes content, returns recommendations as JSON. User confirms in UI before changes are persisted. No additional API cost concerns - uses CLI execution.
+
+**Design Considerations:**
+- Claude's recommendations are suggestions, not automatic updates
+- User always has final say on conviction changes
+- Evidence source (transcript/link) persisted for audit trail
+- Could batch multiple signal updates in single assessment
+
+### DP-5.5: Upgrade Judgment to Explicit
+
+| Field | Description |
+|-------|-------------|
+| **Decision Point** | Convert Judgment-Based Signal to Explicit |
+| **Stage** | Signals |
+| **Trigger** | User-initiated: User realizes a judgment-based signal can now be measured with available data |
+| **Context Needed** | Current signal statement, available data sources, whether statement needs rewording for measurability |
+| **Available Actions** | (1) Keep statement as-is, add data trigger, (2) Edit statement to be more measurable, then add trigger, (3) Cancel (keep as judgment) |
+| **Downstream Effects** | signal category changes: `judgment` → `explicit`. Data trigger configuration created. Enables automated monitoring. |
+| **Complexity** | Medium - reuses DP-5.2 configuration flow |
+| **Current Location** | **DESIGN PHASE** - no upgrade path exists currently |
+| **Triage Suitable?** | No - user-initiated edit action from thesis detail page |
+| **Recommended UX** | "Convert to Explicit" button on judgment-based signals. Opens DP-5.2 configuration flow. May prompt statement edit first if needed. |
+
+**Upgrade Flow:**
+
+```
+User viewing thesis detail page
+         │
+         ▼
+Sees judgment-based signal:
+"Market shows signs of risk-off sentiment"
+Category: judgment | Status: monitoring
+         │
+         ▼
+User realizes VIX data could measure this
+         │
+         ▼
+Clicks "Convert to Explicit"
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Convert to Explicit Trigger                                 │
+├─────────────────────────────────────────────────────────────┤
+│ Current statement:                                          │
+│ "Market shows signs of risk-off sentiment"                  │
+│                                                             │
+│ ⚠️  This statement may need adjustment for measurability    │
+│                                                             │
+│ Suggested revision:                                         │
+│ "VIX rises above 25 indicating risk-off sentiment"          │
+│                                                             │
+│ ○ Keep original statement                                   │
+│ ● Use suggested revision                                    │
+│ ○ Write custom statement                                    │
+│                                                             │
+│ [Cancel]                                      [Continue →]  │
+└─────────────────────────────────────────────────────────────┘
+         │
+         ▼
+DP-5.2 Configuration Flow (data source + criteria)
+```
+
+**When to Suggest Upgrade:**
+
+| Scenario | Prompt |
+|----------|--------|
+| User repeatedly manually updates a judgment signal | "You've updated this 3 times. Could this be measured automatically?" |
+| AI detects measurable language in judgment statement | "This mentions 'GDP' - would you like to link to FRED data?" |
+| New data source becomes available | "TradingView integration now available - review your judgment signals?" |
+
+**Design Considerations:**
+- AI can assist by suggesting statement rewording for measurability
+- Preserve history: log that this was upgraded from judgment
+- Original manual status updates should remain in history
+- If upgrade fails (no suitable data source), gracefully cancel back to judgment
 
 ---
 
@@ -769,143 +1019,226 @@
 
 ---
 
-## 8. Trade Reconciliation
+## 8. Trade Journaling
 
-### DP-8.1: Quantity Change (Unmatched Trades)
+> **Architecture Note:** This section was simplified from 6 decision points to 2. The original "reconciliation" model (matching trades to pre-created actions) is replaced with a simpler "metadata capture" model where trades are ingested and the user adds context directly to the trade record.
 
-| Field | Description |
-|-------|-------------|
-| **Decision Point** | Reconcile Unmatched Trades |
-| **Stage** | Trade Reconciliation |
-| **Trigger** | Automatic: trades ingested don't match existing TRADE actions |
-| **Context Needed** | Unmatched trade executions (symbol, quantity, price, date), strategy context |
-| **Available Actions** | (1) Select trades to acknowledge, (2) Set trade stage (open/close/roll/hedge/etc.), (3) Enter trade reason, (4) Optional: link to thesis, profit/defense/time rules |
-| **Downstream Effects** | Creates blotter_action record; links trades to strategy; marks severity → complete |
-| **Complexity** | Medium - requires context for each trade |
-| **Current Location** | Triage queue, `QUANTITY_CHANGE` rule |
-| **Triage Suitable?** | Partial - trade list in triage, detailed context may need page |
-| **Recommended UX** | Triage card with trade list; expandable detail form |
+### Design Philosophy
 
-### DP-8.2: Trade Stage Selection
+**Current State (Complex):**
+```
+Trade ingested → QUANTITY_CHANGE triage → Reconciliation form → blotter_action created
+```
 
-| Field | Description |
-|-------|-------------|
-| **Decision Point** | Classify Trade Stage |
-| **Stage** | Trade Reconciliation |
-| **Trigger** | During trade reconciliation (QUANTITY_CHANGE) |
-| **Context Needed** | Trade direction, quantity, existing position |
-| **Available Actions** | Select: open, close, assignment, hedge, roll, reduce, add |
-| **Downstream Effects** | Affects blotter categorization and analysis |
-| **Complexity** | Quick |
-| **Current Location** | Triage TRADE action form |
-| **Triage Suitable?** | Yes - dropdown selection |
-| **Recommended UX** | Auto-suggest based on quantity sign and position state |
+**Proposed State (Simple):**
+```
+Trade ingested → Journal entry auto-created → Add metadata to trade → Done
+```
 
-### DP-8.3: Trade Reason Documentation
+The key insight: **trade metadata capture is compulsory but should be lightweight**. Users cannot dismiss a trade triage without providing at least minimal context.
+
+### DP-8.1: Trade Metadata Capture
 
 | Field | Description |
 |-------|-------------|
-| **Decision Point** | Document Trade Rationale |
-| **Stage** | Trade Reconciliation |
-| **Trigger** | During trade reconciliation (required field) |
-| **Context Needed** | Trade details, strategy thesis, market context |
-| **Available Actions** | Enter narrative trade reason |
-| **Downstream Effects** | Enables journal analysis; supports retrospective review |
-| **Complexity** | Medium - requires thoughtful narrative |
-| **Current Location** | Triage TRADE action form |
-| **Triage Suitable?** | Partial - prompted in triage, may want richer editing |
-| **Recommended UX** | Textarea in triage expansion; templates for common reasons |
+| **Decision Point** | Add Context to Ingested Trade |
+| **Stage** | Trade Journaling |
+| **Trigger** | Automatic: new trade ingested from IBKR Flex |
+| **Context Needed** | Trade details (symbol, quantity, price, date), strategy, current thesis/signals |
+| **Available Actions** | (1) Select trade stage, (2) Enter trade reason, (3) Optionally link to signal |
+| **Downstream Effects** | Trade record enriched; journal entry complete; enables analysis |
+| **Complexity** | Quick - minimal required fields |
+| **Current Location** | Triage queue, `QUANTITY_CHANGE` rule (but overly complex) |
+| **Triage Suitable?** | Yes - compulsory inline form |
+| **Recommended UX** | Compact triage card with required fields; cannot dismiss without completing |
 
-### DP-8.4: Trade Action Creation
+**Required Fields (Minimum):**
+- **Trade Stage**: open / close / roll / hedge / add / reduce / assignment
+- **Trade Reason**: Brief narrative (can be short)
+
+**Optional Fields (Enrichment):**
+- **Signal Link**: "Was this trade triggered by a signal?"
+- **Additional Notes**: Extended context
+
+**Compulsory Completion:**
+> Unlike other triage items, trade metadata capture cannot be dismissed. The user must provide at least stage + reason before the triage item resolves.
+
+**UX Wireframe:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🔔 NEW TRADE                                    AAPL        │
+├─────────────────────────────────────────────────────────────┤
+│ Sold 5 AAPL 180P 2026-02-21 @ $3.45                        │
+│ Strategy: AAPL Income                                       │
+│                                                             │
+│ Stage*: [Close ▼]  ○ Open  ○ Roll  ○ Hedge  ○ Add          │
+│                                                             │
+│ Reason*: [Took profits at 50% max gain_________]           │
+│                                                             │
+│ ┌─ Signal Link (optional) ─────────────────────────────┐   │
+│ │ ○ Not signal-related                                 │   │
+│ │ ● Triggered by signal:                               │   │
+│ │   [AAPL: Price target $185 reached ▼]                │   │
+│ └──────────────────────────────────────────────────────┘   │
+│                                                             │
+│                                            [Save Context]   │
+└─────────────────────────────────────────────────────────────┘
+* Required fields
+```
+
+**Implementation Notes:**
+- Auto-suggest stage based on trade direction and position state
+- Provide reason templates for common scenarios (profit target, defense, roll for time, etc.)
+- Signal dropdown shows only signals for the relevant thesis
+- Journal entry created automatically on trade ingestion; this form enriches it
+
+### DP-8.2: Post-Trade Reflection (Optional)
 
 | Field | Description |
 |-------|-------------|
-| **Decision Point** | Create Trade Action (Pre-Trade) |
-| **Stage** | Trade Reconciliation |
-| **Trigger** | User decides to trade based on triage alert |
-| **Context Needed** | Position details, planned action |
-| **Available Actions** | Create pending TRADE action with: positions, quantities, stage, reason |
-| **Downstream Effects** | Severity → "pending"; awaits matching trade ingestion |
-| **Complexity** | Medium |
-| **Current Location** | Triage TRADE action button |
-| **Triage Suitable?** | Yes - action workflow in triage |
-| **Recommended UX** | "Plan Trade" button; form in triage expansion |
+| **Decision Point** | Add Retrospective Notes |
+| **Stage** | Trade Journaling |
+| **Trigger** | User-initiated OR time-based prompt (e.g., 7 days after closed trade) |
+| **Context Needed** | Trade details, original rationale, actual outcome, P&L |
+| **Available Actions** | (1) Add reflection notes, (2) Rate decision quality, (3) Skip |
+| **Downstream Effects** | Enriches journal for AI pattern analysis |
+| **Complexity** | Medium - thoughtful narrative |
+| **Current Location** | **DESIGN PHASE** - not implemented |
+| **Triage Suitable?** | Partial - prompt in triage, editing in journal detail |
+| **Recommended UX** | Low-priority triage prompt; journal detail page for editing |
 
-### DP-8.5: Trade Matching Verification
+**When to Prompt:**
+- Position fully closed (all legs exited)
+- Sufficient time passed for outcome clarity (7-14 days)
+- Significant P&L (positive or negative)
 
-| Field | Description |
-|-------|-------------|
-| **Decision Point** | Verify Trade Action Matched |
-| **Stage** | Trade Reconciliation |
-| **Trigger** | Automatic: trade ingestion matches pending action |
-| **Context Needed** | Planned action, actual execution details |
-| **Available Actions** | Review match (usually auto-resolved) |
-| **Downstream Effects** | Severity → "complete"; linkage established |
-| **Complexity** | Quick |
-| **Current Location** | Automated in blotter computation |
-| **Triage Suitable?** | N/A - automated |
-| **Recommended UX** | Toast notification of match; journal entry |
+**Reflection Fields:**
+- **What worked?** (optional)
+- **What didn't work?** (optional)
+- **Would you do this again?** Yes / No / Modified
+- **Decision quality**: Good decision / Bad decision / Lucky / Unlucky
 
-### DP-8.6: Post-Trade Reflection
+**Design Considerations:**
+- This is optional enrichment, not compulsory
+- AI can prompt for reflection on trades with notable outcomes
+- Reflection data feeds into pattern analysis ("you tend to exit winners too early")
+- Keep it lightweight - users won't write essays
 
-| Field | Description |
-|-------|-------------|
-| **Decision Point** | Add Post-Trade Notes |
-| **Stage** | Trade Reconciliation |
-| **Trigger** | User action after trade completion |
-| **Context Needed** | Trade details, original rationale, outcome |
-| **Available Actions** | Enter reflection notes, update profit/defense/time rules effectiveness |
-| **Downstream Effects** | Enriches journal for AI analysis |
-| **Complexity** | Medium |
-| **Current Location** | Not directly implemented (could be blotter detail) |
-| **Triage Suitable?** | Partial - prompt in triage, editing on detail page |
-| **Recommended UX** | Triage item: "Add reflection for [Trade]"; detail page form |
+### Removed/Consolidated Decision Points
+
+| Original DP | Disposition |
+|-------------|-------------|
+| DP-8.1 (Quantity Change) | → Consolidated into DP-8.1 (Trade Metadata Capture) |
+| DP-8.2 (Trade Stage Selection) | → Field within DP-8.1 |
+| DP-8.3 (Trade Reason Documentation) | → Field within DP-8.1 |
+| DP-8.4 (Pre-Trade Action Creation) | → **LOW PRIORITY** - rare use case, keep as optional feature |
+| DP-8.5 (Trade Matching Verification) | → **REMOVED** - automated, not a user decision |
+| DP-8.6 (Post-Trade Reflection) | → Renumbered to DP-8.2 |
+
+### Pre-Trade Action (Low Priority)
+
+For completeness, users *can* create a trade action before execution:
+
+```
+User planning a trade
+         │
+         ▼
+"Plan Trade" button (from position or strategy page)
+         │
+         ▼
+Enter: stage, reason, expected details
+         │
+         ▼
+Pending action created
+         │
+         ▼
+Trade ingested from IBKR
+         │
+         ▼
+Auto-matched to pending action (fills in execution details)
+```
+
+This is a **low priority** feature. Most users find it easier to execute first, document after. The pre-trade flow exists for users who want to document intent before action.
 
 ---
 
 ## 9. Pattern Analysis
 
+> **Note:** This analysis reflects the consolidated decision point inventory after review. Original counts reduced through consolidation of related decision points.
+
 ### Decision Point Complexity Distribution
 
 | Complexity | Count | Examples |
 |------------|-------|----------|
-| **Quick** | 28 | Status changes, MONITOR/DISMISS, dropdown selections |
-| **Medium** | 22 | Form completion, entity linking, result review |
-| **Deep** | 4 | Research extraction, synthesis matching, roll analysis |
+| **Quick** | ~18 | Status changes, MONITOR/DISMISS, dropdown selections, trade metadata |
+| **Medium** | ~12 | Signal configuration, entity linking, result review, AI-assisted judgment |
+| **Deep** | ~4 | Research extraction, synthesis matching |
 
 ### Triage Suitability Summary
 
 | Rating | Count | Pattern |
 |--------|-------|---------|
-| **Yes** | 26 | Quantitative alerts, status toggles, simple actions |
-| **Partial** | 16 | Decision prompt in triage, details elsewhere |
-| **No** | 12 | Forms, creation workflows, exploration |
+| **Yes** | ~16 | Quantitative alerts, status toggles, compulsory metadata capture |
+| **Partial** | ~10 | Decision prompt in triage, details elsewhere |
+| **No** | ~8 | Forms, creation workflows, exploration |
 
-### Decision Point Groupings
+### Decision Point Groupings (Revised)
 
-**Group 1: Quantitative Risk Alerts** (Highly Triage-Suitable)
-- DTE, ITM, Assignment Risk, Sigma, Size
-- Pattern: Metric + threshold → severity badge → MONITOR/DISMISS
+**Group 1: Position Risk Alerts** (Highly Triage-Suitable)
+- Consolidated DTE, ITM, Assignment Risk, Sigma into single "Position Risk Alert"
+- Pattern: Multiple risk metrics → single triage item → MONITOR/DISMISS
+- Key insight: These are hygiene alerts, not bullish/bearish conviction signals
 
-**Group 2: Lifecycle State Changes** (Triage-Suitable)
-- State code change, thesis lifecycle stages
-- Pattern: State transition → suggested action → quick resolution
+**Group 2: Signal Triggers** (Triage-Suitable)
+- Thesis-level triage when explicit signals trigger
+- Pattern: Data threshold crossed → thesis review prompt → assess impact
+- Replaces per-signal triage with thesis-level consolidation
 
 **Group 3: Linking Operations** (Partially Triage-Suitable)
 - Claim→thesis, asset→macro, strategy→thesis
 - Pattern: Source entity needs link → suggestions → multi-select confirmation
+- Note: DP-3.4 and DP-6.2 are same action from opposite directions
 
-**Group 4: Content Review** (Partially Triage-Suitable)
-- Monitoring results, synthesis recommendations
-- Pattern: Content summary in triage → full review in expanded view or page
+**Group 4: AI-Assisted Review** (Partially Triage-Suitable)
+- Signal batch review, judgment updates, synthesis recommendations
+- Pattern: AI recommends → user reviews → confirms/rejects
+- Key pattern: Claude analyzes, user decides
 
 **Group 5: Entity Creation** (Not Triage-Suitable)
-- New thesis, new asset thesis, new V&I point
+- New thesis, new asset thesis, new signal configuration
 - Pattern: Multi-field forms requiring dedicated UX
+- Note: Signal configuration (DP-5.2) is form-based, not triage
 
-**Group 6: Documentation** (Partially Triage-Suitable)
-- Trade reasons, evidence entry, reflections
-- Pattern: Prompted by triage → text entry → may need templates
+**Group 6: Compulsory Documentation** (Triage-Suitable)
+- Trade metadata capture (cannot dismiss without completing)
+- Pattern: Compulsory fields + optional enrichment (signal link)
+- Key insight: Lightweight but non-dismissable
+
+### Key Architectural Patterns Identified
+
+**Pattern A: Signals Framework**
+- "Validation/Invalidation Points" renamed to "Signals" for clarity
+- Green Signals = confirmation (thesis on track)
+- Red Signals = warning (thesis undermined)
+- Two categories: Judgment-based (manual) vs Explicit (data-triggered)
+- Thesis-level triage, not per-signal triage
+
+**Pattern B: AI-Assisted Judgment**
+- Claude analyzes content against thesis + signals
+- Recommends impact and status changes
+- User always has final say
+- Uses existing headless CLI pattern
+
+**Pattern C: Compulsory vs Optional Triage**
+- Most triage items: MONITOR/DISMISS/ACTION options
+- Trade metadata: Cannot dismiss, must complete minimal fields
+- Signal review: Cannot dismiss, must accept/reject
+
+**Pattern D: Consolidation Over Fragmentation**
+- Multiple related alerts → single triage item with detail
+- Multiple sub-steps → single decision point with fields
+- Reduces triage noise, improves signal-to-noise ratio
 
 ---
 
@@ -941,20 +1274,22 @@ interface UnifiedTriageItem {
     // Thesis-specific
     lifecycleStage?: string;
     claimCount?: number;
-    monitoringResults?: MonitoringResult[];
+    triggeredSignals?: Signal[];  // Signals that triggered this triage
 
-    // Position-specific
-    dte?: number;
-    sigma?: number;
-    itmStatus?: boolean;
+    // Position-specific (consolidated risk alert)
+    riskAlerts?: {
+      dte?: number;
+      sigma?: number;
+      itmStatus?: boolean;
+      assignmentRisk?: boolean;
+    };
 
     // Strategy-specific
     pctNav?: number;
-    stateCode?: string;
-    previousStateCode?: string;
 
     // Trade-specific
-    unmatchedTrades?: TradeExecution[];
+    tradeDetails?: TradeExecution;
+    suggestedStage?: string;
   };
 
   // Actions
@@ -984,7 +1319,7 @@ interface TriageAction {
 - Single unified inbox across all domains
 - Filter by: domain, severity, urgency, rule type
 - Sort by: urgency, severity, age, domain
-- Group by: strategy (for positions), thesis (for V&I), domain
+- Group by: strategy (for positions), thesis (for signals), domain
 
 **2. Triage Card Design**
 - Compact: Title, severity badge, key metric, primary action button
@@ -1013,31 +1348,175 @@ interface TriageAction {
 | From Triage | To | Data Flow |
 |-------------|-----|-----------|
 | Claim linking | ConvertClaimDialog | Claim ID, suggestions |
-| Strategy confirm | StrategyConfirmDialog | Strategy ID, type suggestions |
-| V&I status | UpdateStatusModal | V&I ID, monitoring evidence |
-| Trade action | TradeForm | Positions, quantities |
-| Monitoring | ManualCheckDialog | Spec ID, V&I context |
+| Strategy confirm | StrategyConfirmDialog | Strategy ID, thesis link |
+| Signal trigger | ThesisReviewModal | Thesis ID, triggered signals |
+| Trade metadata | TradeContextForm | Trade details, signal options |
+| AI judgment | AssessEvidenceModal | Content, thesis, signals |
+| Signal config | SignalConfigForm | Signal ID, data sources |
 | Synthesis | Detail page | Thesis ID, claim mappings |
+
+---
+
+## 11. Journal Logging Requirements
+
+> **Cross-Cutting Requirement**: Every decision point action MUST create a journal entry. The journal provides institutional memory for retrospective analysis and AI-powered process improvement.
+
+### Design Principle (from PRD)
+
+> "All triggers, triage outcomes, decisions, and actions are logged in a chronological journal. This institutional memory supports retrospective analysis of decision quality over time."
+
+### Journal Entry Interface
+
+All journal entries use the unified `logToJournal()` function with this interface:
+
+```typescript
+interface JournalEntry {
+  // What object was affected
+  objectType: string;      // 'macro_thesis' | 'asset_thesis' | 'strategy' | 'position' | 'claim' | 'signal'
+  objectId: string;        // UUID of the affected object
+  objectTitle?: string;    // Human-readable title for display
+
+  // What action occurred
+  actionType: string;      // Standardized action type (see table below)
+  actionDescription: string; // Human-readable description
+
+  // Context and linkage
+  triageRecordId?: string; // If action originated from triage
+  skillInvoked?: string;   // If action invoked a Claude skill (e.g., '/synthesize-thesis')
+
+  // State change tracking
+  previousState?: Record<string, unknown>;  // State before action
+  newState?: Record<string, unknown>;       // State after action
+
+  // User reasoning (critical for divergence analysis)
+  rationale?: string;      // User's explanation for the decision
+
+  // Provenance
+  source: 'user' | 'skill' | 'automation';  // Who/what initiated the action
+
+  // Additional context
+  metadata?: Record<string, unknown>;
+}
+```
+
+### Standard Action Types
+
+| actionType | Description | Triggered By |
+|------------|-------------|--------------|
+| **Triage Actions** | | |
+| `triage_detected` | System detected new trigger condition | Automation |
+| `triage_escalated` | Severity increased (info → attention → urgent) | Automation |
+| `triage_actioned` | User took action on triage item | User |
+| `triage_dismissed` | User dismissed triage item | User |
+| `triage_resolved` | Triage auto-resolved by downstream action | Automation |
+| `triage_created` | New triage record created | Automation/Skill |
+| **Lifecycle Actions** | | |
+| `lifecycle_stage_changed` | Thesis moved to new lifecycle stage | Automation |
+| `articulation_created` | Thesis articulation generated | Skill |
+| `signal_status_changed` | Signal status updated (not_triggered → monitoring → triggered) | User/Automation |
+| `signal_auto_triggered` | Data threshold breach auto-triggered signal | Automation |
+| **Claim Actions** | | |
+| `claim_converted` | Claim promoted to new thesis | User |
+| `claim_linked` | Claim linked to existing thesis | User |
+| **Trade Actions** | | |
+| `trade_ingested` | New trade imported from broker | Automation |
+| `trade_reconciled` | Trade matched to triage action | User/Automation |
+| `triage_trade_action` | Trade action created from triage | User |
+| **Strategy Actions** | | |
+| `strategy_confirmed` | Strategy confirmed and linked to thesis | User |
+| `strategy_linked` | Strategy linked to asset thesis | User |
+
+### Decision Point to Journal Mapping
+
+Every decision point should log to journal. Here's the mapping:
+
+| Section | Decision Points | actionType(s) |
+|---------|-----------------|---------------|
+| **1. Research Ingestion** | DP-1.1 to DP-1.5 | `claim_extracted`, `audit_uploaded` |
+| **2. Claim Management** | DP-2.4 to DP-2.8 | `claim_linked`, `claim_converted`, `claim_status_changed` |
+| **3. Thesis Management** | DP-3.1 to DP-3.7 | `thesis_created`, `thesis_linked`, `thesis_status_changed`, `thesis_deleted` |
+| **4. Thesis Lifecycle** | DP-4.1 to DP-4.5 | `triage_actioned`, `lifecycle_stage_changed`, `articulation_created` |
+| **5. Signals** | DP-5.1 to DP-5.5 | `signal_reviewed`, `signal_configured`, `signal_status_changed`, `signal_auto_triggered` |
+| **6. Strategy Management** | DP-6.1, DP-6.5, DP-6.6 | `strategy_confirmed`, `strategy_linked`, `triage_actioned` |
+| **7. Position Management** | DP-7.1 | `triage_actioned`, `triage_dismissed` |
+| **8. Trade Journaling** | DP-8.1, DP-8.2 | `trade_metadata_captured`, `trade_reflection_added` |
+
+### Implementation Status
+
+| Component | Status | File |
+|-----------|--------|------|
+| Journal table | ✅ | `src/db/schema.ts` (`journal_entries`) |
+| `logToJournal()` utility | ✅ | `src/lib/workflow/lifecycleDetection.ts` |
+| Thesis triage logging | ✅ | `src/app/api/thesis-triage/[id]/route.ts` |
+| Strategy/position triage logging | ✅ | `src/app/api/triage/action/route.ts` |
+| Trade ingestion logging | ✅ | `src/lib/derived/blotter.ts` |
+| Claim conversion logging | ✅ | `src/app/api/research/convert-claim/route.ts` |
+| Signal status logging | ✅ | `src/app/api/validation-points/[id]/route.ts` |
+| Signal batch review logging | ❌ | **DESIGN PHASE** |
+| Trade metadata capture logging | ❌ | **DESIGN PHASE** |
+
+### Key Logging Principles
+
+1. **Every user decision creates a journal entry** - No exceptions for triage actions, status changes, or entity modifications.
+
+2. **Capture state changes** - Use `previousState` and `newState` to enable before/after comparison and divergence analysis.
+
+3. **Capture rationale** - The `rationale` field is critical for understanding why decisions were made. Prompt users to provide reasoning for significant actions.
+
+4. **Link to triage** - If an action originated from a triage item, include `triageRecordId` to enable triage-to-outcome analysis.
+
+5. **Track source** - Distinguish between `user`, `skill` (Claude), and `automation` (system-triggered) actions for process analysis.
+
+6. **Include skill context** - When Claude skills are invoked, record `skillInvoked` to track AI-assisted decisions.
+
+### Journal Analysis Use Cases
+
+The journal enables:
+
+| Use Case | How Journal Supports It |
+|----------|------------------------|
+| **Decision quality retrospective** | Compare `previousState`/`newState` with subsequent outcomes |
+| **Process adherence tracking** | Identify when users skip steps or dismiss without action |
+| **AI recommendation acceptance rate** | Track when skill recommendations are accepted vs modified |
+| **Triage-to-trade correlation** | Link triage actions to eventual trade outcomes via `triageRecordId` |
+| **Signal effectiveness** | Track which signals led to conviction changes and subsequent trades |
+| **Divergence detection** | Identify patterns where user rationale diverges from system suggestions |
+
+### Reference Documentation
+
+- **Implementation details**: `docs/features/260108-thesis-triage-flows.md` (Journal Integration section)
+- **PRD requirements**: `docs/PRD_v1.1.md` Section 8 (Logging, Journal & Institutional Memory)
+- **Schema definition**: `src/db/schema.ts` (`journalEntries` table)
 
 ---
 
 ## Appendix: Decision Point Index by Current Location
 
+> **Note:** This index reflects the consolidated decision point structure after review. Some DPs have been merged or removed.
+
 ### Triage Queue (`/triage`)
+
+**Thesis Lifecycle:**
 - DP-4.1: NEEDS_RESEARCH
 - DP-4.2: PRODUCE_CORE_ARGUMENT
 - DP-4.3: UPDATE_CORE_ARGUMENT
 - DP-4.4: REVIEW_CONTENT
 - DP-4.5: REVIEW_DATA
-- DP-6.1: LINK_STRATEGY_TO_THESIS
-- DP-6.5: REVIEW_SIZE
-- DP-6.6: REVIEW_COMPLEXITY
-- DP-6.7: STATE_CODE_CHANGE
-- DP-7.1: REVIEW_DTE
-- DP-7.2: ITM_LONG/ITM_SHORT
-- DP-7.3: ASSIGNMENT_RISK
-- DP-7.4: SIGMA alerts
-- DP-8.1: QUANTITY_CHANGE
+
+**Signals (formerly V&I):**
+- DP-5.1: REVIEW_RECOMMENDED_SIGNALS (post-synthesis batch review)
+- DP-5.3: SIGNAL_TRIGGER_THESIS_REVIEW (thesis-level, when explicit signals fire)
+
+**Strategy:**
+- DP-6.1: CONFIRM_STRATEGY (confirm + link to thesis in single flow)
+- DP-6.5: REVIEW_SIZE (low priority/legacy)
+- DP-6.6: REVIEW_COMPLEXITY (low priority/legacy)
+
+**Position Risk (Consolidated):**
+- DP-7.1: POSITION_RISK_ALERT (combines DTE, ITM, Sigma, Assignment Risk)
+
+**Trade Journaling:**
+- DP-8.1: TRADE_METADATA_CAPTURE (compulsory, replaces QUANTITY_CHANGE)
 
 ### Claims Browser (`/claims`)
 - DP-2.4: Status Change
@@ -1049,23 +1528,48 @@ interface TriageAction {
 - DP-3.1: Create Macro Thesis
 - DP-3.2: Create Asset Thesis
 - DP-3.3: Link Asset to Macro
-- DP-3.4: Link Asset to Strategy
+- DP-3.4: Link Asset to Strategy (= DP-6.2, same action opposite direction)
 - DP-3.5: Update Status
 - DP-3.6: Update Conviction
 - DP-3.7: Delete Thesis
-- DP-5.1: Create V&I Point
-- DP-5.2: Update V&I Status
-- DP-5.4: Create Monitoring Spec
-- DP-5.7: View History
+- DP-5.2: Configure Explicit Signal (signal configuration form)
+- DP-5.4: AI-Assisted Judgment Update (Assess Evidence button)
+- DP-5.5: Upgrade Judgment to Explicit (Convert to Explicit button)
 
 ### Claude Code Skills
 - DP-1.1 through DP-1.5: Research Ingestion
 - DP-2.1 through DP-2.3: Synthesis Matching
 
-### Not Yet Implemented
-- DP-7.5: Roll Decision (market analysis)
-- DP-8.6: Post-Trade Reflection
+### Not Yet Implemented / Design Phase
+- DP-5.1: Review Recommended Signals (needs `recommended` status, batch review UI)
+- DP-5.2: Configure Explicit Signal (needs criteria builder UI, data source integration)
+- DP-5.3: Signal Trigger Thesis Review (needs thesis-level triage consolidation)
+- DP-5.4: AI-Assisted Judgment Update (skill exists, needs app UI integration)
+- DP-5.5: Upgrade Judgment to Explicit (needs conversion flow)
+- DP-8.2: Post-Trade Reflection (optional reflection prompts)
+
+### Removed Decision Points
+- DP-6.2, DP-6.3: Consolidated into DP-6.1 (Strategy Confirmation)
+- DP-6.4: Strategy Entry Context - integrated into Asset Thesis Signals
+- DP-6.7: State Code Change - merged into Signals framework
+- DP-7.2, DP-7.3, DP-7.4: Consolidated into DP-7.1 (Position Risk Alert)
+- DP-7.5, DP-7.6: Roll/Close - trade action types, not separate DPs
+- DP-8.2-8.5: Consolidated into DP-8.1 (Trade Metadata Capture)
 
 ---
 
-*This inventory serves as the foundation for UX/UI redesign work. Next steps: Pattern refinement, unified triage mockups, object page integration design.*
+## Revision History
+
+| Date | Changes |
+|------|---------|
+| 2026-01-09 | Initial draft with 54 decision points across 8 sections |
+| 2026-01-12 | Section 5 rewrite: V&I → Signals framework, thesis-level triage, AI-assisted judgment |
+| 2026-01-12 | Section 6 review: Consolidated DP-6.1/6.2/6.3, integrated with Signals, marked legacy features |
+| 2026-01-12 | Section 7 review: Consolidated position alerts into single DP-7.1, removed Roll/Close as DPs |
+| 2026-01-12 | Section 8 rewrite: "Reconciliation" → "Journaling", 6 DPs → 2 DPs, compulsory metadata capture |
+| 2026-01-12 | Pattern Analysis updated to reflect consolidations and Signals framework |
+| 2026-01-12 | Added Section 11: Journal Logging Requirements as cross-cutting concern |
+
+---
+
+*This inventory serves as the foundation for UX/UI redesign work. Next steps: Apply "Signals" terminology throughout codebase, implement consolidated triage views, build signal configuration UI, ensure all DPs log to journal.*

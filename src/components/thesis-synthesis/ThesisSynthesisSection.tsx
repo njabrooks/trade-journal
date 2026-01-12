@@ -335,7 +335,7 @@ export function ThesisSynthesisSection({
         <MonitoringSpecForm
           validationPoint={
             editingSpec
-              ? validationPoints.find((p) => p.id === editingSpec.validationPointId)!
+              ? validationPoints.find((p) => p.id === editingSpec.signalId)!
               : validationPoints[0]
           }
           existingSpec={editingSpec}
@@ -350,7 +350,7 @@ export function ThesisSynthesisSection({
         <ManualCheckDialog
           spec={selectedSpecForCheck}
           validationPoint={
-            validationPoints.find((p) => p.id === selectedSpecForCheck.validationPointId)!
+            validationPoints.find((p) => p.id === selectedSpecForCheck.signalId)!
           }
           isOpen={!!selectedSpecForCheck}
           onClose={handleCloseCheckDialog}

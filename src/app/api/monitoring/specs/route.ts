@@ -2,26 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   createMonitoringSpec,
   getMonitoringSpecsByThesis,
-  getMonitoringSpecsByValidationPoint,
+  getMonitoringSpecsBySignal,
   getLatestMonitoringEvent,
 } from '@/db/queries/monitoring';
-import { getValidationPointById } from '@/db/queries/thesisSynthesis';
+import { getSignalById } from '@/db/queries/thesisSynthesis';
 import { validateMonitoringSpec } from '@/lib/services/monitoring';
 
 /**
  * GET /api/monitoring/specs
- * List monitoring specs for a thesis or validation point
+ * List monitoring specs for a thesis or signal
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const thesisId = searchParams.get('thesisId');
     const thesisType = searchParams.get('thesisType') as 'macro' | 'asset' | null;
-    const validationPointId = searchParams.get('validationPointId');
+    const signalId = searchParams.get('signalId') || searchParams.get('validationPointId'); // Support legacy param
 
-    if (validationPointId) {
-      // Get specs for a specific validation point
-      const specs = await getMonitoringSpecsByValidationPoint(validationPointId);
+    if (signalId) {
+      // Get specs for a specific signal
+      const specs = await getMonitoringSpecsBySignal(signalId);
 
       // Enrich with last check event
       const enriched = await Promise.all(
@@ -37,18 +37,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ specs: enriched });
     } else if (thesisId && thesisType) {
       // Get specs for a thesis
-      const specsWithPoints = await getMonitoringSpecsByThesis(thesisId, thesisType);
+      const specsWithSignals = await getMonitoringSpecsByThesis(thesisId, thesisType);
 
       // Enrich with last check event
       const enriched = await Promise.all(
-        specsWithPoints.map(async ({ spec, validationPoint }) => {
+        specsWithSignals.map(async ({ spec, validationPoint: signal }) => {
           const lastCheckEvent = await getLatestMonitoringEvent(spec.id);
           return {
             spec: {
               ...spec,
               lastCheckEvent: lastCheckEvent || null,
             },
-            validationPoint,
+            signal,
+            validationPoint: signal, // Legacy support
           };
         })
       );
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ specs: enriched });
     } else {
       return NextResponse.json(
-        { error: 'Either thesisId+thesisType or validationPointId is required' },
+        { error: 'Either thesisId+thesisType or signalId is required' },
         { status: 400 }
       );
     }
@@ -78,7 +79,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const {
-      validationPointId,
+      signalId,
+      validationPointId, // Legacy support
       keywords,
       semanticDescription,
       sources,
@@ -88,15 +90,17 @@ export async function POST(request: NextRequest) {
       enabled,
     } = body;
 
-    // Validate validation point exists
-    const validationPoint = await getValidationPointById(validationPointId);
-    if (!validationPoint) {
-      return NextResponse.json({ error: 'Validation point not found' }, { status: 404 });
+    const resolvedSignalId = signalId || validationPointId;
+
+    // Validate signal exists
+    const signal = await getSignalById(resolvedSignalId);
+    if (!signal) {
+      return NextResponse.json({ error: 'Signal not found' }, { status: 404 });
     }
 
     // Validate spec data
     const validation = validateMonitoringSpec({
-      validationPointId,
+      signalId: resolvedSignalId,
       keywords,
       sources,
       frequency,
@@ -112,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     // Create spec
     const spec = await createMonitoringSpec({
-      validationPointId,
+      signalId: resolvedSignalId,
       keywords,
       semanticDescription,
       sources,

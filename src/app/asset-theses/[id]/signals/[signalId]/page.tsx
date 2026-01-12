@@ -1,42 +1,42 @@
 import { getAssetThesisById } from '@/db/queries/assetTheses';
-import { getValidationPointById } from '@/db/queries/thesisSynthesis';
+import { getSignalById } from '@/db/queries/thesisSynthesis';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { ValidationPointDetailClient } from './ValidationPointDetailClient';
 import { notFound } from 'next/navigation';
 
-interface ValidationPointPageProps {
-  params: Promise<{ id: string; pointId: string }>;
+interface SignalPageProps {
+  params: Promise<{ id: string; signalId: string }>;
 }
 
-export default async function ValidationPointPage({ params }: ValidationPointPageProps) {
-  const { id, pointId } = await params;
+export default async function SignalPage({ params }: SignalPageProps) {
+  const { id, signalId } = await params;
 
-  const [thesis, validationPoint] = await Promise.all([
+  const [thesis, signal] = await Promise.all([
     getAssetThesisById(id),
-    getValidationPointById(pointId),
+    getSignalById(signalId),
   ]);
 
   if (!thesis) {
     notFound();
   }
 
-  if (!validationPoint) {
+  if (!signal) {
     notFound();
   }
 
-  // Verify the validation point belongs to this thesis
-  if (validationPoint.thesisId !== id || validationPoint.thesisType !== 'asset') {
+  // Verify the signal belongs to this thesis
+  if (signal.thesisId !== id || signal.thesisType !== 'asset') {
     notFound();
   }
 
   return (
     <DashboardShell
-      title={`Validation Point`}
+      title={`Signal`}
       subtitle={thesis.title}
       activeNav="asset-theses"
     >
       <ValidationPointDetailClient
-        validationPoint={validationPoint}
+        validationPoint={signal}
         thesisTitle={thesis.title}
         thesisType="asset"
         thesisId={id}

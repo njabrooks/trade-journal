@@ -1,12 +1,15 @@
 import { db } from '@/db';
-import { monitoringSpecs, monitoringEvents, validationPoints } from '@/db/schema';
+import { monitoringSpecs, monitoringEvents, signals } from '@/db/schema';
 import { eq, and, desc, isNull, sql } from 'drizzle-orm';
+
+// Legacy alias for backwards compatibility
+const validationPoints = signals;
 
 /**
  * Create a new monitoring spec
  */
 export async function createMonitoringSpec(data: {
-  validationPointId: string;
+  signalId: string;
   keywords: string[];
   semanticDescription?: string;
   sources: string[];
@@ -24,7 +27,7 @@ export async function createMonitoringSpec(data: {
   const [spec] = await db
     .insert(monitoringSpecs)
     .values({
-      validationPointId: data.validationPointId,
+      signalId: data.signalId,
       keywords: data.keywords,
       semanticDescription: data.semanticDescription || null,
       sources: data.sources,
@@ -53,7 +56,7 @@ export async function getMonitoringSpecsByThesis(
       validationPoint: validationPoints,
     })
     .from(monitoringSpecs)
-    .innerJoin(validationPoints, eq(monitoringSpecs.validationPointId, validationPoints.id))
+    .innerJoin(validationPoints, eq(monitoringSpecs.signalId, validationPoints.id))
     .where(
       and(
         eq(validationPoints.thesisId, thesisId),
@@ -66,11 +69,11 @@ export async function getMonitoringSpecsByThesis(
 /**
  * Get monitoring specs for a specific validation point
  */
-export async function getMonitoringSpecsByValidationPoint(validationPointId: string) {
+export async function getMonitoringSpecsBySignal(signalId: string) {
   return db
     .select()
     .from(monitoringSpecs)
-    .where(eq(monitoringSpecs.validationPointId, validationPointId))
+    .where(eq(monitoringSpecs.signalId, signalId))
     .orderBy(desc(monitoringSpecs.createdAt));
 }
 
@@ -131,7 +134,7 @@ export async function deleteMonitoringSpec(id: string) {
  */
 export async function createMonitoringEvent(data: {
   monitoringSpecId: string;
-  validationPointId: string;
+  signalId: string;
   checkedBy: 'user' | 'scheduled' | 'claude';
   dataSource: 'fred' | 'news' | 'price_iv' | 'sec_filings';
   queryParams: Record<string, any>;
@@ -149,7 +152,7 @@ export async function createMonitoringEvent(data: {
     .insert(monitoringEvents)
     .values({
       monitoringSpecId: data.monitoringSpecId,
-      validationPointId: data.validationPointId,
+      signalId: data.signalId,
       checkedAt: new Date(),
       checkedBy: data.checkedBy,
       dataSource: data.dataSource,
@@ -191,8 +194,8 @@ export async function updateMonitoringEventAssessment(
 /**
  * Get monitoring events for a validation point
  */
-export async function getMonitoringEventsByValidationPoint(
-  validationPointId: string,
+export async function getMonitoringEventsBySignal(
+  signalId: string,
   limit = 50
 ) {
   return db
@@ -202,7 +205,7 @@ export async function getMonitoringEventsByValidationPoint(
     })
     .from(monitoringEvents)
     .innerJoin(monitoringSpecs, eq(monitoringEvents.monitoringSpecId, monitoringSpecs.id))
-    .where(eq(monitoringEvents.validationPointId, validationPointId))
+    .where(eq(monitoringEvents.signalId, signalId))
     .orderBy(desc(monitoringEvents.checkedAt))
     .limit(limit);
 }
@@ -231,7 +234,7 @@ export async function getMonitoringEventById(id: string) {
     })
     .from(monitoringEvents)
     .innerJoin(monitoringSpecs, eq(monitoringEvents.monitoringSpecId, monitoringSpecs.id))
-    .innerJoin(validationPoints, eq(monitoringEvents.validationPointId, validationPoints.id))
+    .innerJoin(validationPoints, eq(monitoringEvents.signalId, validationPoints.id))
     .where(eq(monitoringEvents.id, id))
     .limit(1);
 
@@ -303,9 +306,9 @@ function calculateNextCheckDate(frequency: 'daily' | 'weekly' | 'on_demand'): Da
 }
 
 /**
- * Get monitoring stats for a validation point
+ * Get monitoring stats for a signal
  */
-export async function getMonitoringStatsForValidationPoint(validationPointId: string) {
+export async function getMonitoringStatsForSignal(signalId: string) {
   const [stats] = await db
     .select({
       totalChecks: sql<number>`COUNT(*)`,
@@ -314,7 +317,12 @@ export async function getMonitoringStatsForValidationPoint(validationPointId: st
       triggeredCount: sql<number>`SUM(CASE WHEN ${monitoringEvents.triggeredStatusChange} = true THEN 1 ELSE 0 END)`,
     })
     .from(monitoringEvents)
-    .where(eq(monitoringEvents.validationPointId, validationPointId));
+    .where(eq(monitoringEvents.signalId, signalId));
 
   return stats || null;
 }
+
+// Legacy aliases for backwards compatibility
+export const getMonitoringSpecsByValidationPoint = getMonitoringSpecsBySignal;
+export const getMonitoringEventsByValidationPoint = getMonitoringEventsBySignal;
+export const getMonitoringStatsForValidationPoint = getMonitoringStatsForSignal;

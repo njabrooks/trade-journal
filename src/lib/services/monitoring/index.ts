@@ -179,14 +179,16 @@ function extractTickerFromSpec(spec: MonitoringSpec): string | null {
 /**
  * Validate monitoring spec configuration
  */
-export function validateMonitoringSpec(spec: Partial<MonitoringSpec>): {
+export function validateMonitoringSpec(spec: Partial<MonitoringSpec> & { validationPointId?: string }): {
   valid: boolean;
   errors: string[];
 } {
   const errors: string[] = [];
 
-  if (!spec.validationPointId) {
-    errors.push('validationPointId is required');
+  // Support both signalId and legacy validationPointId
+  const hasSignalId = spec.signalId || spec.validationPointId;
+  if (!hasSignalId) {
+    errors.push('signalId is required');
   }
 
   if (!spec.keywords || (spec.keywords as string[]).length === 0) {

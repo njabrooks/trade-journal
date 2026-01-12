@@ -338,7 +338,7 @@ export function ValidationPointsList({
                     </button>
                   )}
                   <Link
-                    href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/validation/${point.id}`}
+                    href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${point.id}`}
                     className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded"
                   >
                     <ExternalLink className="w-3 h-3" />

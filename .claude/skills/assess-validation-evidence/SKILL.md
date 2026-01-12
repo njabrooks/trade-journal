@@ -149,17 +149,18 @@ FROM asset_theses
 WHERE id = $1
 ```
 
-2. **Fetch validation points:**
+2. **Fetch signals:**
 ```sql
 SELECT
   id, statement, type, category, importance, status,
   rationale, timeframe,
   explicit_details, judgment_details, response_protocol,
   created_at, updated_at
-FROM validation_points
+FROM signals
 WHERE thesis_id = $1 AND thesis_type = $2
 ORDER BY importance DESC, type ASC
 ```
+**Note:** Type values are 'confirmation' (validates thesis) or 'warning' (invalidates thesis).
 
 ## Skill Parameters
 

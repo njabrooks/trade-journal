@@ -1375,9 +1375,9 @@ export const thesisArticulations = pgTable(
 export type ThesisArticulation = typeof thesisArticulations.$inferSelect;
 export type NewThesisArticulation = typeof thesisArticulations.$inferInsert;
 
-// Validation Points - Explicit validation/invalidation criteria
-export const validationPoints = pgTable(
-  'validation_points',
+// Signals - Explicit confirmation/warning criteria (renamed from validation_points)
+export const signals = pgTable(
+  'signals',
   {
     id: uuid('id').defaultRandom().primaryKey(),
     thesisId: uuid('thesis_id').notNull(),
@@ -1387,7 +1387,7 @@ export const validationPoints = pgTable(
     }),
 
     // Core definition
-    type: text('type').notNull(), // 'validation' | 'invalidation'
+    type: text('type').notNull(), // 'confirmation' | 'warning'
     statement: text('statement').notNull(),
     rationale: text('rationale'),
 
@@ -1404,7 +1404,7 @@ export const validationPoints = pgTable(
     responseProtocol: jsonb('response_protocol').notNull(), // { description, linkedStrategies?, escalation? }
 
     // Status
-    status: text('status').notNull().default('not_triggered'), // 'not_triggered' | 'monitoring' | 'triggered' | 'superseded'
+    status: text('status').notNull().default('not_triggered'), // 'not_triggered' | 'monitoring' | 'triggered' | 'superseded' | 'recommended'
 
     // Dependent thesis reference (for compositional validation)
     dependentThesisId: uuid('dependent_thesis_id'),
@@ -1418,24 +1418,29 @@ export const validationPoints = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    thesisIdx: index('idx_validation_points_thesis').on(table.thesisId, table.thesisType),
-    statusIdx: index('idx_validation_points_status').on(table.status),
-    typeIdx: index('idx_validation_points_type').on(table.type),
-    importanceIdx: index('idx_validation_points_importance').on(table.importance),
+    thesisIdx: index('idx_signals_thesis').on(table.thesisId, table.thesisType),
+    statusIdx: index('idx_signals_status').on(table.status),
+    typeIdx: index('idx_signals_type').on(table.type),
+    importanceIdx: index('idx_signals_importance').on(table.importance),
   })
 );
 
-export type ValidationPoint = typeof validationPoints.$inferSelect;
-export type NewValidationPoint = typeof validationPoints.$inferInsert;
+export type Signal = typeof signals.$inferSelect;
+export type NewSignal = typeof signals.$inferInsert;
 
-// Validation Status History - Audit trail of status changes
-export const validationStatusHistory = pgTable(
-  'validation_status_history',
+// Legacy aliases for backwards compatibility during migration
+export const validationPoints = signals;
+export type ValidationPoint = Signal;
+export type NewValidationPoint = NewSignal;
+
+// Signal Status History - Audit trail of status changes (renamed from validation_status_history)
+export const signalStatusHistory = pgTable(
+  'signal_status_history',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    validationPointId: uuid('validation_point_id')
+    signalId: uuid('signal_id')
       .notNull()
-      .references(() => validationPoints.id, { onDelete: 'cascade' }),
+      .references(() => signals.id, { onDelete: 'cascade' }),
 
     timestamp: timestamp('timestamp', { withTimezone: true }).notNull().defaultNow(),
     previousStatus: text('previous_status'),
@@ -1454,13 +1459,18 @@ export const validationStatusHistory = pgTable(
     userActionTimestamp: timestamp('user_action_timestamp', { withTimezone: true }),
   },
   (table) => ({
-    pointIdx: index('idx_status_history_point').on(table.validationPointId),
-    timestampIdx: index('idx_status_history_timestamp').on(table.timestamp),
+    signalIdx: index('idx_signal_status_history_signal').on(table.signalId),
+    timestampIdx: index('idx_signal_status_history_timestamp').on(table.timestamp),
   })
 );
 
-export type ValidationStatusHistory = typeof validationStatusHistory.$inferSelect;
-export type NewValidationStatusHistory = typeof validationStatusHistory.$inferInsert;
+export type SignalStatusHistory = typeof signalStatusHistory.$inferSelect;
+export type NewSignalStatusHistory = typeof signalStatusHistory.$inferInsert;
+
+// Legacy aliases for backwards compatibility during migration
+export const validationStatusHistory = signalStatusHistory;
+export type ValidationStatusHistory = SignalStatusHistory;
+export type NewValidationStatusHistory = NewSignalStatusHistory;
 
 // Decision Audit Log - Process vs actual actions
 export const decisionAuditLog = pgTable(
@@ -1473,12 +1483,12 @@ export const decisionAuditLog = pgTable(
     thesisId: uuid('thesis_id'),
     thesisType: text('thesis_type'), // 'macro' | 'asset'
     strategyId: uuid('strategy_id'),
-    validationPointId: uuid('validation_point_id').references(() => validationPoints.id, {
+    signalId: uuid('signal_id').references(() => signals.id, {
       onDelete: 'set null',
     }),
 
     // Trigger
-    triggerType: text('trigger_type').notNull(), // 'validation_point' | 'playbook' | 'user_discretion' | 'other'
+    triggerType: text('trigger_type').notNull(), // 'signal' | 'playbook' | 'user_discretion' | 'other'
     triggerDescription: text('trigger_description').notNull(),
 
     // Process vs. actual
@@ -1505,9 +1515,9 @@ export const monitoringSpecs = pgTable(
   'monitoring_specs',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    validationPointId: uuid('validation_point_id')
+    signalId: uuid('signal_id')
       .notNull()
-      .references(() => validationPoints.id, { onDelete: 'cascade' }),
+      .references(() => signals.id, { onDelete: 'cascade' }),
 
     // Search strategy
     keywords: jsonb('keywords').notNull().default([]),
@@ -1531,7 +1541,7 @@ export const monitoringSpecs = pgTable(
   },
   (table) => ({
     nextCheckIdx: index('idx_monitoring_specs_next_check').on(table.nextCheck),
-    pointIdx: index('idx_monitoring_specs_point').on(table.validationPointId),
+    signalIdx: index('idx_monitoring_specs_signal').on(table.signalId),
     enabledIdx: index('idx_monitoring_specs_enabled').on(table.enabled),
   })
 );
@@ -1547,9 +1557,9 @@ export const monitoringEvents = pgTable(
     monitoringSpecId: uuid('monitoring_spec_id')
       .notNull()
       .references(() => monitoringSpecs.id, { onDelete: 'cascade' }),
-    validationPointId: uuid('validation_point_id')
+    signalId: uuid('signal_id')
       .notNull()
-      .references(() => validationPoints.id, { onDelete: 'cascade' }),
+      .references(() => signals.id, { onDelete: 'cascade' }),
 
     // Check metadata
     checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
@@ -1573,7 +1583,7 @@ export const monitoringEvents = pgTable(
 
     // Status change trigger
     triggeredStatusChange: boolean('triggered_status_change').default(false),
-    statusHistoryId: uuid('status_history_id').references(() => validationStatusHistory.id, {
+    statusHistoryId: uuid('status_history_id').references(() => signalStatusHistory.id, {
       onDelete: 'set null',
     }),
 
@@ -1581,7 +1591,7 @@ export const monitoringEvents = pgTable(
   },
   (table) => ({
     specIdx: index('idx_monitoring_events_spec').on(table.monitoringSpecId),
-    pointIdx: index('idx_monitoring_events_validation_point').on(table.validationPointId),
+    signalIdx: index('idx_monitoring_events_signal').on(table.signalId),
     checkedAtIdx: index('idx_monitoring_events_checked_at').on(table.checkedAt),
     dataSourceIdx: index('idx_monitoring_events_data_source').on(table.dataSource),
     checkedByIdx: index('idx_monitoring_events_checked_by').on(table.checkedBy),
@@ -1592,7 +1602,7 @@ export type MonitoringEvent = typeof monitoringEvents.$inferSelect;
 export type NewMonitoringEvent = typeof monitoringEvents.$inferInsert;
 
 // Thesis Monitoring Configs - Phase 3.2: Thesis-level monitoring configuration
-// Replaces per-validation-point approach with thesis-level config + broad analysis
+// Replaces per-signal approach with thesis-level config + broad analysis
 export const thesisMonitoringConfigs = pgTable(
   'thesis_monitoring_configs',
   {
@@ -1856,10 +1866,10 @@ export const thesisFredIndicators = pgTable(
     breachSeverity: text('breach_severity').default('medium'),
     breachMessageTemplate: text('breach_message_template'),
 
-    // Link to validation point
-    linkedValidationPointId: uuid('linked_validation_point_id'),
-    linkedValidationPointType: text('linked_validation_point_type'),
-    autoUpdateViStatus: boolean('auto_update_vi_status').default(false),
+    // Link to signal
+    linkedSignalId: uuid('linked_signal_id'),
+    linkedSignalType: text('linked_signal_type'),
+    autoUpdateSignalStatus: boolean('auto_update_vi_status').default(false), // Note: column name kept for backwards compat
 
     // Status
     enabled: boolean('enabled').notNull().default(true),
@@ -2053,7 +2063,7 @@ export interface ThesisMonitoringSources {
 }
 
 export interface ExplicitThreshold {
-  validationPointId: string;
+  signalId: string;
   source: 'fred' | 'price_iv';
   metric: string;                     // e.g., "ICSA", "spot", "iv30"
   operator: '>' | '<' | '>=' | '<=' | '==';
