@@ -15,11 +15,13 @@ import {
   Edit2,
   CheckCheck,
   XOctagon,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import type { Signal } from '@/db/schema';
+import { SignalConfigForm, type ExplicitDetails } from './SignalConfigForm';
 
 interface SignalBatchReviewProps {
   thesisId: string;
@@ -47,6 +49,7 @@ export function SignalBatchReview({
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [configuringSignal, setConfiguringSignal] = useState<Signal | null>(null);
 
   // Fetch recommended signals
   const fetchSignals = useCallback(async () => {
@@ -225,6 +228,55 @@ export function SignalBatchReview({
         s.id === signalId ? { ...s, pendingModifications: { ...s.pendingModifications, ...mods } } : s
       )
     );
+  };
+
+  // Handle accepting signal as explicit with configuration
+  const handleAcceptAsExplicit = async (config: ExplicitDetails) => {
+    if (!configuringSignal) return;
+
+    const signalId = configuringSignal.id;
+    setProcessingIds((prev) => new Set(prev).add(signalId));
+
+    try {
+      // Accept the signal with modifications to make it explicit
+      const response = await fetch('/api/signals/batch-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'accept',
+          signalId,
+          modifications: {
+            // Update category to explicit
+            category: 'explicit',
+          },
+          // Include explicit details to be stored
+          explicitDetails: config,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to accept signal');
+      }
+
+      setSignals((prev) => prev.filter((s) => s.id !== signalId));
+      toast.success('Signal accepted and configured as explicit trigger');
+      setConfiguringSignal(null);
+
+      // Check if all signals are processed
+      if (signals.length === 1) {
+        onComplete?.();
+      }
+    } catch (error) {
+      console.error('Error accepting signal as explicit:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to accept signal');
+    } finally {
+      setProcessingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(signalId);
+        return next;
+      });
+    }
   };
 
   // Style helpers
@@ -501,8 +553,19 @@ export function SignalBatchReview({
                         onClick={() => setEditingId(signal.id)}
                         disabled={isProcessing}
                         className="text-slate-500"
+                        title="Edit before accepting"
                       >
                         <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setConfiguringSignal(signal)}
+                        disabled={isProcessing}
+                        className="text-blue-600 hover:bg-blue-50"
+                        title="Accept as explicit with data trigger"
+                      >
+                        <Zap className="w-4 h-4" />
                       </Button>
                       <Button
                         size="sm"
@@ -510,6 +573,7 @@ export function SignalBatchReview({
                         onClick={() => handleReject(signal.id)}
                         disabled={isProcessing}
                         className="text-red-600 hover:bg-red-50"
+                        title="Reject signal"
                       >
                         {isProcessing ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -522,6 +586,7 @@ export function SignalBatchReview({
                         onClick={() => handleAccept(signal.id)}
                         disabled={isProcessing}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        title="Accept as judgment-based"
                       >
                         {isProcessing ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -537,6 +602,15 @@ export function SignalBatchReview({
           );
         })}
       </div>
+
+      {/* Signal Configuration Form */}
+      <SignalConfigForm
+        signal={configuringSignal ?? undefined}
+        isOpen={configuringSignal !== null}
+        onClose={() => setConfiguringSignal(null)}
+        onSubmit={handleAcceptAsExplicit}
+        mode="create"
+      />
     </div>
   );
 }

@@ -141,10 +141,10 @@
 - [x] Update `/synthesize-thesis` skill to output `recommended` status and document workflow
 
 ### 2.2 Signal Configuration UI (DP-5.2)
-- [ ] Create `src/components/signals/SignalConfigForm.tsx`
-- [ ] Create `src/components/signals/DataSourceSelector.tsx`
-- [ ] Create `src/components/signals/CriteriaBuilder.tsx`
-- [ ] Integrate with signal acceptance flow
+- [x] Create `src/components/signals/SignalConfigForm.tsx` (includes DataSourceSelector and CriteriaBuilder inline)
+- [x] Integrate with signal acceptance flow in SignalBatchReview
+- [x] Update batch-review API to store explicitDetails when accepting as explicit
+- [x] Add "Accept as Explicit" (⚡) button to batch review UI
 
 ### 2.3 Thesis-Level Triage Consolidation (DP-5.3)
 - [ ] Modify `thesisTriage.ts` for consolidation logic
@@ -291,3 +291,4 @@
 | 2026-01-12 | 0 | Created SynthesizeButton component | Added to macro & asset thesis detail pages |
 | 2026-01-12 | 1 | Phase 1 complete | Full signals rename: DB tables, schema.ts, API routes, queries, components, page routes, skills |
 | 2026-01-12 | 2.1 | Phase 2.1 complete | Signal batch review: triage rule, API endpoint, SignalBatchReview component, skill docs |
+| 2026-01-12 | 2.2 | Phase 2.2 complete | Signal config UI: SignalConfigForm with data sources (FRED/IV/Price), criteria builder, acceptance flow integration |

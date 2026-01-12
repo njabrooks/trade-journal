@@ -34,13 +34,28 @@ interface BatchReviewBody {
     statement?: string;
     rationale?: string;
     importance?: 'critical' | 'significant' | 'supporting';
+    category?: 'explicit' | 'judgment_required';
+  };
+  explicitDetails?: {
+    dataSource: 'fred' | 'iv_data' | 'price_feed';
+    metric: string;
+    metricName?: string;
+    operator: string;
+    threshold: number;
+    thresholdUnit?: string;
+    duration?: {
+      count: number;
+      period: string;
+    };
+    checkFrequency: 'daily' | 'weekly' | 'monthly';
+    ticker?: string;
   };
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: BatchReviewBody = await request.json();
-    const { action, signalId, thesisId, thesisType, modifications } = body;
+    const { action, signalId, thesisId, thesisType, modifications, explicitDetails } = body;
 
     if (!action) {
       return NextResponse.json(
@@ -95,6 +110,14 @@ export async function POST(request: NextRequest) {
         if (modifications?.statement) updateValues.statement = modifications.statement;
         if (modifications?.rationale) updateValues.rationale = modifications.rationale;
         if (modifications?.importance) updateValues.importance = modifications.importance;
+        if (modifications?.category) updateValues.category = modifications.category;
+
+        // Store explicit trigger configuration if provided
+        if (explicitDetails) {
+          updateValues.explicitDetails = explicitDetails;
+          // Ensure category is set to explicit when explicitDetails are provided
+          updateValues.category = 'explicit';
+        }
 
         // Update signal status to not_triggered
         const [updatedSignal] = await db
@@ -104,27 +127,43 @@ export async function POST(request: NextRequest) {
           .returning();
 
         // Create history record
+        const historyEvidence: Record<string, unknown> = {
+          source: 'user_review',
+          summary: explicitDetails
+            ? 'Signal accepted and configured as explicit trigger during batch review'
+            : 'Signal accepted during batch review',
+        };
+        if (explicitDetails) {
+          historyEvidence.explicitConfig = explicitDetails;
+        }
+
         await db.insert(signalStatusHistory).values({
           signalId,
           previousStatus: 'recommended',
           newStatus: 'not_triggered',
-          evidence: {
-            source: 'user_review',
-            summary: 'Signal accepted during batch review',
-          },
+          evidence: historyEvidence,
           confidence: 'high',
           assessedBy: 'user',
         });
 
         // Log to journal
+        const actionDescription = explicitDetails
+          ? `Accepted and configured explicit trigger for signal: "${signal.statement}"`
+          : `Accepted recommended signal: "${signal.statement}"`;
+        const newState: Record<string, unknown> = { status: 'not_triggered', ...modifications };
+        if (explicitDetails) {
+          newState.explicitDetails = explicitDetails;
+          newState.category = 'explicit';
+        }
+
         await logToJournal({
           objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
           objectId: signal.thesisId,
           objectTitle: thesisTitle,
-          actionType: 'signal_accepted',
-          actionDescription: `Accepted recommended signal: "${signal.statement}"`,
-          previousState: { status: 'recommended' },
-          newState: { status: 'not_triggered', ...modifications },
+          actionType: explicitDetails ? 'signal_configured_explicit' : 'signal_accepted',
+          actionDescription,
+          previousState: { status: 'recommended', category: signal.category },
+          newState,
           source: 'user',
         });
 
