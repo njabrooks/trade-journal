@@ -18,6 +18,7 @@ import {
   Sparkles,
   RefreshCw,
   Lightbulb,
+  ScrollText,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,6 +34,7 @@ import {
 const MAIN_NAV = [
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
   { href: "/blotter", label: "Blotter", icon: BookOpen, id: "blotter" },
+  { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
   { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
   { href: "/asset-theses", label: "Asset Theses", icon: Target, id: "asset-theses" },
   { href: "/macro-theses", label: "Macro Theses", icon: TrendingUp, id: "macro-theses" },
