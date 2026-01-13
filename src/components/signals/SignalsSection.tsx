@@ -2,20 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ValidationPointsList } from '@/components/thesis-synthesis/ValidationPointsList';
+import { toast } from 'sonner';
+import { UnifiedSignalsTable } from '@/components/signals/UnifiedSignalsTable';
 import { SignalConfigForm } from '@/components/signals/SignalConfigForm';
 import { AssessEvidenceButton } from '@/components/signals/AssessEvidenceButton';
-import type { ValidationPoint, MonitoringSpec, MonitoringEvent } from '@/db/schema';
+import { UpdateValidationStatusModal } from '@/components/thesis-synthesis/UpdateValidationStatusModal';
+import type { Signal } from '@/db/schema';
 
 interface SignalsSectionProps {
-  signals: ValidationPoint[];
+  signals: Signal[];
   thesisId: string;
   thesisType: 'macro' | 'asset';
   thesisTitle: string;
-  monitoringSpecs?: Array<{
-    spec: MonitoringSpec & { lastCheckEvent?: MonitoringEvent | null };
-    validationPoint: ValidationPoint;
-  }>;
 }
 
 export function SignalsSection({
@@ -23,13 +21,20 @@ export function SignalsSection({
   thesisId,
   thesisType,
   thesisTitle,
-  monitoringSpecs = [],
 }: SignalsSectionProps) {
   const router = useRouter();
-  const [selectedSignalForUpgrade, setSelectedSignalForUpgrade] = useState<ValidationPoint | null>(null);
+  const [selectedSignalForUpgrade, setSelectedSignalForUpgrade] = useState<Signal | null>(null);
+  const [selectedSignalForStatus, setSelectedSignalForStatus] = useState<Signal | null>(null);
 
-  const handleConvertToExplicit = (signal: ValidationPoint) => {
+  const handleConvertToDataDriven = (signal: Signal) => {
     setSelectedSignalForUpgrade(signal);
+  };
+
+  const handleUpdateStatus = (signalId: string) => {
+    const signal = signals.find(s => s.id === signalId);
+    if (signal) {
+      setSelectedSignalForStatus(signal);
+    }
   };
 
   const handleConfigSubmit = async (config: {
@@ -97,30 +102,18 @@ export function SignalsSection({
         />
       </div>
 
-      {/* Content */}
-      {signals.length === 0 ? (
-        <div className="text-center py-4">
-          <p className="text-sm text-slate-500 mb-2">
-            No signals defined yet.
-          </p>
-          <p className="text-xs text-slate-400">
-            Signals are created when you run{' '}
-            <code className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">
-              /synthesize-thesis
-            </code>
-          </p>
-        </div>
-      ) : (
-        <ValidationPointsList
-          validationPoints={signals}
-          thesisId={thesisId}
-          thesisType={thesisType}
-          monitoringSpecs={monitoringSpecs}
-          onConvertToExplicit={handleConvertToExplicit}
-        />
-      )}
+      {/* Content - Unified Signals Table in browse mode */}
+      <UnifiedSignalsTable
+        signals={signals}
+        thesisId={thesisId}
+        thesisType={thesisType}
+        thesisTitle={thesisTitle}
+        mode="browse"
+        onUpdateStatus={handleUpdateStatus}
+        onConvertToDataDriven={handleConvertToDataDriven}
+      />
 
-      {/* Signal Config Form Dialog for upgrading to explicit */}
+      {/* Signal Config Form Dialog for upgrading to data-driven */}
       <SignalConfigForm
         signal={selectedSignalForUpgrade ?? undefined}
         isOpen={selectedSignalForUpgrade !== null}
@@ -128,6 +121,36 @@ export function SignalsSection({
         onSubmit={handleConfigSubmit}
         mode="upgrade"
       />
+
+      {/* Update Status Modal */}
+      {selectedSignalForStatus && (
+        <UpdateValidationStatusModal
+          point={selectedSignalForStatus}
+          isOpen={selectedSignalForStatus !== null}
+          onClose={() => setSelectedSignalForStatus(null)}
+          onSubmit={async (data) => {
+            const response = await fetch(`/api/validation-points/${selectedSignalForStatus.id}/status`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                newStatus: data.newStatus,
+                evidence: data.evidence,
+                confidence: data.confidence,
+                userActionTaken: data.userActionTaken,
+              }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Failed to update status');
+            }
+
+            toast.success('Signal status updated');
+            setSelectedSignalForStatus(null);
+            router.refresh();
+          }}
+        />
+      )}
     </>
   );
 }

@@ -210,44 +210,45 @@ The `SignalBatchReview` component exists but is not rendered in `ExpandedTriageD
 
 **Completed**: 2026-01-13
 
-### Phase 3: Build Unified Signals Table
+### Phase 3: Build Unified Signals Table ✅ COMPLETE
 
 **Goal**: Single clean component for all signals display
 
-1. **Create `UnifiedSignalsTable.tsx`**
-   - Modeled after `UnifiedClaimsBrowser.tsx` pattern
+1. ✅ **Create `UnifiedSignalsTable.tsx`**
+   - Created ~943 line component modeled after `UnifiedClaimsBrowser.tsx`
    - Supports two modes: `browse` (thesis page) and `review` (triage batch review)
    - Expandable rows with consistent layout
-   - Proper filtering by type/category/status
+   - Filtering by type/category/status with search
+   - Sortable columns (statement, type, category, status, importance, updatedAt)
 
-2. **Row structure**:
+2. ✅ **Row structure** implemented:
    ```
    Collapsed:
-   [▸] [✓/⚠] Statement text...           [Judgment] [Active]  [Actions ▾]
+   [▸] [✓/⚠] Statement text...           [Category] [Importance] [Status]  [Actions]
 
    Expanded:
-   [▾] [✓/⚠] Statement text...           [Judgment] [Active]  [Actions ▾]
+   [▾] [✓/⚠] Statement text...           [Category] [Importance] [Status]  [Actions]
        ┌─────────────────────────────────────────────────────────────────┐
        │ Rationale: "This signal tracks..."                              │
-       │ Assessment: Look for X, Y, Z indicators                         │
-       │ Last updated: 3 days ago                                        │
-       │                                                                 │
+       │ Trigger Criteria: (for data-driven) / Assessment: (for judgment)│
        │ [Update Status]  [Make Data-Driven]  [View History]             │
        └─────────────────────────────────────────────────────────────────┘
    ```
 
-3. **Batch review mode** (for triage):
+3. ✅ **Batch review mode** (for triage):
    - Shows only `status: 'recommended'` signals
-   - Each row has Accept/Reject/Edit actions
+   - Each row has Accept/Reject/Configure as Data-Driven actions
    - Bulk actions: Accept All, Reject All
-   - On complete, resolves triage record
+   - On complete, triggers onComplete callback
 
-4. **Replace usages**:
-   - `ValidationPointsList` → `UnifiedSignalsTable` (browse mode)
-   - `SignalBatchReview` → `UnifiedSignalsTable` (review mode)
-   - `SignalsSection` wrapper updated to use new component
+4. ✅ **Replace usages**:
+   - `SignalsSection.tsx`: Now uses `UnifiedSignalsTable` in browse mode
+   - `ExpandedTriageDetail.tsx`: Now uses `UnifiedSignalsTable` in review mode
+   - Removed `monitoringSpecs` prop from `SignalsSection` (no longer needed)
+   - Added `UpdateValidationStatusModal` integration for status updates
+   - Created `RecommendedSignalsReview` wrapper to fetch signals for triage context
 
-**Estimated effort**: 2-3 sessions
+**Completed**: 2026-01-13
 
 ### Phase 4: Streamline Detail Page
 
@@ -445,3 +446,4 @@ JOIN signals s ON ms.signal_id = s.id;
 | 2026-01-13 | Initial design document created from UX discussion |
 | 2026-01-13 | Phase 1 completed: Fixed triage trigger, integrated SignalBatchReview, terminology fixes |
 | 2026-01-13 | Phase 2 completed: Category migration (judgment/data_driven), code references updated |
+| 2026-01-13 | Phase 3 completed: UnifiedSignalsTable created, SignalsSection & ExpandedTriageDetail updated |

@@ -31,7 +31,8 @@ import { TriageActionsTable } from './TriageActionsTable';
 import { TriageActionButtons } from './TriageActionButtons';
 import { ClaimsContext } from './ClaimsContext';
 import { ThesisSignalTriageCard } from './ThesisSignalTriageCard';
-import { SignalBatchReview } from '@/components/signals/SignalBatchReview';
+import { UnifiedSignalsTable } from '@/components/signals/UnifiedSignalsTable';
+import type { Signal } from '@/db/schema';
 
 interface ExpandedTriageDetailProps {
   record: UnifiedTriageRecord;
@@ -680,7 +681,7 @@ function ThesisDetail({
 
       {/* Review Recommended Signals - Batch Review UI */}
       {isReviewRecommendedSignals && (
-        <SignalBatchReview
+        <RecommendedSignalsReview
           thesisId={record.objectId}
           thesisType={isMacro ? 'macro' : 'asset'}
           thesisTitle={thesisRecord?.thesisTitle || record.title}
@@ -818,6 +819,67 @@ function ThesisDetail({
         </Button>
       </div>
     </div>
+  );
+}
+
+// =============================================================================
+// Recommended Signals Review (Wrapper for UnifiedSignalsTable in review mode)
+// =============================================================================
+
+function RecommendedSignalsReview({
+  thesisId,
+  thesisType,
+  thesisTitle,
+  onComplete,
+}: {
+  thesisId: string;
+  thesisType: 'macro' | 'asset';
+  thesisTitle?: string;
+  onComplete?: () => void;
+}) {
+  const [signals, setSignals] = useState<Signal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchSignals() {
+      try {
+        const response = await fetch(`/api/validation-points?thesisId=${thesisId}&thesisType=${thesisType}&status=recommended`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch signals');
+        }
+        const data = await response.json();
+        setSignals(data.validationPoints || []);
+      } catch (err) {
+        console.error('Error fetching signals:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load signals');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchSignals();
+  }, [thesisId, thesisType]);
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+        <AlertCircle className="h-5 w-5 text-red-600 mx-auto mb-2" />
+        <p className="text-sm text-red-700">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <UnifiedSignalsTable
+      signals={signals}
+      thesisId={thesisId}
+      thesisType={thesisType}
+      thesisTitle={thesisTitle}
+      mode="review"
+      onComplete={onComplete}
+      isLoading={isLoading}
+    />
   );
 }
 
