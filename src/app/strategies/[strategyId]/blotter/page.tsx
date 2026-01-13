@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -8,6 +9,16 @@ import { formatCurrency, formatDateLabel } from "@/lib/formatters";
 
 interface BlotterPageProps {
   params: Promise<{ strategyId: string }>;
+}
+
+export async function generateMetadata({ params }: BlotterPageProps): Promise<Metadata> {
+  const { strategyId } = await params;
+  const detail = await getStrategyDetail(strategyId);
+
+  const label = detail?.strategy?.label || detail?.strategy?.strategyKey || 'Strategy';
+  return {
+    title: `${label} - Blotter`,
+  };
 }
 
 export default async function BlotterPage({ params }: BlotterPageProps) {

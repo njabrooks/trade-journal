@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -22,6 +23,16 @@ interface TriagePageProps {
     sort?: string;
     direction?: "asc" | "desc";
   }>;
+}
+
+export async function generateMetadata({ params }: TriagePageProps): Promise<Metadata> {
+  const { strategyId } = await params;
+  const detail = await getStrategyDetail(strategyId);
+
+  const label = detail?.strategy?.label || detail?.strategy?.strategyKey || 'Strategy';
+  return {
+    title: `${label} - Triage`,
+  };
 }
 
 export default async function TriagePage({ params, searchParams }: TriagePageProps) {

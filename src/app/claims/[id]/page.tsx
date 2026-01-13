@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getMainClaimById } from '@/db/queries/research';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { ExpandableEvidenceClaim } from '@/components/research/ExpandableEvidenceClaim';
@@ -11,6 +12,15 @@ import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } f
 
 interface ClaimDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: ClaimDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const claimData = await getMainClaimById(id);
+
+  return {
+    title: claimData?.claim?.title ?? 'Claim',
+  };
 }
 
 export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) {

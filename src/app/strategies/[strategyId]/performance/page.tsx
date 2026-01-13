@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
@@ -13,6 +14,16 @@ import {
 
 interface PerformancePageProps {
   params: Promise<{ strategyId: string }>;
+}
+
+export async function generateMetadata({ params }: PerformancePageProps): Promise<Metadata> {
+  const { strategyId } = await params;
+  const detail = await getStrategyDetail(strategyId);
+
+  const label = detail?.strategy?.label || detail?.strategy?.strategyKey || 'Strategy';
+  return {
+    title: `${label} - Performance`,
+  };
 }
 
 export default async function PerformancePage({ params }: PerformancePageProps) {

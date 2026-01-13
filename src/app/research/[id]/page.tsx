@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getResearchArtifactById, getResearchInsightByArtifactId, getMainClaimsForArtifact } from '@/db/queries/research';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { notFound } from 'next/navigation';
@@ -12,6 +13,15 @@ import { ChevronDown, ChevronUp, CheckCircle2, Circle, Clock } from 'lucide-reac
 
 interface ResearchDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: ResearchDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const artifact = await getResearchArtifactById(id);
+
+  return {
+    title: artifact?.title ?? 'Research',
+  };
 }
 
 export default async function ResearchDetailPage({ params }: ResearchDetailPageProps) {

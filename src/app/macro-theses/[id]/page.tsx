@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getMacroThesisById, getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
 import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
@@ -15,6 +16,15 @@ import { notFound } from 'next/navigation';
 
 interface ThesisDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: ThesisDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const thesis = await getMacroThesisById(id);
+
+  return {
+    title: thesis?.title ?? 'Macro Thesis',
+  };
 }
 
 export default async function ThesisDetailPage({ params }: ThesisDetailPageProps) {

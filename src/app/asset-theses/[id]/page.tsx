@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { getAssetThesisById } from '@/db/queries/assetTheses';
 import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
@@ -10,6 +11,15 @@ import { notFound } from 'next/navigation';
 
 interface AssetThesisDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: AssetThesisDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const thesis = await getAssetThesisById(id);
+
+  return {
+    title: thesis?.title ?? 'Asset Thesis',
+  };
 }
 
 export default async function AssetThesisDetailPage({ params }: AssetThesisDetailPageProps) {

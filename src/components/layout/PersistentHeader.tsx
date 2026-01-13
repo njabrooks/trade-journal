@@ -29,48 +29,115 @@ const pathLabelMap: Record<string, string> = {
   ingestion: "Ingestion",
   flex: "Flex",
   recompute: "Recompute",
+  "macro-theses": "Macro Theses",
+  "asset-theses": "Asset Theses",
+  research: "Research",
+  claims: "Claims",
+  signals: "Signals",
+  journal: "Journal",
 };
+
+// Helper to check if a string looks like a UUID
+function isUuid(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
 
 export function PersistentHeader() {
   const pathname = usePathname();
-  const [strategyLabel, setStrategyLabel] = useState<string | null>(null);
-  
-  // Extract strategy ID from pathname if we're on a strategy detail page
+  const [entityLabels, setEntityLabels] = useState<Record<string, string>>({});
+
+  // Extract entity IDs from various routes
   const strategyMatch = pathname.match(/^\/strategies\/([^/]+)/);
+  const macroThesisMatch = pathname.match(/^\/macro-theses\/([^/]+)/);
+  const assetThesisMatch = pathname.match(/^\/asset-theses\/([^/]+)/);
+  const researchMatch = pathname.match(/^\/research\/([^/]+)/);
+  const claimMatch = pathname.match(/^\/claims\/([^/]+)/);
+
   const strategyId = strategyMatch?.[1];
-  
-  // Fetch strategy label when on a strategy detail page
+  const macroThesisId = macroThesisMatch?.[1];
+  const assetThesisId = assetThesisMatch?.[1];
+  const researchId = researchMatch?.[1];
+  const claimId = claimMatch?.[1];
+
+  // Fetch entity labels
   useEffect(() => {
-    if (strategyId && !strategyId.match(/^(performance|triage|blotter)$/)) {
-      // Only fetch if it looks like a UUID (not a sub-route)
-      fetch(`/api/strategies?id=${strategyId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && (data.autoDerivedLabel || data.strategyKey)) {
-            setStrategyLabel(data.autoDerivedLabel || data.strategyKey);
+    const fetchLabels = async () => {
+      const newLabels: Record<string, string> = {};
+
+      // Fetch strategy label
+      if (strategyId && isUuid(strategyId)) {
+        try {
+          const res = await fetch(`/api/strategies?id=${strategyId}`);
+          const data = await res.json();
+          if (data?.autoDerivedLabel || data?.strategyKey) {
+            newLabels[strategyId] = data.autoDerivedLabel || data.strategyKey;
           }
-        })
-        .catch(() => {
-          // Silently fail - will just show the ID
-        });
-    } else {
-      setStrategyLabel(null);
-    }
-  }, [strategyId]);
-  
+        } catch { /* ignore */ }
+      }
+
+      // Fetch macro thesis title
+      if (macroThesisId && isUuid(macroThesisId)) {
+        try {
+          const res = await fetch(`/api/macro-theses/${macroThesisId}`);
+          const data = await res.json();
+          if (data?.title) {
+            newLabels[macroThesisId] = data.title;
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Fetch asset thesis title
+      if (assetThesisId && isUuid(assetThesisId)) {
+        try {
+          const res = await fetch(`/api/asset-theses/${assetThesisId}`);
+          const data = await res.json();
+          if (data?.title) {
+            newLabels[assetThesisId] = data.title;
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Fetch research artifact title
+      if (researchId && isUuid(researchId)) {
+        try {
+          const res = await fetch(`/api/research/artifacts/${researchId}`);
+          const data = await res.json();
+          if (data?.title) {
+            newLabels[researchId] = data.title;
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Fetch claim title
+      if (claimId && isUuid(claimId)) {
+        try {
+          const res = await fetch(`/api/claims/${claimId}`);
+          const data = await res.json();
+          if (data?.title) {
+            newLabels[claimId] = data.title;
+          }
+        } catch { /* ignore */ }
+      }
+
+      setEntityLabels(newLabels);
+    };
+
+    fetchLabels();
+  }, [strategyId, macroThesisId, assetThesisId, researchId, claimId]);
+
   // Build breadcrumb items from pathname
   const pathSegments = pathname.split("/").filter(Boolean);
   const breadcrumbItems = pathSegments.map((segment, index) => {
     const href = "/" + pathSegments.slice(0, index + 1).join("/");
     let label = pathLabelMap[segment] || segment;
-    
-    // Replace strategy ID with strategy label if available
-    if (strategyId && segment === strategyId && strategyLabel) {
-      label = strategyLabel;
+
+    // Replace UUID with fetched label if available
+    if (isUuid(segment) && entityLabels[segment]) {
+      label = entityLabels[segment];
     }
-    
+
     const isLast = index === pathSegments.length - 1;
-    
+
     return { href, label, isLast };
   });
 
