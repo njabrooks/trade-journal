@@ -10,7 +10,7 @@ const VALID_STATUSES = ['not_triggered', 'monitoring', 'triggered', 'superseded'
 const VALID_CONFIDENCE = ['low', 'medium', 'high'];
 const VALID_SOURCES = ['user', 'automation'];
 
-interface PatchRequestBody {
+interface StatusUpdateBody {
   newStatus: string;
   evidence: {
     source: string;
@@ -22,16 +22,41 @@ interface PatchRequestBody {
   userActionTaken?: string;
 }
 
+interface UpgradeToExplicitBody {
+  category: 'explicit';
+  explicitDetails: {
+    dataSource: string;
+    metric: string;
+    operator: string;
+    threshold: number;
+    thresholdUnit?: string;
+    durationCount?: number;
+    durationPeriod?: string;
+    checkFrequency: string;
+    notes?: string;
+  };
+}
+
+type PatchRequestBody = StatusUpdateBody | UpgradeToExplicitBody;
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const body: PatchRequestBody = await request.json();
+    const body = await request.json() as PatchRequestBody;
+
+    // Detect if this is an upgrade-to-explicit request or a status update
+    if ('category' in body && body.category === 'explicit' && 'explicitDetails' in body) {
+      return handleUpgradeToExplicit(id, body as UpgradeToExplicitBody);
+    }
+
+    // Handle status update
+    const statusBody = body as StatusUpdateBody;
 
     // 1. Validate input
-    const { newStatus, evidence, confidence, source = 'user', userActionTaken } = body;
+    const { newStatus, evidence, confidence, source = 'user', userActionTaken } = statusBody;
 
     if (!newStatus || !evidence || !confidence) {
       return NextResponse.json(
@@ -167,4 +192,102 @@ export async function PATCH(
       { status: 500 }
     );
   }
+}
+
+/**
+ * Handle upgrading a judgment-based signal to an explicit (data-driven) signal
+ */
+async function handleUpgradeToExplicit(
+  id: string,
+  body: UpgradeToExplicitBody
+): Promise<NextResponse> {
+  // 1. Fetch current signal
+  const [currentSignal] = await db
+    .select()
+    .from(signals)
+    .where(eq(signals.id, id))
+    .limit(1);
+
+  if (!currentSignal) {
+    return NextResponse.json(
+      { error: 'Signal not found' },
+      { status: 404 }
+    );
+  }
+
+  // 2. Verify signal is judgment_required
+  if (currentSignal.category !== 'judgment_required') {
+    return NextResponse.json(
+      { error: 'Signal is not a judgment-based signal. Only judgment_required signals can be upgraded.' },
+      { status: 400 }
+    );
+  }
+
+  // 3. Fetch thesis for journal context
+  const thesis = currentSignal.thesisType === 'macro'
+    ? await getMacroThesisById(currentSignal.thesisId)
+    : await getAssetThesisById(currentSignal.thesisId);
+  const thesisTitle = thesis?.title || 'Unknown Thesis';
+
+  // 4. Update signal with new category and explicit details
+  const [updatedSignal] = await db
+    .update(signals)
+    .set({
+      category: 'explicit',
+      explicitDetails: body.explicitDetails,
+      updatedAt: new Date(),
+    })
+    .where(eq(signals.id, id))
+    .returning();
+
+  // 5. Create history record
+  await db.insert(signalStatusHistory).values({
+    signalId: id,
+    previousStatus: currentSignal.status,
+    newStatus: currentSignal.status, // Status unchanged
+    evidence: {
+      source: 'user_configuration',
+      summary: `Converted to explicit signal with data-driven trigger: ${body.explicitDetails.metric} ${body.explicitDetails.operator} ${body.explicitDetails.threshold}`,
+    },
+    confidence: 'high',
+    assessedBy: 'user',
+  });
+
+  // 6. Log to journal
+  const statementPreview = currentSignal.statement.length > 50
+    ? `${currentSignal.statement.slice(0, 50)}...`
+    : currentSignal.statement;
+
+  await logToJournal({
+    objectType: currentSignal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+    objectId: currentSignal.thesisId,
+    objectTitle: thesisTitle,
+    actionType: 'signal_upgraded_to_explicit',
+    actionDescription: `Signal "${statementPreview}" upgraded from judgment to explicit with data trigger`,
+    previousState: {
+      category: 'judgment_required',
+      signalId: id,
+      signalType: currentSignal.type,
+    },
+    newState: {
+      category: 'explicit',
+      explicitDetails: body.explicitDetails,
+    },
+    source: 'user',
+    metadata: {
+      signalId: id,
+      signalType: currentSignal.type,
+      importance: currentSignal.importance,
+      dataSource: body.explicitDetails.dataSource,
+      metric: body.explicitDetails.metric,
+    },
+  });
+
+  // 7. Return response
+  return NextResponse.json({
+    success: true,
+    signal: updatedSignal,
+    validationPoint: updatedSignal, // Legacy support
+    message: 'Signal upgraded to explicit',
+  });
 }

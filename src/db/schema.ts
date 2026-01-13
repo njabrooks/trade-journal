@@ -1672,7 +1672,7 @@ export const thesisTriageRecords = pgTable(
     thesisTitle: text('thesis_title').notNull(),
 
     // Trigger source
-    triggerType: text('trigger_type').notNull(),  // 'scheduled_monitoring' | 'filing_alert' | 'data_release' | 'manual'
+    triggerType: text('trigger_type').notNull(),  // 'scheduled_monitoring' | 'filing_alert' | 'data_release' | 'manual' | 'lifecycle_transition' | 'signal_recommendation'
     triggerSource: text('trigger_source').notNull(),  // e.g., "daily_news_scan"
 
     // Aggregated content summary

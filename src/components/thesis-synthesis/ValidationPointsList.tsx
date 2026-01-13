@@ -58,7 +58,7 @@ export function ValidationPointsList({
 }: ValidationPointsListProps) {
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const [expandedMonitoring, setExpandedMonitoring] = useState<Set<string>>(new Set());
-  const [filterType, setFilterType] = useState<'all' | 'validation' | 'invalidation'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'confirmation' | 'warning'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'not_triggered' | 'monitoring' | 'triggered'>('all');
 
   const togglePoint = (id: string) => {
@@ -132,8 +132,8 @@ export function ValidationPointsList({
     return true;
   });
 
-  const validationCount = validationPoints.filter((p) => p.type === 'validation').length;
-  const invalidationCount = validationPoints.filter((p) => p.type === 'invalidation').length;
+  const confirmationCount = validationPoints.filter((p) => p.type === 'confirmation').length;
+  const warningCount = validationPoints.filter((p) => p.type === 'warning').length;
   const triggeredCount = validationPoints.filter((p) => p.status === 'triggered').length;
   const monitoringCount = validationPoints.filter((p) => p.status === 'monitoring').length;
 
@@ -186,11 +186,11 @@ export function ValidationPointsList({
           <div className="flex items-center gap-2 text-xs">
             <span className="flex items-center gap-1 text-emerald-600">
               <CheckCircle2 className="w-3 h-3" />
-              {validationCount} validation
+              {confirmationCount} confirmation
             </span>
-            <span className="flex items-center gap-1 text-red-600">
-              <XCircle className="w-3 h-3" />
-              {invalidationCount} invalidation
+            <span className="flex items-center gap-1 text-amber-600">
+              <AlertTriangle className="w-3 h-3" />
+              {warningCount} warning
             </span>
             {triggeredCount > 0 && (
               <span className="flex items-center gap-1 text-amber-600 font-medium">
@@ -211,8 +211,8 @@ export function ValidationPointsList({
               className="text-xs border-slate-200 rounded px-1.5 py-0.5"
             >
               <option value="all">All</option>
-              <option value="validation">Validation</option>
-              <option value="invalidation">Invalidation</option>
+              <option value="confirmation">Confirmation</option>
+              <option value="warning">Warning</option>
             </select>
           </div>
           <div className="flex items-center gap-1">
@@ -272,17 +272,17 @@ export function ValidationPointsList({
                     {/* Type badge */}
                     <span
                       className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded ${
-                        point.type === 'validation'
+                        point.type === 'confirmation'
                           ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-red-100 text-red-700'
+                          : 'bg-amber-100 text-amber-700'
                       }`}
                     >
-                      {point.type === 'validation' ? (
+                      {point.type === 'confirmation' ? (
                         <CheckCircle2 className="w-3 h-3" />
                       ) : (
-                        <XCircle className="w-3 h-3" />
+                        <AlertTriangle className="w-3 h-3" />
                       )}
-                      {point.type}
+                      {point.type === 'confirmation' ? 'Confirmation' : 'Warning'}
                     </span>
 
                     {/* Importance badge */}

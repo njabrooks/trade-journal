@@ -31,6 +31,7 @@ import { TriageActionsTable } from './TriageActionsTable';
 import { TriageActionButtons } from './TriageActionButtons';
 import { ClaimsContext } from './ClaimsContext';
 import { ThesisSignalTriageCard } from './ThesisSignalTriageCard';
+import { SignalBatchReview } from '@/components/signals/SignalBatchReview';
 
 interface ExpandedTriageDetailProps {
   record: UnifiedTriageRecord;
@@ -368,6 +369,7 @@ function ThesisDetail({
   const isNeedsArticulation = triageRule === 'thesis_needs_articulation' || triageRule === 'NEEDS_RESEARCH' || triageRule === 'PRODUCE_CORE_ARGUMENT';
   const isNewClaimsAvailable = triageRule === 'thesis_new_claims_available' || triageRule === 'UPDATE_CORE_ARGUMENT';
   const isSignalTriggered = triageRule === 'SIGNAL_TRIGGERED';
+  const isReviewRecommendedSignals = triageRule === 'REVIEW_RECOMMENDED_SIGNALS';
 
   // Parse signal-specific content summary
   const signalContentSummary = isSignalTriggered ? (thesisRecord?.contentSummary as {
@@ -670,6 +672,20 @@ function ThesisDetail({
           currentConviction={signalContentSummary.currentConviction}
           onActionComplete={() => {
             // Refresh the page to show updated triage
+            router.refresh();
+            onDismiss();
+          }}
+        />
+      )}
+
+      {/* Review Recommended Signals - Batch Review UI */}
+      {isReviewRecommendedSignals && (
+        <SignalBatchReview
+          thesisId={record.objectId}
+          thesisType={isMacro ? 'macro' : 'asset'}
+          thesisTitle={thesisRecord?.thesisTitle || record.title}
+          onComplete={() => {
+            // Refresh the page to show resolved triage
             router.refresh();
             onDismiss();
           }}
