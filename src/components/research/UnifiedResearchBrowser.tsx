@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { ArtifactClaimsBrowser } from './ArtifactClaimsBrowser';
 
 interface UnifiedResearchBrowserProps {
   artifacts: ResearchArtifactListItem[];
@@ -452,74 +453,41 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                         <tr className="bg-slate-50 border-b">
                           <td colSpan={8} className="px-4 py-4">
                             <div className="space-y-4">
-                              {/* Tags */}
-                              {artifact.tags && artifact.tags.length > 0 && (
-                                <div>
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
-                                    Tags
-                                  </h4>
-                                  <div className="flex flex-wrap gap-2">
-                                    {artifact.tags.map((tag, idx) => (
-                                      <Badge key={idx} className="bg-blue-100 text-blue-700 text-xs">
-                                        {tag}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Claims Summary */}
-                              {artifact.hasInsight && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <h4 className="text-xs font-semibold text-blue-900 mb-1 uppercase tracking-wide">
-                                        Claims Summary
-                                      </h4>
-                                      <p className="text-sm text-blue-800">
-                                        {artifact.claimCount} total claim{artifact.claimCount !== 1 ? 's' : ''}
-                                        {artifact.unconfirmedClaimCount > 0 && (
-                                          <span className="ml-2">
-                                            ({artifact.unconfirmedClaimCount} unconfirmed)
-                                          </span>
-                                        )}
-                                      </p>
+                              {/* Artifact Metadata Header */}
+                              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                                <div className="flex items-center gap-4">
+                                  {artifact.tags && artifact.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {artifact.tags.map((tag, idx) => (
+                                        <Badge key={idx} className="bg-blue-100 text-blue-700 text-xs">
+                                          {tag}
+                                        </Badge>
+                                      ))}
                                     </div>
-                                    <Link
-                                      href={`/research/${artifact.id}#claims`}
-                                      className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
-                                    >
-                                      View Claims →
-                                    </Link>
-                                  </div>
+                                  )}
+                                  {artifact.publishedDate && (
+                                    <span className="text-xs text-slate-500">
+                                      Published: {new Date(artifact.publishedDate).toLocaleDateString('en-GB')}
+                                    </span>
+                                  )}
+                                </div>
+                                <Link
+                                  href={`/research/${artifact.id}`}
+                                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                                >
+                                  View Full Details
+                                  <ExternalLink className="h-3 w-3" />
+                                </Link>
+                              </div>
+
+                              {/* Claims Browser */}
+                              {artifact.hasInsight && artifact.claimCount > 0 ? (
+                                <ArtifactClaimsBrowser artifactId={artifact.id} />
+                              ) : (
+                                <div className="py-4 text-center text-sm text-slate-500">
+                                  No claims have been extracted from this research artifact yet.
                                 </div>
                               )}
-
-                              {/* Metadata */}
-                              <div className="grid grid-cols-3 gap-4 pt-2 border-t border-slate-200">
-                                {artifact.publishedDate && (
-                                  <div>
-                                    <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Published:</span>
-                                    <span className="ml-2 text-sm text-slate-600">
-                                      {new Date(artifact.publishedDate).toLocaleDateString('en-GB')}
-                                    </span>
-                                  </div>
-                                )}
-                                <div>
-                                  <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Created:</span>
-                                  <span className="ml-2 text-sm text-slate-600">
-                                    {new Date(artifact.createdAt).toLocaleDateString('en-GB')}
-                                  </span>
-                                </div>
-                                <div>
-                                  <Link
-                                    href={`/research/${artifact.id}`}
-                                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                  >
-                                    View Full Details →
-                                  </Link>
-                                </div>
-                              </div>
                             </div>
                           </td>
                         </tr>
