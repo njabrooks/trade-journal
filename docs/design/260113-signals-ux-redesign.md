@@ -274,29 +274,31 @@ The `SignalBatchReview` component exists but is not rendered in `ExpandedTriageD
 
 **Completed**: 2026-01-13
 
-### Phase 5: Cleanup & Polish
+### Phase 5: Cleanup & Polish ✅ COMPLETE
 
 **Goal**: Remove dead code, ensure consistency
 
-1. **Delete deprecated files**
-   - Old monitoring components
-   - Any unused signal components
+1. ✅ **Clean up ValidationPointsList.tsx**
+   - Removed all monitoring-related props, state, and JSX
+   - Reduced from 681 lines to 432 lines (~250 lines removed)
 
-2. **Update documentation**
-   - Update `docs/terminology.md` with signal categories
-   - Archive old signal documentation
-   - Update CLAUDE.md if needed
+2. ✅ **Delete deprecated files**
+   - Removed `src/app/api/monitoring/` directory (5 API routes)
+   - Removed `src/db/queries/monitoring.ts`
+   - Removed `src/lib/services/monitoring/` directory (6 files)
 
-3. **Database cleanup**
-   - Drop `monitoring_specs` table (after confirming migration)
-   - Clean up any orphaned data
+3. ✅ **Database cleanup**
+   - Dropped `monitoring_events` table (27 records)
+   - Dropped `monitoring_specs` table (5 records)
+   - Removed table definitions from `schema.ts`
+   - Migration: `migrations/260113-drop-monitoring-tables.sql`
 
-4. **Testing**
+4. **Testing** (manual verification recommended)
    - End-to-end test: synthesize → triage → review → accept
    - Test data-driven signal configuration
    - Test status updates and history
 
-**Estimated effort**: 1 session
+**Completed**: 2026-01-13
 
 ---
 
@@ -451,3 +453,4 @@ JOIN signals s ON ms.signal_id = s.id;
 | 2026-01-13 | Phase 2 completed: Category migration (judgment/data_driven), code references updated |
 | 2026-01-13 | Phase 3 completed: UnifiedSignalsTable created, SignalsSection & ExpandedTriageDetail updated |
 | 2026-01-13 | Phase 4 completed: Simplified detail page, deleted 4 deprecated monitoring components (~1,400 lines) |
+| 2026-01-13 | Phase 5 completed: Dropped monitoring tables, removed API routes/services, cleaned up ValidationPointsList |

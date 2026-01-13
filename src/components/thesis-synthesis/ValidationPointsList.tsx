@@ -12,18 +12,12 @@ import {
   ChevronRight,
   Target,
   Scale,
-  Play,
-  Edit,
-  Power,
-  PowerOff,
-  Calendar,
-  Plus,
   ExternalLink,
   Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { ValidationPoint, MonitoringSpec, MonitoringEvent } from '@/db/schema';
+import type { ValidationPoint } from '@/db/schema';
 
 interface ValidationPointsListProps {
   validationPoints: ValidationPoint[];
@@ -32,15 +26,6 @@ interface ValidationPointsListProps {
   onUpdateStatus?: (pointId: string) => void;
   onViewHistory?: (pointId: string) => void;
   onConvertToExplicit?: (point: ValidationPoint) => void;
-  // Monitoring props
-  monitoringSpecs?: Array<{
-    spec: MonitoringSpec & { lastCheckEvent?: MonitoringEvent | null };
-    validationPoint: ValidationPoint;
-  }>;
-  onCreateSpec?: (validationPointId: string) => void;
-  onEditSpec?: (specId: string) => void;
-  onRunCheck?: (specId: string) => void;
-  onToggleEnabled?: (specId: string, enabled: boolean) => void;
 }
 
 export function ValidationPointsList({
@@ -50,14 +35,8 @@ export function ValidationPointsList({
   onUpdateStatus,
   onViewHistory,
   onConvertToExplicit,
-  monitoringSpecs = [],
-  onCreateSpec,
-  onEditSpec,
-  onRunCheck,
-  onToggleEnabled,
 }: ValidationPointsListProps) {
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
-  const [expandedMonitoring, setExpandedMonitoring] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<'all' | 'confirmation' | 'warning'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'not_triggered' | 'monitoring' | 'triggered'>('all');
 
@@ -69,61 +48,6 @@ export function ValidationPointsList({
       next.add(id);
     }
     setExpandedPoints(next);
-  };
-
-  const toggleMonitoring = (id: string) => {
-    const next = new Set(expandedMonitoring);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-    setExpandedMonitoring(next);
-  };
-
-  // Group specs by validation point
-  const specsByPoint = new Map<string, typeof monitoringSpecs>();
-  for (const item of monitoringSpecs) {
-    const pointId = item.validationPoint.id;
-    if (!specsByPoint.has(pointId)) {
-      specsByPoint.set(pointId, []);
-    }
-    specsByPoint.get(pointId)!.push(item);
-  }
-
-  const formatLastChecked = (date: Date | null | undefined) => {
-    if (!date) return 'Never';
-    const now = new Date();
-    const diff = now.getTime() - new Date(date).getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor(diff / (1000 * 60));
-
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
-  };
-
-  const formatNextCheck = (date: Date | null | undefined) => {
-    if (!date) return 'On demand';
-    const dateObj = new Date(date);
-    return dateObj.toLocaleDateString('en-GB');
-  };
-
-  const getDataSourceIcon = (source: string) => {
-    switch (source) {
-      case 'fred':
-        return '📊';
-      case 'news':
-        return '📰';
-      case 'price_iv':
-        return '📈';
-      case 'sec_filings':
-        return '📄';
-      default:
-        return '🔍';
-    }
   };
 
   const filteredPoints = validationPoints.filter((point) => {
@@ -364,179 +288,6 @@ export function ValidationPointsList({
               {/* Expanded Details */}
               {isExpanded && (
                 <div className="mt-3 ml-7 space-y-3">
-                  {/* Monitoring Section */}
-                  {(() => {
-                    const pointSpecs = specsByPoint.get(point.id) || [];
-                    const hasSpecs = pointSpecs.length > 0;
-                    const isMonitoringExpanded = expandedMonitoring.has(point.id);
-
-                    return (
-                      <div className="bg-blue-50 rounded-lg border border-blue-100 overflow-hidden">
-                        <div
-                          className="px-3 py-2 flex items-center justify-between cursor-pointer hover:bg-blue-100/50"
-                          onClick={() => hasSpecs && toggleMonitoring(point.id)}
-                        >
-                          <div className="flex items-center gap-2">
-                            {hasSpecs && (
-                              <>
-                                {isMonitoringExpanded ? (
-                                  <ChevronDown className="w-4 h-4 text-blue-600" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-blue-600" />
-                                )}
-                              </>
-                            )}
-                            <h5 className="text-xs font-medium text-blue-700 uppercase tracking-wide">
-                              Monitoring
-                            </h5>
-                            {hasSpecs ? (
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs">
-                                {pointSpecs.length} spec{pointSpecs.length > 1 ? 's' : ''}
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-blue-600">Not monitored</span>
-                            )}
-                          </div>
-                          {onCreateSpec && !hasSpecs && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onCreateSpec(point.id);
-                              }}
-                            >
-                              <Plus className="w-3 h-3 mr-1" />
-                              Create Spec
-                            </Button>
-                          )}
-                        </div>
-
-                        {/* Monitoring Specs (Expanded) */}
-                        {isMonitoringExpanded && hasSpecs && (
-                          <div className="px-3 pb-3 space-y-2">
-                            {pointSpecs.map(({ spec }) => (
-                              <div
-                                key={spec.id}
-                                className={`p-2 rounded border ${
-                                  spec.enabled
-                                    ? 'border-blue-200 bg-white'
-                                    : 'border-slate-200 bg-slate-50/50'
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    {/* Keywords */}
-                                    <div className="flex flex-wrap items-center gap-1 mb-1.5">
-                                      {(spec.keywords as string[]).map((keyword) => (
-                                        <Badge
-                                          key={keyword}
-                                          variant="secondary"
-                                          className="text-xs"
-                                        >
-                                          {keyword}
-                                        </Badge>
-                                      ))}
-                                    </div>
-
-                                    {/* Data Sources */}
-                                    <div className="flex items-center gap-1.5 mb-1.5">
-                                      {(spec.sources as string[]).map((source) => (
-                                        <span
-                                          key={source}
-                                          title={source}
-                                          className="text-base"
-                                        >
-                                          {getDataSourceIcon(source)}
-                                        </span>
-                                      ))}
-                                    </div>
-
-                                    {/* Metadata */}
-                                    <div className="flex items-center gap-3 text-xs text-slate-500">
-                                      <div className="flex items-center gap-1">
-                                        <Calendar className="w-3 h-3" />
-                                        <span>{spec.frequency}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <Clock className="w-3 h-3" />
-                                        <span>Last: {formatLastChecked(spec.lastCheckEvent?.checkedAt)}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1">
-                                        <span>Next: {formatNextCheck(spec.nextCheck)}</span>
-                                      </div>
-                                      {!spec.enabled && (
-                                        <Badge variant="outline" className="text-xs">
-                                          Disabled
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Actions */}
-                                  <div className="flex items-center gap-1">
-                                    {onRunCheck && (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => onRunCheck(spec.id)}
-                                        disabled={!spec.enabled}
-                                        title="Run check now"
-                                      >
-                                        <Play className="w-3 h-3 mr-1" />
-                                        Run
-                                      </Button>
-                                    )}
-                                    {onEditSpec && (
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => onEditSpec(spec.id)}
-                                        title="Edit spec"
-                                      >
-                                        <Edit className="w-3 h-3" />
-                                      </Button>
-                                    )}
-                                    {onToggleEnabled && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => onToggleEnabled(spec.id, !spec.enabled)}
-                                        title={spec.enabled ? 'Disable' : 'Enable'}
-                                      >
-                                        {spec.enabled ? (
-                                          <Power className="w-3 h-3 text-green-600" />
-                                        ) : (
-                                          <PowerOff className="w-3 h-3 text-slate-400" />
-                                        )}
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Create Spec CTA (when expanded but no specs) */}
-                        {isMonitoringExpanded && !hasSpecs && onCreateSpec && (
-                          <div className="px-3 pb-3">
-                            <div className="text-center py-3 text-sm text-blue-600">
-                              <p className="mb-2">No monitoring specs configured for this validation point.</p>
-                              <Button
-                                size="sm"
-                                onClick={() => onCreateSpec(point.id)}
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Create First Spec
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
                   {/* Rationale */}
                   {point.rationale && (
                     <div>
