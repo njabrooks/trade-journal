@@ -90,6 +90,8 @@ export function UnifiedSignalsTable({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{ statement: string; notes: string }>({ statement: '', notes: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
   const [configuringSignal, setConfiguringSignal] = useState<Signal | null>(null);
 
   // Filter states
@@ -239,6 +241,66 @@ export function UnifiedSignalsTable({
       next.add(id);
     }
     setExpandedIds(next);
+  };
+
+  // Inline edit handlers
+  const startEditing = (signal: Signal) => {
+    setEditingId(signal.id);
+    setEditValues({
+      statement: signal.statement,
+      notes: signal.notes || '',
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditValues({ statement: '', notes: '' });
+  };
+
+  const saveEdit = async (signalId: string) => {
+    const signal = signals.find((s) => s.id === signalId);
+    if (!signal) return;
+
+    // Check if anything changed
+    const statementChanged = editValues.statement !== signal.statement;
+    const notesChanged = editValues.notes !== (signal.notes || '');
+    if (!statementChanged && !notesChanged) {
+      cancelEditing();
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const response = await fetch('/api/validation-points', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: signalId,
+          ...(statementChanged && { statement: editValues.statement }),
+          ...(notesChanged && { notes: editValues.notes }),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update signal');
+      }
+
+      const { signal: updatedSignal } = await response.json();
+
+      // Update local state
+      setSignals((prev) =>
+        prev.map((s) => (s.id === signalId ? { ...s, ...updatedSignal } : s))
+      );
+
+      toast.success('Signal updated');
+      cancelEditing();
+    } catch (error) {
+      console.error('Error updating signal:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update signal');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   // Review mode actions
@@ -799,123 +861,188 @@ export function UnifiedSignalsTable({
                         <tr className="bg-slate-50">
                           <td colSpan={mode === 'browse' ? 7 : 6} className="px-4 py-4">
                             <div className="ml-8 space-y-3">
-                              {/* Notes (simplified - replaces rationale, judgmentDetails, responseProtocol) */}
-                              {signal.notes && (
-                                <div>
-                                  <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                    Notes
-                                  </h5>
-                                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{signal.notes}</p>
+                              {isEditing ? (
+                                // Edit Form
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                      Statement
+                                    </label>
+                                    <textarea
+                                      value={editValues.statement}
+                                      onChange={(e) => setEditValues((prev) => ({ ...prev, statement: e.target.value }))}
+                                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      rows={2}
+                                      placeholder="Signal statement..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                      Notes
+                                    </label>
+                                    <textarea
+                                      value={editValues.notes}
+                                      onChange={(e) => setEditValues((prev) => ({ ...prev, notes: e.target.value }))}
+                                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      rows={4}
+                                      placeholder="Additional notes, context, or response guidance..."
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => saveEdit(signal.id)}
+                                      disabled={savingEdit || !editValues.statement.trim()}
+                                      className="gap-1"
+                                    >
+                                      {savingEdit ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <Check className="w-3 h-3" />
+                                      )}
+                                      Save
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={cancelEditing}
+                                      disabled={savingEdit}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
                                 </div>
-                              )}
+                              ) : (
+                                // View Mode
+                                <>
+                                  {/* Notes (simplified - replaces rationale, judgmentDetails, responseProtocol) */}
+                                  {signal.notes && (
+                                    <div>
+                                      <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                        Notes
+                                      </h5>
+                                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{signal.notes}</p>
+                                    </div>
+                                  )}
 
-                              {/* Data-Driven Trigger Criteria (for configured data-driven signals) */}
-                              {signal.category === 'data_driven' && explicitDetails && (
-                                <div className="bg-white rounded-md p-3 border border-slate-200">
-                                  <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
-                                    Trigger Criteria
-                                  </h5>
-                                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                    {explicitDetails.metric && (
-                                      <>
-                                        <dt className="text-slate-500">Metric:</dt>
-                                        <dd className="text-slate-900">{explicitDetails.metric}</dd>
-                                      </>
-                                    )}
-                                    {explicitDetails.threshold && (
-                                      <>
-                                        <dt className="text-slate-500">Threshold:</dt>
-                                        <dd className="text-slate-900 font-mono">{explicitDetails.threshold}</dd>
-                                      </>
-                                    )}
-                                    {explicitDetails.dataSources && explicitDetails.dataSources.length > 0 && (
-                                      <>
-                                        <dt className="text-slate-500">Sources:</dt>
-                                        <dd className="text-slate-900">{explicitDetails.dataSources.join(', ')}</dd>
-                                      </>
-                                    )}
-                                    {explicitDetails.monitoringFrequency && (
-                                      <>
-                                        <dt className="text-slate-500">Frequency:</dt>
-                                        <dd className="text-slate-900">{explicitDetails.monitoringFrequency}</dd>
-                                      </>
-                                    )}
-                                  </dl>
-                                </div>
-                              )}
+                                  {/* Data-Driven Trigger Criteria (for configured data-driven signals) */}
+                                  {signal.category === 'data_driven' && explicitDetails && (
+                                    <div className="bg-white rounded-md p-3 border border-slate-200">
+                                      <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                                        Trigger Criteria
+                                      </h5>
+                                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                                        {explicitDetails.metric && (
+                                          <>
+                                            <dt className="text-slate-500">Metric:</dt>
+                                            <dd className="text-slate-900">{explicitDetails.metric}</dd>
+                                          </>
+                                        )}
+                                        {explicitDetails.threshold && (
+                                          <>
+                                            <dt className="text-slate-500">Threshold:</dt>
+                                            <dd className="text-slate-900 font-mono">{explicitDetails.threshold}</dd>
+                                          </>
+                                        )}
+                                        {explicitDetails.dataSources && explicitDetails.dataSources.length > 0 && (
+                                          <>
+                                            <dt className="text-slate-500">Sources:</dt>
+                                            <dd className="text-slate-900">{explicitDetails.dataSources.join(', ')}</dd>
+                                          </>
+                                        )}
+                                        {explicitDetails.monitoringFrequency && (
+                                          <>
+                                            <dt className="text-slate-500">Frequency:</dt>
+                                            <dd className="text-slate-900">{explicitDetails.monitoringFrequency}</dd>
+                                          </>
+                                        )}
+                                      </dl>
+                                    </div>
+                                  )}
 
-                              {/* Expanded row actions - unified based on signal status */}
-                              <div className="flex items-center gap-2 pt-2">
-                                {signal.status === 'recommended' ? (
-                                  // Recommended: Accept/Reject/Configure
-                                  <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleAccept(signal.id)}
-                                      disabled={isProcessing}
-                                      className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                                    >
-                                      <Check className="w-3 h-3" />
-                                      Accept
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleReject(signal.id)}
-                                      disabled={isProcessing}
-                                      className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
-                                    >
-                                      <X className="w-3 h-3" />
-                                      Reject
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => setConfiguringSignal(signal)}
-                                      disabled={isProcessing}
-                                      className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
-                                    >
-                                      <Zap className="w-3 h-3" />
-                                      Accept as Data-Driven
-                                    </Button>
-                                  </>
-                                ) : (
-                                  // Accepted signals: Update/Configure/History
-                                  <>
-                                    {onUpdateStatus && signal.status !== 'superseded' && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => onUpdateStatus(signal.id)}
-                                        className="gap-1"
-                                      >
-                                        <Edit2 className="w-3 h-3" />
-                                        Update Status
-                                      </Button>
+                                  {/* Expanded row actions - unified based on signal status */}
+                                  <div className="flex items-center gap-2 pt-2">
+                                    {signal.status === 'recommended' ? (
+                                      // Recommended: Edit/Accept/Reject/Configure
+                                      <>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => startEditing(signal)}
+                                          disabled={isProcessing}
+                                          className="gap-1"
+                                        >
+                                          <Edit2 className="w-3 h-3" />
+                                          Edit
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleAccept(signal.id)}
+                                          disabled={isProcessing}
+                                          className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                        >
+                                          <Check className="w-3 h-3" />
+                                          Accept
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleReject(signal.id)}
+                                          disabled={isProcessing}
+                                          className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                                        >
+                                          <X className="w-3 h-3" />
+                                          Reject
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => setConfiguringSignal(signal)}
+                                          disabled={isProcessing}
+                                          className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
+                                        >
+                                          <Zap className="w-3 h-3" />
+                                          Accept as Data-Driven
+                                        </Button>
+                                      </>
+                                    ) : (
+                                      // Accepted signals: Update/Configure/History (no edit - locked after acceptance)
+                                      <>
+                                        {onUpdateStatus && signal.status !== 'superseded' && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => onUpdateStatus(signal.id)}
+                                            className="gap-1"
+                                          >
+                                            Update Status
+                                          </Button>
+                                        )}
+                                        {signal.category === 'judgment' && signal.status !== 'superseded' && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setConfiguringSignal(signal)}
+                                            className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
+                                          >
+                                            <Zap className="w-3 h-3" />
+                                            Make Data-Driven
+                                          </Button>
+                                        )}
+                                        <Link
+                                          href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${signal.id}`}
+                                        >
+                                          <Button variant="outline" size="sm" className="gap-1">
+                                            <History className="w-3 h-3" />
+                                            View History
+                                          </Button>
+                                        </Link>
+                                      </>
                                     )}
-                                    {signal.category === 'judgment' && signal.status !== 'superseded' && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setConfiguringSignal(signal)}
-                                        className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
-                                      >
-                                        <Zap className="w-3 h-3" />
-                                        Make Data-Driven
-                                      </Button>
-                                    )}
-                                    <Link
-                                      href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${signal.id}`}
-                                    >
-                                      <Button variant="outline" size="sm" className="gap-1">
-                                        <History className="w-3 h-3" />
-                                        View History
-                                      </Button>
-                                    </Link>
-                                  </>
-                                )}
-                              </div>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
