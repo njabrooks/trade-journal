@@ -1,4 +1,19 @@
 /**
+ * @DEPRECATED - Use daily-signal-monitoring.ts instead
+ *
+ * This script is deprecated as of 2026-01-13 (Signals UX Redesign Phase 5).
+ * The new architecture reads threshold configuration directly from
+ * signals.explicit_details instead of thesisMonitoringConfigs.
+ *
+ * See: scripts/daily-signal-monitoring.ts
+ *
+ * This file is kept for reference during migration but should not be used.
+ * The launchd job has been updated to use the new script.
+ *
+ * ============================================================================
+ * ORIGINAL DOCUMENTATION (for reference):
+ * ============================================================================
+ *
  * Daily Thesis Monitoring Script
  *
  * Checks thesis monitoring configs against current data:

@@ -1510,8 +1510,23 @@ export const decisionAuditLog = pgTable(
 export type DecisionAuditLog = typeof decisionAuditLog.$inferSelect;
 export type NewDecisionAuditLog = typeof decisionAuditLog.$inferInsert;
 
-// Thesis Monitoring Configs - Phase 3.2: Thesis-level monitoring configuration
-// Replaces per-signal approach with thesis-level config + broad analysis
+// ============================================================================
+// @DEPRECATED: Thesis Monitoring Configs
+// ============================================================================
+// This table is DEPRECATED as of 2026-01-13 (Signals UX Redesign Phase 5).
+//
+// The new architecture reads threshold configuration directly from:
+//   signals.explicit_details (category='data_driven')
+//
+// See: scripts/daily-signal-monitoring.ts (replaces daily-thesis-monitoring.ts)
+//
+// This table will be dropped in a future migration once all existing configs
+// have been migrated to signal-level explicit_details.
+//
+// Migration: For each thesisMonitoringConfigs.explicitThresholds entry that has
+// a linkedValidationPointId, copy the threshold config to that signal's
+// explicit_details field using the ExplicitDetails interface format.
+// ============================================================================
 export const thesisMonitoringConfigs = pgTable(
   'thesis_monitoring_configs',
   {

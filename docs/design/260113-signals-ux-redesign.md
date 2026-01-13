@@ -300,6 +300,34 @@ The `SignalBatchReview` component exists but is not rendered in `ExpandedTriageD
 
 **Completed**: 2026-01-13
 
+### Phase 6: Daily Monitoring Migration ✅ COMPLETE
+
+**Goal**: Unify automated threshold checking with signal-level configuration
+
+1. ✅ **Created `daily-signal-monitoring.ts`**
+   - Reads directly from `signals.explicit_details` (category='data_driven')
+   - Single source of truth - no more data duplication
+   - Supports FRED, IV data, and price feed sources
+   - Auto-triggers signals and creates triage records
+
+2. ✅ **Deprecated `daily-thesis-monitoring.ts`**
+   - Added @DEPRECATED header with migration notes
+   - Old script kept for reference during transition
+
+3. ✅ **Updated launchd job**
+   - Renamed `com.trade-journal.thesis-monitoring.plist` → `com.trade-journal.signal-monitoring.plist`
+   - Points to new `daily-signal-monitoring.ts` script
+   - Logs to `signal-monitoring.log`
+
+4. ✅ **Deprecated `thesisMonitoringConfigs` table**
+   - Added detailed deprecation comment in `schema.ts`
+   - Table will be dropped after existing configs are migrated
+   - Migration path documented for `explicitThresholds` → signal `explicit_details`
+
+**Impact**: Existing threshold configs from `thesisMonitoringConfigs` are now inactive. Signals need to be reconfigured via the new UI to use proper `explicit_details` format.
+
+**Completed**: 2026-01-13
+
 ---
 
 ## User Flows (Target State)
@@ -454,3 +482,4 @@ JOIN signals s ON ms.signal_id = s.id;
 | 2026-01-13 | Phase 3 completed: UnifiedSignalsTable created, SignalsSection & ExpandedTriageDetail updated |
 | 2026-01-13 | Phase 4 completed: Simplified detail page, deleted 4 deprecated monitoring components (~1,400 lines) |
 | 2026-01-13 | Phase 5 completed: Dropped monitoring tables, removed API routes/services, cleaned up ValidationPointsList |
+| 2026-01-13 | Phase 6 completed: Migrated daily monitoring to signal-level (daily-signal-monitoring.ts), deprecated thesisMonitoringConfigs |
