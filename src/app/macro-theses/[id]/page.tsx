@@ -141,7 +141,7 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
               thesisTitle={thesis.title}
               claimCount={claimsWithSources.length}
               hasArticulation={!!articulation}
-              articulationClaimCount={articulation?.claimIdsUsed ? (articulation.claimIdsUsed as string[]).length : undefined}
+              articulationClaimCount={thesis.claimsCountAtLastArticulation ?? undefined}
             />
           </div>
 

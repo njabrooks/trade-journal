@@ -42,9 +42,9 @@ export function AssetThesisDetailSections({
   validationPoints,
 }: AssetThesisDetailSectionsProps) {
   const currentClaimCount = claimsWithSources?.length ?? 0;
-  const articulationClaimCount = articulation
-    ? ((articulation.claimIdsUsed as string[]) || []).length
-    : 0;
+  // Use thesis-level claimsCountAtLastArticulation (set by insert script) for accurate tracking
+  // This is more reliable than articulation.claimIdsUsed which only contains explicitly referenced claims
+  const articulationClaimCount = view.claimsCountAtLastArticulation ?? 0;
   const newClaimsSinceArticulation = currentClaimCount - articulationClaimCount;
 
   // Legacy summary staleness (for fallback display)
