@@ -117,18 +117,6 @@ export function ValidationPointDetail({
     monitoringFrequency?: string;
   } | null;
 
-  const judgmentDetails = validationPoint.judgmentDetails as {
-    observableProxies?: string[];
-    judgmentCriteria?: string;
-    reviewFrequency?: string;
-  } | null;
-
-  const responseProtocol = validationPoint.responseProtocol as {
-    description?: string;
-    escalation?: string;
-    linkedStrategies?: string[];
-  } | null;
-
   const backUrl = thesisType === 'macro' ? `/theses/${thesisId}` : `/asset-theses/${thesisId}`;
 
   return (
@@ -182,9 +170,9 @@ export function ValidationPointDetail({
               {validationPoint.statement}
             </h1>
 
-            {/* Rationale */}
-            {validationPoint.rationale && (
-              <p className="text-slate-600">{validationPoint.rationale}</p>
+            {/* Notes */}
+            {validationPoint.notes && (
+              <p className="text-slate-600 whitespace-pre-wrap">{validationPoint.notes}</p>
             )}
           </div>
 
@@ -231,11 +219,11 @@ export function ValidationPointDetail({
 
       {/* Details cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Explicit details */}
+        {/* Data-driven trigger criteria */}
         {validationPoint.category === 'data_driven' && explicitDetails && (
           <div className="bg-white rounded-lg border border-slate-200 p-4">
             <h3 className="text-sm font-semibold text-slate-900 mb-3">
-              Measurement Criteria
+              Trigger Criteria
             </h3>
             <dl className="space-y-2 text-sm">
               {explicitDetails.metric && (
@@ -266,71 +254,6 @@ export function ValidationPointDetail({
           </div>
         )}
 
-        {/* Judgment details */}
-        {validationPoint.category === 'judgment' && judgmentDetails && (
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">
-              Judgment Criteria
-            </h3>
-            {judgmentDetails.observableProxies && judgmentDetails.observableProxies.length > 0 && (
-              <div className="mb-3">
-                <h4 className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-                  Observable Proxies
-                </h4>
-                <ul className="text-sm text-slate-700 list-disc list-inside space-y-1">
-                  {judgmentDetails.observableProxies.map((proxy, idx) => (
-                    <li key={idx}>{proxy}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {judgmentDetails.judgmentCriteria && (
-              <div className="mb-3">
-                <h4 className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-                  How to Decide
-                </h4>
-                <p className="text-sm text-slate-700">{judgmentDetails.judgmentCriteria}</p>
-              </div>
-            )}
-            {judgmentDetails.reviewFrequency && (
-              <div>
-                <h4 className="text-xs text-slate-500 uppercase tracking-wide mb-1">
-                  Review Frequency
-                </h4>
-                <p className="text-sm text-slate-700">{judgmentDetails.reviewFrequency}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Response protocol */}
-        {responseProtocol && (
-          <div className="bg-blue-50 rounded-lg border border-blue-100 p-4">
-            <h3 className="text-sm font-semibold text-blue-900 mb-3">
-              Response Protocol
-            </h3>
-            {responseProtocol.description && (
-              <p className="text-sm text-blue-800 mb-2">{responseProtocol.description}</p>
-            )}
-            {responseProtocol.escalation && (
-              <p className="text-xs text-blue-700">
-                <span className="font-medium">Escalation: </span>
-                {responseProtocol.escalation.replace('_', ' ')}
-              </p>
-            )}
-            {responseProtocol.linkedStrategies && responseProtocol.linkedStrategies.length > 0 && (
-              <div className="mt-2">
-                <p className="text-xs text-blue-700 font-medium">Linked Strategies:</p>
-                <ul className="text-xs text-blue-600 list-disc list-inside mt-1">
-                  {responseProtocol.linkedStrategies.map((strategyId) => (
-                    <li key={strategyId}>{strategyId}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Dependent thesis */}
         {validationPoint.dependentThesisId && (
           <div className="bg-purple-50 rounded-lg border border-purple-100 p-4">
@@ -338,7 +261,7 @@ export function ValidationPointDetail({
               Dependent Thesis Trigger
             </h3>
             <p className="text-sm text-purple-800">
-              This validation point triggers when the{' '}
+              This signal triggers when the{' '}
               <span className="font-medium">{validationPoint.dependentThesisType}</span> thesis is{' '}
               <span className="font-medium">{validationPoint.dependentThesisCondition}</span>
               {validationPoint.dependentThesisConditionDetail && (

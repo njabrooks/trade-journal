@@ -45,7 +45,7 @@ type SortDirection = 'asc' | 'desc';
 interface SignalWithModifications extends Signal {
   pendingModifications?: {
     statement?: string;
-    rationale?: string;
+    notes?: string;
     importance?: 'critical' | 'significant' | 'supporting';
   };
 }
@@ -162,7 +162,7 @@ export function UnifiedSignalsTable({
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter((s) => {
-        const searchableText = [s.statement, s.rationale]
+        const searchableText = [s.statement, s.notes]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
@@ -652,12 +652,6 @@ export function UnifiedSignalsTable({
                     monitoringFrequency?: string;
                   } | null;
 
-                  const judgmentDetails = signal.judgmentDetails as {
-                    observableProxies?: string[];
-                    judgmentCriteria?: string;
-                    reviewFrequency?: string;
-                  } | null;
-
                   return (
                     <Fragment key={signal.id}>
                       {/* Main Row */}
@@ -805,17 +799,17 @@ export function UnifiedSignalsTable({
                         <tr className="bg-slate-50">
                           <td colSpan={mode === 'browse' ? 7 : 6} className="px-4 py-4">
                             <div className="ml-8 space-y-3">
-                              {/* Rationale */}
-                              {signal.rationale && (
+                              {/* Notes (simplified - replaces rationale, judgmentDetails, responseProtocol) */}
+                              {signal.notes && (
                                 <div>
                                   <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
-                                    Rationale
+                                    Notes
                                   </h5>
-                                  <p className="text-sm text-slate-700">{signal.rationale}</p>
+                                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{signal.notes}</p>
                                 </div>
                               )}
 
-                              {/* Data-Driven Details */}
+                              {/* Data-Driven Trigger Criteria (for configured data-driven signals) */}
                               {signal.category === 'data_driven' && explicitDetails && (
                                 <div className="bg-white rounded-md p-3 border border-slate-200">
                                   <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
@@ -847,37 +841,6 @@ export function UnifiedSignalsTable({
                                       </>
                                     )}
                                   </dl>
-                                </div>
-                              )}
-
-                              {/* Judgment Details */}
-                              {signal.category === 'judgment' && judgmentDetails && (
-                                <div className="bg-white rounded-md p-3 border border-slate-200">
-                                  <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
-                                    Assessment Criteria
-                                  </h5>
-                                  {judgmentDetails.observableProxies && judgmentDetails.observableProxies.length > 0 && (
-                                    <div className="mb-2">
-                                      <span className="text-xs text-slate-500">Observable Proxies:</span>
-                                      <ul className="mt-1 text-sm text-slate-700 list-disc list-inside">
-                                        {judgmentDetails.observableProxies.map((proxy, idx) => (
-                                          <li key={idx}>{proxy}</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                  {judgmentDetails.judgmentCriteria && (
-                                    <div className="mb-2">
-                                      <span className="text-xs text-slate-500">Judgment Criteria:</span>
-                                      <p className="mt-1 text-sm text-slate-700">{judgmentDetails.judgmentCriteria}</p>
-                                    </div>
-                                  )}
-                                  {judgmentDetails.reviewFrequency && (
-                                    <div>
-                                      <span className="text-xs text-slate-500">Review Frequency:</span>
-                                      <span className="ml-2 text-sm text-slate-700">{judgmentDetails.reviewFrequency}</span>
-                                    </div>
-                                  )}
                                 </div>
                               )}
 
