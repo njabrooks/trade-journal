@@ -1403,8 +1403,10 @@ export const signals = pgTable(
     // Response protocol
     responseProtocol: jsonb('response_protocol').notNull(), // { description, linkedStrategies?, escalation? }
 
-    // Status
-    status: text('status').notNull().default('not_triggered'), // 'not_triggered' | 'monitoring' | 'triggered' | 'superseded' | 'recommended'
+    // Status: recommended (AI proposed) → not_triggered (accepted) → triggered (condition met)
+    // Also: superseded (no longer relevant)
+    // Note: 'monitoring' was removed in Phase 7 - all accepted signals are implicitly being monitored
+    status: text('status').notNull().default('not_triggered'), // 'not_triggered' | 'triggered' | 'superseded' | 'recommended'
 
     // Dependent thesis reference (for compositional validation)
     dependentThesisId: uuid('dependent_thesis_id'),

@@ -33,7 +33,7 @@ import { SignalConfigForm, type ExplicitDetails } from './SignalConfigForm';
 // Types
 type SignalType = 'confirmation' | 'warning';
 type SignalCategory = 'judgment' | 'data_driven';
-type SignalStatus = 'not_triggered' | 'monitoring' | 'triggered' | 'superseded' | 'recommended';
+type SignalStatus = 'not_triggered' | 'triggered' | 'superseded' | 'recommended';
 type TableMode = 'browse' | 'review';
 
 type TypeFilter = 'all' | SignalType;
@@ -189,9 +189,9 @@ export function UnifiedSignalsTable({
           bVal = b.category;
           break;
         case 'status':
-          const statusOrder = { recommended: 0, not_triggered: 1, monitoring: 2, triggered: 3, superseded: 4 };
-          aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 5;
-          bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 5;
+          const statusOrder = { recommended: 0, not_triggered: 1, triggered: 2, superseded: 3 };
+          aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 4;
+          bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 4;
           break;
         case 'importance':
           const importanceOrder = { critical: 0, significant: 1, supporting: 2 };
@@ -393,8 +393,6 @@ export function UnifiedSignalsTable({
     switch (status) {
       case 'triggered':
         return 'bg-red-100 text-red-700';
-      case 'monitoring':
-        return 'bg-blue-100 text-blue-700';
       case 'not_triggered':
         return 'bg-slate-100 text-slate-700';
       case 'superseded':
@@ -561,7 +559,6 @@ export function UnifiedSignalsTable({
                 >
                   <option value="all">All Statuses</option>
                   <option value="not_triggered">Not Triggered</option>
-                  <option value="monitoring">Monitoring</option>
                   <option value="triggered">Triggered</option>
                   <option value="superseded">Superseded</option>
                   <option value="recommended">Recommended</option>
@@ -731,34 +728,11 @@ export function UnifiedSignalsTable({
                           </td>
                         )}
 
-                        {/* Actions */}
+                        {/* Actions - unified: recommended signals get Accept/Reject, others get Update/Configure */}
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {mode === 'browse' ? (
-                              <>
-                                {onUpdateStatus && signal.status !== 'superseded' && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onUpdateStatus(signal.id)}
-                                    className="h-8 px-2 text-xs"
-                                  >
-                                    Update
-                                  </Button>
-                                )}
-                                {onConvertToDataDriven && signal.category === 'judgment' && signal.status !== 'superseded' && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onConvertToDataDriven(signal)}
-                                    className="h-8 px-2 text-xs text-amber-600 hover:bg-amber-50"
-                                  >
-                                    <Zap className="w-3 h-3 mr-1" />
-                                    Data-Driven
-                                  </Button>
-                                )}
-                              </>
-                            ) : (
+                            {signal.status === 'recommended' ? (
+                              // Recommended signals: Accept/Reject/Configure actions (same in both modes)
                               <>
                                 <Button
                                   variant="ghost"
@@ -766,6 +740,7 @@ export function UnifiedSignalsTable({
                                   onClick={() => handleAccept(signal.id)}
                                   disabled={isProcessing}
                                   className="h-8 px-2 text-xs text-emerald-600 hover:bg-emerald-50"
+                                  title="Accept signal"
                                 >
                                   {isProcessing ? (
                                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -779,6 +754,7 @@ export function UnifiedSignalsTable({
                                   onClick={() => handleReject(signal.id)}
                                   disabled={isProcessing}
                                   className="h-8 px-2 text-xs text-red-600 hover:bg-red-50"
+                                  title="Reject signal"
                                 >
                                   <X className="w-3 h-3" />
                                 </Button>
@@ -792,6 +768,32 @@ export function UnifiedSignalsTable({
                                 >
                                   <Zap className="w-3 h-3" />
                                 </Button>
+                              </>
+                            ) : (
+                              // Accepted signals: Update status / Configure data actions
+                              <>
+                                {onUpdateStatus && signal.status !== 'superseded' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onUpdateStatus(signal.id)}
+                                    className="h-8 px-2 text-xs"
+                                  >
+                                    Update
+                                  </Button>
+                                )}
+                                {signal.category === 'judgment' && signal.status !== 'superseded' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setConfiguringSignal(signal)}
+                                    className="h-8 px-2 text-xs text-amber-600 hover:bg-amber-50"
+                                    title="Configure as data-driven"
+                                  >
+                                    <Zap className="w-3 h-3 mr-1" />
+                                    Data-Driven
+                                  </Button>
+                                )}
                               </>
                             )}
                           </div>
@@ -879,41 +881,78 @@ export function UnifiedSignalsTable({
                                 </div>
                               )}
 
-                              {/* Browse mode actions */}
-                              {mode === 'browse' && (
-                                <div className="flex items-center gap-2 pt-2">
-                                  {onUpdateStatus && signal.status !== 'superseded' && (
+                              {/* Expanded row actions - unified based on signal status */}
+                              <div className="flex items-center gap-2 pt-2">
+                                {signal.status === 'recommended' ? (
+                                  // Recommended: Accept/Reject/Configure
+                                  <>
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => onUpdateStatus(signal.id)}
-                                      className="gap-1"
+                                      onClick={() => handleAccept(signal.id)}
+                                      disabled={isProcessing}
+                                      className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
                                     >
-                                      <Edit2 className="w-3 h-3" />
-                                      Update Status
+                                      <Check className="w-3 h-3" />
+                                      Accept
                                     </Button>
-                                  )}
-                                  {onConvertToDataDriven && signal.category === 'judgment' && signal.status !== 'superseded' && (
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => onConvertToDataDriven(signal)}
+                                      onClick={() => handleReject(signal.id)}
+                                      disabled={isProcessing}
+                                      className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                                    >
+                                      <X className="w-3 h-3" />
+                                      Reject
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setConfiguringSignal(signal)}
+                                      disabled={isProcessing}
                                       className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
                                     >
                                       <Zap className="w-3 h-3" />
-                                      Make Data-Driven
+                                      Accept as Data-Driven
                                     </Button>
-                                  )}
-                                  <Link
-                                    href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${signal.id}`}
-                                  >
-                                    <Button variant="outline" size="sm" className="gap-1">
-                                      <History className="w-3 h-3" />
-                                      View History
-                                    </Button>
-                                  </Link>
-                                </div>
-                              )}
+                                  </>
+                                ) : (
+                                  // Accepted signals: Update/Configure/History
+                                  <>
+                                    {onUpdateStatus && signal.status !== 'superseded' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => onUpdateStatus(signal.id)}
+                                        className="gap-1"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                        Update Status
+                                      </Button>
+                                    )}
+                                    {signal.category === 'judgment' && signal.status !== 'superseded' && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setConfiguringSignal(signal)}
+                                        className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
+                                      >
+                                        <Zap className="w-3 h-3" />
+                                        Make Data-Driven
+                                      </Button>
+                                    )}
+                                    <Link
+                                      href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${signal.id}`}
+                                    >
+                                      <Button variant="outline" size="sm" className="gap-1">
+                                        <History className="w-3 h-3" />
+                                        View History
+                                      </Button>
+                                    </Link>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </td>
                         </tr>

@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Check, Copy } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SynthesizeButtonProps {
   thesisId: string;
   thesisType: 'macro' | 'asset';
+  thesisTitle?: string;
   claimCount: number;
   hasArticulation: boolean;
   /** If provided, shows "update" mode when new claims exist since articulation */
@@ -20,16 +23,18 @@ interface SynthesizeButtonProps {
  * - Has ≥3 claims AND no articulation (new synthesis)
  * - OR has ≥3 new claims since last articulation (update synthesis)
  *
- * Clicking copies the skill command to clipboard for use in Claude Code.
+ * Clicking calls the synthesize-thesis API to generate the articulation.
  */
 export function SynthesizeButton({
   thesisId,
   thesisType,
+  thesisTitle,
   claimCount,
   hasArticulation,
   articulationClaimCount,
 }: SynthesizeButtonProps) {
-  const [copied, setCopied] = useState(false);
+  const router = useRouter();
+  const [isExecuting, setIsExecuting] = useState(false);
 
   // Determine if synthesis is recommended
   const MIN_CLAIMS = 3;
@@ -48,15 +53,41 @@ export function SynthesizeButton({
   }
 
   const handleClick = async () => {
-    const command = `/synthesize-thesis ${thesisId}`;
+    setIsExecuting(true);
 
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy command:', err);
-    }
+    const title = thesisTitle || 'thesis';
+
+    toast.promise(
+      (async () => {
+        const res = await fetch('/api/skills/synthesize-thesis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            thesisId,
+            thesisType,
+          }),
+        });
+        const data = await res.json();
+        setIsExecuting(false);
+
+        if (!data.success) {
+          throw new Error(data.error || 'Skill execution failed');
+        }
+
+        // Refresh the page to show the new articulation
+        setTimeout(() => {
+          router.refresh();
+        }, 1500);
+
+        return data;
+      })(),
+      {
+        loading: `${needsInitialSynthesis ? 'Generating' : 'Updating'} articulation for "${title}"... This may take several minutes.`,
+        success: `Articulation ${needsInitialSynthesis ? 'created' : 'updated'} for "${title}"`,
+        error: (err) => `Failed: ${err.message}`,
+        duration: 10000,
+      }
+    );
   };
 
   const buttonText = needsInitialSynthesis
@@ -64,38 +95,32 @@ export function SynthesizeButton({
     : `Update Articulation (+${newClaimsSinceArticulation} claims)`;
 
   const tooltipText = needsInitialSynthesis
-    ? `This thesis has ${claimCount} claims. Generate a Core Argument with validation points.`
+    ? `This thesis has ${claimCount} claims. Generate a Core Argument with confirmation/warning signals.`
     : `${newClaimsSinceArticulation} new claims since last articulation. Update to incorporate new evidence.`;
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        onClick={handleClick}
-        size="sm"
-        variant={needsInitialSynthesis ? 'default' : 'outline'}
-        className={needsInitialSynthesis
-          ? 'bg-purple-600 hover:bg-purple-700'
-          : 'border-purple-200 text-purple-700 hover:bg-purple-50'
-        }
-        title={tooltipText}
-      >
-        {copied ? (
-          <>
-            <Check className="h-4 w-4 mr-1" />
-            Copied!
-          </>
-        ) : (
-          <>
-            <Sparkles className="h-4 w-4 mr-1" />
-            {buttonText}
-          </>
-        )}
-      </Button>
-      {copied && (
-        <span className="text-xs text-slate-500">
-          Run in Claude Code terminal
-        </span>
+    <Button
+      onClick={handleClick}
+      size="sm"
+      variant={needsInitialSynthesis ? 'default' : 'outline'}
+      className={needsInitialSynthesis
+        ? 'bg-purple-600 hover:bg-purple-700'
+        : 'border-purple-200 text-purple-700 hover:bg-purple-50'
+      }
+      title={tooltipText}
+      disabled={isExecuting}
+    >
+      {isExecuting ? (
+        <>
+          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          Running...
+        </>
+      ) : (
+        <>
+          <Sparkles className="h-4 w-4 mr-1" />
+          {buttonText}
+        </>
       )}
-    </div>
+    </Button>
   );
 }

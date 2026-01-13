@@ -138,6 +138,7 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
             <SynthesizeButton
               thesisId={id}
               thesisType="macro"
+              thesisTitle={thesis.title}
               claimCount={claimsWithSources.length}
               hasArticulation={!!articulation}
               articulationClaimCount={articulation?.claimIdsUsed ? (articulation.claimIdsUsed as string[]).length : undefined}

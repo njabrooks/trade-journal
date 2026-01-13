@@ -76,7 +76,7 @@ interface SignalInput {
   type: 'confirmation' | 'warning' | 'validation' | 'invalidation'; // Support both old and new type values
   statement: string;
   rationale: string;
-  category: 'explicit' | 'judgment_required';
+  category?: 'judgment' | 'data_driven' | 'explicit' | 'judgment_required'; // Optional - defaults to 'judgment'
   importance: 'critical' | 'significant' | 'supporting';
   timeframe: 'immediate' | 'medium_term' | 'secular';
   status?: 'not_triggered' | 'recommended'; // Default: 'recommended' for AI-generated signals
@@ -187,6 +187,70 @@ async function main() {
 
   console.log(`✅ Articulation created: ${insertedArticulation.id}`);
 
+  // Get thesis for logging (used in multiple steps below)
+  const thesisTable = thesisType === 'macro' ? macroTheses : assetTheses;
+  const [thesis] = await db
+    .select({
+      id: thesisTable.id,
+      title: thesisTable.title,
+      claimsCountAtLastArticulation: thesisTable.claimsCountAtLastArticulation,
+    })
+    .from(thesisTable)
+    .where(eq(thesisTable.id, thesisId))
+    .limit(1);
+
+  // -------------------------------------------------------------------------
+  // Step 2b: Supersede existing signals (on re-articulation)
+  // -------------------------------------------------------------------------
+  // When re-articulating, mark all existing signals as 'superseded' so new ones take precedence.
+  // User can later delete superseded signals or reinstate valuable ones.
+  const existingSignals = await db
+    .select({ id: signalsTable.id, status: signalsTable.status, statement: signalsTable.statement })
+    .from(signalsTable)
+    .where(
+      and(
+        eq(signalsTable.thesisId, thesisId),
+        eq(signalsTable.thesisType, thesisType),
+        sql`${signalsTable.status} != 'superseded'` // Don't re-supersede already superseded signals
+      )
+    );
+
+  if (existingSignals.length > 0) {
+    await db
+      .update(signalsTable)
+      .set({
+        status: 'superseded',
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(signalsTable.thesisId, thesisId),
+          eq(signalsTable.thesisType, thesisType),
+          sql`${signalsTable.status} != 'superseded'`
+        )
+      );
+
+    console.log(`✅ Superseded ${existingSignals.length} existing signals`);
+
+    // Log to journal
+    await logToJournal({
+      objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: thesisId,
+      objectTitle: thesis?.title,
+      actionType: 'signals_superseded',
+      actionDescription: `Superseded ${existingSignals.length} existing signal(s) due to re-articulation`,
+      skillInvoked: '/synthesize-thesis',
+      previousState: {
+        activeSignalCount: existingSignals.length,
+      },
+      newState: {
+        supersededCount: existingSignals.length,
+        reason: 're-articulation',
+      },
+      source: 'skill',
+    });
+  }
+
   // -------------------------------------------------------------------------
   // Step 3: Insert signals
   // -------------------------------------------------------------------------
@@ -197,6 +261,15 @@ async function main() {
     return type as 'confirmation' | 'warning';
   };
 
+  // Helper to normalize category - all signals start as 'judgment'
+  // Category becomes 'data_driven' only when user configures explicit_details via UI
+  const normalizeCategory = (cat?: string): 'judgment' | 'data_driven' => {
+    // Legacy mapping and default to judgment
+    if (!cat) return 'judgment';
+    if (cat === 'explicit' || cat === 'data_driven') return 'judgment'; // Even "data-driven" suggestions start as judgment until user configures
+    return 'judgment';
+  };
+
   if (signals.length > 0) {
     const signalsToInsert = signals.map((sig) => ({
       thesisId,
@@ -205,10 +278,10 @@ async function main() {
       type: normalizeType(sig.type),
       statement: sig.statement,
       rationale: sig.rationale,
-      category: sig.category,
+      category: normalizeCategory(sig.category), // Always 'judgment' until user configures data trigger
       importance: sig.importance,
       timeframe: sig.timeframe,
-      explicitDetails: sig.explicitDetails || null,
+      explicitDetails: null, // Never pre-populate - user must configure via UI
       judgmentDetails: sig.judgmentDetails || null,
       responseProtocol: sig.responseProtocol,
       linkedClaimIds: sig.linkedClaimIds,
@@ -216,7 +289,7 @@ async function main() {
       dependentThesisType: sig.dependentThesisType || null,
       dependentThesisCondition: sig.dependentThesisCondition || null,
       // Default to 'recommended' for AI-generated signals (user must review before they become active)
-      status: (sig.status || 'recommended') as 'not_triggered' | 'monitoring' | 'triggered' | 'superseded' | 'recommended',
+      status: (sig.status || 'recommended') as 'not_triggered' | 'triggered' | 'superseded' | 'recommended',
     }));
 
     const insertedSignals = await db
@@ -243,18 +316,7 @@ async function main() {
   // -------------------------------------------------------------------------
   console.log('\nUpdating thesis and resolving triage...');
 
-  // Get thesis for logging
-  const thesisTable = thesisType === 'macro' ? macroTheses : assetTheses;
-  const [thesis] = await db
-    .select({
-      id: thesisTable.id,
-      title: thesisTable.title,
-      claimsCountAtLastArticulation: thesisTable.claimsCountAtLastArticulation,
-    })
-    .from(thesisTable)
-    .where(eq(thesisTable.id, thesisId))
-    .limit(1);
-
+  // thesis was already queried earlier (after Step 2)
   if (!thesis) {
     console.warn(`Thesis not found: ${thesisType}/${thesisId}`);
   } else {

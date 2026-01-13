@@ -6,7 +6,7 @@ import { logToJournal } from '@/lib/workflow';
 import { getMacroThesisById } from '@/db/queries/macroTheses';
 import { getAssetThesisById } from '@/db/queries/assetTheses';
 
-const VALID_STATUSES = ['not_triggered', 'monitoring', 'triggered', 'superseded', 'recommended'];
+const VALID_STATUSES = ['not_triggered', 'triggered', 'superseded', 'recommended'];
 const VALID_CONFIDENCE = ['low', 'medium', 'high'];
 const VALID_SOURCES = ['user', 'automation'];
 

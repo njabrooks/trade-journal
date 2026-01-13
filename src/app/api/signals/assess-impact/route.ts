@@ -106,14 +106,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update triggered signals to 'monitoring' status (acknowledged but still watching)
+    // Update triggered signals back to 'not_triggered' (acknowledged, back to watching)
     if (triggeredSignalIds && triggeredSignalIds.length > 0) {
       // Create history records for each signal
       for (const signalId of triggeredSignalIds) {
         await db.insert(signalStatusHistory).values({
           signalId,
           previousStatus: 'triggered',
-          newStatus: 'monitoring',
+          newStatus: 'not_triggered',
           evidence: {
             source: 'user_assessment',
             summary: `Impact assessment: ${assessment}${notes ? '. Notes: ' + notes : ''}`,
@@ -128,11 +128,11 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Update signal statuses to monitoring (back to watching, trigger acknowledged)
+      // Update signal statuses to not_triggered (back to watching, trigger acknowledged)
       await db
         .update(signals)
         .set({
-          status: 'monitoring',
+          status: 'not_triggered',
           updatedAt: new Date(),
         })
         .where(

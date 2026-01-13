@@ -159,7 +159,7 @@ export async function getSignalsStats(
     confirmation: signalsList.filter((s) => s.type === 'confirmation').length,
     warning: signalsList.filter((s) => s.type === 'warning').length,
     triggered: signalsList.filter((s) => s.status === 'triggered').length,
-    monitoring: signalsList.filter((s) => s.status === 'monitoring').length,
+    notTriggered: signalsList.filter((s) => s.status === 'not_triggered').length,
     critical: signalsList.filter((s) => s.importance === 'critical').length,
     dataDriven: signalsList.filter((s) => s.category === 'data_driven').length,
     judgment: signalsList.filter((s) => s.category === 'judgment').length,

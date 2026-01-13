@@ -34,7 +34,8 @@ interface BatchReviewBody {
     statement?: string;
     rationale?: string;
     importance?: 'critical' | 'significant' | 'supporting';
-    category?: 'data_driven' | 'judgment';
+    // Note: category is NOT modifiable directly - it's derived from explicitDetails
+    // Category becomes 'data_driven' only when explicitDetails is configured
   };
   explicitDetails?: {
     dataSource: 'fred' | 'iv_data' | 'price_feed';
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
         if (modifications?.statement) updateValues.statement = modifications.statement;
         if (modifications?.rationale) updateValues.rationale = modifications.rationale;
         if (modifications?.importance) updateValues.importance = modifications.importance;
-        if (modifications?.category) updateValues.category = modifications.category;
+        // Note: category is NOT modified directly - only set to 'data_driven' when explicitDetails provided
 
         // Store data-driven trigger configuration if provided
         if (explicitDetails) {

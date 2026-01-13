@@ -214,6 +214,18 @@ export function SignalConfigForm({
     return condition;
   }, [metric, threshold, operator, selectedMetric, durationCount, durationPeriod, dataSource, ticker]);
 
+  // Group FRED series by category for optgroups (must be before early return)
+  const fredSeriesByCategory = useMemo(() => {
+    return FRED_SERIES.reduce(
+      (acc, series) => {
+        if (!acc[series.category]) acc[series.category] = [];
+        acc[series.category].push(series);
+        return acc;
+      },
+      {} as Record<string, typeof FRED_SERIES>
+    );
+  }, []);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -278,18 +290,6 @@ export function SignalConfigForm({
         return 'Configure Explicit Signal';
     }
   };
-
-  // Group FRED series by category for optgroups
-  const fredSeriesByCategory = useMemo(() => {
-    return FRED_SERIES.reduce(
-      (acc, series) => {
-        if (!acc[series.category]) acc[series.category] = [];
-        acc[series.category].push(series);
-        return acc;
-      },
-      {} as Record<string, typeof FRED_SERIES>
-    );
-  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

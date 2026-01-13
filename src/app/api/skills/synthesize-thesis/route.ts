@@ -89,16 +89,14 @@ Based on the thesis and claims, create a JSON file at /tmp/articulation-data.jso
   "signals": [
     {
       "type": "confirmation",
-      "statement": "What would confirm this thesis",
+      "statement": "What would confirm this thesis (be specific and measurable where possible)",
       "rationale": "Why this confirms the thesis",
-      "category": "data_driven",
       "importance": "critical",
       "timeframe": "medium_term",
-      "explicitDetails": {
-        "metric": "Metric name",
-        "threshold": "> 5%",
-        "dataSources": ["FRED", "Bloomberg"],
-        "monitoringFrequency": "monthly"
+      "judgmentDetails": {
+        "observableProxies": ["What to observe", "Data points to watch"],
+        "judgmentCriteria": "How to evaluate if this signal has triggered",
+        "reviewFrequency": "monthly"
       },
       "responseProtocol": {
         "description": "What to do if triggered",
@@ -108,14 +106,13 @@ Based on the thesis and claims, create a JSON file at /tmp/articulation-data.jso
     },
     {
       "type": "warning",
-      "statement": "What would warn against this thesis",
+      "statement": "What would warn against this thesis (be specific and measurable where possible)",
       "rationale": "Why this warns against the thesis",
-      "category": "judgment",
       "importance": "critical",
       "timeframe": "medium_term",
       "judgmentDetails": {
-        "observableProxies": ["Proxy 1"],
-        "judgmentCriteria": "How to evaluate",
+        "observableProxies": ["What to observe", "Data points to watch"],
+        "judgmentCriteria": "How to evaluate if this signal has triggered",
         "reviewFrequency": "quarterly"
       },
       "responseProtocol": {
@@ -131,7 +128,8 @@ Based on the thesis and claims, create a JSON file at /tmp/articulation-data.jso
 IMPORTANT for signals:
 - Use "type": "confirmation" for things that would CONFIRM the thesis
 - Use "type": "warning" for things that would WARN AGAINST the thesis
-- "category": "data_driven" = measurable metric, "judgment" = qualitative assessment
+- All signals are created as "judgment" by default - users can configure data-driven triggers later via the UI
+- Write statements that are specific and measurable where possible (e.g., "VIX sustains above 30 for 5+ days" not "Market volatility increases")
 - "importance": "critical" | "significant" | "supporting"
 - "timeframe": "immediate" | "medium_term" | "secular"
 - Include 5-8 confirmation signals and 5-8 warning signals

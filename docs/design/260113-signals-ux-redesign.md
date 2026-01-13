@@ -1,6 +1,6 @@
 # Signals UX Redesign
 
-**Status**: Ready for Implementation
+**Status**: ✅ Implementation Complete - Ready for Testing
 **Created**: 2026-01-13
 **Related**:
 - `docs/design/260112-decision-point-implementation-tracker.md`
@@ -328,6 +328,60 @@ The `SignalBatchReview` component exists but is not rendered in `ExpandedTriageD
 
 **Completed**: 2026-01-13
 
+### Phase 7: UX Refinements (Flow Testing Feedback) ✅ COMPLETE
+
+**Goal**: Simplify the signal model based on user testing feedback
+
+#### Key Refinements
+
+1. **Status Simplification** - Remove `monitoring` status
+   - It's redundant since all accepted signals are being monitored
+   - Simplified states: `recommended` → `not_triggered` → `triggered` (+ `superseded`)
+
+2. **Category Derived from Configuration**
+   - All signals are `judgment` by default
+   - Signal becomes `data_driven` **only when** `explicit_details` is configured
+   - Removing/clearing explicit_details reverts to `judgment`
+   - No direct UI to set category - only the ⚡ config form changes it
+
+3. **Unified Actions Across Contexts**
+   - Browse mode (thesis page) should show Accept/Reject for `recommended` signals
+   - Same actions available regardless of where you're viewing the signal
+   - Actions adapt based on signal status, not viewing context
+
+4. **The ⚡ Zap Flow Clarification**
+   - Opens config form regardless of current category
+   - Saving config → sets `category: 'data_driven'` + stores `explicit_details`
+   - A data-oriented statement can still be manually assessed (stays `judgment`)
+
+#### Implementation Tasks
+
+1. ✅ **Remove `monitoring` status**
+   - Updated `schema.ts` status constraint comment
+   - Migrated 1 existing `monitoring` signal to `not_triggered`
+   - Removed from `UnifiedSignalsTable.tsx` (filters, badges, sorting)
+   - Removed from `UpdateValidationStatusModal.tsx` status options
+   - Updated `assess-impact/route.ts` to set `not_triggered` instead of `monitoring`
+
+2. ✅ **Make category derived**
+   - Updated `/api/skills/synthesize-thesis/route.ts` to not include category in AI prompt
+   - Updated `scripts/insert-thesis-articulation.ts` to always set `category='judgment'` and `explicitDetails=null`
+   - Updated `batch-review/route.ts` to not accept category in modifications
+   - Category only becomes `data_driven` when user configures via SignalConfigForm
+
+3. ✅ **Unify browse/review mode actions**
+   - `UnifiedSignalsTable.tsx` now shows Accept/Reject/⚡Zap for `status='recommended'` regardless of mode
+   - After acceptance, shows Update Status / Configure Data-Driven
+   - Actions adapt based on signal status, not viewing context
+
+4. ✅ **Update related components**
+   - `UnifiedSignalsTable.tsx`: Unified action rendering in both table rows and expanded rows
+   - `SignalConfigForm.tsx`: Already handles setting `data_driven` on save
+   - `UpdateValidationStatusModal.tsx`: Removed `monitoring` option
+   - `thesisSynthesis.ts`: Changed `monitoring` stat to `notTriggered`
+
+**Completed**: 2026-01-13
+
 ---
 
 ## User Flows (Target State)
@@ -438,6 +492,26 @@ Triage resolved
    - Clear component boundaries
    - No more overlapping concepts
 
+### Phase 8: Re-articulation & Button Improvements ✅ COMPLETE
+
+**Goal**: Handle re-articulation properly and improve UX consistency
+
+1. ✅ **Supersede existing signals on re-articulation**
+   - When running `/synthesize-thesis` again, existing signals are marked `superseded`
+   - New signals created with `status='recommended'`
+   - User can delete superseded signals or reinstate valuable ones
+   - Journal entry logged for the supersede action
+   - Implementation: `scripts/insert-thesis-articulation.ts` Step 2b
+
+2. ✅ **SynthesizeButton calls API directly**
+   - Previously: button copied skill command to clipboard
+   - Now: button calls `/api/skills/synthesize-thesis` API directly (like triage does)
+   - Shows loading spinner and toast notifications
+   - Auto-refreshes page when articulation is created/updated
+   - Implementation: `src/components/thesis/SynthesizeButton.tsx`
+
+**Completed**: 2026-01-13
+
 ---
 
 ## Appendix: Database Queries for Debugging
@@ -483,3 +557,4 @@ JOIN signals s ON ms.signal_id = s.id;
 | 2026-01-13 | Phase 4 completed: Simplified detail page, deleted 4 deprecated monitoring components (~1,400 lines) |
 | 2026-01-13 | Phase 5 completed: Dropped monitoring tables, removed API routes/services, cleaned up ValidationPointsList |
 | 2026-01-13 | Phase 6 completed: Migrated daily monitoring to signal-level (daily-signal-monitoring.ts), deprecated thesisMonitoringConfigs |
+| 2026-01-13 | Phase 7 started: UX refinements from flow testing - remove monitoring status, derive category from config, unify actions |

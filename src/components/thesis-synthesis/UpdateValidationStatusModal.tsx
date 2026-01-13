@@ -41,14 +41,8 @@ export function UpdateValidationStatusModal({
     {
       value: 'not_triggered',
       label: 'Not Triggered',
-      description: 'Condition has not yet occurred',
+      description: 'Condition has not yet occurred (all accepted signals are monitored)',
       icon: <Eye className="w-4 h-4 text-slate-400" />,
-    },
-    {
-      value: 'monitoring',
-      label: 'Monitoring',
-      description: 'Actively watching for this condition',
-      icon: <Eye className="w-4 h-4 text-blue-500" />,
     },
     {
       value: 'triggered',

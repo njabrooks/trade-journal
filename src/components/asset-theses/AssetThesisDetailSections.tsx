@@ -181,6 +181,7 @@ export function AssetThesisDetailSections({
               <SynthesizeButton
                 thesisId={view.id}
                 thesisType="asset"
+                thesisTitle={view.title}
                 claimCount={currentClaimCount}
                 hasArticulation={hasCoreArgument}
                 articulationClaimCount={articulationClaimCount}
