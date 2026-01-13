@@ -161,8 +161,8 @@ export async function getSignalsStats(
     triggered: signalsList.filter((s) => s.status === 'triggered').length,
     monitoring: signalsList.filter((s) => s.status === 'monitoring').length,
     critical: signalsList.filter((s) => s.importance === 'critical').length,
-    explicit: signalsList.filter((s) => s.category === 'explicit').length,
-    judgmentRequired: signalsList.filter((s) => s.category === 'judgment_required').length,
+    dataDriven: signalsList.filter((s) => s.category === 'data_driven').length,
+    judgment: signalsList.filter((s) => s.category === 'judgment').length,
     // Legacy field names for backwards compatibility
     validation: signalsList.filter((s) => s.type === 'confirmation').length,
     invalidation: signalsList.filter((s) => s.type === 'warning').length,

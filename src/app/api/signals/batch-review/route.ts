@@ -34,7 +34,7 @@ interface BatchReviewBody {
     statement?: string;
     rationale?: string;
     importance?: 'critical' | 'significant' | 'supporting';
-    category?: 'explicit' | 'judgment_required';
+    category?: 'data_driven' | 'judgment';
   };
   explicitDetails?: {
     dataSource: 'fred' | 'iv_data' | 'price_feed';
@@ -112,11 +112,11 @@ export async function POST(request: NextRequest) {
         if (modifications?.importance) updateValues.importance = modifications.importance;
         if (modifications?.category) updateValues.category = modifications.category;
 
-        // Store explicit trigger configuration if provided
+        // Store data-driven trigger configuration if provided
         if (explicitDetails) {
           updateValues.explicitDetails = explicitDetails;
-          // Ensure category is set to explicit when explicitDetails are provided
-          updateValues.category = 'explicit';
+          // Ensure category is set to data_driven when explicitDetails are provided
+          updateValues.category = 'data_driven';
         }
 
         // Update signal status to not_triggered
@@ -148,19 +148,19 @@ export async function POST(request: NextRequest) {
 
         // Log to journal
         const actionDescription = explicitDetails
-          ? `Accepted and configured explicit trigger for signal: "${signal.statement}"`
+          ? `Accepted and configured data-driven trigger for signal: "${signal.statement}"`
           : `Accepted recommended signal: "${signal.statement}"`;
         const newState: Record<string, unknown> = { status: 'not_triggered', ...modifications };
         if (explicitDetails) {
           newState.explicitDetails = explicitDetails;
-          newState.category = 'explicit';
+          newState.category = 'data_driven';
         }
 
         await logToJournal({
           objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
           objectId: signal.thesisId,
           objectTitle: thesisTitle,
-          actionType: explicitDetails ? 'signal_configured_explicit' : 'signal_accepted',
+          actionType: explicitDetails ? 'signal_configured_data_driven' : 'signal_accepted',
           actionDescription,
           previousState: { status: 'recommended', category: signal.category },
           newState,

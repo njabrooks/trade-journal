@@ -1392,12 +1392,12 @@ export const signals = pgTable(
     rationale: text('rationale'),
 
     // Classification
-    category: text('category').notNull(), // 'explicit' | 'judgment_required'
+    category: text('category').notNull(), // 'judgment' | 'data_driven'
     importance: text('importance').notNull(), // 'critical' | 'significant' | 'supporting'
     timeframe: text('timeframe').notNull(), // 'immediate' | 'medium_term' | 'secular'
 
     // Category-specific details
-    explicitDetails: jsonb('explicit_details'), // { metric, threshold, dataSources, monitoringFrequency }
+    explicitDetails: jsonb('explicit_details'), // DataDrivenConfig - see ExplicitDetails type in components/signals/SignalConfigForm.tsx
     judgmentDetails: jsonb('judgment_details'), // { observableProxies, judgmentCriteria, reviewFrequency }
 
     // Response protocol
@@ -1511,6 +1511,9 @@ export type DecisionAuditLog = typeof decisionAuditLog.$inferSelect;
 export type NewDecisionAuditLog = typeof decisionAuditLog.$inferInsert;
 
 // Monitoring Specs - Phase 3.2: Automated monitoring configuration
+// @deprecated - Keyword-based news monitoring. Being replaced by explicit_details on signals for data-driven triggers.
+// UI components (MonitoringSpecForm, MonitoringSpecsList, MonitoringEventsLog) will be removed in Phase 4.
+// Only 5 specs exist for 2 signals - minimal migration needed.
 export const monitoringSpecs = pgTable(
   'monitoring_specs',
   {
@@ -1550,6 +1553,7 @@ export type MonitoringSpec = typeof monitoringSpecs.$inferSelect;
 export type NewMonitoringSpec = typeof monitoringSpecs.$inferInsert;
 
 // Monitoring Events - Phase 3.2A: Manual check results
+// @deprecated - Part of keyword-based news monitoring system. See monitoringSpecs deprecation notes.
 export const monitoringEvents = pgTable(
   'monitoring_events',
   {

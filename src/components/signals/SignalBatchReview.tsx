@@ -246,10 +246,10 @@ export function SignalBatchReview({
           action: 'accept',
           signalId,
           modifications: {
-            // Update category to explicit
-            category: 'explicit',
+            // Update category to data-driven
+            category: 'data_driven',
           },
-          // Include explicit details to be stored
+          // Include data-driven trigger details to be stored
           explicitDetails: config,
         }),
       });
@@ -260,7 +260,7 @@ export function SignalBatchReview({
       }
 
       setSignals((prev) => prev.filter((s) => s.id !== signalId));
-      toast.success('Signal accepted and configured as explicit trigger');
+      toast.success('Signal accepted and configured as data-driven trigger');
       setConfiguringSignal(null);
 
       // Check if all signals are processed
@@ -292,8 +292,8 @@ export function SignalBatchReview({
   };
 
   const categoryIcons: Record<string, React.ReactNode> = {
-    explicit: <Target className="w-3 h-3" />,
-    judgment_required: <Scale className="w-3 h-3" />,
+    data_driven: <Target className="w-3 h-3" />,
+    judgment: <Scale className="w-3 h-3" />,
   };
 
   // Loading state

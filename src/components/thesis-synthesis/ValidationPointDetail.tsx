@@ -132,8 +132,8 @@ export function ValidationPointDetail({
   };
 
   const categoryIcons: Record<string, React.ReactNode> = {
-    explicit: <Target className="w-4 h-4" />,
-    judgment_required: <Scale className="w-4 h-4" />,
+    data_driven: <Target className="w-4 h-4" />,
+    judgment: <Scale className="w-4 h-4" />,
   };
 
   const explicitDetails = validationPoint.explicitDetails as {
@@ -256,7 +256,7 @@ export function ValidationPointDetail({
       {/* Details cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Explicit details */}
-        {validationPoint.category === 'explicit' && explicitDetails && (
+        {validationPoint.category === 'data_driven' && explicitDetails && (
           <div className="bg-white rounded-lg border border-slate-200 p-4">
             <h3 className="text-sm font-semibold text-slate-900 mb-3">
               Measurement Criteria
@@ -291,7 +291,7 @@ export function ValidationPointDetail({
         )}
 
         {/* Judgment details */}
-        {validationPoint.category === 'judgment_required' && judgmentDetails && (
+        {validationPoint.category === 'judgment' && judgmentDetails && (
           <div className="bg-white rounded-lg border border-slate-200 p-4">
             <h3 className="text-sm font-semibold text-slate-900 mb-3">
               Judgment Criteria

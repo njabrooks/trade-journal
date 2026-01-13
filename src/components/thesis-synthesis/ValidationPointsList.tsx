@@ -158,8 +158,8 @@ export function ValidationPointsList({
   };
 
   const categoryIcons: Record<string, React.ReactNode> = {
-    explicit: <Target className="w-3 h-3" />,
-    judgment_required: <Scale className="w-3 h-3" />,
+    data_driven: <Target className="w-3 h-3" />,
+    judgment: <Scale className="w-3 h-3" />,
   };
 
   if (validationPoints.length === 0) {
@@ -324,15 +324,15 @@ export function ValidationPointsList({
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Convert to Explicit - only for judgment-based signals */}
-                  {onConvertToExplicit && point.category === 'judgment_required' && point.status !== 'superseded' && (
+                  {/* Convert to Data-Driven - only for judgment-based signals */}
+                  {onConvertToExplicit && point.category === 'judgment' && point.status !== 'superseded' && (
                     <button
                       onClick={() => onConvertToExplicit(point)}
                       className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded"
-                      title="Convert to explicit signal with data-driven triggers"
+                      title="Convert to data-driven signal with measurable triggers"
                     >
                       <Zap className="w-3 h-3" />
-                      Make Explicit
+                      Make Data-Driven
                     </button>
                   )}
                   {onUpdateStatus && point.status !== 'superseded' && (
@@ -547,8 +547,8 @@ export function ValidationPointsList({
                     </div>
                   )}
 
-                  {/* Explicit Details */}
-                  {point.category === 'explicit' && explicitDetails && (
+                  {/* Data-Driven Details */}
+                  {point.category === 'data_driven' && explicitDetails && (
                     <div className="bg-slate-50 rounded-md p-3">
                       <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
                         Measurement Criteria
@@ -585,7 +585,7 @@ export function ValidationPointsList({
                   )}
 
                   {/* Judgment Details */}
-                  {point.category === 'judgment_required' && judgmentDetails && (
+                  {point.category === 'judgment' && judgmentDetails && (
                     <div className="bg-slate-50 rounded-md p-3">
                       <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
                         Judgment Criteria

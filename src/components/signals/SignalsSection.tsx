@@ -45,12 +45,12 @@ export function SignalsSection({
   }) => {
     if (!selectedSignalForUpgrade) return;
 
-    // Update the signal to explicit with the config
+    // Update the signal to data-driven with the config
     const response = await fetch(`/api/validation-points/${selectedSignalForUpgrade.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        category: 'explicit',
+        category: 'data_driven',
         explicitDetails: {
           dataSource: config.dataSource,
           metric: config.metric,
@@ -66,7 +66,7 @@ export function SignalsSection({
     });
 
     if (!response.ok) {
-      throw new Error('Failed to upgrade signal to explicit');
+      throw new Error('Failed to upgrade signal to data-driven');
     }
 
     setSelectedSignalForUpgrade(null);

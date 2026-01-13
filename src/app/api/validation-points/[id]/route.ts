@@ -23,7 +23,7 @@ interface StatusUpdateBody {
 }
 
 interface UpgradeToExplicitBody {
-  category: 'explicit';
+  category: 'data_driven';
   explicitDetails: {
     dataSource: string;
     metric: string;
@@ -47,8 +47,8 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json() as PatchRequestBody;
 
-    // Detect if this is an upgrade-to-explicit request or a status update
-    if ('category' in body && body.category === 'explicit' && 'explicitDetails' in body) {
+    // Detect if this is an upgrade-to-data-driven request or a status update
+    if ('category' in body && body.category === 'data_driven' && 'explicitDetails' in body) {
       return handleUpgradeToExplicit(id, body as UpgradeToExplicitBody);
     }
 
@@ -215,10 +215,10 @@ async function handleUpgradeToExplicit(
     );
   }
 
-  // 2. Verify signal is judgment_required
-  if (currentSignal.category !== 'judgment_required') {
+  // 2. Verify signal is judgment-based
+  if (currentSignal.category !== 'judgment') {
     return NextResponse.json(
-      { error: 'Signal is not a judgment-based signal. Only judgment_required signals can be upgraded.' },
+      { error: 'Signal is not a judgment-based signal. Only judgment signals can be upgraded to data-driven.' },
       { status: 400 }
     );
   }
@@ -233,7 +233,7 @@ async function handleUpgradeToExplicit(
   const [updatedSignal] = await db
     .update(signals)
     .set({
-      category: 'explicit',
+      category: 'data_driven',
       explicitDetails: body.explicitDetails,
       updatedAt: new Date(),
     })
@@ -262,15 +262,15 @@ async function handleUpgradeToExplicit(
     objectType: currentSignal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
     objectId: currentSignal.thesisId,
     objectTitle: thesisTitle,
-    actionType: 'signal_upgraded_to_explicit',
-    actionDescription: `Signal "${statementPreview}" upgraded from judgment to explicit with data trigger`,
+    actionType: 'signal_upgraded_to_data_driven',
+    actionDescription: `Signal "${statementPreview}" upgraded from judgment to data-driven with data trigger`,
     previousState: {
-      category: 'judgment_required',
+      category: 'judgment',
       signalId: id,
       signalType: currentSignal.type,
     },
     newState: {
-      category: 'explicit',
+      category: 'data_driven',
       explicitDetails: body.explicitDetails,
     },
     source: 'user',

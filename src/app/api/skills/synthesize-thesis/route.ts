@@ -5,7 +5,7 @@ import { exec } from 'child_process';
  * POST /api/skills/synthesize-thesis
  *
  * Spawns Claude CLI to execute the synthesize-thesis skill in headless mode.
- * The skill generates an articulation with validation/invalidation points,
+ * The skill generates an articulation with confirmation/warning signals,
  * stores them to the database, and resolves any pending triage records.
  *
  * Body: { thesisId: string, thesisType: 'macro' | 'asset' }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 You are synthesizing a thesis articulation. This is an AUTOMATED headless run - do NOT ask for user input.
 
 ## Task
-Create a thesis articulation with validation/invalidation points for thesis ID: ${thesisId} (${thesisType})
+Create a thesis articulation with confirmation/warning signals for thesis ID: ${thesisId} (${thesisType})
 
 ## Step 1: Load thesis and claims
 
@@ -86,12 +86,12 @@ Based on the thesis and claims, create a JSON file at /tmp/articulation-data.jso
     "evidenceGaps": ["Gap 1", "Gap 2"],
     "claimIdsUsed": ["claim-id-1", "claim-id-2"]
   },
-  "validationPoints": [
+  "signals": [
     {
-      "type": "validation",
-      "statement": "What would validate this thesis",
-      "rationale": "Why this validates the thesis",
-      "category": "explicit",
+      "type": "confirmation",
+      "statement": "What would confirm this thesis",
+      "rationale": "Why this confirms the thesis",
+      "category": "data_driven",
       "importance": "critical",
       "timeframe": "medium_term",
       "explicitDetails": {
@@ -107,10 +107,10 @@ Based on the thesis and claims, create a JSON file at /tmp/articulation-data.jso
       "linkedClaimIds": []
     },
     {
-      "type": "invalidation",
-      "statement": "What would invalidate this thesis",
-      "rationale": "Why this invalidates the thesis",
-      "category": "judgment_required",
+      "type": "warning",
+      "statement": "What would warn against this thesis",
+      "rationale": "Why this warns against the thesis",
+      "category": "judgment",
       "importance": "critical",
       "timeframe": "medium_term",
       "judgmentDetails": {
@@ -128,13 +128,13 @@ Based on the thesis and claims, create a JSON file at /tmp/articulation-data.jso
 }
 \`\`\`
 
-IMPORTANT for validationPoints:
-- Use "type": "validation" for things that would CONFIRM the thesis
-- Use "type": "invalidation" for things that would DISPROVE the thesis
-- "category": "explicit" = measurable metric, "judgment_required" = qualitative assessment
+IMPORTANT for signals:
+- Use "type": "confirmation" for things that would CONFIRM the thesis
+- Use "type": "warning" for things that would WARN AGAINST the thesis
+- "category": "data_driven" = measurable metric, "judgment" = qualitative assessment
 - "importance": "critical" | "significant" | "supporting"
 - "timeframe": "immediate" | "medium_term" | "secular"
-- Include 5-8 validation points and 5-8 invalidation points
+- Include 5-8 confirmation signals and 5-8 warning signals
 - Use actual claim IDs from Step 1 in claimIdsUsed and linkedClaimIds
 
 ## Step 3: Store to database
@@ -144,7 +144,7 @@ Write the JSON to /tmp/articulation-data.json, then run:
 npx tsx scripts/insert-thesis-articulation.ts --input /tmp/articulation-data.json
 \`\`\`
 
-This script inserts the articulation, validation points, updates the thesis, and resolves triage records.
+This script inserts the articulation, signals, updates the thesis, and resolves triage records.
 
 ## Step 4: Clean up and report
 
@@ -152,7 +152,7 @@ Delete the temp file and output a JSON summary:
 {
   "success": true,
   "articulationId": "<uuid from script output>",
-  "validationPointsCount": <number>,
+  "signalsCount": <number>,
   "message": "Articulation created successfully"
 }
 
@@ -165,7 +165,7 @@ If any step fails, output:
 IMPORTANT:
 - Do NOT ask for confirmation or user input
 - Make sensible default choices for all fields
-- Use "medium_term" as default timeframe for validation points
+- Use "medium_term" as default timeframe for signals
 - Proceed through all steps automatically
 `;
 
