@@ -1389,19 +1389,20 @@ export const signals = pgTable(
     // Core definition
     type: text('type').notNull(), // 'confirmation' | 'warning'
     statement: text('statement').notNull(),
-    rationale: text('rationale'),
+    notes: text('notes'), // Free-form notes (replaces rationale, judgmentDetails, responseProtocol)
 
     // Classification
     category: text('category').notNull(), // 'judgment' | 'data_driven'
     importance: text('importance').notNull(), // 'critical' | 'significant' | 'supporting'
-    timeframe: text('timeframe').notNull(), // 'immediate' | 'medium_term' | 'secular'
 
-    // Category-specific details
+    // Data-driven trigger configuration
     explicitDetails: jsonb('explicit_details'), // DataDrivenConfig - see ExplicitDetails type in components/signals/SignalConfigForm.tsx
-    judgmentDetails: jsonb('judgment_details'), // { observableProxies, judgmentCriteria, reviewFrequency }
 
-    // Response protocol
-    responseProtocol: jsonb('response_protocol').notNull(), // { description, linkedStrategies?, escalation? }
+    // DEPRECATED fields (kept for backwards compatibility, will be migrated to notes)
+    rationale: text('rationale'), // @deprecated - use notes
+    timeframe: text('timeframe'), // @deprecated - rarely used
+    judgmentDetails: jsonb('judgment_details'), // @deprecated - use notes
+    responseProtocol: jsonb('response_protocol'), // @deprecated - use notes
 
     // Status: recommended (AI proposed) → not_triggered (accepted) → triggered (condition met)
     // Also: superseded (no longer relevant)
@@ -1473,6 +1474,36 @@ export type NewSignalStatusHistory = typeof signalStatusHistory.$inferInsert;
 export const validationStatusHistory = signalStatusHistory;
 export type ValidationStatusHistory = SignalStatusHistory;
 export type NewValidationStatusHistory = NewSignalStatusHistory;
+
+// Signal Data Tracking - Tracks last observed data for on_release trigger detection
+export const signalDataTracking = pgTable(
+  'signal_data_tracking',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    signalId: uuid('signal_id')
+      .notNull()
+      .references(() => signals.id, { onDelete: 'cascade' })
+      .unique(), // One tracking record per signal
+
+    // Last observed data point
+    lastObservedDate: text('last_observed_date'), // Date string from data source (e.g., '2025-01-01')
+    lastObservedValue: numeric('last_observed_value', { precision: 18, scale: 6 }),
+    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+
+    // Metadata
+    dataSource: text('data_source').notNull(), // 'fred' | 'iv_data' | 'price_feed'
+    metric: text('metric').notNull(), // Series ID or metric name
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    signalIdx: index('idx_signal_data_tracking_signal').on(table.signalId),
+  })
+);
+
+export type SignalDataTracking = typeof signalDataTracking.$inferSelect;
+export type NewSignalDataTracking = typeof signalDataTracking.$inferInsert;
 
 // Decision Audit Log - Process vs actual actions
 export const decisionAuditLog = pgTable(

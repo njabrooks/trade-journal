@@ -405,12 +405,14 @@ export function ValidationPointsList({
                     </div>
                   )}
 
-                  {/* Timeframe */}
+                  {/* Metadata */}
                   <div className="flex items-center gap-4 text-xs text-slate-500">
-                    <span>
-                      <Clock className="w-3 h-3 inline mr-1" />
-                      Timeframe: {point.timeframe.replace('_', ' ')}
-                    </span>
+                    {point.timeframe && (
+                      <span>
+                        <Clock className="w-3 h-3 inline mr-1" />
+                        Timeframe: {point.timeframe.replace('_', ' ')}
+                      </span>
+                    )}
                     <span>
                       Created: {new Date(point.createdAt).toLocaleDateString('en-GB')}
                     </span>

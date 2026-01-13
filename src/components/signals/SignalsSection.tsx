@@ -41,7 +41,7 @@ export function SignalsSection({
     dataSource: string;
     metric: string;
     operator: string;
-    threshold: number;
+    threshold?: number;
     thresholdUnit?: string;
     durationCount?: number;
     durationPeriod?: string;

@@ -34,6 +34,7 @@ const {
   underlyingsIvHistory,
   macroTheses,
   assetTheses,
+  signalDataTracking,
 } = schema;
 
 // ============================================================================
@@ -72,17 +73,17 @@ interface MonitoringRunResult {
 
 /**
  * Get latest price/IV data for a ticker
+ * Note: iv_rank and iv_percentile are computed values, not stored in this table
  */
 async function getLatestPriceIvForTicker(
   ticker: string
-): Promise<{ spot?: number; iv30?: number; iv_rank?: number; iv_percentile?: number; rv20?: number; asOfDate?: string } | null> {
+): Promise<{ spot?: number; iv30?: number; rv20?: number; atr20?: number; asOfDate?: string } | null> {
   const result = await db
     .select({
       spot: underlyingsIvHistory.spot,
       iv30: underlyingsIvHistory.iv30,
-      ivRank: underlyingsIvHistory.ivRank,
-      ivPercentile: underlyingsIvHistory.ivPercentile,
       rv20: underlyingsIvHistory.rv20,
+      atr20: underlyingsIvHistory.atr20,
       asOfDate: underlyingsIvHistory.asOfDate,
     })
     .from(underlyingsIvHistory)
@@ -94,17 +95,21 @@ async function getLatestPriceIvForTicker(
   return {
     spot: result[0].spot ? Number(result[0].spot) : undefined,
     iv30: result[0].iv30 ? Number(result[0].iv30) : undefined,
-    iv_rank: result[0].ivRank ? Number(result[0].ivRank) : undefined,
-    iv_percentile: result[0].ivPercentile ? Number(result[0].ivPercentile) : undefined,
     rv20: result[0].rv20 ? Number(result[0].rv20) : undefined,
+    atr20: result[0].atr20 ? Number(result[0].atr20) : undefined,
     asOfDate: result[0].asOfDate,
   };
 }
 
+interface FredObservation {
+  value: number;
+  date: string; // YYYY-MM-DD format from FRED API
+}
+
 /**
- * Fetch latest value from FRED API
+ * Fetch latest value and date from FRED API
  */
-async function getFredSeriesLatestValue(series: string): Promise<number | null> {
+async function getFredSeriesLatestObservation(series: string): Promise<FredObservation | null> {
   const apiKey = process.env.FRED_API_KEY;
   if (!apiKey) {
     console.warn('FRED_API_KEY not set, skipping FRED monitoring');
@@ -120,8 +125,13 @@ async function getFredSeriesLatestValue(series: string): Promise<number | null> 
     }
     const data = await response.json();
     if (data.observations && data.observations.length > 0) {
-      const value = parseFloat(data.observations[0].value);
-      return isNaN(value) ? null : value;
+      const obs = data.observations[0];
+      const value = parseFloat(obs.value);
+      if (isNaN(value)) return null;
+      return {
+        value,
+        date: obs.date, // FRED returns 'date' in YYYY-MM-DD format
+      };
     }
     return null;
   } catch (error) {
@@ -130,18 +140,37 @@ async function getFredSeriesLatestValue(series: string): Promise<number | null> 
   }
 }
 
+/**
+ * Fetch latest value from FRED API (legacy wrapper)
+ */
+async function getFredSeriesLatestValue(series: string): Promise<number | null> {
+  const obs = await getFredSeriesLatestObservation(series);
+  return obs?.value ?? null;
+}
+
 // ============================================================================
 // Threshold Evaluation
 // ============================================================================
 
 /**
  * Map ExplicitDetails operator to comparison function
- * New format: 'gt', 'gte', 'lt', 'lte', 'eq', 'crosses_above', 'crosses_below'
+ * New format: 'gt', 'gte', 'lt', 'lte', 'eq', 'crosses_above', 'crosses_below', 'on_release'
  * Legacy format: '>', '>=', '<', '<=', '==' (from old manual configs)
  */
-function evaluateThreshold(operator: string, threshold: number, currentValue: number): boolean {
+function evaluateThreshold(operator: string, threshold: number | undefined, currentValue: number): boolean {
   // Normalize operator - support both new and legacy formats
   const normalizedOp = operator.toLowerCase().trim();
+
+  // on_release is handled separately in checkSignalThreshold
+  if (normalizedOp === 'on_release') {
+    return false; // Never triggers via threshold comparison
+  }
+
+  // Threshold required for all other operators
+  if (threshold === undefined) {
+    console.warn(`Threshold required for operator: ${operator}`);
+    return false;
+  }
 
   switch (normalizedOp) {
     // New format
@@ -192,8 +221,59 @@ function getOperatorSymbol(operator: string): string {
     '=': '=',
     crosses_above: '↗',
     crosses_below: '↘',
+    on_release: '📅',
   };
   return symbols[normalizedOp] || operator;
+}
+
+/**
+ * Get or create tracking record for a signal
+ */
+async function getOrCreateTracking(
+  signalId: string,
+  dataSource: string,
+  metric: string
+): Promise<{ lastObservedDate: string | null; lastObservedValue: number | null }> {
+  const existing = await db
+    .select()
+    .from(signalDataTracking)
+    .where(eq(signalDataTracking.signalId, signalId))
+    .limit(1);
+
+  if (existing.length > 0) {
+    return {
+      lastObservedDate: existing[0].lastObservedDate,
+      lastObservedValue: existing[0].lastObservedValue ? Number(existing[0].lastObservedValue) : null,
+    };
+  }
+
+  // Create initial tracking record
+  await db.insert(signalDataTracking).values({
+    signalId,
+    dataSource,
+    metric,
+  });
+
+  return { lastObservedDate: null, lastObservedValue: null };
+}
+
+/**
+ * Update tracking record with new observation
+ */
+async function updateTracking(
+  signalId: string,
+  observedDate: string,
+  observedValue: number
+): Promise<void> {
+  await db
+    .update(signalDataTracking)
+    .set({
+      lastObservedDate: observedDate,
+      lastObservedValue: String(observedValue),
+      lastCheckedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(signalDataTracking.signalId, signalId));
 }
 
 /**
@@ -204,12 +284,23 @@ async function checkSignalThreshold(
   thesisTitle: string
 ): Promise<ThresholdCheckResult | null> {
   const config = signal.explicitDetails;
+  const isOnRelease = config.operator.toLowerCase() === 'on_release';
 
   let currentValue: number | null = null;
+  let currentDate: string | null = null;
 
   // Fetch data based on data source
   if (config.dataSource === 'fred') {
-    currentValue = await getFredSeriesLatestValue(config.metric);
+    if (isOnRelease) {
+      // For on_release, we need both value and date
+      const obs = await getFredSeriesLatestObservation(config.metric);
+      if (obs) {
+        currentValue = obs.value;
+        currentDate = obs.date;
+      }
+    } else {
+      currentValue = await getFredSeriesLatestValue(config.metric);
+    }
   } else if (config.dataSource === 'iv_data' || config.dataSource === 'price_feed') {
     if (!config.ticker) {
       console.warn(`    ⚠ Signal ${signal.id.slice(0, 8)} has IV/price source but no ticker`);
@@ -223,17 +314,18 @@ async function checkSignalThreshold(
     }
 
     // Map metric to data field
+    // Note: iv_rank and iv_percentile are computed values, not available in base table
     const metricMap: Record<string, keyof typeof data> = {
       spot: 'spot',
       iv30: 'iv30',
-      iv_rank: 'iv_rank',
-      iv_percentile: 'iv_percentile',
       rv20: 'rv20',
+      atr20: 'atr20',
     };
 
     const field = metricMap[config.metric];
     if (field && data[field] !== undefined) {
       currentValue = data[field] as number;
+      currentDate = data.asOfDate || null;
     } else {
       console.warn(`    ⚠ Metric ${config.metric} not found in data for ${config.ticker}`);
       return null;
@@ -244,13 +336,40 @@ async function checkSignalThreshold(
     return null;
   }
 
-  const breached = evaluateThreshold(config.operator, config.threshold, currentValue);
+  let breached = false;
+  let message = '';
   const opSymbol = getOperatorSymbol(config.operator);
   const unit = config.thresholdUnit || '';
 
-  const message = breached
-    ? `⚠️ TRIGGERED: ${config.metricName || config.metric} ${opSymbol} ${config.threshold}${unit} (current: ${currentValue.toFixed(2)}${unit})`
-    : `✓ ${config.metricName || config.metric} = ${currentValue.toFixed(2)}${unit} (threshold: ${opSymbol} ${config.threshold}${unit})`;
+  if (isOnRelease) {
+    // on_release: Check if this is a new data point we haven't seen before
+    const tracking = await getOrCreateTracking(signal.id, config.dataSource, config.metric);
+
+    if (currentDate && tracking.lastObservedDate !== currentDate) {
+      // New data release detected!
+      breached = true;
+      const previousValue = tracking.lastObservedValue;
+      const changeStr = previousValue !== null
+        ? ` (was ${previousValue.toFixed(2)}${unit})`
+        : ' (first observation)';
+
+      message = `📅 NEW RELEASE: ${config.metricName || config.metric} = ${currentValue.toFixed(2)}${unit}${changeStr}`;
+
+      // Update tracking (will be done after trigger in main loop to avoid double-update)
+      if (!DRY_RUN) {
+        await updateTracking(signal.id, currentDate, currentValue);
+      }
+    } else {
+      // No new data
+      message = `✓ ${config.metricName || config.metric} = ${currentValue.toFixed(2)}${unit} (no new release since ${tracking.lastObservedDate || 'never'})`;
+    }
+  } else {
+    // Standard threshold comparison
+    breached = evaluateThreshold(config.operator, config.threshold, currentValue);
+    message = breached
+      ? `⚠️ TRIGGERED: ${config.metricName || config.metric} ${opSymbol} ${config.threshold}${unit} (current: ${currentValue.toFixed(2)}${unit})`
+      : `✓ ${config.metricName || config.metric} = ${currentValue.toFixed(2)}${unit} (threshold: ${opSymbol} ${config.threshold}${unit})`;
+  }
 
   return {
     signal,
@@ -290,13 +409,18 @@ async function triggerSignal(
     const previousStatus = signal.status;
 
     // 2. Create validation_status_history entry
+    const isOnRelease = config.operator.toLowerCase() === 'on_release';
+    const evidenceSummary = isOnRelease
+      ? `New data release detected: ${config.metricName || config.metric} = ${result.currentValue.toFixed(2)}`
+      : `Automated threshold breach: ${config.metricName || config.metric} ${getOperatorSymbol(config.operator)} ${config.threshold}. Current value: ${result.currentValue.toFixed(2)}`;
+
     await db.insert(validationStatusHistory).values({
-      validationPointId: signal.id,
+      signalId: signal.id,
       previousStatus,
       newStatus: 'triggered',
       evidence: {
         source: config.dataSource === 'fred' ? 'FRED' : 'IBKR/Massive',
-        summary: `Automated threshold breach: ${config.metricName || config.metric} ${getOperatorSymbol(config.operator)} ${config.threshold}. Current value: ${result.currentValue.toFixed(2)}`,
+        summary: evidenceSummary,
         link:
           config.dataSource === 'fred'
             ? `https://fred.stlouisfed.org/series/${config.metric}`
@@ -348,10 +472,15 @@ async function triggerSignal(
               recommendedAction: 'Assess impact on thesis',
             },
           ],
-          keyFindings: [
-            `${signal.type === 'confirmation' ? 'Confirmation' : 'Warning'} signal triggered`,
-            `${config.metricName || config.metric} ${getOperatorSymbol(config.operator)} ${config.threshold} (current: ${result.currentValue.toFixed(2)})`,
-          ],
+          keyFindings: isOnRelease
+            ? [
+                `${signal.type === 'confirmation' ? 'Confirmation' : 'Warning'} signal triggered - new data release`,
+                `${config.metricName || config.metric}: ${result.currentValue.toFixed(2)} (new monthly release)`,
+              ]
+            : [
+                `${signal.type === 'confirmation' ? 'Confirmation' : 'Warning'} signal triggered`,
+                `${config.metricName || config.metric} ${getOperatorSymbol(config.operator)} ${config.threshold} (current: ${result.currentValue.toFixed(2)})`,
+              ],
           suggestedNextSteps: [
             'Review the triggered signal against thesis assumptions',
             'Assess whether this changes thesis conviction',
@@ -573,10 +702,12 @@ async function runMonitoring(dryRun: boolean): Promise<MonitoringRunResult> {
 // ============================================================================
 
 let VERBOSE = false;
+let DRY_RUN = false;
 
 async function main() {
-  const dryRun = process.argv.includes('--dry-run');
+  DRY_RUN = process.argv.includes('--dry-run');
   VERBOSE = process.argv.includes('--verbose');
+  const dryRun = DRY_RUN; // Local alias for existing code
 
   try {
     const result = await runMonitoring(dryRun);

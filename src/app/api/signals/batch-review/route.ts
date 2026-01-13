@@ -19,7 +19,7 @@ import { getAssetThesisById } from '@/db/queries/assetTheses';
  *   thesisType?: 'macro' | 'asset',  // Required for bulk actions
  *   modifications?: {         // Optional modifications when accepting
  *     statement?: string,
- *     rationale?: string,
+ *     notes?: string,
  *     importance?: 'critical' | 'significant' | 'supporting',
  *   }
  * }
@@ -32,7 +32,7 @@ interface BatchReviewBody {
   thesisType?: 'macro' | 'asset';
   modifications?: {
     statement?: string;
-    rationale?: string;
+    notes?: string;
     importance?: 'critical' | 'significant' | 'supporting';
     // Note: category is NOT modifiable directly - it's derived from explicitDetails
     // Category becomes 'data_driven' only when explicitDetails is configured
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         };
 
         if (modifications?.statement) updateValues.statement = modifications.statement;
-        if (modifications?.rationale) updateValues.rationale = modifications.rationale;
+        if (modifications?.notes) updateValues.notes = modifications.notes;
         if (modifications?.importance) updateValues.importance = modifications.importance;
         // Note: category is NOT modified directly - only set to 'data_driven' when explicitDetails provided
 

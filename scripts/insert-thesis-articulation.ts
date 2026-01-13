@@ -75,10 +75,11 @@ interface ArticulationInput {
 interface SignalInput {
   type: 'confirmation' | 'warning' | 'validation' | 'invalidation'; // Support both old and new type values
   statement: string;
-  rationale: string;
+  notes?: string; // New simplified field (replaces rationale, judgmentDetails, responseProtocol)
+  rationale?: string; // @deprecated - migrated to notes
   category?: 'judgment' | 'data_driven' | 'explicit' | 'judgment_required'; // Optional - defaults to 'judgment'
   importance: 'critical' | 'significant' | 'supporting';
-  timeframe: 'immediate' | 'medium_term' | 'secular';
+  timeframe?: 'immediate' | 'medium_term' | 'secular'; // @deprecated
   status?: 'not_triggered' | 'recommended'; // Default: 'recommended' for AI-generated signals
   explicitDetails?: {
     metric: string;
@@ -89,16 +90,16 @@ interface SignalInput {
     operator?: string;
     value?: number;
   };
-  judgmentDetails?: {
+  judgmentDetails?: { // @deprecated - migrated to notes
     observableProxies: string[];
     judgmentCriteria: string;
     reviewFrequency: string;
   };
-  responseProtocol: {
+  responseProtocol?: { // @deprecated - migrated to notes
     description: string;
     escalation?: 'review_thesis' | 'reduce_exposure' | 'exit' | 'increase_exposure';
   };
-  linkedClaimIds: string[];
+  linkedClaimIds?: string[];
   dependentThesisId?: string;
   dependentThesisType?: 'macro' | 'asset';
   dependentThesisCondition?: 'invalidated' | 'confidence_drops' | 'status_changes';
@@ -270,6 +271,20 @@ async function main() {
     return 'judgment';
   };
 
+  // Helper to merge deprecated fields into notes
+  const buildNotes = (sig: SignalInput): string | null => {
+    // If notes is provided directly, use it
+    if (sig.notes) return sig.notes;
+
+    // Otherwise, merge deprecated fields
+    const parts: string[] = [];
+    if (sig.rationale) parts.push(`Rationale: ${sig.rationale}`);
+    if (sig.responseProtocol?.description) parts.push(`Response: ${sig.responseProtocol.description}`);
+    if (sig.judgmentDetails?.judgmentCriteria) parts.push(`Judgment Criteria: ${sig.judgmentDetails.judgmentCriteria}`);
+
+    return parts.length > 0 ? parts.join('\n\n') : null;
+  };
+
   if (signals.length > 0) {
     const signalsToInsert = signals.map((sig) => ({
       thesisId,
@@ -277,14 +292,15 @@ async function main() {
       articulationId: insertedArticulation.id,
       type: normalizeType(sig.type),
       statement: sig.statement,
-      rationale: sig.rationale,
+      notes: buildNotes(sig), // New simplified field
+      rationale: sig.rationale || null, // @deprecated - kept for backwards compatibility
       category: normalizeCategory(sig.category), // Always 'judgment' until user configures data trigger
       importance: sig.importance,
-      timeframe: sig.timeframe,
+      timeframe: sig.timeframe || null, // @deprecated
       explicitDetails: null, // Never pre-populate - user must configure via UI
-      judgmentDetails: sig.judgmentDetails || null,
-      responseProtocol: sig.responseProtocol,
-      linkedClaimIds: sig.linkedClaimIds,
+      judgmentDetails: sig.judgmentDetails || null, // @deprecated
+      responseProtocol: sig.responseProtocol || null, // @deprecated
+      linkedClaimIds: sig.linkedClaimIds || [],
       dependentThesisId: sig.dependentThesisId || null,
       dependentThesisType: sig.dependentThesisType || null,
       dependentThesisCondition: sig.dependentThesisCondition || null,

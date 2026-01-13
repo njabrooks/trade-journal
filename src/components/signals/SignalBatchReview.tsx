@@ -4,12 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Loader2,
   Check,
   X,
-  ChevronDown,
-  ChevronRight,
   Target,
   Scale,
   Edit2,
@@ -18,7 +15,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import type { Signal } from '@/db/schema';
 import { SignalConfigForm, type ExplicitDetails } from './SignalConfigForm';
@@ -33,7 +29,7 @@ interface SignalBatchReviewProps {
 interface SignalWithModifications extends Signal {
   pendingModifications?: {
     statement?: string;
-    rationale?: string;
+    notes?: string;
     importance?: 'critical' | 'significant' | 'supporting';
   };
 }
@@ -47,7 +43,6 @@ export function SignalBatchReview({
   const [signals, setSignals] = useState<SignalWithModifications[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [configuringSignal, setConfiguringSignal] = useState<Signal | null>(null);
 
@@ -72,17 +67,6 @@ export function SignalBatchReview({
   useEffect(() => {
     fetchSignals();
   }, [fetchSignals]);
-
-  // Toggle expanded state
-  const toggleExpanded = (id: string) => {
-    const next = new Set(expandedIds);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-    setExpandedIds(next);
-  };
 
   // Handle single signal accept
   const handleAccept = async (signalId: string, modifications?: SignalWithModifications['pendingModifications']) => {
@@ -377,33 +361,16 @@ export function SignalBatchReview({
       {/* Signals List */}
       <div className="divide-y divide-slate-100">
         {signals.map((signal) => {
-          const isExpanded = expandedIds.has(signal.id);
           const isEditing = editingId === signal.id;
           const isProcessing = processingIds.has(signal.id);
-          const responseProtocol = signal.responseProtocol as {
-            description?: string;
-            escalation?: string;
-          } | null;
 
           return (
             <div key={signal.id} className={`px-4 py-3 ${isProcessing ? 'opacity-50' : ''}`}>
-              {/* Signal Header */}
+              {/* Signal Card */}
               <div className="flex items-start gap-3">
-                <button
-                  onClick={() => toggleExpanded(signal.id)}
-                  className="mt-0.5 text-slate-400 hover:text-slate-600"
-                  disabled={isProcessing}
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  )}
-                </button>
-
                 <div className="flex-1 min-w-0">
-                  {/* Badges */}
-                  <div className="flex items-start gap-2 flex-wrap">
+                  {/* Badges - simplified */}
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
                     {/* Type badge */}
                     <span
                       className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded ${
@@ -421,7 +388,7 @@ export function SignalBatchReview({
                     {/* Importance badge */}
                     <span
                       className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded border ${
-                        importanceColors[signal.importance]
+                        importanceColors[signal.pendingModifications?.importance || signal.importance]
                       }`}
                     >
                       {signal.pendingModifications?.importance || signal.importance}
@@ -432,12 +399,6 @@ export function SignalBatchReview({
                       {categoryIcons[signal.category]}
                       {signal.category.replace('_', ' ')}
                     </span>
-
-                    {/* Recommended badge */}
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                      <AlertTriangle className="w-3 h-3 mr-1" />
-                      Pending Review
-                    </Badge>
                   </div>
 
                   {/* Statement */}
@@ -445,64 +406,46 @@ export function SignalBatchReview({
                     <textarea
                       value={signal.pendingModifications?.statement ?? signal.statement}
                       onChange={(e) => updateModifications(signal.id, { statement: e.target.value })}
-                      className="mt-2 w-full px-2 py-1 text-sm border border-slate-200 rounded resize-none"
+                      className="w-full px-2 py-1.5 text-sm border border-slate-200 rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                       rows={2}
+                      placeholder="Signal statement..."
                     />
                   ) : (
-                    <p className="mt-1.5 text-sm text-slate-900">
+                    <p className="text-sm text-slate-900 font-medium">
                       {signal.pendingModifications?.statement || signal.statement}
                     </p>
                   )}
 
-                  {/* Rationale */}
-                  {(isExpanded || isEditing) && (
+                  {/* Notes - shown inline (not behind expand) */}
+                  {isEditing ? (
                     <div className="mt-2">
-                      <span className="text-xs font-medium text-slate-500">Rationale:</span>
-                      {isEditing ? (
-                        <textarea
-                          value={signal.pendingModifications?.rationale ?? signal.rationale ?? ''}
-                          onChange={(e) => updateModifications(signal.id, { rationale: e.target.value })}
-                          className="mt-1 w-full px-2 py-1 text-xs border border-slate-200 rounded resize-none"
-                          rows={3}
-                        />
-                      ) : (
-                        <p className="mt-0.5 text-xs text-slate-600">{signal.rationale}</p>
-                      )}
+                      <textarea
+                        value={signal.pendingModifications?.notes ?? signal.notes ?? ''}
+                        onChange={(e) => updateModifications(signal.id, { notes: e.target.value })}
+                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        rows={3}
+                        placeholder="Notes (optional)..."
+                      />
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs text-slate-500">Importance:</span>
+                        <select
+                          value={signal.pendingModifications?.importance || signal.importance}
+                          onChange={(e) =>
+                            updateModifications(signal.id, {
+                              importance: e.target.value as 'critical' | 'significant' | 'supporting',
+                            })
+                          }
+                          className="text-xs border border-slate-200 rounded px-2 py-1"
+                        >
+                          <option value="critical">Critical</option>
+                          <option value="significant">Significant</option>
+                          <option value="supporting">Supporting</option>
+                        </select>
+                      </div>
                     </div>
-                  )}
-
-                  {/* Response Protocol (when expanded) */}
-                  {isExpanded && responseProtocol?.description && (
-                    <div className="mt-2">
-                      <span className="text-xs font-medium text-slate-500">Response Protocol:</span>
-                      <p className="mt-0.5 text-xs text-slate-600">{responseProtocol.description}</p>
-                      {responseProtocol.escalation && (
-                        <span className="inline-flex px-1.5 py-0.5 mt-1 text-xs bg-slate-100 text-slate-600 rounded">
-                          Escalation: {responseProtocol.escalation.replace('_', ' ')}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Importance selector (when editing) */}
-                  {isEditing && (
-                    <div className="mt-2">
-                      <span className="text-xs font-medium text-slate-500">Importance:</span>
-                      <select
-                        value={signal.pendingModifications?.importance || signal.importance}
-                        onChange={(e) =>
-                          updateModifications(signal.id, {
-                            importance: e.target.value as 'critical' | 'significant' | 'supporting',
-                          })
-                        }
-                        className="ml-2 text-xs border-slate-200 rounded px-1.5 py-0.5"
-                      >
-                        <option value="critical">Critical</option>
-                        <option value="significant">Significant</option>
-                        <option value="supporting">Supporting</option>
-                      </select>
-                    </div>
-                  )}
+                  ) : signal.notes ? (
+                    <p className="mt-1 text-xs text-slate-500 line-clamp-2">{signal.notes}</p>
+                  ) : null}
                 </div>
 
                 {/* Actions */}

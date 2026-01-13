@@ -54,6 +54,9 @@ const FRED_SERIES = [
   { id: 'RSAFS', name: 'Retail Sales', unit: '%', category: 'Consumer' },
   { id: 'UMCSENT', name: 'Consumer Sentiment', unit: 'index', category: 'Consumer' },
   { id: 'INDPRO', name: 'Industrial Production', unit: '%', category: 'Manufacturing' },
+  { id: 'NAPM', name: 'ISM Manufacturing PMI', unit: 'index', category: 'Manufacturing' },
+  { id: 'NAPMNOI', name: 'ISM Manufacturing New Orders', unit: 'index', category: 'Manufacturing' },
+  { id: 'NAPMEI', name: 'ISM Manufacturing Employment', unit: 'index', category: 'Manufacturing' },
 ];
 
 // IV Data metrics
@@ -83,6 +86,7 @@ const OPERATORS = [
   { id: 'eq', label: 'Equal to', symbol: '=' },
   { id: 'crosses_above', label: 'Crosses above', symbol: '↗' },
   { id: 'crosses_below', label: 'Crosses below', symbol: '↘' },
+  { id: 'on_release', label: 'On new data release', symbol: '📅', description: 'Triggers when new data point is published (ideal for monthly economic data)' },
 ];
 
 // Duration periods
@@ -94,19 +98,15 @@ const DURATION_PERIODS = [
   { id: 'quarters', label: 'consecutive quarters' },
 ];
 
-// Check frequencies
-const CHECK_FREQUENCIES = [
-  { id: 'daily', label: 'Daily', description: 'Check every day' },
-  { id: 'weekly', label: 'Weekly', description: 'Check every week' },
-  { id: 'monthly', label: 'Monthly', description: 'Check once a month' },
-];
+// Check frequency - always daily (removed UI options for simplicity)
+// The field is kept for backwards compatibility with existing configs
 
 export interface ExplicitDetails {
   dataSource: 'fred' | 'iv_data' | 'price_feed';
   metric: string;
   metricName?: string;
   operator: string;
-  threshold: number;
+  threshold?: number; // Optional for 'on_release' operator
   thresholdUnit?: string;
   duration?: {
     count: number;
@@ -114,6 +114,8 @@ export interface ExplicitDetails {
   };
   checkFrequency: 'daily' | 'weekly' | 'monthly';
   ticker?: string; // For IV/Price data
+  // For on_release operator: stores last observed data date to detect new releases
+  lastObservedDate?: string;
 }
 
 interface SignalConfigFormProps {
@@ -171,8 +173,8 @@ export function SignalConfigForm({
   const [durationPeriod, setDurationPeriod] = useState(
     existingConfig?.duration?.period || 'readings'
   );
-  const [checkFrequency, setCheckFrequency] = useState<'daily' | 'weekly' | 'monthly'>(
-    existingConfig?.checkFrequency || 'weekly'
+  const [checkFrequency] = useState<'daily' | 'weekly' | 'monthly'>(
+    existingConfig?.checkFrequency || 'daily'
   );
   const [ticker, setTicker] = useState(existingConfig?.ticker || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -198,17 +200,24 @@ export function SignalConfigForm({
 
   // Build preview string
   const previewCondition = useMemo(() => {
-    if (!metric || !threshold) return null;
+    // For on_release, only need metric selected
+    if (!metric) return null;
+    if (operator !== 'on_release' && !threshold) return null;
 
     const metricLabel = selectedMetric?.name || metric;
     const op = OPERATORS.find((o) => o.id === operator);
     const unit = selectedMetric?.unit || '';
     const tickerPrefix = dataSource !== 'fred' && ticker ? `${ticker} ` : '';
 
-    let condition = `${tickerPrefix}${metricLabel} ${op?.symbol || operator} ${threshold}${unit}`;
+    let condition: string;
+    if (operator === 'on_release') {
+      condition = `Trigger when ${tickerPrefix}${metricLabel} releases new data`;
+    } else {
+      condition = `${tickerPrefix}${metricLabel} ${op?.symbol || operator} ${threshold}${unit}`;
 
-    if (parseInt(durationCount) > 1) {
-      condition += ` for ${durationCount} ${DURATION_PERIODS.find((p) => p.id === durationPeriod)?.label}`;
+      if (parseInt(durationCount) > 1) {
+        condition += ` for ${durationCount} ${DURATION_PERIODS.find((p) => p.id === durationPeriod)?.label}`;
+      }
     }
 
     return condition;
@@ -236,7 +245,8 @@ export function SignalConfigForm({
       return;
     }
 
-    if (!threshold) {
+    // Threshold only required for non on_release operators
+    if (operator !== 'on_release' && !threshold) {
       alert('Please enter a threshold value');
       return;
     }
@@ -254,10 +264,14 @@ export function SignalConfigForm({
         metric,
         metricName: selectedMetric?.name,
         operator,
-        threshold: parseFloat(threshold),
         thresholdUnit: selectedMetric?.unit,
         checkFrequency,
       };
+
+      // Only include threshold for non on_release operators
+      if (operator !== 'on_release' && threshold) {
+        config.threshold = parseFloat(threshold);
+      }
 
       if (parseInt(durationCount) > 1) {
         config.duration = {
@@ -395,7 +409,7 @@ export function SignalConfigForm({
           {/* Criteria Builder */}
           <div className="space-y-2">
             <Label>Trigger Condition *</Label>
-            <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
+            <div className={`grid ${operator === 'on_release' ? 'grid-cols-1' : 'grid-cols-[1fr_auto_1fr]'} gap-3 items-center`}>
               {/* Operator */}
               <NativeSelect value={operator} onChange={setOperator}>
                 {OPERATORS.map((op) => (
@@ -405,32 +419,44 @@ export function SignalConfigForm({
                 ))}
               </NativeSelect>
 
-              {/* Threshold */}
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="any"
-                  value={threshold}
-                  onChange={(e) => setThreshold(e.target.value)}
-                  placeholder="Value"
-                  className="w-24"
-                />
-                {selectedMetric?.unit && (
-                  <span className="text-sm text-slate-500">{selectedMetric.unit}</span>
-                )}
-              </div>
+              {/* Threshold - hidden for on_release operator */}
+              {operator !== 'on_release' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="any"
+                      value={threshold}
+                      onChange={(e) => setThreshold(e.target.value)}
+                      placeholder="Value"
+                      className="w-24"
+                    />
+                    {selectedMetric?.unit && (
+                      <span className="text-sm text-slate-500">{selectedMetric.unit}</span>
+                    )}
+                  </div>
 
-              {/* Visual indicator */}
-              <div className="flex items-center justify-end">
-                {operator.includes('above') || operator === 'gt' || operator === 'gte' ? (
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
-                ) : operator.includes('below') || operator === 'lt' || operator === 'lte' ? (
-                  <TrendingDown className="w-5 h-5 text-red-500" />
-                ) : (
-                  <Activity className="w-5 h-5 text-blue-500" />
-                )}
-              </div>
+                  {/* Visual indicator */}
+                  <div className="flex items-center justify-end">
+                    {operator.includes('above') || operator === 'gt' || operator === 'gte' ? (
+                      <TrendingUp className="w-5 h-5 text-emerald-500" />
+                    ) : operator.includes('below') || operator === 'lt' || operator === 'lte' ? (
+                      <TrendingDown className="w-5 h-5 text-red-500" />
+                    ) : (
+                      <Activity className="w-5 h-5 text-blue-500" />
+                    )}
+                  </div>
+                </>
+              )}
             </div>
+
+            {/* Explanation for on_release */}
+            {operator === 'on_release' && (
+              <p className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg mt-2">
+                📅 Triggers when new data is released (e.g., monthly PMI update), regardless of value.
+                Ideal for economic indicators with infrequent releases.
+              </p>
+            )}
           </div>
 
           {/* Duration */}
@@ -458,28 +484,6 @@ export function SignalConfigForm({
             </div>
           </div>
 
-          {/* Check Frequency */}
-          <div className="space-y-2">
-            <Label>Check Frequency *</Label>
-            <div className="grid grid-cols-3 gap-3">
-              {CHECK_FREQUENCIES.map((freq) => (
-                <button
-                  key={freq.id}
-                  type="button"
-                  onClick={() => setCheckFrequency(freq.id as 'daily' | 'weekly' | 'monthly')}
-                  className={`px-4 py-3 rounded-lg border-2 transition-colors ${
-                    checkFrequency === freq.id
-                      ? 'border-blue-500 bg-blue-50 text-blue-900'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="text-sm font-medium">{freq.label}</div>
-                  <div className="text-xs text-slate-500 mt-1">{freq.description}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Preview */}
           {previewCondition && (
             <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
@@ -488,7 +492,7 @@ export function SignalConfigForm({
               </Label>
               <p className="mt-2 text-sm font-medium text-slate-800">{previewCondition}</p>
               <p className="mt-1 text-xs text-slate-500">
-                Checked {checkFrequency === 'daily' ? 'every day' : checkFrequency === 'weekly' ? 'every week' : 'monthly'}
+                Checked daily at 08:00 UTC
               </p>
             </div>
           )}

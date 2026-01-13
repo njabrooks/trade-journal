@@ -90,35 +90,15 @@ Based on the thesis and claims, create a JSON file at /tmp/articulation-data.jso
     {
       "type": "confirmation",
       "statement": "What would confirm this thesis (be specific and measurable where possible)",
-      "rationale": "Why this confirms the thesis",
       "importance": "critical",
-      "timeframe": "medium_term",
-      "judgmentDetails": {
-        "observableProxies": ["What to observe", "Data points to watch"],
-        "judgmentCriteria": "How to evaluate if this signal has triggered",
-        "reviewFrequency": "monthly"
-      },
-      "responseProtocol": {
-        "description": "What to do if triggered",
-        "escalation": "increase_exposure"
-      },
+      "notes": "Why this confirms the thesis and what to do if triggered",
       "linkedClaimIds": []
     },
     {
       "type": "warning",
       "statement": "What would warn against this thesis (be specific and measurable where possible)",
-      "rationale": "Why this warns against the thesis",
       "importance": "critical",
-      "timeframe": "medium_term",
-      "judgmentDetails": {
-        "observableProxies": ["What to observe", "Data points to watch"],
-        "judgmentCriteria": "How to evaluate if this signal has triggered",
-        "reviewFrequency": "quarterly"
-      },
-      "responseProtocol": {
-        "description": "What to do if triggered",
-        "escalation": "review_thesis"
-      },
+      "notes": "Why this warns against the thesis and what to do if triggered",
       "linkedClaimIds": []
     }
   ]
@@ -131,8 +111,8 @@ IMPORTANT for signals:
 - All signals are created as "judgment" by default - users can configure data-driven triggers later via the UI
 - Write statements that are specific and measurable where possible (e.g., "VIX sustains above 30 for 5+ days" not "Market volatility increases")
 - "importance": "critical" | "significant" | "supporting"
-- "timeframe": "immediate" | "medium_term" | "secular"
 - Include 5-8 confirmation signals and 5-8 warning signals
+- Use "notes" to combine rationale and response guidance in a single freeform field
 - Use actual claim IDs from Step 1 in claimIdsUsed and linkedClaimIds
 
 ## Step 3: Store to database
