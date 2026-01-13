@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { claimThesisMappings, mainClaims } from '@/db/schema';
-import { eq, and, or } from 'drizzle-orm';
+import { claimThesisMappings, mainClaims, macroTheses, assetTheses } from '@/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
+import { logToJournal } from '@/lib/workflow';
 
 /**
  * POST /api/research/claims/link-to-entities
@@ -108,6 +109,65 @@ export async function POST(request: NextRequest) {
       })
       .where(eq(mainClaims.id, claimId));
 
+    // Log to journal for each linked thesis/view
+    // Fetch thesis titles for logging
+    if (thesisIds.length > 0) {
+      const theses = await db
+        .select({ id: macroTheses.id, title: macroTheses.title })
+        .from(macroTheses)
+        .where(inArray(macroTheses.id, thesisIds));
+
+      for (const thesis of theses) {
+        await logToJournal({
+          objectType: 'macro_thesis',
+          objectId: thesis.id,
+          objectTitle: thesis.title,
+          actionType: 'claim_linked',
+          actionDescription: `Claim linked (${relationshipType}): "${claim.claim.substring(0, 100)}${claim.claim.length > 100 ? '...' : ''}"`,
+          previousState: {},
+          newState: {
+            mappingType: relationshipType,
+          },
+          source: 'user',
+          metadata: {
+            mainClaimId: claimId,
+            claimTitle: claim.title,
+            claimCategory: claim.category,
+            sourceInsightId: claim.sourceInsightId,
+          },
+        });
+      }
+    }
+
+    // Fetch view titles for logging
+    if (viewIds.length > 0) {
+      const views = await db
+        .select({ id: assetTheses.id, title: assetTheses.title })
+        .from(assetTheses)
+        .where(inArray(assetTheses.id, viewIds));
+
+      for (const view of views) {
+        await logToJournal({
+          objectType: 'asset_thesis',
+          objectId: view.id,
+          objectTitle: view.title,
+          actionType: 'claim_linked',
+          actionDescription: `Claim linked (${relationshipType}): "${claim.claim.substring(0, 100)}${claim.claim.length > 100 ? '...' : ''}"`,
+          previousState: {},
+          newState: {
+            mappingType: relationshipType,
+          },
+          source: 'user',
+          metadata: {
+            mainClaimId: claimId,
+            claimTitle: claim.title,
+            claimCategory: claim.category,
+            sourceInsightId: claim.sourceInsightId,
+          },
+        });
+      }
+    }
+
     // Compute triage for all linked theses/views
     for (const thesisId of thesisIds) {
       await computeThesisTriageForThesis(thesisId, 'macro');
@@ -170,8 +230,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete the mapping based on target type
+    // Delete the mapping based on target type and log to journal
     if (targetType === 'macroThesis') {
+      // Fetch thesis title for logging
+      const [thesis] = await db
+        .select({ id: macroTheses.id, title: macroTheses.title })
+        .from(macroTheses)
+        .where(eq(macroTheses.id, targetId))
+        .limit(1);
+
       await db
         .delete(claimThesisMappings)
         .where(
@@ -180,7 +247,33 @@ export async function DELETE(request: NextRequest) {
             eq(claimThesisMappings.macroThesisId, targetId)
           )
         );
+
+      // Log unlink to journal
+      if (thesis) {
+        await logToJournal({
+          objectType: 'macro_thesis',
+          objectId: targetId,
+          objectTitle: thesis.title,
+          actionType: 'claim_unlinked',
+          actionDescription: `Claim unlinked: "${claim.claim.substring(0, 100)}${claim.claim.length > 100 ? '...' : ''}"`,
+          previousState: { linked: true },
+          newState: { linked: false },
+          source: 'user',
+          metadata: {
+            mainClaimId: claimId,
+            claimTitle: claim.title,
+            claimCategory: claim.category,
+          },
+        });
+      }
     } else if (targetType === 'assetThesis') {
+      // Fetch view title for logging
+      const [view] = await db
+        .select({ id: assetTheses.id, title: assetTheses.title })
+        .from(assetTheses)
+        .where(eq(assetTheses.id, targetId))
+        .limit(1);
+
       await db
         .delete(claimThesisMappings)
         .where(
@@ -189,6 +282,25 @@ export async function DELETE(request: NextRequest) {
             eq(claimThesisMappings.assetThesisId, targetId)
           )
         );
+
+      // Log unlink to journal
+      if (view) {
+        await logToJournal({
+          objectType: 'asset_thesis',
+          objectId: targetId,
+          objectTitle: view.title,
+          actionType: 'claim_unlinked',
+          actionDescription: `Claim unlinked: "${claim.claim.substring(0, 100)}${claim.claim.length > 100 ? '...' : ''}"`,
+          previousState: { linked: true },
+          newState: { linked: false },
+          source: 'user',
+          metadata: {
+            mainClaimId: claimId,
+            claimTitle: claim.title,
+            claimCategory: claim.category,
+          },
+        });
+      }
     } else {
       return NextResponse.json(
         { error: 'Invalid targetType. Must be: macroThesis or assetThesis' },
