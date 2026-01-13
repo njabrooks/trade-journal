@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -10,9 +10,7 @@ import {
 import { ThesisArticulationDisplay } from './ThesisArticulationDisplay';
 import { ValidationPointsList } from './ValidationPointsList';
 import { UpdateValidationStatusModal } from './UpdateValidationStatusModal';
-import { MonitoringSpecForm } from './MonitoringSpecForm';
-import { ManualCheckDialog } from './ManualCheckDialog';
-import type { ThesisArticulation, ValidationPoint, MonitoringSpec, MonitoringEvent } from '@/db/schema';
+import type { ThesisArticulation, ValidationPoint } from '@/db/schema';
 
 interface ThesisSynthesisSectionProps {
   thesisId: string;
@@ -32,16 +30,6 @@ export function ThesisSynthesisSection({
   const [validationPoints, setValidationPoints] = useState(initialPoints);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Monitoring state
-  const [monitoringSpecs, setMonitoringSpecs] = useState<Array<{
-    spec: MonitoringSpec & { lastCheckEvent?: MonitoringEvent | null };
-    validationPoint: ValidationPoint;
-  }>>([]);
-  const [isLoadingSpecs, setIsLoadingSpecs] = useState(false);
-  const [isSpecFormOpen, setIsSpecFormOpen] = useState(false);
-  const [editingSpec, setEditingSpec] = useState<MonitoringSpec | null>(null);
-  const [selectedSpecForCheck, setSelectedSpecForCheck] = useState<MonitoringSpec | null>(null);
 
   // Default both sections expanded if articulation exists
   const [expandedSections, setExpandedSections] = useState<string[]>(
@@ -104,121 +92,6 @@ export function ThesisSynthesisSection({
     // TODO: Implement history view modal
   };
 
-  // Fetch monitoring specs on mount
-  useEffect(() => {
-    const fetchSpecs = async () => {
-      setIsLoadingSpecs(true);
-      try {
-        const response = await fetch(
-          `/api/monitoring/specs?thesisId=${thesisId}&thesisType=${thesisType}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setMonitoringSpecs(data.specs || []);
-        }
-      } catch (error) {
-        console.error('Error fetching monitoring specs:', error);
-      } finally {
-        setIsLoadingSpecs(false);
-      }
-    };
-
-    fetchSpecs();
-  }, [thesisId, thesisType]);
-
-  // Monitoring handlers
-  const handleCreateSpec = (validationPointId?: string) => {
-    setEditingSpec(null);
-    setIsSpecFormOpen(true);
-  };
-
-  const handleEditSpec = (specId: string) => {
-    const item = monitoringSpecs.find(s => s.spec.id === specId);
-    if (item) {
-      setEditingSpec(item.spec);
-      setIsSpecFormOpen(true);
-    }
-  };
-
-  const handleCloseSpecForm = () => {
-    setIsSpecFormOpen(false);
-    setEditingSpec(null);
-  };
-
-  const handleSubmitSpec = async (specData: any) => {
-    const url = editingSpec
-      ? `/api/monitoring/specs/${editingSpec.id}`
-      : '/api/monitoring/specs';
-    const method = editingSpec ? 'PUT' : 'POST';
-
-    const saveResponse = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(specData),
-    });
-
-    if (!saveResponse.ok) {
-      const error = await saveResponse.json();
-      throw new Error(error.error || 'Failed to save monitoring spec');
-    }
-
-    // Refresh specs list after create/update
-    const refreshResponse = await fetch(
-      `/api/monitoring/specs?thesisId=${thesisId}&thesisType=${thesisType}`
-    );
-    if (refreshResponse.ok) {
-      const data = await refreshResponse.json();
-      setMonitoringSpecs(data.specs || []);
-    }
-  };
-
-  const handleRunCheck = (specId: string) => {
-    const item = monitoringSpecs.find(s => s.spec.id === specId);
-    if (item) {
-      setSelectedSpecForCheck(item.spec);
-    }
-  };
-
-  const handleCloseCheckDialog = () => {
-    setSelectedSpecForCheck(null);
-  };
-
-  const handleStatusUpdate = async (validationPointId: string) => {
-    // Refresh validation points and specs after status update
-    try {
-      // Refresh validation points (this would need to be fetched from parent or API)
-      // For now, we'll just refresh specs
-      const response = await fetch(
-        `/api/monitoring/specs?thesisId=${thesisId}&thesisType=${thesisType}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setMonitoringSpecs(data.specs || []);
-      }
-    } catch (error) {
-      console.error('Error refreshing after status update:', error);
-    }
-  };
-
-  const handleToggleEnabled = async (specId: string, enabled: boolean) => {
-    const response = await fetch(`/api/monitoring/specs/${specId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled }),
-    });
-
-    if (response.ok) {
-      // Refresh specs list
-      const refreshResponse = await fetch(
-        `/api/monitoring/specs?thesisId=${thesisId}&thesisType=${thesisType}`
-      );
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-        setMonitoringSpecs(data.specs || []);
-      }
-    }
-  };
-
   // If no articulation exists, show placeholder
   if (!articulation) {
     return (
@@ -238,24 +111,13 @@ export function ThesisSynthesisSection({
 
         {/* Show validation points even without articulation (in case they exist from partial run) */}
         {validationPoints.length > 0 && (
-          <>
-            {isLoadingSpecs ? (
-              <div className="text-center py-8 text-slate-500">Loading monitoring specs...</div>
-            ) : (
-              <ValidationPointsList
-                validationPoints={validationPoints}
-                thesisId={thesisId}
-                thesisType={thesisType}
-                onUpdateStatus={handleUpdateStatus}
-                onViewHistory={handleViewHistory}
-                monitoringSpecs={monitoringSpecs}
-                onCreateSpec={handleCreateSpec}
-                onEditSpec={handleEditSpec}
-                onRunCheck={handleRunCheck}
-                onToggleEnabled={handleToggleEnabled}
-              />
-            )}
-          </>
+          <ValidationPointsList
+            validationPoints={validationPoints}
+            thesisId={thesisId}
+            thesisType={thesisType}
+            onUpdateStatus={handleUpdateStatus}
+            onViewHistory={handleViewHistory}
+          />
         )}
 
         {selectedPoint && (
@@ -300,22 +162,13 @@ export function ThesisSynthesisSection({
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4">
-            {isLoadingSpecs ? (
-              <div className="text-center py-8 text-slate-500">Loading monitoring specs...</div>
-            ) : (
-              <ValidationPointsList
-                validationPoints={validationPoints}
-                thesisId={thesisId}
-                thesisType={thesisType}
-                onUpdateStatus={handleUpdateStatus}
-                onViewHistory={handleViewHistory}
-                monitoringSpecs={monitoringSpecs}
-                onCreateSpec={handleCreateSpec}
-                onEditSpec={handleEditSpec}
-                onRunCheck={handleRunCheck}
-                onToggleEnabled={handleToggleEnabled}
-              />
-            )}
+            <ValidationPointsList
+              validationPoints={validationPoints}
+              thesisId={thesisId}
+              thesisType={thesisType}
+              onUpdateStatus={handleUpdateStatus}
+              onViewHistory={handleViewHistory}
+            />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
@@ -327,34 +180,6 @@ export function ThesisSynthesisSection({
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onSubmit={handleSubmitStatus}
-        />
-      )}
-
-      {/* Monitoring Spec Form */}
-      {isSpecFormOpen && (
-        <MonitoringSpecForm
-          validationPoint={
-            editingSpec
-              ? validationPoints.find((p) => p.id === editingSpec.signalId)!
-              : validationPoints[0]
-          }
-          existingSpec={editingSpec}
-          isOpen={isSpecFormOpen}
-          onClose={handleCloseSpecForm}
-          onSubmit={handleSubmitSpec}
-        />
-      )}
-
-      {/* Manual Check Dialog */}
-      {selectedSpecForCheck && (
-        <ManualCheckDialog
-          spec={selectedSpecForCheck}
-          validationPoint={
-            validationPoints.find((p) => p.id === selectedSpecForCheck.signalId)!
-          }
-          isOpen={!!selectedSpecForCheck}
-          onClose={handleCloseCheckDialog}
-          onStatusUpdate={handleStatusUpdate}
         />
       )}
     </div>

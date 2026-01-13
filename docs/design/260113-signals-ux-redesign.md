@@ -250,26 +250,29 @@ The `SignalBatchReview` component exists but is not rendered in `ExpandedTriageD
 
 **Completed**: 2026-01-13
 
-### Phase 4: Streamline Detail Page
+### Phase 4: Streamline Detail Page ✅ COMPLETE
 
 **Goal**: Simpler, focused signal detail view
 
-1. **Simplify ValidationPointDetail.tsx**
-   - Remove/hide: Monitoring section, Events log, Manual check
-   - Keep: Signal card, Criteria card, Status history, Actions
+1. ✅ **Simplify ValidationPointDetail.tsx**
+   - Removed tabs UI, now shows status history directly
+   - Removed MonitoringEventsLog import and state
+   - Updated terminology from 'validation' to 'confirmation'
+   - Kept: Signal card, Criteria card, Status history, Actions
 
-2. **Update page routes**
-   - Keep `/macro-theses/[id]/signals/[signalId]/page.tsx`
-   - Keep `/asset-theses/[id]/signals/[signalId]/page.tsx`
-   - But render simplified detail component
+2. ✅ **Simplify ThesisSynthesisSection.tsx**
+   - Removed all monitoring spec state and handlers (~180 lines)
+   - Removed MonitoringSpecForm and ManualCheckDialog imports
+   - Component reduced from 363 lines to 187 lines
 
-3. **Remove deprecated components**:
-   - `MonitoringSpecForm.tsx`
-   - `MonitoringSpecsList.tsx`
-   - `MonitoringEventsLog.tsx`
-   - `ManualCheckDialog.tsx`
+3. ✅ **Remove deprecated components**:
+   - Deleted `MonitoringSpecForm.tsx` (387 lines)
+   - Deleted `MonitoringSpecsList.tsx` (~200 lines)
+   - Deleted `MonitoringEventsLog.tsx` (383 lines)
+   - Deleted `ManualCheckDialog.tsx` (442 lines)
+   - Updated `index.ts` exports
 
-**Estimated effort**: 1-2 sessions
+**Completed**: 2026-01-13
 
 ### Phase 5: Cleanup & Polish
 
@@ -447,3 +450,4 @@ JOIN signals s ON ms.signal_id = s.id;
 | 2026-01-13 | Phase 1 completed: Fixed triage trigger, integrated SignalBatchReview, terminology fixes |
 | 2026-01-13 | Phase 2 completed: Category migration (judgment/data_driven), code references updated |
 | 2026-01-13 | Phase 3 completed: UnifiedSignalsTable created, SignalsSection & ExpandedTriageDetail updated |
+| 2026-01-13 | Phase 4 completed: Simplified detail page, deleted 4 deprecated monitoring components (~1,400 lines) |

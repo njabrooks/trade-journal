@@ -5,21 +5,17 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   CheckCircle2,
-  XCircle,
   AlertTriangle,
   Eye,
   Clock,
   Target,
   Scale,
   Archive,
-  RefreshCw,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatusTimeline } from './StatusTimeline';
-import { MonitoringEventsLog } from './MonitoringEventsLog';
 import { UpdateValidationStatusModal } from './UpdateValidationStatusModal';
-import type { ValidationPoint, ValidationStatusHistory, MonitoringEvent, MonitoringSpec } from '@/db/schema';
+import type { ValidationPoint, ValidationStatusHistory } from '@/db/schema';
 
 interface ValidationPointDetailProps {
   validationPoint: ValidationPoint;
@@ -47,11 +43,8 @@ export function ValidationPointDetail({
 }: ValidationPointDetailProps) {
   const router = useRouter();
   const [statusHistory, setStatusHistory] = useState<ValidationStatusHistory[]>([]);
-  const [monitoringEvents, setMonitoringEvents] = useState<Array<{ event: MonitoringEvent; spec: MonitoringSpec }>>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'history' | 'events'>('history');
 
   // Fetch status history
   const fetchStatusHistory = async () => {
@@ -71,27 +64,8 @@ export function ValidationPointDetail({
     }
   };
 
-  // Fetch monitoring events
-  const fetchMonitoringEvents = async () => {
-    setIsLoadingEvents(true);
-    try {
-      const response = await fetch(
-        `/api/monitoring/events?validationPointId=${validationPoint.id}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setMonitoringEvents(data.events || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch monitoring events:', error);
-    } finally {
-      setIsLoadingEvents(false);
-    }
-  };
-
   useEffect(() => {
     fetchStatusHistory();
-    fetchMonitoringEvents();
   }, [validationPoint.id]);
 
   const handleUpdateStatus = async (data: {
@@ -176,15 +150,15 @@ export function ValidationPointDetail({
             <div className="flex items-center gap-2 flex-wrap mb-3">
               <span
                 className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded ${
-                  validationPoint.type === 'validation'
+                  validationPoint.type === 'confirmation'
                     ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-red-100 text-red-700'
+                    : 'bg-amber-100 text-amber-700'
                 }`}
               >
-                {validationPoint.type === 'validation' ? (
+                {validationPoint.type === 'confirmation' ? (
                   <CheckCircle2 className="w-4 h-4" />
                 ) : (
-                  <XCircle className="w-4 h-4" />
+                  <AlertTriangle className="w-4 h-4" />
                 )}
                 {validationPoint.type}
               </span>
@@ -373,49 +347,18 @@ export function ValidationPointDetail({
         )}
       </div>
 
-      {/* Tabs for history and events */}
+      {/* Status History */}
       <div className="bg-white rounded-lg border border-slate-200">
-        <div className="border-b border-slate-200">
-          <nav className="flex -mb-px">
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 ${
-                activeTab === 'history'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
-            >
-              Status History
-              <Badge variant="secondary" className="ml-2">
-                {statusHistory.length}
-              </Badge>
-            </button>
-            <button
-              onClick={() => setActiveTab('events')}
-              className={`px-4 py-3 text-sm font-medium border-b-2 ${
-                activeTab === 'events'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-              }`}
-            >
-              Monitoring Events
-              <Badge variant="secondary" className="ml-2">
-                {monitoringEvents.length}
-              </Badge>
-            </button>
-          </nav>
+        <div className="px-4 py-3 border-b border-slate-200">
+          <h3 className="text-sm font-semibold text-slate-900">
+            Status History
+            <span className="ml-2 text-xs font-normal text-slate-500">
+              ({statusHistory.length} {statusHistory.length === 1 ? 'entry' : 'entries'})
+            </span>
+          </h3>
         </div>
-
         <div className="p-4">
-          {activeTab === 'history' ? (
-            <StatusTimeline history={statusHistory} isLoading={isLoadingHistory} />
-          ) : (
-            <MonitoringEventsLog
-              events={monitoringEvents}
-              isLoading={isLoadingEvents}
-              onRefresh={fetchMonitoringEvents}
-            />
-          )}
+          <StatusTimeline history={statusHistory} isLoading={isLoadingHistory} />
         </div>
       </div>
 
