@@ -28,6 +28,7 @@ export interface TriageQueueRecord {
   strategyKey: string | null;
   positionId: string | null;
   accountId: string;
+  direction: string | null; // 'bullish' | 'bearish' | 'neutral'
 }
 
 export interface TriageQueueResult {
@@ -174,6 +175,7 @@ export async function getTriageQueue(
       positionId: triageRecords.positionId,
       accountId: triageRecords.accountId,
       strategyKey: strategies.strategyKey,
+      direction: triageRecords.direction,
     })
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
@@ -196,6 +198,7 @@ export async function getTriageQueue(
     positionId: row.positionId,
     accountId: row.accountId,
     strategyKey: row.strategyKey,
+    direction: row.direction,
   }));
 
   // Deduplicate CONFIRM_STRATEGIES records: keep only the most recent one per strategy
@@ -361,6 +364,7 @@ export async function getTriageQueueForStrategy(
       positionId: triageRecords.positionId,
       accountId: triageRecords.accountId,
       strategyKey: strategies.strategyKey,
+      direction: triageRecords.direction,
     })
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
@@ -383,6 +387,7 @@ export async function getTriageQueueForStrategy(
     positionId: row.positionId,
     accountId: row.accountId,
     strategyKey: row.strategyKey,
+    direction: row.direction,
   }));
 
   // Deduplicate CONFIRM_STRATEGIES records: keep only the most recent one per strategy

@@ -12,6 +12,7 @@ interface Strategy {
   status: string;
   isAuto?: boolean;
   strategyType?: string | null;
+  direction?: string | null;
   assetThesisId?: string | null;
 }
 
@@ -53,6 +54,7 @@ export function StrategyConfirmationDialog({
 }: StrategyConfirmationDialogProps) {
   // Form state
   const [strategyType, setStrategyType] = useState<string>('');
+  const [strategyDirection, setStrategyDirection] = useState<string>('');
   const [strategyTypes, setStrategyTypes] = useState<string[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
 
@@ -82,6 +84,7 @@ export function StrategyConfirmationDialog({
   useEffect(() => {
     if (isOpen && strategy) {
       setStrategyType(strategy.strategyType || '');
+      setStrategyDirection(strategy.direction || '');
       setSelectedThesisId(strategy.assetThesisId || null);
       setMode('select');
       setSearchQuery('');
@@ -196,6 +199,10 @@ export function StrategyConfirmationDialog({
       setError('Strategy type is required');
       return;
     }
+    if (!strategyDirection) {
+      setError('Strategy direction is required');
+      return;
+    }
 
     let assetThesisId = selectedThesisId;
 
@@ -253,6 +260,7 @@ export function StrategyConfirmationDialog({
         body: JSON.stringify({
           id: strategy.id,
           strategyType,
+          direction: strategyDirection,
           assetThesisId,
           confirm: true,
         }),
@@ -325,27 +333,49 @@ export function StrategyConfirmationDialog({
             </div>
           </div>
 
-          {/* Strategy Type Selection */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Strategy Type <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={strategyType}
-              onChange={(e) => setStrategyType(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={submitting || loadingTypes}
-            >
-              <option value="">Select a strategy type...</option>
-              {strategyTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-slate-500 mt-1">
-              Links the strategy to playbook items for state code computation
-            </p>
+          {/* Strategy Type and Direction Selection */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Strategy Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={strategyType}
+                onChange={(e) => setStrategyType(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={submitting || loadingTypes}
+              >
+                <option value="">Select a strategy type...</option>
+                {strategyTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-1">
+                Links to playbook items
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Direction <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={strategyDirection}
+                onChange={(e) => setStrategyDirection(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={submitting}
+              >
+                <option value="">Select direction...</option>
+                <option value="bullish">Bullish</option>
+                <option value="bearish">Bearish</option>
+                <option value="neutral">Neutral</option>
+              </select>
+              <p className="text-xs text-slate-500 mt-1">
+                Net directional bias
+              </p>
+            </div>
           </div>
 
           {/* Asset Thesis Section */}
@@ -605,7 +635,7 @@ export function StrategyConfirmationDialog({
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={submitting || !strategyType || (mode === 'select' && !selectedThesisId)}
+            disabled={submitting || !strategyType || !strategyDirection || (mode === 'select' && !selectedThesisId)}
           >
             {submitting ? (
               <>

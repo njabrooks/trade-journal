@@ -898,11 +898,12 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
         )
       );
 
-    // Get strategy info
+    // Get strategy info including direction metadata
     const strategyResult = await db
       .select({
         strategyKey: strategies.strategyKey,
         accountId: strategies.accountId,
+        direction: strategies.direction,
       })
       .from(strategies)
       .where(eq(strategies.id, strategyId))
@@ -991,6 +992,7 @@ export async function createQuantityChangeTriageForUnmatchedTrades(
       recommendedAction: 'QUANTITY_CHANGE',
       severity: 'attention', // System detection - surfaces unmatched trades for user review
       ruleSet: TRIAGE_RULES_V1.ruleSet,
+      direction: strategy.direction,
       // Store full trade execution details for matching
       unmatchedTradeExecutions: unmatchedTradeExecutions as any,
       // Store aggregated trade info in notes (optional, for display)

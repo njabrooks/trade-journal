@@ -59,6 +59,7 @@ function StrategiesPageContent() {
   const [editingMetadataId, setEditingMetadataId] = useState<string | null>(null);
   const [metadataValues, setMetadataValues] = useState<{
     strategyType: string;
+    direction: string;
   } | null>(null);
   const [editingStrategyTypeId, setEditingStrategyTypeId] = useState<string | null>(null);
   const [editingStrategyType, setEditingStrategyType] = useState<string>('');
@@ -441,6 +442,7 @@ function StrategiesPageContent() {
     setEditingMetadataId(strategy.id);
     setMetadataValues({
       strategyType: strategy.strategyType || '',
+      direction: (strategy as any).direction || '',
     });
   };
 
@@ -461,22 +463,23 @@ function StrategiesPageContent() {
         body: JSON.stringify({
           id: editingMetadataId,
           strategyType: metadataValues.strategyType || null,
+          direction: metadataValues.direction || null,
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to update strategy type');
+      if (!response.ok) throw new Error('Failed to update strategy metadata');
 
       // If strategyType changed, trigger state code recomputation
       if (strategyTypeChanged && metadataValues.strategyType) {
         // The backend will handle state code recomputation automatically
-        setSuccess('Strategy type updated. State code will be recomputed automatically.');
+        setSuccess('Strategy metadata updated. State code will be recomputed automatically.');
       } else {
-        setSuccess('Strategy type updated successfully');
+        setSuccess('Strategy metadata updated successfully');
       }
 
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update strategy type');
+      setError(err instanceof Error ? err.message : 'Failed to update strategy metadata');
     } finally {
       setEditingMetadataId(null);
       setMetadataValues(null);
@@ -1344,41 +1347,60 @@ function StrategiesPageContent() {
         </div>
       )}
 
-      {/* Strategy Type Edit Modal */}
+      {/* Strategy Metadata Edit Modal */}
       {editingMetadataId && metadataValues && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold mb-4">Edit Strategy Type</h2>
+            <h2 className="text-xl font-semibold mb-4">Edit Strategy Metadata</h2>
             <p className="text-sm text-gray-600 mb-6">
               Changing the strategy type will trigger state code recomputation.
             </p>
 
             <div className="space-y-4">
-              <div>
-                <label htmlFor="metadataStrategyType" className="block text-sm font-medium mb-2">
-                  Strategy Type *
-                </label>
-                <select
-                  id="metadataStrategyType"
-                  required
-                  value={metadataValues.strategyType}
-                  onChange={(e) =>
-                    setMetadataValues((prev) =>
-                      prev ? { ...prev, strategyType: e.target.value } : prev
-                    )
-                  }
-                  className="w-full border rounded px-3 py-2"
-                >
-                  <option value="">Select a strategy type...</option>
-                  {strategyTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Links the strategy to playbook items and enables state code computation
-                </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="metadataStrategyType" className="block text-sm font-medium mb-2">
+                    Strategy Type
+                  </label>
+                  <select
+                    id="metadataStrategyType"
+                    value={metadataValues.strategyType}
+                    onChange={(e) =>
+                      setMetadataValues((prev) =>
+                        prev ? { ...prev, strategyType: e.target.value } : prev
+                      )
+                    }
+                    className="w-full border rounded px-3 py-2"
+                  >
+                    <option value="">Select a strategy type...</option>
+                    {strategyTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="metadataDirection" className="block text-sm font-medium mb-2">
+                    Direction
+                  </label>
+                  <select
+                    id="metadataDirection"
+                    value={metadataValues.direction}
+                    onChange={(e) =>
+                      setMetadataValues((prev) =>
+                        prev ? { ...prev, direction: e.target.value } : prev
+                      )
+                    }
+                    className="w-full border rounded px-3 py-2"
+                  >
+                    <option value="">Select direction...</option>
+                    <option value="bullish">Bullish</option>
+                    <option value="bearish">Bearish</option>
+                    <option value="neutral">Neutral</option>
+                  </select>
+                </div>
               </div>
 
               <p className="text-xs text-gray-500 bg-blue-50 p-3 rounded">
@@ -1396,7 +1418,6 @@ function StrategiesPageContent() {
               </button>
               <button
                 onClick={saveMetadata}
-                disabled={!metadataValues.strategyType}
                 className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
               >
                 Save

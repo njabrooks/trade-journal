@@ -179,6 +179,30 @@ export async function computePositionTriageForDate(
 
   const records: NewTriageRecord[] = [];
 
+  // Batch fetch strategy directions for positions with strategyId
+  const strategyIds = Array.from(
+    new Set(
+      optionPositions
+        .map((p) => p.strategyId)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+
+  const strategyDirectionMap = new Map<string, string | null>();
+  if (strategyIds.length > 0) {
+    const strategyRows = await db
+      .select({
+        id: strategies.id,
+        direction: strategies.direction,
+      })
+      .from(strategies)
+      .where(inArray(strategies.id, strategyIds));
+
+    for (const row of strategyRows) {
+      strategyDirectionMap.set(row.id, row.direction);
+    }
+  }
+
   // Batch fetch IV data for all underlyingIds to avoid N+1 queries
   const underlyingIds = Array.from(
     new Set(
@@ -347,6 +371,11 @@ export async function computePositionTriageForDate(
     // Apply override if found, otherwise use computed severity
     const finalSeverity = overrideSeverity || severity;
 
+    // Get direction from parent strategy (null if no strategy linked)
+    const strategyDirection = position.strategyId
+      ? strategyDirectionMap.get(position.strategyId) ?? null
+      : null;
+
     records.push({
       snapshotDate,
       accountId: position.accountId,
@@ -368,6 +397,7 @@ export async function computePositionTriageForDate(
       unrealizedPnl: position.unrealizedPnl,
       absNotional: position.absNotional,
       severity: finalSeverity,
+      direction: strategyDirection,
       recommendedAction,
       ruleSet: TRIAGE_RULES_V1.ruleSet,
     });
@@ -420,6 +450,7 @@ export async function computeStrategyTriageForDate(
           confirmedAt: strategies.confirmedAt,
           assetThesisId: strategies.assetThesisId,
           status: strategies.status,
+          direction: strategies.direction,
         })
       .from(strategies)
         .where(inArray(strategies.id, strategyIds))
@@ -476,6 +507,7 @@ export async function computeStrategyTriageForDate(
         absNotional: metric.totalAbsNotional,
         unrealizedPnl: metric.totalUnrealizedPnl,
         severity: overrideSeverity || computedSeverity,
+        direction: strategyRow?.direction ?? null,
         recommendedAction,
         notes: 'Strategy needs confirmation: select strategy type and link to asset thesis',
         ruleSet: 'strategy_workflow',
@@ -503,6 +535,7 @@ export async function computeStrategyTriageForDate(
         absNotional: metric.totalAbsNotional,
         unrealizedPnl: metric.totalUnrealizedPnl,
         severity: overrideSeverity || computedSeverity,
+        direction: strategyRow?.direction ?? null,
         recommendedAction,
         notes: 'Strategy confirmed but missing asset thesis link',
         ruleSet: 'strategy_workflow',
@@ -547,6 +580,7 @@ export async function computeStrategyTriageForDate(
           unrealizedPnl: metric.totalUnrealizedPnl,
           pctNavAbsNotional: metric.pctNavAbsNotional,
           severity: overrideSeverity || computedSeverity,
+          direction: strategyRow?.direction ?? null,
           recommendedAction,
           notes,
           ruleSet: TRIAGE_RULES_V1.strategySizeRuleSet,
@@ -576,6 +610,7 @@ export async function computeStrategyTriageForDate(
         absNotional: metric.totalAbsNotional,
         unrealizedPnl: metric.totalUnrealizedPnl,
         severity: overrideSeverity || computedSeverity,
+        direction: strategyRow?.direction ?? null,
         recommendedAction,
         notes: `Strategy has ${metric.numOpenPositions} open positions`,
         ruleSet: TRIAGE_RULES_V1.strategyComplexityRuleSet,
@@ -614,6 +649,7 @@ export async function computeStrategyTriageForDate(
           absNotional: metric.totalAbsNotional,
           unrealizedPnl: metric.totalUnrealizedPnl,
           severity: overrideSeverity || computedSeverity,
+          direction: strategyRow?.direction ?? null,
           recommendedAction,
           notes: `State code changed from ${stateCodeChange.previous ?? 'null'} to ${stateCodeChange.current ?? 'null'}`,
           ruleSet: 'strategy_workflow',

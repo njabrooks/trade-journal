@@ -75,11 +75,17 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Strategy id is required' }, { status: 400 });
     }
 
-    // If confirming, require both strategyType and assetThesisId
+    // If confirming, require strategyType, direction, and assetThesisId
     if (confirm) {
       if (!updates.strategyType) {
         return NextResponse.json(
           { error: 'strategyType is required when confirming a strategy' },
+          { status: 400 }
+        );
+      }
+      if (!updates.direction) {
+        return NextResponse.json(
+          { error: 'direction is required when confirming a strategy' },
           { status: 400 }
         );
       }

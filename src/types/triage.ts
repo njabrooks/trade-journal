@@ -94,6 +94,7 @@ export function mapPositionTriageToUnified(record: TriageQueueRecord): UnifiedTr
     trigger: record.recommendedAction ?? "unknown",
     status: record.severity ?? "pending",
     date: new Date(record.snapshotDate),
+    direction: record.direction,
     strategyId: record.strategyId,
     strategyKey: record.strategyKey,
     positionTriageRecord: record,

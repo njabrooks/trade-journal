@@ -504,6 +504,7 @@ export const strategies = pgTable(
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
     // Playbook linkage
     strategyType: text('strategy_type'), // Links to playbook_items.strategy_type
+    direction: text('direction'), // 'bullish' | 'bearish' | 'neutral' - strategy directional bias
     // Hierarchy linkage (Phase 1)
     // Note: Strategies inherit macro thesis connections through assetThesisId
     assetThesisId: uuid('asset_thesis_id').references(() => assetTheses.id, {
@@ -707,6 +708,7 @@ export const triageRecords = pgTable(
     absNotional: numeric('abs_notional'),
     pctNavAbsNotional: numeric('pct_nav_abs_notional'),
     severity: text('severity'), // 'info' | 'monitor' | 'attention' | 'urgent' | 'pending' | 'complete'
+    direction: text('direction'), // 'bullish' | 'bearish' | 'neutral' - net direction of position(s)
     recommendedAction: text('recommended_action'),
     notes: text('notes'),
     ruleSet: text('rule_set'), // e.g. 'options_v1'

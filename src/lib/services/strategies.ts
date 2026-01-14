@@ -254,6 +254,10 @@ export async function updateStrategy(
   if ((updates as any).assetThesisId !== undefined) {
     updateData.assetThesisId = (updates as any).assetThesisId ?? null;
   }
+  // Handle direction update (bullish/bearish/neutral)
+  if ((updates as any).direction !== undefined) {
+    updateData.direction = (updates as any).direction ?? null;
+  }
 
   updateData.updatedAt = new Date();
 
