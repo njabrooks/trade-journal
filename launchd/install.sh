@@ -2,7 +2,7 @@
 # Install launchd jobs for trade-journal scheduled tasks
 #
 # This script installs scheduled jobs to:
-# - Run Flex ingestion at 4 AM, 6 AM, 8 AM, 12 PM UTC
+# - Run Flex ingestion hourly from 4 AM to 2 PM UTC (11 times daily)
 # - Run Massive ingestion at 21:30 UTC (4:30 PM ET, after market close)
 # - Run Signal monitoring at 08:00 UTC (morning triage before market open)
 # - Run FRED ingestion at 06:00 UTC (before market open)
@@ -101,7 +101,7 @@ install_jobs() {
     echo ""
     echo "Schedule (UTC):"
     echo "  Supabase start:     On login (30s delay for Docker)"
-    echo "  Flex ingestion:     04:00, 06:00, 08:00, 12:00 UTC"
+    echo "  Flex ingestion:     Hourly 04:00-14:00 UTC (11 runs)"
     echo "  FRED ingestion:     06:00 UTC (before market open)"
     echo "  Massive ingestion:  21:30 UTC (4:30 PM ET)"
     echo "  Signal monitoring:  08:00 UTC (morning triage)"

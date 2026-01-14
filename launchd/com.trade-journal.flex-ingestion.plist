@@ -12,12 +12,18 @@
         <string>cd /Users/twotrees/Projects/trade-journal &amp;&amp; git pull --ff-only &amp;&amp; set -a &amp;&amp; source .env.local &amp;&amp; set +a &amp;&amp; ./node_modules/.bin/tsx scripts/run-flex-ingestion.ts >> /Users/twotrees/Projects/trade-journal/logs/flex-ingestion.log 2>&amp;1</string>
     </array>
 
-    <!-- Run at 4 AM, 6 AM, 8 AM, and noon UTC -->
+    <!-- Run hourly from 4 AM to 2 PM UTC (every hour) -->
     <key>StartCalendarInterval</key>
     <array>
         <dict>
             <key>Hour</key>
             <integer>4</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>5</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>
@@ -29,13 +35,49 @@
         </dict>
         <dict>
             <key>Hour</key>
+            <integer>7</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
             <integer>8</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key>
+            <integer>9</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>10</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>11</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
             <integer>12</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>13</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>14</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>
