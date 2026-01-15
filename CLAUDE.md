@@ -55,6 +55,9 @@ npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psq
 - **[Future Enhancements](docs/FUTURE_ENHANCEMENTS.md)** - **Single source of truth** for all enhancements (past/present/future)
 - **[Implementation Progress](docs/implementation_progress.md)** - Phase completion tracking
 
+**Operations**:
+- **[Database Mode Switch Runbook](docs/runbook-database-mode-switch.md)** - Switching between local and remote Supabase
+
 **Historical/Reference**:
 - **[docs/archive/](docs/archive/)** - Completed implementation notes and planning docs
 
