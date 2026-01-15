@@ -32,12 +32,24 @@ const __dirname = dirname(__filename);
 config({ path: resolve(__dirname, '..', '.env.local') });
 
 // Use PostgreSQL 17 to match local Supabase server version (17.6)
+// Note: pg17's pg_dump generates \restrict commands that remote doesn't support,
+// so we filter those out before restoring
 const PSQL_PATH = '/opt/homebrew/opt/postgresql@17/bin/psql';
 const PG_DUMP_PATH = '/opt/homebrew/opt/postgresql@17/bin/pg_dump';
 
 // Connection strings
 const LOCAL_DB = process.env.DATABASE_URL_POOLER;
 const REMOTE_DB = process.env.DATABASE_URL_REMOTE;
+
+// Extract password from connection URL for pg_dump (which doesn't parse URLs reliably)
+function extractPassword(connUrl: string): string | undefined {
+  try {
+    const url = new URL(connUrl);
+    return url.password || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 // All tables to sync (in dependency order - parents before children)
 const ALL_TABLES = [
@@ -175,6 +187,10 @@ function pushTable(table: string, options: PushOptions): { success: boolean; row
   const tempFile = `/tmp/push_${table}_${Date.now()}.sql`;
 
   try {
+    // Extract password for pg_dump (it doesn't reliably parse passwords from URLs)
+    const localPassword = extractPassword(LOCAL_DB!);
+    const pgEnv = localPassword ? { ...process.env, PGPASSWORD: localPassword } : process.env;
+
     // Dump from local using COPY format (much faster than INSERT for large tables)
     const dumpResult = spawnSync(
       PG_DUMP_PATH,
@@ -187,7 +203,7 @@ function pushTable(table: string, options: PushOptions): { success: boolean; row
         '--disable-triggers',  // Disable FK triggers during restore
         `-f${tempFile}`,
       ],
-      { encoding: 'utf-8' }
+      { encoding: 'utf-8', env: pgEnv }
     );
 
     if (dumpResult.status !== 0) {
@@ -198,14 +214,24 @@ function pushTable(table: string, options: PushOptions): { success: boolean; row
     execPsql(REMOTE_DB!, `TRUNCATE "${table}" CASCADE`);
 
     // Restore to remote - prepend search_path and session_replication_role to disable triggers
+    // Also filter out pg17's \restrict and \unrestrict commands that remote Supabase doesn't support
     const preamble = `SET search_path TO public;
 SET session_replication_role = replica;
 `;
-    execSync(`echo '${preamble}' | cat - ${tempFile} > ${tempFile}.tmp && mv ${tempFile}.tmp ${tempFile}`);
+    execSync(
+      `grep -v '^\\\\restrict\\|^\\\\unrestrict' ${tempFile} > ${tempFile}.filtered && ` +
+        `echo '${preamble}' | cat - ${tempFile}.filtered > ${tempFile}.tmp && ` +
+        `mv ${tempFile}.tmp ${tempFile} && rm -f ${tempFile}.filtered`
+    );
+
+    // Extract password for remote restore
+    const remotePassword = extractPassword(REMOTE_DB!);
+    const remoteEnv = remotePassword ? { ...process.env, PGPASSWORD: remotePassword } : process.env;
 
     const restoreResult = spawnSync(PSQL_PATH, [REMOTE_DB!, '-f', tempFile], {
       encoding: 'utf-8',
       maxBuffer: 100 * 1024 * 1024,
+      env: remoteEnv,
     });
 
     if (restoreResult.status !== 0) {
