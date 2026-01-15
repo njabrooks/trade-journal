@@ -1,16 +1,23 @@
-name: Flex Ingestion (DISABLED - Using Local Mac Mini)
+name: Flex Ingestion
 
-# DISABLED: Ingestion now runs locally on Mac Mini via launchd
-# This workflow is kept for emergency use only (manual trigger)
-# See launchd/install.sh for local setup
+# Runs on remote Supabase via GitHub Actions
+# Local Mac Mini launchd jobs should be disabled when this is active
 
 on:
-  # schedule:
-  #   # Run at 4 AM, 6 AM, and noon GMT
-  #   - cron: '0 4 * * *'
-  #   - cron: '0 6 * * *'
-  #   - cron: '0 12 * * *'
-  workflow_dispatch: # Manual trigger only (emergency backup)
+  schedule:
+    # Run hourly from 4 AM to 2 PM UTC (cover US market hours with buffer)
+    - cron: '0 4 * * *'
+    - cron: '0 5 * * *'
+    - cron: '0 6 * * *'
+    - cron: '0 7 * * *'
+    - cron: '0 8 * * *'
+    - cron: '0 9 * * *'
+    - cron: '0 10 * * *'
+    - cron: '0 11 * * *'
+    - cron: '0 12 * * *'
+    - cron: '0 13 * * *'
+    - cron: '0 14 * * *'
+  workflow_dispatch: # Manual trigger for testing
 
 jobs:
   ingest:

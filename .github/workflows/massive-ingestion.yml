@@ -1,14 +1,13 @@
-name: Massive Underlyings Ingestion (DISABLED - Using Local Mac Mini)
+name: Massive Underlyings Ingestion
 
-# DISABLED: Ingestion now runs locally on Mac Mini via launchd
-# This workflow is kept for emergency use only (manual trigger)
-# See launchd/install.sh for local setup
+# Runs on remote Supabase via GitHub Actions
+# Local Mac Mini launchd jobs should be disabled when this is active
 
 on:
-  # schedule:
-  #   # Run daily at 4:30 PM ET / 8:30 PM UTC (30 minutes after market close)
-  #   - cron: '30 20 * * *'
-  workflow_dispatch: # Manual trigger only (emergency backup)
+  schedule:
+    # Run daily at 9:30 PM UTC (4:30 PM ET, 30 minutes after market close)
+    - cron: '30 21 * * *'
+  workflow_dispatch: # Manual trigger for testing
 
 jobs:
   ingest:
