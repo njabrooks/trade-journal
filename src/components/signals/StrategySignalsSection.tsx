@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, AlertTriangle, CheckCircle2, Clock, Radio, Wifi } from 'lucide-react';
+import { Plus, AlertTriangle, CheckCircle2, Clock, Radio, Wifi, Pencil, Trash2, RotateCcw, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { StrategySignalConfigForm } from './StrategySignalConfigForm';
+import { StrategySignalConfigForm, type EditingSignal, type StrategySignalConfig } from './StrategySignalConfigForm';
 import type { Signal } from '@/db/schema';
 
 interface StrategySignalsSectionProps {
@@ -92,24 +92,31 @@ export function StrategySignalsSection({
 }: StrategySignalsSectionProps) {
   const router = useRouter();
   const [showConfigForm, setShowConfigForm] = useState(false);
+  const [editingSignal, setEditingSignal] = useState<EditingSignal | null>(null);
+  const [deletingSignalId, setDeletingSignalId] = useState<string | null>(null);
+  const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close action menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActionMenuOpen(null);
+      }
+    };
+
+    if (actionMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [actionMenuOpen]);
 
   const handleCreateSignal = async (data: {
     statement: string;
     type: 'confirmation' | 'warning';
     importance: 'critical' | 'significant' | 'supporting';
     notes?: string;
-    explicitDetails: {
-      logic: 'all' | 'any';
-      conditions: Array<{
-        id: string;
-        type: string;
-        value: number;
-        ticker?: string;
-        tvAlertName?: string;
-      }>;
-      recommendedAction: string;
-      actionNotes?: string;
-    };
+    explicitDetails: StrategySignalConfig;
   }) => {
     const response = await fetch('/api/signals/strategy', {
       method: 'POST',
@@ -127,6 +134,93 @@ export function StrategySignalsSection({
 
     setShowConfigForm(false);
     router.refresh();
+  };
+
+  const handleUpdateSignal = async (data: {
+    statement: string;
+    type: 'confirmation' | 'warning';
+    importance: 'critical' | 'significant' | 'supporting';
+    notes?: string;
+    explicitDetails: StrategySignalConfig;
+  }) => {
+    if (!editingSignal) return;
+
+    const response = await fetch(`/api/signals/${editingSignal.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update signal');
+    }
+
+    setEditingSignal(null);
+    setShowConfigForm(false);
+    router.refresh();
+  };
+
+  const handleDeleteSignal = async (signalId: string) => {
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(errorData.error || 'Failed to delete signal');
+      return;
+    }
+
+    setDeletingSignalId(null);
+    router.refresh();
+  };
+
+  const handleResetSignal = async (signalId: string) => {
+    const response = await fetch(`/api/signals/${signalId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'not_triggered' }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      alert(errorData.error || 'Failed to reset signal');
+      return;
+    }
+
+    router.refresh();
+  };
+
+  const openEditForm = (signal: Signal) => {
+    const config = signal.explicitDetails as ExplicitDetailsConfig | null;
+    setEditingSignal({
+      id: signal.id,
+      statement: signal.statement,
+      type: signal.type as 'confirmation' | 'warning',
+      importance: signal.importance as 'critical' | 'significant' | 'supporting',
+      status: signal.status,
+      notes: signal.notes,
+      explicitDetails: config ? {
+        logic: config.logic,
+        conditions: config.conditions.map(c => ({
+          id: c.id,
+          type: c.type,
+          value: c.value,
+          ticker: c.ticker,
+        })),
+        recommendedAction: config.recommendedAction,
+        actionNotes: config.actionNotes,
+        tvAlertName: config.tvAlertName,
+      } as StrategySignalConfig : null,
+    });
+    setShowConfigForm(true);
+    setActionMenuOpen(null);
+  };
+
+  const closeForm = () => {
+    setShowConfigForm(false);
+    setEditingSignal(null);
   };
 
   const confirmationSignals = signals.filter((s) => s.type === 'confirmation');
@@ -243,13 +337,80 @@ export function StrategySignalsSection({
                       </div>
                     )}
                   </div>
-                  <div className="text-xs text-slate-400 whitespace-nowrap">
-                    {signal.importance}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 whitespace-nowrap">
+                      {signal.importance}
+                    </span>
+                    {/* Action Menu */}
+                    <div className="relative" ref={actionMenuOpen === signal.id ? menuRef : null}>
+                      <button
+                        onClick={() => setActionMenuOpen(actionMenuOpen === signal.id ? null : signal.id)}
+                        className="p-1 rounded hover:bg-slate-200/50 text-slate-400 hover:text-slate-600"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      {actionMenuOpen === signal.id && (
+                        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10">
+                          <button
+                            onClick={() => openEditForm(signal)}
+                            className="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                          {signal.status === 'triggered' && (
+                            <button
+                              onClick={() => {
+                                handleResetSignal(signal.id);
+                                setActionMenuOpen(null);
+                              }}
+                              className="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2 text-blue-600"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Reset
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setDeletingSignalId(signal.id);
+                              setActionMenuOpen(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2 text-red-600"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingSignalId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm">
+            <h3 className="text-lg font-semibold text-slate-900">Delete Signal?</h3>
+            <p className="text-sm text-slate-600 mt-2">
+              This action cannot be undone. The signal and its history will be permanently deleted.
+            </p>
+            <div className="flex justify-end gap-3 mt-4">
+              <Button variant="outline" onClick={() => setDeletingSignalId(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleDeleteSignal(deletingSignalId)}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -259,8 +420,9 @@ export function StrategySignalsSection({
         strategyKey={strategyKey}
         underlyingTicker={underlyingTicker}
         isOpen={showConfigForm}
-        onClose={() => setShowConfigForm(false)}
-        onSubmit={handleCreateSignal}
+        onClose={closeForm}
+        editingSignal={editingSignal}
+        onSubmit={editingSignal ? handleUpdateSignal : handleCreateSignal}
       />
     </>
   );

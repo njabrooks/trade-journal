@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { X, Plus, Trash2, AlertTriangle, TrendingUp, TrendingDown, Copy, Check, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,12 +67,24 @@ export interface StrategySignalConfig {
   tvAlertName?: string; // Top-level TV alert name for webhook matching
 }
 
+// Signal data for editing
+export interface EditingSignal {
+  id: string;
+  statement: string;
+  type: 'confirmation' | 'warning';
+  importance: 'critical' | 'significant' | 'supporting';
+  status: string;
+  notes?: string | null;
+  explicitDetails: StrategySignalConfig | null;
+}
+
 interface StrategySignalConfigFormProps {
   strategyId: string;
   strategyKey: string;
   underlyingTicker?: string;
   isOpen: boolean;
   onClose: () => void;
+  editingSignal?: EditingSignal | null;
   onSubmit: (data: {
     statement: string;
     type: 'confirmation' | 'warning';
@@ -92,31 +104,78 @@ export function StrategySignalConfigForm({
   underlyingTicker,
   isOpen,
   onClose,
+  editingSignal,
   onSubmit,
 }: StrategySignalConfigFormProps) {
-  // Signal metadata
-  const [signalType, setSignalType] = useState<'confirmation' | 'warning'>('confirmation');
-  const [importance, setImportance] = useState<'critical' | 'significant' | 'supporting'>('significant');
-  const [statement, setStatement] = useState('');
-  const [notes, setNotes] = useState('');
+  const isEditMode = !!editingSignal;
 
-  // Condition configuration
-  const [logic, setLogic] = useState<'all' | 'any'>('any');
-  const [conditions, setConditions] = useState<StrategyCondition[]>([
-    { id: generateId(), type: 'price_above', value: 0, ticker: underlyingTicker },
-  ]);
+  // Signal metadata - initialize from editingSignal if present
+  const [signalType, setSignalType] = useState<'confirmation' | 'warning'>(
+    editingSignal?.type || 'confirmation'
+  );
+  const [importance, setImportance] = useState<'critical' | 'significant' | 'supporting'>(
+    editingSignal?.importance || 'significant'
+  );
+  const [statement, setStatement] = useState(editingSignal?.statement || '');
+  const [notes, setNotes] = useState(editingSignal?.notes || '');
 
-  // Action configuration
-  const [recommendedAction, setRecommendedAction] = useState('');
-  const [actionNotes, setActionNotes] = useState('');
+  // Condition configuration - initialize from editingSignal if present
+  const [logic, setLogic] = useState<'all' | 'any'>(
+    editingSignal?.explicitDetails?.logic || 'any'
+  );
+  const [conditions, setConditions] = useState<StrategyCondition[]>(
+    editingSignal?.explicitDetails?.conditions?.length
+      ? editingSignal.explicitDetails.conditions.map(c => ({
+          id: c.id || generateId(),
+          type: c.type as ConditionType,
+          value: c.value,
+          ticker: c.ticker,
+        }))
+      : [{ id: generateId(), type: 'price_above', value: 0, ticker: underlyingTicker }]
+  );
 
-  // TradingView configuration
-  const [tvAlertName, setTvAlertName] = useState('');
-  const [showTvSetup, setShowTvSetup] = useState(false);
+  // Action configuration - initialize from editingSignal if present
+  const [recommendedAction, setRecommendedAction] = useState(
+    editingSignal?.explicitDetails?.recommendedAction || ''
+  );
+  const [actionNotes, setActionNotes] = useState(
+    editingSignal?.explicitDetails?.actionNotes || ''
+  );
+
+  // TradingView configuration - initialize from editingSignal if present
+  const [tvAlertName, setTvAlertName] = useState(
+    editingSignal?.explicitDetails?.tvAlertName || ''
+  );
+  const [showTvSetup, setShowTvSetup] = useState(!!editingSignal?.explicitDetails?.tvAlertName);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedPayload, setCopiedPayload] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reset form state when editingSignal changes or form opens
+  useEffect(() => {
+    if (isOpen) {
+      setSignalType(editingSignal?.type || 'confirmation');
+      setImportance(editingSignal?.importance || 'significant');
+      setStatement(editingSignal?.statement || '');
+      setNotes(editingSignal?.notes || '');
+      setLogic(editingSignal?.explicitDetails?.logic || 'any');
+      setConditions(
+        editingSignal?.explicitDetails?.conditions?.length
+          ? editingSignal.explicitDetails.conditions.map(c => ({
+              id: c.id || generateId(),
+              type: c.type as ConditionType,
+              value: c.value,
+              ticker: c.ticker,
+            }))
+          : [{ id: generateId(), type: 'price_above', value: 0, ticker: underlyingTicker }]
+      );
+      setRecommendedAction(editingSignal?.explicitDetails?.recommendedAction || '');
+      setActionNotes(editingSignal?.explicitDetails?.actionNotes || '');
+      setTvAlertName(editingSignal?.explicitDetails?.tvAlertName || '');
+      setShowTvSetup(!!editingSignal?.explicitDetails?.tvAlertName);
+    }
+  }, [isOpen, editingSignal, underlyingTicker]);
 
   // Check if any price conditions exist
   const hasPriceConditions = conditions.some(
@@ -239,7 +298,9 @@ export function StrategySignalConfigForm({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Configure Strategy Signal</h2>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {isEditMode ? 'Edit Signal' : 'Configure Strategy Signal'}
+            </h2>
             <p className="text-sm text-slate-500 mt-1">
               {strategyKey} {underlyingTicker ? `(${underlyingTicker})` : ''}
             </p>
@@ -619,7 +680,7 @@ export function StrategySignalConfigForm({
             Cancel
           </Button>
           <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Create Signal'}
+            {isSubmitting ? 'Saving...' : isEditMode ? 'Update Signal' : 'Create Signal'}
           </Button>
         </div>
       </div>
