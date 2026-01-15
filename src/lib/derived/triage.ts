@@ -90,60 +90,83 @@ function computeSigmaToStrike(
 }
 
 /**
- * Checks for active severity override from blotter actions
- * Returns override severity if found, null otherwise
- * 
- * Override matches if:
- * - actionDetail is DISMISS or MONITOR
- * - severityOverride is not null
- * - triageFlagAtAction matches recommendedAction (rule-specific)
- * - overrideExpiresDate is null or >= snapshotDate (not expired)
- * - positionId matches (for position-level) OR strategyId matches (for strategy-level)
+ * Severity override cache entry
  */
-async function checkSeverityOverride(
+interface SeverityOverride {
+  positionId: string | null;
+  strategyId: string | null;
+  triageFlagAtAction: string;
+  severityOverride: string;
+  createdAt: Date;
+}
+
+/**
+ * Pre-fetches ALL active severity overrides for a snapshot date.
+ * This batches what would otherwise be N individual queries into 1.
+ *
+ * Returns a cache that can be queried synchronously via lookupSeverityOverride().
+ */
+async function prefetchSeverityOverrides(snapshotDate: string): Promise<SeverityOverride[]> {
+  const overrides = await db
+    .select({
+      positionId: blotterActions.positionId,
+      strategyId: blotterActions.strategyId,
+      triageFlagAtAction: blotterActions.triageFlagAtAction,
+      severityOverride: blotterActions.severityOverride,
+      createdAt: blotterActions.createdAt,
+    })
+    .from(blotterActions)
+    .where(
+      and(
+        or(
+          eq(blotterActions.actionDetail, 'DISMISS'),
+          eq(blotterActions.actionDetail, 'MONITOR')
+        ),
+        isNotNull(blotterActions.severityOverride),
+        isNotNull(blotterActions.triageFlagAtAction),
+        or(
+          isNull(blotterActions.overrideExpiresDate),
+          gte(blotterActions.overrideExpiresDate, snapshotDate)
+        )
+      )
+    )
+    .orderBy(desc(blotterActions.createdAt));
+
+  return overrides.filter((o): o is SeverityOverride =>
+    o.severityOverride !== null && o.triageFlagAtAction !== null
+  );
+}
+
+/**
+ * Synchronously looks up a severity override from the pre-fetched cache.
+ *
+ * Override matches if:
+ * - triageFlagAtAction matches recommendedAction (rule-specific)
+ * - positionId matches (for position-level) OR strategyId matches (for strategy-level)
+ *
+ * Returns the most recently created matching override's severity, or null if none found.
+ */
+function lookupSeverityOverride(
+  cache: SeverityOverride[],
   positionId: string | null,
   strategyId: string | null,
-  recommendedAction: string,
-  snapshotDate: string
-): Promise<string | null> {
+  recommendedAction: string
+): string | null {
   if (!positionId && !strategyId) return null;
 
-  // Build conditions for position/strategy matching
-  const entityConditions = [];
-  if (positionId) {
-    entityConditions.push(eq(blotterActions.positionId, positionId));
-  }
-  if (strategyId) {
-    entityConditions.push(eq(blotterActions.strategyId, strategyId));
-  }
-  
-  // If both exist, match either (for position-level triggers where position belongs to strategy)
-  const entityMatch = entityConditions.length > 1 
-    ? or(...entityConditions)
-    : entityConditions[0];
+  // Find matching override (cache is already sorted by createdAt desc)
+  const match = cache.find((o) => {
+    // Must match the recommended action
+    if (o.triageFlagAtAction !== recommendedAction) return false;
 
-  const overrideConditions = [
-    or(
-      eq(blotterActions.actionDetail, 'DISMISS'),
-      eq(blotterActions.actionDetail, 'MONITOR')
-    ),
-    isNotNull(blotterActions.severityOverride),
-    eq(blotterActions.triageFlagAtAction, recommendedAction),
-    or(
-      isNull(blotterActions.overrideExpiresDate),
-      gte(blotterActions.overrideExpiresDate, snapshotDate)
-    ),
-    entityMatch,
-  ];
+    // Match either positionId or strategyId
+    if (positionId && o.positionId === positionId) return true;
+    if (strategyId && o.strategyId === strategyId) return true;
 
-  const override = await db
-    .select({ severityOverride: blotterActions.severityOverride })
-    .from(blotterActions)
-    .where(and(...overrideConditions))
-    .orderBy(desc(blotterActions.createdAt))
-    .limit(1);
+    return false;
+  });
 
-  return override[0]?.severityOverride ?? null;
+  return match?.severityOverride ?? null;
 }
 
 /**
@@ -224,6 +247,9 @@ export async function computePositionTriageForDate(
       underlyingSpotMap.set(underlyingId, data.spot);
     }
   }
+
+  // Pre-fetch all severity overrides for this date (batched to avoid N+1 queries)
+  const severityOverrideCache = await prefetchSeverityOverrides(snapshotDate);
 
   for (const position of optionPositions) {
     if (!position.expiry || !position.accountId) continue;
@@ -357,14 +383,14 @@ export async function computePositionTriageForDate(
       recommendedAction = 'REVIEW_DTE';
     }
 
-    // Check for active severity override from previous actions
+    // Check for active severity override from previous actions (sync lookup from batched cache)
     let overrideSeverity: string | null = null;
     if (recommendedAction) {
-      overrideSeverity = await checkSeverityOverride(
+      overrideSeverity = lookupSeverityOverride(
+        severityOverrideCache,
         position.id,
         position.strategyId,
-        recommendedAction,
-        snapshotDate
+        recommendedAction
       );
     }
 
@@ -477,6 +503,9 @@ export async function computeStrategyTriageForDate(
 
   const previousDate = previousDateResult[0]?.snapshotDate ?? null;
 
+  // Pre-fetch all severity overrides for this date (batched to avoid N+1 queries)
+  const severityOverrideCache = await prefetchSeverityOverrides(snapshotDate);
+
   for (const metric of strategyMetrics) {
     if (!metric.strategyId) continue;
 
@@ -491,12 +520,12 @@ export async function computeStrategyTriageForDate(
       const computedSeverity = 'urgent';
       const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
 
-      // Check for active override
-      const overrideSeverity = await checkSeverityOverride(
+      // Check for active override (sync lookup from batched cache)
+      const overrideSeverity = lookupSeverityOverride(
+        severityOverrideCache,
         null,
         metric.strategyId,
-        recommendedAction,
-        snapshotDate
+        recommendedAction
       );
 
       records.push({
@@ -519,12 +548,12 @@ export async function computeStrategyTriageForDate(
       const computedSeverity = 'attention';
       const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
 
-      // Check for active override
-      const overrideSeverity = await checkSeverityOverride(
+      // Check for active override (sync lookup from batched cache)
+      const overrideSeverity = lookupSeverityOverride(
+        severityOverrideCache,
         null,
         metric.strategyId,
-        recommendedAction,
-        snapshotDate
+        recommendedAction
       );
 
       records.push({
@@ -563,12 +592,12 @@ export async function computeStrategyTriageForDate(
       }
       
       if (computedSeverity) {
-        // Check for active override
-        const overrideSeverity = await checkSeverityOverride(
+        // Check for active override (sync lookup from batched cache)
+        const overrideSeverity = lookupSeverityOverride(
+          severityOverrideCache,
           null,
           metric.strategyId,
-          recommendedAction,
-          snapshotDate
+          recommendedAction
         );
         
         records.push({
@@ -594,12 +623,12 @@ export async function computeStrategyTriageForDate(
       const computedSeverity = 'info';
       const recommendedAction = 'REVIEW_COMPLEXITY';
       
-      // Check for active override
-      const overrideSeverity = await checkSeverityOverride(
+      // Check for active override (sync lookup from batched cache)
+      const overrideSeverity = lookupSeverityOverride(
+        severityOverrideCache,
         null,
         metric.strategyId,
-        recommendedAction,
-        snapshotDate
+        recommendedAction
       );
       
       records.push({
@@ -632,13 +661,13 @@ export async function computeStrategyTriageForDate(
       if (stateCodeChange.changed) {
         const computedSeverity = 'urgent';
         const recommendedAction = 'STATE_CODE_CHANGE';
-        
-        // Check for active override
-        const overrideSeverity = await checkSeverityOverride(
+
+        // Check for active override (sync lookup from batched cache)
+        const overrideSeverity = lookupSeverityOverride(
+          severityOverrideCache,
           null,
           metric.strategyId,
-          recommendedAction,
-          snapshotDate
+          recommendedAction
         );
         
         records.push({

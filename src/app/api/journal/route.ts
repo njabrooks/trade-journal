@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { journalEntries } from '@/db/schema';
-import { desc, eq, ilike, and, or, SQL, gte, lte } from 'drizzle-orm';
+import { desc, eq, ilike, and, or, SQL, gte, lte, sql, count } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,15 +58,15 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    // Get total count for pagination
+    // Get total count for pagination (using COUNT(*) to avoid fetching all rows)
     const countResult = await db
-      .select({ count: journalEntries.id })
+      .select({ count: count() })
       .from(journalEntries)
       .where(whereClause);
 
     return NextResponse.json({
       entries,
-      total: countResult.length,
+      total: countResult[0]?.count ?? 0,
       limit,
       offset,
     });

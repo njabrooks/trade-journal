@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const strategyId = searchParams.get('strategyId');
 
     if (positionId) {
-      // Fetch single position with underlying ticker and all required fields
+      // Fetch single position with underlying ticker, NAV, and all required fields (single query)
       const positionRows = await db
         .select({
           id: positions.id,
@@ -32,9 +32,17 @@ export async function GET(request: NextRequest) {
           multiplier: positions.multiplier,
           unrealizedPnl: positions.unrealizedPnl,
           accountId: positions.accountId,
+          nav: navSnapshots.total,
         })
         .from(positions)
         .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
+        .leftJoin(
+          navSnapshots,
+          and(
+            eq(navSnapshots.accountId, positions.accountId),
+            eq(navSnapshots.reportDate, positions.snapshotDate)
+          )
+        )
         .where(eq(positions.id, positionId))
         .limit(1);
 
@@ -43,22 +51,6 @@ export async function GET(request: NextRequest) {
       }
 
       const position = positionRows[0];
-      
-      // Fetch NAV for snapshot date
-      let nav = null;
-      if (position.accountId && position.snapshotDate) {
-        const navResult = await db
-          .select({ total: navSnapshots.total })
-          .from(navSnapshots)
-          .where(
-            and(
-              eq(navSnapshots.accountId, position.accountId),
-              eq(navSnapshots.reportDate, position.snapshotDate)
-            )
-          )
-          .limit(1);
-        nav = navResult[0]?.total ?? null;
-      }
 
       return NextResponse.json({
         id: position.id,
@@ -77,16 +69,15 @@ export async function GET(request: NextRequest) {
         avgPrice: toNumber(position.avgPrice),
         multiplier: toNumber(position.multiplier),
         unrealizedPnl: toNumber(position.unrealizedPnl),
-        nav: nav ? Number(nav) : null,
+        nav: position.nav ? Number(position.nav) : null,
       });
     }
 
     if (strategyId) {
-      // Fetch latest snapshot date for strategy
+      // Fetch latest snapshot date for strategy (required for filtering)
       const latestSnapshotResult = await db
         .select({
           snapshotDate: positions.snapshotDate,
-          accountId: positions.accountId,
         })
         .from(positions)
         .where(eq(positions.strategyId, strategyId))
@@ -94,13 +85,12 @@ export async function GET(request: NextRequest) {
         .limit(1);
 
       const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
-      const accountId = latestSnapshotResult[0]?.accountId ?? null;
 
       if (!latestSnapshotDate) {
         return NextResponse.json([]);
       }
 
-      // Fetch all open positions for strategy with underlying ticker and all required fields
+      // Fetch all open positions with underlying ticker and NAV in single query
       const positionRows = await db
         .select({
           id: positions.id,
@@ -119,9 +109,17 @@ export async function GET(request: NextRequest) {
           avgPrice: positions.avgPrice,
           multiplier: positions.multiplier,
           unrealizedPnl: positions.unrealizedPnl,
+          nav: navSnapshots.total,
         })
         .from(positions)
         .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
+        .leftJoin(
+          navSnapshots,
+          and(
+            eq(navSnapshots.accountId, positions.accountId),
+            eq(navSnapshots.reportDate, positions.snapshotDate)
+          )
+        )
         .where(
           and(
             eq(positions.strategyId, strategyId),
@@ -130,22 +128,6 @@ export async function GET(request: NextRequest) {
           )
         )
         .orderBy(desc(positions.symbol));
-
-      // Fetch NAV for snapshot date
-      let nav = null;
-      if (accountId && latestSnapshotDate) {
-        const navResult = await db
-          .select({ total: navSnapshots.total })
-          .from(navSnapshots)
-          .where(
-            and(
-              eq(navSnapshots.accountId, accountId),
-              eq(navSnapshots.reportDate, latestSnapshotDate)
-            )
-          )
-          .limit(1);
-        nav = navResult[0]?.total ?? null;
-      }
 
       const positionsList = positionRows.map((row) => ({
         id: row.id,
@@ -164,7 +146,7 @@ export async function GET(request: NextRequest) {
         avgPrice: toNumber(row.avgPrice),
         multiplier: toNumber(row.multiplier),
         unrealizedPnl: toNumber(row.unrealizedPnl),
-        nav: nav ? Number(nav) : null,
+        nav: row.nav ? Number(row.nav) : null,
       }));
 
       return NextResponse.json(positionsList);
