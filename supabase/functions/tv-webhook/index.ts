@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     // Find matching signals
     // Match by: tvAlertName in explicit_details AND (strategy's underlying_ticker = payload.ticker OR condition ticker = payload.ticker)
     const { data: signals, error: signalsError } = await supabase
-      .from('validation_points')
+      .from('signals')
       .select(`
         id,
         entity_type,
@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
 
         // Update signal status to 'triggered'
         const { error: updateError } = await supabase
-          .from('validation_points')
+          .from('signals')
           .update({
             status: 'triggered',
             updated_at: new Date().toISOString()

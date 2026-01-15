@@ -1378,9 +1378,8 @@ export type ThesisArticulation = typeof thesisArticulations.$inferSelect;
 export type NewThesisArticulation = typeof thesisArticulations.$inferInsert;
 
 // Signals - Explicit confirmation/warning criteria for theses AND strategies
-// Note: DB table is 'validation_points' (legacy name), but we use 'signals' in code
 export const signals = pgTable(
-  'validation_points', // Actual DB table name
+  'signals',
   {
     id: uuid('id').defaultRandom().primaryKey(),
 
@@ -1436,12 +1435,12 @@ export const signals = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    thesisIdx: index('idx_validation_points_thesis').on(table.thesisId, table.thesisType),
-    strategyIdx: index('idx_validation_points_strategy').on(table.strategyId),
-    entityTypeIdx: index('idx_validation_points_entity_type').on(table.entityType),
-    statusIdx: index('idx_validation_points_status').on(table.status),
-    typeIdx: index('idx_validation_points_type').on(table.type),
-    importanceIdx: index('idx_validation_points_importance').on(table.importance),
+    thesisIdx: index('idx_signals_thesis').on(table.thesisId, table.thesisType),
+    strategyIdx: index('idx_signals_strategy').on(table.strategyId),
+    entityTypeIdx: index('idx_signals_entity_type').on(table.entityType),
+    statusIdx: index('idx_signals_status').on(table.status),
+    typeIdx: index('idx_signals_type').on(table.type),
+    importanceIdx: index('idx_signals_importance').on(table.importance),
   })
 );
 
