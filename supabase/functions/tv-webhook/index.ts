@@ -111,19 +111,16 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // Initialize Supabase client with auto-injected credentials
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase credentials')
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
 
     // Find matching signals
     // Match by: tvAlertName in explicit_details AND (strategy's underlying_ticker = payload.ticker OR condition ticker = payload.ticker)
