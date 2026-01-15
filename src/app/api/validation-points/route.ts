@@ -119,10 +119,13 @@ export async function PATCH(request: NextRequest) {
       .where(eq(signals.id, id))
       .returning();
 
-    // Get thesis for journal
-    const thesis = existingSignal.thesisType === 'macro'
-      ? await getMacroThesisById(existingSignal.thesisId)
-      : await getAssetThesisById(existingSignal.thesisId);
+    // Get thesis for journal (only for thesis signals)
+    let thesis: { title: string } | null | undefined;
+    if (existingSignal.entityType === 'thesis' && existingSignal.thesisId) {
+      thesis = existingSignal.thesisType === 'macro'
+        ? await getMacroThesisById(existingSignal.thesisId)
+        : await getAssetThesisById(existingSignal.thesisId);
+    }
 
     // Build change description
     const changes: string[] = [];

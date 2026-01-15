@@ -72,7 +72,7 @@ The system implements a four-level decision hierarchy (see `docs/PRD_v1.1.md` an
 3. **Strategies** - Tactical implementations (options, duration, relative value)
 4. **Positions** - Individual trades and live exposures
 
-**CRITICAL:** Do not confuse strategies with theses/views. Strategies are tactical execution constructs; theses/views are long-lived belief objects that evolve with evidence.
+**CRITICAL:** Do not confuse strategies with theses. Strategies are tactical execution constructs; theses (macro and asset) are long-lived belief objects that evolve with evidence.
 
 ### Data Flow Pattern
 
@@ -120,7 +120,7 @@ React Frontend (ClaimsBrowser, ConvertClaimDialog)
 4. **Process Tracking** - All ingestion runs logged to `ingestion_runs` table
 5. **Normalized + Denormalized** - Some denormalization (e.g., ticker in multiple tables) for query efficiency
 6. **Local-First Research Workflow** - Research processing happens locally via Claude Code skills, with Supabase as single source of truth
-7. **Provenance Tracking** - Automatic tracking from claims → theses/views via conversion metadata
+7. **Provenance Tracking** - Automatic tracking from claims → theses via conversion metadata
 
 ## Key Directories
 
@@ -193,25 +193,25 @@ Feature-based component organization:
 - **`test-claims-integration.ts`** - Test claims parsing and database integration (48 tests)
 - **`upload-audit-with-claims.ts`** - Upload research artifact with claims structure
 - **`migrate-claims-structure.ts`** - Migrate existing insights to new claims structure
-- **`test-claim-conversion.ts`** - Test claim-to-thesis/view conversion logic
+- **`test-claim-conversion.ts`** - Test claim-to-thesis conversion logic
 
 ### `/.cursor/skills` - Claude Code Skills
 Research workflow automation skills (managed skills, invoked via `/skill-name`):
 
 **Research Ingestion (Bottom-Up Discovery):**
 - **`process-transcript`** - Process research transcripts with forensic Toulmin claim extraction
-- **`synthesize-claims`** - Cross-reference audit claims against existing theses/views in database
+- **`synthesize-claims`** - Cross-reference audit claims against existing macro theses and asset theses in database
 - **`deep-dive`** - Guide collaborative deep dive analysis on themes or tickers
-- **`finalize-for-upload`** - Upload finalized research (auto-detects artifact/insight/thesis/view)
+- **`finalize-for-upload`** - Upload finalized research (auto-detects artifact/insight/macro thesis/asset thesis)
 
-**Validation Assessment (Top-Down Evidence):**
-- **`assess-validation-evidence`** - Assess content against existing validation points to identify evidence of validation/invalidation
+**Signal Assessment (Top-Down Evidence):**
+- **`assess-signal-evidence`** - Assess content against existing signals to identify confirmation or warning evidence
 
 **Database Operations:**
 - **`create-thesis`** - Create macro thesis in Supabase from markdown (via psql)
-- **`create-view`** - Create asset thesis in Supabase from markdown (via psql)
+- **`create-asset-thesis`** - Create asset thesis in Supabase from markdown (via psql)
 - **`read-theses`** - Query and display macro theses from database (via psql)
-- **`read-views`** - Query and display asset thesiss from database (via psql)
+- **`read-asset-theses`** - Query and display asset theses from database (via psql)
 - **`upload-artifact`** - Upload raw research artifact to database (via psql)
 - **`upload-insight`** - Upload structured insight to database (via psql)
 
@@ -276,126 +276,75 @@ See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
 
 ### Critical Distinctions
 - **Underlying** (reference data) vs **Asset Thesis** (belief about that underlying)
-- **Strategy** (tactical execution) vs **Thesis/View** (long-lived belief)
+- **Strategy** (tactical execution) vs **Thesis** (long-lived belief at macro or asset level)
 - **Triage** (evaluation process) vs **Action Items** (user-facing queue)
+- **Signal** (confirmation/warning criteria) vs **Triage Record** (actionable item created when signal triggers)
 
-## Data Ingestion Architecture (Local-First)
+## Data Ingestion Architecture (Remote-Primary)
 
-**Primary**: Ingestion runs locally on Mac Mini via launchd scheduled jobs.
-**Development**: MacBook Pro connects to Mac Mini via Tailscale from anywhere.
-**Backup**: Remote Supabase is synced nightly for disaster recovery.
+**Primary**: Remote Supabase is the source of truth. Ingestion runs via GitHub Actions.
+**Development**: All machines connect directly to remote Supabase.
+**Fallback**: Local Mac Mini Supabase available for offline development (see runbook).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│         MAC MINI (Primary - Always On)                      │
-│         Tailscale IP: 100.75.22.47                          │
+│              REMOTE SUPABASE (Primary)                      │
+│              aws-1-eu-north-1.pooler.supabase.com           │
 ├─────────────────────────────────────────────────────────────┤
-│  Local Supabase @ :54322 (source of truth)                  │
+│  Source of truth for all data                               │
 │                                                             │
-│  Scheduled Jobs (launchd, all times UTC):                   │
-│  ├── Supabase start: On login (30s delay for Docker)       │
-│  ├── Flex ingestion: 04:00, 06:00, 08:00, 12:00 UTC        │
-│  ├── Massive ingestion: 21:30 UTC (4:30 PM ET)             │
-│  └── Push to remote: 07:00 UTC                             │
-│                                                             │
-│  All activity happens here:                                 │
-│  ├── Ingestion → Derived computations → User edits         │
-│  └── Claude skills → Research uploads                       │
+│  Data flows:                                                │
+│  ├── GitHub Actions → Ingestion (Flex, Massive)            │
+│  ├── Edge Functions → TradingView webhooks (tv-webhook)    │
+│  └── All machines → Direct reads/writes                     │
 └─────────────────────────────────────────────────────────────┘
                     ▲
-                    │ Tailscale (works anywhere)
+                    │ Direct connection (all machines)
                     ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      MACBOOK PRO                            │
+│            DEVELOPMENT MACHINES                             │
 ├─────────────────────────────────────────────────────────────┤
-│  npm run dev → connects to Mac Mini's DB via Tailscale     │
-│  Works: home, coffee shop, travel                           │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              │ Daily backup (07:00 UTC)
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│              REMOTE SUPABASE (Backup Only)                  │
-├─────────────────────────────────────────────────────────────┤
-│  Mirror of local (pushed nightly)                          │
-│  Used when: Mac Mini down (disaster recovery)              │
+│  MacBook Pro / Mac Mini / Any machine                      │
+│  npm run dev → connects to remote Supabase                 │
+│  Works from anywhere with internet                          │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Local Scheduled Jobs (launchd)
+### GitHub Actions Scheduled Jobs
 
-Install on Mac Mini:
+Ingestion runs automatically via GitHub Actions (all times UTC):
+- **Flex ingestion**: Hourly from 4 AM to 2 PM UTC (covers US market hours)
+- **Massive ingestion**: 9:30 PM UTC (4:30 PM ET, 30 min after market close)
+
+Workflows:
+- `.github/workflows/flex-ingestion.yml` - IBKR Flex API trades/positions
+- `.github/workflows/massive-ingestion.yml` - Massive.com IV/spot data
+
+Manual trigger available from GitHub UI for testing.
+
+### Environment Configuration
+
+All machines use remote Supabase in `.env.local`:
 ```bash
-./launchd/install.sh           # Install all jobs
-./launchd/install.sh --status  # Check status
-./launchd/install.sh --remove  # Remove all jobs
-```
-
-Jobs installed:
-- `com.trade-journal.supabase-start` - On login (30s delay for Docker)
-- `com.trade-journal.flex-ingestion` - 04:00, 06:00, 08:00, 12:00 UTC
-- `com.trade-journal.massive-ingestion` - 21:30 UTC (4:30 PM ET)
-- `com.trade-journal.push-to-remote` - 07:00 UTC
-
-Logs (in project `logs/` directory): `logs/flex-ingestion.log`, `logs/massive-ingestion.log`, `logs/push-to-remote.log`, `logs/supabase-start.log`
-
-### MacBook Pro Development (via Tailscale)
-
-MacBook Pro connects to Mac Mini's database via Tailscale mesh VPN, enabling development from anywhere.
-
-**MacBook Pro `.env.local`:**
-```bash
-DATABASE_URL_POOLER=postgresql://postgres:postgres@100.75.22.47:54322/postgres
-DATABASE_URL_DIRECT=postgresql://postgres:postgres@100.75.22.47:54322/postgres
-```
-
-**Mac Mini `.env.local`:**
-```bash
-DATABASE_URL_POOLER=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-DATABASE_URL_DIRECT=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-```
-
-**Development workflow:**
-1. Ensure Tailscale connected (menu bar icon on both machines)
-2. `git pull` on MacBook Pro
-3. `npm run dev` — runs locally, connects to Mac Mini's DB
-4. Code, test, commit, push
-
-**Claude Code skills** work on both machines — they read `DATABASE_URL_POOLER` from the local `.env.local`.
-
-### Sync Scripts
-
-```bash
-# Push local → remote (daily backup, runs automatically at 07:00 UTC)
-set -a && source .env.local && set +a && npx tsx scripts/push-to-remote.ts
-
-# Restore remote → local (disaster recovery only)
-set -a && source .env.local && set +a && npx tsx scripts/restore-from-remote.ts --dry-run
-set -a && source .env.local && set +a && npx tsx scripts/restore-from-remote.ts --confirm
-```
-
-### GitHub Actions (Emergency Backup)
-
-GitHub Actions workflows are **disabled by default** (schedule commented out).
-They can be triggered manually from GitHub UI for emergency use:
-- `.github/workflows/flex-ingestion.yml` - Manual trigger only
-- `.github/workflows/massive-ingestion.yml` - Manual trigger only
-
-### Fallback: Remote Supabase
-
-With Tailscale, MacBook Pro can connect to Mac Mini from anywhere. Remote Supabase is only needed if Mac Mini is down.
-
-To switch MacBook Pro to remote Supabase (disaster recovery):
-```bash
-# In MacBook Pro .env.local:
 DATABASE_URL_POOLER=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
-DATABASE_URL_DIRECT=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+DATABASE_URL_DIRECT=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:5432/postgres
+USE_DIRECT_CONNECTION=false
 ```
 
-When Mac Mini is back, restore if needed:
-```bash
-npx tsx scripts/restore-from-remote.ts --confirm
-```
+### Mode Switching
+
+To switch between local and remote modes, see **[Database Mode Switch Runbook](docs/runbook-database-mode-switch.md)**.
+
+**Why remote-primary?**
+- Simpler architecture (no Mac Mini dependency, no Tailscale)
+- Edge Functions for webhooks (TradingView alerts)
+- Works from anywhere without VPN setup
+- GitHub Actions handles scheduled ingestion reliably
+
+**When to use local mode:**
+- Offline development
+- Schema experimentation
+- Heavy data manipulation without egress costs
 
 ## Environment Variables
 
@@ -425,6 +374,9 @@ IBKR_GATEWAY_PASSWORD=<password>
 # Massive.com
 MASSIVE_API_KEY=<api-key>
 MASSIVE_API_BASE_URL=https://api.massive.com
+
+# TradingView Webhooks (optional - for strategy signals)
+NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-webhook
 ```
 
 ## Working with the Codebase
@@ -583,9 +535,41 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 7. **State Codes** - Playbook states like "LC1", "RR2" are tactical workflow concepts, not PRD concepts
 8. **Local-First Research** - Research processing via Claude Code skills with Supabase as single source of truth
 9. **Toulmin Framework** - Claims use Toulmin argumentation model (claim, evidence, reasoning, backing)
-10. **Provenance Tracking** - Automatic tracking from research claims → theses/views with source metadata
+10. **Provenance Tracking** - Automatic tracking from research claims → theses with source metadata
 11. **JSONB Claims Structure** - `research_insights.claims_structure` stores hierarchical claim tree
 12. **No Bidirectional Sync** - One-way upload from local Markdown to Supabase; no automatic sync back to files
+13. **TradingView Webhooks** - Price alerts via Edge Function (`supabase/functions/tv-webhook`), matched by `tvAlertName` in signal config
+
+## TradingView Webhook Integration
+
+Strategy signals can be triggered by TradingView price alerts via Supabase Edge Function.
+
+**Setup:**
+1. Deploy Edge Function: `supabase functions deploy tv-webhook`
+2. Add env var: `NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-webhook`
+3. In TradingView: Create alert, set webhook URL, use standard JSON payload
+
+**Payload Template (paste into TradingView alert message):**
+```json
+{
+  "ticker": "{{ticker}}",
+  "exchange": "{{exchange}}",
+  "alertName": "{{alertname}}",
+  "price": {{close}},
+  "time": "{{timenow}}",
+  "interval": "{{interval}}"
+}
+```
+
+**Matching Logic:**
+- Webhook matches signals by `tvAlertName` (case-insensitive) + strategy's `underlying_ticker`
+- On match: Signal status → `triggered`, triage record created with `recommendedAction`
+- Journal entry logged with trigger context
+
+**Files:**
+- Edge Function: `supabase/functions/tv-webhook/index.ts`
+- Signal Config UI: `src/components/signals/StrategySignalConfigForm.tsx`
+- Signal Display: `src/components/signals/StrategySignalsSection.tsx`
 
 ## Quick Navigation for Specific Features
 
@@ -609,13 +593,13 @@ This codebase is transitioning from a tactical options trading tool to the "Univ
 ### Implemented Features ✅
 - **Macro Theses** and **Asset Thesiss** - Core entities with claims provenance tracking
 - **Research & Intelligence Layer** - Local-first Toulmin claim extraction workflow
-- **Claims Browsing & Conversion** - Web UI for exploring and converting research into theses/views
+- **Claims Browsing & Conversion** - Web UI for exploring and converting research into macro/asset theses
 - **Claude Code Skills** - Automated research processing and database integration
 
 ### Remaining Future Additions
 - **Journal / Decision Log** - Evolution of current "Blotter" concept with narrative context
 - **Workflow Triggers** - First-class trigger entities beyond current triage rules (Phase 4)
 - **Enhanced Evidence Linking** - Direct linkage from positions/strategies back to supporting claims
-- **Research Synthesis Dashboard** - Portfolio-wide view of thesis → view → strategy → position chain
+- **Research Synthesis Dashboard** - Portfolio-wide view of macro thesis → asset thesis → strategy → position chain
 
 When implementing new features, consult the PRD and terminology docs to ensure alignment with the long-term vision.

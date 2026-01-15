@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { strategies } from '@/db/schema';
+import { strategies, triageRecords, accounts } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 /**
  * POST /api/strategies/create
@@ -73,6 +74,9 @@ export async function POST(request: NextRequest) {
     // Auto-generate label if not provided
     const finalLabel = label || `${direction.toUpperCase()} ${strategyKey}`;
 
+    // Get default account (first account in system)
+    const [defaultAccount] = await db.select().from(accounts).limit(1);
+
     // Create the strategy
     // Note: Using placeholder strategyTemplateId - in production, this should be provided or looked up
     // Note: thesis, exitCriteria, profitRules, defenseRules, timeRules, entryContext removed - these now come from linked asset thesis
@@ -85,18 +89,36 @@ export async function POST(request: NextRequest) {
         status,
         openedAt: new Date(),
         assetThesisId: assetThesisId || null, // Inherits macro thesis through asset thesis
+        accountId: defaultAccount?.id || null,
         timeHorizon: timeHorizon || null,
         createdAt: new Date(),
         updatedAt: new Date(),
       })
       .returning();
 
+    // Create DEFINE_SIGNALS triage record to prompt user to configure signals
+    if (defaultAccount) {
+      const today = new Date().toISOString().split('T')[0];
+      await db.insert(triageRecords).values({
+        snapshotDate: today,
+        accountId: defaultAccount.id,
+        contextLevel: 'strategy',
+        strategyId: createdStrategy.id,
+        symbol: strategyKey.split('-')[0] || strategyKey, // Extract ticker from strategy key
+        severity: 'attention',
+        recommendedAction: 'DEFINE_SIGNALS',
+        notes: `New strategy created. Configure signals to define trigger conditions for take profit, stop loss, and other alerts.`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
     return NextResponse.json({
       success: true,
       id: createdStrategy.id,
       strategyKey: createdStrategy.strategyKey,
       label: createdStrategy.autoDerivedLabel,
-      message: 'Strategy created successfully',
+      message: 'Strategy created successfully. DEFINE_SIGNALS triage record created.',
     });
   } catch (error: any) {
     console.error('Error creating strategy:', error);

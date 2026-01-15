@@ -95,11 +95,16 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Get thesis for logging
-      const thesis = signal.thesisType === 'macro'
-        ? await getMacroThesisById(signal.thesisId)
-        : await getAssetThesisById(signal.thesisId);
-      const thesisTitle = thesis?.title || 'Unknown Thesis';
+      // Get thesis for logging (only for thesis signals, not strategy signals)
+      let thesisTitle = 'Unknown Thesis';
+      if (signal.entityType === 'thesis' && signal.thesisId) {
+        const thesis = signal.thesisType === 'macro'
+          ? await getMacroThesisById(signal.thesisId)
+          : await getAssetThesisById(signal.thesisId);
+        thesisTitle = thesis?.title || 'Unknown Thesis';
+      } else if (signal.entityType === 'strategy') {
+        thesisTitle = 'Strategy Signal';
+      }
 
       if (action === 'accept') {
         // Apply modifications if provided
@@ -157,19 +162,22 @@ export async function POST(request: NextRequest) {
           newState.category = 'data_driven';
         }
 
-        await logToJournal({
-          objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-          objectId: signal.thesisId,
-          objectTitle: thesisTitle,
-          actionType: explicitDetails ? 'signal_configured_data_driven' : 'signal_accepted',
-          actionDescription,
-          previousState: { status: 'recommended', category: signal.category },
-          newState,
-          source: 'user',
-        });
+        // Log to journal and check triage (only for thesis signals)
+        if (signal.entityType === 'thesis' && signal.thesisId && signal.thesisType) {
+          await logToJournal({
+            objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+            objectId: signal.thesisId,
+            objectTitle: thesisTitle,
+            actionType: explicitDetails ? 'signal_configured_data_driven' : 'signal_accepted',
+            actionDescription,
+            previousState: { status: 'recommended', category: signal.category },
+            newState,
+            source: 'user',
+          });
 
-        // Check if any recommended signals remain and resolve triage if not
-        await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset');
+          // Check if any recommended signals remain and resolve triage if not
+          await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset');
+        }
 
         return NextResponse.json({
           success: true,
@@ -181,20 +189,22 @@ export async function POST(request: NextRequest) {
         // Reject - delete the signal
         await db.delete(signals).where(eq(signals.id, signalId));
 
-        // Log to journal
-        await logToJournal({
-          objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-          objectId: signal.thesisId,
-          objectTitle: thesisTitle,
-          actionType: 'signal_rejected',
-          actionDescription: `Rejected recommended signal: "${signal.statement}"`,
-          previousState: { status: 'recommended', statement: signal.statement },
-          newState: { deleted: true },
-          source: 'user',
-        });
+        // Log to journal and check triage (only for thesis signals)
+        if (signal.entityType === 'thesis' && signal.thesisId && signal.thesisType) {
+          await logToJournal({
+            objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+            objectId: signal.thesisId,
+            objectTitle: thesisTitle,
+            actionType: 'signal_rejected',
+            actionDescription: `Rejected recommended signal: "${signal.statement}"`,
+            previousState: { status: 'recommended', statement: signal.statement },
+            newState: { deleted: true },
+            source: 'user',
+          });
 
-        // Check if any recommended signals remain and resolve triage if not
-        await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset');
+          // Check if any recommended signals remain and resolve triage if not
+          await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset');
+        }
 
         return NextResponse.json({
           success: true,

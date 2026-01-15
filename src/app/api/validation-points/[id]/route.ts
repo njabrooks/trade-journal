@@ -109,11 +109,16 @@ export async function PATCH(
 
     const previousStatus = currentSignal.status;
 
-    // 3. Fetch thesis for journal context
-    const thesis = currentSignal.thesisType === 'macro'
-      ? await getMacroThesisById(currentSignal.thesisId)
-      : await getAssetThesisById(currentSignal.thesisId);
-    const thesisTitle = thesis?.title || 'Unknown Thesis';
+    // 3. Fetch context for journal (thesis or strategy)
+    let thesisTitle = 'Unknown';
+    if (currentSignal.entityType === 'thesis' && currentSignal.thesisId) {
+      const thesis = currentSignal.thesisType === 'macro'
+        ? await getMacroThesisById(currentSignal.thesisId)
+        : await getAssetThesisById(currentSignal.thesisId);
+      thesisTitle = thesis?.title || 'Unknown Thesis';
+    } else if (currentSignal.entityType === 'strategy') {
+      thesisTitle = 'Strategy Signal';
+    }
 
     // 4. Create signal_status_history entry
     const [historyRecord] = await db
@@ -150,32 +155,36 @@ export async function PATCH(
       ? `${currentSignal.statement.slice(0, 50)}...`
       : currentSignal.statement;
 
-    const journalEntryId = await logToJournal({
-      objectType: currentSignal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-      objectId: currentSignal.thesisId,
-      objectTitle: thesisTitle,
-      actionType: 'vi_status_changed',
-      actionDescription: `Signal "${statementPreview}" status: ${previousStatus} → ${newStatus}`,
-      previousState: {
-        status: previousStatus,
-        signalId: id,
-        signalType: currentSignal.type,
-      },
-      newState: {
-        status: newStatus,
-        confidence,
-        evidenceSource: evidence.source,
-      },
-      source,
-      metadata: {
-        signalId: id,
-        signalType: currentSignal.type,
-        importance: currentSignal.importance,
-        evidenceSummary: evidence.summary,
-        evidenceLink: evidence.link,
-        userActionTaken,
-      },
-    });
+    // Log to journal (only for thesis signals with valid thesisId)
+    let journalEntryId: string | undefined;
+    if (currentSignal.entityType === 'thesis' && currentSignal.thesisId && currentSignal.thesisType) {
+      journalEntryId = await logToJournal({
+        objectType: currentSignal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+        objectId: currentSignal.thesisId,
+        objectTitle: thesisTitle,
+        actionType: 'vi_status_changed',
+        actionDescription: `Signal "${statementPreview}" status: ${previousStatus} → ${newStatus}`,
+        previousState: {
+          status: previousStatus,
+          signalId: id,
+          signalType: currentSignal.type,
+        },
+        newState: {
+          status: newStatus,
+          confidence,
+          evidenceSource: evidence.source,
+        },
+        source,
+        metadata: {
+          signalId: id,
+          signalType: currentSignal.type,
+          importance: currentSignal.importance,
+          evidenceSummary: evidence.summary,
+          evidenceLink: evidence.link,
+          userActionTaken,
+        },
+      });
+    }
 
     // 7. Return response
     return NextResponse.json({
@@ -223,11 +232,16 @@ async function handleUpgradeToExplicit(
     );
   }
 
-  // 3. Fetch thesis for journal context
-  const thesis = currentSignal.thesisType === 'macro'
-    ? await getMacroThesisById(currentSignal.thesisId)
-    : await getAssetThesisById(currentSignal.thesisId);
-  const thesisTitle = thesis?.title || 'Unknown Thesis';
+  // 3. Fetch context for journal (thesis or strategy)
+  let thesisTitle = 'Unknown';
+  if (currentSignal.entityType === 'thesis' && currentSignal.thesisId) {
+    const thesis = currentSignal.thesisType === 'macro'
+      ? await getMacroThesisById(currentSignal.thesisId)
+      : await getAssetThesisById(currentSignal.thesisId);
+    thesisTitle = thesis?.title || 'Unknown Thesis';
+  } else if (currentSignal.entityType === 'strategy') {
+    thesisTitle = 'Strategy Signal';
+  }
 
   // 4. Update signal with new category and explicit details
   const [updatedSignal] = await db
@@ -253,35 +267,37 @@ async function handleUpgradeToExplicit(
     assessedBy: 'user',
   });
 
-  // 6. Log to journal
+  // 6. Log to journal (only for thesis signals)
   const statementPreview = currentSignal.statement.length > 50
     ? `${currentSignal.statement.slice(0, 50)}...`
     : currentSignal.statement;
 
-  await logToJournal({
-    objectType: currentSignal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-    objectId: currentSignal.thesisId,
-    objectTitle: thesisTitle,
-    actionType: 'signal_upgraded_to_data_driven',
-    actionDescription: `Signal "${statementPreview}" upgraded from judgment to data-driven with data trigger`,
-    previousState: {
-      category: 'judgment',
-      signalId: id,
-      signalType: currentSignal.type,
-    },
-    newState: {
-      category: 'data_driven',
-      explicitDetails: body.explicitDetails,
-    },
-    source: 'user',
-    metadata: {
-      signalId: id,
-      signalType: currentSignal.type,
-      importance: currentSignal.importance,
-      dataSource: body.explicitDetails.dataSource,
-      metric: body.explicitDetails.metric,
-    },
-  });
+  if (currentSignal.entityType === 'thesis' && currentSignal.thesisId && currentSignal.thesisType) {
+    await logToJournal({
+      objectType: currentSignal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: currentSignal.thesisId,
+      objectTitle: thesisTitle,
+      actionType: 'signal_upgraded_to_data_driven',
+      actionDescription: `Signal "${statementPreview}" upgraded from judgment to data-driven with data trigger`,
+      previousState: {
+        category: 'judgment',
+        signalId: id,
+        signalType: currentSignal.type,
+      },
+      newState: {
+        category: 'data_driven',
+        explicitDetails: body.explicitDetails,
+      },
+      source: 'user',
+      metadata: {
+        signalId: id,
+        signalType: currentSignal.type,
+        importance: currentSignal.importance,
+        dataSource: body.explicitDetails.dataSource,
+        metric: body.explicitDetails.metric,
+      },
+    });
+  }
 
   // 7. Return response
   return NextResponse.json({

@@ -1377,15 +1377,26 @@ export const thesisArticulations = pgTable(
 export type ThesisArticulation = typeof thesisArticulations.$inferSelect;
 export type NewThesisArticulation = typeof thesisArticulations.$inferInsert;
 
-// Signals - Explicit confirmation/warning criteria (renamed from validation_points)
+// Signals - Explicit confirmation/warning criteria for theses AND strategies
+// Note: DB table is 'validation_points' (legacy name), but we use 'signals' in code
 export const signals = pgTable(
-  'signals',
+  'validation_points', // Actual DB table name
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    thesisId: uuid('thesis_id').notNull(),
-    thesisType: text('thesis_type').notNull(), // 'macro' | 'asset'
+
+    // Entity type: 'thesis' (macro/asset thesis) or 'strategy'
+    entityType: text('entity_type').notNull().default('thesis'), // 'thesis' | 'strategy'
+
+    // For thesis signals (entity_type = 'thesis')
+    thesisId: uuid('thesis_id'), // Nullable - null when entity_type = 'strategy'
+    thesisType: text('thesis_type'), // 'macro' | 'asset' - null when entity_type = 'strategy'
     articulationId: uuid('articulation_id').references(() => thesisArticulations.id, {
       onDelete: 'set null',
+    }),
+
+    // For strategy signals (entity_type = 'strategy')
+    strategyId: uuid('strategy_id').references(() => strategies.id, {
+      onDelete: 'cascade',
     }),
 
     // Core definition
@@ -1398,7 +1409,9 @@ export const signals = pgTable(
     importance: text('importance').notNull(), // 'critical' | 'significant' | 'supporting'
 
     // Data-driven trigger configuration
-    explicitDetails: jsonb('explicit_details'), // DataDrivenConfig - see ExplicitDetails type in components/signals/SignalConfigForm.tsx
+    // For thesis signals: see ExplicitDetails type in components/signals/SignalConfigForm.tsx
+    // For strategy signals: see StrategySignalConfig type in docs/design/260115-strategy-signals.md
+    explicitDetails: jsonb('explicit_details'),
 
     // DEPRECATED fields (kept for backwards compatibility, will be migrated to notes)
     rationale: text('rationale'), // @deprecated - use notes
@@ -1411,7 +1424,7 @@ export const signals = pgTable(
     // Note: 'monitoring' was removed in Phase 7 - all accepted signals are implicitly being monitored
     status: text('status').notNull().default('not_triggered'), // 'not_triggered' | 'triggered' | 'superseded' | 'recommended'
 
-    // Dependent thesis reference (for compositional validation)
+    // Dependent thesis reference (for compositional validation - thesis signals only)
     dependentThesisId: uuid('dependent_thesis_id'),
     dependentThesisType: text('dependent_thesis_type'), // 'macro' | 'asset'
     dependentThesisCondition: text('dependent_thesis_condition'), // 'invalidated' | 'confidence_drops' | 'status_changes'
@@ -1423,10 +1436,12 @@ export const signals = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    thesisIdx: index('idx_signals_thesis').on(table.thesisId, table.thesisType),
-    statusIdx: index('idx_signals_status').on(table.status),
-    typeIdx: index('idx_signals_type').on(table.type),
-    importanceIdx: index('idx_signals_importance').on(table.importance),
+    thesisIdx: index('idx_validation_points_thesis').on(table.thesisId, table.thesisType),
+    strategyIdx: index('idx_validation_points_strategy').on(table.strategyId),
+    entityTypeIdx: index('idx_validation_points_entity_type').on(table.entityType),
+    statusIdx: index('idx_validation_points_status').on(table.status),
+    typeIdx: index('idx_validation_points_type').on(table.type),
+    importanceIdx: index('idx_validation_points_importance').on(table.importance),
   })
 );
 

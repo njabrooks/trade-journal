@@ -108,6 +108,7 @@ const ALL_TABLES = [
   // Derived/computed
   'triage_records',
   'blotter_actions',
+  'journal_entries',
 
   // Logging
   'ingestion_runs',

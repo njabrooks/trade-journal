@@ -11,6 +11,7 @@ interface StrategyTabsProps {
 const TABS = [
   { href: (id: string) => `/strategies/${id}/performance`, label: "Performance", id: "performance" },
   { href: (id: string) => `/strategies/${id}/triage`, label: "Triage", id: "triage" },
+  { href: (id: string) => `/strategies/${id}/signals`, label: "Signals", id: "signals" },
   { href: (id: string) => `/strategies/${id}/blotter`, label: "Blotter", id: "blotter" },
 ] as const;
 
