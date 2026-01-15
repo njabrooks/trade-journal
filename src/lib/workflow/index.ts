@@ -10,6 +10,9 @@ export {
   applyLifecycleTransition,
   processAllLifecycleTransitions,
   logToJournal,
+  logTriageToJournalWithDedup,
+  resolveJournalEntry,
+  dismissJournalEntry,
   type LifecycleStatus,
   type ThesisType,
 } from './lifecycleDetection';

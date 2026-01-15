@@ -10,7 +10,7 @@ import {
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc, ne } from 'drizzle-orm';
 import { detectStateCodeChangeFromStored } from '@/lib/derived/stateCode';
-import { logToJournal } from '@/lib/workflow';
+import { logToJournal, logTriageToJournalWithDedup } from '@/lib/workflow';
 
 // Triage rule configuration
 export const TRIAGE_RULES_V1 = {
@@ -674,8 +674,12 @@ function isMoreSevere(newSeverity: string | null, oldSeverity: string | null): b
 }
 
 /**
- * Logs new triage detections to the journal
- * Compares against previous day's records to identify truly new triggers
+ * Logs new triage detections to the journal with deduplication.
+ *
+ * For triage_detected: Updates existing active entries instead of creating duplicates.
+ * For triage_escalated: Creates new entry and marks previous as superseded.
+ *
+ * This prevents journal spam when the same condition persists across multiple days/runs.
  */
 async function logNewTriageDetections(
   records: NewTriageRecord[],
@@ -688,26 +692,24 @@ async function logNewTriageDetections(
     }
 
     const entityId = rec.contextLevel === 'strategy' ? rec.strategyId : rec.positionId;
+    if (!entityId) continue;
+
     const key = `${rec.contextLevel}:${entityId}:${rec.recommendedAction}`;
     const previousRec = previousRecordsMap.get(key);
 
-    // Determine if this is a new detection or escalation
-    const isNew = !previousRec;
+    // Determine if this is an escalation (severity increased)
     const isEscalation = previousRec && isMoreSevere(rec.severity ?? null, previousRec.severity);
 
-    if (isNew || isEscalation) {
-      try {
+    try {
+      if (isEscalation) {
+        // Escalation: Create new entry (escalations are always logged as new events)
         await logToJournal({
           objectType: rec.contextLevel === 'strategy' ? 'strategy' : 'position',
-          objectId: entityId!,
+          objectId: entityId,
           objectTitle: rec.symbol || 'Unknown',
-          actionType: isNew ? 'triage_detected' : 'triage_escalated',
-          actionDescription: isNew
-            ? `System detected ${rec.recommendedAction}${rec.notes ? `: ${rec.notes}` : ''}`
-            : `Trigger ${rec.recommendedAction} escalated from ${previousRec?.severity} to ${rec.severity}`,
-          previousState: previousRec
-            ? { severity: previousRec.severity, recommendedAction: previousRec.recommendedAction }
-            : {},
+          actionType: 'triage_escalated',
+          actionDescription: `Trigger ${rec.recommendedAction} escalated from ${previousRec?.severity} to ${rec.severity}`,
+          previousState: { severity: previousRec?.severity, recommendedAction: previousRec?.recommendedAction },
           newState: {
             severity: rec.severity,
             recommendedAction: rec.recommendedAction,
@@ -724,10 +726,38 @@ async function logNewTriageDetections(
             ...(rec.flagAssignment && { flagAssignment: rec.flagAssignment }),
           },
         });
-      } catch (error) {
-        // Log error but don't fail the entire operation
-        console.error(`[Triage] Failed to log journal entry for ${rec.recommendedAction}:`, error);
+      } else {
+        // Detection: Use dedup function to update existing or create new
+        // This prevents duplicate entries when the same condition persists
+        await logTriageToJournalWithDedup({
+          objectType: rec.contextLevel === 'strategy' ? 'strategy' : 'position',
+          objectId: entityId,
+          objectTitle: rec.symbol || 'Unknown',
+          actionType: 'triage_detected',
+          actionDescription: `System detected ${rec.recommendedAction}${rec.notes ? `: ${rec.notes}` : ''}`,
+          triggerKey: rec.recommendedAction || 'unknown',
+          previousState: previousRec
+            ? { severity: previousRec.severity, recommendedAction: previousRec.recommendedAction }
+            : {},
+          newState: {
+            severity: rec.severity,
+            recommendedAction: rec.recommendedAction,
+            contextLevel: rec.contextLevel,
+          },
+          source: 'automation',
+          metadata: {
+            snapshotDate: rec.snapshotDate,
+            ruleSet: rec.ruleSet,
+            ...(rec.dte !== undefined && rec.dte !== null && { dte: rec.dte }),
+            ...(rec.sigmaToStrike && { sigmaToStrike: rec.sigmaToStrike }),
+            ...(rec.isItm !== null && { isItm: rec.isItm }),
+            ...(rec.flagAssignment && { flagAssignment: rec.flagAssignment }),
+          },
+        });
       }
+    } catch (error) {
+      // Log error but don't fail the entire operation
+      console.error(`[Triage] Failed to log journal entry for ${rec.recommendedAction}:`, error);
     }
   }
 }

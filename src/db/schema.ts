@@ -1952,12 +1952,19 @@ export const journalEntries = pgTable(
 
     // Additional metadata
     metadata: jsonb('metadata').default({}),
+
+    // Deduplication / lifecycle tracking
+    firstDetectedAt: timestamp('first_detected_at', { withTimezone: true }),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+    occurrenceCount: integer('occurrence_count').default(1),
+    status: text('status').default('active'), // 'active' | 'resolved' | 'dismissed' | 'superseded'
   },
   (table) => ({
     objectIdx: index('idx_journal_object').on(table.objectType, table.objectId),
     timestampIdx: index('idx_journal_timestamp').on(table.timestamp),
     actionTypeIdx: index('idx_journal_action_type').on(table.actionType),
     sourceIdx: index('idx_journal_source').on(table.source),
+    dedupLookupIdx: index('idx_journal_dedup_lookup').on(table.objectId, table.actionType, table.status),
   })
 );
 

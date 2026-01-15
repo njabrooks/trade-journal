@@ -5,14 +5,106 @@ import { computeTriageForDate, deleteTriageRecordsForDateRange } from '@/lib/der
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 import { computeTradeBlotterEntriesForDate, computeTradeBlotterEntriesForDateRange, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
 import { db } from '@/db';
-import { positions } from '@/db/schema';
-import { and, eq, ne, isNotNull, gte, lte, sql } from 'drizzle-orm';
+import { positions, ingestionRuns } from '@/db/schema';
+import { and, eq, ne, isNotNull, gte, lte, sql, desc, inArray, gt } from 'drizzle-orm';
 import { trackProcess } from '@/lib/services/processTracking';
+
+// Ingestion job types that produce new data requiring recompute
+const INGESTION_JOB_TYPES = [
+  'trade_ingestion',
+  'position_ingestion',
+  'flex_trades',
+  'flex_positions',
+  'flex_nav',
+  'flex_mtm',
+  'massive_iv',
+];
+
+/**
+ * Check if recompute is needed by comparing last successful recompute
+ * with last successful ingestion.
+ *
+ * Returns: { needed: boolean, reason: string, lastRecompute?: Date, lastIngestion?: Date }
+ */
+async function checkRecomputeNeeded(accountId?: string): Promise<{
+  needed: boolean;
+  reason: string;
+  lastRecompute?: Date;
+  lastIngestion?: Date;
+}> {
+  // Find last successful recompute_all run
+  const lastRecomputeQuery = db
+    .select({ finishedAt: ingestionRuns.finishedAt })
+    .from(ingestionRuns)
+    .where(
+      and(
+        eq(ingestionRuns.jobType, 'recompute_all'),
+        eq(ingestionRuns.status, 'completed'),
+        isNotNull(ingestionRuns.finishedAt),
+        accountId ? eq(ingestionRuns.accountId, accountId) : sql`true`
+      )
+    )
+    .orderBy(desc(ingestionRuns.finishedAt))
+    .limit(1);
+
+  const [lastRecompute] = await lastRecomputeQuery;
+
+  // If no previous recompute, definitely need one
+  if (!lastRecompute?.finishedAt) {
+    return { needed: true, reason: 'No previous recompute found' };
+  }
+
+  // Find any successful ingestion since last recompute
+  const newIngestionQuery = db
+    .select({ id: ingestionRuns.id, jobType: ingestionRuns.jobType, finishedAt: ingestionRuns.finishedAt })
+    .from(ingestionRuns)
+    .where(
+      and(
+        inArray(ingestionRuns.jobType, INGESTION_JOB_TYPES),
+        eq(ingestionRuns.status, 'completed'),
+        isNotNull(ingestionRuns.finishedAt),
+        gt(ingestionRuns.finishedAt, lastRecompute.finishedAt),
+        accountId ? eq(ingestionRuns.accountId, accountId) : sql`true`
+      )
+    )
+    .orderBy(desc(ingestionRuns.finishedAt))
+    .limit(1);
+
+  const [lastIngestion] = await newIngestionQuery;
+
+  if (lastIngestion?.finishedAt) {
+    return {
+      needed: true,
+      reason: `New ${lastIngestion.jobType} since last recompute`,
+      lastRecompute: lastRecompute.finishedAt,
+      lastIngestion: lastIngestion.finishedAt,
+    };
+  }
+
+  return {
+    needed: false,
+    reason: 'No new ingestions since last recompute',
+    lastRecompute: lastRecompute.finishedAt,
+  };
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { accountId, startDate, endDate, snapshotDate, includeUnderlyings } = body;
+    const { accountId, startDate, endDate, snapshotDate, includeUnderlyings, force } = body;
+
+    // Gating check: skip if no new data (unless force=true)
+    if (!force) {
+      const gateCheck = await checkRecomputeNeeded(accountId);
+      if (!gateCheck.needed) {
+        return NextResponse.json({
+          skipped: true,
+          reason: gateCheck.reason,
+          lastRecompute: gateCheck.lastRecompute,
+          message: 'No new data to process. Use force=true to override.',
+        });
+      }
+    }
 
     // Track the recompute process
     return await trackProcess(
