@@ -221,21 +221,28 @@ Deno.serve(async (req) => {
         const details = signal.explicit_details
         const recommendedAction = details?.recommendedAction || 'REVIEW_SIGNAL'
 
+        // Get default account for triage record
+        const { data: defaultAccount } = await supabase
+          .from('accounts')
+          .select('id')
+          .limit(1)
+          .single()
+
         const triageRecord = {
+          snapshot_date: new Date().toISOString().split('T')[0],
+          account_id: defaultAccount?.id,
+          symbol: payload.ticker,
           strategy_id: signal.strategy_id,
           severity: signal.importance === 'critical' ? 'urgent' :
-                   signal.importance === 'significant' ? 'attention' : 'monitor',
-          urgency: signal.type === 'warning' ? 'high' : 'medium',
+                   signal.importance === 'significant' ? 'attention' : 'info',
           recommended_action: recommendedAction,
-          reasons: JSON.stringify([
+          notes: [
             `Signal triggered: ${signal.statement}`,
             `TradingView alert: ${payload.alertName}`,
             `Price: ${payload.price ?? 'N/A'}`,
             details?.actionNotes ? `Notes: ${details.actionNotes}` : null
-          ].filter(Boolean)),
-          source: 'tradingview_webhook',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          ].filter(Boolean).join(' | '),
+          context_level: 'strategy'
         }
 
         const { data: newTriage, error: triageError } = await supabase
@@ -262,22 +269,22 @@ Deno.serve(async (req) => {
           object_title: strategy?.auto_derived_label || strategy?.strategy_key || 'Unknown Strategy',
           action_type: 'signal_triggered',
           action_description: `TradingView alert "${payload.alertName}" triggered signal: ${signal.statement}`,
-          previous_state: JSON.stringify({ status: 'not_triggered' }),
-          new_state: JSON.stringify({
+          previous_state: { status: 'not_triggered' },
+          new_state: {
             status: 'triggered',
             triggeredAt: new Date().toISOString(),
             triggerPrice: payload.price,
             triageRecordId: newTriage?.id
-          }),
-          source: 'tradingview_webhook',
-          metadata: JSON.stringify({
+          },
+          source: 'automation',
+          metadata: {
             signalId: signal.id,
             alertName: payload.alertName,
             ticker: payload.ticker,
             price: payload.price,
-            exchange: payload.exchange
-          }),
-          created_at: new Date().toISOString()
+            exchange: payload.exchange,
+            webhookSource: 'tradingview'
+          }
         }
 
         await supabase
