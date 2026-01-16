@@ -223,42 +223,47 @@ Add "Link to Thesis" button on claim detail page. Reuse existing ConvertClaimToE
 
 ---
 
-### #ENH-048: Thesis Status Field Consolidation
-**Priority**: Medium | **Effort**: 1-2 days | **Phase**: 5+ (Technical Debt)
+### #ENH-048: Entity Status Standardization
+**Priority**: Medium | **Effort**: 1-2 weeks | **Phase**: 5+ (Technical Debt)
 **PRD**: Section 3 (Decision Hierarchy), Section 5 (Research Layer)
 
-Resolve confusion between `status`, `workflowStatus`, and `lifecycleStatus` fields on MacroThesis and AssetThesis entities.
+Standardize the `status` field across all key domain entities (Claims, Signals, Theses, Strategies) using a universal lifecycle model.
 
-**Current State:**
-- `status` - Lifecycle validity (used)
-- `workflowStatus` - User intent (schema only, never used in code)
-- `lifecycleStatus` - Workflow progression (marked deprecated, but actively used in code)
+**See:** [Entity Status Standardization Guide](features/entity-status-standardization.md) for full specification.
 
-**Proposed Solution:**
+**Universal Lifecycle Values:**
 
-Keep TWO fields with clear, distinct purposes:
+| Status | Meaning |
+|--------|---------|
+| `draft` | Created but not yet validated/armed |
+| `active` | Validated and in use |
+| `complete` | Successfully concluded (terminal) |
+| `rejected` | Cancelled/invalidated (terminal) |
 
-| Field | Purpose | Values | When Changes |
-|-------|---------|--------|--------------|
-| `status` | Lifecycle validity | active, retired, superseded, invalidated | When thesis validity changes |
-| `workflowStatus` | Workflow progression | needs_claims, needs_synthesis, needs_signals, monitoring, closed | Auto-computed or manual |
+**Entity Migrations:**
 
-**Migration Steps:**
-1. Update `workflowStatus` enum values to match workflow stages
-2. Migrate `lifecycleDetection.ts` to use `workflowStatus` instead of `lifecycleStatus`
-3. Drop `lifecycleStatus` column after migration
-4. Update CURRENT_STATE.md state machines
+| Entity | Current Values | New Values |
+|--------|----------------|------------|
+| `main_claims` | unconfirmed, confirmed, rejected, invalidated, merged | draft, active, complete, rejected |
+| `signals` | recommended, not_triggered, triggered, superseded | draft, active, complete, rejected |
+| `macro_theses` | draft, active, inactive, invalidated + workflowStatus + lifecycleStatus | draft, active, complete, rejected |
+| `asset_theses` | draft, active, inactive, invalidated + workflowStatus + lifecycleStatus | draft, active, complete, rejected |
+| `strategies` | (implicit/derived) | draft, active, complete, rejected |
+| `positions` | isOpen boolean | Keep as-is (binary is appropriate) |
 
-**Alternative:** Make workflow stage COMPUTED (not stored) based on:
-- Has claims? → needs_synthesis
-- Has articulation? → needs_signals
-- Has signals? → monitoring
+**Key Simplifications:**
+- Remove `workflowStatus` and `lifecycleStatus` from theses (triage system handles workflow)
+- Remove `merged` from claims (no longer used)
+- Remove `superseded` from signals (use `rejected`)
+- Add explicit `status` field to strategies
 
-This eliminates stored state that can get out of sync.
+**Implementation Order:**
+1. Claims - Simplest, self-contained (~8 files)
+2. Signals - Also simple (~6 files)
+3. Theses - More complex, consolidate 3 fields into 1 (~20 files)
+4. Strategies - New field, determine derived logic (~8 files)
 
-**Scope:** ~20 file changes (schema, lifecycleDetection.ts, queries, UI)
-
-**See:** [CLEANUP_PLAN.md](CLEANUP_PLAN.md#6-thesis-status-field-confusion-technical-debt) for full analysis.
+**Scope:** ~40 file changes total across all entities
 
 ---
 
@@ -377,4 +382,5 @@ For detailed specifications of completed work, see [docs/archive/completed-enhan
 - **PRD v1.1**: `docs/PRD_v1.1.md` - Product vision (locked)
 - **Current State**: `docs/CURRENT_STATE.md` - Actual implementation state
 - **Cleanup Plan**: `docs/CLEANUP_PLAN.md` - Technical debt tracking
+- **Entity Status Guide**: `docs/features/entity-status-standardization.md` - Universal status model for #ENH-048
 - **Completed Details**: `docs/archive/completed-enhancements-2025-2026.md`

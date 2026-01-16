@@ -47,6 +47,7 @@ npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psq
 - **[Terminology Guide](docs/features/terminology.md)** - Authoritative term definitions (PRD-aligned)
 - **[Current State](docs/CURRENT_STATE.md)** - Actual implementation state, state machines, cross-domain flows
 - **[Research Workflow](docs/features/research-workflow.md)** - Complete research workflow guide
+- **[Entity Status Guide](docs/features/entity-status-standardization.md)** - Universal lifecycle status model for domain entities
 - **[Documentation Best Practices](DOCUMENTATION_BEST_PRACTICES.md)** - How to document work and link to big picture
 
 **For Architects** (system design and vision):
