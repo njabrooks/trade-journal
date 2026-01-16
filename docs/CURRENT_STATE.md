@@ -384,9 +384,9 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 
 | Item | Location | Reason | Action |
 |------|----------|--------|--------|
-| `stateCode` system | `src/lib/derived/stateCode.ts` (696 lines) | Replaced by signals | Archive/Remove |
-| `strategyMetricsSnapshots.stateCode` | `src/db/schema.ts` | Deprecated column | Remove |
-| `realizedPnlToDate` | `src/lib/derived/strategyMetrics.ts` | Never computed | Remove or implement |
+| `stateCode` system | `src/lib/derived/stateCode.ts` (696 lines) | Replaced by signals | ✅ Archived (2026-01-16) |
+| `strategyMetricsSnapshots.stateCode` | `src/db/schema.ts` | Deprecated column | ✅ Dropped (2026-01-16) |
+| `strategyMetricsSnapshots.realizedPnlToDate` | `src/db/schema.ts` | Never computed | ✅ Dropped (2026-01-16) |
 
 ### Triage Domain
 

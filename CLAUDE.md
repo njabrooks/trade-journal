@@ -30,7 +30,6 @@ npx tsx scripts/<script-name>.ts
 # Common scripts
 npx tsx scripts/run-flex-ingestion.ts           # IBKR Flex ingestion
 npx tsx scripts/ingest-underlyings-massive.ts   # Massive.com IV/spot ingestion
-npx tsx scripts/seed_playbook_items.ts          # Initialize playbook data
 
 # Research workflow scripts
 npx tsx scripts/test-claims-integration.ts      # Test claims parsing & DB integration
@@ -273,7 +272,6 @@ Feature-based component organization:
 - **`lib/db.ts`** - Database helper for scripts (handles dotenv + Drizzle ORM correctly)
 - **`run-flex-ingestion.ts`** - Flex ingestion runner (used by GitHub Actions)
 - **`ingest-underlyings-massive.ts`** - Massive.com daily ingestion
-- **`seed_playbook_items.ts`** - Playbook initialization
 - **`test-claims-integration.ts`** - Test claims parsing and database integration (48 tests)
 - **`upload-audit-with-claims.ts`** - Upload research artifact with claims structure
 - **`migrate-claims-structure.ts`** - Migrate existing insights to new claims structure
@@ -324,7 +322,6 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`underlyings_iv_history`** - Time-series IV/spot snapshots (unique on ticker + date + source)
 - **`options_chain_snapshots`** - Full options chains for IV analysis
 - **`strategy_templates`** - Reusable strategy patterns for auto-linking
-- **`playbook_items`** - Strategy playbook rules with state codes (LC1, RR2, etc.)
 - **`triage_rules`** - Configurable triage logic
 - **`ingestion_runs`** - Process tracking for all data imports
 
@@ -355,7 +352,6 @@ See `docs/features/terminology.md` for the authoritative terminology guide. Key 
 ### Implementation Terms (Keep As-Is)
 - **Underlying** - The financial instrument (reference data, not a belief)
 - **Strategy Template** - Reusable strategy pattern (tactical, not in PRD)
-- **Playbook** - Tactical rules for strategy states (tactical, not in PRD)
 - **Blotter Actions** - Structured trade aggregations (feeds journal, used for triage severity)
 
 ### Critical Distinctions
@@ -684,7 +680,7 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 4. **IBKR conid** - Stored in `underlyings` table for faster IBKR API calls
 5. **Multi-source Data** - Yahoo Finance (spot) → IBKR Gateway → Massive (fallback priority)
 6. **CSV Error Handling** - Detailed row-by-row error reporting with line numbers
-7. **Signal-Based Triggers** - Signals system replaced legacy stateCode system for strategy trigger evaluation
+7. **Signal-Based Triggers** - Signals system handles strategy trigger evaluation (playbook/stateCode system removed)
 8. **Local-First Research** - Research processing via Claude Code skills with Supabase as single source of truth
 9. **Toulmin Framework** - Claims use Toulmin argumentation model (claim, evidence, reasoning, backing)
 10. **Provenance Tracking** - Automatic tracking from research claims → theses with source metadata

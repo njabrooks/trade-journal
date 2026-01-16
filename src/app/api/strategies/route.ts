@@ -4,8 +4,8 @@ import {
   updateStrategy,
   getStrategyById,
   getStrategies,
+  getDistinctStrategyTypes,
 } from '@/lib/services/strategies';
-import { getDistinctStrategyTypes } from '@/db/queries/playbook';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const strategyId = searchParams.get('id') || undefined;
     const strategyTypes = searchParams.get('strategyTypes') === 'true';
 
-    // Return distinct strategy types if requested
+    // Return distinct strategy types from existing strategies
     if (strategyTypes) {
       const types = await getDistinctStrategyTypes();
       return NextResponse.json(types);

@@ -1,7 +1,7 @@
 # Cleanup Plan: PRD Alignment & Technical Debt
 
 **Generated:** 2026-01-16
-**Updated:** 2026-01-16 (Revised scope after user decisions)
+**Updated:** 2026-01-16 (Playbook system fully removed)
 **Purpose:** Map audit findings against PRD v1.1 and prioritize cleanup work.
 
 ---
@@ -425,23 +425,31 @@ Full blotter deprecation requires migrating these functionalities to the Journal
 
 ## Unified Remaining Work
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-01-16 (StateCode archival completed)
 
 ### Quick Wins (< 1 hour each)
 
-| Task | Location | Action |
+| Task | Location | Status |
 |------|----------|--------|
-| Remove `realizedPnlToDate` | `src/lib/derived/strategyMetrics.ts` | Delete unused function |
-| Remove `lifecycleStatus` refs | Search codebase | Replace with `workflowStatus` |
-| Standardize "conviction" → "confidenceLevel" | Thesis-related code | Terminology alignment |
+| ~~Remove `realizedPnlToDate`~~ | `src/lib/derived/strategyMetrics.ts` | ✅ Complete |
+| ~~Standardize "conviction" → "confidenceLevel"~~ | `src/types/claims.ts`, `CLAUDE.md` | ✅ Complete |
+| Remove `lifecycleStatus` refs | See #ENH-048 | Tracked as enhancement |
 
 ### Safe Code Removal (no dependencies)
 
 | Task | Location | Size | Action |
 |------|----------|------|--------|
-| Archive `stateCode` system | `src/lib/derived/stateCode.ts` | 696 lines | Move to /archive/ |
-| Archive `strategyStateCode` service | `src/lib/services/strategyStateCode.ts` | ~200 lines | Move to /archive/ |
-| Drop `stateCode` column | `strategyMetricsSnapshots` table | Schema | Migration |
+| ~~Archive `stateCode` system~~ | `src/lib/derived/stateCode.ts` | 696 lines | ✅ Archived (2026-01-16) |
+| ~~Archive `strategyStateCode` service~~ | `src/lib/services/strategyStateCode.ts` | ~200 lines | ✅ Archived (2026-01-16) |
+| ~~Drop `stateCode` column~~ | `strategyMetricsSnapshots` table | Schema | ✅ Dropped (2026-01-16) |
+| ~~Drop `realizedPnlToDate` column~~ | `strategyMetricsSnapshots` table | Schema | ✅ Dropped (2026-01-16) |
+| ~~Remove `playbook_items` table~~ | Database | Schema | ✅ Dropped (2026-01-16) |
+| ~~Remove `stateCodeAtAction` column~~ | `blotter_actions` table | Schema | ✅ Dropped (2026-01-16) |
+| ~~Remove playbook admin UI~~ | `src/app/admin/playbook/` | UI | ✅ Removed (2026-01-16) |
+| ~~Remove playbook API routes~~ | `src/app/api/playbook/` | API | ✅ Removed (2026-01-16) |
+| ~~Remove playbook queries~~ | `src/db/queries/playbook.ts` | Queries | ✅ Removed (2026-01-16) |
+| ~~Remove CriteriaBuilder~~ | `src/components/playbook/` | Component | ✅ Removed (2026-01-16) |
+| ~~Rename PlaybookSidebar~~ | `src/components/strategies/` | Component | ✅ Renamed to StrategySidebar (2026-01-16) |
 
 ### Dead Columns (blotter_actions)
 
@@ -464,6 +472,7 @@ Full blotter deprecation requires migrating these functionalities to the Journal
 | Enhancement | Description | Priority |
 |-------------|-------------|----------|
 | [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) | Triage severity/status separation | Medium |
+| [#ENH-048](FUTURE_ENHANCEMENTS.md#enh-048-thesis-status-field-consolidation) | Thesis status field consolidation | Medium |
 
 ### Major Migrations (deferred)
 
@@ -474,11 +483,12 @@ Full blotter deprecation requires migrating these functionalities to the Journal
 
 ### Recommended Execution Order
 
-1. **Quick wins** - Low risk, immediate cleanup
-2. **StateCode archival** - Safe, reduces dead code
+1. ~~**Quick wins**~~ - ✅ Complete (realizedPnlToDate, conviction terminology)
+2. ~~**StateCode archival**~~ - ✅ Complete (2026-01-16) - Removed 900+ lines of dead code
 3. **Documentation** - Helps future work
-4. **#ENH-047** - Triage schema fix
-5. **Blotter migration** - Complex, requires planning
+4. **#ENH-047** - Triage severity/status separation
+5. **#ENH-048** - Thesis status field consolidation
+6. **Blotter migration** - Complex, requires planning
 
 ---
 

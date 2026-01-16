@@ -502,8 +502,8 @@ export const strategies = pgTable(
     autoSource: text('auto_source'),
     autoDerivedLabel: text('auto_derived_label'),
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
-    // Playbook linkage
-    strategyType: text('strategy_type'), // Links to playbook_items.strategy_type
+    // Strategy categorization
+    strategyType: text('strategy_type'), // e.g., "Long Call", "Risk Reversal", etc.
     direction: text('direction'), // 'bullish' | 'bearish' | 'neutral' - strategy directional bias
     // Hierarchy linkage (Phase 1)
     // Note: Strategies inherit macro thesis connections through assetThesisId
@@ -733,36 +733,9 @@ export const triageRecords = pgTable(
 );
 
 // ============================================================================
-// Playbook Items
+// Playbook Items - DEPRECATED and REMOVED (2026-01-16)
+// Replaced by Signals system. See docs/CLEANUP_PLAN.md
 // ============================================================================
-
-export const playbookItems = pgTable(
-  'playbook_items',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    code: text('code').notNull().unique(), // StateCode like "LC1", "RR1", "STK0"
-    label: text('label').notNull(), // Description from WeeklyOptionsReview
-    description: text('description'), // More detailed explanation
-    category: text('category').notNull(), // 'entry' | 'profit' | 'defense' | 'time' | 'risk' | 'meta'
-    strategyType: text('strategy_type').notNull(), // StrategyType like "LEAPS long call", "LEAPS risk reversal"
-    criteria: text('criteria'), // Criteria column from WeeklyOptionsReview
-    appliesToContext: text('applies_to_context'), // 'strategy' | 'position' | 'portfolio' | 'underlying'
-    strategyTemplateId: uuid('strategy_template_id').references(() => strategyTemplates.id, {
-      onDelete: 'set null',
-    }),
-    checklistItems: jsonb('checklist_items'), // JSON array with PrimaryAction, SecondaryAction, RiskNotes
-    linkedTriageRuleSet: text('linked_triage_rule_set'), // e.g. 'options_v1'
-    defaultSeverity: text('default_severity'), // 'info' | 'attention' | 'urgent' (computed severities only, 'monitor' set via override)
-    isActive: boolean('is_active').notNull().default(true),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-  },
-  (table) => ({
-    codeIdx: index('idx_playbook_code').on(table.code),
-    strategyTypeIdx: index('idx_playbook_strategy_type').on(table.strategyType),
-    categoryIdx: index('idx_playbook_category').on(table.category),
-  })
-);
 
 // ============================================================================
 // Blotter Actions
@@ -785,7 +758,7 @@ export const blotterActions: any = pgTable(
     strategyLabel: text('strategy_label'),
     ticker: text('ticker'),
     strategyTypeAtAction: text('strategy_type_at_action'),
-    stateCodeAtAction: text('state_code_at_action'),
+    // REMOVED: stateCodeAtAction - deprecated, replaced by signals system (2026-01-16)
     triageFlagAtAction: text('triage_flag_at_action'),
     reasonCode: text('reason_code'),
     actionClass: text('action_class'),
@@ -912,8 +885,6 @@ export const strategyMetricsSnapshots = pgTable(
     numOpenPositions: integer('num_open_positions'),
     minDte: integer('min_dte'),
     maxDte: integer('max_dte'),
-    realizedPnlToDate: numeric('realized_pnl_to_date'),
-    stateCode: text('state_code'), // Computed state code from playbook (e.g., "LC1", "RR2")
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -958,8 +929,7 @@ export const strategiesRelations = relations(strategies, ({ one }) => ({
   }),
 }));
 
-export type PlaybookItem = typeof playbookItems.$inferSelect;
-export type NewPlaybookItem = typeof playbookItems.$inferInsert;
+// REMOVED: PlaybookItem types - deprecated, replaced by signals system (2026-01-16)
 
 export type Trade = typeof trades.$inferSelect;
 export type NewTrade = typeof trades.$inferInsert;

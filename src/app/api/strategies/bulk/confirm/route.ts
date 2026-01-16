@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { strategies } from '@/db/schema';
 import { inArray, eq } from 'drizzle-orm';
-import { recomputeStateCodesForStrategies } from '@/lib/services/strategyStateCode';
-// REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 import { trackProcess } from '@/lib/services/processTracking';
 
 export async function POST(request: NextRequest) {
@@ -51,11 +49,6 @@ export async function POST(request: NextRequest) {
         updatedAt: now,
       })
       .where(inArray(strategies.id, ids));
-
-    // Compute state codes for the confirmed strategies
-        await recomputeStateCodesForStrategies(ids);
-
-        // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 
         return { success: true, confirmed: ids.length };
       }

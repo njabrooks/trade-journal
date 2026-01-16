@@ -23,7 +23,6 @@ import {
   underlyings,
 } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
-import { getPlaybookItemByCode } from "@/db/queries/playbook";
 
 export interface StrategyListItem {
   id: string;
@@ -36,7 +35,6 @@ export interface StrategyListItem {
   latestAbsNotional: number | null;
   latestUnrealized: number | null;
   latestPctNav: number | null;
-  stateCode: string | null;
   strategyType: string | null;
   assetThesisId: string | null;
   assetViewTitle: string | null;
@@ -118,7 +116,6 @@ export async function getStrategiesForList(
       totalAbsNotional: number | null;
       totalUnrealizedPnl: number | null;
       pctNavAbsNotional: number | null;
-      stateCode: string | null;
     }
   >();
 
@@ -130,7 +127,6 @@ export async function getStrategiesForList(
         totalAbsNotional: strategyMetricsSnapshots.totalAbsNotional,
         totalUnrealizedPnl: strategyMetricsSnapshots.totalUnrealizedPnl,
         pctNavAbsNotional: strategyMetricsSnapshots.pctNavAbsNotional,
-        stateCode: strategyMetricsSnapshots.stateCode,
       })
       .from(strategyMetricsSnapshots)
       .where(inArray(strategyMetricsSnapshots.strategyId, strategyIds))
@@ -142,7 +138,6 @@ export async function getStrategiesForList(
           totalAbsNotional: toNumber(row.totalAbsNotional),
           totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
           pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
-          stateCode: row.stateCode,
         });
       }
     }
@@ -221,7 +216,6 @@ export async function getStrategiesForList(
         latestAbsNotional: metrics?.totalAbsNotional ?? null,
         latestUnrealized: metrics?.totalUnrealizedPnl ?? null,
         latestPctNav: metrics?.pctNavAbsNotional ?? null,
-        stateCode: metrics?.stateCode ?? null,
         strategyType: row.strategyType,
         assetThesisId: row.assetThesisId,
         assetViewTitle: row.assetViewTitle,
@@ -253,14 +247,6 @@ export interface StrategyDetail {
     assetViewTitle: string | null;
     linkedMacroTheses: Array<{ id: string; title: string }>;
   };
-  currentStateCode: string | null;
-  currentPlaybookItem: {
-    code: string;
-    label: string;
-    description: string | null;
-    category: string;
-    checklistItems: Array<{ order: number; type: string; text: string }> | null;
-  } | null;
   metricsTimeline: {
     snapshotDate: string;
     totalAbsNotional: number | null;
@@ -269,7 +255,6 @@ export interface StrategyDetail {
     numOpenPositions: number | null;
     minDte: number | null;
     maxDte: number | null;
-    stateCode: string | null;
   }[];
   openPositions: {
     id: string;
@@ -367,7 +352,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       numOpenPositions: strategyMetricsSnapshots.numOpenPositions,
       minDte: strategyMetricsSnapshots.minDte,
       maxDte: strategyMetricsSnapshots.maxDte,
-      stateCode: strategyMetricsSnapshots.stateCode,
     })
     .from(strategyMetricsSnapshots)
     .where(eq(strategyMetricsSnapshots.strategyId, strategyId))
@@ -381,27 +365,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     numOpenPositions: row.numOpenPositions ?? null,
     minDte: row.minDte ?? null,
     maxDte: row.maxDte ?? null,
-    stateCode: row.stateCode,
   }));
-
-    // Get current state code from latest metrics
-    const latestMetrics = metricsTimelineRows[metricsTimelineRows.length - 1];
-    const currentStateCode = latestMetrics?.stateCode ?? null;
-
-    // Get playbook item for current state code
-    let currentPlaybookItem = null;
-    if (currentStateCode) {
-      const playbookItem = await getPlaybookItemByCode(currentStateCode);
-      if (playbookItem) {
-        currentPlaybookItem = {
-          code: playbookItem.code,
-          label: playbookItem.label,
-          description: playbookItem.description,
-          category: playbookItem.category,
-          checklistItems: playbookItem.checklistItems,
-        };
-      }
-    }
 
     // Get latest snapshot date for this strategy
     const latestSnapshotResult = await db
@@ -551,8 +515,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         assetViewTitle: strategyRow.assetViewTitle,
         linkedMacroTheses,
       },
-      currentStateCode,
-      currentPlaybookItem,
       metricsTimeline,
       openPositions,
       triageFlags,

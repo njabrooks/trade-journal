@@ -15,7 +15,7 @@ interface UnifiedStrategiesBrowserProps {
 }
 
 type StatusFilter = 'all' | 'open' | 'closed' | 'draft' | 'planned';
-type SortColumn = 'label' | 'account' | 'stateCode' | 'status' | 'absNotional' | 'unrealized' | 'pctNav' | 'openedAt';
+type SortColumn = 'label' | 'account' | 'status' | 'absNotional' | 'unrealized' | 'pctNav' | 'openedAt';
 type SortDirection = 'asc' | 'desc';
 
 export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowserProps) {
@@ -29,7 +29,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   const [accountFilter, setAccountFilter] = useState<string>('all');
   const [assetThesisFilter, setAssetThesisFilter] = useState<string>('all');
   const [macroThesisFilter, setMacroThesisFilter] = useState<string>('all');
-  const [stateCodeFilter, setStateCodeFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   // Sort states
@@ -99,14 +98,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
     return Array.from(theses.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [strategies]);
 
-  const uniqueStateCodes = useMemo(() => {
-    const codes = new Set<string>();
-    strategies.forEach((strategy) => {
-      if (strategy.stateCode) codes.add(strategy.stateCode);
-    });
-    return Array.from(codes).sort();
-  }, [strategies]);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -162,10 +153,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
       );
     }
 
-    if (stateCodeFilter !== 'all') {
-      filtered = filtered.filter((s) => s.stateCode === stateCodeFilter);
-    }
-
     // Search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -177,7 +164,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
           s.accountBrokerId,
           s.assetViewTitle,
           ...s.linkedMacroTheses.map((lmt) => lmt.title),
-          s.stateCode,
         ]
           .filter(Boolean)
           .join(' ')
@@ -200,10 +186,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
         case 'account':
           aVal = (a.accountLabel || a.accountBrokerId || '').toLowerCase();
           bVal = (b.accountLabel || b.accountBrokerId || '').toLowerCase();
-          break;
-        case 'stateCode':
-          aVal = a.stateCode || '';
-          bVal = b.stateCode || '';
           break;
         case 'status':
           const statusOrder = { open: 0, planned: 1, draft: 2, closed: 3 };
@@ -242,7 +224,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
     accountFilter,
     assetThesisFilter,
     macroThesisFilter,
-    stateCodeFilter,
     searchQuery,
     sortColumn,
     sortDirection,
@@ -391,25 +372,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                 ))}
               </select>
             </div>
-
-            {/* State Code */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                State Code
-              </label>
-              <select
-                value={stateCodeFilter}
-                onChange={(e) => setStateCodeFilter(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All States</option>
-                {uniqueStateCodes.map((code) => (
-                  <option key={code} value={code}>
-                    {code}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Clear Filters */}
@@ -423,7 +385,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                 setAccountFilter('all');
                 setAssetThesisFilter('all');
                 setMacroThesisFilter('all');
-                setStateCodeFilter('all');
               }}
             >
               Clear Filters
@@ -459,15 +420,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                     <div className="flex items-center gap-2">
                       Account
                       {getSortIcon('account')}
-                    </div>
-                  </th>
-                  <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
-                    onClick={() => handleSort('stateCode')}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      State Code
-                      {getSortIcon('stateCode')}
                     </div>
                   </th>
                   <th
@@ -545,17 +497,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                               <span className="text-xs text-slate-400">—</span>
                             );
                           })()}
-                        </td>
-
-                        {/* State Code */}
-                        <td className="px-4 py-3 text-center">
-                          {strategy.stateCode ? (
-                            <Badge className="bg-blue-100 text-blue-800 text-xs">
-                              {strategy.stateCode}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-slate-400">—</span>
-                          )}
                         </td>
 
                         {/* Status */}

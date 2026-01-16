@@ -24,7 +24,7 @@ const pathLabelMap: Record<string, string> = {
   blotter: "Blotter",
   performance: "Performance",
   admin: "Admin",
-  playbook: "Playbook",
+  // REMOVED: playbook - deprecated, replaced by Signals system
   accounts: "Accounts",
   ingestion: "Ingestion",
   flex: "Flex",

@@ -1302,7 +1302,7 @@ function StrategiesPageContent() {
             <h2 className="text-xl font-semibold mb-4">Select Strategy Type</h2>
             <p className="text-sm text-gray-600 mb-4">
               Please select the strategy type for the {pendingConfirmIds.length} strategy(ies) you're confirming.
-              This links the strategy to its playbook items and state codes.
+              This categorizes the strategy for filtering and signal evaluation.
             </p>
             <div className="mb-4">
               <label htmlFor="strategyType" className="block text-sm font-medium mb-2">

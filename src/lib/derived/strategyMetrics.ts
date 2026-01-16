@@ -126,10 +126,6 @@ export async function computeStrategyMetrics(
     }
   }
 
-  // DEPRECATED fields (kept in schema for backwards compatibility, always null):
-  // - realizedPnlToDate: Requires complex closing trade logic, never implemented
-  // - stateCode: Replaced by strategy signals system
-
   return {
     accountId,
     strategyId,
@@ -141,8 +137,6 @@ export async function computeStrategyMetrics(
     numOpenPositions: numOpenPositions > 0 ? numOpenPositions : null,
     minDte,
     maxDte,
-    realizedPnlToDate: null,
-    stateCode: null,
   };
 }
 
@@ -169,8 +163,6 @@ export async function upsertStrategyMetrics(
         numOpenPositions: metrics.numOpenPositions,
         minDte: metrics.minDte,
         maxDte: metrics.maxDte,
-        realizedPnlToDate: metrics.realizedPnlToDate,
-        stateCode: metrics.stateCode,
         updatedAt: new Date(),
       },
     });

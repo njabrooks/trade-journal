@@ -353,7 +353,7 @@ export function StrategyConfirmationDialog({
                 ))}
               </select>
               <p className="text-xs text-slate-500 mt-1">
-                Links to playbook items
+                Categorizes the strategy for filtering and analysis
               </p>
             </div>
 

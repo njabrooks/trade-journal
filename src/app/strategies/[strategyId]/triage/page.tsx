@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { StrategyTabs } from "@/components/layout/StrategyTabs";
-import { PlaybookSidebar } from "@/components/strategies/PlaybookSidebar";
+import { StrategySidebar } from "@/components/strategies/StrategySidebar";
 import { TriageFilters } from "@/components/triage/TriageFilters";
 import { TriageTableRow } from "@/components/triage/TriageTableRow";
 import { SortableHeader } from "@/components/triage/SortableHeader";
@@ -207,7 +207,7 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
           </div>
         </section>
 
-        <PlaybookSidebar
+        <StrategySidebar
           strategy={{
             strategyType: strategy.strategyType,
             templateLabel: strategy.templateLabel,
@@ -215,8 +215,6 @@ export default async function TriagePage({ params, searchParams }: TriagePagePro
             openedAt: strategy.openedAt,
             status: strategy.status,
           }}
-          currentStateCode={detail.currentStateCode}
-          currentPlaybookItem={detail.currentPlaybookItem}
         />
       </div>
     </DashboardShell>

@@ -943,3 +943,16 @@ export async function getStrategies(filters: {
     .orderBy(strategies.openedAt);
 }
 
+/**
+ * Get all distinct strategy types from confirmed strategies
+ */
+export async function getDistinctStrategyTypes(): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ strategyType: strategies.strategyType })
+    .from(strategies)
+    .where(isNotNull(strategies.strategyType))
+    .orderBy(strategies.strategyType);
+
+  return rows.map((row) => row.strategyType).filter((type): type is string => type !== null);
+}
+

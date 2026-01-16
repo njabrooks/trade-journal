@@ -44,7 +44,7 @@ const MAIN_NAV = [
 
 const ADMIN_NAV = [
   { href: "/admin/strategies", label: "Strategies", icon: FolderKanban, id: "admin-strategies" },
-  { href: "/admin/playbook", label: "Playbook", icon: FileText, id: "admin-playbook" },
+  // REMOVED: Playbook - deprecated, replaced by Signals system
   { href: "/admin/triage", label: "Triage Rules", icon: AlertTriangle, id: "admin-triage" },
   { href: "/admin/accounts", label: "Accounts", icon: Users, id: "admin-accounts" },
   { href: "/admin/ingestion/flex", label: "Ingestion", icon: Database, id: "admin-ingestion" },

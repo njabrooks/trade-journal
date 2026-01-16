@@ -14,7 +14,7 @@ export type NavKey =
   | "research"
   | "claims"
   | "admin-strategies"
-  | "admin-playbook"
+  // REMOVED: admin-playbook - deprecated, replaced by Signals system
   | "admin-triage"
   | "admin-accounts"
   | "admin-ingestion"

@@ -1016,11 +1016,11 @@ export function TriageActionButtons({
     }
 
     if (action === "UPDATE" && recommendedAction === "CONFIRM_STRATEGIES") {
-      return "Confirm this auto-derived strategy and set its metadata. This will link it to playbook items and enable state code computation.";
+      return "Confirm this auto-derived strategy and set its metadata. This categorizes the strategy and enables signal evaluation.";
     }
 
     if (action === "UPDATE" && recommendedAction === "PROVIDE_STRATEGY_METADATA") {
-      return "Complete the required strategy metadata fields. This will link the strategy to playbook items and enable state code computation.";
+      return "Complete the required strategy metadata fields. This categorizes the strategy and enables signal evaluation.";
     }
 
     switch (action) {
@@ -1107,7 +1107,7 @@ export function TriageActionButtons({
                 ))}
               </select>
               <p className="mt-1.5 text-xs text-slate-500">
-                Links the strategy to playbook items and enables state code computation
+                Categorizes the strategy for filtering and signal evaluation
               </p>
             </div>
 
@@ -1384,7 +1384,7 @@ export function TriageActionButtons({
                 ))}
               </select>
               <p className="mt-1.5 text-xs text-slate-500">
-                Links the strategy to playbook items and enables state code computation
+                Categorizes the strategy for filtering and signal evaluation
               </p>
             </div>
 
