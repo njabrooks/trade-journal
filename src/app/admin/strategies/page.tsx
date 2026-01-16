@@ -39,7 +39,7 @@ function StrategiesPageContent() {
     brokerAccountId: '',
     underlyingTicker: '',
     openedAt: new Date().toISOString().split('T')[0]!,
-    status: 'open',
+    status: 'active',
     label: '',
     thesis: '',
     profitRules: '',
@@ -194,7 +194,7 @@ function StrategiesPageContent() {
         brokerAccountId: '',
         underlyingTicker: '',
         openedAt: new Date().toISOString().split('T')[0]!,
-        status: 'open',
+        status: 'active',
         label: '',
         thesis: '',
         profitRules: '',
@@ -557,13 +557,12 @@ function StrategiesPageContent() {
     }
   };
 
-  // Combine all strategies (except merged) into one list, sorted by status
-  // Status indicates: 'draft' = auto-derived/suggested, 'open'/'closed' = confirmed
+  // Combine all strategies into one list, sorted by status
+  // Status indicates: 'draft' = auto-derived/suggested, 'active'/'complete' = confirmed
   const allStrategies = strategies
-    .filter((s) => s.status !== 'merged')
     .sort((a, b) => {
-      // Primary sort: status in descending order (open > closed > draft)
-      const statusOrder: Record<string, number> = { open: 3, closed: 2, draft: 1 };
+      // Primary sort: status in descending order (active > complete > draft > rejected)
+      const statusOrder: Record<string, number> = { active: 4, complete: 3, draft: 2, rejected: 1 };
       const statusDiff = (statusOrder[b.status] || 0) - (statusOrder[a.status] || 0);
       if (statusDiff !== 0) return statusDiff;
 
@@ -1191,12 +1190,14 @@ function StrategiesPageContent() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                                strategy.status === 'open'
+                                strategy.status === 'draft'
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : strategy.status === 'active'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : strategy.status === 'complete'
                                   ? 'bg-emerald-100 text-emerald-700'
-                                  : strategy.status === 'closed'
-                                  ? 'bg-slate-200 text-slate-700'
-                                  : strategy.status === 'draft'
-                                  ? 'bg-amber-100 text-amber-700'
+                                  : strategy.status === 'rejected'
+                                  ? 'bg-slate-100 text-slate-500'
                                   : 'bg-slate-100 text-slate-700'
                               }`}>
                                 {strategy.status}

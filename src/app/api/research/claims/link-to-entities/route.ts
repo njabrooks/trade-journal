@@ -9,7 +9,7 @@ import { logToJournal } from '@/lib/workflow';
  * POST /api/research/claims/link-to-entities
  *
  * Links a main claim to existing macro theses and/or asset thesiss.
- * Also sets the claim status to 'confirmed' after linking.
+ * Also sets the claim status to 'active' after linking.
  *
  * Request body:
  * {
@@ -100,11 +100,11 @@ export async function POST(request: NextRequest) {
       linkedViewsCount = viewLinks.length;
     }
 
-    // Update claim status to confirmed
+    // Update claim status to active (standardized #ENH-048)
     await db
       .update(mainClaims)
       .set({
-        status: 'confirmed',
+        status: 'active',
         updatedAt: new Date(),
       })
       .where(eq(mainClaims.id, claimId));

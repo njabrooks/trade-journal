@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         qualifier: claim.qualifier,
         timeHorizon: claim.time_horizon,
         relevantTickers: claim.relevant_tickers || [],
-        status: 'confirmed', // Mark as confirmed since it was converted
+        status: 'active', // Mark as active since it was converted (standardized #ENH-048)
         sourceInsightId: insightId,
         sourceClaimId: claimId,
         createdAt: new Date(),

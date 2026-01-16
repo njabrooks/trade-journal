@@ -164,7 +164,7 @@ export async function createStrategy(input: CreateStrategyInput): Promise<string
       accountId,
       openedAt,
       closedAt,
-      status: input.status || 'open',
+      status: input.status || 'active', // Standard values: draft, active, complete, rejected
       entrySpot: input.entrySpot?.toString() ?? null,
       entryIv30: input.entryIv30?.toString() ?? null,
       netPremium: input.netPremium?.toString() ?? null,
@@ -553,7 +553,7 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
   await db
     .update(strategies)
     .set({
-      status: 'merged',
+      status: 'complete', // Merged strategies are complete (absorbed into target)
       isAuto: false,
       updatedAt: now,
     })
@@ -710,10 +710,11 @@ export async function getStrategyById(strategyId: string) {
  * - "open" if has positions with quantity != 0 on the GLOBAL latest snapshot date
  * - "closed" if had positions before but none on the global latest snapshot
  * - "draft" if never had any positions
- * 
- * Uses the global latest snapshot date (not strategy-specific) to determine if strategy is currently open
+ *
+ * Uses the global latest snapshot date (not strategy-specific) to determine if strategy is currently active
+ * Returns standardized status values: 'draft', 'active', 'complete'
  */
-export async function recomputeStrategyStatus(strategyId: string): Promise<'open' | 'closed' | 'draft'> {
+export async function recomputeStrategyStatus(strategyId: string): Promise<'active' | 'complete' | 'draft'> {
   // Get the GLOBAL latest snapshot date (where any strategy has positions with quantity != 0)
   const globalLatestSnapshotResult = await db
     .select({
@@ -723,9 +724,9 @@ export async function recomputeStrategyStatus(strategyId: string): Promise<'open
     .where(sql`${positions.quantity} != 0`)
     .orderBy(desc(positions.snapshotDate))
     .limit(1);
-  
+
   const globalLatestSnapshotDate = globalLatestSnapshotResult[0]?.snapshotDate ?? null;
-  
+
   if (globalLatestSnapshotDate) {
     // Check if THIS strategy has positions with quantity != 0 on the global latest snapshot date
     const hasOpenPositions = await db
@@ -739,10 +740,10 @@ export async function recomputeStrategyStatus(strategyId: string): Promise<'open
         )
       )
       .limit(1);
-    
+
     const openPositionCount = Number(hasOpenPositions[0]?.count ?? 0);
     if (openPositionCount > 0) {
-      return 'open';
+      return 'active'; // Has open positions
     } else {
       // Strategy doesn't have positions on latest snapshot, but check if it ever had positions
       const everHadPositions = await db
@@ -750,10 +751,10 @@ export async function recomputeStrategyStatus(strategyId: string): Promise<'open
         .from(positions)
         .where(eq(positions.strategyId, strategyId))
         .limit(1);
-      
+
       const hadPositionsCount = Number(everHadPositions[0]?.count ?? 0);
       if (hadPositionsCount > 0) {
-        return 'closed'; // Had positions before but not on latest snapshot
+        return 'complete'; // Had positions before but not on latest snapshot
       } else {
         return 'draft'; // Never had any positions
       }
@@ -768,7 +769,7 @@ export async function recomputeStrategyStatus(strategyId: string): Promise<'open
     
     const hadPositionsCount = Number(everHadPositions[0]?.count ?? 0);
     if (hadPositionsCount > 0) {
-      return 'closed';
+      return 'complete';
     } else {
       return 'draft';
     }
@@ -776,9 +777,10 @@ export async function recomputeStrategyStatus(strategyId: string): Promise<'open
 }
 
 /**
- * Restores merged strategies that may have been incorrectly changed
- * A strategy should be 'merged' if it has no positions (they were moved to target during merge)
+ * Restores complete strategies that may have been incorrectly changed
+ * A strategy should be 'complete' if it has no positions (they were moved to target during merge)
  * and there are other strategies with the same strategyKey that have positions
+ * Note: This function was originally for 'merged' strategies, now updated for 'complete' status
  */
 export async function restoreMergedStrategies(): Promise<{
   restored: number;
@@ -788,12 +790,12 @@ export async function restoreMergedStrategies(): Promise<{
   let restored = 0;
 
   // Find strategies that:
-  // 1. Don't have status 'merged' but should be (no positions, and other strategies with same key exist)
-  // 2. Or have positions but status is 'merged' (shouldn't happen, but fix it)
-  
+  // 1. Don't have status 'complete' but should be (no positions, and other strategies with same key exist)
+  // 2. Or have positions but status is 'complete' (shouldn't happen for active strategies, fix it)
+
   // First, find all strategies that have no positions
   const allStrategies = await db.select().from(strategies);
-  
+
   for (const strategy of allStrategies) {
     // Check if this strategy has any positions
     const hasPositions = await db
@@ -801,12 +803,12 @@ export async function restoreMergedStrategies(): Promise<{
       .from(positions)
       .where(eq(positions.strategyId, strategy.id))
       .limit(1);
-    
+
     const positionCount = Number(hasPositions[0]?.count ?? 0);
-    
-    if (positionCount === 0 && strategy.status !== 'merged') {
+
+    if (positionCount === 0 && strategy.status !== 'complete' && strategy.status !== 'rejected') {
       // Strategy has no positions - check if there are other strategies with same key that have positions
-      // If so, this one was likely merged
+      // If so, this one was likely merged into another
       const otherStrategiesWithSameKey = await db
         .select()
         .from(strategies)
@@ -816,39 +818,39 @@ export async function restoreMergedStrategies(): Promise<{
             sql`${strategies.id} != ${strategy.id}`
           )
         );
-      
+
       // Check if any of these other strategies have positions
-      let shouldBeMerged = false;
+      let shouldBeComplete = false;
       for (const other of otherStrategiesWithSameKey) {
         const otherHasPositions = await db
           .select({ count: sql<number>`count(*)` })
           .from(positions)
           .where(eq(positions.strategyId, other.id))
           .limit(1);
-        
+
         if (Number(otherHasPositions[0]?.count ?? 0) > 0) {
-          shouldBeMerged = true;
+          shouldBeComplete = true;
           break;
         }
       }
-      
-      if (shouldBeMerged) {
+
+      if (shouldBeComplete) {
         await db
           .update(strategies)
           .set({
-            status: 'merged',
+            status: 'complete',
             updatedAt: new Date(),
           })
           .where(eq(strategies.id, strategy.id));
-        
+
         results.push({
           strategyId: strategy.id,
           strategyKey: strategy.strategyKey,
         });
         restored++;
       }
-    } else if (positionCount > 0 && strategy.status === 'merged') {
-      // Strategy has positions but status is 'merged' - this shouldn't happen, restore it
+    } else if (positionCount > 0 && strategy.status === 'complete') {
+      // Strategy has positions but status is 'complete' - this shouldn't happen, restore it
       const newStatus = await recomputeStrategyStatus(strategy.id);
       await db
         .update(strategies)
@@ -857,7 +859,7 @@ export async function restoreMergedStrategies(): Promise<{
           updatedAt: new Date(),
         })
         .where(eq(strategies.id, strategy.id));
-      
+
       results.push({
         strategyId: strategy.id,
         strategyKey: strategy.strategyKey,
@@ -872,8 +874,8 @@ export async function restoreMergedStrategies(): Promise<{
 /**
  * Recomputes and updates status for all strategies (or optionally a specific strategy)
  * Returns count of strategies updated
- * 
- * Note: Skips strategies with status 'merged' - merged strategies should always remain 'merged'
+ *
+ * Note: Skips strategies with status 'rejected' - abandoned strategies should always remain 'rejected'
  */
 export async function recomputeAllStrategyStatuses(strategyId?: string): Promise<{
   updated: number;
@@ -882,14 +884,14 @@ export async function recomputeAllStrategyStatuses(strategyId?: string): Promise
   const results: Array<{ strategyId: string; oldStatus: string; newStatus: string }> = [];
   let updated = 0;
 
-  // Get strategies to update (exclude merged strategies)
+  // Get strategies to update (exclude rejected strategies)
   const strategiesToUpdate = strategyId
     ? await db.select().from(strategies).where(eq(strategies.id, strategyId))
-    : await db.select().from(strategies).where(sql`${strategies.status} != 'merged'`);
+    : await db.select().from(strategies).where(sql`${strategies.status} != 'rejected'`);
 
   for (const strategy of strategiesToUpdate) {
-    // Skip merged strategies - they should always remain 'merged'
-    if (strategy.status === 'merged') {
+    // Skip rejected strategies - they should always remain 'rejected'
+    if (strategy.status === 'rejected') {
       continue;
     }
 

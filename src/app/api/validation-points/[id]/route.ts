@@ -6,7 +6,7 @@ import { logToJournal } from '@/lib/workflow';
 import { getMacroThesisById } from '@/db/queries/macroTheses';
 import { getAssetThesisById } from '@/db/queries/assetTheses';
 
-const VALID_STATUSES = ['not_triggered', 'triggered', 'superseded', 'recommended'];
+const VALID_STATUSES = ['draft', 'active', 'complete', 'rejected'];
 const VALID_CONFIDENCE = ['low', 'medium', 'high'];
 const VALID_SOURCES = ['user', 'automation'];
 
@@ -134,7 +134,7 @@ export async function PATCH(
         },
         confidence,
         assessedBy: source === 'automation' ? 'claude' : 'user',
-        userActionRequired: newStatus === 'triggered',
+        userActionRequired: newStatus === 'complete',
         userActionTaken: userActionTaken || null,
         userActionTimestamp: userActionTaken ? new Date() : null,
       })

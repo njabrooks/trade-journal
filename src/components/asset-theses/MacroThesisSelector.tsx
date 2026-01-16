@@ -165,9 +165,10 @@ export function MacroThesisSelector({
             className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg"
           >
             <option value="all">All Statuses</option>
+            <option value="draft">Draft</option>
             <option value="active">Active</option>
-            <option value="under_review">Under Review</option>
-            <option value="retired">Retired</option>
+            <option value="complete">Complete</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
       </div>

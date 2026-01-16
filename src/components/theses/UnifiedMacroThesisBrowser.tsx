@@ -17,7 +17,7 @@ interface UnifiedMacroThesisBrowserProps {
 type ThesisTypeFilter = 'all' | 'secular' | 'cyclical' | 'structural';
 type TimeHorizonFilter = 'all' | 'long_term' | 'medium_term' | 'short_term';
 type ConfidenceFilter = 'all' | 'high' | 'medium' | 'low' | 'exploratory';
-type StatusFilter = 'all' | 'active' | 'under_review' | 'retired' | 'superseded';
+type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
 type DirectionFilter = 'all' | 'bullish' | 'bearish' | 'neutral';
 type SortColumn = 'title' | 'thesisType' | 'timeHorizon' | 'confidence' | 'status' | 'assetTheses' | 'claims' | 'strategies' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -152,7 +152,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
           bVal = confidenceOrder[b.confidenceLevel as keyof typeof confidenceOrder] ?? -1;
           break;
         case 'status':
-          const statusOrder = { active: 0, under_review: 1, retired: 2, superseded: 3 };
+          const statusOrder = { draft: 0, active: 1, complete: 2, rejected: 3 };
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 0;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 0;
           break;
@@ -229,14 +229,14 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
+      case 'draft':
+        return 'bg-purple-100 text-purple-700';
       case 'active':
+        return 'bg-blue-100 text-blue-700';
+      case 'complete':
         return 'bg-emerald-100 text-emerald-700';
-      case 'under_review':
-        return 'bg-amber-100 text-amber-700';
-      case 'retired':
-        return 'bg-slate-200 text-slate-700';
-      case 'superseded':
-        return 'bg-orange-100 text-orange-700';
+      case 'rejected':
+        return 'bg-slate-100 text-slate-500';
       default:
         return 'bg-slate-100 text-slate-700';
     }
@@ -367,10 +367,10 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Statuses</option>
+                <option value="draft">Draft</option>
                 <option value="active">Active</option>
-                <option value="under_review">Under Review</option>
-                <option value="retired">Retired</option>
-                <option value="superseded">Superseded</option>
+                <option value="complete">Complete</option>
+                <option value="rejected">Rejected</option>
               </select>
             </div>
 

@@ -495,7 +495,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
         .where(
           and(
             eq(strategies.accountId, accountId),
-            ne(strategies.status, 'merged')
+            ne(strategies.status, 'rejected')
           )
         );
 
@@ -692,7 +692,7 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
             .where(
               and(
                 eq(strategies.accountId, accountId),
-                ne(strategies.status, 'merged')
+                ne(strategies.status, 'rejected')
               )
             );
 

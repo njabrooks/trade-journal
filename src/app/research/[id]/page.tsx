@@ -46,11 +46,10 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
   const claimsStructure = hasClaimsStructure ? (insight!.claimsStructure as ClaimsStructure) : null;
   const evidenceClaimsCount = claimsStructure?.evidence_claims.length || 0;
 
-  // Count conversion status from claim status field
+  // Count conversion status from claim status field (standardized #ENH-048)
   // Note: Conversion tracking is done via status field and separate join tables
-  // For now, showing all counts - conversion tracking via ClaimThesisMapping would require additional query
-  const unconvertedCount = claimsWithSources.filter(c => c.claim.status === 'unconfirmed').length;
-  const convertedCount = claimsWithSources.filter(c => c.claim.status === 'confirmed').length;
+  const draftCount = claimsWithSources.filter(c => c.claim.status === 'draft').length;
+  const activeCount = claimsWithSources.filter(c => c.claim.status === 'active').length;
 
   return (
     <DashboardShell
@@ -152,7 +151,7 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
                     Processing progress
                   </p>
                 </div>
-                {unconvertedCount === 0 && convertedCount > 0 && (
+                {draftCount === 0 && activeCount > 0 && (
                   <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
                     <CheckCircle2 className="h-3 w-3" />
                     Complete
@@ -189,23 +188,23 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
                 </div>
 
                 {/* Step 3: Conversion Status */}
-                {hasClaimsStructure && unconvertedCount > 0 && (
+                {hasClaimsStructure && draftCount > 0 && (
                   <div className="flex items-start gap-2">
                     <Clock className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
                     <span className="text-sm text-blue-700 font-medium">
-                      <span className="text-blue-700">{unconvertedCount}</span> claim
-                      {unconvertedCount !== 1 ? 's' : ''} ready to link
+                      <span className="text-blue-700">{draftCount}</span> claim
+                      {draftCount !== 1 ? 's' : ''} ready to link
                     </span>
                   </div>
                 )}
 
                 {/* Step 4: Linked Count */}
-                {convertedCount > 0 && (
+                {activeCount > 0 && (
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
                     <span className="text-sm text-slate-900 font-medium">
-                      <span className="text-emerald-600">{convertedCount}</span> claim
-                      {convertedCount !== 1 ? 's' : ''} linked to theses
+                      <span className="text-emerald-600">{activeCount}</span> claim
+                      {activeCount !== 1 ? 's' : ''} linked to theses
                     </span>
                   </div>
                 )}

@@ -9,7 +9,7 @@ interface CreateStrategyFormData {
   strategyKey: string;
   description?: string;
   direction: 'long' | 'short' | 'neutral';
-  status: 'open' | 'closed';
+  status: 'draft' | 'active' | 'complete' | 'rejected';
   assetThesisId?: string;
   // Note: strategies no longer have direct macroThesisId - they inherit through asset thesis
 }
@@ -32,7 +32,7 @@ export function CreateStrategyForm({
 }: CreateStrategyFormProps) {
   const [formData, setFormData] = useState<CreateStrategyFormData>({
     direction: initialData.direction || 'long',
-    status: initialData.status || 'open',
+    status: initialData.status || 'active',
     strategyKey: initialData.strategyKey || '',
     label: initialData.label,
     description: initialData.description,
@@ -153,8 +153,10 @@ export function CreateStrategyForm({
             required
             disabled={loading}
           >
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
+            <option value="draft">Draft</option>
+            <option value="active">Active</option>
+            <option value="complete">Complete</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
       </div>

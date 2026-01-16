@@ -12,7 +12,7 @@ import { getAssetThesisById } from '@/db/queries/assetTheses';
  * Query params:
  * - thesisId (required): UUID of the thesis
  * - thesisType (required): 'macro' | 'asset'
- * - status (optional): Filter by status (e.g., 'recommended', 'active', 'triggered')
+ * - status (optional): Filter by status (e.g., 'draft', 'active', 'complete', 'rejected')
  */
 export async function GET(request: NextRequest) {
   try {

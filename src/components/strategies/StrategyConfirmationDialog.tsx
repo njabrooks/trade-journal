@@ -33,7 +33,7 @@ interface CreateAssetThesisFormData {
   direction: 'bullish' | 'bearish' | 'neutral';
   timeHorizon: 'long_term' | 'medium_term' | 'short_term';
   confidenceLevel: 'high' | 'medium' | 'low' | 'exploratory';
-  status: 'active' | 'under_review' | 'retired';
+  status: 'draft' | 'active' | 'complete' | 'rejected';
   description?: string;
 }
 
@@ -593,9 +593,10 @@ export function StrategyConfirmationDialog({
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       disabled={submitting}
                     >
+                      <option value="draft">Draft</option>
                       <option value="active">Active</option>
-                      <option value="under_review">Under Review</option>
-                      <option value="retired">Retired</option>
+                      <option value="complete">Complete</option>
+                      <option value="rejected">Rejected</option>
                     </select>
                   </div>
                 </div>

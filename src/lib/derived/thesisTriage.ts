@@ -8,7 +8,7 @@
  * - NEEDS_RESEARCH: <3 claims, no articulation → status: 'info'
  * - PRODUCE_CORE_ARGUMENT: ≥3 claims, no articulation → status: 'attention'
  * - UPDATE_CORE_ARGUMENT: ≥3 new claims since last articulation → status: 'info'
- * - REVIEW_RECOMMENDED_SIGNALS: ≥1 signals with status='recommended' → status: 'attention'
+ * - REVIEW_DRAFT_SIGNALS: ≥1 signals with status='draft' → status: 'attention'
  * - SIGNAL_TRIGGERED: ≥1 explicit signals triggered for thesis → status: 'attention' (consolidates all)
  *
  * Monitoring triggers (handled by scripts/daily-thesis-monitoring.ts):
@@ -192,35 +192,35 @@ export async function computeThesisTriageForThesis(
     }
   }
 
-  // REVIEW_RECOMMENDED_SIGNALS: ≥1 signals with status='recommended' need user review
+  // REVIEW_DRAFT_SIGNALS: ≥1 signals with status='draft' need user review
   // This is independent of articulation state - can happen anytime after synthesis
   const existingReviewSignals = existingTriage.find(
-    (t) => t.triageRule === 'REVIEW_RECOMMENDED_SIGNALS'
+    (t) => t.triageRule === 'REVIEW_RECOMMENDED_SIGNALS' || t.triageRule === 'REVIEW_DRAFT_SIGNALS'
   );
 
-  if (evolutionState.recommendedSignalCount > 0) {
-    // Has recommended signals - create triage if not exists
+  if (evolutionState.draftSignalCount > 0) {
+    // Has draft signals - create triage if not exists
     if (!existingReviewSignals) {
       await createTriageRecord({
         thesisId,
         thesisType,
         thesisTitle: thesis.title,
-        triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
+        triageRule: 'REVIEW_DRAFT_SIGNALS',
         triggerType: 'signal_recommendation',
         triggerSource: 'computeThesisTriageForThesis',
         status: 'attention',
         urgency: 'this_week',
         lifecycleStage: 'monitoring',
         suggestedSkill: null,
-        actionRequired: `${evolutionState.recommendedSignalCount} AI-recommended signal(s) need review. Accept, modify, or reject each signal.`,
+        actionRequired: `${evolutionState.draftSignalCount} AI-proposed signal(s) need review. Accept, modify, or reject each signal.`,
         contentSummary: {
-          recommendedSignalCount: evolutionState.recommendedSignalCount,
+          draftSignalCount: evolutionState.draftSignalCount,
           totalSignalCount: evolutionState.hasSignals ? 'multiple' : 0,
         },
       });
       // Don't overwrite triageCreated if already set (e.g., by UPDATE_CORE_ARGUMENT)
       if (!result.triageCreated) {
-        result.triageCreated = 'REVIEW_RECOMMENDED_SIGNALS';
+        result.triageCreated = 'REVIEW_DRAFT_SIGNALS';
       }
     }
   } else if (existingReviewSignals) {
@@ -229,17 +229,17 @@ export async function computeThesisTriageForThesis(
     result.existingTriageResolved = true;
   }
 
-  // SIGNAL_TRIGGERED: ≥1 explicit signals have fired for this thesis
-  // Creates ONE thesis-level triage record consolidating all triggered signals
+  // SIGNAL_TRIGGERED: ≥1 explicit signals have completed (fired) for this thesis
+  // Creates ONE thesis-level triage record consolidating all complete signals
   const existingSignalTriggered = existingTriage.find(
     (t) => t.triageRule === 'SIGNAL_TRIGGERED'
   );
 
-  if (evolutionState.triggeredSignalCount > 0) {
-    // Has triggered signals - create or update thesis-level triage
+  if (evolutionState.completeSignalCount > 0) {
+    // Has completed signals - create or update thesis-level triage
     if (!existingSignalTriggered) {
       // Determine severity based on signal importance
-      // We'll need to check if any critical signals are triggered
+      // We'll need to check if any critical signals are completed
       const severity = await determineTriggeredSignalSeverity(
         evolutionState.triggeredSignalIds
       );
@@ -255,9 +255,9 @@ export async function computeThesisTriageForThesis(
         urgency: severity === 'critical' ? 'immediate' : 'this_week',
         lifecycleStage: 'monitoring',
         suggestedSkill: null,
-        actionRequired: `${evolutionState.triggeredSignalCount} of ${evolutionState.totalSignalCount} signal(s) triggered. Review thesis conviction and assess impact.`,
+        actionRequired: `${evolutionState.completeSignalCount} of ${evolutionState.totalSignalCount} signal(s) triggered. Review thesis conviction and assess impact.`,
         contentSummary: {
-          triggeredSignalCount: evolutionState.triggeredSignalCount,
+          completeSignalCount: evolutionState.completeSignalCount,
           totalSignalCount: evolutionState.totalSignalCount,
           triggeredSignalIds: evolutionState.triggeredSignalIds,
           currentConviction: thesis.confidenceLevel,
@@ -269,17 +269,18 @@ export async function computeThesisTriageForThesis(
     } else {
       // Update existing triage with latest signal counts if changed
       const existingSummary = existingSignalTriggered.contentSummary as {
-        triggeredSignalCount?: number;
+        completeSignalCount?: number;
+        triggeredSignalCount?: number; // Legacy
       } | undefined;
-      const existingCount = existingSummary?.triggeredSignalCount ?? 0;
+      const existingCount = existingSummary?.completeSignalCount ?? existingSummary?.triggeredSignalCount ?? 0;
 
-      if (existingCount !== evolutionState.triggeredSignalCount) {
+      if (existingCount !== evolutionState.completeSignalCount) {
         await db
           .update(thesisTriageRecords)
           .set({
-            actionRequired: `${evolutionState.triggeredSignalCount} of ${evolutionState.totalSignalCount} signal(s) triggered. Review thesis conviction and assess impact.`,
+            actionRequired: `${evolutionState.completeSignalCount} of ${evolutionState.totalSignalCount} signal(s) triggered. Review thesis conviction and assess impact.`,
             contentSummary: {
-              triggeredSignalCount: evolutionState.triggeredSignalCount,
+              completeSignalCount: evolutionState.completeSignalCount,
               totalSignalCount: evolutionState.totalSignalCount,
               triggeredSignalIds: evolutionState.triggeredSignalIds,
               currentConviction: thesis.confidenceLevel,
@@ -290,7 +291,7 @@ export async function computeThesisTriageForThesis(
       }
     }
   } else if (existingSignalTriggered) {
-    // No triggered signals left - resolve existing triage
+    // No completed signals left - resolve existing triage
     await resolveTriageRecord(existingSignalTriggered.id, 'all_triggered_signals_resolved');
     result.existingTriageResolved = true;
   }
@@ -442,6 +443,9 @@ interface ThesisEvolutionState {
   hasArticulation: boolean;
   hasSignals: boolean;
   totalSignalCount: number;
+  draftSignalCount: number;
+  completeSignalCount: number;
+  // Legacy aliases for backward compatibility
   recommendedSignalCount: number;
   triggeredSignalCount: number;
   triggeredSignalIds: string[];
@@ -483,8 +487,8 @@ async function getThesisEvolutionState(
   const signalCounts = await db
     .select({
       total: count(),
-      recommended: sql<number>`count(*) filter (where ${signals.status} = 'recommended')`,
-      triggered: sql<number>`count(*) filter (where ${signals.status} = 'triggered')`,
+      draft: sql<number>`count(*) filter (where ${signals.status} = 'draft')`,
+      complete: sql<number>`count(*) filter (where ${signals.status} = 'complete')`,
     })
     .from(signals)
     .where(
@@ -494,20 +498,20 @@ async function getThesisEvolutionState(
       )
     );
 
-  // Get IDs of triggered signals for detailed triage info
-  let triggeredSignalIds: string[] = [];
-  if ((signalCounts[0]?.triggered ?? 0) > 0) {
-    const triggeredSignals = await db
+  // Get IDs of completed (triggered) signals for detailed triage info
+  let completedSignalIds: string[] = [];
+  if ((signalCounts[0]?.complete ?? 0) > 0) {
+    const completedSignals = await db
       .select({ id: signals.id })
       .from(signals)
       .where(
         and(
           eq(signals.thesisId, thesisId),
           eq(signals.thesisType, thesisType),
-          eq(signals.status, 'triggered')
+          eq(signals.status, 'complete')
         )
       );
-    triggeredSignalIds = triggeredSignals.map(s => s.id);
+    completedSignalIds = completedSignals.map(s => s.id);
   }
 
   return {
@@ -515,9 +519,12 @@ async function getThesisEvolutionState(
     hasArticulation: articulation.length > 0,
     hasSignals: (signalCounts[0]?.total ?? 0) > 0,
     totalSignalCount: signalCounts[0]?.total ?? 0,
-    recommendedSignalCount: signalCounts[0]?.recommended ?? 0,
-    triggeredSignalCount: signalCounts[0]?.triggered ?? 0,
-    triggeredSignalIds,
+    draftSignalCount: signalCounts[0]?.draft ?? 0,
+    completeSignalCount: signalCounts[0]?.complete ?? 0,
+    // Legacy aliases for backward compatibility
+    recommendedSignalCount: signalCounts[0]?.draft ?? 0,
+    triggeredSignalCount: signalCounts[0]?.complete ?? 0,
+    triggeredSignalIds: completedSignalIds,
     hasMonitoringConfig: false, // TODO: implement when monitoring is integrated
   };
 }

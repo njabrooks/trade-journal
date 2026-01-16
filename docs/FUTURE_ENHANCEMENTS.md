@@ -223,50 +223,6 @@ Add "Link to Thesis" button on claim detail page. Reuse existing ConvertClaimToE
 
 ---
 
-### #ENH-048: Entity Status Standardization
-**Priority**: Medium | **Effort**: 1-2 weeks | **Phase**: 5+ (Technical Debt)
-**PRD**: Section 3 (Decision Hierarchy), Section 5 (Research Layer)
-
-Standardize the `status` field across all key domain entities (Claims, Signals, Theses, Strategies) using a universal lifecycle model.
-
-**See:** [Entity Status Standardization Guide](features/entity-status-standardization.md) for full specification.
-
-**Universal Lifecycle Values:**
-
-| Status | Meaning |
-|--------|---------|
-| `draft` | Created but not yet validated/armed |
-| `active` | Validated and in use |
-| `complete` | Successfully concluded (terminal) |
-| `rejected` | Cancelled/invalidated (terminal) |
-
-**Entity Migrations:**
-
-| Entity | Current Values | New Values |
-|--------|----------------|------------|
-| `main_claims` | unconfirmed, confirmed, rejected, invalidated, merged | draft, active, complete, rejected |
-| `signals` | recommended, not_triggered, triggered, superseded | draft, active, complete, rejected |
-| `macro_theses` | draft, active, inactive, invalidated + workflowStatus + lifecycleStatus | draft, active, complete, rejected |
-| `asset_theses` | draft, active, inactive, invalidated + workflowStatus + lifecycleStatus | draft, active, complete, rejected |
-| `strategies` | (implicit/derived) | draft, active, complete, rejected |
-| `positions` | isOpen boolean | Keep as-is (binary is appropriate) |
-
-**Key Simplifications:**
-- Remove `workflowStatus` and `lifecycleStatus` from theses (triage system handles workflow)
-- Remove `merged` from claims (no longer used)
-- Remove `superseded` from signals (use `rejected`)
-- Add explicit `status` field to strategies
-
-**Implementation Order:**
-1. Claims - Simplest, self-contained (~8 files)
-2. Signals - Also simple (~6 files)
-3. Theses - More complex, consolidate 3 fields into 1 (~20 files)
-4. Strategies - New field, determine derived logic (~8 files)
-
-**Scope:** ~40 file changes total across all entities
-
----
-
 ## Planned - Low Priority
 
 ### #ENH-002-timeout: Trade Decision Timeout
@@ -360,6 +316,7 @@ For detailed specifications of completed work, see [docs/archive/completed-enhan
 
 | Phase | Date | Key Deliverables |
 |-------|------|------------------|
+| #ENH-048 | 2026-01-16 | Entity status standardization - unified lifecycle (draft, active, complete, rejected) |
 | #ENH-047 | 2026-01-16 | Triage severity/status separation - clean workflow vs importance fields |
 | 3.2A-B | 2026-01-05 | Validation assessment workflow, database recording, status history UI |
 | 2.7 | 2025-12-31 | Unified browsers for all hierarchy entities (9 of 11 complete) |

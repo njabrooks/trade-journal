@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         type,
         category: 'data_driven',
         importance,
-        status: 'not_triggered',
+        status: 'active',
         notes: notes || null,
         explicitDetails,
         createdAt: new Date(),

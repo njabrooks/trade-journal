@@ -18,8 +18,8 @@ export default async function StrategiesPage({ searchParams }: StrategiesPagePro
   const includeClosed = params?.includeClosed === 'true';
   const allStrategies = await getStrategiesForList(200, { includeClosedStrategies: includeClosed });
 
-  // Calculate totals for open strategies only
-  const openStrategies = allStrategies.filter((s) => s.status === 'open');
+  // Calculate totals for active strategies only
+  const openStrategies = allStrategies.filter((s) => s.status === 'active');
   const totalAbs = openStrategies.reduce(
     (acc, strategy) => acc + (strategy.latestAbsNotional ?? 0),
     0

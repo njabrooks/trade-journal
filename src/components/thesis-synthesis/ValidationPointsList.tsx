@@ -38,7 +38,7 @@ export function ValidationPointsList({
 }: ValidationPointsListProps) {
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
   const [filterType, setFilterType] = useState<'all' | 'confirmation' | 'warning'>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'not_triggered' | 'monitoring' | 'triggered'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'active' | 'complete' | 'rejected'>('all');
 
   const togglePoint = (id: string) => {
     const next = new Set(expandedPoints);
@@ -58,21 +58,21 @@ export function ValidationPointsList({
 
   const confirmationCount = validationPoints.filter((p) => p.type === 'confirmation').length;
   const warningCount = validationPoints.filter((p) => p.type === 'warning').length;
-  const triggeredCount = validationPoints.filter((p) => p.status === 'triggered').length;
-  const monitoringCount = validationPoints.filter((p) => p.status === 'monitoring').length;
+  const completeCount = validationPoints.filter((p) => p.status === 'complete').length;
+  const activeCount = validationPoints.filter((p) => p.status === 'active').length;
 
   const statusIcons: Record<string, React.ReactNode> = {
-    not_triggered: <Clock className="w-4 h-4 text-slate-400" />,
-    monitoring: <Eye className="w-4 h-4 text-blue-500" />,
-    triggered: <AlertTriangle className="w-4 h-4 text-amber-500" />,
-    superseded: <XCircle className="w-4 h-4 text-slate-300" />,
+    draft: <Clock className="w-4 h-4 text-purple-400" />,
+    active: <Eye className="w-4 h-4 text-blue-500" />,
+    complete: <AlertTriangle className="w-4 h-4 text-emerald-500" />,
+    rejected: <XCircle className="w-4 h-4 text-slate-300" />,
   };
 
   const statusColors: Record<string, string> = {
-    not_triggered: 'bg-slate-100 text-slate-600',
-    monitoring: 'bg-blue-100 text-blue-700',
-    triggered: 'bg-amber-100 text-amber-700',
-    superseded: 'bg-slate-100 text-slate-400',
+    draft: 'bg-purple-100 text-purple-700',
+    active: 'bg-blue-100 text-blue-700',
+    complete: 'bg-emerald-100 text-emerald-700',
+    rejected: 'bg-slate-100 text-slate-400',
   };
 
   const importanceColors: Record<string, string> = {
@@ -116,10 +116,10 @@ export function ValidationPointsList({
               <AlertTriangle className="w-3 h-3" />
               {warningCount} warning
             </span>
-            {triggeredCount > 0 && (
-              <span className="flex items-center gap-1 text-amber-600 font-medium">
-                <AlertTriangle className="w-3 h-3" />
-                {triggeredCount} triggered
+            {completeCount > 0 && (
+              <span className="flex items-center gap-1 text-emerald-600 font-medium">
+                <CheckCircle2 className="w-3 h-3" />
+                {completeCount} complete
               </span>
             )}
           </div>
@@ -147,9 +147,10 @@ export function ValidationPointsList({
               className="text-xs border-slate-200 rounded px-1.5 py-0.5"
             >
               <option value="all">All ({validationPoints.length})</option>
-              <option value="not_triggered">Not Triggered</option>
-              <option value="monitoring">Monitoring ({monitoringCount})</option>
-              <option value="triggered">Triggered ({triggeredCount})</option>
+              <option value="draft">Draft</option>
+              <option value="active">Active ({activeCount})</option>
+              <option value="complete">Complete ({completeCount})</option>
+              <option value="rejected">Rejected</option>
             </select>
           </div>
         </div>
@@ -249,7 +250,7 @@ export function ValidationPointsList({
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
                   {/* Convert to Data-Driven - only for judgment-based signals */}
-                  {onConvertToExplicit && point.category === 'judgment' && point.status !== 'superseded' && (
+                  {onConvertToExplicit && point.category === 'judgment' && point.status !== 'rejected' && (
                     <button
                       onClick={() => onConvertToExplicit(point)}
                       className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded"
@@ -259,7 +260,7 @@ export function ValidationPointsList({
                       Make Data-Driven
                     </button>
                   )}
-                  {onUpdateStatus && point.status !== 'superseded' && (
+                  {onUpdateStatus && point.status !== 'rejected' && (
                     <button
                       onClick={() => onUpdateStatus(point.id)}
                       className="px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"

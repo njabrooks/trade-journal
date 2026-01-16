@@ -34,17 +34,17 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
   };
 
   const statusIcons: Record<string, React.ReactNode> = {
-    not_triggered: <Clock className="w-4 h-4 text-slate-400" />,
-    monitoring: <Eye className="w-4 h-4 text-blue-500" />,
-    triggered: <AlertTriangle className="w-4 h-4 text-amber-500" />,
-    superseded: <Archive className="w-4 h-4 text-slate-300" />,
+    draft: <Clock className="w-4 h-4 text-purple-400" />,
+    active: <Eye className="w-4 h-4 text-blue-500" />,
+    complete: <AlertTriangle className="w-4 h-4 text-emerald-500" />,
+    rejected: <Archive className="w-4 h-4 text-slate-300" />,
   };
 
   const statusColors: Record<string, string> = {
-    not_triggered: 'border-slate-300 bg-slate-50',
-    monitoring: 'border-blue-400 bg-blue-50',
-    triggered: 'border-amber-400 bg-amber-50',
-    superseded: 'border-slate-200 bg-slate-50',
+    draft: 'border-purple-300 bg-purple-50',
+    active: 'border-blue-400 bg-blue-50',
+    complete: 'border-emerald-400 bg-emerald-50',
+    rejected: 'border-slate-200 bg-slate-50',
   };
 
   const confidenceColors: Record<string, string> = {
@@ -160,10 +160,10 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
                           <>
                             <span
                               className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded ${
-                                statusColors[record.previousStatus || 'not_triggered']
+                                statusColors[record.previousStatus || 'active']
                               }`}
                             >
-                              {record.previousStatus?.replace('_', ' ') || 'initial'}
+                              {record.previousStatus || 'initial'}
                             </span>
                             <span className="text-slate-400">&rarr;</span>
                             <span
@@ -171,7 +171,7 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
                                 statusColors[record.newStatus]
                               }`}
                             >
-                              {record.newStatus.replace('_', ' ')}
+                              {record.newStatus}
                             </span>
                           </>
                         ) : (

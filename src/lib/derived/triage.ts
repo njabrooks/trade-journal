@@ -511,8 +511,8 @@ export async function computeStrategyTriageForDate(
     const strategyRow = strategyRows.find((s) => s.id === metric.strategyId);
     const strategyKey = strategyKeyMap.get(metric.strategyId) ?? `STRATEGY-${metric.strategyId}`;
 
-    // Skip merged strategies - they're no longer active and shouldn't generate triage records
-    if (strategyRow?.status === 'merged') continue;
+    // Skip rejected strategies - they're abandoned and shouldn't generate triage records
+    if (strategyRow?.status === 'rejected') continue;
 
     // 1. LINK_STRATEGY_TO_THESIS - Unconfirmed auto-derived strategies need thesis link
     if (strategyRow?.isAuto && !strategyRow.confirmedAt) {

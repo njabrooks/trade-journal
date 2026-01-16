@@ -145,7 +145,8 @@ export async function getStrategiesForList(
 
 
   // Determine actual status based on positions for latest snapshot date
-  const statusByStrategy = new Map<string, "open" | "closed">();
+  // Uses standardized values: 'active' (has positions) or 'complete' (no positions)
+  const statusByStrategy = new Map<string, "active" | "complete">();
   if (latestSnapshotDate && strategyIds.length > 0) {
     const positionRows = await db
       .select({
@@ -163,7 +164,7 @@ export async function getStrategiesForList(
 
     for (const row of positionRows) {
       if (row.strategyId) {
-        statusByStrategy.set(row.strategyId, "open");
+        statusByStrategy.set(row.strategyId, "active");
       }
     }
   }
@@ -194,16 +195,17 @@ export async function getStrategiesForList(
     });
   }
 
-  // Map rows with computed status and optionally filter to open only
+  // Map rows with computed status and optionally filter to active only
+  // Standard status values: draft, active, complete, rejected
   const strategiesWithStatus = rows
     .map((row) => {
-      // Respect database status for special statuses like "merged", "draft", "planned"
-      // Only compute status for "open"/"closed" strategies
+      // Respect database status for special statuses (draft, rejected)
+      // Only compute status for active/complete strategies based on positions
       const dbStatus = row.status;
       const computedStatus =
-        dbStatus === "merged" || dbStatus === "draft" || dbStatus === "planned"
+        dbStatus === "draft" || dbStatus === "rejected"
           ? dbStatus
-          : (statusByStrategy.get(row.id) ?? "closed");
+          : (statusByStrategy.get(row.id) ?? "complete");
       const metrics = metricsByStrategy.get(row.id);
       return {
         id: row.id,
@@ -224,7 +226,7 @@ export async function getStrategiesForList(
           : [],
       };
     })
-    .filter((s) => filters?.includeClosedStrategies ? true : s.status === "open")
+    .filter((s) => filters?.includeClosedStrategies ? true : s.status === "active")
     .slice(0, limit);
 
   return strategiesWithStatus;

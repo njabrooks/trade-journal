@@ -171,11 +171,11 @@ export async function getTriageQueue(
     orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
   }
 
-  // Exclude triage records for merged strategies
+  // Exclude triage records for rejected (abandoned) strategies
   conditions.push(
     or(
       isNull(strategies.status),
-      ne(strategies.status, 'merged')
+      ne(strategies.status, 'rejected')
     )
   );
 
@@ -381,11 +381,11 @@ export async function getTriageQueueForStrategy(
     orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
   }
 
-  // Exclude triage records for merged strategies
+  // Exclude triage records for rejected (abandoned) strategies
   conditions.push(
     or(
       isNull(strategies.status),
-      ne(strategies.status, 'merged')
+      ne(strategies.status, 'rejected')
     )
   );
 
@@ -512,7 +512,7 @@ export async function getTriageQueueCounts(
     ne(triageRecords.status, 'done'), // Exclude done by default
     or(
       isNull(strategies.status),
-      ne(strategies.status, 'merged')
+      ne(strategies.status, 'rejected') // Exclude rejected (abandoned) strategies
     ),
   ];
 

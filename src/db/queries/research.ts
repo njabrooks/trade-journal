@@ -122,7 +122,7 @@ export async function getResearchArtifactsListWithCounts(): Promise<ResearchArti
         .select({
           insightId: mainClaims.sourceInsightId,
           totalCount: sql<number>`count(*)::int`,
-          unconfirmedCount: sql<number>`count(*) FILTER (WHERE ${mainClaims.status} = 'unconfirmed')::int`,
+          unconfirmedCount: sql<number>`count(*) FILTER (WHERE ${mainClaims.status} = 'draft')::int`,
         })
         .from(mainClaims)
         .where(inArray(mainClaims.sourceInsightId, insightIds))
@@ -315,7 +315,7 @@ export async function autoPromoteAuditClaims(insightId: string): Promise<number>
         rebuttal: auditClaim.rebuttal || null, // Already an array, don't wrap it
         timeHorizon: normalizedTimeHorizon,
         relevantTickers: auditClaim.relevant_tickers || [],
-        status: 'unconfirmed', // Default status for auto-promoted claims
+        status: 'draft', // Default status for auto-promoted claims (standardized #ENH-048)
         sourceInsightId: insightId,
         sourceClaimId: auditClaim.id,
       };
@@ -504,13 +504,13 @@ export async function getMainClaimsForArtifact(artifactId: string) {
 }
 
 /**
- * Promote a main claim from 'unconfirmed' to 'confirmed' status
+ * Promote a main claim from 'draft' to 'active' status (standardized #ENH-048)
  */
 export async function promoteMainClaim(claimId: string): Promise<void> {
   await db
     .update(mainClaims)
     .set({
-      status: 'confirmed',
+      status: 'active',
       updatedAt: new Date(),
     })
     .where(eq(mainClaims.id, claimId));

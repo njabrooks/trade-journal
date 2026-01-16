@@ -44,7 +44,7 @@ export async function getArticulationHistory(
 }
 
 /**
- * Get active signals for a thesis (excludes superseded)
+ * Get active signals for a thesis (excludes rejected)
  * Note: Legacy alias getActiveValidationPoints also exported for backwards compatibility
  */
 export async function getActiveSignals(
@@ -67,7 +67,7 @@ export async function getActiveSignals(
 export const getActiveValidationPoints = getActiveSignals;
 
 /**
- * Get all signals for a thesis (including superseded)
+ * Get all signals for a thesis (including rejected)
  */
 export async function getAllSignals(
   thesisId: string,
@@ -158,8 +158,11 @@ export async function getSignalsStats(
     total: signalsList.length,
     confirmation: signalsList.filter((s) => s.type === 'confirmation').length,
     warning: signalsList.filter((s) => s.type === 'warning').length,
-    triggered: signalsList.filter((s) => s.status === 'triggered').length,
-    notTriggered: signalsList.filter((s) => s.status === 'not_triggered').length,
+    complete: signalsList.filter((s) => s.status === 'complete').length,
+    active: signalsList.filter((s) => s.status === 'active').length,
+    // Legacy aliases
+    triggered: signalsList.filter((s) => s.status === 'complete').length,
+    notTriggered: signalsList.filter((s) => s.status === 'active').length,
     critical: signalsList.filter((s) => s.importance === 'critical').length,
     dataDriven: signalsList.filter((s) => s.category === 'data_driven').length,
     judgment: signalsList.filter((s) => s.category === 'judgment').length,

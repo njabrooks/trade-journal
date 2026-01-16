@@ -125,26 +125,32 @@ React Frontend (ClaimsBrowser, ConvertClaimDialog)
 
 ### Entity State Machines
 
-Key entities have status fields with defined transitions. For complete documentation, see `docs/CURRENT_STATE.md`.
+All lifecycle entities use a **universal status model** (as of #ENH-048):
+
+```
+draft ──► active ──┬──► complete
+                   └──► rejected
+```
 
 | Entity | Field | Values | Notes |
 |--------|-------|--------|-------|
-| MacroThesis | `status` | draft, active, inactive, invalidated | Lifecycle state |
-| MacroThesis | `workflowStatus` | needs_articulation, active, needs_review, archived | Parallel workflow track |
-| AssetThesis | `status` | draft, active, inactive, invalidated | Lifecycle state |
-| AssetThesis | `workflowStatus` | needs_articulation, active, needs_review, archived | Parallel workflow track |
-| MainClaim | `status` | unconfirmed, confirmed, rejected, invalidated, merged | Terminal states |
-| Signal | `status` | recommended, not_triggered, triggered, superseded | Event-driven |
-| TriageRecord | `severity` | info, monitor, attention, urgent, pending, complete | Escalation ladder |
+| MacroThesis | `status` | draft, active, complete, rejected | Single unified lifecycle |
+| AssetThesis | `status` | draft, active, complete, rejected | Single unified lifecycle |
+| MainClaim | `status` | draft, active, complete, rejected | Single unified lifecycle |
+| Signal | `status` | draft, active, complete, rejected | Single unified lifecycle |
+| Strategy | `status` | draft, active, complete, rejected | Auto-computed from positions |
+| TriageRecord | `status` | inbox, in_progress, done | Workflow state |
+| TriageRecord | `severity` | urgent, attention, monitor, info | Importance level |
 | Position | `isOpen` | true, false | Boolean toggle (closed when quantity = 0) |
 
 **Key Transitions:**
 ```
-MainClaim:  unconfirmed → confirmed | rejected | invalidated | merged
-Signal:     recommended → not_triggered → triggered | superseded
-Thesis:     draft → active → inactive | invalidated (status)
-            needs_articulation → active → needs_review → archived (workflowStatus)
+Universal:  draft → active → complete | rejected
+Strategy:   draft (no positions) → active (open positions) → complete (closed) | rejected (abandoned)
+Triage:     inbox → in_progress → done (workflow), severity is independent
 ```
+
+For complete documentation, see `docs/CURRENT_STATE.md`.
 
 ### Cross-Domain Data Flow
 
@@ -483,7 +489,7 @@ NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-web
 | New component | `CLAUDE.md` (Key Directories section) |
 | State field changes | `docs/CURRENT_STATE.md` (State Machines section) |
 | New enhancement started | `docs/FUTURE_ENHANCEMENTS.md` (move to Active) |
-| Enhancement completed | `docs/FUTURE_ENHANCEMENTS.md` (move to Completed) |
+| Enhancement completed | `docs/FUTURE_ENHANCEMENTS.md` (move to Completed summary table) + `docs/archive/completed-enhancements-2025-2026.md` (add full specification) |
 | Dead code identified | `docs/CURRENT_STATE.md` (Dead Code Registry) |
 | Dead code removed | `docs/CURRENT_STATE.md` (mark as removed) |
 | Technical debt added | `docs/CLEANUP_PLAN.md` |
@@ -688,7 +694,7 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 11. **JSONB Claims Structure** - `research_insights.claims_structure` stores hierarchical claim tree
 12. **No Bidirectional Sync** - One-way upload from local Markdown to Supabase; no automatic sync back to files
 13. **TradingView Webhooks** - Price alerts via Edge Function (`supabase/functions/tv-webhook`), matched by `tvAlertName` in signal config
-14. **Dual Status Pattern** - Theses have both `status` (lifecycle) and `workflowStatus` (articulation state) fields
+14. **Universal Status Model** - All lifecycle entities (theses, claims, signals, strategies) use unified status: draft, active, complete, rejected
 
 ## TradingView Webhook Integration
 

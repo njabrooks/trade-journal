@@ -33,7 +33,7 @@ import { SignalConfigForm, type ExplicitDetails } from './SignalConfigForm';
 // Types
 type SignalType = 'confirmation' | 'warning';
 type SignalCategory = 'judgment' | 'data_driven';
-type SignalStatus = 'not_triggered' | 'triggered' | 'superseded' | 'recommended';
+type SignalStatus = 'draft' | 'active' | 'complete' | 'rejected';
 type TableMode = 'browse' | 'review';
 
 type TypeFilter = 'all' | SignalType;
@@ -140,9 +140,9 @@ export function UnifiedSignalsTable({
   const filteredAndSortedSignals = useMemo(() => {
     let result = [...signals];
 
-    // In review mode, only show recommended signals
+    // In review mode, only show draft signals (awaiting review)
     if (mode === 'review') {
-      result = result.filter((s) => s.status === 'recommended');
+      result = result.filter((s) => s.status === 'draft');
     }
 
     // Type filter
@@ -191,7 +191,7 @@ export function UnifiedSignalsTable({
           bVal = b.category;
           break;
         case 'status':
-          const statusOrder = { recommended: 0, not_triggered: 1, triggered: 2, superseded: 3 };
+          const statusOrder = { draft: 0, active: 1, complete: 2, rejected: 3 };
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 4;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 4;
           break;
@@ -326,7 +326,7 @@ export function UnifiedSignalsTable({
       toast.success('Signal accepted');
 
       // Check if all signals processed
-      if (signals.filter((s) => s.status === 'recommended').length === 1) {
+      if (signals.filter((s) => s.status === 'draft').length === 1) {
         onComplete?.();
       }
     } catch (error) {
@@ -362,7 +362,7 @@ export function UnifiedSignalsTable({
       toast.success('Signal rejected');
 
       // Check if all signals processed
-      if (signals.filter((s) => s.status === 'recommended').length === 1) {
+      if (signals.filter((s) => s.status === 'draft').length === 1) {
         onComplete?.();
       }
     } catch (error) {
@@ -378,15 +378,15 @@ export function UnifiedSignalsTable({
   };
 
   const handleAcceptAll = async () => {
-    const recommendedSignals = signals.filter((s) => s.status === 'recommended');
-    for (const signal of recommendedSignals) {
+    const draftSignals = signals.filter((s) => s.status === 'draft');
+    for (const signal of draftSignals) {
       await handleAccept(signal.id);
     }
   };
 
   const handleRejectAll = async () => {
-    const recommendedSignals = signals.filter((s) => s.status === 'recommended');
-    for (const signal of recommendedSignals) {
+    const draftSignals = signals.filter((s) => s.status === 'draft');
+    for (const signal of draftSignals) {
       await handleReject(signal.id);
     }
   };
@@ -419,7 +419,7 @@ export function UnifiedSignalsTable({
       toast.success('Signal accepted and configured as data-driven trigger');
       setConfiguringSignal(null);
 
-      if (signals.filter((s) => s.status === 'recommended').length === 1) {
+      if (signals.filter((s) => s.status === 'draft').length === 1) {
         onComplete?.();
       }
     } catch (error) {
@@ -453,14 +453,14 @@ export function UnifiedSignalsTable({
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
-      case 'triggered':
-        return 'bg-red-100 text-red-700';
-      case 'not_triggered':
-        return 'bg-slate-100 text-slate-700';
-      case 'superseded':
-        return 'bg-slate-100 text-slate-500';
-      case 'recommended':
+      case 'draft':
         return 'bg-purple-100 text-purple-700';
+      case 'active':
+        return 'bg-slate-100 text-slate-700';
+      case 'complete':
+        return 'bg-emerald-100 text-emerald-700';
+      case 'rejected':
+        return 'bg-slate-100 text-slate-500';
       default:
         return 'bg-slate-100 text-slate-700';
     }
@@ -513,15 +513,15 @@ export function UnifiedSignalsTable({
     );
   }
 
-  const recommendedCount = signals.filter((s) => s.status === 'recommended').length;
+  const draftCount = signals.filter((s) => s.status === 'draft').length;
 
   return (
     <div className="space-y-4">
       {/* Header with bulk actions (review mode) */}
-      {mode === 'review' && recommendedCount > 0 && (
+      {mode === 'review' && draftCount > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-slate-600">
-            {recommendedCount} signal{recommendedCount !== 1 ? 's' : ''} to review
+            {draftCount} signal{draftCount !== 1 ? 's' : ''} to review
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -561,7 +561,7 @@ export function UnifiedSignalsTable({
           {showFilters && <span className="text-xs text-slate-500">(ESC)</span>}
         </Button>
         <div className="text-sm text-slate-600">
-          Showing {filteredAndSortedSignals.length} of {mode === 'review' ? recommendedCount : signals.length} signals
+          Showing {filteredAndSortedSignals.length} of {mode === 'review' ? draftCount : signals.length} signals
         </div>
       </div>
 
@@ -620,10 +620,10 @@ export function UnifiedSignalsTable({
                   className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Statuses</option>
-                  <option value="not_triggered">Not Triggered</option>
-                  <option value="triggered">Triggered</option>
-                  <option value="superseded">Superseded</option>
-                  <option value="recommended">Recommended</option>
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="complete">Complete</option>
+                  <option value="rejected">Rejected</option>
                 </select>
               </div>
             )}
@@ -787,7 +787,7 @@ export function UnifiedSignalsTable({
                         {/* Actions - unified: recommended signals get Accept/Reject, others get Update/Configure */}
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {signal.status === 'recommended' ? (
+                            {signal.status === 'draft' ? (
                               // Recommended signals: Accept/Reject/Configure actions (same in both modes)
                               <>
                                 <Button
@@ -828,7 +828,7 @@ export function UnifiedSignalsTable({
                             ) : (
                               // Accepted signals: Update status / Configure data actions
                               <>
-                                {onUpdateStatus && signal.status !== 'superseded' && (
+                                {onUpdateStatus && signal.status !== 'rejected' && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -838,7 +838,7 @@ export function UnifiedSignalsTable({
                                     Update
                                   </Button>
                                 )}
-                                {signal.category === 'judgment' && signal.status !== 'superseded' && (
+                                {signal.category === 'judgment' && signal.status !== 'rejected' && (
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -962,7 +962,7 @@ export function UnifiedSignalsTable({
 
                                   {/* Expanded row actions - unified based on signal status */}
                                   <div className="flex items-center gap-2 pt-2">
-                                    {signal.status === 'recommended' ? (
+                                    {signal.status === 'draft' ? (
                                       // Recommended: Edit/Accept/Reject/Configure
                                       <>
                                         <Button
@@ -1009,7 +1009,7 @@ export function UnifiedSignalsTable({
                                     ) : (
                                       // Accepted signals: Update/Configure/History (no edit - locked after acceptance)
                                       <>
-                                        {onUpdateStatus && signal.status !== 'superseded' && (
+                                        {onUpdateStatus && signal.status !== 'rejected' && (
                                           <Button
                                             variant="outline"
                                             size="sm"
@@ -1019,7 +1019,7 @@ export function UnifiedSignalsTable({
                                             Update Status
                                           </Button>
                                         )}
-                                        {signal.category === 'judgment' && signal.status !== 'superseded' && (
+                                        {signal.category === 'judgment' && signal.status !== 'rejected' && (
                                           <Button
                                             variant="outline"
                                             size="sm"

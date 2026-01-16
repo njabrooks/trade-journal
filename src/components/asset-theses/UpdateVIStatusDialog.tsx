@@ -37,17 +37,17 @@ interface PointUpdate {
   notes: string;
 }
 
-// Map evidence type to recommended status
+// Map evidence type to recommended status (standardized #ENH-048)
 function getRecommendedStatus(evidenceType: string): string {
   switch (evidenceType) {
     case 'strong_validation':
     case 'strong_invalidation':
-      return 'triggered';
+      return 'complete';
     case 'weak_validation':
     case 'weak_invalidation':
-      return 'monitoring';
+      return 'active';
     default:
-      return 'monitoring';
+      return 'active';
   }
 }
 
@@ -291,10 +291,10 @@ export function UpdateVIStatusDialog({
                                 }
                                 className="w-full mt-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md"
                               >
-                                <option value="not_triggered">Not Triggered</option>
-                                <option value="monitoring">Monitoring</option>
-                                <option value="triggered">Triggered</option>
-                                <option value="superseded">Superseded</option>
+                                <option value="draft">Draft</option>
+                                <option value="active">Active</option>
+                                <option value="complete">Complete</option>
+                                <option value="rejected">Rejected</option>
                               </select>
                             </div>
                             <div>

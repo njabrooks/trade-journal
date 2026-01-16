@@ -6,6 +6,65 @@
 
 ---
 
+## Status Field Technical Debt (2026-01-16)
+
+### #ENH-047: Triage Severity/Status Separation
+**Status**: Complete (2026-01-16)
+**PRD Alignment**: Section 6.1 (Triggers), Section 6.2 (Triage)
+
+Separated workflow status from severity level in triage records. Previously, the `severity` field conflated two concepts: importance levels (urgent, attention, monitor, info) and workflow states (pending, complete).
+
+**Key Insight**: Triage records are separate objects associated with domain entities. The entity has its own lifecycle status; the triage record has its own workflow state + severity.
+
+**Implemented**:
+- Added `status` column to `triage_records`: `inbox` | `in_progress` | `done`
+- Added `status` column to `thesis_triage_records`: `inbox` | `in_progress` | `done`
+- Standardized `severity` to pure importance: `urgent` | `attention` | `monitor` | `info`
+- Migration script: `migrations/20260116_triage_status_severity_separation.sql`
+- Updated TypeScript types in `src/types/triage.ts`
+- Updated schema in `src/db/schema.ts`
+
+**Files Changed**: ~30 files across queries, API routes, derived logic, UI components
+
+**Foundation for**: #ENH-048 (Entity Status Standardization) - extends this pattern to all domain entities
+
+### #ENH-048: Entity Status Standardization
+**Status**: Complete (2026-01-16)
+**PRD Alignment**: Section 3 (Decision Hierarchy), Section 5 (Research Layer)
+
+Standardized all entity `status` fields to use a universal lifecycle model. Builds on #ENH-047's pattern of separating workflow state from lifecycle status.
+
+**Universal Lifecycle Values:**
+- `draft` → Planning/developing stage
+- `active` → Currently active/open
+- `complete` → Finished/closed successfully
+- `rejected` → Abandoned/invalidated/merged
+
+**Entity Migrations:**
+
+| Entity | Old Values | New Values |
+|--------|------------|------------|
+| `main_claims` | unconfirmed, confirmed, rejected, invalidated, merged | draft, active, complete, rejected |
+| `signals` | recommended, not_triggered, triggered, superseded | draft, active, complete, rejected |
+| `macro_theses` | status + workflowStatus + lifecycleStatus | status only (draft, active, complete, rejected) |
+| `asset_theses` | status + workflowStatus + lifecycleStatus | status only (draft, active, complete, rejected) |
+| `strategies` | open, closed, merged, draft, planned | draft, active, complete, rejected |
+
+**Key Simplifications:**
+- Removed `workflowStatus` and `lifecycleStatus` from theses (triage system handles workflow)
+- Unified `merged`, `invalidated`, `superseded` → `rejected`
+- Added explicit `status` field to strategies (previously computed)
+
+**Migration Scripts:**
+- `migrations/20260116_standardize_claim_status.sql`
+- `migrations/20260116_standardize_signal_status.sql`
+- `migrations/20260116_standardize_thesis_status.sql`
+- `migrations/20260116_standardize_strategy_status.sql`
+
+**Files Changed**: ~50 files across schema, queries, API routes, services, derived logic, UI components
+
+---
+
 ## Phase 3.2: Validation Assessment Workflow (2026-01-05)
 
 ### #ENH-042: Validation Assessment Workflow

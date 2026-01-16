@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (signal.status !== 'recommended') {
+      if (signal.status !== 'draft') {
         return NextResponse.json(
           { error: 'Signal is not in recommended status' },
           { status: 400 }
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       if (action === 'accept') {
         // Apply modifications if provided
         const updateValues: Record<string, unknown> = {
-          status: 'not_triggered',
+          status: 'active',
           updatedAt: new Date(),
         };
 
@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
 
         await db.insert(signalStatusHistory).values({
           signalId,
-          previousStatus: 'recommended',
-          newStatus: 'not_triggered',
+          previousStatus: 'draft',
+          newStatus: 'active',
           evidence: historyEvidence,
           confidence: 'high',
           assessedBy: 'user',
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         const actionDescription = explicitDetails
           ? `Accepted and configured data-driven trigger for signal: "${signal.statement}"`
           : `Accepted recommended signal: "${signal.statement}"`;
-        const newState: Record<string, unknown> = { status: 'not_triggered', ...modifications };
+        const newState: Record<string, unknown> = { status: 'active', ...modifications };
         if (explicitDetails) {
           newState.explicitDetails = explicitDetails;
           newState.category = 'data_driven';
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
             objectTitle: thesisTitle,
             actionType: explicitDetails ? 'signal_configured_data_driven' : 'signal_accepted',
             actionDescription,
-            previousState: { status: 'recommended', category: signal.category },
+            previousState: { status: 'draft', category: signal.category },
             newState,
             source: 'user',
           });
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
             objectTitle: thesisTitle,
             actionType: 'signal_rejected',
             actionDescription: `Rejected recommended signal: "${signal.statement}"`,
-            previousState: { status: 'recommended', statement: signal.statement },
+            previousState: { status: 'draft', statement: signal.statement },
             newState: { deleted: true },
             source: 'user',
           });
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
           and(
             eq(signals.thesisId, thesisId),
             eq(signals.thesisType, thesisType),
-            eq(signals.status, 'recommended')
+            eq(signals.status, 'draft')
           )
         );
 
@@ -255,14 +255,14 @@ export async function POST(request: NextRequest) {
         await db
           .update(signals)
           .set({
-            status: 'not_triggered',
+            status: 'active',
             updatedAt: new Date(),
           })
           .where(
             and(
               eq(signals.thesisId, thesisId),
               eq(signals.thesisType, thesisType),
-              eq(signals.status, 'recommended')
+              eq(signals.status, 'draft')
             )
           );
 
@@ -270,8 +270,8 @@ export async function POST(request: NextRequest) {
         for (const signal of recommendedSignals) {
           await db.insert(signalStatusHistory).values({
             signalId: signal.id,
-            previousStatus: 'recommended',
-            newStatus: 'not_triggered',
+            previousStatus: 'draft',
+            newStatus: 'active',
             evidence: {
               source: 'user_review',
               summary: 'Signal accepted during bulk batch review',
@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
             and(
               eq(signals.thesisId, thesisId),
               eq(signals.thesisType, thesisType),
-              eq(signals.status, 'recommended')
+              eq(signals.status, 'draft')
             )
           );
 
@@ -354,7 +354,7 @@ async function checkAndResolveTriage(thesisId: string, thesisType: 'macro' | 'as
       and(
         eq(signals.thesisId, thesisId),
         eq(signals.thesisType, thesisType),
-        eq(signals.status, 'recommended')
+        eq(signals.status, 'draft')
       )
     );
 
@@ -427,7 +427,7 @@ export async function GET(request: NextRequest) {
         and(
           eq(signals.thesisId, thesisId),
           eq(signals.thesisType, thesisType),
-          eq(signals.status, 'recommended')
+          eq(signals.status, 'draft')
         )
       )
       .orderBy(signals.importance, signals.type);

@@ -21,7 +21,7 @@ import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
  *   direction?: 'bullish' | 'bearish' | 'neutral';
  *   timeHorizon?: 'long_term' | 'medium_term' | 'short_term';
  *   confidenceLevel?: 'high' | 'medium' | 'low' | 'exploratory';
- *   status?: 'active' | 'under_review' | 'retired' | 'superseded';
+ *   status?: 'draft' | 'active' | 'complete' | 'rejected';
  *   positionStartDate?: string;
  *   positionEndDate?: string;
  *   targetPrice?: string;            // Numeric string
@@ -161,12 +161,12 @@ export async function POST(request: NextRequest) {
       await db.insert(claimThesisMappings).values(claimLinks);
       linkedClaimsCount = claimLinks.length;
 
-      // Mark linked claims as 'confirmed' (claim has been converted to an asset thesis)
+      // Mark linked claims as 'active' (claim has been converted to an asset thesis) - standardized #ENH-048
       for (const mainClaimId of linkedMainClaimIds) {
         await db
           .update(mainClaims)
           .set({
-            status: 'confirmed',
+            status: 'active',
             updatedAt: new Date()
           })
           .where(eq(mainClaims.id, mainClaimId));

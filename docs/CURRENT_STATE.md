@@ -147,9 +147,10 @@ interface MainClaim {
 - `strategy_templates` - Reusable patterns for auto-linking
 - `strategy_metrics_snapshots` - Historical performance data
 
-**Strategy Status (implicit):**
-- Status is derived from positions data, not stored explicitly
-- Exception: `merged` status for consolidated strategies
+**Strategy Status:**
+- Explicit `status` field with standardized lifecycle values: `draft`, `active`, `complete`, `rejected`
+- Status is auto-computed based on positions during ingestion/recompute
+- Merged strategies get `complete` status (absorbed into target)
 
 **Key Files:**
 - `src/lib/services/strategies.ts` (960 lines) - Core strategy service
@@ -240,53 +241,53 @@ Journal entry logged
 
 ## State Machines
 
+### Universal Status Model
+
+All entities now use standardized lifecycle status values (as of #ENH-048):
+
+```
+draft ──► active ──┬──► complete
+                   └──► rejected
+```
+
+- **draft**: Planning/developing stage
+- **active**: Currently active/open
+- **complete**: Finished/closed successfully
+- **rejected**: Abandoned/invalidated/merged
+
 ### Entity Status Values
 
 | Entity | Field | Values | Notes |
 |--------|-------|--------|-------|
-| ResearchArtifact | `status` | draft, processed, archived | Linear progression |
-| ResearchInsight | `status` | draft, published, archived | Linear progression |
-| MainClaim | `status` | unconfirmed, confirmed, rejected, invalidated, merged | Terminal states |
+| ResearchArtifact | `status` | draft, active, complete, rejected | ✅ [#ENH-048] |
+| ResearchInsight | `status` | draft, active, complete, rejected | ✅ [#ENH-048] |
+| MainClaim | `status` | draft, active, complete, rejected | ✅ [#ENH-048] |
 | IngestionRun | `status` | pending, running, completed, failed | Terminal states |
-| Strategy | `status` | draft, open, closed, merged | Mostly implicit |
-| Position | `isOpen` | true, false | Boolean toggle |
-| TriageRecord | `status` | inbox, in_progress, done | Workflow state ✅ [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
-| TriageRecord | `severity` | urgent, attention, monitor, info | Importance level ✅ [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
-| Signal | `status` | recommended, not_triggered, triggered, superseded | Event-driven |
-| ThesisTriageRecord | `status` | inbox, in_progress, done | Workflow state ✅ [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
-| ThesisTriageRecord | `severity` | urgent, attention, monitor, info | Importance level ✅ [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
-| MacroThesis | `status` | active, under_review, retired, superseded | Lifecycle validity |
-| MacroThesis | `workflowStatus` | developing, monitoring, paused, validated, invalidated, abandoned | ⚠️ Schema only, unused in code |
-| MacroThesis | `lifecycleStatus` | created (+ code values) | ⚠️ Deprecated but used - see [#ENH-048](FUTURE_ENHANCEMENTS.md#enh-048-thesis-status-field-consolidation) |
-| AssetThesis | `status` | active (default) | Lifecycle validity |
-| AssetThesis | `workflowStatus` | developing, monitoring, paused, validated, invalidated, abandoned | ⚠️ Schema only, unused in code |
-| AssetThesis | `lifecycleStatus` | created (+ code values) | ⚠️ Deprecated but used - see [#ENH-048](FUTURE_ENHANCEMENTS.md#enh-048-thesis-status-field-consolidation) |
+| Strategy | `status` | draft, active, complete, rejected | ✅ [#ENH-048] Explicit status field |
+| Position | `isOpen` | true, false | Boolean toggle (quantity-based) |
+| TriageRecord | `status` | inbox, in_progress, done | Workflow state ✅ [#ENH-047] |
+| TriageRecord | `severity` | urgent, attention, monitor, info | Importance level ✅ [#ENH-047] |
+| Signal | `status` | draft, active, complete, rejected | ✅ [#ENH-048] |
+| ThesisTriageRecord | `status` | inbox, in_progress, done | Workflow state ✅ [#ENH-047] |
+| ThesisTriageRecord | `severity` | urgent, attention, monitor, info | Importance level ✅ [#ENH-047] |
+| MacroThesis | `status` | draft, active, complete, rejected | ✅ [#ENH-048] Single status field |
+| AssetThesis | `status` | draft, active, complete, rejected | ✅ [#ENH-048] Single status field |
 | JournalEntry | `status` | active, resolved, dismissed, superseded | Terminal states |
 | BlotterAction | `category` | trade_ingestion, triage_action, signal_triggered, thesis_event, manual | Static type |
 
 ### State Transition Diagrams
 
-**MainClaim:**
+**Universal Lifecycle (Claims, Signals, Theses, Strategies):**
 ```
-unconfirmed ──┬──► confirmed
-              ├──► rejected
-              ├──► invalidated
-              └──► merged
+draft ──► active ──┬──► complete
+                   └──► rejected
 ```
 
-**Signal:**
-```
-recommended ──► not_triggered ──┬──► triggered
-                               └──► superseded
-```
-
-**MacroThesis/AssetThesis (dual status):**
-```
-status:         draft ──► active ──┬──► inactive
-                                   └──► invalidated
-
-workflowStatus: needs_articulation ──► active ──► needs_review ──► archived
-```
+**Strategy Status Derivation:**
+- `draft` → Never had positions
+- `active` → Has open positions (quantity != 0)
+- `complete` → All positions closed (also used for merged strategies)
+- `rejected` → Abandoned by user
 
 ---
 
@@ -452,7 +453,7 @@ Key items:
 - ~~Quick wins (realizedPnlToDate, terminology)~~ ✅ Complete
 - ~~StateCode archival (696 lines)~~ ✅ Complete (2026-01-16)
 - ~~Playbook removal~~ ✅ Complete (2026-01-16)
+- ~~#ENH-047 (triage severity/status separation)~~ ✅ Complete (2026-01-16)
+- ~~#ENH-048 (entity status standardization)~~ ✅ Complete (2026-01-16)
 - Documentation (signals, triage rules)
-- #ENH-047 (triage severity/status separation)
-- #ENH-048 (thesis status field consolidation)
 - Blotter-to-Journal migration (deferred)

@@ -86,17 +86,17 @@ export function ValidationPointDetail({
   };
 
   const statusIcons: Record<string, React.ReactNode> = {
-    not_triggered: <Clock className="w-5 h-5 text-slate-400" />,
-    monitoring: <Eye className="w-5 h-5 text-blue-500" />,
-    triggered: <AlertTriangle className="w-5 h-5 text-amber-500" />,
-    superseded: <Archive className="w-5 h-5 text-slate-300" />,
+    draft: <Clock className="w-5 h-5 text-purple-400" />,
+    active: <Eye className="w-5 h-5 text-blue-500" />,
+    complete: <AlertTriangle className="w-5 h-5 text-emerald-500" />,
+    rejected: <Archive className="w-5 h-5 text-slate-300" />,
   };
 
   const statusColors: Record<string, string> = {
-    not_triggered: 'bg-slate-100 text-slate-700 border-slate-200',
-    monitoring: 'bg-blue-100 text-blue-700 border-blue-200',
-    triggered: 'bg-amber-100 text-amber-700 border-amber-200',
-    superseded: 'bg-slate-50 text-slate-500 border-slate-200',
+    draft: 'bg-purple-100 text-purple-700 border-purple-200',
+    active: 'bg-blue-100 text-blue-700 border-blue-200',
+    complete: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    rejected: 'bg-slate-50 text-slate-500 border-slate-200',
   };
 
   const importanceColors: Record<string, string> = {
@@ -187,7 +187,7 @@ export function ValidationPointDetail({
               <span className="font-medium">{validationPoint.status.replace('_', ' ')}</span>
             </div>
 
-            {validationPoint.status !== 'superseded' && (
+            {validationPoint.status !== 'rejected' && (
               <Button
                 onClick={() => setIsUpdateModalOpen(true)}
                 className="mt-3"

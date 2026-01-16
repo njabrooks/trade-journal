@@ -63,9 +63,13 @@ function formatConditions(explicitDetails: unknown): string {
 
 function getStatusIcon(status: string) {
   switch (status) {
-    case 'triggered':
-      return <AlertTriangle className="w-4 h-4 text-amber-500" />;
-    case 'superseded':
+    case 'draft':
+      return <Clock className="w-4 h-4 text-purple-500" />;
+    case 'active':
+      return <Clock className="w-4 h-4 text-slate-400" />;
+    case 'complete':
+      return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+    case 'rejected':
       return <CheckCircle2 className="w-4 h-4 text-slate-400" />;
     default:
       return <Clock className="w-4 h-4 text-slate-400" />;
@@ -74,12 +78,16 @@ function getStatusIcon(status: string) {
 
 function getStatusBadge(status: string) {
   switch (status) {
-    case 'triggered':
-      return 'bg-amber-100 text-amber-800';
-    case 'superseded':
+    case 'draft':
+      return 'bg-purple-100 text-purple-800';
+    case 'active':
+      return 'bg-blue-100 text-blue-800';
+    case 'complete':
+      return 'bg-emerald-100 text-emerald-800';
+    case 'rejected':
       return 'bg-slate-100 text-slate-600';
     default:
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-slate-100 text-slate-600';
   }
 }
 
@@ -180,7 +188,7 @@ export function StrategySignalsSection({
     const response = await fetch(`/api/signals/${signalId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'not_triggered' }),
+      body: JSON.stringify({ status: 'active' }),
     });
 
     if (!response.ok) {
@@ -323,7 +331,7 @@ export function StrategySignalsSection({
                     )}
                     {config?.tvAlertName && (
                       <div className="flex items-center gap-1.5 mt-2">
-                        {signal.status === 'triggered' ? (
+                        {signal.status === 'complete' ? (
                           <Radio className="w-3.5 h-3.5 text-green-600" />
                         ) : (
                           <Wifi className="w-3.5 h-3.5 text-blue-500" />
@@ -331,7 +339,7 @@ export function StrategySignalsSection({
                         <span className="text-xs text-slate-500">
                           TradingView: <code className="bg-slate-100 px-1 rounded">{config.tvAlertName}</code>
                         </span>
-                        {signal.status === 'not_triggered' && (
+                        {signal.status === 'active' && (
                           <span className="text-xs text-slate-400 italic">awaiting trigger</span>
                         )}
                       </div>
@@ -358,7 +366,7 @@ export function StrategySignalsSection({
                             <Pencil className="w-3.5 h-3.5" />
                             Edit
                           </button>
-                          {signal.status === 'triggered' && (
+                          {signal.status === 'complete' && (
                             <button
                               onClick={() => {
                                 handleResetSignal(signal.id);

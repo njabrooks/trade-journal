@@ -1,18 +1,14 @@
 /**
  * Workflow Module
  *
- * Contains lifecycle detection and workflow orchestration logic
- * for the triage system.
+ * Contains journal logging utilities for tracking thesis and entity lifecycle events.
+ * Workflow state tracking is handled by the triage system (thesisTriage.ts).
  */
 
 export {
-  detectLifecycleTransition,
-  applyLifecycleTransition,
-  processAllLifecycleTransitions,
   logToJournal,
   logTriageToJournalWithDedup,
   resolveJournalEntry,
   dismissJournalEntry,
-  type LifecycleStatus,
   type ThesisType,
 } from './lifecycleDetection';

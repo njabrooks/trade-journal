@@ -14,7 +14,7 @@ interface UnifiedStrategiesBrowserProps {
   strategies: StrategyListItem[];
 }
 
-type StatusFilter = 'all' | 'open' | 'closed' | 'draft' | 'planned';
+type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
 type SortColumn = 'label' | 'account' | 'status' | 'absNotional' | 'unrealized' | 'pctNav' | 'openedAt';
 type SortDirection = 'asc' | 'desc';
 
@@ -188,7 +188,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
           bVal = (b.accountLabel || b.accountBrokerId || '').toLowerCase();
           break;
         case 'status':
-          const statusOrder = { open: 0, planned: 1, draft: 2, closed: 3 };
+          const statusOrder = { active: 0, draft: 1, complete: 2, rejected: 3 };
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 99;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 99;
           break;
@@ -249,14 +249,14 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
   const statusBadgeColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'open':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'closed':
-        return 'bg-slate-200 text-slate-700';
       case 'draft':
-        return 'bg-amber-100 text-amber-700';
-      case 'planned':
+        return 'bg-purple-100 text-purple-700';
+      case 'active':
         return 'bg-blue-100 text-blue-700';
+      case 'complete':
+        return 'bg-emerald-100 text-emerald-700';
+      case 'rejected':
+        return 'bg-slate-100 text-slate-500';
       default:
         return 'bg-slate-100 text-slate-700';
     }
@@ -309,10 +309,10 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Statuses</option>
-                <option value="open">Open</option>
-                <option value="closed">Closed</option>
                 <option value="draft">Draft</option>
-                <option value="planned">Planned</option>
+                <option value="active">Active</option>
+                <option value="complete">Complete</option>
+                <option value="rejected">Rejected</option>
               </select>
             </div>
 

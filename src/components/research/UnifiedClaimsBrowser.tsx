@@ -38,7 +38,7 @@ interface UnifiedClaimsBrowserProps {
   filterArtifactId?: string; // Optional: filter claims to a specific research source
 }
 
-type StatusFilter = 'all' | 'unconfirmed' | 'confirmed' | 'rejected' | 'invalidated' | 'merged';
+type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
 type ConfidenceFilter = 'all' | 'high' | 'medium' | 'low' | 'exploratory';
 type CategoryFilter = 'all' | 'macro' | 'asset_specific';
 type SortColumn = 'claim' | 'source' | 'confidence' | 'category' | 'status' | 'createdAt';
@@ -261,16 +261,14 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
-      case 'confirmed':
+      case 'active':
         return 'bg-emerald-100 text-emerald-700';
-      case 'unconfirmed':
+      case 'draft':
         return 'bg-amber-100 text-amber-700';
+      case 'complete':
+        return 'bg-blue-100 text-blue-700';
       case 'rejected':
-        return 'bg-orange-100 text-orange-700';
-      case 'invalidated':
         return 'bg-red-100 text-red-700';
-      case 'merged':
-        return 'bg-slate-100 text-slate-700';
       default:
         return 'bg-slate-100 text-slate-700';
     }
@@ -280,8 +278,8 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
     const claimData = claimsWithSources.find(c => c.claim.id === claimId);
     const previousStatus = claimData?.claim.status || '';
 
-    // If setting to 'confirmed', show convert dialog to link/create thesis or view
-    if (newStatus === 'confirmed' && claimData) {
+    // If setting to 'active', show convert dialog to link/create thesis or view
+    if (newStatus === 'active' && claimData) {
       const hasLinks = (claimData.linkedTheses && claimData.linkedTheses.length > 0) ||
                        (claimData.linkedViews && claimData.linkedViews.length > 0);
 
@@ -430,11 +428,10 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                 className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All</option>
-                <option value="unconfirmed">Unconfirmed</option>
-                <option value="confirmed">Confirmed</option>
+                <option value="draft">Draft</option>
+                <option value="active">Active</option>
+                <option value="complete">Complete</option>
                 <option value="rejected">Rejected</option>
-                <option value="invalidated">Invalidated</option>
-                <option value="merged">Merged</option>
               </select>
             </div>
 
@@ -720,11 +717,10 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                               updatingClaimId === claim.id ? 'opacity-50 cursor-wait' : ''
                             }`}
                           >
-                            <option value="unconfirmed">Unconfirmed</option>
-                            <option value="confirmed">✓ Confirmed</option>
+                            <option value="draft">Draft</option>
+                            <option value="active">✓ Active</option>
+                            <option value="complete">Complete</option>
                             <option value="rejected">✗ Rejected</option>
-                            <option value="invalidated">Invalidated</option>
-                            <option value="merged">Merged</option>
                           </select>
                         </td>
 

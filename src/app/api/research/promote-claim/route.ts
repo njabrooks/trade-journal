@@ -115,8 +115,8 @@ export async function POST(request: NextRequest) {
         timeHorizon: claim.time_horizon || null,
         relevantTickers: relevantTickers.length > 0 ? relevantTickers : null,
 
-        // Lifecycle
-        status: 'unconfirmed',
+        // Lifecycle (standardized #ENH-048)
+        status: 'draft',
         confidenceEvolution: null,
 
         // Timestamps

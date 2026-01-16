@@ -14,7 +14,7 @@ import { eq } from 'drizzle-orm';
  *   label?: string;                  // Optional: Will be auto-generated if not provided
  *   description?: string;
  *   direction: 'long' | 'short' | 'neutral';
- *   status?: 'open' | 'closed';
+ *   status?: 'draft' | 'active' | 'complete' | 'rejected';
  *   assetThesisId?: string;          // Auto-link to this asset thesis (inherits macro thesis)
  *   rationale?: string;
  *   exitStrategy?: string;
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       label,
       description,
       direction,
-      status = 'open',
+      status = 'active',
       assetThesisId, // Strategy inherits macro thesis through asset thesis
       rationale,
       exitStrategy,

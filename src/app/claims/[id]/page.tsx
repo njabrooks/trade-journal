@@ -73,16 +73,14 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
-      case 'confirmed':
+      case 'active':
         return 'bg-emerald-100 text-emerald-700';
-      case 'unconfirmed':
+      case 'draft':
         return 'bg-amber-100 text-amber-700';
+      case 'complete':
+        return 'bg-blue-100 text-blue-700';
       case 'rejected':
-        return 'bg-orange-100 text-orange-700';
-      case 'invalidated':
         return 'bg-red-100 text-red-700';
-      case 'merged':
-        return 'bg-slate-100 text-slate-700';
       default:
         return 'bg-slate-100 text-slate-700';
     }

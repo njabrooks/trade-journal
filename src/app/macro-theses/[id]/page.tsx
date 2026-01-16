@@ -101,8 +101,10 @@ export default async function ThesisDetailPage({ params }: ThesisDetailPageProps
               <dt className="text-xs font-medium text-slate-500">Status</dt>
               <dd className="mt-0.5">
                 <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                  thesis.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
-                  thesis.status === 'under_review' ? 'bg-amber-100 text-amber-700' :
+                  thesis.status === 'draft' ? 'bg-purple-100 text-purple-700' :
+                  thesis.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                  thesis.status === 'complete' ? 'bg-emerald-100 text-emerald-700' :
+                  thesis.status === 'rejected' ? 'bg-slate-100 text-slate-500' :
                   'bg-slate-200 text-slate-700'
                 }`}>
                   {thesis.status}

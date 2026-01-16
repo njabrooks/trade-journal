@@ -49,7 +49,7 @@ export async function GET(
  *   statement?: string;
  *   type?: 'confirmation' | 'warning';
  *   importance?: 'critical' | 'significant' | 'supporting';
- *   status?: 'not_triggered' | 'monitoring' | 'triggered' | 'superseded';
+ *   status?: 'draft' | 'active' | 'complete' | 'rejected';
  *   notes?: string;
  *   explicitDetails?: {
  *     logic: 'all' | 'any';
@@ -104,10 +104,10 @@ export async function PUT(
       );
     }
 
-    // Validate status if provided
-    if (status && !['not_triggered', 'monitoring', 'triggered', 'superseded'].includes(status)) {
+    // Validate status if provided (standardized #ENH-048)
+    if (status && !['draft', 'active', 'complete', 'rejected'].includes(status)) {
       return NextResponse.json(
-        { error: 'status must be "not_triggered", "monitoring", "triggered", or "superseded"' },
+        { error: 'status must be "draft", "active", "complete", or "rejected"' },
         { status: 400 }
       );
     }
@@ -149,9 +149,9 @@ export async function PUT(
     let actionDescription = `Updated signal: "${updatedSignal.statement}"`;
 
     if (status && status !== existingSignal.status) {
-      if (status === 'not_triggered' && existingSignal.status === 'triggered') {
+      if (status === 'active' && existingSignal.status === 'complete') {
         actionType = 'signal_reset';
-        actionDescription = `Reset signal to not_triggered: "${updatedSignal.statement}"`;
+        actionDescription = `Reset signal to active: "${updatedSignal.statement}"`;
       } else {
         actionType = 'signal_status_changed';
         actionDescription = `Changed signal status from ${existingSignal.status} to ${status}: "${updatedSignal.statement}"`;

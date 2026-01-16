@@ -471,7 +471,7 @@ export async function POST(request: NextRequest) {
             .where(
               and(
                 eq(strategies.accountId, accountId),
-                ne(strategies.status, 'merged')
+                ne(strategies.status, 'rejected')
               )
             );
 
@@ -561,7 +561,7 @@ export async function POST(request: NextRequest) {
           .where(
             and(
               eq(strategies.accountId, accountId),
-              ne(strategies.status, 'merged')
+              ne(strategies.status, 'rejected')
             )
           );
 

@@ -88,10 +88,10 @@ export async function GET(request: NextRequest) {
 
     const openPositionCount = Number(openPositionsOnLatest[0]?.count ?? 0);
 
-    // Determine expected status
-    let expectedStatus: 'open' | 'closed' | 'draft';
+    // Determine expected status (using standardized lifecycle values)
+    let expectedStatus: 'active' | 'complete' | 'draft';
     if (latestSnapshotDate) {
-      expectedStatus = openPositionCount > 0 ? 'open' : 'closed';
+      expectedStatus = openPositionCount > 0 ? 'active' : 'complete';
     } else {
       expectedStatus = 'draft';
     }

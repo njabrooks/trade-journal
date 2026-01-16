@@ -228,8 +228,8 @@ export interface DbMainClaim {
   timeHorizon: 'long_term' | 'medium_term' | 'short_term' | null;
   relevantTickers: string[] | null;
 
-  // Lifecycle
-  status: 'active' | 'invalidated' | 'merged';
+  // Lifecycle (standardized #ENH-048)
+  status: 'draft' | 'active' | 'complete' | 'rejected';
   confidenceEvolution: any | null; // JSONB tracking confidence changes
 
   // Timestamps
@@ -363,7 +363,7 @@ export function isDbMainClaim(data: any): data is DbMainClaim {
     typeof data.title === 'string' &&
     typeof data.claim === 'string' &&
     ['macro', 'asset_specific'].includes(data.category) &&
-    ['active', 'invalidated', 'merged'].includes(data.status)
+    ['draft', 'active', 'complete', 'rejected'].includes(data.status)
   );
 }
 

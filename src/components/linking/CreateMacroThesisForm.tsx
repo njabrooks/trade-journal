@@ -17,7 +17,7 @@ interface CreateMacroThesisFormData {
   direction: 'bullish' | 'bearish' | 'neutral';
   timeHorizon: 'long_term' | 'medium_term' | 'short_term';
   confidenceLevel: 'high' | 'medium' | 'low' | 'exploratory';
-  status: 'active' | 'under_review' | 'retired';
+  status: 'draft' | 'active' | 'complete' | 'rejected';
   sectors: string[];
   positionStartDate?: string;
   positionEndDate?: string;
@@ -239,9 +239,10 @@ export function CreateMacroThesisForm({
             required
             disabled={loading}
           >
+            <option value="draft">Draft</option>
             <option value="active">Active</option>
-            <option value="under_review">Under Review</option>
-            <option value="retired">Retired</option>
+            <option value="complete">Complete</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
       </div>

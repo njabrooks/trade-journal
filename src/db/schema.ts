@@ -67,27 +67,21 @@ export const macroTheses = pgTable(
     thesisType: text('thesis_type').notNull(), // 'secular' | 'cyclical' | 'structural'
     timeHorizon: text('time_horizon'), // 'long_term' | 'medium_term' | 'short_term'
     confidenceLevel: text('confidence_level'), // 'high' | 'medium' | 'low' | 'exploratory'
-    status: text('status').notNull().default('active'), // 'active' | 'under_review' | 'retired' | 'superseded'
+    status: text('status').notNull().default('active'), // 'draft' | 'active' | 'complete' | 'rejected'
 
-    // Position structure (NEW)
+    // Position structure
     sectors: text('sectors').array().default(sql`'{}'`), // e.g., ['AI hyperscalers', 'crypto alts']
     direction: text('direction'), // 'bullish' | 'bearish' | 'neutral'
     positionStartDate: date('position_start_date'),
     positionEndDate: date('position_end_date'),
 
-    // Outcome tracking (NEW)
+    // Outcome tracking
     outcome: text('outcome'), // 'validated' | 'invalidated' | 'partial' | 'ongoing'
     outcomeNotes: text('outcome_notes'),
     actualOutcomeDate: date('actual_outcome_date'),
 
-    // Workflow status (user-controlled intent)
-    workflowStatus: text('workflow_status').default('developing'), // 'developing' | 'monitoring' | 'paused' | 'validated' | 'invalidated' | 'abandoned'
-
     // Track claims count when articulation was last generated (for triage rule #2)
     claimsCountAtLastArticulation: integer('claims_count_at_last_articulation').default(0),
-
-    // DEPRECATED: Use workflowStatus instead. Kept temporarily for migration safety.
-    lifecycleStatus: text('lifecycle_status').default('created'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -101,7 +95,6 @@ export const macroTheses = pgTable(
     nextReviewIdx: index('idx_macro_theses_next_review').on(table.nextReviewDueAt),
     directionIdx: index('idx_macro_theses_direction').on(table.direction),
     positionDatesIdx: index('idx_macro_theses_position_dates').on(table.positionStartDate, table.positionEndDate),
-    workflowIdx: index('idx_macro_theses_workflow').on(table.workflowStatus),
   })
 );
 
@@ -128,7 +121,7 @@ export const assetTheses = pgTable(
     regimeContext: text('regime_context'),
     timeHorizon: text('time_horizon'),
     confidenceLevel: text('confidence_level'),
-    status: text('status').notNull().default('active'),
+    status: text('status').notNull().default('active'), // 'draft' | 'active' | 'complete' | 'rejected'
 
     // AI-generated summary (Phase 2.8)
     aiSummary: text('ai_summary'),
@@ -137,29 +130,23 @@ export const assetTheses = pgTable(
     aiSummaryClaimIds: text('ai_summary_claim_ids').array().default(sql`'{}'`),
     aiSummaryClaimCount: integer('ai_summary_claim_count').default(0),
 
-    // Position structure (NEW)
+    // Position structure
     direction: text('direction'), // 'bullish' | 'bearish' | 'neutral'
     positionStartDate: date('position_start_date'),
     positionEndDate: date('position_end_date'),
 
-    // Price targets (NEW)
+    // Price targets
     targetPrice: numeric('target_price'),
     entryReferencePrice: numeric('entry_reference_price'),
 
-    // Outcome tracking (NEW)
+    // Outcome tracking
     outcome: text('outcome'), // 'validated' | 'invalidated' | 'partial' | 'ongoing'
     outcomeNotes: text('outcome_notes'),
     actualOutcomeDate: date('actual_outcome_date'),
     actualPrice: numeric('actual_price'),
 
-    // Workflow status (user-controlled intent)
-    workflowStatus: text('workflow_status').default('developing'), // 'developing' | 'monitoring' | 'paused' | 'validated' | 'invalidated' | 'abandoned'
-
     // Track claims count when articulation was last generated (for triage rule #2)
     claimsCountAtLastArticulation: integer('claims_count_at_last_articulation').default(0),
-
-    // DEPRECATED: Use workflowStatus instead. Kept temporarily for migration safety.
-    lifecycleStatus: text('lifecycle_status').default('created'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -173,7 +160,6 @@ export const assetTheses = pgTable(
     nextReviewIdx: index('idx_asset_theses_next_review').on(table.nextReviewDueAt),
     directionIdx: index('idx_asset_theses_direction').on(table.direction),
     positionDatesIdx: index('idx_asset_theses_position_dates').on(table.positionStartDate, table.positionEndDate),
-    workflowIdx: index('idx_asset_theses_workflow').on(table.workflowStatus),
   })
 );
 
@@ -269,7 +255,7 @@ export const mainClaims = pgTable(
     relevantTickers: text('relevant_tickers').array(),
 
     // Lifecycle
-    status: text('status').notNull().default('unconfirmed'), // 'unconfirmed' | 'confirmed' | 'rejected' | 'invalidated' | 'merged'
+    status: text('status').notNull().default('draft'), // 'draft' | 'active' | 'complete' | 'rejected' (standardized #ENH-048)
     confidenceEvolution: jsonb('confidence_evolution'),
 
     // Source tracking (for auto-promoted audit claims)
@@ -485,7 +471,7 @@ export const strategies = pgTable(
     }),
     openedAt: timestamp('opened_at', { withTimezone: true }).notNull(),
     closedAt: timestamp('closed_at', { withTimezone: true }),
-    status: text('status').notNull().default('open'),
+    status: text('status').notNull().default('active'), // 'draft' | 'active' | 'complete' | 'rejected'
     // Entry metrics (computed during confirmation)
     entrySpot: numeric('entry_spot'),
     entryIv30: numeric('entry_iv30'),
@@ -1358,10 +1344,9 @@ export const signals = pgTable(
     judgmentDetails: jsonb('judgment_details'), // @deprecated - use notes
     responseProtocol: jsonb('response_protocol'), // @deprecated - use notes
 
-    // Status: recommended (AI proposed) → not_triggered (accepted) → triggered (condition met)
-    // Also: superseded (no longer relevant)
-    // Note: 'monitoring' was removed in Phase 7 - all accepted signals are implicitly being monitored
-    status: text('status').notNull().default('not_triggered'), // 'not_triggered' | 'triggered' | 'superseded' | 'recommended'
+    // Status: draft (proposed) → active (accepted/monitoring) → complete (triggered) | rejected (cancelled)
+    // Standardized #ENH-048: draft, active, complete, rejected
+    status: text('status').notNull().default('active'), // 'draft' | 'active' | 'complete' | 'rejected'
 
     // Dependent thesis reference (for compositional validation - thesis signals only)
     dependentThesisId: uuid('dependent_thesis_id'),

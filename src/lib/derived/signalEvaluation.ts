@@ -285,11 +285,11 @@ async function triggerSignal(
   const config = signal.explicitDetails as SignalConfig | null;
   const recommendedAction = config?.recommendedAction || 'REVIEW_SIGNAL';
 
-  // 1. Update signal status to 'triggered'
+  // 1. Update signal status to 'complete' (triggered = complete in standardized status)
   await db
     .update(signals)
     .set({
-      status: 'triggered',
+      status: 'complete',
       updatedAt: new Date(),
     })
     .where(eq(signals.id, signal.id));
@@ -330,9 +330,9 @@ async function triggerSignal(
     objectTitle: strategy.autoDerivedLabel || strategy.strategyKey,
     actionType: 'signal_triggered' as const,
     actionDescription: `Position metrics triggered signal: ${signal.statement}`,
-    previousState: { status: 'not_triggered' },
+    previousState: { status: 'active' },
     newState: {
-      status: 'triggered',
+      status: 'complete',
       triggeredAt: new Date().toISOString(),
       triageRecordId: newTriage[0]?.id,
       metrics: {
@@ -394,7 +394,7 @@ export async function evaluateStrategySignalsForDate(
       and(
         eq(signals.entityType, 'strategy'),
         inArray(signals.strategyId, strategyIds),
-        inArray(signals.status, ['not_triggered', 'monitoring'])
+        eq(signals.status, 'active')
       )
     );
 

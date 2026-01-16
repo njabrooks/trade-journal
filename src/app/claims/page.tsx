@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 export default async function ClaimsBrowserPage() {
   const claimsWithSources = await getAllMainClaimsWithSources();
 
-  // Calculate statistics
+  // Calculate statistics (using standardized status values #ENH-048)
   const totalClaims = claimsWithSources.length;
-  const unconfirmedCount = claimsWithSources.filter(item => item.claim.status === 'unconfirmed').length;
-  const confirmedCount = claimsWithSources.filter(item => item.claim.status === 'confirmed').length;
-  const invalidatedCount = claimsWithSources.filter(item => item.claim.status === 'invalidated').length;
-  const mergedCount = claimsWithSources.filter(item => item.claim.status === 'merged').length;
+  const draftCount = claimsWithSources.filter(item => item.claim.status === 'draft').length;
+  const activeCount = claimsWithSources.filter(item => item.claim.status === 'active').length;
+  const completeCount = claimsWithSources.filter(item => item.claim.status === 'complete').length;
+  const rejectedCount = claimsWithSources.filter(item => item.claim.status === 'rejected').length;
 
   // Count unique sources
   const uniqueSources = new Set(
@@ -41,16 +41,16 @@ export default async function ClaimsBrowserPage() {
               <dd className="mt-1 text-2xl font-semibold text-slate-900">{totalClaims}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Unconfirmed</dt>
-              <dd className="mt-1 text-2xl font-semibold text-amber-600">{unconfirmedCount}</dd>
+              <dt className="text-sm font-medium text-slate-500">Draft</dt>
+              <dd className="mt-1 text-2xl font-semibold text-amber-600">{draftCount}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Confirmed</dt>
-              <dd className="mt-1 text-2xl font-semibold text-emerald-600">{confirmedCount}</dd>
+              <dt className="text-sm font-medium text-slate-500">Active</dt>
+              <dd className="mt-1 text-2xl font-semibold text-emerald-600">{activeCount}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Invalidated</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-500">{invalidatedCount}</dd>
+              <dt className="text-sm font-medium text-slate-500">Rejected</dt>
+              <dd className="mt-1 text-2xl font-semibold text-slate-500">{rejectedCount}</dd>
             </div>
           </dl>
         </div>

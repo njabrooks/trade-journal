@@ -39,21 +39,27 @@ export function UpdateValidationStatusModal({
 
   const statusOptions = [
     {
-      value: 'not_triggered',
-      label: 'Not Triggered',
-      description: 'Condition has not yet occurred (all accepted signals are monitored)',
+      value: 'draft',
+      label: 'Draft',
+      description: 'Proposed signal awaiting acceptance',
+      icon: <Archive className="w-4 h-4 text-purple-400" />,
+    },
+    {
+      value: 'active',
+      label: 'Active',
+      description: 'Condition is being monitored',
       icon: <Eye className="w-4 h-4 text-slate-400" />,
     },
     {
-      value: 'triggered',
-      label: 'Triggered',
-      description: 'Condition has been met',
-      icon: <AlertTriangle className="w-4 h-4 text-amber-500" />,
+      value: 'complete',
+      label: 'Complete',
+      description: 'Condition has been triggered/met',
+      icon: <AlertTriangle className="w-4 h-4 text-emerald-500" />,
     },
     {
-      value: 'superseded',
-      label: 'Superseded',
-      description: 'No longer relevant (replaced by newer articulation)',
+      value: 'rejected',
+      label: 'Rejected',
+      description: 'No longer relevant',
       icon: <Archive className="w-4 h-4 text-slate-400" />,
     },
   ];
