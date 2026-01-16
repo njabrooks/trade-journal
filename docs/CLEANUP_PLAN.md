@@ -1,7 +1,7 @@
 # Cleanup Plan: PRD Alignment & Technical Debt
 
 **Generated:** 2026-01-16
-**Updated:** 2026-01-16 (Playbook system fully removed)
+**Updated:** 2026-01-16 (Blotter-to-Journal Migration COMPLETED)
 **Purpose:** Map audit findings against PRD v1.1 and prioritize cleanup work.
 
 ---
@@ -63,31 +63,38 @@
 | Chronological journal | ✅ `journal_entries` table |
 | Event Logging | ✅ `logToJournal()` captures all events |
 
-**Deprecated:** Entire `blotter` system - Journal now handles all functionality:
+**Deprecated & Removed:** Entire `blotter` system - Journal now handles all functionality:
 - Trade ingestion events → Journal entries
 - Triage metadata → Journal entries
-- The complex blotter reconciliation is no longer needed
+- Severity overrides → `triage_records` table (overrideSource, overrideExpiresDate, overrideAt columns)
+- ✅ Migration completed 2026-01-16: `blotter_actions` table dropped, backup retained as `blotter_actions_backup`
 
 ---
 
 ## Deprecated Systems Summary
 
-### 1. Blotter System (FULLY DEPRECATED)
+### 1. Blotter System (✅ FULLY REMOVED - 2026-01-16)
 
-The Journal system now replaces all blotter functionality. Remove entirely:
+The Journal system and `triage_records` table now handle all former blotter functionality.
 
-**Database:**
-- `blotter_actions` table - Drop
-- All blotter-related columns
+**Migration Summary:**
+1. Added override columns to `triage_records`: `overrideSource`, `overrideExpiresDate`, `overrideAt`
+2. Migrated 9 existing severity overrides from `blotter_actions` to `triage_records`
+3. Updated triage computation (`triage.ts`) to read overrides from `triage_records`
+4. Updated triage action APIs to write overrides to `triage_records` + journal
+5. Dropped `blotter_actions` table (backup retained as `blotter_actions_backup`)
 
-**Backend:**
-- `src/lib/derived/blotter.ts` (1805 lines) - Archive locally
-- `src/db/queries/blotter.ts` - Remove
-- `src/app/api/blotter/*` - Remove all routes
+**Migration files:**
+- `migrations/20260116_add_triage_override_columns.sql`
+- `migrations/20260116_migrate_blotter_overrides.sql`
+- `migrations/20260116_drop_blotter_actions.sql`
 
-**UI:**
-- `src/app/blotter/*` - Remove pages
-- `src/components/blotter/*` - Remove components
+**Files modified:**
+- `src/db/schema.ts` - Removed `blotterActions` table definition
+- `src/lib/derived/triage.ts` - Updated to use `triage_records` overrides
+- `src/app/api/triage/action/route.ts` - Removed blotter writes
+- `src/app/api/triage/action/bulk/route.ts` - Removed blotter writes
+- `src/db/queries/strategies.ts` - Removed blotter query from strategy detail
 
 ---
 
@@ -388,20 +395,16 @@ Keep deprecated code locally for reference but exclude from repo.
 - [x] `asset_view` → `asset_thesis` terminology updated across all files
 - [x] CURRENT_STATE.md updated with cleanup status
 
-**Deferred (blotter system still actively used):**
+**Blotter Migration Completed (2026-01-16):**
 
-- [ ] ~~`blotter_actions` table dropped~~ - **DEFERRED** - Still used for triage severity overrides
-- [ ] ~~`stateCode` column dropped~~ - **DEFERRED** - Part of blotter dependency chain
-- [ ] ~~All blotter UI pages removed~~ - **DEFERRED** - Pages already removed but backend still needed
-- [ ] ~~All blotter components removed~~ - **DEFERRED** - Components removed but table active
-- [ ] ~~All blotter API routes removed~~ - **DEFERRED** - Routes removed but schema active
+- [x] `blotter_actions` table dropped - ✅ Migrated to `triage_records` override columns
+- [x] Triage severity override queries updated - ✅ Now use `triage_records.overrideSource`
+- [x] Strategy detail view queries updated - ✅ Removed blotter from response
+- [x] Triage action API routes updated - ✅ Now write to `triage_records` + journal
+- [x] Bulk triage action routes updated - ✅ Now write to `triage_records` + journal
+- [x] Admin recompute page cleaned up - ✅ Removed blotter backfill UI
 
-**Note:** The blotter_actions table is still actively referenced by:
-- `src/lib/derived/triage.ts` - Triage severity override queries
-- `src/db/queries/strategies.ts` - Strategy detail view queries
-- Triage action recording in API routes
-
-Full blotter deprecation requires migrating these functionalities to the Journal system first.
+**Note:** Backup retained as `blotter_actions_backup` table for safety. Can be dropped after verification period.
 
 ---
 

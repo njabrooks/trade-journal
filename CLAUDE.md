@@ -87,7 +87,7 @@ Raw Data Tables (trades, positions, underlyings_iv_history, etc.)
   ↓
 Derived Computation Layer (/src/lib/derived/)
   ↓
-Computed Tables (triage_records, blotter_actions, strategy_metrics_snapshots)
+Computed Tables (triage_records, strategy_metrics_snapshots, journal_entries)
   ↓
 API Routes (/src/app/api/)
   ↓
@@ -204,10 +204,10 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
                          ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                    JOURNAL LAYER                                  │
-│  ┌─────────────────┐              ┌─────────────────┐            │
-│  │ journal_entries │◄────────────►│ blotter_actions │            │
-│  │ (narrative)     │   linked     │ (structured)    │            │
-│  └─────────────────┘              └─────────────────┘            │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ journal_entries (narrative audit trail for all events)      │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│  Note: Triage overrides stored on triage_records (overrideSource)│
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -229,7 +229,6 @@ Contains business logic for calculating derived insights from raw data:
 - **`triage.ts`** (1259 lines) - Position triage: DTE alerts, size thresholds, complexity flags, IV metrics
 - **`thesisTriage.ts`** (550 lines) - Thesis triage rules (needs articulation, new claims)
 - **`signalEvaluation.ts`** (365 lines) - Auto signal evaluation for strategy triggers
-- **`blotter.ts`** (1805 lines) - Trade aggregations, blotter action generation (feeds journal)
 - **`strategyAuto.ts`** - Auto-linking trades to strategies based on templates
 - **`ivMetrics.ts`** - IV rank and IV percentile calculations from options chain snapshots
 - **`portfolio.ts`** - Portfolio-level aggregations (unrealized PnL, notional)
@@ -320,8 +319,8 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`positions`** - Current/closed positions with MTM data
 
 ### Derived/Computed Tables
-- **`triage_records`** - Triage alerts with severity/urgency/reasons
-- **`blotter_actions`** - Trade-level aggregations and strategy linkage
+- **`triage_records`** - Triage alerts with severity/urgency/reasons (includes override columns)
+- **`journal_entries`** - Chronological audit trail for all events
 - **`strategy_metrics_snapshots`** - Historical strategy performance
 - **`mtm_snapshots`** - Mark-to-market snapshots
 
@@ -359,7 +358,6 @@ See `docs/features/terminology.md` for the authoritative terminology guide. Key 
 ### Implementation Terms (Keep As-Is)
 - **Underlying** - The financial instrument (reference data, not a belief)
 - **Strategy Template** - Reusable strategy pattern (tactical, not in PRD)
-- **Blotter Actions** - Structured trade aggregations (feeds journal, used for triage severity)
 
 ### Critical Distinctions
 - **Underlying** (reference data) vs **Asset Thesis** (belief about that underlying)
@@ -593,7 +591,7 @@ source .env.local && /opt/homebrew/opt/postgresql@16/bin/psql "$DATABASE_URL_POO
 - **Thesis Triage** (`/src/lib/derived/thesisTriage.ts`) - Evaluates theses for articulation needs, new claims
 - **Signals** (`/src/lib/derived/signalEvaluation.ts`) - Evaluates strategy signals, creates triggers
 - **Journal** (`/src/lib/workflow/lifecycleDetection.ts`) - `logToJournal()` captures all events
-- Blotter actions (`/src/lib/derived/blotter.ts`) - Trade aggregations, still used for triage severity
+- **Triage Overrides** - Severity overrides stored on `triage_records` via `overrideSource`, `overrideExpiresDate`, `overrideAt`
 - Recomputation via `/api/recompute/*` endpoints after ingestion
 
 ### When Working with Research Workflow
@@ -761,7 +759,7 @@ See `docs/FUTURE_ENHANCEMENTS.md` for the complete prioritized backlog. Key item
 - **Enhanced Evidence Linking** - Direct linkage from positions/strategies back to supporting claims
 - **Research Synthesis Dashboard** - Portfolio-wide view of macro thesis → asset thesis → strategy → position chain
 
-### Deferred Work
-- **Blotter-to-Journal Migration** - `blotter_actions` table still actively used for triage severity overrides
+### Recently Completed (2026-01-16)
+- **Blotter-to-Journal Migration** - `blotter_actions` table removed, overrides now stored on `triage_records`
 
 When implementing new features, consult PRD, terminology docs, and FUTURE_ENHANCEMENTS.md for alignment.

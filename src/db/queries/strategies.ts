@@ -11,7 +11,6 @@ import {
   accounts,
   assetTheses,
   assetThesisRelatedMacroTheses,
-  blotterActions,
   macroTheses,
   navSnapshots,
   positions,
@@ -288,15 +287,7 @@ export interface StrategyDetail {
     symbol: string;
     grossAmount: number | null;
   }[];
-  blotter: {
-    id: string;
-    actionDate: string;
-    reasonCode: string | null;
-    actionClass: string | null;
-    actionDetail: string | null;
-    premiumChange: number | null;
-    realizedPnl: number | null;
-  }[];
+  // Note: blotter property removed - action history now in journal_entries
 }
 
 export async function getStrategyDetail(strategyId: string): Promise<StrategyDetail | null> {
@@ -475,30 +466,8 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     grossAmount: toNumber(row.grossAmount),
   }));
 
-    const blotterRows = await db
-    .select({
-      id: blotterActions.id,
-      actionDate: blotterActions.actionDate,
-      reasonCode: blotterActions.reasonCode,
-      actionClass: blotterActions.actionClass,
-      actionDetail: blotterActions.actionDetail,
-      premiumChange: blotterActions.premiumChange,
-      realizedPnl: blotterActions.realizedPnl,
-    })
-    .from(blotterActions)
-    .where(eq(blotterActions.strategyId, strategyId))
-    .orderBy(desc(blotterActions.actionDate))
-    .limit(20);
-
-    const blotter = blotterRows.map((row) => ({
-    id: row.id,
-    actionDate: row.actionDate,
-    reasonCode: row.reasonCode,
-    actionClass: row.actionClass,
-    actionDetail: row.actionDetail,
-    premiumChange: toNumber(row.premiumChange),
-    realizedPnl: toNumber(row.realizedPnl),
-  }));
+    // Note: blotter table has been deprecated and removed
+    // Action history is now available via journal_entries table
 
     return {
       strategy: {
@@ -521,7 +490,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       openPositions,
       triageFlags,
       recentTrades,
-      blotter,
     };
   } catch (error) {
     // Extract detailed error information for better debugging

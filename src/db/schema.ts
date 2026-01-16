@@ -704,6 +704,10 @@ export const triageRecords = pgTable(
     notes: text('notes'),
     ruleSet: text('rule_set'), // e.g. 'options_v1'
     unmatchedTradeExecutions: jsonb('unmatched_trade_executions'), // JSONB array of unmatched trade blotter entry details (for QUANTITY_CHANGE)
+    // Override tracking - persists user DISMISS/MONITOR actions across triage recomputes
+    overrideSource: text('override_source'), // 'user_dismiss' | 'user_monitor' | null (no override)
+    overrideExpiresDate: date('override_expires_date'), // When override expires (null = permanent)
+    overrideAt: timestamp('override_at', { withTimezone: true }), // When override was set
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -722,6 +726,7 @@ export const triageRecords = pgTable(
     ),
     statusIdx: index('idx_triage_status').on(table.status),
     severityIdx: index('idx_triage_severity').on(table.severity),
+    overrideSourceIdx: index('idx_triage_override_source').on(table.overrideSource),
   })
 );
 
@@ -731,95 +736,14 @@ export const triageRecords = pgTable(
 // ============================================================================
 
 // ============================================================================
-// Blotter Actions
+// Blotter Actions - DEPRECATED (2026-01-16)
 // ============================================================================
-
-export const blotterActions: any = pgTable(
-  'blotter_actions',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    blotterId: text('blotter_id').notNull().unique(),
-    actionDate: date('action_date').notNull(),
-    snapshotDate: date('snapshot_date'),
-    strategyId: uuid('strategy_id').references(() => strategies.id, {
-      onDelete: 'set null',
-    }),
-    positionId: uuid('position_id').references(() => positions.id, {
-      onDelete: 'set null',
-    }),
-    strategyKey: text('strategy_key'),
-    strategyLabel: text('strategy_label'),
-    ticker: text('ticker'),
-    strategyTypeAtAction: text('strategy_type_at_action'),
-    // REMOVED: stateCodeAtAction - deprecated, replaced by signals system (2026-01-16)
-    triageFlagAtAction: text('triage_flag_at_action'),
-    reasonCode: text('reason_code'),
-    actionClass: text('action_class'),
-    actionDetail: text('action_detail'),
-    legScope: text('leg_scope'),
-    executionRef: text('execution_ref'),
-    qtyChange: numeric('qty_change'),
-    premiumChange: numeric('premium_change'),
-    realizedPnl: numeric('realized_pnl'),
-    sizeBeforeNotional: numeric('size_before_notional'),
-    sizeAfterNotional: numeric('size_after_notional'),
-    riskNotesAtAction: text('risk_notes_at_action'),
-    notes: text('notes'),
-    followUpRequired: boolean('follow_up_required'),
-    followUpDate: date('follow_up_date'),
-    completed: boolean('completed'),
-    // Severity/Status override set by user action
-    // Values: 'info' (dismissed), 'monitor' (monitoring), 'in_progress' (trade pending), 'done' (completed)
-    // Note: This column stores both severity overrides and workflow status - see docs/CLEANUP_PLAN.md #ENH-047
-    severityOverride: text('severity_override'),
-    overrideExpiresDate: date('override_expires_date'), // null = permanent override
-    monitorDays: integer('monitor_days'), // For MONITOR actions: days before reverting
-    tradeReason: text('trade_reason'), // Explanation for the trade action taken (for QUANTITY_CHANGE triggers)
-    tradeStage: text('trade_stage'), // 'open' | 'close' | 'hedge' | 'roll' | 'reduce' | 'add' (for QUANTITY_CHANGE triggers)
-    source: text('source').default('triage_action'), // 'triage_action' | 'trade_ingestion'
-    tradeId: uuid('trade_id').references(() => trades.id, { onDelete: 'set null' }), // For single trade links
-    tradeIds: jsonb('trade_ids'), // Array of trade IDs for aggregated entries
-    tradeCount: integer('trade_count'), // Number of trades in aggregation
-    conid: bigint('conid', { mode: 'number' }), // Contract ID for matching trades to positions
-    linkedBlotterActionId: uuid('linked_blotter_action_id').references(() => blotterActions.id, { onDelete: 'set null' }), // Bidirectional link to matching entry (primary/backward compatible)
-    linkedTradeBlotterIds: jsonb('linked_trade_blotter_ids'), // Array of linked trade blotter entry IDs (for QUANTITY_CHANGE linking to multiple TRADE_INGESTED entries)
-    // Enhanced decision capture (Phase 1)
-    decisionType: text('decision_type'), // 'trade' | 'update_thesis' | 'record_observation' | 'no_action'
-    decisionRationale: text('decision_rationale'),
-    confidenceLevel: text('confidence_level'), // 'high' | 'medium' | 'low'
-    convictionScore: integer('conviction_score'), // 1-10 scale
-    expectedOutcome: text('expected_outcome'),
-    actualOutcome: text('actual_outcome'),
-    outcomeEvaluatedAt: timestamp('outcome_evaluated_at', { withTimezone: true }),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-  },
-  (table) => ({
-    strategyActionDateIdx: index('idx_blotter_strategy_action_date').on(
-      table.strategyId,
-      table.actionDate
-    ),
-    followUpIdx: index('idx_blotter_follow_up').on(
-      table.followUpRequired,
-      table.followUpDate
-    ),
-    overrideIdx: index('idx_blotter_override').on(
-      table.positionId,
-      table.strategyId,
-      table.triageFlagAtAction,
-      table.overrideExpiresDate
-    ),
-    tradeSourceIdx: index('idx_blotter_trade_source').on(
-      table.strategyId,
-      table.ticker,
-      table.actionDate,
-      table.source
-    ),
-    conidIdx: index('idx_blotter_conid').on(table.conid),
-    linkedIdx: index('idx_blotter_linked').on(table.linkedBlotterActionId),
-    decisionTypeIdx: index('idx_blotter_decision_type').on(table.decisionType),
-  })
-);
+// The blotter_actions table has been deprecated and removed as part of the
+// blotter-to-journal migration. All functionality has been moved to:
+// - journal_entries: Audit trail for all actions
+// - triage_records: Override tracking via overrideSource, overrideExpiresDate, overrideAt columns
+// See: docs/CLEANUP_PLAN.md - Blotter-to-Journal Migration
+// ============================================================================
 
 // ============================================================================
 // Portfolio Snapshots
@@ -942,8 +866,7 @@ export type NewNavSnapshot = typeof navSnapshots.$inferInsert;
 export type TriageRecord = typeof triageRecords.$inferSelect;
 export type NewTriageRecord = typeof triageRecords.$inferInsert;
 
-export type BlotterAction = typeof blotterActions.$inferSelect;
-export type NewBlotterAction = typeof blotterActions.$inferInsert;
+// BlotterAction types removed - table deprecated (2026-01-16)
 
 export type PortfolioSnapshot = typeof portfolioSnapshots.$inferSelect;
 export type NewPortfolioSnapshot = typeof portfolioSnapshots.$inferInsert;

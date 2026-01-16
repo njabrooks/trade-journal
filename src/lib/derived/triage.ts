@@ -5,7 +5,6 @@ import {
   strategies,
   underlyingsIvHistory,
   triageRecords,
-  blotterActions,
   NewTriageRecord,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc, ne } from 'drizzle-orm';
@@ -90,49 +89,51 @@ function computeSigmaToStrike(
 
 /**
  * Severity override cache entry
+ * Now stored directly on triage_records instead of blotter_actions
  */
 interface SeverityOverride {
   positionId: string | null;
   strategyId: string | null;
-  triageFlagAtAction: string;
-  severityOverride: string;
-  createdAt: Date;
+  recommendedAction: string;
+  severity: string;
+  overrideSource: string;
+  overrideExpiresDate: string | null;
+  overrideAt: Date | null;
 }
 
 /**
- * Pre-fetches ALL active severity overrides for a snapshot date.
+ * Pre-fetches ALL active severity overrides from existing triage_records.
  * This batches what would otherwise be N individual queries into 1.
  *
+ * Overrides are stored directly on triage_records via override_source field.
  * Returns a cache that can be queried synchronously via lookupSeverityOverride().
  */
 async function prefetchSeverityOverrides(snapshotDate: string): Promise<SeverityOverride[]> {
   const overrides = await db
     .select({
-      positionId: blotterActions.positionId,
-      strategyId: blotterActions.strategyId,
-      triageFlagAtAction: blotterActions.triageFlagAtAction,
-      severityOverride: blotterActions.severityOverride,
-      createdAt: blotterActions.createdAt,
+      positionId: triageRecords.positionId,
+      strategyId: triageRecords.strategyId,
+      recommendedAction: triageRecords.recommendedAction,
+      severity: triageRecords.severity,
+      overrideSource: triageRecords.overrideSource,
+      overrideExpiresDate: triageRecords.overrideExpiresDate,
+      overrideAt: triageRecords.overrideAt,
     })
-    .from(blotterActions)
+    .from(triageRecords)
     .where(
       and(
+        isNotNull(triageRecords.overrideSource),
+        isNotNull(triageRecords.recommendedAction),
         or(
-          eq(blotterActions.actionDetail, 'DISMISS'),
-          eq(blotterActions.actionDetail, 'MONITOR')
-        ),
-        isNotNull(blotterActions.severityOverride),
-        isNotNull(blotterActions.triageFlagAtAction),
-        or(
-          isNull(blotterActions.overrideExpiresDate),
-          gte(blotterActions.overrideExpiresDate, snapshotDate)
+          isNull(triageRecords.overrideExpiresDate),
+          gte(triageRecords.overrideExpiresDate, snapshotDate)
         )
       )
     )
-    .orderBy(desc(blotterActions.createdAt));
+    .orderBy(desc(triageRecords.overrideAt));
 
   return overrides.filter((o): o is SeverityOverride =>
-    o.severityOverride !== null && o.triageFlagAtAction !== null
+    o.severity !== null && o.recommendedAction !== null && o.overrideSource !== null
   );
 }
 
@@ -140,23 +141,23 @@ async function prefetchSeverityOverrides(snapshotDate: string): Promise<Severity
  * Synchronously looks up a severity override from the pre-fetched cache.
  *
  * Override matches if:
- * - triageFlagAtAction matches recommendedAction (rule-specific)
+ * - recommendedAction matches (rule-specific)
  * - positionId matches (for position-level) OR strategyId matches (for strategy-level)
  *
- * Returns the most recently created matching override's severity, or null if none found.
+ * Returns the full override info (severity + override fields) or null if none found.
  */
 function lookupSeverityOverride(
   cache: SeverityOverride[],
   positionId: string | null,
   strategyId: string | null,
   recommendedAction: string
-): string | null {
+): SeverityOverride | null {
   if (!positionId && !strategyId) return null;
 
-  // Find matching override (cache is already sorted by createdAt desc)
+  // Find matching override (cache is already sorted by overrideAt desc)
   const match = cache.find((o) => {
     // Must match the recommended action
-    if (o.triageFlagAtAction !== recommendedAction) return false;
+    if (o.recommendedAction !== recommendedAction) return false;
 
     // Match either positionId or strategyId
     if (positionId && o.positionId === positionId) return true;
@@ -165,7 +166,7 @@ function lookupSeverityOverride(
     return false;
   });
 
-  return match?.severityOverride ?? null;
+  return match ?? null;
 }
 
 /**
@@ -383,9 +384,9 @@ export async function computePositionTriageForDate(
     }
 
     // Check for active severity override from previous actions (sync lookup from batched cache)
-    let overrideSeverity: string | null = null;
+    let override: SeverityOverride | null = null;
     if (recommendedAction) {
-      overrideSeverity = lookupSeverityOverride(
+      override = lookupSeverityOverride(
         severityOverrideCache,
         position.id,
         position.strategyId,
@@ -394,7 +395,7 @@ export async function computePositionTriageForDate(
     }
 
     // Apply override if found, otherwise use computed severity
-    const finalSeverity = overrideSeverity || severity;
+    const finalSeverity = override?.severity || severity;
 
     // Get direction from parent strategy (null if no strategy linked)
     const strategyDirection = position.strategyId
@@ -425,6 +426,10 @@ export async function computePositionTriageForDate(
       direction: strategyDirection,
       recommendedAction,
       ruleSet: TRIAGE_RULES_V1.ruleSet,
+      // Preserve override fields if they exist
+      overrideSource: override?.overrideSource ?? null,
+      overrideExpiresDate: override?.overrideExpiresDate ?? null,
+      overrideAt: override?.overrideAt ?? null,
     });
   }
 
@@ -520,7 +525,7 @@ export async function computeStrategyTriageForDate(
       const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
 
       // Check for active override (sync lookup from batched cache)
-      const overrideSeverity = lookupSeverityOverride(
+      const override = lookupSeverityOverride(
         severityOverrideCache,
         null,
         metric.strategyId,
@@ -534,12 +539,15 @@ export async function computeStrategyTriageForDate(
         strategyId: metric.strategyId,
         absNotional: metric.totalAbsNotional,
         unrealizedPnl: metric.totalUnrealizedPnl,
-        severity: overrideSeverity || computedSeverity,
+        severity: override?.severity || computedSeverity,
         direction: strategyRow?.direction ?? null,
         recommendedAction,
         notes: 'Strategy needs confirmation: select strategy type and link to asset thesis',
         ruleSet: 'strategy_workflow',
         symbol: strategyKey,
+        overrideSource: override?.overrideSource ?? null,
+        overrideExpiresDate: override?.overrideExpiresDate ?? null,
+        overrideAt: override?.overrideAt ?? null,
       });
     }
     // 2. LINK_STRATEGY_TO_THESIS (soft) - Confirmed but missing asset thesis link
@@ -548,7 +556,7 @@ export async function computeStrategyTriageForDate(
       const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
 
       // Check for active override (sync lookup from batched cache)
-      const overrideSeverity = lookupSeverityOverride(
+      const override = lookupSeverityOverride(
         severityOverrideCache,
         null,
         metric.strategyId,
@@ -562,12 +570,15 @@ export async function computeStrategyTriageForDate(
         strategyId: metric.strategyId,
         absNotional: metric.totalAbsNotional,
         unrealizedPnl: metric.totalUnrealizedPnl,
-        severity: overrideSeverity || computedSeverity,
+        severity: override?.severity || computedSeverity,
         direction: strategyRow?.direction ?? null,
         recommendedAction,
         notes: 'Strategy confirmed but missing asset thesis link',
         ruleSet: 'strategy_workflow',
         symbol: strategyKey,
+        overrideSource: override?.overrideSource ?? null,
+        overrideExpiresDate: override?.overrideExpiresDate ?? null,
+        overrideAt: override?.overrideAt ?? null,
       });
     }
 
@@ -592,13 +603,13 @@ export async function computeStrategyTriageForDate(
       
       if (computedSeverity) {
         // Check for active override (sync lookup from batched cache)
-        const overrideSeverity = lookupSeverityOverride(
+        const override = lookupSeverityOverride(
           severityOverrideCache,
           null,
           metric.strategyId,
           recommendedAction
         );
-        
+
         records.push({
           snapshotDate,
           accountId: metric.accountId,
@@ -607,12 +618,15 @@ export async function computeStrategyTriageForDate(
           absNotional: metric.totalAbsNotional,
           unrealizedPnl: metric.totalUnrealizedPnl,
           pctNavAbsNotional: metric.pctNavAbsNotional,
-          severity: overrideSeverity || computedSeverity,
+          severity: override?.severity || computedSeverity,
           direction: strategyRow?.direction ?? null,
           recommendedAction,
           notes,
           ruleSet: TRIAGE_RULES_V1.strategySizeRuleSet,
           symbol: strategyKey,
+          overrideSource: override?.overrideSource ?? null,
+          overrideExpiresDate: override?.overrideExpiresDate ?? null,
+          overrideAt: override?.overrideAt ?? null,
         });
       }
     }
@@ -621,15 +635,15 @@ export async function computeStrategyTriageForDate(
     if (metric.numOpenPositions && metric.numOpenPositions > TRIAGE_RULES_V1.complexityThreshold) {
       const computedSeverity = 'info';
       const recommendedAction = 'REVIEW_COMPLEXITY';
-      
+
       // Check for active override (sync lookup from batched cache)
-      const overrideSeverity = lookupSeverityOverride(
+      const override = lookupSeverityOverride(
         severityOverrideCache,
         null,
         metric.strategyId,
         recommendedAction
       );
-      
+
       records.push({
         snapshotDate,
         accountId: metric.accountId,
@@ -637,12 +651,15 @@ export async function computeStrategyTriageForDate(
         strategyId: metric.strategyId,
         absNotional: metric.totalAbsNotional,
         unrealizedPnl: metric.totalUnrealizedPnl,
-        severity: overrideSeverity || computedSeverity,
+        severity: override?.severity || computedSeverity,
         direction: strategyRow?.direction ?? null,
         recommendedAction,
         notes: `Strategy has ${metric.numOpenPositions} open positions`,
         ruleSet: TRIAGE_RULES_V1.strategyComplexityRuleSet,
         symbol: strategyKey,
+        overrideSource: override?.overrideSource ?? null,
+        overrideExpiresDate: override?.overrideExpiresDate ?? null,
+        overrideAt: override?.overrideAt ?? null,
       });
     }
 
@@ -871,94 +888,9 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
   await logNewTriageDetections([...strategyRecords, ...positionRecords], previousRecordsMap);
 }
 
-/**
- * Reconciles pending TRADE actions with detected quantity changes
- * When a quantity change is detected, check if there's a pending TRADE action
- * for the same position/strategy and mark it as complete
- * 
- * @returns true if a pending TRADE action was found and reconciled, false otherwise
- */
-async function reconcilePendingTradeActions(
-  positionId: string | null,
-  strategyId: string | null,
-  snapshotDate: string
-): Promise<boolean> {
-  // Find in-progress TRADE actions for this position/strategy
-  const whereConditions = [
-    eq(blotterActions.actionDetail, 'TRADE'),
-    eq(blotterActions.severityOverride, 'in_progress'),
-  ];
-
-  if (positionId) {
-    whereConditions.push(eq(blotterActions.positionId, positionId));
-  } else if (strategyId) {
-    whereConditions.push(eq(blotterActions.strategyId, strategyId));
-  } else {
-    return false; // Need at least one identifier
-  }
-
-  const pendingActions = await db
-    .select()
-    .from(blotterActions)
-    .where(and(...whereConditions))
-    .orderBy(desc(blotterActions.createdAt))
-    .limit(10); // Get recent pending actions
-
-  // If no pending actions found, return false
-  if (pendingActions.length === 0) {
-    return false;
-  }
-
-  // Update each in-progress action to 'done'
-  for (const action of pendingActions) {
-    // Update blotter action
-    await db
-      .update(blotterActions)
-      .set({
-        severityOverride: 'done',
-        completed: true,
-      })
-      .where(eq(blotterActions.id, action.id));
-
-      // Find and update associated triage record if it exists
-      // Match by positionId/strategyId and status = 'in_progress'
-      const triageWhereConditions = [
-        eq(triageRecords.status, 'in_progress'),
-      ];
-
-      if (positionId) {
-        triageWhereConditions.push(eq(triageRecords.positionId, positionId));
-      } else if (strategyId) {
-        triageWhereConditions.push(eq(triageRecords.strategyId, strategyId));
-      }
-
-      // Optionally match by recommendedAction if available
-      if (action.triageFlagAtAction) {
-        triageWhereConditions.push(eq(triageRecords.recommendedAction, action.triageFlagAtAction));
-      }
-
-      // Get the most recent in-progress triage record
-      const inProgressTriage = await db
-        .select()
-        .from(triageRecords)
-        .where(and(...triageWhereConditions))
-        .orderBy(desc(triageRecords.createdAt))
-        .limit(1);
-
-      if (inProgressTriage.length > 0) {
-        await db
-          .update(triageRecords)
-          .set({
-            status: 'done',
-            updatedAt: new Date(),
-          })
-          .where(eq(triageRecords.id, inProgressTriage[0].id));
-      }
-  }
-
-  // Return true to indicate reconciliation occurred
-  return true;
-}
+// NOTE (2026-01-16): reconcilePendingTradeActions removed as part of blotter-to-journal migration.
+// The journal system now handles trade ingestion → triage action linkage directly.
+// See: docs/CLEANUP_PLAN.md - Blotter-to-Journal Migration
 
 /**
  * Detects quantity changes by comparing positions across snapshot dates
@@ -1160,19 +1092,10 @@ export async function computeQuantityChangeTriageForDate(
 
   // NOTE: QUANTITY_CHANGE triage records are now created by createQuantityChangeTriageForUnmatchedTrades
   // in blotter.ts, which runs after matching completes. This function no longer creates QUANTITY_CHANGE records.
-  // It only reconciles pending TRADE actions when quantity changes are detected.
-  
-  // Second pass: Reconcile pending TRADE actions for strategies with quantity changes
-  for (const [strategyId, changeData] of changesByStrategy.entries()) {
-    // Reconcile any pending TRADE actions for this strategy
-    await reconcilePendingTradeActions(null, strategyId, snapshotDate);
-  }
-
-  // Third pass: Reconcile pending TRADE actions for unlinked positions
-  for (const change of unlinkedChanges) {
-    // Reconcile any pending TRADE actions for this position
-    await reconcilePendingTradeActions(change.positionId, null, snapshotDate);
-  }
+  //
+  // NOTE (2026-01-16): Blotter reconciliation removed as part of blotter-to-journal migration.
+  // The journal system now handles trade ingestion → triage action linkage directly.
+  // Pending TRADE action reconciliation is no longer needed.
 }
 
 

@@ -214,28 +214,35 @@ Journal entry logged
 
 ---
 
-### 6. Journal/Blotter Domain
+### 6. Journal Domain
 
 **Purpose:** Chronological log of decisions and events
 
 **Key Tables:**
 - `journal_entries` - Narrative entries with provenance
-- `blotter_actions` - Structured trade/event aggregations
 
-**Blotter Categories:**
+**Note:** The `blotter_actions` table was deprecated and removed (2026-01-16). Functionality migrated to:
+- Journal entries capture all events via `logToJournal()`
+- Triage severity overrides stored directly on `triage_records` via override columns
+
+**Override System (triage_records):**
+```typescript
+// Override fields on triage_records table
+overrideSource: 'user_dismiss' | 'user_monitor' | null
+overrideExpiresDate: Date | null  // Position expiration or 30 days
+overrideAt: Date | null           // When override was applied
+```
+
+**Journal Categories:**
 - `trade_ingestion` - Trade execution events
 - `triage_action` - Triage-driven actions
 - `signal_triggered` - Signal events
 - `thesis_event` - Thesis lifecycle events
 - `manual` - User-created entries
 
-**Bidirectional Linking:**
-- `triage_action` entries link to `trade_ingestion` via `linkedBlotterActionId`
-- `trade_ingestion` entries track linked triage via `linkedTradeBlotterIds`
-
 **Key Files:**
-- `src/lib/derived/blotter.ts` (1805 lines) - Trade aggregation & blotter generation
 - `src/lib/workflow/lifecycleDetection.ts` (521 lines) - Lifecycle detection & `logToJournal()`
+- `src/app/api/triage/action/route.ts` - Triage action handling with override persistence
 
 ---
 
@@ -273,7 +280,6 @@ draft ──► active ──┬──► complete
 | MacroThesis | `status` | draft, active, complete, rejected | ✅ [#ENH-048] Single status field |
 | AssetThesis | `status` | draft, active, complete, rejected | ✅ [#ENH-048] Single status field |
 | JournalEntry | `status` | active, resolved, dismissed, superseded | Terminal states |
-| BlotterAction | `category` | trade_ingestion, triage_action, signal_triggered, thesis_event, manual | Static type |
 
 ### State Transition Diagrams
 
@@ -360,10 +366,13 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
                          ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                    JOURNAL LAYER                                  │
-│  ┌─────────────────┐              ┌─────────────────┐            │
-│  │ journal_entries │◄────────────►│ blotter_actions │            │
-│  │ (narrative)     │   linked     │ (structured)    │            │
-│  └─────────────────┘              └─────────────────┘            │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ journal_entries                                              │ │
+│  │ (narrative audit trail for all events)                       │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                   │
+│  Note: blotter_actions removed (2026-01-16)                      │
+│  Overrides now stored on triage_records (overrideSource)         │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -407,10 +416,17 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 
 | Item | Location | Reason | Action |
 |------|----------|--------|--------|
-| `legScope` | `src/db/schema.ts` | Never populated | Remove |
-| `riskNotesAtAction` | `src/db/schema.ts` | Never populated | Remove |
-| `tradeDescription` | `src/db/schema.ts` | Rarely used | Evaluate |
-| `linkedSignalId` | `src/db/schema.ts` | Never used | Remove |
+| `blotter_actions` table | `src/db/schema.ts` | Replaced by journal + triage overrides | ✅ Removed (2026-01-16) |
+| `blotter.ts` | `src/lib/derived/` | 1805 lines of blotter generation | ✅ Removed (2026-01-16) |
+| `legScope` | `src/db/schema.ts` | Never populated | ✅ Removed with table (2026-01-16) |
+| `riskNotesAtAction` | `src/db/schema.ts` | Never populated | ✅ Removed with table (2026-01-16) |
+| `tradeDescription` | `src/db/schema.ts` | Rarely used | ✅ Removed with table (2026-01-16) |
+| `linkedSignalId` | `src/db/schema.ts` | Never used | ✅ Removed with table (2026-01-16) |
+
+**Migration Summary (2026-01-16):**
+- Override tracking moved to `triage_records.overrideSource`, `overrideExpiresDate`, `overrideAt`
+- Event audit trail via `journal_entries` using `logToJournal()`
+- Backup retained as `blotter_actions_backup` for verification period
 
 ---
 
@@ -419,7 +435,7 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 | Current Usage | PRD Term | Files Affected | Action |
 |---------------|----------|----------------|--------|
 | "Asset View" | "Asset Thesis" | UI components, some API routes | ✅ Standardized (2026-01-16) |
-| "Blotter" | "Journal" or "Decision Log" | Entire blotter domain | Gradual rename (deferred) |
+| "Blotter" | "Journal" | N/A | ✅ Blotter system removed (2026-01-16) |
 | `lifecycleStatus` | `workflowStatus` | Old code references | Already migrated, remove old refs |
 | `validationPoints` | `signals` | Schema comments, docs | ✅ Renamed to `signals` (2026-01-16) |
 | "conviction" | "confidenceLevel" | Some thesis code | Standardize |
@@ -455,5 +471,5 @@ Key items:
 - ~~Playbook removal~~ ✅ Complete (2026-01-16)
 - ~~#ENH-047 (triage severity/status separation)~~ ✅ Complete (2026-01-16)
 - ~~#ENH-048 (entity status standardization)~~ ✅ Complete (2026-01-16)
+- ~~Blotter-to-Journal migration~~ ✅ Complete (2026-01-16)
 - Documentation (signals, triage rules)
-- Blotter-to-Journal migration (deferred)

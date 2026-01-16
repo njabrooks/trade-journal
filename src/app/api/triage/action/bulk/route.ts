@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { blotterActions, triageRecords, strategies, positions, underlyings } from "@/db/schema";
-import { eq, inArray, desc } from "drizzle-orm";
-// REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated, replaced by journal
+import { triageRecords, strategies, positions, underlyings } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import { logToJournal } from "@/lib/workflow";
 
 export async function POST(request: NextRequest) {
@@ -51,68 +50,47 @@ export async function POST(request: NextRequest) {
     // Get common trigger type (used for logic decisions)
     const commonTrigger = Array.from(triggerTypes)[0];
 
-    // Map action types to action classes
-    const actionClassMap: Record<string, string> = {
-      TRADE: "TRADE",
-      MONITOR: "NOTE_ONLY",
-      DISMISS: "NOTE_ONLY",
-      UPDATE: "NOTE_ONLY",
-    };
-
-    const actionClass = actionClassMap[actionType] || "NOTE_ONLY";
-
-    // Determine triage record updates and blotter severity override based on action type
-    // Note: Triage records have separate status (workflow) and severity (importance) fields
-    // Blotter actions use severityOverride column for both severity overrides and workflow status
-    let triageStatusUpdate: string | null = null;  // Status for triage record
-    let triageSeverityUpdate: string | null = null;  // Severity for triage record (only for overrides)
-    let blotterSeverityOverride: string | null = null;  // Value for blotter_actions.severity_override
+    // Determine triage record updates based on action type
+    // Override fields (overrideSource, overrideExpiresDate, overrideAt) persist across triage recomputes
+    let triageStatusUpdate: string | null = null;
+    let triageSeverityUpdate: string | null = null;
+    let overrideSource: string | null = null;
     let overrideExpiresDate: string | null = null;
     let monitorDaysValue: number | null = null;
 
     if (actionType === "DISMISS") {
-      // Dismiss: mark as done, override severity to 'info'
       triageStatusUpdate = "done";
       triageSeverityUpdate = "info";
-      blotterSeverityOverride = "info";
+      overrideSource = "user_dismiss";
       overrideExpiresDate = null;
     } else if (actionType === "MONITOR") {
-      // Monitor: keep in_progress, override severity to 'monitor'
       triageStatusUpdate = "in_progress";
       triageSeverityUpdate = "monitor";
-      blotterSeverityOverride = "monitor";
+      overrideSource = "user_monitor";
       const days = monitorDays || 7;
       monitorDaysValue = days;
       const expiresDate = new Date();
       expiresDate.setDate(expiresDate.getDate() + days);
       overrideExpiresDate = expiresDate.toISOString().split("T")[0];
     } else if (actionType === "TRADE") {
-      // Trade: mark workflow status
       if (commonTrigger === "QUANTITY_CHANGE" && tradeReason && tradeStage) {
-        // Already validated trade - mark as done
         triageStatusUpdate = "done";
-        blotterSeverityOverride = "done";
       } else {
-        // Trade action in progress
         triageStatusUpdate = "in_progress";
-        blotterSeverityOverride = "in_progress";
       }
     } else if (actionType === "UPDATE") {
       if (commonTrigger === "CONFIRM_STRATEGIES") {
         triageStatusUpdate = "done";
-        blotterSeverityOverride = "done";
       }
-      // For PROVIDE_STRATEGY_METADATA, we'd need more data, so we'll leave updates as null
     }
 
     // Handle TRADE action with multiple positions
-    // QUANTITY_CHANGE now uses TRADE action type (not UPDATE), so check for TRADE action
     const needsTradeActions = actionType === "TRADE" && tradePositions;
 
     if (needsTradeActions) {
       if (!tradePositions || !Array.isArray(tradePositions) || tradePositions.length === 0) {
         return NextResponse.json(
-          { error: "tradePositions array is required for TRADE action or QUANTITY_CHANGE with Trade Actions" },
+          { error: "tradePositions array is required for TRADE action" },
           { status: 400 }
         );
       }
@@ -124,15 +102,59 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // For QUANTITY_CHANGE with TRADE action, create Trade Actions (actionClass='TRADE', actionDetail='TRADE')
-      // For regular TRADE action, also create Trade Actions
-      const isQuantityChange = commonTrigger === "QUANTITY_CHANGE";
-      
-      // For QUANTITY_CHANGE, always use TRADE action class/detail
-      const finalActionClass = isQuantityChange ? "TRADE" : actionClass;
-      const finalActionDetail = isQuantityChange ? "TRADE" : actionType;
+      // Collect position details for journal metadata
+      const positionDetails = [];
+      for (const tradePosition of tradePositions) {
+        const positionResult = await db
+          .select({
+            conid: positions.conid,
+            symbol: positions.symbol,
+            assetClass: positions.assetClass,
+            quantity: positions.quantity,
+            expiry: positions.expiry,
+            strike: positions.strike,
+            optionRight: positions.optionRight,
+            underlyingId: positions.underlyingId,
+          })
+          .from(positions)
+          .where(eq(positions.id, tradePosition.positionId))
+          .limit(1);
 
-    // Process each triage record
+        if (positionResult.length === 0) {
+          return NextResponse.json(
+            { error: `Position ${tradePosition.positionId} not found` },
+            { status: 400 }
+          );
+        }
+
+        const position = positionResult[0];
+
+        // Fetch underlying symbol if needed (for options)
+        let underlyingSymbol: string | null = null;
+        if (position.assetClass !== 'STK' && position.underlyingId) {
+          const underlyingResult = await db
+            .select({ ticker: underlyings.ticker })
+            .from(underlyings)
+            .where(eq(underlyings.id, position.underlyingId))
+            .limit(1);
+          underlyingSymbol = underlyingResult[0]?.ticker ?? null;
+        } else if (position.assetClass === 'STK') {
+          underlyingSymbol = position.symbol;
+        }
+
+        positionDetails.push({
+          positionId: tradePosition.positionId,
+          quantity: tradePosition.quantity,
+          symbol: position.symbol,
+          underlying: underlyingSymbol || position.symbol,
+          assetClass: position.assetClass,
+          expiry: position.expiry,
+          strike: position.strike,
+          optionRight: position.optionRight,
+        });
+      }
+
+      // Process each triage record
       const results = [];
       const errors = [];
 
@@ -151,146 +173,7 @@ export async function POST(request: NextRequest) {
             strategyKey = strategyResult[0]?.strategyKey ?? null;
           }
 
-          // Determine actionDate based on triage type
-          let actionDate: string;
-          if (triage.recommendedAction === 'QUANTITY_CHANGE') {
-            // For QUANTITY_CHANGE, use snapshotDate directly (matches trade date)
-            if (!triage.snapshotDate) {
-              errors.push({
-                triageId: triage.id,
-                error: "Triage record missing snapshotDate",
-              });
-              continue;
-            }
-            actionDate = typeof triage.snapshotDate === 'string' 
-              ? triage.snapshotDate 
-              : (triage.snapshotDate as Date).toISOString().split('T')[0];
-          } else {
-            // For other actions, snapshotDate + 1 day (intended for next day's trades)
-            if (!triage.snapshotDate) {
-              errors.push({
-                triageId: triage.id,
-                error: "Triage record missing snapshotDate",
-              });
-              continue;
-            }
-            const date = new Date(triage.snapshotDate);
-            date.setDate(date.getDate() + 1);
-            actionDate = date.toISOString().split('T')[0];
-          }
-
-          const insertedBlotterActions = [];
-
-          // Create one blotter entry per position
-          for (const tradePosition of tradePositions) {
-            // Fetch position data
-            const positionResult = await db
-              .select({
-                conid: positions.conid,
-                symbol: positions.symbol,
-                assetClass: positions.assetClass,
-                quantity: positions.quantity,
-                expiry: positions.expiry,
-                strike: positions.strike,
-                optionRight: positions.optionRight,
-                underlyingId: positions.underlyingId,
-              })
-              .from(positions)
-              .where(eq(positions.id, tradePosition.positionId))
-              .limit(1);
-
-            if (positionResult.length === 0) {
-              errors.push({
-                triageId: triage.id,
-                error: `Position ${tradePosition.positionId} not found`,
-              });
-              continue;
-            }
-
-            const position = positionResult[0];
-
-            if (!position.conid) {
-              errors.push({
-                triageId: triage.id,
-                error: `Position ${tradePosition.positionId} missing conid`,
-              });
-              continue;
-            }
-
-            // Fetch underlying symbol if needed (for options)
-            let underlyingSymbol: string | null = null;
-            if (position.assetClass !== 'STK' && position.underlyingId) {
-              const underlyingResult = await db
-                .select({ ticker: underlyings.ticker })
-                .from(underlyings)
-                .where(eq(underlyings.id, position.underlyingId))
-                .limit(1);
-              underlyingSymbol = underlyingResult[0]?.ticker ?? null;
-            } else if (position.assetClass === 'STK') {
-              underlyingSymbol = position.symbol;
-            }
-
-            // Build trade details JSON
-            const tradeDetails = {
-              assetClass: position.assetClass,
-              quantity: tradePosition.quantity,
-              underlying: underlyingSymbol || position.symbol,
-              expiry: position.expiry,
-              strike: position.strike,
-              optionRight: position.optionRight,
-            };
-
-            const notesJson = JSON.stringify({
-              text: notes || triage.notes || null,
-              tradeDetails,
-            });
-
-            const blotterId = `${actionDate}_${triage.strategyId || 'unknown'}_${position.conid}_${Date.now()}`;
-
-            // Create blotter entry
-            const [inserted] = await db
-              .insert(blotterActions)
-              .values({
-                blotterId,
-                actionDate: actionDate,
-                snapshotDate: triage.snapshotDate,
-                strategyId: triage.strategyId,
-                positionId: tradePosition.positionId,
-                strategyKey: triage.symbol,
-                ticker: position.symbol,
-                triageFlagAtAction: triage.recommendedAction,
-                actionClass: finalActionClass,
-                actionDetail: finalActionDetail,
-                reasonCode: triage.recommendedAction || null,
-                notes: notesJson,
-                qtyChange: tradePosition.quantity.toString(), // Signed quantity (negative for SELL, positive for BUY) - matching uses absolute values
-                completed: false,
-                severityOverride: 'in_progress',  // Workflow status: trade action in progress
-                tradeReason: tradeReason,
-                tradeStage: tradeStage,
-                source: 'triage_action',
-                conid: position.conid,
-                createdAt: new Date(),
-              })
-              .returning({ id: blotterActions.id });
-
-            if (inserted) {
-              insertedBlotterActions.push(inserted);
-              // REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated, replaced by journal
-              // Journal entries now serve as the primary audit trail
-            }
-          }
-
-          // Ensure at least one blotter action was created
-          if (insertedBlotterActions.length === 0) {
-            errors.push({
-              triageId: triage.id,
-              error: "No blotter actions were created. Check that positions exist and have conid values.",
-            });
-            continue;
-          }
-
-          // Update triage record status (and severity if overridden)
+          // Update triage record status
           const triageUpdate: Record<string, unknown> = { updatedAt: new Date() };
           if (triageStatusUpdate) {
             triageUpdate.status = triageStatusUpdate;
@@ -298,12 +181,10 @@ export async function POST(request: NextRequest) {
           if (triageSeverityUpdate) {
             triageUpdate.severity = triageSeverityUpdate;
           }
-          if (Object.keys(triageUpdate).length > 1) {
-            await db
-              .update(triageRecords)
-              .set(triageUpdate)
-              .where(eq(triageRecords.id, triage.id));
-          }
+          await db
+            .update(triageRecords)
+            .set(triageUpdate)
+            .where(eq(triageRecords.id, triage.id));
 
           // Log to journal for unified audit trail
           await logToJournal({
@@ -330,11 +211,11 @@ export async function POST(request: NextRequest) {
             source: 'user',
             metadata: {
               bulkAction: true,
-              blotterIds: insertedBlotterActions.map(a => a.id),
+              tradePositions: positionDetails,
             },
           });
 
-          results.push({ triageId: triage.id, success: true, blotterIds: insertedBlotterActions.map(a => a.id) });
+          results.push({ triageId: triage.id, success: true });
         } catch (error) {
           console.error(`Error processing triage record ${triage.id}:`, error);
           errors.push({
@@ -353,7 +234,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Process non-TRADE actions (existing logic for MONITOR, DISMISS, UPDATE without tradePositions)
+    // Process non-TRADE actions (DISMISS, MONITOR, UPDATE)
     const results = [];
     const errors = [];
 
@@ -372,78 +253,7 @@ export async function POST(request: NextRequest) {
           strategyKey = strategyResult[0]?.strategyKey ?? null;
         }
 
-        // Generate blotter ID
-        const blotterId = `${triage.snapshotDate}_${triage.strategyId ?? "unknown"}_${Date.now()}_${triage.id.slice(0, 8)}`;
-
-        // Resolve identifiers for matching
-        let conid: number | null = null;
-        let ticker: string | null = triage.symbol ?? null;
-
-        // From explicit position
-        if (triage.positionId) {
-          const position = await db
-            .select({
-              conid: positions.conid,
-              symbol: positions.symbol,
-            })
-            .from(positions)
-            .where(eq(positions.id, triage.positionId))
-            .limit(1);
-          if (position.length > 0) {
-            conid = position[0].conid ?? conid;
-            ticker = ticker ?? position[0].symbol ?? ticker;
-          }
-        }
-
-        // Fallback: latest position for the strategy
-        if ((!conid || !ticker) && triage.strategyId) {
-          const latestPosition = await db
-            .select({
-              conid: positions.conid,
-              symbol: positions.symbol,
-            })
-            .from(positions)
-            .where(eq(positions.strategyId, triage.strategyId))
-            .orderBy(desc(positions.snapshotDate))
-            .limit(1);
-          if (latestPosition.length > 0) {
-            conid = conid ?? latestPosition[0].conid;
-            ticker = ticker ?? latestPosition[0].symbol ?? ticker;
-          }
-        }
-
-        // Create blotter action
-        const [insertedBlotterAction] = await db
-          .insert(blotterActions)
-          .values({
-            blotterId,
-            actionDate: triage.snapshotDate,
-            snapshotDate: triage.snapshotDate,
-            strategyId: triage.strategyId,
-            positionId: triage.positionId,
-            strategyKey: triage.symbol,
-            ticker: ticker,
-            triageFlagAtAction: triage.recommendedAction,
-            actionClass,
-            actionDetail: actionType,
-            reasonCode: triage.recommendedAction || null,
-            notes: notes || triage.notes || null,
-            completed: triageStatusUpdate === "done",
-            severityOverride: blotterSeverityOverride,
-            overrideExpiresDate,
-            monitorDays: monitorDaysValue,
-            tradeReason: tradeReason || null,
-            tradeStage: tradeStage || null,
-            source: "triage_action",
-            conid: conid ?? null,
-            createdAt: new Date(),
-          })
-          .returning({ id: blotterActions.id });
-
-        // REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated, replaced by journal
-        // Journal entries now serve as the primary audit trail
-
-        // Update triage record status (and severity if overridden)
+        // Update triage record with status, severity, and override fields
         const triageUpdateNonTrade: Record<string, unknown> = { updatedAt: new Date() };
         if (triageStatusUpdate) {
           triageUpdateNonTrade.status = triageStatusUpdate;
@@ -451,12 +261,17 @@ export async function POST(request: NextRequest) {
         if (triageSeverityUpdate) {
           triageUpdateNonTrade.severity = triageSeverityUpdate;
         }
-        if (Object.keys(triageUpdateNonTrade).length > 1) {
-          await db
-            .update(triageRecords)
-            .set(triageUpdateNonTrade)
-            .where(eq(triageRecords.id, triage.id));
+        // Set override fields for DISMISS/MONITOR actions (persists across triage recomputes)
+        if (overrideSource) {
+          triageUpdateNonTrade.overrideSource = overrideSource;
+          triageUpdateNonTrade.overrideExpiresDate = overrideExpiresDate;
+          triageUpdateNonTrade.overrideAt = new Date();
         }
+
+        await db
+          .update(triageRecords)
+          .set(triageUpdateNonTrade)
+          .where(eq(triageRecords.id, triage.id));
 
         // Log to journal for unified audit trail
         const actionTypeMap: Record<string, string> = {
@@ -482,7 +297,7 @@ export async function POST(request: NextRequest) {
             severity: triageSeverityUpdate || previousSeverity,
             status: triageStatusUpdate,
             actionType: actionType,
-            actionClass,
+            overrideSource,
             monitorDays: monitorDaysValue,
             overrideExpiresDate,
           },
@@ -490,8 +305,8 @@ export async function POST(request: NextRequest) {
           source: 'user',
           metadata: {
             bulkAction: true,
-            blotterId,
-            blotterActionId: insertedBlotterAction?.id,
+            positionId: triage.positionId,
+            strategyId: triage.strategyId,
           },
         });
 
@@ -523,4 +338,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
