@@ -32,7 +32,7 @@ export const ALL_TRIGGERS = [
   "PROVIDE_STRATEGY_METADATA",
   "REVIEW_SIZE",
   "REVIEW_COMPLEXITY",
-  "STATE_CODE_CHANGE",
   "QUANTITY_CHANGE",
+  // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
 ] as const;
 

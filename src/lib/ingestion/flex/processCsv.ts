@@ -36,6 +36,7 @@ import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetric
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
+import { evaluateStrategySignalsForDate } from '@/lib/derived/signalEvaluation';
 import { strategies } from '@/db/schema';
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
@@ -135,6 +136,8 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
   };
 
   const allSnapshotDates = new Set<string>();
+  // Track dates that actually have changes (for egress optimization)
+  const datesWithChanges = new Set<string>();
   let accountId: string | null = null;
 
   const parsed = Papa.parse<string[]>(csvText, {
@@ -295,11 +298,15 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
             .where(and(eq(positions.accountId, acc), eq(positions.snapshotDate, snapshotDate)));
         }
 
-        // Insert positions
+        // Insert positions and track which dates have changes
         for (const { data, rowNumber } of normalizedRows) {
           try {
             await db.insert(positions).values(data);
             results.post.inserted++;
+            // Mark this date as having changes (for egress optimization)
+            if (data.snapshotDate) {
+              datesWithChanges.add(data.snapshotDate);
+            }
           } catch (error) {
             results.post.errors.push({
               row: rowNumber,
@@ -433,11 +440,23 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
           }
         }
 
-        // Insert MTM snapshots
+        // Insert MTM snapshots (only count actual inserts, not conflicts)
         for (const { data } of normalizedRows) {
           try {
-            await db.insert(mtmSnapshots).values(data).onConflictDoNothing();
-            results.mtmp.inserted++;
+            const insertResult = await db
+              .insert(mtmSnapshots)
+              .values(data)
+              .onConflictDoNothing()
+              .returning({ id: mtmSnapshots.id });
+
+            // Only count as inserted if actually inserted (not a conflict)
+            if (insertResult.length > 0) {
+              results.mtmp.inserted++;
+              // Mark this date as having changes
+              if (data.snapshotDate) {
+                datesWithChanges.add(data.snapshotDate);
+              }
+            }
           } catch (error) {
             // Ignore duplicate errors
           }
@@ -446,9 +465,15 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     }
   }
 
-  // Trigger recompute for all affected snapshot dates
-  if (accountId && allSnapshotDates.size > 0) {
-    const snapshotDates = Array.from(allSnapshotDates).sort();
+  // Trigger recompute only for dates with actual changes (egress optimization)
+  // This prevents unnecessary recomputation when IBKR returns stale/identical data
+  if (accountId && datesWithChanges.size > 0) {
+    const snapshotDates = Array.from(datesWithChanges).sort();
+    console.log(`[Egress Optimization] Recomputing for ${snapshotDates.length} date(s) with changes: ${snapshotDates.join(', ')}`);
+    if (allSnapshotDates.size > datesWithChanges.size) {
+      const skippedDates = Array.from(allSnapshotDates).filter(d => !datesWithChanges.has(d));
+      console.log(`[Egress Optimization] Skipping recompute for ${skippedDates.length} date(s) with no changes: ${skippedDates.join(', ')}`);
+    }
     const minDate = snapshotDates[0];
     const maxDate = snapshotDates[snapshotDates.length - 1];
 
@@ -509,6 +534,13 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
           } catch (error) {
             console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${date}:`, error);
           }
+
+          // Evaluate strategy signals (DTE, sigma, PnL% conditions)
+          try {
+            await evaluateStrategySignalsForDate(accountId, date);
+          } catch (error) {
+            console.error(`Failed to evaluate strategy signals for ${accountId} on ${date}:`, error);
+          }
         } catch (error) {
           console.error(`Failed to compute triage for ${date}:`, error);
         }
@@ -517,6 +549,9 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
       console.error('Recompute error:', error);
       // Don't fail the upload if recompute fails
     }
+  } else if (accountId && allSnapshotDates.size > 0) {
+    // Data was processed but no actual changes detected
+    console.log(`[Egress Optimization] No changes detected for ${allSnapshotDates.size} date(s), skipping recompute`);
   }
 
   const totalInserted = results.post.inserted + results.equt.inserted + results.mtmp.inserted;
@@ -696,6 +731,13 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
             await createQuantityChangeTriageForUnmatchedTrades(tradeDate, accountId);
           } catch (error) {
             console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${tradeDate}:`, error);
+          }
+
+          // Evaluate strategy signals (DTE, sigma, PnL% conditions)
+          try {
+            await evaluateStrategySignalsForDate(accountId, tradeDate);
+          } catch (error) {
+            console.error(`Failed to evaluate strategy signals for ${accountId} on ${tradeDate}:`, error);
           }
         } catch (error) {
           console.error(`Failed to auto-recompute after trades ingestion for ${accountId} on ${tradeDate}:`, error);

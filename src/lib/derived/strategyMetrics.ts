@@ -4,10 +4,8 @@ import {
   navSnapshots,
   strategyMetricsSnapshots,
   NewStrategyMetricsSnapshot,
-  strategies,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, gte, lte } from 'drizzle-orm';
-import { computeStateCode } from './stateCode';
 
 export interface StrategyMetricsInput {
   accountId: string;
@@ -132,26 +130,9 @@ export async function computeStrategyMetrics(
   // For v0.1, we'll skip this as it requires more complex logic to identify closing trades
   const realizedPnlToDate: string | null = null;
 
-  // 9. Compute state code if strategy has a strategyType
-  let stateCode: string | null = null;
-  const strategyRow = await db
-    .select({ strategyType: strategies.strategyType })
-    .from(strategies)
-    .where(eq(strategies.id, strategyId))
-    .limit(1);
-
-  if (strategyRow[0]?.strategyType) {
-    try {
-      const stateCodeResult = await computeStateCode({
-        strategyId,
-        snapshotDate,
-      });
-      stateCode = stateCodeResult?.stateCode ?? null;
-    } catch (error) {
-      // If state code computation fails, log but don't fail the entire metrics computation
-      console.error(`Failed to compute state code for strategy ${strategyId} on ${snapshotDate}:`, error);
-    }
-  }
+  // 9. State code - DEPRECATED (replaced by strategy signals)
+  // Keeping field for schema compatibility but no longer computing
+  const stateCode: string | null = null;
 
   return {
     accountId,

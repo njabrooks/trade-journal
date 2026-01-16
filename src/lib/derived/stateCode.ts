@@ -1,6 +1,23 @@
 /**
+ * @deprecated This module is DEPRECATED as of January 2026.
+ *
+ * State codes have been replaced by Strategy Signals which provide:
+ * - User-configurable trigger conditions (DTE, sigma, PnL%, price)
+ * - Auto-evaluation during data ingestion
+ * - TradingView webhook integration for price-based signals
+ * - Full audit trail via signal_status_history
+ *
+ * See: /src/lib/derived/signalEvaluation.ts for the replacement
+ * See: /src/components/signals/ for UI components
+ *
+ * This file is kept for historical reference only.
+ * DO NOT import or use functions from this module in new code.
+ *
+ * ---
+ *
+ * ORIGINAL DOCUMENTATION:
  * State Code Computation
- * 
+ *
  * Computes the current state code for a strategy based on playbook criteria.
  * State codes change based on:
  * - PnlPctOfCost (profit/loss percentage)

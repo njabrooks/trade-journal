@@ -9,7 +9,6 @@ import {
   NewTriageRecord,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc, ne } from 'drizzle-orm';
-import { detectStateCodeChangeFromStored } from '@/lib/derived/stateCode';
 import { logToJournal, logTriageToJournalWithDedup } from '@/lib/workflow';
 
 // Triage rule configuration
@@ -647,45 +646,8 @@ export async function computeStrategyTriageForDate(
       });
     }
 
-    // 5. STATE_CODE_CHANGE - State code change detection
-    // Only check if strategy has a strategyType and previous date exists
-    if (strategyRow?.strategyType && previousDate) {
-      // Fast detection: read stored state codes instead of recomputing
-      // State codes are already computed and stored in strategy_metrics_snapshots during metrics computation
-      const stateCodeChange = await detectStateCodeChangeFromStored(
-        metric.strategyId,
-        previousDate,
-        snapshotDate
-      );
-
-      if (stateCodeChange.changed) {
-        const computedSeverity = 'urgent';
-        const recommendedAction = 'STATE_CODE_CHANGE';
-
-        // Check for active override (sync lookup from batched cache)
-        const overrideSeverity = lookupSeverityOverride(
-          severityOverrideCache,
-          null,
-          metric.strategyId,
-          recommendedAction
-        );
-        
-        records.push({
-          snapshotDate,
-          accountId: metric.accountId,
-          contextLevel: 'strategy',
-          strategyId: metric.strategyId,
-          absNotional: metric.totalAbsNotional,
-          unrealizedPnl: metric.totalUnrealizedPnl,
-          severity: overrideSeverity || computedSeverity,
-          direction: strategyRow?.direction ?? null,
-          recommendedAction,
-          notes: `State code changed from ${stateCodeChange.previous ?? 'null'} to ${stateCodeChange.current ?? 'null'}`,
-          ruleSet: 'strategy_workflow',
-          symbol: strategyKey,
-        });
-      }
-    }
+    // 5. STATE_CODE_CHANGE - DEPRECATED (replaced by strategy signals)
+    // State code detection removed - signals now handle tactical workflow triggers
   }
 
   return records;

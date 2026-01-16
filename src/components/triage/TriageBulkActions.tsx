@@ -21,8 +21,8 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "LINK_STRATEGY_TO_THESIS": ["UPDATE"],  // Confirmation now requires asset thesis linkage
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [],
-  "STATE_CODE_CHANGE": ["MONITOR", "DISMISS"],
   "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
+  // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
 };
 
 const ACTION_LABELS: Record<ActionType, string> = {
