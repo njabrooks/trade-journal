@@ -3,7 +3,7 @@ import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetric
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { computeTriageForDate, deleteTriageRecordsForDateRange } from '@/lib/derived/triage';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
-import { computeTradeBlotterEntriesForDate, computeTradeBlotterEntriesForDateRange, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
+// REMOVED: blotter imports - blotter system deprecated, replaced by journal
 import { db } from '@/db';
 import { positions, ingestionRuns } from '@/db/schema';
 import { and, eq, ne, isNotNull, gte, lte, sql, desc, inArray, gt } from 'drizzle-orm';
@@ -182,17 +182,7 @@ export async function POST(request: NextRequest) {
         results.triage = { error: error instanceof Error ? error.message : 'Failed' };
       }
 
-          // Trade blotter entries
-          try {
-            const blotterCount = await computeTradeBlotterEntriesForDate(snapshotDate, accountId);
-            
-            // Create QUANTITY_CHANGE triage records for unmatched trades (after matching completes)
-            const qcCount = await createQuantityChangeTriageForUnmatchedTrades(snapshotDate, accountId);
-            
-            results.blotter = { count: blotterCount, quantityChangeRecords: qcCount };
-          } catch (error) {
-            results.blotter = { error: error instanceof Error ? error.message : 'Failed' };
-          }
+          // REMOVED: Trade blotter entries - blotter system deprecated, replaced by journal
 
           return {
         success: true,
@@ -230,8 +220,8 @@ export async function POST(request: NextRequest) {
         datesProcessed: dates.length,
         portfolio: { account: 0, underlying: 0 },
         strategyMetrics: { count: 0 },
-            triage: { position: 0, strategy: 0, quantityChange: 0 },
-            blotter: { count: 0 },
+        triage: { position: 0, strategy: 0, quantityChange: 0 },
+        // REMOVED: blotter - deprecated, replaced by journal
       };
 
       // Auto-link strategies across range
@@ -310,13 +300,7 @@ export async function POST(request: NextRequest) {
         results.triage = { error: error instanceof Error ? error.message : 'Failed' };
       }
 
-          // Trade blotter entries (process date range)
-          try {
-            const blotterCount = await computeTradeBlotterEntriesForDateRange(startDate, endDate, accountId);
-            results.blotter = { count: blotterCount };
-          } catch (error) {
-            results.blotter = { error: error instanceof Error ? error.message : 'Failed' };
-          }
+          // REMOVED: Trade blotter entries - blotter system deprecated, replaced by journal
 
           return {
         success: true,

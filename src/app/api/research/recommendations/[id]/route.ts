@@ -6,7 +6,7 @@ import {
 } from '@/db/queries/research';
 import { createMacroThesis } from '@/db/queries/macroTheses';
 import { createAssetThesis } from '@/db/queries/assetTheses';
-import { createResearchMapping } from '@/db/queries/research';
+// REMOVED: createResearchMapping - deprecated, claims link directly to theses via claim_thesis_mappings
 import { db } from '@/db';
 import { underlyings, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -95,16 +95,7 @@ export async function PATCH(
           status: 'active',
         });
 
-        // Create mapping from research to new thesis
-        await createResearchMapping({
-          researchInsightId: recommendation.researchInsightId,
-          hierarchyLevel: 'macro_thesis',
-          macroThesisId: thesisId,
-          mappingType: 'supports',
-          confidence: 'high',
-          mappedBy: 'ai_recommendation',
-          notes: `Created from AI recommendation: ${recommendation.reasoning}`,
-        });
+        // REMOVED: createResearchMapping - deprecated, claims link directly to theses
 
         await updateRecommendationStatus(id, 'accepted', false);
         return NextResponse.json({
@@ -112,7 +103,7 @@ export async function PATCH(
           message: 'Macro thesis created',
           thesisId,
         });
-      } else if (recommendation.recommendationType === 'new_asset_view') {
+      } else if (recommendation.recommendationType === 'new_asset_thesis') {
         // Create new asset thesis
         const proposedData = recommendation.proposedData as any;
         if (!modifications?.title && !proposedData?.title) {
@@ -143,16 +134,7 @@ export async function PATCH(
           status: 'active',
         });
 
-        // Create mapping from research to new view
-        await createResearchMapping({
-          researchInsightId: recommendation.researchInsightId,
-          hierarchyLevel: 'asset_view',
-          assetThesisId: viewId,
-          mappingType: 'supports',
-          confidence: 'high',
-          mappedBy: 'ai_recommendation',
-          notes: `Created from AI recommendation: ${recommendation.reasoning}`,
-        });
+        // REMOVED: createResearchMapping - deprecated, claims link directly to theses
 
         await updateRecommendationStatus(id, 'accepted', false);
         return NextResponse.json({
@@ -164,48 +146,12 @@ export async function PATCH(
         recommendation.recommendationType === 'link_existing' ||
         recommendation.recommendationType === 'refute_existing'
       ) {
-        // Create mapping to existing item
-        const mappingType =
-          recommendation.recommendationType === 'refute_existing' ? 'refutes' : recommendation.mappingType || 'supports';
-
-        if (recommendation.existingThesisId) {
-          await createResearchMapping({
-            researchInsightId: recommendation.researchInsightId,
-            hierarchyLevel: 'macro_thesis',
-            macroThesisId: recommendation.existingThesisId,
-            mappingType,
-            confidence: recommendation.confidenceScore
-              ? Number(recommendation.confidenceScore) > 0.7
-                ? 'high'
-                : Number(recommendation.confidenceScore) > 0.4
-                  ? 'medium'
-                  : 'low'
-              : 'medium',
-            mappedBy: 'ai_recommendation',
-            notes: `AI recommendation: ${recommendation.reasoning}`,
-          });
-        } else if (recommendation.existingAssetThesisId) {
-          await createResearchMapping({
-            researchInsightId: recommendation.researchInsightId,
-            hierarchyLevel: 'asset_view',
-            assetThesisId: recommendation.existingAssetThesisId,
-            mappingType,
-            confidence: recommendation.confidenceScore
-              ? Number(recommendation.confidenceScore) > 0.7
-                ? 'high'
-                : Number(recommendation.confidenceScore) > 0.4
-                  ? 'medium'
-                  : 'low'
-              : 'medium',
-            mappedBy: 'ai_recommendation',
-            notes: `AI recommendation: ${recommendation.reasoning}`,
-          });
-        }
-
+        // REMOVED: createResearchMapping calls - deprecated, claims link directly to theses
+        // This recommendation type is no longer supported - use claim-to-thesis linking instead
         await updateRecommendationStatus(id, 'accepted', false);
         return NextResponse.json({
           success: true,
-          message: 'Mapping created',
+          message: 'Recommendation accepted (insight-level mappings deprecated, use claim linking)',
         });
       }
 

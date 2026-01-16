@@ -17,7 +17,7 @@ import { logToJournal } from '@/lib/workflow';
  * Request body:
  * {
  *   mainClaimId: string;                     // UUID of the main_claims row
- *   targetType: 'macro_thesis' | 'asset_view';
+ *   targetType: 'macro_thesis' | 'asset_thesis';
  *   targetId: string;                        // UUID of macro_theses or asset_theses row
  *   mappingType: 'supports' | 'refutes' | 'foundation';
  *   confidence?: 'high' | 'medium' | 'low';
@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate targetType
-    if (!['macro_thesis', 'asset_view'].includes(targetType)) {
+    if (!['macro_thesis', 'asset_thesis'].includes(targetType)) {
       return NextResponse.json(
-        { error: 'Invalid targetType. Must be: macro_thesis or asset_view' },
+        { error: 'Invalid targetType. Must be: macro_thesis or asset_thesis' },
         { status: 400 }
       );
     }
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       .values({
         mainClaimId,
         macroThesisId: targetType === 'macro_thesis' ? targetId : null,
-        assetThesisId: targetType === 'asset_view' ? targetId : null,
+        assetThesisId: targetType === 'asset_thesis' ? targetId : null,
         mappingType,
         confidence: confidence || null,
         mappedBy,
@@ -248,7 +248,7 @@ export async function GET(request: NextRequest) {
             .where(eq(assetTheses.id, mapping.assetThesisId))
             .limit(1);
           target = view;
-          targetType = 'asset_view';
+          targetType = 'asset_thesis';
         }
 
         return {

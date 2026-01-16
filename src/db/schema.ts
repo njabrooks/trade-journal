@@ -1144,50 +1144,10 @@ export const researchInsights = pgTable(
 export type ResearchInsight = typeof researchInsights.$inferSelect;
 export type NewResearchInsight = typeof researchInsights.$inferInsert;
 
-// Research Mappings - Links research insights to hierarchy (theses, views, strategies, positions)
-export const researchMappings = pgTable(
-  'research_mappings',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    researchInsightId: uuid('research_insight_id')
-      .notNull()
-      .references(() => researchInsights.id, { onDelete: 'cascade' }),
-
-    // Hierarchy target (exactly one must be set)
-    hierarchyLevel: text('hierarchy_level').notNull(),
-    macroThesisId: uuid('macro_thesis_id').references(() => macroTheses.id, { onDelete: 'cascade' }),
-    assetThesisId: uuid('asset_thesis_id').references(() => assetTheses.id, { onDelete: 'cascade' }),
-    strategyId: uuid('strategy_id').references(() => strategies.id, { onDelete: 'cascade' }),
-    positionId: uuid('position_id').references(() => positions.id, { onDelete: 'cascade' }),
-
-    // Evidence relationship
-    mappingType: text('mapping_type').notNull(),
-    confidence: text('confidence'),
-
-    // Context
-    mappedAt: timestamp('mapped_at', { withTimezone: true }).notNull().defaultNow(),
-    mappedBy: text('mapped_by').notNull(),
-    notes: text('notes'),
-
-    // AI suggestion tracking
-    suggestedByAi: boolean('suggested_by_ai').default(false),
-    aiSuggestionScore: numeric('ai_suggestion_score', { precision: 3, scale: 2 }),
-
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    insightIdx: index('idx_research_mappings_insight').on(table.researchInsightId),
-    macroThesisIdx: index('idx_research_mappings_macro_thesis').on(table.macroThesisId),
-    assetThesisIdx: index('idx_research_mappings_asset_thesis').on(table.assetThesisId),
-    strategyIdx: index('idx_research_mappings_strategy').on(table.strategyId),
-    positionIdx: index('idx_research_mappings_position').on(table.positionId),
-    typeIdx: index('idx_research_mappings_type').on(table.mappingType),
-    hierarchyLevelIdx: index('idx_research_mappings_hierarchy_level').on(table.hierarchyLevel),
-  })
-);
-
-export type ResearchMapping = typeof researchMappings.$inferSelect;
-export type NewResearchMapping = typeof researchMappings.$inferInsert;
+// REMOVED: researchMappings table (2026-01-16)
+// Deprecated - claims now link directly to theses via claim_thesis_mappings
+// The insight-level mappings were redundant since claim-to-thesis relationships
+// provide more granular and accurate provenance tracking.
 
 // Research Hierarchy Recommendations - AI-generated recommendations for linking or creating hierarchy items
 export const researchHierarchyRecommendations = pgTable(
@@ -1199,7 +1159,7 @@ export const researchHierarchyRecommendations = pgTable(
       .references(() => researchInsights.id, { onDelete: 'cascade' }),
 
     // Recommendation type
-    recommendationType: text('recommendation_type').notNull(), // 'new_macro_thesis' | 'new_asset_view' | 'link_existing' | 'refute_existing'
+    recommendationType: text('recommendation_type').notNull(), // 'new_macro_thesis' | 'new_asset_thesis' | 'link_existing' | 'refute_existing'
 
     // Proposed new item data (JSONB for flexibility)
     proposedData: jsonb('proposed_data'),

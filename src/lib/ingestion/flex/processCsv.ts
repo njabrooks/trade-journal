@@ -35,7 +35,7 @@ import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
-import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
+// REMOVED: computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 import { evaluateStrategySignalsForDate } from '@/lib/derived/signalEvaluation';
 import { strategies } from '@/db/schema';
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
@@ -520,20 +520,9 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
       for (const date of snapshotDates) {
         try {
           await computeTriageForDate(date, accountId);
-          
-          // Create trade blotter entries
-          try {
-            await computeTradeBlotterEntriesForDate(date, accountId);
-          } catch (error) {
-            console.error(`Failed to create trade blotter entries for ${accountId} on ${date}:`, error);
-          }
-          
-          // Create QUANTITY_CHANGE triage records
-          try {
-            await createQuantityChangeTriageForUnmatchedTrades(date, accountId);
-          } catch (error) {
-            console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${date}:`, error);
-          }
+
+          // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
+          // REMOVED: createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 
           // Evaluate strategy signals (DTE, sigma, PnL% conditions)
           try {
@@ -706,7 +695,7 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
                 ne(strategies.status, 'merged')
               )
             );
-          
+
           for (const strategy of accountStrategies) {
             await computeStrategyMetricsForDateRange(
               accountId,
@@ -715,23 +704,13 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
               tradeDate
             );
           }
-          
-          // Create trade blotter entries
-          try {
-            await computeTradeBlotterEntriesForDate(tradeDate, accountId);
-          } catch (error) {
-            console.error(`Failed to create trade blotter entries for ${accountId} on ${tradeDate}:`, error);
-          }
+
+          // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
 
           // Triage
           await computeTriageForDate(tradeDate, accountId);
 
-          // Create QUANTITY_CHANGE triage records
-          try {
-            await createQuantityChangeTriageForUnmatchedTrades(tradeDate, accountId);
-          } catch (error) {
-            console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${tradeDate}:`, error);
-          }
+          // REMOVED: createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 
           // Evaluate strategy signals (DTE, sigma, PnL% conditions)
           try {

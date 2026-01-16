@@ -3,7 +3,7 @@ import { positions, trades, strategies } from '@/db/schema';
 import { eq, and, isNull, sql, isNotNull } from 'drizzle-orm';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTriageForDate } from '@/lib/derived/triage';
-import { computeTradeBlotterEntriesForDate, recomputeTradeBlotterForPositionLinking } from '@/lib/derived/blotter';
+// REMOVED: blotter imports - blotter system deprecated, replaced by journal
 
 /**
  * Links positions to strategies by strategy_key
@@ -209,24 +209,7 @@ export async function linkPositionToStrategy(
       )
     );
 
-  // Get position conid for matching trades
-  const positionConid = await db
-    .select({ conid: positions.conid })
-    .from(positions)
-    .where(eq(positions.id, positionId))
-    .limit(1);
-
-  // Recompute trade blotter entries if position has conid
-  if (positionConid.length > 0 && positionConid[0].conid) {
-    try {
-      await recomputeTradeBlotterForPositionLinking(strategyId, [positionConid[0].conid]);
-    } catch (error) {
-      console.error(
-        `Failed to recompute trade blotter after linking position ${positionId} to strategy ${strategyId}:`,
-        error
-      );
-    }
-  }
+  // REMOVED: Trade blotter recompute - blotter system deprecated, replaced by journal
 
   // Recompute strategy metrics for affected dates
   for (const { snapshotDate } of snapshotDates) {
@@ -289,11 +272,10 @@ export async function linkTradeToStrategy(tradeId: string, strategyId: string): 
   const tradeDate = trade[0].tradeDate;
   if (tradeDate) {
     const snapshotDate = new Date(tradeDate).toISOString().split('T')[0];
-    
+
     try {
-      // Recompute trade blotter entry for this date
-      await computeTradeBlotterEntriesForDate(snapshotDate, accountId, strategyId);
-      
+      // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
+
       // Recompute strategy metrics for this date
       await computeStrategyMetricsForDateRange(
         accountId,
@@ -301,7 +283,7 @@ export async function linkTradeToStrategy(tradeId: string, strategyId: string): 
         snapshotDate,
         snapshotDate
       );
-      
+
       // Trigger targeted triage recompute for this strategy and date
       // Clean first to ensure stale records are removed (e.g., if underlying data changed)
       await computeTriageForDate(snapshotDate, accountId, strategyId, true);

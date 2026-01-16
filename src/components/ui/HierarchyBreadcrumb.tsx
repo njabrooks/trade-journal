@@ -33,7 +33,7 @@ interface HierarchyBreadcrumbProps {
   assetView?: HierarchyLevel | null;
   strategy?: HierarchyLevel | null;
   position?: HierarchyLevel | null;
-  currentLevel: 'macro_thesis' | 'asset_view' | 'strategy' | 'position';
+  currentLevel: 'macro_thesis' | 'asset_thesis' | 'strategy' | 'position';
   onLinkMacroThesis?: () => void;
   onLinkAssetThesis?: () => void;
   onManageRelatedTheses?: () => void; // New: manage related theses
@@ -70,7 +70,7 @@ export function HierarchyBreadcrumb({
     });
 
     levels.push({
-      type: 'asset_view' as const,
+      type: 'asset_thesis' as const,
       label: 'Asset Thesis',
       data: assetView,
       href: assetView ? `/asset-theses/${assetView.id}` : null,
@@ -79,7 +79,7 @@ export function HierarchyBreadcrumb({
     });
   }
 
-  if (currentLevel === 'asset_view' || showFullPath) {
+  if (currentLevel === 'asset_thesis' || showFullPath) {
     // When viewing Asset Thesis, show Macro Thesis → Asset Thesis
     if (levels.length === 0) {
       levels.push({

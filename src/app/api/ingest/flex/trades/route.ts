@@ -6,7 +6,7 @@ import { normalizeFlexTradeRow, validateFlexTradeRow, FlexTradeRow } from '@/lib
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { and, eq, ne } from 'drizzle-orm';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
-import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
+// REMOVED: computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 import { autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
@@ -215,29 +215,9 @@ export async function POST(request: NextRequest) {
               strategyMetricsCount += count;
             }
             
-            // Create trade blotter entries (this also attempts matching to pending Trade Actions)
-            try {
-              await computeTradeBlotterEntriesForDate(tradeDate, accountId);
-            } catch (error) {
-              console.error(`Failed to create trade blotter entries for ${accountId} on ${tradeDate}:`, error);
-              // Don't fail ingestion if blotter creation fails
-            }
+            // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
+            // REMOVED: createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 
-            // NOTE: Position-level and strategy-level triage (DTE, sigma, ITM, etc.) is computed
-            // during positions ingestion, NOT here. Trades ingestion only creates QUANTITY_CHANGE
-            // records for unmatched trades, which is strategy-level only.
-
-            // Create QUANTITY_CHANGE triage records for unmatched trades (after matching completes)
-            try {
-              const qcCount = await createQuantityChangeTriageForUnmatchedTrades(tradeDate, accountId);
-              if (qcCount > 0) {
-                console.log(`Created ${qcCount} QUANTITY_CHANGE triage records for ${accountId} on ${tradeDate}`);
-              }
-            } catch (error) {
-              console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${tradeDate}:`, error);
-              // Don't fail ingestion if QUANTITY_CHANGE creation fails
-            }
-            
             recomputeResults[`${accountId}_${tradeDate}`] = {
               autoStrategies: {
                 strategiesCreated: autoLinkResult.strategiesCreated,

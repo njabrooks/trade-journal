@@ -3,7 +3,7 @@ import { db } from '@/db';
 import { strategies } from '@/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { recomputeStateCodesForStrategies } from '@/lib/services/strategyStateCode';
-import { backfillTradeBlotterForStrategy } from '@/lib/derived/blotter';
+// REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 import { trackProcess } from '@/lib/services/processTracking';
 
 export async function POST(request: NextRequest) {
@@ -55,10 +55,7 @@ export async function POST(request: NextRequest) {
     // Compute state codes for the confirmed strategies
         await recomputeStateCodesForStrategies(ids);
 
-        // Backfill trade blotter entries for confirmed strategies
-        for (const id of ids) {
-          await backfillTradeBlotterForStrategy(id);
-        }
+        // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 
         return { success: true, confirmed: ids.length };
       }

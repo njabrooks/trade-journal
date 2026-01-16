@@ -32,7 +32,7 @@ interface ClientHierarchyBreadcrumbProps {
   assetView?: HierarchyLevel | null;
   strategy?: HierarchyLevel | null;
   position?: HierarchyLevel | null;
-  currentLevel: 'macro_thesis' | 'asset_view' | 'strategy' | 'position';
+  currentLevel: 'macro_thesis' | 'asset_thesis' | 'strategy' | 'position';
   showFullPath?: boolean;
   onManageRelatedTheses?: () => void; // Callback to manage related theses
 }
@@ -46,7 +46,7 @@ export function ClientHierarchyBreadcrumb(props: ClientHierarchyBreadcrumbProps)
   } | null>(null);
 
   const handleLinkMacroThesis = () => {
-    if (props.currentLevel === 'asset_view' && props.assetView) {
+    if (props.currentLevel === 'asset_thesis' && props.assetView) {
       setLinkingEntity({
         sourceType: 'assetThesis',
         sourceId: props.assetView.id,

@@ -31,7 +31,7 @@ import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
-import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
+// REMOVED: computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 import { strategies } from '@/db/schema';
 import { trackProcess, startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
@@ -501,25 +501,8 @@ export async function POST(request: NextRequest) {
           try {
             await computeTriageForDate(date, accountId);
             
-            // Create trade blotter entries and QUANTITY_CHANGE records for each date
-            // This ensures that when positions are ingested first, trades get processed
-            try {
-              await computeTradeBlotterEntriesForDate(date, accountId);
-            } catch (error) {
-              console.error(`Failed to create trade blotter entries for ${accountId} on ${date}:`, error);
-              // Don't fail ingestion if blotter creation fails
-            }
-            
-            // Create QUANTITY_CHANGE triage records for unmatched trades (after matching completes)
-            try {
-              const qcCount = await createQuantityChangeTriageForUnmatchedTrades(date, accountId);
-              if (qcCount > 0) {
-                console.log(`Created ${qcCount} QUANTITY_CHANGE triage records for ${accountId} on ${date} after positions ingestion`);
-              }
-            } catch (error) {
-              console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${date}:`, error);
-              // Don't fail ingestion if QUANTITY_CHANGE creation fails
-            }
+            // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
+            // REMOVED: createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
           } catch (error) {
             console.error(`Failed to compute triage for ${date}:`, error);
             // Continue processing other dates even if one fails

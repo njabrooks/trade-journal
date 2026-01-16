@@ -14,7 +14,7 @@ import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
-import { computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades } from '@/lib/derived/blotter';
+// REMOVED: computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 import { strategies } from '@/db/schema';
 
 const SECTION_CODE = 'POST';
@@ -333,24 +333,8 @@ export async function POST(request: NextRequest) {
               // Link any unlinked trades to strategies (may create more strategies)
               const tradeLinkResult = await autoLinkTradesToStrategies(accountId, { snapshotDate });
               
-              // Create trade blotter entries for this date (if any trades exist)
-              try {
-                await computeTradeBlotterEntriesForDate(snapshotDate, accountId);
-              } catch (error) {
-                console.error(`Failed to create trade blotter entries for ${accountId} on ${snapshotDate}:`, error);
-                // Don't fail ingestion if blotter creation fails
-              }
-              
-              // Create QUANTITY_CHANGE triage records for unmatched trades (after matching completes)
-              try {
-                const qcCount = await createQuantityChangeTriageForUnmatchedTrades(snapshotDate, accountId);
-                if (qcCount > 0) {
-                  console.log(`Created ${qcCount} QUANTITY_CHANGE triage records for ${accountId} on ${snapshotDate} after positions ingestion`);
-                }
-              } catch (error) {
-                console.error(`Failed to create QUANTITY_CHANGE triage records for ${accountId} on ${snapshotDate}:`, error);
-                // Don't fail ingestion if QUANTITY_CHANGE creation fails
-              }
+              // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
+              // REMOVED: createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
             } catch (error) {
               console.error(`Failed to link trades and create blotter entries for ${accountId} on ${snapshotDate}:`, error);
               // Don't fail ingestion if trade linking fails

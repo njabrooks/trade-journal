@@ -46,8 +46,8 @@ export interface MainClaim {
 
   // Conversion Tracking
   converted_to: null | {
-    type: 'macro_thesis' | 'asset_view';
-    id: string; // UUID of created thesis/view
+    type: 'macro_thesis' | 'asset_thesis';
+    id: string; // UUID of created thesis
     converted_at: string; // ISO timestamp
   };
 }

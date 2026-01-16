@@ -296,15 +296,18 @@ The system implements a four-level decision hierarchy. Terms below map to this s
 
 ---
 
-### Research Mapping
-**PRD Term:** ✅ **Contextual Mapping**  
-**Existing Term:** ❌ None (new concept)  
-**Database:** `research_mappings` (Phase 2)  
-**Definition:** Link between research insight and hierarchy element (macro thesis, asset thesis, strategy, or position). Records whether research supports, refutes, is neutral, or exploratory.
+### Research Mapping → Claim-to-Thesis Mapping
+**PRD Term:** ✅ **Contextual Mapping**
+**Existing Term:** ✅ **Claim-to-Thesis Mapping** (implemented 2026-01-16)
+**Database:** `claim_thesis_mappings` (replaces deprecated `research_mappings`)
+**Definition:** Many-to-many link between main claims and hierarchy elements (macro thesis, asset thesis). Records relationship type (supports, refutes, foundation). Claims are now first-class entities with direct provenance tracking.
 
 **Usage:**
-- Use "Research Mapping" or "Mapping" (when context is clear)
-- Mapping types: `supports`, `refutes`, `neutral`, `exploratory`
+- Use "Claim-to-Thesis Mapping" or "Claim Mapping" (when context is clear)
+- Mapping types: `supports`, `refutes`, `foundation`
+- One claim can support multiple theses; one thesis can have multiple claims
+
+**Note:** The `research_mappings` table was deprecated and dropped (2026-01-16). Claim-level linking via `claim_thesis_mappings` provides more granular provenance tracking than insight-level mappings.
 
 ---
 

@@ -17,7 +17,7 @@ import { getRenderedPrompt } from '@/lib/services/prompt-manager';
 import { createAIProvider, getDefaultModel, type AIModel } from './ai-providers';
 
 interface HierarchyRecommendation {
-  recommendation_type: 'new_macro_thesis' | 'new_asset_view' | 'link_existing' | 'refute_existing';
+  recommendation_type: 'new_macro_thesis' | 'new_asset_thesis' | 'link_existing' | 'refute_existing';
   proposed_title?: string;
   proposed_description?: string;
   proposed_thesis_type?: 'secular' | 'cyclical' | 'structural';
@@ -313,7 +313,7 @@ Generate recommendations for:
 3. Linking to existing items (with confidence scores and evidence type)
 
 Return recommendations in JSON array format, each with:
-- recommendation_type: 'new_macro_thesis' | 'new_asset_view' | 'link_existing' | 'refute_existing'
+- recommendation_type: 'new_macro_thesis' | 'new_asset_thesis' | 'link_existing' | 'refute_existing'
 - proposed_title, proposed_description (for new items)
 - existing_thesis_id or existing_asset_thesis_id (for linking)
 - confidence_score: 0.0 to 1.0

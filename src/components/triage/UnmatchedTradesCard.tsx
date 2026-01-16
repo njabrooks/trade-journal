@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TradeDetailsCard } from "@/components/blotter/TradeDetailsCard";
-import type { BlotterEntry } from "@/db/queries/blotter";
+import { TradeDetailsCard } from "@/components/trades/TradeDetailsCard";
+import type { TradeDetail } from "@/types/trades";
 
 interface UnmatchedTradeExecution {
   blotterId?: string;
@@ -28,7 +28,7 @@ interface UnmatchedTradesCardProps {
   onDeselectAll?: () => void;
 }
 
-export function UnmatchedTradesCard({ 
+export function UnmatchedTradesCard({
   unmatchedTradeExecutions,
   editMode = false,
   selectedTradeIds = new Set(),
@@ -38,7 +38,7 @@ export function UnmatchedTradesCard({
   onSelectAll,
   onDeselectAll,
 }: UnmatchedTradesCardProps) {
-  const [tradeDetails, setTradeDetails] = useState<BlotterEntry["tradeDetails"]>(null);
+  const [tradeDetails, setTradeDetails] = useState<TradeDetail[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Collect all tradeIds from all unmatched trade executions
@@ -191,49 +191,9 @@ export function UnmatchedTradesCard({
     );
   }
 
-  // Create a minimal BlotterEntry object for TradeDetailsCard
-  const mockEntry: BlotterEntry = {
-    id: "",
-    actionDate: unmatchedTradeExecutions[0]?.actionDate || "",
-    createdAt: null,
-    strategyId: null,
-    strategyKey: null,
-    actionClass: null,
-    actionDetail: null,
-    reasonCode: null,
-    legScope: null,
-    qtyChange: null,
-    premiumChange: null,
-    realizedPnl: null,
-    followUpRequired: null,
-    followUpDate: null,
-    completed: null,
-    source: null,
-    tradeCount: null,
-    tradeIds: null,
-    conid: null,
-    linkedBlotterActionId: null,
-    linkedTradeBlotterIds: null,
-    linkedTradeReason: null,
-    linkedTradeStage: null,
-    linkedNotes: null,
-    linkedCreatedAt: null,
-    linkedTradeEntries: null,
-    notes: null,
-    severityOverride: null,
-    monitorDays: null,
-    overrideExpiresDate: null,
-    ticker: null,
-    tradeStage: null,
-    tradeReason: null,
-    tradeDetails: tradeDetails,
-    positionDetails: null,
-    parsedNotes: null,
-  };
-
   return (
-    <TradeDetailsCard 
-      entry={mockEntry}
+    <TradeDetailsCard
+      tradeDetails={tradeDetails}
       editMode={editMode}
       selectedTradeIds={selectedTradeIds}
       onTradeSelect={onTradeSelect}

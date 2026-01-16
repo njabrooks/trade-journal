@@ -8,7 +8,6 @@ import {
   trades,
   strategyMetricsSnapshots,
   triageRecords,
-  blotterActions,
   underlyingsIvHistory,
   NewStrategy,
   NewStrategyTemplate,
@@ -17,7 +16,7 @@ import { eq, and, sql, inArray, isNotNull, desc, gte, lte, or } from 'drizzle-or
 import { toNumber } from '@/lib/utils';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computeTriageForDate } from '@/lib/derived/triage';
-import { backfillTradeBlotterForStrategy } from '@/lib/derived/blotter';
+// REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
 export interface CreateStrategyInput {
@@ -279,11 +278,8 @@ export async function updateStrategy(
         )
       );
 
-    // Backfill trade blotter entries and create QUANTITY_CHANGE records for unmatched trades
-    // This ensures that when a strategy is confirmed, any unmatched trades get QUANTITY_CHANGE triage records
-    backfillTradeBlotterForStrategy(strategyId).catch((error) => {
-      console.error(`Failed to backfill trade blotter for strategy ${strategyId} after confirmation:`, error);
-    });
+    // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
+    // Trade context is now captured via journal entries when trades are recorded
 
     // Populate entry context fields when strategy is confirmed
     populateStrategyEntryContext(strategyId).catch((error) => {
@@ -291,13 +287,8 @@ export async function updateStrategy(
     });
   }
 
-  // If strategy was confirmed with a strategyType, or strategyType was changed, compute state code
-  if ((updates.confirm && updates.strategyType) || (strategyTypeChanged && updates.strategyType)) {
-    const { recomputeStateCodeForStrategy } = await import('@/lib/services/strategyStateCode');
-    recomputeStateCodeForStrategy(strategyId).catch((error) => {
-      console.error(`Failed to recompute state code for strategy ${strategyId}:`, error);
-    });
-  }
+  // REMOVED: State code computation - replaced by signals system
+  // State code was part of the deprecated playbook system
 
   if (
     strategyRow?.strategyTemplateId &&
@@ -551,12 +542,7 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
     .where(inArray(trades.strategyId, sourceIds))
     .returning({ id: trades.id });
 
-  // Update blotter entries that point to merged strategies
-  // This ensures trade blotter entries are updated immediately (not just in background recompute)
-  await db
-    .update(blotterActions)
-    .set({ strategyId: targetId, updatedAt: now })
-    .where(inArray(blotterActions.strategyId, sourceIds));
+  // REMOVED: blotterActions update - blotter system deprecated, replaced by journal
 
   await db
     .delete(strategyMetricsSnapshots)
@@ -626,8 +612,7 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
               }
             );
 
-            // Backfill trade blotter entries for target strategy (includes trades from merged strategies)
-            await backfillTradeBlotterForStrategy(targetId);
+            // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 
             // Recompute strategy metrics for all dates where target strategy has positions
             if (targetStrategy.accountId) {

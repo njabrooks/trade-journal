@@ -4,11 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPosition } from "@/lib/formatters";
-import { TradeDetailsCard } from "@/components/blotter/TradeDetailsCard";
 import { TriagePositionsTable } from "@/components/triage/TriagePositionsTable";
 import { StrategyConfirmationDialog } from "@/components/strategies/StrategyConfirmationDialog";
 import { TradeMetadataForm, type TradeMetadataFormData } from "@/components/triage/TradeMetadataForm";
-import type { BlotterEntry } from "@/db/queries/blotter";
+import type { TradeDetail } from "@/types/trades";
 
 interface TriageActionButtonsProps {
   triageId: string;
@@ -114,7 +113,7 @@ export function TriageActionButtons({
   const [loadingPositions, setLoadingPositions] = useState(false);
   
   // Trade details for QUANTITY_CHANGE edit mode
-  const [tradeDetails, setTradeDetails] = useState<BlotterEntry["tradeDetails"]>(null);
+  const [tradeDetails, setTradeDetails] = useState<TradeDetail[] | null>(null);
   const [selectedTradeIds, setSelectedTradeIds] = useState<Set<string>>(new Set());
   const [tradeQuantities, setTradeQuantities] = useState<Map<string, number>>(new Map());
   

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { blotterActions, triageRecords, strategies, positions, underlyings } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
-import { matchTriageActionToTradeBlotter } from "@/lib/derived/blotter";
+// REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated, replaced by journal
 import { logToJournal } from "@/lib/workflow";
 
 export async function POST(request: NextRequest) {
@@ -243,20 +243,8 @@ export async function POST(request: NextRequest) {
 
         if (inserted) {
           insertedBlotterActions.push(inserted);
-
-          // Attempt to match with existing trade blotter entry
-          try {
-            await matchTriageActionToTradeBlotter(
-              inserted.id,
-              strategyId || triage.strategyId,
-              position.symbol,
-              position.conid,
-              actionDate
-            );
-          } catch (error) {
-            console.error('Failed to match triage action to trade blotter:', error);
-            // Continue - matching is optional
-          }
+          // REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated
+          // Journal entries now serve as the primary audit trail
         }
       }
 

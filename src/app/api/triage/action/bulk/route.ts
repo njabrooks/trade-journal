@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { blotterActions, triageRecords, strategies, positions, underlyings } from "@/db/schema";
 import { eq, inArray, desc } from "drizzle-orm";
-import { matchTriageActionToTradeBlotter } from "@/lib/derived/blotter";
+// REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated, replaced by journal
 import { logToJournal } from "@/lib/workflow";
 
 export async function POST(request: NextRequest) {
@@ -260,20 +260,8 @@ export async function POST(request: NextRequest) {
 
             if (inserted) {
               insertedBlotterActions.push(inserted);
-
-              // Attempt to match with existing trade blotter entry
-              try {
-                await matchTriageActionToTradeBlotter(
-                  inserted.id,
-                  triage.strategyId,
-                  position.symbol,
-                  position.conid,
-                  actionDate
-                );
-              } catch (error) {
-                console.error('Failed to match triage action to trade blotter:', error);
-                // Continue - matching is optional
-              }
+              // REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated, replaced by journal
+              // Journal entries now serve as the primary audit trail
             }
           }
 
@@ -432,28 +420,8 @@ export async function POST(request: NextRequest) {
           })
           .returning({ id: blotterActions.id });
 
-        // Attempt to match with existing trade blotter entry
-        if (insertedBlotterAction && actionType === "TRADE") {
-          try {
-            // For strategy-level QUANTITY_CHANGE, pass null as conid to match ALL trades
-            // For other actions, pass the specific conid to match only that position's trade
-            const conidForMatching = commonTrigger === "QUANTITY_CHANGE" ? null : conid;
-
-            await matchTriageActionToTradeBlotter(
-              insertedBlotterAction.id,
-              triage.strategyId,
-              ticker ?? triage.symbol,
-              conidForMatching,
-              triage.snapshotDate
-            );
-          } catch (error) {
-            console.error(
-              `Failed to match triage action ${triage.id} to trade blotter:`,
-              error
-            );
-            // Continue - matching is optional
-          }
-        }
+        // REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated, replaced by journal
+        // Journal entries now serve as the primary audit trail
 
         // Update triage record severity
         if (severityOverride && (actionType === "MONITOR" || actionType === "DISMISS" || actionType === "TRADE" || actionType === "UPDATE")) {

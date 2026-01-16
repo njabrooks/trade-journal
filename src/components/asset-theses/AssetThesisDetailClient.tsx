@@ -50,7 +50,7 @@ export function AssetThesisDetailClient({
           id: assetThesisId,
           title: assetThesisTitle,
         }}
-        currentLevel="asset_view"
+        currentLevel="asset_thesis"
         onManageRelatedTheses={() => setManageDialogOpen(true)}
       />
 

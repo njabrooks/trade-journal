@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TradeDetailsCard } from '@/components/blotter/TradeDetailsCard';
-import type { BlotterEntry } from '@/db/queries/blotter';
+import { TradeDetailsCard } from '@/components/trades/TradeDetailsCard';
+import type { TradeDetail } from '@/types/trades';
 
 /**
  * Trade stages for classifying the type of trade action
@@ -19,21 +19,8 @@ export const TRADE_STAGES: { value: TradeStage; label: string; description: stri
   { value: 'add', label: 'Add', description: 'Adding to an existing position' },
 ];
 
-export interface TradeDetail {
-  id: string;
-  symbol: string;
-  side: string;
-  quantity: number;
-  price: number;
-  grossAmount: number | null;
-  netAmount: number | null;
-  fees: number | null;
-  assetClass: string | null;
-  exchange: string | null;
-  orderType: string | null;
-  currency: string | null;
-  tradeDate: string;
-}
+// Re-export TradeDetail from shared types for backward compatibility
+export type { TradeDetail } from '@/types/trades';
 
 export interface TradeMetadataFormData {
   tradeStage: TradeStage | '';
@@ -119,46 +106,6 @@ export function TradeMetadataForm({
     }
   }, [tradeDetails, selectedTradeIds.size]);
 
-  // Create mock BlotterEntry for TradeDetailsCard
-  const mockEntry: BlotterEntry = {
-    id: '',
-    actionDate: actionDate,
-    createdAt: null,
-    strategyId: null,
-    strategyKey: null,
-    actionClass: null,
-    actionDetail: null,
-    reasonCode: null,
-    legScope: null,
-    qtyChange: null,
-    premiumChange: null,
-    realizedPnl: null,
-    followUpRequired: null,
-    followUpDate: null,
-    completed: null,
-    source: null,
-    tradeCount: null,
-    tradeIds: null,
-    conid: null,
-    linkedBlotterActionId: null,
-    linkedTradeBlotterIds: null,
-    linkedTradeReason: null,
-    linkedTradeStage: null,
-    linkedNotes: null,
-    linkedCreatedAt: null,
-    linkedTradeEntries: null,
-    notes: null,
-    severityOverride: null,
-    monitorDays: null,
-    overrideExpiresDate: null,
-    ticker: null,
-    tradeStage: null,
-    tradeReason: null,
-    tradeDetails: tradeDetails,
-    positionDetails: null,
-    parsedNotes: null,
-  };
-
   const handleSubmit = async () => {
     // Validate required fields
     if (!tradeStage) {
@@ -206,7 +153,7 @@ export function TradeMetadataForm({
         <div className="space-y-4">
           {/* Trade Execution Details with checkboxes */}
           <TradeDetailsCard
-            entry={mockEntry}
+            tradeDetails={tradeDetails}
             editMode={true}
             selectedTradeIds={selectedTradeIds}
             onTradeSelect={(tradeId, selected) => {

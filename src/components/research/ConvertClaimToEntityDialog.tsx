@@ -26,7 +26,7 @@ interface ConvertClaimToEntityDialogProps {
 }
 
 type Mode = 'link_existing' | 'create_new';
-type EntityType = 'macro_thesis' | 'asset_view';
+type EntityType = 'macro_thesis' | 'asset_thesis';
 type Direction = 'bullish' | 'bearish' | 'neutral';
 type TimeHorizon = 'long_term' | 'medium_term' | 'short_term';
 type ThesisType = 'secular' | 'cyclical' | 'structural';
@@ -248,7 +248,7 @@ export function ConvertClaimToEntityDialog({
         router.push(`/macro-theses/${data.thesisId}`);
         router.refresh();
         handleClose();
-      } else if (entityType === 'asset_view') {
+      } else if (entityType === 'asset_thesis') {
         if (!ticker) {
           setError('Ticker is required for Asset Theses');
           setIsSubmitting(false);
@@ -594,7 +594,7 @@ export function ConvertClaimToEntityDialog({
                   </div>
                 </button>
                 <button
-                  onClick={() => setEntityType('asset_view')}
+                  onClick={() => setEntityType('asset_thesis')}
                   className="p-6 border-2 border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
                 >
                   <div className="font-semibold text-lg mb-2">Asset Thesis</div>
@@ -686,7 +686,7 @@ export function ConvertClaimToEntityDialog({
               )}
 
               {/* Asset Thesis Specific */}
-              {entityType === 'asset_view' && (
+              {entityType === 'asset_thesis' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Ticker <span className="text-red-500">*</span>

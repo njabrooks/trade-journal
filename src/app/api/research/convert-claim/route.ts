@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         .returning();
 
       createdId = thesis.id;
-    } else if (conversionType === 'asset_view') {
+    } else if (conversionType === 'asset_thesis') {
       // Validate ticker
       if (!data.ticker || data.ticker === 'undefined' || typeof data.ticker !== 'string' || data.ticker.trim() === '') {
         return NextResponse.json({ error: 'Valid ticker is required for asset thesis' }, { status: 400 });
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     await db.insert(claimThesisMappings).values({
       mainClaimId: createdMainClaim.id,
       macroThesisId: conversionType === 'macro_thesis' ? createdId : null,
-      assetThesisId: conversionType === 'asset_view' ? createdId : null,
+      assetThesisId: conversionType === 'asset_thesis' ? createdId : null,
       mappingType: relationshipType,
       mappedBy: 'conversion', // Indicate this was created during claim conversion
       notes: `Original claim converted to ${conversionType}`,

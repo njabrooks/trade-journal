@@ -73,3 +73,6 @@ logs/
 
 # Research workspace (local research files)
 research-workspace/
+
+# Deprecated code archive (local reference only)
+/archive/

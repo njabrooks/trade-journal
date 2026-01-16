@@ -2,7 +2,7 @@ import { db } from '@/db';
 import {
   researchArtifacts,
   researchInsights,
-  researchMappings,
+  // REMOVED: researchMappings - deprecated, claims link directly to theses
   researchProcessingRuns,
   researchHierarchyRecommendations,
   macroTheses,
@@ -17,7 +17,7 @@ import { eq, desc, and, isNull, inArray, sql, count, or } from 'drizzle-orm';
 import type {
   NewResearchArtifact,
   NewResearchInsight,
-  NewResearchMapping,
+  // REMOVED: NewResearchMapping - deprecated
   NewResearchProcessingRun,
   NewResearchHierarchyRecommendation,
   NewMainClaim,
@@ -586,164 +586,12 @@ export async function getMainClaimById(claimId: string) {
   };
 }
 
-/**
- * @deprecated Use getAllMainClaimsWithSources() instead
- * Get all claims from all research insights with source metadata (JSONB)
- * This is the old method that queries JSONB claims_structure
- */
-export async function getAllClaimsWithSources() {
-  const insights = await db
-    .select({
-      insight: researchInsights,
-      artifact: researchArtifacts,
-    })
-    .from(researchInsights)
-    .innerJoin(
-      researchArtifacts,
-      eq(researchInsights.researchArtifactId, researchArtifacts.id)
-    )
-    .where(sql`${researchInsights.claimsStructure} IS NOT NULL`)
-    .orderBy(desc(researchArtifacts.publishedDate), desc(researchInsights.structuredAt));
-
-  return insights;
-}
-
-// Pre-investment research: insights with no mappings
-export async function getPreInvestmentResearch() {
-  // Get all insights
-  const allInsights = await db
-    .select({
-      insight: researchInsights,
-      artifact: researchArtifacts,
-    })
-    .from(researchInsights)
-    .innerJoin(
-      researchArtifacts,
-      eq(researchInsights.researchArtifactId, researchArtifacts.id)
-    )
-    .orderBy(desc(researchInsights.structuredAt));
-
-  // Get all insight IDs that have mappings
-  const mappedInsightIds = await db
-    .selectDistinct({ insightId: researchMappings.researchInsightId })
-    .from(researchMappings);
-
-  const mappedIds = new Set(mappedInsightIds.map((m) => m.insightId));
-
-  // Filter out insights that have mappings
-  return allInsights.filter((item) => !mappedIds.has(item.insight.id));
-}
-
-// ============================================================================
-// Research Mappings
-// ============================================================================
-
-export async function createResearchMapping(data: NewResearchMapping): Promise<string> {
-  const [mapping] = await db
-    .insert(researchMappings)
-    .values(data)
-    .returning({ id: researchMappings.id });
-  return mapping.id;
-}
-
-export async function getResearchMappingsForInsight(insightId: string) {
-  return db
-    .select()
-    .from(researchMappings)
-    .where(eq(researchMappings.researchInsightId, insightId))
-    .orderBy(desc(researchMappings.mappedAt));
-}
-
-export async function getResearchForThesis(thesisId: string) {
-  const mappings = await db
-    .select({
-      mapping: researchMappings,
-      insight: researchInsights,
-      artifact: researchArtifacts,
-    })
-    .from(researchMappings)
-    .innerJoin(researchInsights, eq(researchMappings.researchInsightId, researchInsights.id))
-    .innerJoin(researchArtifacts, eq(researchInsights.researchArtifactId, researchArtifacts.id))
-    .where(eq(researchMappings.macroThesisId, thesisId))
-    .orderBy(desc(researchMappings.mappedAt));
-
-  return mappings;
-}
-
-export async function getResearchForAssetThesis(viewId: string) {
-  const mappings = await db
-    .select({
-      mapping: researchMappings,
-      insight: researchInsights,
-      artifact: researchArtifacts,
-    })
-    .from(researchMappings)
-    .innerJoin(researchInsights, eq(researchMappings.researchInsightId, researchInsights.id))
-    .innerJoin(researchArtifacts, eq(researchInsights.researchArtifactId, researchArtifacts.id))
-    .where(eq(researchMappings.assetThesisId, viewId))
-    .orderBy(desc(researchMappings.mappedAt));
-
-  return mappings;
-}
-
-export async function getResearchForStrategy(strategyId: string) {
-  const mappings = await db
-    .select({
-      mapping: researchMappings,
-      insight: researchInsights,
-      artifact: researchArtifacts,
-    })
-    .from(researchMappings)
-    .innerJoin(researchInsights, eq(researchMappings.researchInsightId, researchInsights.id))
-    .innerJoin(researchArtifacts, eq(researchInsights.researchArtifactId, researchArtifacts.id))
-    .where(eq(researchMappings.strategyId, strategyId))
-    .orderBy(desc(researchMappings.mappedAt));
-
-  return mappings;
-}
-
-export async function deleteResearchMapping(id: string): Promise<void> {
-  await db.delete(researchMappings).where(eq(researchMappings.id, id));
-}
-
-// Get evidence summary for a thesis/view (count of supporting/refuting research)
-export async function getEvidenceSummaryForThesis(thesisId: string) {
-  const mappings = await db
-    .select({
-      mappingType: researchMappings.mappingType,
-      count: sql<number>`count(*)::int`,
-    })
-    .from(researchMappings)
-    .where(eq(researchMappings.macroThesisId, thesisId))
-    .groupBy(researchMappings.mappingType);
-
-  return {
-    supports: mappings.find((m) => m.mappingType === 'supports')?.count ?? 0,
-    refutes: mappings.find((m) => m.mappingType === 'refutes')?.count ?? 0,
-    neutral: mappings.find((m) => m.mappingType === 'neutral')?.count ?? 0,
-    exploratory: mappings.find((m) => m.mappingType === 'exploratory')?.count ?? 0,
-    total: mappings.reduce((acc, m) => acc + m.count, 0),
-  };
-}
-
-export async function getEvidenceSummaryForAssetThesis(viewId: string) {
-  const mappings = await db
-    .select({
-      mappingType: researchMappings.mappingType,
-      count: sql<number>`count(*)::int`,
-    })
-    .from(researchMappings)
-    .where(eq(researchMappings.assetThesisId, viewId))
-    .groupBy(researchMappings.mappingType);
-
-  return {
-    supports: mappings.find((m) => m.mappingType === 'supports')?.count ?? 0,
-    refutes: mappings.find((m) => m.mappingType === 'refutes')?.count ?? 0,
-    neutral: mappings.find((m) => m.mappingType === 'neutral')?.count ?? 0,
-    exploratory: mappings.find((m) => m.mappingType === 'exploratory')?.count ?? 0,
-    total: mappings.reduce((acc, m) => acc + m.count, 0),
-  };
-}
+// REMOVED: getAllClaimsWithSources() - Superseded by getAllMainClaimsWithSources()
+// REMOVED: getPreInvestmentResearch() - Never called, used deprecated researchMappings
+// REMOVED: createResearchMapping, getResearchMappingsForInsight, getResearchForThesis,
+//          getResearchForAssetThesis, getResearchForStrategy, deleteResearchMapping,
+//          getEvidenceSummaryForThesis, getEvidenceSummaryForAssetThesis
+//          - All deprecated, claims now link directly to theses via claim_thesis_mappings
 
 // ============================================================================
 // Research Processing Runs
@@ -801,15 +649,14 @@ export async function getResearchStats() {
     .select({
       totalArtifacts: sql<number>`count(distinct ${researchArtifacts.id})::int`,
       totalInsights: sql<number>`count(distinct ${researchInsights.id})::int`,
-      totalMappings: sql<number>`count(distinct ${researchMappings.id})::int`,
+      // REMOVED: totalMappings - researchMappings deprecated, claims link directly to theses
       rawCount: sql<number>`count(distinct case when ${researchArtifacts.status} = 'raw' then ${researchArtifacts.id} end)::int`,
       structuredCount: sql<number>`count(distinct case when ${researchArtifacts.status} = 'structured' then ${researchArtifacts.id} end)::int`,
       processingCount: sql<number>`count(distinct case when ${researchArtifacts.status} = 'processing' then ${researchArtifacts.id} end)::int`,
       errorCount: sql<number>`count(distinct case when ${researchArtifacts.status} = 'error' then ${researchArtifacts.id} end)::int`,
     })
     .from(researchArtifacts)
-    .leftJoin(researchInsights, eq(researchArtifacts.id, researchInsights.researchArtifactId))
-    .leftJoin(researchMappings, eq(researchInsights.id, researchMappings.researchInsightId));
+    .leftJoin(researchInsights, eq(researchArtifacts.id, researchInsights.researchArtifactId));
 
   return stats;
 }
