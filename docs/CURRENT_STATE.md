@@ -157,8 +157,9 @@ interface MainClaim {
 - `src/lib/derived/strategyMetrics.ts` - Metrics computation
 - `src/lib/derived/strategyAuto.ts` - Auto-derivation logic
 
-**Deprecated:**
-- `stateCode` system (`src/lib/derived/stateCode.ts`, 696 lines) - Replaced by signals
+**Removed (2026-01-16):**
+- `stateCode` system - Replaced by signals, code archived and deleted
+- `playbook_items` table - Dropped, was only used for stateCode configuration
 
 ---
 
@@ -249,9 +250,11 @@ Journal entry logged
 | IngestionRun | `status` | pending, running, completed, failed | Terminal states |
 | Strategy | `status` | draft, open, closed, merged | Mostly implicit |
 | Position | `isOpen` | true, false | Boolean toggle |
-| TriageRecord | `severity` | info, monitor, attention, urgent, pending, complete | ⚠️ Overloaded - see [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
+| TriageRecord | `status` | inbox, in_progress, done | Workflow state ✅ [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
+| TriageRecord | `severity` | urgent, attention, monitor, info | Importance level ✅ [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
 | Signal | `status` | recommended, not_triggered, triggered, superseded | Event-driven |
-| ThesisTriageRecord | `status` | pending, in_review, actioned, dismissed | Workflow states |
+| ThesisTriageRecord | `status` | inbox, in_progress, done | Workflow state ✅ [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
+| ThesisTriageRecord | `severity` | urgent, attention, monitor, info | Importance level ✅ [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
 | MacroThesis | `status` | active, under_review, retired, superseded | Lifecycle validity |
 | MacroThesis | `workflowStatus` | developing, monitoring, paused, validated, invalidated, abandoned | ⚠️ Schema only, unused in code |
 | MacroThesis | `lifecycleStatus` | created (+ code values) | ⚠️ Deprecated but used - see [#ENH-048](FUTURE_ENHANCEMENTS.md#enh-048-thesis-status-field-consolidation) |
@@ -384,9 +387,14 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 
 | Item | Location | Reason | Action |
 |------|----------|--------|--------|
-| `stateCode` system | `src/lib/derived/stateCode.ts` (696 lines) | Replaced by signals | ✅ Archived (2026-01-16) |
+| `stateCode` system | `src/lib/derived/stateCode.ts` (696 lines) | Replaced by signals | ✅ Removed (2026-01-16) |
+| `strategyStateCode` service | `src/lib/services/strategyStateCode.ts` | Replaced by signals | ✅ Removed (2026-01-16) |
 | `strategyMetricsSnapshots.stateCode` | `src/db/schema.ts` | Deprecated column | ✅ Dropped (2026-01-16) |
 | `strategyMetricsSnapshots.realizedPnlToDate` | `src/db/schema.ts` | Never computed | ✅ Dropped (2026-01-16) |
+| `playbook_items` table | `src/db/schema.ts` | Only used for stateCode config | ✅ Dropped (2026-01-16) |
+| `blotter_actions.stateCodeAtAction` | `src/db/schema.ts` | StateCode removed | ✅ Dropped (2026-01-16) |
+| Playbook admin UI | `src/app/admin/playbook/` | Only used for stateCode config | ✅ Removed (2026-01-16) |
+| Playbook API routes | `src/app/api/playbook/` | Only used for stateCode config | ✅ Removed (2026-01-16) |
 
 ### Triage Domain
 
@@ -441,8 +449,10 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 See **[CLEANUP_PLAN.md - Unified Remaining Work](CLEANUP_PLAN.md#unified-remaining-work)** for the consolidated backlog.
 
 Key items:
-- Quick wins (realizedPnlToDate, terminology)
-- StateCode archival (696 lines)
+- ~~Quick wins (realizedPnlToDate, terminology)~~ ✅ Complete
+- ~~StateCode archival (696 lines)~~ ✅ Complete (2026-01-16)
+- ~~Playbook removal~~ ✅ Complete (2026-01-16)
 - Documentation (signals, triage rules)
 - #ENH-047 (triage severity/status separation)
+- #ENH-048 (thesis status field consolidation)
 - Blotter-to-Journal migration (deferred)

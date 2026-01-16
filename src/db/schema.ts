@@ -707,7 +707,12 @@ export const triageRecords = pgTable(
     unrealizedPnl: numeric('unrealized_pnl'),
     absNotional: numeric('abs_notional'),
     pctNavAbsNotional: numeric('pct_nav_abs_notional'),
-    severity: text('severity'), // 'info' | 'monitor' | 'attention' | 'urgent' | 'pending' | 'complete'
+    // Severity: importance/priority level (how urgent is this?)
+    // Values: 'urgent' | 'attention' | 'monitor' | 'info'
+    severity: text('severity'),
+    // Status: workflow state (where is this in the triage workflow?)
+    // Values: 'inbox' | 'in_progress' | 'done'
+    status: text('status').default('inbox'),
     direction: text('direction'), // 'bullish' | 'bearish' | 'neutral' - net direction of position(s)
     recommendedAction: text('recommended_action'),
     notes: text('notes'),
@@ -729,6 +734,8 @@ export const triageRecords = pgTable(
       table.positionId,
       table.snapshotDate
     ),
+    statusIdx: index('idx_triage_status').on(table.status),
+    severityIdx: index('idx_triage_severity').on(table.severity),
   })
 );
 
@@ -775,7 +782,10 @@ export const blotterActions: any = pgTable(
     followUpRequired: boolean('follow_up_required'),
     followUpDate: date('follow_up_date'),
     completed: boolean('completed'),
-    severityOverride: text('severity_override'), // 'info' | 'monitor' | 'attention' | 'urgent' | 'pending' | 'complete'
+    // Severity/Status override set by user action
+    // Values: 'info' (dismissed), 'monitor' (monitoring), 'in_progress' (trade pending), 'done' (completed)
+    // Note: This column stores both severity overrides and workflow status - see docs/CLEANUP_PLAN.md #ENH-047
+    severityOverride: text('severity_override'),
     overrideExpiresDate: date('override_expires_date'), // null = permanent override
     monitorDays: integer('monitor_days'), // For MONITOR actions: days before reverting
     tradeReason: text('trade_reason'), // Explanation for the trade action taken (for QUANTITY_CHANGE triggers)
@@ -1587,12 +1597,15 @@ export const thesisTriageRecords = pgTable(
     // Raw matched results (for audit)
     matchedResults: jsonb('matched_results').notNull().default([]),
 
-    // Triage classification
-    severity: text('severity').notNull(),  // 'critical' | 'high' | 'medium' | 'low' | 'info'
-    urgency: text('urgency').notNull(),  // 'immediate' | 'today' | 'this_week' | 'when_convenient'
-
-    // User action tracking
-    status: text('status').notNull().default('pending'),  // 'pending' | 'in_review' | 'actioned' | 'dismissed'
+    // Triage classification (standardized pattern - see docs/CLEANUP_PLAN.md #ENH-047)
+    // Severity: importance/priority level (how urgent is this?)
+    // Values: 'urgent' | 'attention' | 'monitor' | 'info'
+    severity: text('severity').notNull(),
+    // Status: workflow state (where is this in the triage workflow?)
+    // Values: 'inbox' | 'in_progress' | 'done'
+    status: text('status').notNull().default('inbox'),
+    // Legacy field - kept for migration, will be removed after data migration
+    urgency: text('urgency'),  // DEPRECATED: was 'immediate' | 'today' | 'this_week' | 'when_convenient'
     userNotes: text('user_notes'),
     actionsTaken: jsonb('actions_taken').default([]),
 

@@ -883,10 +883,10 @@ async function reconcilePendingTradeActions(
   strategyId: string | null,
   snapshotDate: string
 ): Promise<boolean> {
-  // Find pending TRADE actions for this position/strategy
+  // Find in-progress TRADE actions for this position/strategy
   const whereConditions = [
     eq(blotterActions.actionDetail, 'TRADE'),
-    eq(blotterActions.severityOverride, 'pending'),
+    eq(blotterActions.severityOverride, 'in_progress'),
   ];
 
   if (positionId) {
@@ -909,21 +909,21 @@ async function reconcilePendingTradeActions(
     return false;
   }
 
-  // Update each pending action to 'complete'
+  // Update each in-progress action to 'done'
   for (const action of pendingActions) {
     // Update blotter action
     await db
       .update(blotterActions)
       .set({
-        severityOverride: 'complete',
+        severityOverride: 'done',
         completed: true,
       })
       .where(eq(blotterActions.id, action.id));
 
       // Find and update associated triage record if it exists
-      // Match by positionId/strategyId and severity = 'pending'
+      // Match by positionId/strategyId and status = 'in_progress'
       const triageWhereConditions = [
-        eq(triageRecords.severity, 'pending'),
+        eq(triageRecords.status, 'in_progress'),
       ];
 
       if (positionId) {
@@ -937,22 +937,22 @@ async function reconcilePendingTradeActions(
         triageWhereConditions.push(eq(triageRecords.recommendedAction, action.triageFlagAtAction));
       }
 
-      // Get the most recent pending triage record
-      const pendingTriage = await db
+      // Get the most recent in-progress triage record
+      const inProgressTriage = await db
         .select()
         .from(triageRecords)
         .where(and(...triageWhereConditions))
         .orderBy(desc(triageRecords.createdAt))
         .limit(1);
 
-      if (pendingTriage.length > 0) {
+      if (inProgressTriage.length > 0) {
         await db
           .update(triageRecords)
           .set({
-            severity: 'complete',
+            status: 'done',
             updatedAt: new Date(),
           })
-          .where(eq(triageRecords.id, pendingTriage[0].id));
+          .where(eq(triageRecords.id, inProgressTriage[0].id));
       }
   }
 

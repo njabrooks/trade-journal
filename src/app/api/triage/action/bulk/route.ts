@@ -61,32 +61,48 @@ export async function POST(request: NextRequest) {
 
     const actionClass = actionClassMap[actionType] || "NOTE_ONLY";
 
-    // Determine severity override and expiration based on action type
-    let severityOverride: string | null = null;
+    // Determine triage record updates and blotter severity override based on action type
+    // Note: Triage records have separate status (workflow) and severity (importance) fields
+    // Blotter actions use severityOverride column for both severity overrides and workflow status
+    let triageStatusUpdate: string | null = null;  // Status for triage record
+    let triageSeverityUpdate: string | null = null;  // Severity for triage record (only for overrides)
+    let blotterSeverityOverride: string | null = null;  // Value for blotter_actions.severity_override
     let overrideExpiresDate: string | null = null;
     let monitorDaysValue: number | null = null;
 
     if (actionType === "DISMISS") {
-      severityOverride = "info";
+      // Dismiss: mark as done, override severity to 'info'
+      triageStatusUpdate = "done";
+      triageSeverityUpdate = "info";
+      blotterSeverityOverride = "info";
       overrideExpiresDate = null;
     } else if (actionType === "MONITOR") {
-      severityOverride = "monitor";
+      // Monitor: keep in_progress, override severity to 'monitor'
+      triageStatusUpdate = "in_progress";
+      triageSeverityUpdate = "monitor";
+      blotterSeverityOverride = "monitor";
       const days = monitorDays || 7;
       monitorDaysValue = days;
       const expiresDate = new Date();
       expiresDate.setDate(expiresDate.getDate() + days);
       overrideExpiresDate = expiresDate.toISOString().split("T")[0];
     } else if (actionType === "TRADE") {
-      severityOverride = "pending";
-      // For QUANTITY_CHANGE with TRADE action, set to 'complete' when trade reason and stage are provided
+      // Trade: mark workflow status
       if (commonTrigger === "QUANTITY_CHANGE" && tradeReason && tradeStage) {
-        severityOverride = "complete";
+        // Already validated trade - mark as done
+        triageStatusUpdate = "done";
+        blotterSeverityOverride = "done";
+      } else {
+        // Trade action in progress
+        triageStatusUpdate = "in_progress";
+        blotterSeverityOverride = "in_progress";
       }
     } else if (actionType === "UPDATE") {
       if (commonTrigger === "CONFIRM_STRATEGIES") {
-        severityOverride = "complete";
+        triageStatusUpdate = "done";
+        blotterSeverityOverride = "done";
       }
-      // For PROVIDE_STRATEGY_METADATA, we'd need more data, so we'll leave severityOverride as null
+      // For PROVIDE_STRATEGY_METADATA, we'd need more data, so we'll leave updates as null
     }
 
     // Handle TRADE action with multiple positions
@@ -249,7 +265,7 @@ export async function POST(request: NextRequest) {
                 notes: notesJson,
                 qtyChange: tradePosition.quantity.toString(), // Signed quantity (negative for SELL, positive for BUY) - matching uses absolute values
                 completed: false,
-                severityOverride: 'pending', // Will be updated to 'complete' after matching
+                severityOverride: 'in_progress',  // Workflow status: trade action in progress
                 tradeReason: tradeReason,
                 tradeStage: tradeStage,
                 source: 'triage_action',
@@ -274,16 +290,18 @@ export async function POST(request: NextRequest) {
             continue;
           }
 
-          // Update triage record severity after all Trade Actions are created and matched
-          // For Trade Actions, severity will be updated to 'complete' after matching (handled by matching logic)
-          // For QUANTITY_CHANGE with Trade Actions, set to 'complete' if all required fields provided
-          if (severityOverride) {
+          // Update triage record status (and severity if overridden)
+          const triageUpdate: Record<string, unknown> = { updatedAt: new Date() };
+          if (triageStatusUpdate) {
+            triageUpdate.status = triageStatusUpdate;
+          }
+          if (triageSeverityUpdate) {
+            triageUpdate.severity = triageSeverityUpdate;
+          }
+          if (Object.keys(triageUpdate).length > 1) {
             await db
               .update(triageRecords)
-              .set({
-                severity: severityOverride,
-                updatedAt: new Date(),
-              })
+              .set(triageUpdate)
               .where(eq(triageRecords.id, triage.id));
           }
 
@@ -297,10 +315,12 @@ export async function POST(request: NextRequest) {
             triageRecordId: triage.id,
             previousState: {
               severity: previousSeverity,
+              status: triage.status,
               recommendedAction: triage.recommendedAction,
             },
             newState: {
-              severity: severityOverride,
+              severity: triageSeverityUpdate || previousSeverity,
+              status: triageStatusUpdate,
               actionType: actionType,
               tradeReason,
               tradeStage,
@@ -408,8 +428,8 @@ export async function POST(request: NextRequest) {
             actionDetail: actionType,
             reasonCode: triage.recommendedAction || null,
             notes: notes || triage.notes || null,
-            completed: actionType === "UPDATE",
-            severityOverride,
+            completed: triageStatusUpdate === "done",
+            severityOverride: blotterSeverityOverride,
             overrideExpiresDate,
             monitorDays: monitorDaysValue,
             tradeReason: tradeReason || null,
@@ -423,14 +443,18 @@ export async function POST(request: NextRequest) {
         // REMOVED: matchTriageActionToTradeBlotter - blotter system deprecated, replaced by journal
         // Journal entries now serve as the primary audit trail
 
-        // Update triage record severity
-        if (severityOverride && (actionType === "MONITOR" || actionType === "DISMISS" || actionType === "TRADE" || actionType === "UPDATE")) {
+        // Update triage record status (and severity if overridden)
+        const triageUpdateNonTrade: Record<string, unknown> = { updatedAt: new Date() };
+        if (triageStatusUpdate) {
+          triageUpdateNonTrade.status = triageStatusUpdate;
+        }
+        if (triageSeverityUpdate) {
+          triageUpdateNonTrade.severity = triageSeverityUpdate;
+        }
+        if (Object.keys(triageUpdateNonTrade).length > 1) {
           await db
             .update(triageRecords)
-            .set({
-              severity: severityOverride,
-              updatedAt: new Date(),
-            })
+            .set(triageUpdateNonTrade)
             .where(eq(triageRecords.id, triage.id));
         }
 
@@ -451,10 +475,12 @@ export async function POST(request: NextRequest) {
           triageRecordId: triage.id,
           previousState: {
             severity: previousSeverity,
+            status: triage.status,
             recommendedAction: triage.recommendedAction,
           },
           newState: {
-            severity: severityOverride || previousSeverity,
+            severity: triageSeverityUpdate || previousSeverity,
+            status: triageStatusUpdate,
             actionType: actionType,
             actionClass,
             monitorDays: monitorDaysValue,

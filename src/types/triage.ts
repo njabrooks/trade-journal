@@ -4,6 +4,10 @@
  * These types support a unified triage inbox that displays records from:
  * - Position/Strategy triage (triage_records table)
  * - Thesis triage (thesis_triage_records table)
+ *
+ * Standardized pattern (see docs/CLEANUP_PLAN.md #ENH-047):
+ * - Status: workflow state ('inbox' | 'in_progress' | 'done')
+ * - Severity: importance level ('urgent' | 'attention' | 'monitor' | 'info')
  */
 
 import type { TriageQueueRecord, ThesisTriageQueueRecordFull } from "@/db/queries/triage";
@@ -11,11 +15,15 @@ import type { TriageQueueRecord, ThesisTriageQueueRecordFull } from "@/db/querie
 // Object types that can appear in the unified triage queue
 export type TriageObjectType = "position" | "strategy" | "asset_thesis" | "macro_thesis";
 
-// Unified status values for display
-// Position/Strategy uses: urgent, attention, monitor, info, pending, complete
-// Thesis uses: pending, in_review, actioned, dismissed
-// We preserve original values and let UI handle display mapping
-export type TriageStatus = string;
+// Standardized status values (workflow state)
+export type TriageStatusValue = "inbox" | "in_progress" | "done";
+
+// Standardized severity values (importance level)
+export type TriageSeverityValue = "urgent" | "attention" | "monitor" | "info";
+
+// For backwards compatibility, allow string
+export type TriageStatus = TriageStatusValue | string;
+export type TriageSeverity = TriageSeverityValue | string;
 
 /**
  * Unified triage record for display in the combined inbox
@@ -29,7 +37,8 @@ export interface UnifiedTriageRecord {
 
   // Common display fields
   trigger: string; // recommendedAction (position/strategy) or triageRule (thesis)
-  status: TriageStatus; // severity (position/strategy) or status (thesis)
+  status: TriageStatus; // Workflow state: 'inbox' | 'in_progress' | 'done'
+  severity: TriageSeverity | null; // Importance: 'urgent' | 'attention' | 'monitor' | 'info'
   date: Date; // snapshotDate (position/strategy) or createdAt (thesis)
 
   // Direction indicator (bullish/bearish/neutral) for thesis records
@@ -92,7 +101,8 @@ export function mapPositionTriageToUnified(record: TriageQueueRecord): UnifiedTr
     objectType,
     objectId: objectType === "strategy" ? (record.strategyId ?? record.id) : (record.positionId ?? record.id),
     trigger: record.recommendedAction ?? "unknown",
-    status: record.severity ?? "pending",
+    status: record.status ?? "inbox",
+    severity: record.severity,
     date: new Date(record.snapshotDate),
     direction: record.direction,
     strategyId: record.strategyId,
@@ -120,6 +130,7 @@ export function mapThesisTriageToUnified(record: ThesisTriageQueueRecordFull): U
     objectId: record.thesisId,
     trigger,
     status: record.status,
+    severity: record.severity,
     date: record.createdAt,
     // Direction for visual indicator (bullish/bearish/neutral)
     direction: record.direction,

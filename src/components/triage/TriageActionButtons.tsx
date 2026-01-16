@@ -1027,11 +1027,11 @@ export function TriageActionButtons({
       case "TRADE":
         return "Record a trade decision (close, adjust, hedge, roll, reduce, add, etc.)";
       case "MONITOR":
-        return "Monitor this trigger for a specified period. Severity will be set to 'monitor' and revert after the period.";
+        return "Monitor this trigger for a specified period. Status will be 'in progress' and severity set to 'monitor'.";
       case "DISMISS":
-        return "Dismiss this trigger. Severity will be set to 'info' permanently.";
+        return "Dismiss this trigger permanently. Status will be 'done' with severity 'info'.";
       case "UPDATE":
-        return "Update metadata or complete forms. Severity will be set to 'complete'.";
+        return "Update metadata or complete forms. Status will be 'done'.";
     }
   };
 

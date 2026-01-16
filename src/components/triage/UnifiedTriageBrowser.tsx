@@ -31,14 +31,15 @@ interface UnifiedTriageBrowserProps {
 }
 
 type ObjectTypeFilter = 'all' | TriageObjectType;
-type SortColumn = 'title' | 'objectType' | 'trigger' | 'status' | 'date';
+type SortColumn = 'title' | 'objectType' | 'trigger' | 'severity' | 'status' | 'date';
 type SortDirection = 'asc' | 'desc';
 type GroupBy = 'none' | 'status';
 type BaseFilter = 'needs_action' | 'all';
 type TypeFilter = 'all' | 'macro_thesis' | 'asset_thesis' | 'positions_strategies';
 
-// Statuses that require action (shown in "Needs Action" view)
-const ACTION_STATUSES = ['urgent', 'attention'];
+// Severities that require action (shown in "Needs Action" view)
+// Note: Status is workflow state (inbox/in_progress/done), severity is importance level
+const ACTION_SEVERITIES = ['urgent', 'attention'];
 
 // Get detail page URL for a triage record (returns null if no detail page exists)
 function getDetailUrl(record: UnifiedTriageRecord): string | null {
@@ -121,7 +122,11 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
 
     // Base filter (applied first)
     if (baseFilter === 'needs_action') {
-      result = result.filter((r) => ACTION_STATUSES.includes(r.status));
+      // Filter by severity (importance level) AND exclude completed items
+      result = result.filter((r) =>
+        r.status !== 'done' &&
+        ACTION_SEVERITIES.includes(r.severity ?? '')
+      );
     }
     // 'all' shows everything
 
@@ -186,10 +191,15 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
           aVal = a.trigger.toLowerCase();
           bVal = b.trigger.toLowerCase();
           break;
+        case 'severity':
+          // Severity order (importance): urgent > attention > monitor > info
+          aVal = getSeverityOrder(a.severity);
+          bVal = getSeverityOrder(b.severity);
+          break;
         case 'status':
-          // Use severity order for sorting
-          aVal = getStatusOrder(a.status);
-          bVal = getStatusOrder(b.status);
+          // Status order (workflow): inbox > in_progress > done
+          aVal = getWorkflowStatusOrder(a.status);
+          bVal = getWorkflowStatusOrder(b.status);
           break;
         case 'date':
         default:
@@ -210,22 +220,27 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
   const groupedRecords = useMemo(() => {
     if (groupBy !== 'status') return null;
 
-    // Define status groups in order
+    // Define severity groups in order (now using severity field, not status)
+    // Status: workflow state (inbox/in_progress/done)
+    // Severity: importance level (urgent/attention/monitor/info)
     const severityGroups = [
-      { key: 'urgent', label: 'Urgent', statuses: ['urgent', 'critical', 'immediate'] },
-      { key: 'attention', label: 'Needs Attention', statuses: ['attention', 'high', 'today'] },
-      { key: 'monitor', label: 'Monitor', statuses: ['monitor', 'medium', 'this_week'] },
-      { key: 'info', label: 'Info / Low Priority', statuses: ['info', 'low', 'pending', 'in_review', 'when_convenient'] },
-      { key: 'complete', label: 'Completed', statuses: ['complete', 'actioned', 'dismissed'] },
+      { key: 'urgent', label: 'Urgent', severities: ['urgent'] },
+      { key: 'attention', label: 'Needs Attention', severities: ['attention'] },
+      { key: 'monitor', label: 'Monitor', severities: ['monitor'] },
+      { key: 'info', label: 'Info', severities: ['info'] },
+      { key: 'done', label: 'Completed', statuses: ['done'] },  // Group by status = done
     ];
 
     const groups: Array<{ key: string; label: string; records: UnifiedTriageRecord[] }> = [];
 
     for (const group of severityGroups) {
-      // Group by status only (status = severity for thesis triage)
-      const groupRecords = filteredAndSortedRecords.filter((r) =>
-        group.statuses.includes(r.status)
-      );
+      // Group by severity (or status for 'done' group)
+      const groupRecords = filteredAndSortedRecords.filter((r) => {
+        if (group.statuses) {
+          return group.statuses.includes(r.status);
+        }
+        return group.severities?.includes(r.severity ?? '') && r.status !== 'done';
+      });
 
       if (groupRecords.length > 0) {
         groups.push({
@@ -318,6 +333,15 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
             </Badge>
           </td>
 
+          {/* Severity */}
+          <td className="px-4 py-3 text-center">
+            {record.severity && (
+              <Badge className={getSeverityBadgeColor(record.severity)}>
+                {formatStatusLabel(record.severity)}
+              </Badge>
+            )}
+          </td>
+
           {/* Status */}
           <td className="px-4 py-3 text-center">
             <Badge className={getStatusBadgeColor(record.status)}>
@@ -350,7 +374,7 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
         {/* Expanded Details Row */}
         {isExpanded && (
           <tr className="bg-slate-50 border-b">
-            <td colSpan={6} className="px-4 py-4">
+            <td colSpan={7} className="px-4 py-4">
               <ExpandedTriageDetail
                 record={record}
                 onDismiss={() => handleDismiss(record.id, record)}
@@ -373,11 +397,11 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
   const handleDismiss = async (recordId: string, record: UnifiedTriageRecord) => {
     try {
       if (record.thesisTriageRecord) {
-        // Thesis triage
+        // Thesis triage - set status to 'done' with severity 'info' (dismissed)
         await fetch(`/api/thesis-triage/${recordId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'dismissed' }),
+          body: JSON.stringify({ status: 'done', severity: 'info' }),
         });
       } else {
         // Position/strategy triage
@@ -419,7 +443,7 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
           className="gap-2"
         >
           <Layers className="h-4 w-4" />
-          Group by Status
+          Group by Severity
         </Button>
 
         <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
@@ -609,6 +633,15 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
                   </th>
                   <th
                     className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    onClick={() => handleSort('severity')}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      Severity
+                      {getSortIcon('severity')}
+                    </div>
+                  </th>
+                  <th
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -635,7 +668,7 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
                     <Fragment key={group.key}>
                       {/* Group Header */}
                       <tr className={`${getSeverityGroupHeaderColor(group.key)}`}>
-                        <td colSpan={6} className="px-4 py-2">
+                        <td colSpan={7} className="px-4 py-2">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-sm">
                               {group.label}
@@ -682,37 +715,59 @@ function DirectionIcon({ direction }: { direction: string }) {
 
 // Helper functions
 
-function getStatusOrder(status: string): number {
-  // Position/strategy severities
-  const severityOrder: Record<string, number> = {
-    urgent: 10,
-    critical: 9,
-    attention: 8,
-    high: 7,
-    monitor: 6,
-    medium: 5,
-    info: 4,
-    low: 3,
-    pending: 2,
-    in_review: 1,
-    complete: 0,
-    actioned: 0,
-    dismissed: -1,
+// Severity order for sorting (importance level: urgent > attention > monitor > info)
+function getSeverityOrder(severity: string | null | undefined): number {
+  const order: Record<string, number> = {
+    urgent: 4,
+    critical: 4,  // Legacy alias
+    attention: 3,
+    high: 3,      // Legacy alias
+    monitor: 2,
+    medium: 2,    // Legacy alias
+    info: 1,
+    low: 1,       // Legacy alias
   };
-  return severityOrder[status] ?? 0;
+  return order[severity ?? ''] ?? 0;
 }
 
+// Workflow status order for sorting (workflow state: inbox > in_progress > done)
+function getWorkflowStatusOrder(status: string): number {
+  const order: Record<string, number> = {
+    inbox: 3,
+    in_progress: 2,
+    done: 1,
+    // Legacy values
+    pending: 3,
+    in_review: 2,
+    complete: 1,
+    actioned: 1,
+    dismissed: 0,
+  };
+  return order[status] ?? 0;
+}
+
+// Severity badge colors (importance level: urgent > attention > monitor > info)
+function getSeverityBadgeColor(severity: string): string {
+  const colors: Record<string, string> = {
+    urgent: 'bg-rose-100 text-rose-700',
+    critical: 'bg-rose-100 text-rose-700',  // Legacy alias
+    attention: 'bg-amber-100 text-amber-700',
+    high: 'bg-amber-100 text-amber-700',  // Legacy alias
+    monitor: 'bg-blue-100 text-blue-700',
+    medium: 'bg-blue-100 text-blue-700',  // Legacy alias
+    info: 'bg-slate-100 text-slate-600',
+    low: 'bg-slate-100 text-slate-600',  // Legacy alias
+  };
+  return colors[severity] ?? 'bg-slate-100 text-slate-600';
+}
+
+// Status badge colors (workflow state: inbox > in_progress > done)
 function getStatusBadgeColor(status: string): string {
   const colors: Record<string, string> = {
-    // Position/strategy severities
-    urgent: 'bg-rose-100 text-rose-700',
-    critical: 'bg-rose-100 text-rose-700',
-    attention: 'bg-amber-100 text-amber-700',
-    high: 'bg-amber-100 text-amber-700',
-    monitor: 'bg-blue-100 text-blue-700',
-    medium: 'bg-blue-100 text-blue-700',
-    info: 'bg-slate-100 text-slate-700',
-    low: 'bg-slate-100 text-slate-700',
+    inbox: 'bg-yellow-100 text-yellow-700',
+    in_progress: 'bg-purple-100 text-purple-700',
+    done: 'bg-emerald-100 text-emerald-700',
+    // Legacy values (for backwards compatibility)
     pending: 'bg-yellow-100 text-yellow-700',
     in_review: 'bg-purple-100 text-purple-700',
     complete: 'bg-emerald-100 text-emerald-700',
@@ -776,7 +831,8 @@ function getSeverityGroupHeaderColor(groupKey: string): string {
     attention: 'bg-amber-100 text-amber-800 border-b-2 border-amber-200',
     monitor: 'bg-blue-100 text-blue-800 border-b-2 border-blue-200',
     info: 'bg-slate-100 text-slate-700 border-b-2 border-slate-200',
-    complete: 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-200',
+    done: 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-200',
+    complete: 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-200',  // Legacy alias
     other: 'bg-gray-100 text-gray-700 border-b-2 border-gray-200',
   };
   return colors[groupKey] ?? 'bg-slate-100 text-slate-700';

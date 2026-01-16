@@ -100,11 +100,9 @@ Add endpoints to list unlinked positions/trades. Display in table with bulk-sele
 
 ## Planned - Medium Priority
 
-### #ENH-020-playbook: Strategy Playbook Tab
-**Priority**: Medium | **Effort**: 8-10 hours | **Phase**: 3+
-**PRD**: Section 3 (Strategies), Section 6 (Decision Capture)
-
-Entry/exit rules, position sizing guidelines, risk management checklist, trade journal integration.
+### ~~#ENH-020-playbook: Strategy Playbook Tab~~ (ABANDONED)
+**Status**: Abandoned (2026-01-16)
+**Reason**: Playbook system was removed - it was only used for stateCode configuration which has been replaced by the Signals system. Entry/exit rules and risk management now handled through signals and triage.
 
 ---
 
@@ -222,24 +220,6 @@ Multiple IBKR accounts with per-account Flex queries. Foundation for multi-excha
 **Priority**: Medium | **Effort**: 2-4 hours | **Phase**: Backlog (Quick Win)
 
 Add "Link to Thesis" button on claim detail page. Reuse existing ConvertClaimToEntityDialog.
-
----
-
-### #ENH-047: Triage Severity/Status Separation
-**Priority**: Medium | **Effort**: 3-5 days | **Phase**: 5+ (Technical Debt)
-**PRD**: Section 6 (Workflow & Triage Engine)
-
-Separate workflow status from severity level in `triage_records` table. Currently `severity` field holds both severity levels (`info`, `attention`, `urgent`) and workflow states (`pending`, `complete`).
-
-**Scope:** ~30 file changes across queries, API routes, derived logic, UI components.
-
-**Deliverables**:
-- Add `status` column to `triage_records` table
-- Migrate 'pending'/'complete' values to `status`
-- Update code to use proper columns
-- Align with `thesis_triage_records` pattern
-
-**See:** [CLEANUP_PLAN.md](CLEANUP_PLAN.md#5-triage-severitystatus-overload-technical-debt) for full analysis.
 
 ---
 
@@ -375,6 +355,7 @@ For detailed specifications of completed work, see [docs/archive/completed-enhan
 
 | Phase | Date | Key Deliverables |
 |-------|------|------------------|
+| #ENH-047 | 2026-01-16 | Triage severity/status separation - clean workflow vs importance fields |
 | 3.2A-B | 2026-01-05 | Validation assessment workflow, database recording, status history UI |
 | 2.7 | 2025-12-31 | Unified browsers for all hierarchy entities (9 of 11 complete) |
 | 2.6 | 2025-12-29 | Research UX, claims browser, hierarchy linking, terminology standardization |

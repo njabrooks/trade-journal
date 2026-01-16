@@ -20,6 +20,7 @@ export async function PATCH(
     }
 
     const previousStatus = triageRecord.status;
+    const previousSeverity = triageRecord.severity;
 
     const update: {
       status?: string;
@@ -41,21 +42,26 @@ export async function PATCH(
 
     await updateThesisTriageStatus(id, update);
 
-    // Log user action to journal
-    if (body.status === 'actioned' || body.status === 'dismissed') {
+    // Log user action to journal when status changes to 'done'
+    // Note: 'done' replaces old 'actioned'/'dismissed' values
+    // body.severity = 'info' indicates dismissed (vs. just completed)
+    if (body.status === 'done') {
+      const isDismissed = body.severity === 'info';
       await logToJournal({
         objectType: triageRecord.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
         objectId: triageRecord.thesisId,
         objectTitle: triageRecord.thesisTitle,
-        actionType: body.status === 'actioned' ? 'triage_actioned' : 'triage_dismissed',
-        actionDescription: `User ${body.status} triage: ${triageRecord.triageRule}${body.userNotes ? `. Notes: ${body.userNotes}` : ''}`,
+        actionType: isDismissed ? 'triage_dismissed' : 'triage_completed',
+        actionDescription: `User ${isDismissed ? 'dismissed' : 'completed'} triage: ${triageRecord.triageRule}${body.userNotes ? `. Notes: ${body.userNotes}` : ''}`,
         triageRecordId: id,
         previousState: {
           status: previousStatus,
+          severity: previousSeverity,
           triageRule: triageRecord.triageRule,
         },
         newState: {
           status: body.status,
+          severity: body.severity,
           completedBy: 'user',
           userNotes: body.userNotes,
         },

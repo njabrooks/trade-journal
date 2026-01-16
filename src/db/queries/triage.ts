@@ -4,7 +4,8 @@ import { strategies, triageRecords, thesisTriageRecords, macroTheses, assetThese
 import { toNumber } from "@/lib/numbers";
 
 export interface TriageQueueFilters {
-  severity?: string | string[]; // Array for multi-select
+  status?: string | string[]; // Workflow state: 'inbox' | 'in_progress' | 'done'
+  severity?: string | string[]; // Importance: 'urgent' | 'attention' | 'monitor' | 'info'
   contextLevel?: string | string[]; // Array for multi-select
   recommendedAction?: string[]; // Array for multi-select
   strategyKey?: string[]; // Array for multi-select
@@ -14,7 +15,8 @@ export interface TriageQueueFilters {
 
 export interface TriageQueueRecord {
   id: string;
-  severity: string | null;
+  status: string | null; // Workflow state: 'inbox' | 'in_progress' | 'done'
+  severity: string | null; // Importance: 'urgent' | 'attention' | 'monitor' | 'info'
   contextLevel: string;
   symbol: string;
   recommendedAction: string | null;
@@ -70,20 +72,32 @@ export async function getTriageQueue(
     ),
   ];
 
-  // Handle severity filtering
+  // Handle status filtering (workflow state)
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : filters.status !== "all"
+      ? [filters.status]
+      : [];
+    if (statusArray.length > 0) {
+      conditions.push(inArray(triageRecords.status, statusArray));
+    }
+  } else {
+    // Exclude completed records by default (when no status filter is set)
+    // This prevents showing historical CONFIRM_STRATEGIES records that are already done
+    conditions.push(ne(triageRecords.status, 'done'));
+  }
+
+  // Handle severity filtering (importance level)
   if (filters.severity) {
-    const severityArray = Array.isArray(filters.severity) 
-      ? filters.severity 
-      : filters.severity !== "all" 
-      ? [filters.severity] 
+    const severityArray = Array.isArray(filters.severity)
+      ? filters.severity
+      : filters.severity !== "all"
+      ? [filters.severity]
       : [];
     if (severityArray.length > 0) {
       conditions.push(inArray(triageRecords.severity, severityArray));
     }
-  } else {
-    // Exclude completed records by default (when no severity filter is set)
-    // This prevents showing historical CONFIRM_STRATEGIES records that are already complete
-    conditions.push(ne(triageRecords.severity, 'complete'));
   }
 
   if (filters.contextLevel) {
@@ -105,13 +119,20 @@ export async function getTriageQueue(
     conditions.push(inArray(strategies.strategyKey, filters.strategyKey));
   }
 
+  // Severity order for sorting by importance (urgent > attention > monitor > info)
   const severityOrder = sql<number>`CASE
-    WHEN ${triageRecords.severity} = 'urgent' THEN 5
-    WHEN ${triageRecords.severity} = 'attention' THEN 4
-    WHEN ${triageRecords.severity} = 'monitor' THEN 3
-    WHEN ${triageRecords.severity} = 'info' THEN 2
-    WHEN ${triageRecords.severity} = 'pending' THEN 1
-    WHEN ${triageRecords.severity} = 'complete' THEN 0
+    WHEN ${triageRecords.severity} = 'urgent' THEN 4
+    WHEN ${triageRecords.severity} = 'attention' THEN 3
+    WHEN ${triageRecords.severity} = 'monitor' THEN 2
+    WHEN ${triageRecords.severity} = 'info' THEN 1
+    ELSE 0
+  END`;
+
+  // Status order for sorting by workflow state (inbox > in_progress > done)
+  const statusOrder = sql<number>`CASE
+    WHEN ${triageRecords.status} = 'inbox' THEN 3
+    WHEN ${triageRecords.status} = 'in_progress' THEN 2
+    WHEN ${triageRecords.status} = 'done' THEN 1
     ELSE 0
   END`;
 
@@ -161,6 +182,7 @@ export async function getTriageQueue(
   const rows = await db
     .select({
       id: triageRecords.id,
+      status: triageRecords.status,
       severity: triageRecords.severity,
       contextLevel: triageRecords.contextLevel,
       symbol: triageRecords.symbol,
@@ -184,6 +206,7 @@ export async function getTriageQueue(
 
   let records: TriageQueueRecord[] = rows.map((row) => ({
     id: row.id,
+    status: row.status,
     severity: row.severity,
     contextLevel: row.contextLevel,
     symbol: row.symbol,
@@ -262,20 +285,32 @@ export async function getTriageQueueForStrategy(
     ),
   ];
 
-  // Handle severity filtering
+  // Handle status filtering (workflow state)
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : filters.status !== "all"
+      ? [filters.status]
+      : [];
+    if (statusArray.length > 0) {
+      conditions.push(inArray(triageRecords.status, statusArray));
+    }
+  } else {
+    // Exclude completed records by default (when no status filter is set)
+    // This prevents showing historical CONFIRM_STRATEGIES records that are already done
+    conditions.push(ne(triageRecords.status, 'done'));
+  }
+
+  // Handle severity filtering (importance level)
   if (filters.severity) {
-    const severityArray = Array.isArray(filters.severity) 
-      ? filters.severity 
-      : filters.severity !== "all" 
-      ? [filters.severity] 
+    const severityArray = Array.isArray(filters.severity)
+      ? filters.severity
+      : filters.severity !== "all"
+      ? [filters.severity]
       : [];
     if (severityArray.length > 0) {
       conditions.push(inArray(triageRecords.severity, severityArray));
     }
-  } else {
-    // Exclude completed records by default (when no severity filter is set)
-    // This prevents showing historical CONFIRM_STRATEGIES records that are already complete
-    conditions.push(ne(triageRecords.severity, 'complete'));
   }
 
   if (filters.contextLevel) {
@@ -297,13 +332,20 @@ export async function getTriageQueueForStrategy(
     conditions.push(inArray(strategies.strategyKey, filters.strategyKey));
   }
 
+  // Severity order for sorting by importance (urgent > attention > monitor > info)
   const severityOrder = sql<number>`CASE
-    WHEN ${triageRecords.severity} = 'urgent' THEN 5
-    WHEN ${triageRecords.severity} = 'attention' THEN 4
-    WHEN ${triageRecords.severity} = 'monitor' THEN 3
-    WHEN ${triageRecords.severity} = 'info' THEN 2
-    WHEN ${triageRecords.severity} = 'pending' THEN 1
-    WHEN ${triageRecords.severity} = 'complete' THEN 0
+    WHEN ${triageRecords.severity} = 'urgent' THEN 4
+    WHEN ${triageRecords.severity} = 'attention' THEN 3
+    WHEN ${triageRecords.severity} = 'monitor' THEN 2
+    WHEN ${triageRecords.severity} = 'info' THEN 1
+    ELSE 0
+  END`;
+
+  // Status order for sorting by workflow state (inbox > in_progress > done)
+  const statusOrder = sql<number>`CASE
+    WHEN ${triageRecords.status} = 'inbox' THEN 3
+    WHEN ${triageRecords.status} = 'in_progress' THEN 2
+    WHEN ${triageRecords.status} = 'done' THEN 1
     ELSE 0
   END`;
 
@@ -350,6 +392,7 @@ export async function getTriageQueueForStrategy(
   const rows = await db
     .select({
       id: triageRecords.id,
+      status: triageRecords.status,
       severity: triageRecords.severity,
       contextLevel: triageRecords.contextLevel,
       symbol: triageRecords.symbol,
@@ -373,6 +416,7 @@ export async function getTriageQueueForStrategy(
 
   let records: TriageQueueRecord[] = rows.map((row) => ({
     id: row.id,
+    status: row.status,
     severity: row.severity,
     contextLevel: row.contextLevel,
     symbol: row.symbol,
@@ -422,6 +466,7 @@ export async function getTriageQueueForStrategy(
 }
 
 export interface TriageQueueCounts {
+  status: Record<string, number>;
   severity: Record<string, number>;
   contextLevel: Record<string, number>;
   recommendedAction: Record<string, number>;
@@ -447,6 +492,7 @@ export async function getTriageQueueCounts(
 
   if (!snapshotDate) {
     return {
+      status: {},
       severity: {},
       contextLevel: {},
       recommendedAction: {},
@@ -463,7 +509,7 @@ export async function getTriageQueueCounts(
       inArray(triageRecords.recommendedAction, historicalTriggers),
       eq(triageRecords.snapshotDate, snapshotDate)
     ),
-    ne(triageRecords.severity, 'complete'), // Exclude completed by default
+    ne(triageRecords.status, 'done'), // Exclude done by default
     or(
       isNull(strategies.status),
       ne(strategies.status, 'merged')
@@ -471,7 +517,18 @@ export async function getTriageQueueCounts(
   ];
 
   // Get counts for each dimension using SQL GROUP BY
-  const [severityRows, contextRows, actionRows, strategyRows] = await Promise.all([
+  const [statusRows, severityRows, contextRows, actionRows, strategyRows] = await Promise.all([
+    // Status counts
+    db
+      .select({
+        value: triageRecords.status,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(triageRecords)
+      .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+      .where(and(...baseConditions))
+      .groupBy(triageRecords.status),
+
     // Severity counts
     db
       .select({
@@ -518,6 +575,9 @@ export async function getTriageQueueCounts(
   ]);
 
   return {
+    status: Object.fromEntries(
+      statusRows.map((row) => [row.value ?? '', row.count])
+    ),
     severity: Object.fromEntries(
       severityRows.map((row) => [row.value ?? '', row.count])
     ),
@@ -538,11 +598,11 @@ export async function getTriageQueueCounts(
 // ============================================================================
 
 export interface ThesisTriageFilters {
-  status?: string[];  // 'pending' | 'in_review' | 'actioned' | 'dismissed'
-  severity?: string[];  // 'critical' | 'high' | 'medium' | 'low' | 'info'
+  status?: string[];  // 'inbox' | 'in_progress' | 'done'
+  severity?: string[];  // 'urgent' | 'attention' | 'monitor' | 'info'
   thesisType?: string[];  // 'macro' | 'asset'
   lifecycleStage?: string[];  // 'created' | 'claims_linked' | 'synthesized' | 'validated' | 'monitoring'
-  includeAll?: boolean;  // If true, include dismissed/complete records (for "All Triage" view)
+  includeAll?: boolean;  // If true, include done records (for "All Triage" view)
   thesisId?: string;  // Filter to specific thesis
 }
 
@@ -557,7 +617,7 @@ export interface ThesisTriageQueueRecord {
   triggerSource: string;
   triageRule: string | null;  // NEEDS_RESEARCH | PRODUCE_CORE_ARGUMENT | UPDATE_CORE_ARGUMENT | REVIEW_CONTENT | REVIEW_DATA
   severity: string;
-  urgency: string;
+  urgency: string | null;  // Deprecated, nullable (see #ENH-047)
   status: string;
   lifecycleStage: string | null;
   suggestedSkill: string | null;
@@ -588,8 +648,7 @@ export async function getThesisTriageQueue(
 
   // By default, only show non-completed records
   if (!filters.status || filters.status.length === 0) {
-    conditions.push(ne(thesisTriageRecords.status, 'actioned'));
-    conditions.push(ne(thesisTriageRecords.status, 'dismissed'));
+    conditions.push(ne(thesisTriageRecords.status, 'done'));
   } else {
     conditions.push(inArray(thesisTriageRecords.status, filters.status));
   }
@@ -628,22 +687,20 @@ export async function getThesisTriageQueue(
     .from(thesisTriageRecords)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(
-      // Sort by urgency (immediate first), then severity, then creation date
-      sql`CASE ${thesisTriageRecords.urgency}
-        WHEN 'immediate' THEN 1
-        WHEN 'today' THEN 2
-        WHEN 'this_week' THEN 3
-        WHEN 'when_convenient' THEN 4
-        ELSE 5
-      END`,
+      // Sort by severity (urgent first), then status, then creation date
       sql`CASE ${thesisTriageRecords.severity}
-        WHEN 'critical' THEN 1
-        WHEN 'high' THEN 2
-        WHEN 'medium' THEN 3
-        WHEN 'low' THEN 4
-        WHEN 'info' THEN 5
-        ELSE 6
-      END`,
+        WHEN 'urgent' THEN 4
+        WHEN 'attention' THEN 3
+        WHEN 'monitor' THEN 2
+        WHEN 'info' THEN 1
+        ELSE 0
+      END DESC`,
+      sql`CASE ${thesisTriageRecords.status}
+        WHEN 'inbox' THEN 3
+        WHEN 'in_progress' THEN 2
+        WHEN 'done' THEN 1
+        ELSE 0
+      END DESC`,
       desc(thesisTriageRecords.createdAt)
     );
 
@@ -667,10 +724,8 @@ export async function getThesisTriageQueueFull(
       conditions.push(inArray(thesisTriageRecords.status, filters.status));
     }
   } else if (!filters.status || filters.status.length === 0) {
-    conditions.push(ne(thesisTriageRecords.status, 'complete'));
-    conditions.push(ne(thesisTriageRecords.status, 'dismissed'));
-    // Also exclude legacy values for backwards compatibility
-    conditions.push(ne(thesisTriageRecords.status, 'actioned'));
+    // Exclude 'done' status by default (new standardized pattern)
+    conditions.push(ne(thesisTriageRecords.status, 'done'));
   } else {
     conditions.push(inArray(thesisTriageRecords.status, filters.status));
   }
@@ -741,14 +796,20 @@ export async function getThesisTriageQueueFull(
     )
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(
-      // Sort by status priority (attention > monitor > info > pending)
-      sql`CASE ${thesisTriageRecords.status}
+      // Sort by severity priority (importance level)
+      sql`CASE ${thesisTriageRecords.severity}
         WHEN 'urgent' THEN 1
         WHEN 'attention' THEN 2
         WHEN 'monitor' THEN 3
         WHEN 'info' THEN 4
-        WHEN 'pending' THEN 5
-        ELSE 6
+        ELSE 5
+      END`,
+      // Then by status priority (workflow state)
+      sql`CASE ${thesisTriageRecords.status}
+        WHEN 'inbox' THEN 1
+        WHEN 'in_progress' THEN 2
+        WHEN 'done' THEN 3
+        ELSE 4
       END`,
       desc(thesisTriageRecords.createdAt)
     );
@@ -807,10 +868,9 @@ export async function getThesisTriageQueueCounts(): Promise<{
   lifecycleStage: Record<string, number>;
   total: number;
 }> {
-  // Base condition: exclude completed records for counts
+  // Base condition: exclude 'done' records for counts (new standardized pattern)
   const baseConditions = [
-    ne(thesisTriageRecords.status, 'actioned'),
-    ne(thesisTriageRecords.status, 'dismissed'),
+    ne(thesisTriageRecords.status, 'done'),
   ];
 
   const [statusRows, severityRows, typeRows, lifecycleRows, totalRow] = await Promise.all([
@@ -853,7 +913,7 @@ export async function getThesisTriageQueueCounts(): Promise<{
       .where(and(...baseConditions))
       .groupBy(thesisTriageRecords.lifecycleStage),
 
-    // Total pending count
+    // Total count (excluding 'done')
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(thesisTriageRecords)
@@ -907,7 +967,8 @@ export async function updateThesisTriageStatus(
 
   if (update.status) {
     updateData.status = update.status;
-    if (update.status === 'actioned' || update.status === 'dismissed') {
+    // Set completion timestamp when status moves to 'done'
+    if (update.status === 'done') {
       updateData.completedAt = new Date();
       updateData.completedBy = update.completedBy || 'user';
     }

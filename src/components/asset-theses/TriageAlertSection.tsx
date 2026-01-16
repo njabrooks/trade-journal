@@ -84,9 +84,9 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
           throw new Error('Failed to fetch triage records');
         }
         const data = await response.json();
-        // Filter to show only pending/attention status (not dismissed/actioned)
+        // Filter to show only active records (status not 'done')
         const activeRecords = data.records.filter(
-          (r: TriageRecord) => r.status === 'pending' || r.status === 'attention' || r.status === 'info'
+          (r: TriageRecord) => r.status !== 'done'
         );
         setRecords(activeRecords);
         // Auto-expand the first REVIEW_CONTENT record if any
@@ -103,17 +103,21 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
     fetchTriage();
   }, [thesisId]);
 
-  const handleAction = async (recordId: string, action: 'actioned' | 'dismissed', notes?: string) => {
+  const handleAction = async (recordId: string, action: 'done' | 'dismissed', notes?: string) => {
     setActioningId(recordId);
     try {
+      // Map action to new status/severity pattern
+      // 'done' = completed successfully, 'dismissed' = completed but dismissed (severity = info)
+      const updateData = {
+        status: 'done' as const,
+        severity: action === 'dismissed' ? 'info' : undefined,
+        userNotes: notes,
+        completedBy: 'user',
+      };
       const response = await fetch(`/api/thesis-triage/${recordId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: action,
-          userNotes: notes,
-          completedBy: 'user',
-        }),
+        body: JSON.stringify(updateData),
       });
       if (!response.ok) {
         throw new Error('Failed to update triage record');
@@ -130,7 +134,7 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
   const handleVIUpdateSuccess = async () => {
     // After V&I status update, mark triage as actioned
     if (updateVIRecord) {
-      await handleAction(updateVIRecord.id, 'actioned', 'V&I status updated from triage review');
+      await handleAction(updateVIRecord.id, 'done', 'V&I status updated from triage review');
     }
     setUpdateVIRecord(null);
   };
@@ -398,7 +402,7 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
                   variant="outline"
                   className={record.aiAnalysis?.validationPointsAffected?.length ? '' : 'flex-1'}
                   disabled={actioningId === record.id}
-                  onClick={() => handleAction(record.id, 'actioned', 'Reviewed and acknowledged')}
+                  onClick={() => handleAction(record.id, 'done', 'Reviewed and acknowledged')}
                 >
                   {actioningId === record.id ? (
                     <span className="flex items-center gap-2">

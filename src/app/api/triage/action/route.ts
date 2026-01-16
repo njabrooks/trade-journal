@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const previousSeverity = triage.severity;
+    const previousStatus = triage.status;
 
     // Generate blotter ID
     const blotterId = `${triage.snapshotDate}_${triage.strategyId ?? "unknown"}_${Date.now()}`;
@@ -65,34 +66,46 @@ export async function POST(request: NextRequest) {
 
     const actionClass = actionClassMap[actionType] || "NOTE_ONLY";
 
-    // Determine severity override and expiration based on action type
-    let severityOverride: string | null = null;
+    // Determine triage record updates and blotter severity override based on action type
+    // Note: Triage records have separate status (workflow) and severity (importance) fields
+    // Blotter actions use severityOverride column for both severity overrides and workflow status
+    let triageStatusUpdate: string | null = null;  // Status for triage record
+    let triageSeverityUpdate: string | null = null;  // Severity for triage record (only for overrides)
+    let blotterSeverityOverride: string | null = null;  // Value for blotter_actions.severity_override
     let overrideExpiresDate: string | null = null;
     let monitorDaysValue: number | null = null;
 
     if (actionType === "DISMISS") {
-      severityOverride = "info";
+      // Dismiss: mark as done, override severity to 'info'
+      triageStatusUpdate = "done";
+      triageSeverityUpdate = "info";
+      blotterSeverityOverride = "info";  // Severity override for future triage computation
       overrideExpiresDate = null; // Permanent
     } else if (actionType === "MONITOR") {
-      severityOverride = "monitor";
+      // Monitor: keep in_progress, override severity to 'monitor'
+      triageStatusUpdate = "in_progress";
+      triageSeverityUpdate = "monitor";
+      blotterSeverityOverride = "monitor";  // Severity override for future triage computation
       const days = monitorDays || 7; // Default 7 days
       monitorDaysValue = days;
       const expiresDate = new Date();
       expiresDate.setDate(expiresDate.getDate() + days);
       overrideExpiresDate = expiresDate.toISOString().split("T")[0];
     } else if (actionType === "TRADE") {
-      // For QUANTITY_CHANGE with TRADE action, set to 'complete' when trade reason and stage are provided
+      // Trade: mark workflow status
       if (triage.recommendedAction === "QUANTITY_CHANGE" && tradeReason && tradeStage) {
-        severityOverride = "complete";
+        // Already validated trade - mark as done
+        triageStatusUpdate = "done";
+        blotterSeverityOverride = "done";
       } else {
-        // For other TRADE actions, set to 'pending' initially
-        // Will be updated to 'complete' after trade validation via quantity change detection
-        severityOverride = "pending";
+        // Trade action in progress - will be completed when quantity change detected
+        triageStatusUpdate = "in_progress";
+        blotterSeverityOverride = "in_progress";
       }
     } else if (actionType === "UPDATE") {
-      // For UPDATE actions (like LINK_STRATEGY_TO_THESIS), set to 'complete'
-      // The strategy confirmation dialog handles validation before calling this API
-      severityOverride = "complete";
+      // Update actions (like LINK_STRATEGY_TO_THESIS) - mark as done
+      triageStatusUpdate = "done";
+      blotterSeverityOverride = "done";
     }
 
     // Handle TRADE action with multiple positions
@@ -232,7 +245,7 @@ export async function POST(request: NextRequest) {
             notes: notesJson,
             qtyChange: tradePosition.quantity.toString(), // Signed quantity (negative for SELL, positive for BUY) - matching uses absolute values
             completed: false,
-            severityOverride: 'pending',
+            severityOverride: 'in_progress',  // Workflow status: trade action in progress
             tradeReason: tradeReason,
             tradeStage: tradeStage,
             source: 'triage_action',
@@ -256,14 +269,18 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Update triage record severity
-      if (severityOverride) {
+      // Update triage record status (and severity if overridden)
+      const triageUpdate: Record<string, unknown> = { updatedAt: new Date() };
+      if (triageStatusUpdate) {
+        triageUpdate.status = triageStatusUpdate;
+      }
+      if (triageSeverityUpdate) {
+        triageUpdate.severity = triageSeverityUpdate;
+      }
+      if (Object.keys(triageUpdate).length > 1) {
         await db
           .update(triageRecords)
-          .set({
-            severity: severityOverride,
-            updatedAt: new Date(),
-          })
+          .set(triageUpdate)
           .where(eq(triageRecords.id, triageId));
       }
 
@@ -277,10 +294,12 @@ export async function POST(request: NextRequest) {
         triageRecordId: triageId,
         previousState: {
           severity: previousSeverity,
+          status: previousStatus,
           recommendedAction: triage.recommendedAction,
         },
         newState: {
-          severity: severityOverride,
+          severity: triageSeverityUpdate || previousSeverity,
+          status: triageStatusUpdate,
           actionType: actionType,
           tradeReason,
           tradeStage,
@@ -359,8 +378,8 @@ export async function POST(request: NextRequest) {
       actionDetail: actionType,
       reasonCode: triage.recommendedAction || null,
       notes: notes || triage.notes || null,
-      completed: actionType === "UPDATE" || actionType === "MARK_REVIEWED",
-      severityOverride,
+      completed: triageStatusUpdate === "done",
+      severityOverride: blotterSeverityOverride,
       overrideExpiresDate,
       monitorDays: monitorDaysValue,
         tradeReason: tradeReason || null,
@@ -371,17 +390,18 @@ export async function POST(request: NextRequest) {
       })
       .returning({ id: blotterActions.id });
 
-    // Update triage record severity immediately for actions with overrides
-    // This provides immediate feedback to the user
-    // Note: For PROVIDE_STRATEGY_METADATA, only update if all fields are filled (severityOverride = 'complete')
-    // Otherwise, severityOverride will be null and we won't update, keeping the trigger active
-    if (severityOverride && (actionType === "MONITOR" || actionType === "DISMISS" || actionType === "TRADE" || actionType === "UPDATE")) {
+    // Update triage record status (and severity if overridden)
+    const triageUpdateNonTrade: Record<string, unknown> = { updatedAt: new Date() };
+    if (triageStatusUpdate) {
+      triageUpdateNonTrade.status = triageStatusUpdate;
+    }
+    if (triageSeverityUpdate) {
+      triageUpdateNonTrade.severity = triageSeverityUpdate;
+    }
+    if (Object.keys(triageUpdateNonTrade).length > 1) {
       await db
         .update(triageRecords)
-        .set({
-          severity: severityOverride,
-          updatedAt: new Date(),
-        })
+        .set(triageUpdateNonTrade)
         .where(eq(triageRecords.id, triageId));
     }
 
@@ -410,10 +430,12 @@ export async function POST(request: NextRequest) {
       triageRecordId: triageId,
       previousState: {
         severity: previousSeverity,
+        status: previousStatus,
         recommendedAction: triage.recommendedAction,
       },
       newState: {
-        severity: severityOverride || previousSeverity,
+        severity: triageSeverityUpdate || previousSeverity,
+        status: triageStatusUpdate,
         actionType: actionType,
         actionClass,
         monitorDays: monitorDaysValue,

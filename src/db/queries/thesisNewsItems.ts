@@ -25,7 +25,7 @@ export interface ThesisNewsItemWithTriage extends ThesisNewsItem {
     id: string;
     triggerType: string;
     severity: string;
-    urgency: string;
+    urgency: string | null;  // Deprecated, nullable
     status: string;
     createdAt: Date;
   } | null;
