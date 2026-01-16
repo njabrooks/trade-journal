@@ -45,15 +45,16 @@ npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psq
 
 **For Developers** (quick reference and navigation):
 - **CLAUDE.md** (this file) - Quick reference, common commands, file navigation
-- **[Terminology Guide](docs/terminology.md)** - Authoritative term definitions (PRD-aligned)
-- **[Research Workflow](251231-research-workflow.md)** - Complete research workflow guide
+- **[Terminology Guide](docs/features/terminology.md)** - Authoritative term definitions (PRD-aligned)
+- **[Current State](docs/CURRENT_STATE.md)** - Actual implementation state, state machines, cross-domain flows
+- **[Research Workflow](docs/features/research-workflow.md)** - Complete research workflow guide
 - **[Documentation Best Practices](DOCUMENTATION_BEST_PRACTICES.md)** - How to document work and link to big picture
 
 **For Architects** (system design and vision):
 - **[PRD v1.1](docs/PRD_v1.1.md)** - Product vision and requirements (locked)
-- **[System Architecture](docs/system_architecture_transition_plan.md)** - Implementation roadmap and transition plan
 - **[Future Enhancements](docs/FUTURE_ENHANCEMENTS.md)** - **Single source of truth** for all enhancements (past/present/future)
-- **[Implementation Progress](docs/implementation_progress.md)** - Phase completion tracking
+- **[Cleanup Plan](docs/CLEANUP_PLAN.md)** - Technical debt tracking and cleanup phases
+- **[System Architecture](docs/system_architecture_transition_plan.md)** - Implementation roadmap and transition plan
 
 **Operations**:
 - **[Database Mode Switch Runbook](docs/runbook-database-mode-switch.md)** - Switching between local and remote Supabase
@@ -122,11 +123,93 @@ React Frontend (ClaimsBrowser, ConvertClaimDialog)
 6. **Local-First Research Workflow** - Research processing happens locally via Claude Code skills, with Supabase as single source of truth
 7. **Provenance Tracking** - Automatic tracking from claims → theses via conversion metadata
 
+### Entity State Machines
+
+Key entities have status fields with defined transitions. For complete documentation, see `docs/CURRENT_STATE.md`.
+
+| Entity | Field | Values | Notes |
+|--------|-------|--------|-------|
+| MacroThesis | `status` | draft, active, inactive, invalidated | Lifecycle state |
+| MacroThesis | `workflowStatus` | needs_articulation, active, needs_review, archived | Parallel workflow track |
+| AssetThesis | `status` | draft, active, inactive, invalidated | Lifecycle state |
+| AssetThesis | `workflowStatus` | needs_articulation, active, needs_review, archived | Parallel workflow track |
+| MainClaim | `status` | unconfirmed, confirmed, rejected, invalidated, merged | Terminal states |
+| Signal | `status` | recommended, not_triggered, triggered, superseded | Event-driven |
+| TriageRecord | `severity` | info, monitor, attention, urgent, pending, complete | Escalation ladder |
+| Position | `isOpen` | true, false | Boolean toggle (closed when quantity = 0) |
+
+**Key Transitions:**
+```
+MainClaim:  unconfirmed → confirmed | rejected | invalidated | merged
+Signal:     recommended → not_triggered → triggered | superseded
+Thesis:     draft → active → inactive | invalidated (status)
+            needs_articulation → active → needs_review → archived (workflowStatus)
+```
+
+### Cross-Domain Data Flow
+
+```
+INGESTION (Entry Points)                    RESEARCH (Entry Points)
+┌──────────────────────┐                    ┌──────────────────────┐
+│ IBKR Flex API        │                    │ Transcripts/Articles │
+│ Massive.com          │                    │ (Local Markdown)     │
+└──────────┬───────────┘                    └──────────┬───────────┘
+           │                                           │
+           ▼                                           ▼
+┌──────────────────────┐                    ┌──────────────────────┐
+│ trades, positions    │                    │ research_artifacts   │
+│ underlyings          │                    │ research_insights    │
+└──────────┬───────────┘                    │ (claims_structure)   │
+           │                                └──────────┬───────────┘
+           │                                           │ auto-promote
+           │                                           ▼
+           │                                ┌──────────────────────┐
+           │                                │ main_claims          │
+           │                                │ claim_thesis_mappings│
+           │                                └──────────┬───────────┘
+           │                                           │
+           ▼                                           ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    BELIEF LAYER                                   │
+│  ┌─────────────────┐              ┌─────────────────┐            │
+│  │ macro_theses    │◄────────────►│ asset_theses    │            │
+│  │ (cross-asset)   │   linkage    │ (ticker-specific)│           │
+│  └────────┬────────┘              └────────┬────────┘            │
+│           └────────────┬───────────────────┘                     │
+│                        ▼                                         │
+│           ┌─────────────────────┐                                │
+│           │ thesis_triage_recs  │                                │
+│           └─────────────────────┘                                │
+└──────────────────────────────────────────────────────────────────┘
+                         │ evidence linkage
+                         ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    EXECUTION LAYER                                │
+│  ┌─────────────────┐              ┌─────────────────┐            │
+│  │ strategies      │◄────────────►│ positions       │            │
+│  │ (tactical)      │   contains   │ (live exposure) │            │
+│  └────────┬────────┘              └────────┬────────┘            │
+│           ▼                                ▼                     │
+│  ┌─────────────────┐              ┌─────────────────┐            │
+│  │ signals         │              │ triage_records  │            │
+│  └─────────────────┘              └─────────────────┘            │
+└──────────────────────────────────────────────────────────────────┘
+                         │ all events flow to
+                         ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                    JOURNAL LAYER                                  │
+│  ┌─────────────────┐              ┌─────────────────┐            │
+│  │ journal_entries │◄────────────►│ blotter_actions │            │
+│  │ (narrative)     │   linked     │ (structured)    │            │
+│  └─────────────────┘              └─────────────────┘            │
+└──────────────────────────────────────────────────────────────────┘
+```
+
 ## Key Directories
 
 ### `/src/app` - Next.js App Router
-- **Pages:** `/strategies`, `/triage`, `/blotter`, `/dashboard`, `/research/*`, `/theses/*`, `/asset-theses/*`, `/admin/*`
-- **API Routes:** `/api/ingest/*`, `/api/ibkr/*`, `/api/strategies/*`, `/api/triage/*`, `/api/blotter/*`, `/api/recompute/*`, `/api/research/*`
+- **Pages:** `/strategies`, `/triage`, `/journal`, `/dashboard`, `/research/*`, `/macro-theses/*`, `/asset-theses/*`, `/admin/*`
+- **API Routes:** `/api/ingest/*`, `/api/ibkr/*`, `/api/strategies/*`, `/api/triage/*`, `/api/journal/*`, `/api/recompute/*`, `/api/research/*`
 
 ### `/src/db` - Data Layer
 - **`schema.ts`** (705 lines) - Complete Drizzle ORM schema with relationships and indexes
@@ -137,9 +220,10 @@ React Frontend (ClaimsBrowser, ConvertClaimDialog)
 ### `/src/lib/derived` - Computation Engine
 Contains business logic for calculating derived insights from raw data:
 
-- **`triage.ts`** (1096 lines) - Position triage: DTE alerts, size thresholds, complexity flags, IV metrics
-- **`blotter.ts`** (1746 lines) - Trade aggregations, strategy matching, action generation
-- **`stateCode.ts`** - Position state determination (ITM/OTM, assignment risk, playbook states like "LC1", "RR2")
+- **`triage.ts`** (1259 lines) - Position triage: DTE alerts, size thresholds, complexity flags, IV metrics
+- **`thesisTriage.ts`** (550 lines) - Thesis triage rules (needs articulation, new claims)
+- **`signalEvaluation.ts`** (365 lines) - Auto signal evaluation for strategy triggers
+- **`blotter.ts`** (1805 lines) - Trade aggregations, blotter action generation (feeds journal)
 - **`strategyAuto.ts`** - Auto-linking trades to strategies based on templates
 - **`ivMetrics.ts`** - IV rank and IV percentile calculations from options chain snapshots
 - **`portfolio.ts`** - Portfolio-level aggregations (unrealized PnL, notional)
@@ -176,7 +260,7 @@ Contains business logic for calculating derived insights from raw data:
 Feature-based component organization:
 - **`ui/`** - Reusable primitives (Radix UI wrappers)
 - **`layout/`** - Shell, navigation, tabs
-- **`blotter/`**, **`triage/`**, **`strategies/`**, **`ibkr/`** - Feature-specific components
+- **`triage/`**, **`strategies/`**, **`signals/`**, **`ibkr/`**, **`journal/`** - Feature-specific components
 - **`research/`** - Research workflow components
   - `UnifiedClaimsBrowser.tsx` - Browse main claims with filtering, search, status management
   - `ExpandableEvidenceClaim.tsx` - Expandable card showing full Toulmin framework for evidence claims
@@ -224,7 +308,7 @@ Key tables (see `/src/db/schema.ts` for full schema):
 ### Core Entities
 - **`accounts`** - Broker accounts
 - **`underlyings`** - Ticker metadata (spot, IV30, ATR20, RV20, conid)
-- **`macro_theses`** - Cross-asset beliefs with conviction, status, and evidence linkage
+- **`macro_theses`** - Cross-asset beliefs with confidence level, status, and evidence linkage
 - **`asset_theses`** - Asset-specific theses linked to underlyings and macro theses
 - **`strategies`** - User-defined trading strategies with entry context
 - **`trades`** - Individual trade executions
@@ -254,25 +338,25 @@ Key tables (see `/src/db/schema.ts` for full schema):
 
 ## Terminology Reference
 
-See `docs/terminology.md` for the authoritative terminology guide. Key concepts:
+See `docs/features/terminology.md` for the authoritative terminology guide. Key concepts:
 
 ### PRD-Aligned Terms (Use These)
 - **Macro Thesis / Macro Theses** - Cross-asset beliefs ✅ (implemented with claims provenance)
-- **Asset Thesis / Asset Thesiss** - Asset-specific theses about underlyings ✅ (implemented with claims provenance)
+- **Asset Thesis / Asset Theses** - Asset-specific theses about underlyings ✅ (implemented with claims provenance)
 - **Research Artifact** - Raw research content (transcript, article, note) ✅
 - **Research Insight** - Processed artifact with Toulmin claims structure ✅
 - **Claim** - Individual assertion from research with evidence/reasoning/backing ✅
 - **Strategies** - Tactical implementations ✅ (existing, aligns with PRD)
 - **Positions** - Live exposures ✅ (existing, aligns with PRD)
 - **Triage** - Evaluation of urgency/severity ✅ (existing, aligns perfectly)
-- **Journal** or **Decision Log** - Chronological log of decisions (⚠️ currently called "Blotter")
+- **Signals** - Strategy trigger rules (price_above, price_below, etc.) ✅ (implemented 2026-01-16)
+- **Journal** - Chronological log of decisions and events ✅ (`journal_entries` table)
 
 ### Implementation Terms (Keep As-Is)
 - **Underlying** - The financial instrument (reference data, not a belief)
 - **Strategy Template** - Reusable strategy pattern (tactical, not in PRD)
-- **State Code** - Playbook state identifier (LC1, RR2) (tactical, not in PRD)
 - **Playbook** - Tactical rules for strategy states (tactical, not in PRD)
-- **Blotter** - Current term for decision log (will evolve to "Journal")
+- **Blotter Actions** - Structured trade aggregations (feeds journal, used for triage severity)
 
 ### Critical Distinctions
 - **Underlying** (reference data) vs **Asset Thesis** (belief about that underlying)
@@ -387,6 +471,72 @@ NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-web
 3. **Use Drizzle ORM** - All database access via Drizzle; prefer pre-built queries in `/src/db/queries/`
 4. **Add process tracking** - Log ingestion runs to `ingestion_runs` table
 5. **Follow computation pattern** - Compute during ingestion, store results, don't compute on query
+6. **Update documentation** - Follow the checklist below
+
+### Documentation Maintenance
+
+**CRITICAL:** Documentation must stay in sync with code. Follow this checklist for every significant change.
+
+**After completing any feature or fix:**
+
+| Change Type | Update Required |
+|-------------|-----------------|
+| New table/column | `CLAUDE.md` (Database Schema section) |
+| New API route | `CLAUDE.md` (Key Directories section) |
+| New component | `CLAUDE.md` (Key Directories section) |
+| State field changes | `docs/CURRENT_STATE.md` (State Machines section) |
+| New enhancement started | `docs/FUTURE_ENHANCEMENTS.md` (move to Active) |
+| Enhancement completed | `docs/FUTURE_ENHANCEMENTS.md` (move to Completed) |
+| Dead code identified | `docs/CURRENT_STATE.md` (Dead Code Registry) |
+| Dead code removed | `docs/CURRENT_STATE.md` (mark as removed) |
+| Technical debt added | `docs/CLEANUP_PLAN.md` |
+| Technical debt resolved | `docs/CLEANUP_PLAN.md` (mark complete) |
+| New terminology | `docs/terminology.md` |
+| Terminology changed | Search and update all docs |
+
+**Quick sanity checks:**
+- Does `CLAUDE.md` Key Directories match actual file structure?
+- Does `CURRENT_STATE.md` State Machines match actual schema?
+- Is `FUTURE_ENHANCEMENTS.md` accurate for current sprint?
+
+**Quarterly cleanup (or when docs feel stale):**
+1. Run `grep -r "TODO\|FIXME\|DEPRECATED" src/` to find code debt
+2. Compare `CURRENT_STATE.md` dead code registry against actual codebase
+3. Archive completed enhancements older than 3 months
+4. Verify all cross-references between docs are valid
+
+### When Planning Future Work
+
+All enhancements must be tracked in `docs/FUTURE_ENHANCEMENTS.md` - the **single source of truth** for work planning.
+
+**Process:**
+1. **Check existing enhancement registry** - Search `FUTURE_ENHANCEMENTS.md` for related work
+2. **Create enhancement entry** with unique ID (format: `#ENH-xxx`)
+3. **Reference PRD section** - Every enhancement should map to PRD v1.1 sections
+4. **Document in appropriate section**:
+   - Active/In Progress - Current sprint work
+   - Planned - Prioritized backlog
+   - Deferred - Intentionally delayed
+   - Abandoned - Cancelled with rationale
+
+**Enhancement Entry Template:**
+```markdown
+#### #ENH-xxx: Feature Name
+**Status**: Planned | In Progress | Complete | Deferred | Abandoned
+**Priority**: High | Medium | Low
+**PRD**: Section X (relevant PRD section)
+**Source**: Link to original discussion/issue
+
+**Description**: What this enhancement does
+**Technical Implementation**: Key files and approach
+**Big Picture Impact**: How this fits into the system
+```
+
+**Related Documentation:**
+- `docs/CURRENT_STATE.md` - Current implementation state, state machines, dead code registry
+- `docs/CLEANUP_PLAN.md` - Technical debt and cleanup work
+- `docs/PRD_v1.1.md` - Product requirements (locked, do not modify)
+- `docs/terminology.md` - Authoritative term definitions
 
 ### When Modifying Data Ingestion
 - CSV ingestion uses PapaParse via `/src/lib/ingestion/flex/processCsv.ts`
@@ -435,11 +585,13 @@ source .env.local && /opt/homebrew/opt/postgresql@16/bin/psql "$DATABASE_URL_POO
 
 **Common pitfall**: Ensure `.env.local` has valid syntax (all lines must have `KEY=value` format, not just `KEY`).
 
-### When Working with Triage/Blotter
+### When Working with Triage/Signals/Journal
 - **Triage** (`/src/lib/derived/triage.ts`) - Evaluates positions, creates `triage_records`
-- **Blotter** (`/src/lib/derived/blotter.ts`) - Aggregates trades, creates `blotter_actions`
-- Both are recomputed after ingestion via `/api/recompute/*` endpoints
-- State codes are managed via playbook system (`playbook_items` table)
+- **Thesis Triage** (`/src/lib/derived/thesisTriage.ts`) - Evaluates theses for articulation needs, new claims
+- **Signals** (`/src/lib/derived/signalEvaluation.ts`) - Evaluates strategy signals, creates triggers
+- **Journal** (`/src/lib/workflow/lifecycleDetection.ts`) - `logToJournal()` captures all events
+- Blotter actions (`/src/lib/derived/blotter.ts`) - Trade aggregations, still used for triage severity
+- Recomputation via `/api/recompute/*` endpoints after ingestion
 
 ### When Working with Research Workflow
 The research workflow follows a **local-first processing pattern** using Toulmin framework claim extraction. **Supabase is the single source of truth** - no bidirectional sync with external tools.
@@ -532,13 +684,14 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 4. **IBKR conid** - Stored in `underlyings` table for faster IBKR API calls
 5. **Multi-source Data** - Yahoo Finance (spot) → IBKR Gateway → Massive (fallback priority)
 6. **CSV Error Handling** - Detailed row-by-row error reporting with line numbers
-7. **State Codes** - Playbook states like "LC1", "RR2" are tactical workflow concepts, not PRD concepts
+7. **Signal-Based Triggers** - Signals system replaced legacy stateCode system for strategy trigger evaluation
 8. **Local-First Research** - Research processing via Claude Code skills with Supabase as single source of truth
 9. **Toulmin Framework** - Claims use Toulmin argumentation model (claim, evidence, reasoning, backing)
 10. **Provenance Tracking** - Automatic tracking from research claims → theses with source metadata
 11. **JSONB Claims Structure** - `research_insights.claims_structure` stores hierarchical claim tree
 12. **No Bidirectional Sync** - One-way upload from local Markdown to Supabase; no automatic sync back to files
 13. **TradingView Webhooks** - Price alerts via Edge Function (`supabase/functions/tv-webhook`), matched by `tvAlertName` in signal config
+14. **Dual Status Pattern** - Theses have both `status` (lifecycle) and `workflowStatus` (articulation state) fields
 
 ## TradingView Webhook Integration
 
@@ -582,7 +735,7 @@ Strategy signals can be triggered by TradingView price alerts via Supabase Edge 
 - **Triage Alerts** → `/src/lib/derived/triage.ts` + `/src/components/triage/`
 - **Trade Ingestion** → `/src/lib/ingestion/flex/trades.ts` + `/src/app/api/ingest/flex/trades/route.ts`
 - **IBKR Integration** → `/src/lib/services/ibkr/` + `/src/app/admin/ingestion/ibkr/`
-- **Blotter/Journal** → `/src/lib/derived/blotter.ts` + `/src/components/blotter/`
+- **Journal** → `/src/lib/workflow/lifecycleDetection.ts` + `/src/components/journal/`
 - **Database Schema** → `/src/db/schema.ts` (705 lines, authoritative)
 - **Styles** → `/src/app/globals.css` (Tailwind with custom animations)
 
@@ -591,15 +744,21 @@ Strategy signals can be triggered by TradingView price alerts via Supabase Edge 
 This codebase is transitioning from a tactical options trading tool to the "Universal Investment Operating System" described in `docs/PRD_v1.1.md`.
 
 ### Implemented Features ✅
-- **Macro Theses** and **Asset Thesiss** - Core entities with claims provenance tracking
+- **Macro Theses** and **Asset Theses** - Core entities with claims provenance tracking
 - **Research & Intelligence Layer** - Local-first Toulmin claim extraction workflow
 - **Claims Browsing & Conversion** - Web UI for exploring and converting research into macro/asset theses
 - **Claude Code Skills** - Automated research processing and database integration
+- **Signals System** - Strategy trigger rules with TradingView webhook integration
+- **Journal System** - Chronological log of decisions and events (`logToJournal()`)
+- **Thesis Triage** - Automated detection of theses needing articulation or new claims
 
 ### Remaining Future Additions
-- **Journal / Decision Log** - Evolution of current "Blotter" concept with narrative context
-- **Workflow Triggers** - First-class trigger entities beyond current triage rules (Phase 4)
+See `docs/FUTURE_ENHANCEMENTS.md` for the complete prioritized backlog. Key items:
+- **Phase 3.3: Thesis Synthesis** - AI-assisted thesis articulation from accumulated claims
 - **Enhanced Evidence Linking** - Direct linkage from positions/strategies back to supporting claims
 - **Research Synthesis Dashboard** - Portfolio-wide view of macro thesis → asset thesis → strategy → position chain
 
-When implementing new features, consult the PRD and terminology docs to ensure alignment with the long-term vision.
+### Deferred Work
+- **Blotter-to-Journal Migration** - `blotter_actions` table still actively used for triage severity overrides
+
+When implementing new features, consult PRD, terminology docs, and FUTURE_ENHANCEMENTS.md for alignment.

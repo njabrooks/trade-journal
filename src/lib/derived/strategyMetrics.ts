@@ -126,13 +126,9 @@ export async function computeStrategyMetrics(
     }
   }
 
-  // 8. Compute realized_pnl_to_date (optional, simplified)
-  // For v0.1, we'll skip this as it requires more complex logic to identify closing trades
-  const realizedPnlToDate: string | null = null;
-
-  // 9. State code - DEPRECATED (replaced by strategy signals)
-  // Keeping field for schema compatibility but no longer computing
-  const stateCode: string | null = null;
+  // DEPRECATED fields (kept in schema for backwards compatibility, always null):
+  // - realizedPnlToDate: Requires complex closing trade logic, never implemented
+  // - stateCode: Replaced by strategy signals system
 
   return {
     accountId,
@@ -145,8 +141,8 @@ export async function computeStrategyMetrics(
     numOpenPositions: numOpenPositions > 0 ? numOpenPositions : null,
     minDte,
     maxDte,
-    realizedPnlToDate,
-    stateCode,
+    realizedPnlToDate: null,
+    stateCode: null,
   };
 }
 

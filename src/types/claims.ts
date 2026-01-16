@@ -114,7 +114,7 @@ export interface ClaimConversionData {
   title: string;
   description: string;
   timeHorizon: TimeHorizon;
-  conviction: ClaimConfidence;
+  confidenceLevel: ClaimConfidence;
   notes?: string;
 
   // Thesis-specific

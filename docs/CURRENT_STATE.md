@@ -249,13 +249,15 @@ Journal entry logged
 | IngestionRun | `status` | pending, running, completed, failed | Terminal states |
 | Strategy | `status` | draft, open, closed, merged | Mostly implicit |
 | Position | `isOpen` | true, false | Boolean toggle |
-| TriageRecord | `severity` | info, monitor, attention, urgent, pending, complete | Escalation ladder |
+| TriageRecord | `severity` | info, monitor, attention, urgent, pending, complete | ⚠️ Overloaded - see [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) |
 | Signal | `status` | recommended, not_triggered, triggered, superseded | Event-driven |
 | ThesisTriageRecord | `status` | pending, in_review, actioned, dismissed | Workflow states |
-| MacroThesis | `status` | draft, active, inactive, invalidated | Lifecycle |
-| MacroThesis | `workflowStatus` | needs_articulation, active, needs_review, archived | Parallel track |
-| AssetThesis | `status` | draft, active, inactive, invalidated | Lifecycle |
-| AssetThesis | `workflowStatus` | needs_articulation, active, needs_review, archived | Parallel track |
+| MacroThesis | `status` | active, under_review, retired, superseded | Lifecycle validity |
+| MacroThesis | `workflowStatus` | developing, monitoring, paused, validated, invalidated, abandoned | ⚠️ Schema only, unused in code |
+| MacroThesis | `lifecycleStatus` | created (+ code values) | ⚠️ Deprecated but used - see [#ENH-048](FUTURE_ENHANCEMENTS.md#enh-048-thesis-status-field-consolidation) |
+| AssetThesis | `status` | active (default) | Lifecycle validity |
+| AssetThesis | `workflowStatus` | developing, monitoring, paused, validated, invalidated, abandoned | ⚠️ Schema only, unused in code |
+| AssetThesis | `lifecycleStatus` | created (+ code values) | ⚠️ Deprecated but used - see [#ENH-048](FUTURE_ENHANCEMENTS.md#enh-048-thesis-status-field-consolidation) |
 | JournalEntry | `status` | active, resolved, dismissed, superseded | Terminal states |
 | BlotterAction | `category` | trade_ingestion, triage_action, signal_triggered, thesis_event, manual | Static type |
 
@@ -417,12 +419,12 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 
 ## Documentation Gaps
 
-1. **State machines** not documented in CLAUDE.md
-2. **Cross-domain relationships** not visualized anywhere
-3. **Signal evaluation rules** scattered across code, not centralized
-4. **Thesis triage rules** (needs articulation, new claims) not clearly documented
-5. **Auto-promotion flow** from claims_structure JSONB to main_claims table not documented
-6. **Dual status pattern** on theses (`status` + `workflowStatus`) purpose unclear
+1. ✅ **State machines** - Now documented in CLAUDE.md (2026-01-16)
+2. ✅ **Cross-domain relationships** - Now visualized in CLAUDE.md (2026-01-16)
+3. **Signal evaluation rules** - Scattered across code, needs centralized documentation
+4. **Thesis triage rules** (needs articulation, new claims) - Needs detailed documentation
+5. **Auto-promotion flow** from claims_structure JSONB to main_claims table - Needs documentation
+6. ✅ **Dual status pattern** - Now explained in CLAUDE.md Important Implementation Notes (2026-01-16)
 
 ---
 
@@ -432,8 +434,15 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 1. ✅ **Dead Code Cleanup** - Removed dead functions from research.ts
 2. ✅ **Terminology Standardization** - Aligned `asset_view` → `asset_thesis` across codebase
 3. ✅ **Schema Cleanup** - Dropped `research_mappings` table, renamed `validation_points` → `signals`
+4. ✅ **CLAUDE.md Refresh** - Updated with state machines, cross-domain flows, and future enhancements process
 
 ### Remaining
-4. **Blotter-to-Journal Migration** - Deferred; `blotter_actions` still actively used for triage severity overrides
-5. **Documentation Gaps** - Address state machines, cross-domain flows in CLAUDE.md
-6. **CLAUDE.md Refresh** - Update with state machines and cross-domain flows
+
+See **[CLEANUP_PLAN.md - Unified Remaining Work](CLEANUP_PLAN.md#unified-remaining-work)** for the consolidated backlog.
+
+Key items:
+- Quick wins (realizedPnlToDate, terminology)
+- StateCode archival (696 lines)
+- Documentation (signals, triage rules)
+- #ENH-047 (triage severity/status separation)
+- Blotter-to-Journal migration (deferred)

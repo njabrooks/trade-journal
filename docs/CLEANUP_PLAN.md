@@ -125,6 +125,70 @@ Replaced by signals system.
 
 ---
 
+### 5. Triage Severity/Status Overload (TECHNICAL DEBT)
+
+**Issue:** The `triage_records.severity` field conflates severity levels with workflow states.
+
+**Current Values:**
+- Severity levels: `info`, `attention`, `urgent` (correct)
+- Severity override: `monitor` (valid - means "watch, don't escalate")
+- **Workflow states: `pending`, `complete`** (incorrect - these are statuses, not severities)
+
+**Impact:**
+- 30+ occurrences across codebase
+- Queries filter on `severity = 'pending'` or `severity != 'complete'`
+- UI groups 'pending' with statuses and 'complete' with 'actioned'
+- `src/types/triage.ts:95` explicitly maps: `status: record.severity ?? "pending"`
+
+**Correct Design (see `thesis_triage_records`):**
+- `severity`: 'critical' | 'high' | 'medium' | 'low' | 'info' (pure severity)
+- `status`: 'pending' | 'in_review' | 'actioned' | 'dismissed' (pure workflow)
+
+**Recommended Fix:**
+1. Add `status` column to `triage_records` table
+2. Migrate 'pending'/'complete' values from `severity` to `status`
+3. Update code to use proper columns
+4. Keep `monitor` as valid severity override
+
+**Scope:** ~30 file changes across queries, API routes, derived logic, UI components
+
+**Tracked as:** #ENH-047 (Triage Severity/Status Separation)
+
+---
+
+### 6. Thesis Status Field Confusion (TECHNICAL DEBT)
+
+**Issue:** MacroThesis and AssetThesis have THREE overlapping status-like fields with unclear purposes.
+
+**Current Fields:**
+
+| Field | Schema Values | Used In Code | Purpose |
+|-------|--------------|--------------|---------|
+| `status` | active, under_review, retired, superseded | Yes | Lifecycle validity |
+| `workflowStatus` | developing, monitoring, paused, validated, invalidated, abandoned | **Schema only** | User intent |
+| `lifecycleStatus` | created (default) | **Code only** | Workflow progression |
+
+**The Confusion:**
+
+1. **`lifecycleStatus`** is marked DEPRECATED in schema but actively used in `lifecycleDetection.ts`
+2. **`workflowStatus`** exists in schema but has ZERO usage in application code
+3. The values don't align:
+   - `lifecycleStatus` in code uses: created → claims_linked → synthesized → validated → monitoring → closed
+   - `workflowStatus` in schema has: developing, monitoring, paused, validated, invalidated, abandoned
+
+**Files Affected:**
+- `src/db/schema.ts` - Both fields defined (lines 84, 90, 156, 162)
+- `src/lib/workflow/lifecycleDetection.ts` - Uses `lifecycleStatus` (17 occurrences)
+
+**Root Cause:** `workflowStatus` was added to schema intending to replace `lifecycleStatus`, but:
+- The code was never migrated
+- The value sets are conceptually different
+- The deprecation comment was added without completing the migration
+
+**Tracked as:** #ENH-048 (Thesis Status Field Consolidation)
+
+---
+
 ## Execution Plan
 
 ### Phase A: Safe Code Removal (No DB Changes)
@@ -356,3 +420,156 @@ Full blotter deprecation requires migrating these functionalities to the Journal
 - Archive folder contains all deprecated code
 - Database migrations can be reversed if needed
 - Git history preserves all removed files
+
+---
+
+## Unified Remaining Work
+
+**Last Updated:** 2026-01-16
+
+### Quick Wins (< 1 hour each)
+
+| Task | Location | Action |
+|------|----------|--------|
+| Remove `realizedPnlToDate` | `src/lib/derived/strategyMetrics.ts` | Delete unused function |
+| Remove `lifecycleStatus` refs | Search codebase | Replace with `workflowStatus` |
+| Standardize "conviction" → "confidenceLevel" | Thesis-related code | Terminology alignment |
+
+### Safe Code Removal (no dependencies)
+
+| Task | Location | Size | Action |
+|------|----------|------|--------|
+| Archive `stateCode` system | `src/lib/derived/stateCode.ts` | 696 lines | Move to /archive/ |
+| Archive `strategyStateCode` service | `src/lib/services/strategyStateCode.ts` | ~200 lines | Move to /archive/ |
+| Drop `stateCode` column | `strategyMetricsSnapshots` table | Schema | Migration |
+
+### Dead Columns (blotter_actions)
+
+| Column | Reason | Action |
+|--------|--------|--------|
+| `legScope` | Never populated | Remove when blotter fully deprecated |
+| `riskNotesAtAction` | Never populated | Remove when blotter fully deprecated |
+| `linkedSignalId` | Never used | Remove when blotter fully deprecated |
+
+### Documentation Needed
+
+| Topic | Priority | Notes |
+|-------|----------|-------|
+| Signal evaluation rules | Medium | Centralize from scattered code |
+| Thesis triage rules | Medium | Document needs_articulation, new claims triggers |
+| Auto-promotion flow | Low | claims_structure → main_claims |
+
+### Schema Changes (tracked enhancements)
+
+| Enhancement | Description | Priority |
+|-------------|-------------|----------|
+| [#ENH-047](FUTURE_ENHANCEMENTS.md#enh-047-triage-severitystatus-separation) | Triage severity/status separation | Medium |
+
+### Major Migrations (deferred)
+
+| Task | Blocker | Prerequisites |
+|------|---------|---------------|
+| Blotter → Journal | `blotter_actions` actively used | Migrate triage severity tracking to journal |
+| Full blotter deprecation | Above migration | Complete journal migration first |
+
+### Recommended Execution Order
+
+1. **Quick wins** - Low risk, immediate cleanup
+2. **StateCode archival** - Safe, reduces dead code
+3. **Documentation** - Helps future work
+4. **#ENH-047** - Triage schema fix
+5. **Blotter migration** - Complex, requires planning
+
+---
+
+## Blotter-to-Journal Migration Plan
+
+**Status:** Planning (2026-01-16)
+
+### Current Blotter Usage
+
+Only 6 files reference `blotterActions`:
+
+| File | Usage |
+|------|-------|
+| `src/db/schema.ts` | Schema definition |
+| `src/lib/derived/triage.ts` | Severity override lookups |
+| `src/app/api/triage/action/route.ts` | Create triage action records |
+| `src/app/api/triage/action/bulk/route.ts` | Bulk triage actions |
+| `src/lib/services/strategies.ts` | Strategy service queries |
+| `src/db/queries/strategies.ts` | Strategy detail queries |
+
+### Core Functionality to Migrate
+
+1. **Severity Override Tracking**
+   - DISMISS/MONITOR actions with severity overrides
+   - Override expiry dates (time-limited overrides)
+   - Position/Strategy-level targeting
+
+2. **Trade Action Tracking**
+   - Pending TRADE actions marked complete on match
+   - Links between triage actions and trades
+
+### Migration Strategy
+
+**Phase 1: Dual-Write**
+- Continue writing to `blotter_actions`
+- Also write to `journal_entries` with override metadata
+- `metadata` JSONB stores: `severityOverride`, `triageFlagAtAction`, `overrideExpiresDate`, `monitorDays`
+
+**Phase 2: Switch Reads**
+- Update `prefetchSeverityOverrides()` to read from journal
+- Query: `actionType = 'triage_override'` + metadata filters
+- Test thoroughly with existing data
+
+**Phase 3: Remove Blotter Writes**
+- Stop writing to `blotter_actions`
+- Remove blotter insert code from triage routes
+
+**Phase 4: Drop Table**
+- Verify no remaining references
+- Drop `blotter_actions` table
+
+### Journal Entry Schema for Triage Overrides
+
+```typescript
+{
+  objectType: 'position' | 'strategy',
+  objectId: positionId | strategyId,
+  actionType: 'triage_override',
+  actionDescription: 'DISMISS REVIEW_DTE - User dismissed triage flag',
+  metadata: {
+    severityOverride: 'complete',      // 'monitor' | 'complete' | 'pending'
+    triageFlagAtAction: 'REVIEW_DTE',  // The flag being overridden
+    overrideExpiresDate: '2026-02-16', // null = permanent
+    monitorDays: 7,                    // For MONITOR actions
+    actionDetail: 'DISMISS',           // Original action type
+  },
+  source: 'user',
+  status: 'active',  // 'active' | 'superseded' when new override
+}
+```
+
+### Index Requirements
+
+Add index for efficient override lookups:
+```sql
+CREATE INDEX idx_journal_triage_override
+ON journal_entries ((metadata->>'triageFlagAtAction'), object_id, status)
+WHERE action_type = 'triage_override';
+```
+
+### Estimated Effort
+
+| Phase | Effort |
+|-------|--------|
+| Phase 1: Dual-Write | 2-3 hours |
+| Phase 2: Switch Reads | 4-6 hours |
+| Phase 3: Remove Writes | 1-2 hours |
+| Phase 4: Drop Table | 1 hour |
+| **Total** | **8-12 hours** |
+
+### Prerequisites
+
+- #ENH-047 completed (clean severity/status separation)
+- Sufficient test coverage for triage system
