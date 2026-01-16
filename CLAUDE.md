@@ -42,19 +42,17 @@ npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psq
 
 ## Documentation Map
 
-**For Developers** (quick reference and navigation):
+**Core Reference** (the three key documents):
+- **[PRD v1.1](docs/PRD_v1.1.md)** - Product vision and requirements (locked)
+- **[Current State](docs/CURRENT_STATE.md)** - Actual implementation state, state machines, cross-domain flows
+- **[Future Enhancements](docs/FUTURE_ENHANCEMENTS.md)** - Single source of truth for planned work
+
+**Feature Documentation** (detailed guides):
 - **CLAUDE.md** (this file) - Quick reference, common commands, file navigation
 - **[Terminology Guide](docs/features/terminology.md)** - Authoritative term definitions (PRD-aligned)
-- **[Current State](docs/CURRENT_STATE.md)** - Actual implementation state, state machines, cross-domain flows
 - **[Research Workflow](docs/features/research-workflow.md)** - Complete research workflow guide
+- **[Signal & Triage Rules](docs/features/signal-triage-rules.md)** - All trigger rules, severity levels, auto-promotion flows
 - **[Entity Status Guide](docs/features/entity-status-standardization.md)** - Universal lifecycle status model for domain entities
-- **[Documentation Best Practices](DOCUMENTATION_BEST_PRACTICES.md)** - How to document work and link to big picture
-
-**For Architects** (system design and vision):
-- **[PRD v1.1](docs/PRD_v1.1.md)** - Product vision and requirements (locked)
-- **[Future Enhancements](docs/FUTURE_ENHANCEMENTS.md)** - **Single source of truth** for all enhancements (past/present/future)
-- **[Cleanup Plan](docs/CLEANUP_PLAN.md)** - Technical debt tracking and cleanup phases
-- **[System Architecture](docs/system_architecture_transition_plan.md)** - Implementation roadmap and transition plan
 
 **Operations**:
 - **[Database Mode Switch Runbook](docs/runbook-database-mode-switch.md)** - Switching between local and remote Supabase
@@ -490,8 +488,8 @@ NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-web
 | Enhancement completed | `docs/FUTURE_ENHANCEMENTS.md` (move to Completed summary table) + `docs/archive/completed-enhancements-2025-2026.md` (add full specification) |
 | Dead code identified | `docs/CURRENT_STATE.md` (Dead Code Registry) |
 | Dead code removed | `docs/CURRENT_STATE.md` (mark as removed) |
-| Technical debt added | `docs/CLEANUP_PLAN.md` |
-| Technical debt resolved | `docs/CLEANUP_PLAN.md` (mark complete) |
+| Technical debt added | `docs/FUTURE_ENHANCEMENTS.md` (add to backlog or deferred) |
+| Technical debt resolved | `docs/FUTURE_ENHANCEMENTS.md` (mark complete) |
 | New terminology | `docs/terminology.md` |
 | Terminology changed | Search and update all docs |
 
@@ -533,11 +531,10 @@ All enhancements must be tracked in `docs/FUTURE_ENHANCEMENTS.md` - the **single
 **Big Picture Impact**: How this fits into the system
 ```
 
-**Related Documentation:**
-- `docs/CURRENT_STATE.md` - Current implementation state, state machines, dead code registry
-- `docs/CLEANUP_PLAN.md` - Technical debt and cleanup work
-- `docs/PRD_v1.1.md` - Product requirements (locked, do not modify)
-- `docs/terminology.md` - Authoritative term definitions
+**The Three Core Documents:**
+- `docs/PRD_v1.1.md` - Product vision and requirements (locked)
+- `docs/CURRENT_STATE.md` - Actual implementation state, state machines, dead code registry
+- `docs/FUTURE_ENHANCEMENTS.md` - Single source of truth for planned work and technical debt
 
 ### When Modifying Data Ingestion
 - CSV ingestion uses PapaParse via `/src/lib/ingestion/flex/processCsv.ts`

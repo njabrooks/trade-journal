@@ -165,13 +165,17 @@ Applied to: MacroThesis, AssetThesis, Strategy, Signal, MainClaim, ResearchArtif
 
 ## Remaining Work
 
-### Documentation Needed
+### Documentation (✅ COMPLETED - 2026-01-16)
 
-| Topic | Priority | Notes |
-|-------|----------|-------|
-| Signal evaluation rules | Medium | Centralize from scattered code |
-| Thesis triage rules | Medium | Document needs_articulation, new claims triggers |
-| Auto-promotion flow | Low | claims_structure → main_claims |
+Signal, triage, and auto-promotion rules centralized in **[docs/features/signal-triage-rules.md](features/signal-triage-rules.md)**.
+
+| Topic | Status |
+|-------|--------|
+| Signal evaluation rules | ✅ Documented |
+| Position triage rules | ✅ Documented |
+| Strategy triage rules | ✅ Documented |
+| Thesis triage rules | ✅ Documented |
+| Auto-promotion flow | ✅ Documented |
 
 ### Housekeeping
 
@@ -206,5 +210,5 @@ Applied to: MacroThesis, AssetThesis, Strategy, Signal, MainClaim, ResearchArtif
 - [x] Documentation updated (CLAUDE.md, CURRENT_STATE.md)
 
 **Remaining:**
-- [ ] Documentation (signals, triage rules)
-- [ ] Drop backup table after verification
+- [x] Documentation (signals, triage rules) - See [signal-triage-rules.md](features/signal-triage-rules.md)
+- [ ] Drop backup table after verification (30 days from 2026-01-16)
