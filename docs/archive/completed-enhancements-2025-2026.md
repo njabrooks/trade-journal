@@ -65,6 +65,107 @@ Standardized all entity `status` fields to use a universal lifecycle model. Buil
 
 ---
 
+## Phase 3.1: Thesis Synthesis & Signal Extraction (2026-01-16)
+
+### #ENH-035: Thesis Articulation Generation
+**Status**: Complete (2026-01-16)
+**PRD Alignment**: Section 5.5 (Thesis Evaluation), Section 5.7 (Role of AI)
+
+Claude Code skill to synthesize linked claims into coherent thesis articulation with key drivers, assumptions, and evidence gaps. Versioned storage for belief evolution tracking.
+
+**Implemented**:
+- `/synthesize-thesis` Claude Code skill (`.claude/skills/synthesize-thesis/SKILL.md` - 1337 lines)
+- `thesis_articulations` table with versioning (`src/db/schema.ts`)
+- Provenance tracking via `claims_used` field storing claim IDs that were synthesized
+- Dual-write support for articulations
+- Markdown output to `~/Desktop/investment-research/thesis-articulations/`
+
+**Key Features**:
+- Multi-step synthesis: fetch thesis → retrieve claims → LLM synthesis → extract signals → write articulation
+- Versioned articulations with timestamps and linked claim tracking
+- Generates structured output: Core Argument, Key Drivers, Assumptions, Evidence Gaps, Confidence Assessment
+
+**Files Changed**:
+- `.claude/skills/synthesize-thesis/SKILL.md` (skill definition)
+- `src/db/schema.ts` (thesis_articulations table)
+- `src/db/queries/research.ts` (articulation queries)
+
+---
+
+### #ENH-036: Signal Extraction from Thesis Articulation
+**Status**: Complete (2026-01-16)
+**PRD Alignment**: Section 6.1 (Triggers)
+**Dependencies**: #ENH-035
+
+Extract explicit, measurable criteria for thesis validation/invalidation during articulation. Push for specificity on qualitative criteria.
+
+**Implemented**:
+- Signal extraction integrated into `/synthesize-thesis` skill
+- `signals` table with `explicit_details` JSONB for threshold configuration
+- `type` field with values: `confirmation` | `warning`
+- `classification` distinguishes `explicit` (measurable) vs `judgment` (qualitative)
+- `entity_type` supports both `macro_thesis` and `asset_thesis`
+
+**Signal Configuration Structure**:
+```typescript
+interface ExplicitDetails {
+  metric_type: 'price' | 'iv30' | 'fred' | 'custom';
+  threshold_type: 'above' | 'below' | 'between';
+  threshold_value: number;
+  ticker?: string;       // For price/IV signals
+  fred_series?: string;  // For FRED signals
+}
+```
+
+**Files Changed**:
+- `src/db/schema.ts` (signals table definition)
+- `src/components/signals/SignalConfigForm.tsx` (UI for signal configuration)
+- `.claude/skills/synthesize-thesis/SKILL.md` (signal extraction logic)
+
+---
+
+### #ENH-037: Manual Status Tracking & Audit Trail
+**Status**: Complete (2026-01-16)
+**PRD Alignment**: Section 8 (Institutional Memory)
+**Dependencies**: #ENH-036
+
+In-app UI for manually updating signal status with evidence. Full audit trail of status changes.
+
+**Implemented**:
+- `signal_status_history` table tracking all status changes with timestamps and evidence
+- `journal_entries` table serves as decision audit log (already existed, now integrated with signals)
+- `StatusTimeline.tsx` component for visualizing signal status history
+- `ValidationPointDetail.tsx` component for signal detail pages
+
+**Note**: Original spec mentioned `decision_audit_log` table - this functionality is provided by the existing `journal_entries` table which logs all system events including signal status changes.
+
+**Files Changed**:
+- `src/db/schema.ts` (signal_status_history table)
+- `src/components/thesis-synthesis/StatusTimeline.tsx` (301 lines)
+- `src/components/thesis-synthesis/ValidationPointDetail.tsx` (431 lines)
+- `src/app/api/signals/update-status/route.ts` (status update endpoint)
+
+---
+
+### #ENH-042F: IV30 & Price Data Integration
+**Status**: Complete (2026-01-16)
+**PRD Alignment**: Section 6.1 (Triggers - Automated Monitoring)
+**Dependencies**: #ENH-042B
+
+Monitor price/IV from `underlyings_iv_history` table against signal thresholds.
+
+**Implemented**:
+- Price/IV threshold checking in `scripts/daily-signal-monitoring.ts`
+- Reads from `underlyings_iv_history` table for latest spot and IV30 values
+- Checks against `signals.explicit_details` thresholds
+- Creates triage records when thresholds are breached
+- Logs breaches to journal
+
+**Files Changed**:
+- `scripts/daily-signal-monitoring.ts` (integrated price/IV monitoring)
+
+---
+
 ## Phase 3.2: Validation Assessment Workflow (2026-01-05)
 
 ### #ENH-042: Validation Assessment Workflow
@@ -254,3 +355,7 @@ Migrated from Supabase-only to hybrid local-first architecture:
 **Status**: Abandoned (2026-01-04)
 **Reason**: Does not add value beyond existing HierarchyBreadcrumb component.
 **Recovery**: Code preserved in git commit `9d8ba79`.
+
+### #ENH-020-playbook: Strategy Playbook Tab
+**Status**: Abandoned (2026-01-16)
+**Reason**: Playbook system was removed - it was only used for stateCode configuration which has been replaced by the Signals system. Entry/exit rules and risk management now handled through signals and triage.

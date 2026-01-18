@@ -182,10 +182,13 @@ async function executeClaudeCLI(prompt: string): Promise<CLIResult> {
 
     console.log('[synthesize-thesis] Executing command...');
 
+    // Exclude ANTHROPIC_API_KEY so CLI uses Max subscription instead of API tokens
+    const { ANTHROPIC_API_KEY: _removed, ...envWithoutApiKey } = process.env;
+
     const child = exec(command, {
       cwd: process.cwd(),
       env: {
-        ...process.env,
+        ...envWithoutApiKey,
         PATH: `${process.env.PATH}:/Users/njb/.local/bin:/opt/homebrew/bin`,
         HOME: process.env.HOME || '/Users/njb',
       },

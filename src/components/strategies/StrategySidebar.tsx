@@ -1,59 +1,172 @@
+'use client';
+
+import Link from 'next/link';
 import {
-  Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
+} from '@/components/ui/accordion';
+import { EntitySidebar } from '@/components/layout/EntitySidebar';
+import { EntityStatusBadge } from '@/components/ui/badge';
+import { ChevronRight, Pencil } from 'lucide-react';
+
+interface LinkedMacroThesis {
+  id: string;
+  title: string;
+}
+
+interface LinkedAssetThesis {
+  id: string;
+  title: string;
+  ticker?: string | null;
+}
 
 interface StrategySidebarProps {
   strategy: {
+    id: string;
+    strategyKey: string;
+    label: string | null;
     strategyType: string | null;
     templateLabel: string | null;
     underlyingTicker: string | null;
     openedAt: Date | null;
     status: string;
   };
+  /** Counts for related entities */
+  openPositionsCount?: number;
+  triageCount?: number;
+  signalsCount?: number;
+  /** Linked macro theses for hierarchy display */
+  linkedMacroTheses?: LinkedMacroThesis[];
+  /** Linked asset thesis for hierarchy display */
+  linkedAssetThesis?: LinkedAssetThesis | null;
 }
 
 export function StrategySidebar({
   strategy,
+  openPositionsCount,
+  triageCount,
+  signalsCount,
+  linkedMacroTheses = [],
+  linkedAssetThesis,
 }: StrategySidebarProps) {
-  return (
-    <div className="sticky top-6 h-fit w-[28rem] self-start">
-      <div className="rounded-lg border bg-white shadow-sm">
-        <Accordion type="multiple" className="w-full" defaultValue={["strategy-info"]}>
-          <AccordionItem value="strategy-info" className="border-b-0">
-            <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:no-underline">
-              Strategy Info
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <dl className="space-y-2 text-sm text-slate-600">
-                <InfoRow label="Strategy Type" value={strategy.strategyType ?? "—"} />
-                <InfoRow label="Template" value={strategy.templateLabel ?? "—"} />
-                <InfoRow label="Underlying" value={strategy.underlyingTicker ?? "—"} />
-                <InfoRow
-                  label="Opened"
-                  value={
-                    strategy.openedAt
-                      ? new Date(strategy.openedAt).toLocaleDateString('en-GB')
-                      : "—"
-                  }
-                />
-                <InfoRow label="Status" value={strategy.status} />
-              </dl>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
-    </div>
-  );
-}
+  // Build metadata items for Quick Stats
+  const metadata = [
+    { label: 'Strategy Type', value: strategy.strategyType ?? '—' },
+    { label: 'Template', value: strategy.templateLabel ?? '—' },
+    { label: 'Underlying', value: strategy.underlyingTicker ?? '—' },
+    {
+      label: 'Opened',
+      value: strategy.openedAt
+        ? new Date(strategy.openedAt).toLocaleDateString('en-GB')
+        : '—',
+    },
+    {
+      label: 'Status',
+      value: <EntityStatusBadge status={strategy.status} />,
+    },
+  ];
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+
+  // Hierarchy accordion section
+  const hierarchySection = (
+    <AccordionItem value="hierarchy" className="border-b">
+      <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:no-underline">
+        Hierarchy
+      </AccordionTrigger>
+      <AccordionContent className="px-4 pb-4">
+        <div className="space-y-3">
+          {/* Linked Macro Theses (upstream) */}
+          <div>
+            <p className="text-xs font-medium text-slate-500 mb-1.5">Macro Theses</p>
+            {linkedMacroTheses.length > 0 ? (
+              <div className="space-y-1">
+                {linkedMacroTheses.map((mt) => (
+                  <Link
+                    key={mt.id}
+                    href={`/macro-theses/${mt.id}`}
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
+                    <span className="truncate">{mt.title}</span>
+                    <ChevronRight className="h-3 w-3 ml-auto text-slate-400 flex-shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic px-2">No linked macro theses</p>
+            )}
+          </div>
+
+          {/* Linked Asset Thesis */}
+          <div>
+            <p className="text-xs font-medium text-slate-500 mb-1.5">Asset Thesis</p>
+            {linkedAssetThesis ? (
+              <Link
+                href={`/asset-theses/${linkedAssetThesis.id}`}
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+              >
+                <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+                <span className="truncate">{linkedAssetThesis.title}</span>
+                {linkedAssetThesis.ticker && (
+                  <span className="text-xs text-slate-500 font-mono flex-shrink-0">
+                    {linkedAssetThesis.ticker}
+                  </span>
+                )}
+                <ChevronRight className="h-3 w-3 ml-auto text-slate-400 flex-shrink-0" />
+              </Link>
+            ) : (
+              <p className="text-xs text-slate-400 italic px-2">No linked asset thesis</p>
+            )}
+          </div>
+
+          {/* Current Strategy */}
+          <div>
+            <p className="text-xs font-medium text-slate-500 mb-1.5">Current</p>
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-900 bg-emerald-50 rounded px-2 py-1.5 -mx-2 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+              <span className="truncate">{strategy.label ?? strategy.strategyKey}</span>
+              {strategy.underlyingTicker && (
+                <span className="text-xs text-slate-500 font-mono ml-auto flex-shrink-0">
+                  {strategy.underlyingTicker}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Positions (downstream) */}
+          {openPositionsCount !== undefined && openPositionsCount > 0 && (
+            <div>
+              <p className="text-xs font-medium text-slate-500 mb-1.5">Positions</p>
+              <Link
+                href={`/strategies/${strategy.id}/overview`}
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+              >
+                <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
+                <span>{openPositionsCount} open position{openPositionsCount !== 1 ? 's' : ''}</span>
+                <ChevronRight className="h-3 w-3 ml-auto text-slate-400 flex-shrink-0" />
+              </Link>
+            </div>
+          )}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs text-slate-400">{label}</span>
-      <span className="text-xs font-medium text-slate-900">{value}</span>
-    </div>
+    <EntitySidebar
+      metadata={metadata}
+      actions={
+        <Link
+          href={`/admin/strategies/${strategy.id}/link`}
+          className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+        >
+          <Pencil className="h-4 w-4" />
+          Edit
+        </Link>
+      }
+      additionalSections={hierarchySection}
+      defaultExpanded={['quick-stats', 'hierarchy']}
+    />
   );
 }

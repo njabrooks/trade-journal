@@ -446,9 +446,9 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 
 1. ✅ **State machines** - Now documented in CLAUDE.md (2026-01-16)
 2. ✅ **Cross-domain relationships** - Now visualized in CLAUDE.md (2026-01-16)
-3. **Signal evaluation rules** - Scattered across code, needs centralized documentation
-4. **Thesis triage rules** (needs articulation, new claims) - Needs detailed documentation
-5. **Auto-promotion flow** from claims_structure JSONB to main_claims table - Needs documentation
+3. ✅ **Signal evaluation rules** - Centralized in `docs/features/signal-triage-rules.md` (2026-01-16)
+4. ✅ **Thesis triage rules** - Centralized in `docs/features/signal-triage-rules.md` (2026-01-16)
+5. ✅ **Auto-promotion flow** - Documented in `docs/features/signal-triage-rules.md` (Claims Auto-Promotion section)
 6. ✅ **Dual status pattern** - Now explained in CLAUDE.md Important Implementation Notes (2026-01-16)
 
 ---
@@ -472,4 +472,8 @@ Key items:
 - ~~#ENH-047 (triage severity/status separation)~~ ✅ Complete (2026-01-16)
 - ~~#ENH-048 (entity status standardization)~~ ✅ Complete (2026-01-16)
 - ~~Blotter-to-Journal migration~~ ✅ Complete (2026-01-16)
-- Documentation (signals, triage rules)
+- ~~Documentation (signals, triage rules)~~ ✅ Complete - `docs/features/signal-triage-rules.md` (2026-01-16)
+- ~~#ENH-035 (thesis articulation generation)~~ ✅ Complete (2026-01-16)
+- ~~#ENH-036 (signal extraction from articulation)~~ ✅ Complete (2026-01-16)
+- ~~#ENH-037 (manual status tracking & audit trail)~~ ✅ Complete (2026-01-16)
+- ~~#ENH-042F (IV30 & Price data integration)~~ ✅ Complete (2026-01-16)

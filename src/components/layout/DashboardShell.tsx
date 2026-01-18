@@ -23,7 +23,7 @@ export type NavKey =
 
 interface DashboardShellProps {
   title: string | ReactNode;
-  subtitle?: string;
+  subtitle?: string | ReactNode;
   actions?: ReactNode;
   tabs?: ReactNode;
   children: ReactNode;

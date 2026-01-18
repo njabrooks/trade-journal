@@ -80,7 +80,7 @@ interface SignalInput {
   category?: 'judgment' | 'data_driven' | 'explicit' | 'judgment_required'; // Optional - defaults to 'judgment'
   importance: 'critical' | 'significant' | 'supporting';
   timeframe?: 'immediate' | 'medium_term' | 'secular'; // @deprecated
-  status?: 'not_triggered' | 'recommended'; // Default: 'recommended' for AI-generated signals
+  status?: 'draft' | 'active' | 'complete' | 'rejected'; // Default: 'draft' for AI-generated signals (pending user review)
   explicitDetails?: {
     metric: string;
     threshold: string;
@@ -203,8 +203,8 @@ async function main() {
   // -------------------------------------------------------------------------
   // Step 2b: Supersede existing signals (on re-articulation)
   // -------------------------------------------------------------------------
-  // When re-articulating, mark all existing signals as 'superseded' so new ones take precedence.
-  // User can later delete superseded signals or reinstate valuable ones.
+  // When re-articulating, mark all existing signals as 'rejected' so new ones take precedence.
+  // User can later delete rejected signals or reinstate valuable ones.
   const existingSignals = await db
     .select({ id: signalsTable.id, status: signalsTable.status, statement: signalsTable.statement })
     .from(signalsTable)
@@ -212,7 +212,7 @@ async function main() {
       and(
         eq(signalsTable.thesisId, thesisId),
         eq(signalsTable.thesisType, thesisType),
-        sql`${signalsTable.status} != 'superseded'` // Don't re-supersede already superseded signals
+        sql`${signalsTable.status} IN ('draft', 'active')` // Only supersede draft/active signals
       )
     );
 
@@ -220,18 +220,18 @@ async function main() {
     await db
       .update(signalsTable)
       .set({
-        status: 'superseded',
+        status: 'rejected',
         updatedAt: new Date(),
       })
       .where(
         and(
           eq(signalsTable.thesisId, thesisId),
           eq(signalsTable.thesisType, thesisType),
-          sql`${signalsTable.status} != 'superseded'`
+          sql`${signalsTable.status} IN ('draft', 'active')`
         )
       );
 
-    console.log(`✅ Superseded ${existingSignals.length} existing signals`);
+    console.log(`✅ Superseded ${existingSignals.length} existing signals (marked as rejected)`);
 
     // Log to journal
     await logToJournal({
@@ -239,7 +239,7 @@ async function main() {
       objectId: thesisId,
       objectTitle: thesis?.title,
       actionType: 'signals_superseded',
-      actionDescription: `Superseded ${existingSignals.length} existing signal(s) due to re-articulation`,
+      actionDescription: `Superseded ${existingSignals.length} existing signal(s) due to re-articulation (marked as rejected)`,
       skillInvoked: '/synthesize-thesis',
       previousState: {
         activeSignalCount: existingSignals.length,
@@ -304,8 +304,8 @@ async function main() {
       dependentThesisId: sig.dependentThesisId || null,
       dependentThesisType: sig.dependentThesisType || null,
       dependentThesisCondition: sig.dependentThesisCondition || null,
-      // Default to 'recommended' for AI-generated signals (user must review before they become active)
-      status: (sig.status || 'recommended') as 'not_triggered' | 'triggered' | 'superseded' | 'recommended',
+      // Default to 'draft' for AI-generated signals (user must review before they become active)
+      status: (sig.status || 'draft') as 'draft' | 'active' | 'complete' | 'rejected',
     }));
 
     const insertedSignals = await db
@@ -318,10 +318,10 @@ async function main() {
     // Count by type
     const confirmationCount = insertedSignals.filter((s) => s.type === 'confirmation').length;
     const warningCount = insertedSignals.filter((s) => s.type === 'warning').length;
-    const recommendedCount = insertedSignals.filter((s) => s.status === 'recommended').length;
+    const draftCount = insertedSignals.filter((s) => s.status === 'draft').length;
     console.log(`   - ${confirmationCount} confirmation, ${warningCount} warning`);
-    if (recommendedCount > 0) {
-      console.log(`   - ${recommendedCount} with 'recommended' status (pending user review)`);
+    if (draftCount > 0) {
+      console.log(`   - ${draftCount} with 'draft' status (pending user review)`);
     }
   } else {
     console.log('ℹ️  No signals to insert');
@@ -386,7 +386,7 @@ async function main() {
       and(
         eq(thesisTriageRecords.thesisId, thesisId),
         eq(thesisTriageRecords.thesisType, thesisType),
-        sql`${thesisTriageRecords.status} IN ('attention', 'info')`
+        sql`${thesisTriageRecords.status} IN ('inbox', 'in_progress')`
       )
     );
 
@@ -403,7 +403,7 @@ async function main() {
     await db
       .update(thesisTriageRecords)
       .set({
-        status: 'complete',
+        status: 'done',
         completedAt: new Date(),
         completedBy: 'articulation_created',
       })
@@ -418,8 +418,8 @@ async function main() {
       actionDescription: `Triage record resolved: ${triage.triageRule}`,
       triageRecordId: triage.id,
       skillInvoked: '/synthesize-thesis',
-      previousState: { status: 'pending' },
-      newState: { status: 'complete', completedBy: 'articulation_created' },
+      previousState: { status: triage.status },
+      newState: { status: 'done', completedBy: 'articulation_created' },
       source: 'skill',
     });
   }
@@ -428,7 +428,7 @@ async function main() {
   // -------------------------------------------------------------------------
   // Step 4b: Create REVIEW_RECOMMENDED_SIGNALS triage if needed
   // -------------------------------------------------------------------------
-  const recommendedSignalsInserted = signals.filter((s) => !s.status || s.status === 'recommended');
+  const recommendedSignalsInserted = signals.filter((s) => !s.status || s.status === 'draft');
   if (recommendedSignalsInserted.length > 0) {
     // Check if triage record already exists
     const existingReviewTriage = await db
@@ -439,7 +439,7 @@ async function main() {
           eq(thesisTriageRecords.thesisId, thesisId),
           eq(thesisTriageRecords.thesisType, thesisType),
           eq(thesisTriageRecords.triageRule, 'REVIEW_RECOMMENDED_SIGNALS'),
-          sql`${thesisTriageRecords.status} != 'complete'`
+          sql`${thesisTriageRecords.status} != 'done'`
         )
       )
       .limit(1);
@@ -455,9 +455,9 @@ async function main() {
           triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
           triggerType: 'signal_recommendation',
           triggerSource: 'insert-thesis-articulation',
-          severity: 'medium',
+          severity: 'attention',
           urgency: 'this_week',
-          status: 'attention',
+          status: 'inbox',
           lifecycleStage: 'monitoring',
           suggestedSkill: null,
           actionRequired: `${recommendedSignalsInserted.length} AI-recommended signal(s) need review. Accept, modify, or reject each signal.`,
@@ -481,7 +481,7 @@ async function main() {
         skillInvoked: '/synthesize-thesis',
         newState: {
           triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
-          status: 'attention',
+          status: 'inbox',
           urgency: 'this_week',
         },
         source: 'skill',
@@ -504,10 +504,10 @@ async function main() {
   console.log(`   Signals: ${signals.length}`);
   console.log(`   Triage Records Resolved: ${articulationTriage.length}`);
 
-  // Notify about recommended signals needing review
-  const recommendedSignals = signals.filter((s) => !s.status || s.status === 'recommended');
-  if (recommendedSignals.length > 0) {
-    console.log(`\n⚠️  ${recommendedSignals.length} signal(s) have 'recommended' status and need user review.`);
+  // Notify about draft signals needing review
+  const draftSignals = signals.filter((s) => !s.status || s.status === 'draft');
+  if (draftSignals.length > 0) {
+    console.log(`\n⚠️  ${draftSignals.length} signal(s) have 'draft' status and need user review.`);
     console.log('   A triage record will be created for batch review.');
   }
 

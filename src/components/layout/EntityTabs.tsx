@@ -5,32 +5,42 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { EntityTab } from '@/lib/types/entity-tabs';
 
-interface StrategyTabsProps {
-  strategyId: string;
+// Re-export for convenience
+export type { EntityTab } from '@/lib/types/entity-tabs';
+export { createEntityTabs } from '@/lib/types/entity-tabs';
+
+interface EntityTabsProps {
+  tabs: EntityTab[];
+  className?: string;
 }
 
 /**
- * Create strategy-specific tabs.
- * Uses Overview/Evidence/Execution naming for consistency with other entities,
- * but maps to strategy-specific content.
+ * Reusable URL-based tab navigation component.
+ * Uses pathname matching to determine active state.
+ *
+ * @example
+ * ```tsx
+ * const tabs = [
+ *   { id: 'overview', label: 'Overview', href: `/macro-theses/${id}/overview` },
+ *   { id: 'evidence', label: 'Evidence', href: `/macro-theses/${id}/evidence` },
+ *   { id: 'execution', label: 'Execution', href: `/macro-theses/${id}/execution` },
+ * ];
+ * <EntityTabs tabs={tabs} />
+ * ```
  */
-function createStrategyTabs(strategyId: string): EntityTab[] {
-  return [
-    { id: 'overview', label: 'Overview', href: `/strategies/${strategyId}/overview` },
-    { id: 'evidence', label: 'Evidence', href: `/strategies/${strategyId}/evidence` },
-    { id: 'execution', label: 'Execution', href: `/strategies/${strategyId}/execution` },
-  ];
-}
-
-export function StrategyTabs({ strategyId }: StrategyTabsProps) {
+export function EntityTabs({ tabs, className }: EntityTabsProps) {
   const pathname = usePathname();
-  const tabs = createStrategyTabs(strategyId);
 
-  // Determine active tab based on pathname
+  // Find active tab by matching pathname
   const activeTab = tabs.find((tab) => pathname === tab.href)?.id ?? tabs[0]?.id;
 
   return (
-    <div className="bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]">
+    <div
+      className={cn(
+        'bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]',
+        className
+      )}
+    >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -52,4 +62,3 @@ export function StrategyTabs({ strategyId }: StrategyTabsProps) {
     </div>
   );
 }
-

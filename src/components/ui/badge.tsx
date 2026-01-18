@@ -17,6 +17,11 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        // Entity status variants
+        draft: "border-transparent bg-purple-100 text-purple-700",
+        active: "border-transparent bg-blue-100 text-blue-700",
+        complete: "border-transparent bg-emerald-100 text-emerald-700",
+        rejected: "border-transparent bg-slate-100 text-slate-500",
       },
     },
     defaultVariants: {
@@ -43,4 +48,26 @@ function Badge({
   )
 }
 
-export { Badge, badgeVariants }
+// Entity status type for type-safe status badges
+type EntityStatus = 'draft' | 'active' | 'complete' | 'rejected';
+
+// Helper component for entity status badges
+function EntityStatusBadge({
+  status,
+  className,
+  ...props
+}: Omit<React.ComponentProps<"span">, 'children'> & { status: EntityStatus | string }) {
+  // Map status to variant, defaulting to secondary for unknown statuses
+  const variant = ['draft', 'active', 'complete', 'rejected'].includes(status)
+    ? (status as EntityStatus)
+    : 'secondary';
+
+  return (
+    <Badge variant={variant} className={className} {...props}>
+      {status}
+    </Badge>
+  );
+}
+
+export { Badge, badgeVariants, EntityStatusBadge }
+export type { EntityStatus }

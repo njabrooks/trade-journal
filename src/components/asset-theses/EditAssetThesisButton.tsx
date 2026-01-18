@@ -2,14 +2,16 @@
 
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { EditAssetThesisDialog } from './EditAssetThesisDialog';
 import type { AssetThesis } from '@/db/schema';
 
 interface EditAssetThesisButtonProps {
   thesis: AssetThesis;
+  className?: string;
 }
 
-export function EditAssetThesisButton({ thesis }: EditAssetThesisButtonProps) {
+export function EditAssetThesisButton({ thesis, className }: EditAssetThesisButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -24,7 +26,10 @@ export function EditAssetThesisButton({ thesis }: EditAssetThesisButtonProps) {
             setIsOpen(true);
           }
         }}
-        className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors cursor-pointer"
+        className={cn(
+          'inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors cursor-pointer',
+          className
+        )}
       >
         <Pencil className="h-4 w-4" />
         Edit
