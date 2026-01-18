@@ -142,7 +142,8 @@ async function runIngestionForConfig(configId: string): Promise<IngestionResult>
       .where(eq(flexQueryConfigs.id, configId));
 
     console.log(`[${flexConfig.queryName}] ✅ Success`);
-    
+    console.log(`[${flexConfig.queryName}] Summary:`, JSON.stringify(ingestionResult.summary, null, 2));
+
     return {
       configId,
       queryName: flexConfig.queryName,

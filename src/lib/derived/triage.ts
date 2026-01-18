@@ -3,6 +3,7 @@ import {
   positions,
   strategyMetricsSnapshots,
   strategies,
+  strategyTemplates,
   underlyingsIvHistory,
   triageRecords,
   NewTriageRecord,
@@ -902,7 +903,7 @@ export async function computeQuantityChangeTriageForDate(
   snapshotDate: string,
   accountId?: string,
   strategyId?: string
-): Promise<void> {
+): Promise<number> {
   // Build conditions for previous date query
   const previousDateConditions = [sql`${positions.snapshotDate} < ${snapshotDate}`];
   if (accountId) {
@@ -1090,12 +1091,141 @@ export async function computeQuantityChangeTriageForDate(
     }
   }
 
-  // NOTE: QUANTITY_CHANGE triage records are now created by createQuantityChangeTriageForUnmatchedTrades
-  // in blotter.ts, which runs after matching completes. This function no longer creates QUANTITY_CHANGE records.
-  //
-  // NOTE (2026-01-16): Blotter reconciliation removed as part of blotter-to-journal migration.
-  // The journal system now handles trade ingestion → triage action linkage directly.
-  // Pending TRADE action reconciliation is no longer needed.
+  // Create triage records and log to journal for quantity changes
+  const triageRecordsToCreate: NewTriageRecord[] = [];
+
+  // Process strategy-level quantity changes
+  for (const [strategyId, data] of changesByStrategy.entries()) {
+    // Get strategy info including template label and underlying ticker
+    const [strategyInfo] = await db
+      .select({
+        strategyKey: strategies.strategyKey,
+        templateLabel: strategyTemplates.label,
+      })
+      .from(strategies)
+      .innerJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
+      .where(eq(strategies.id, strategyId))
+      .limit(1);
+
+    if (!strategyInfo) continue;
+
+    // Extract underlying symbol from strategyKey (e.g., "GLXY-STK" -> "GLXY")
+    const symbol = strategyInfo.strategyKey.split('-')[0] || 'UNKNOWN';
+    const title = strategyInfo.templateLabel || strategyInfo.strategyKey;
+
+    // Aggregate trade stages for the strategy
+    const stages = new Set(data.positions.map(p => p.tradeStage).filter(Boolean));
+    const stageStr = Array.from(stages).join('/');
+
+    // Summarize quantity changes
+    const changeSummary = data.positions.map(p => {
+      const delta = p.currentQty - p.previousQty;
+      const sign = delta > 0 ? '+' : '';
+      return `${p.symbol}: ${sign}${delta}`;
+    }).join(', ');
+
+    // Determine severity based on trade stage
+    let severity: 'urgent' | 'attention' | 'monitor' | 'info' = 'info';
+    if (stages.has('close')) {
+      severity = 'attention'; // Position closed - needs review
+    } else if (stages.has('open')) {
+      severity = 'monitor'; // New position - worth tracking
+    }
+
+    // Create strategy-level triage record for quantity change
+    const triageRecord: NewTriageRecord = {
+      snapshotDate,
+      accountId: data.accountId,
+      strategyId,
+      positionId: null,
+      contextLevel: 'strategy',
+      ruleSet: 'quantity_change_v1',
+      symbol,
+      severity,
+      status: 'inbox',
+      recommendedAction: `Review ${stageStr} activity: ${changeSummary}`,
+      notes: JSON.stringify({
+        tradeStages: Array.from(stages),
+        positions: data.positions.map(p => ({
+          symbol: p.symbol,
+          previousQty: p.previousQty,
+          currentQty: p.currentQty,
+          delta: p.currentQty - p.previousQty,
+          tradeStage: p.tradeStage,
+        })),
+      }),
+    };
+
+    triageRecordsToCreate.push(triageRecord);
+
+    // Log to journal with dedup (use strategyId + snapshotDate as trigger key for dedup)
+    await logTriageToJournalWithDedup({
+      objectType: 'strategy',
+      objectId: strategyId,
+      objectTitle: title,
+      actionType: 'quantity_change',
+      actionDescription: `${stageStr}: ${changeSummary}`,
+      triggerKey: `qty_change:${strategyId}:${snapshotDate}`,
+      source: 'automation',
+      metadata: {
+        snapshotDate,
+        tradeStages: Array.from(stages),
+        positions: data.positions,
+      },
+    });
+  }
+
+  // Process unlinked position-level changes
+  for (const change of unlinkedChanges) {
+    const delta = change.currentQty - change.previousQty;
+    const sign = delta > 0 ? '+' : '';
+
+    const triageRecord: NewTriageRecord = {
+      snapshotDate,
+      accountId: change.accountId,
+      strategyId: null,
+      positionId: change.positionId,
+      contextLevel: 'position',
+      ruleSet: 'quantity_change_v1',
+      symbol: change.symbol,
+      severity: change.tradeStage === 'close' ? 'attention' : 'info',
+      status: 'inbox',
+      recommendedAction: `Review ${change.tradeStage}: ${change.symbol} ${sign}${delta}`,
+      notes: JSON.stringify({
+        previousQty: change.previousQty,
+        currentQty: change.currentQty,
+        delta,
+        tradeStage: change.tradeStage,
+      }),
+    };
+
+    triageRecordsToCreate.push(triageRecord);
+
+    // Log to journal with dedup
+    await logTriageToJournalWithDedup({
+      objectType: 'position',
+      objectId: change.positionId,
+      objectTitle: change.symbol,
+      actionType: 'quantity_change',
+      actionDescription: `${change.tradeStage}: ${sign}${delta}`,
+      triggerKey: `qty_change:${change.positionId}:${snapshotDate}`,
+      source: 'automation',
+      metadata: {
+        snapshotDate,
+        previousQty: change.previousQty,
+        currentQty: change.currentQty,
+        delta,
+        tradeStage: change.tradeStage,
+      },
+    });
+  }
+
+  // Upsert triage records
+  if (triageRecordsToCreate.length > 0) {
+    await upsertTriageRecords(triageRecordsToCreate);
+  }
+
+  return triageRecordsToCreate.length;
 }
 
 
@@ -1165,18 +1295,15 @@ export async function computeTriageForDate(
   const positionRecords = await computePositionTriageForDate(snapshotDate, accountId, strategyId);
   const strategyRecords = await computeStrategyTriageForDate(snapshotDate, accountId, strategyId);
   
-  // NOTE: computeQuantityChangeTriageForDate no longer creates QUANTITY_CHANGE records.
-  // It only reconciles pending TRADE actions. QUANTITY_CHANGE records are created by
-  // createQuantityChangeTriageForUnmatchedTrades in blotter.ts after matching completes.
-  // We still call it to reconcile pending TRADE actions when quantity changes are detected.
-  await computeQuantityChangeTriageForDate(snapshotDate, accountId, strategyId);
+  // Compute quantity change triage records (compares positions between snapshots)
+  const quantityChangeCount = await computeQuantityChangeTriageForDate(snapshotDate, accountId, strategyId);
 
   await upsertTriageRecords([...positionRecords, ...strategyRecords]);
 
   return {
     position: positionRecords.length,
     strategy: strategyRecords.length,
-    quantityChange: 0, // QUANTITY_CHANGE records are now created separately after matching
+    quantityChange: quantityChangeCount,
   };
 }
 
