@@ -199,6 +199,104 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
           }
         }
 
+        // === CHANGE DETECTION (Egress Optimization) ===
+        // Before deleting and re-inserting, compare incoming data against existing positions
+        // to determine if there are actual changes. This prevents unnecessary recompute cycles
+        // when IBKR returns identical data (which happens on hourly checks between daily updates).
+        //
+        // We compare a fingerprint of key fields that would affect triage/metrics:
+        // - quantity, spot, unrealizedPnl, avgPrice, costBasisMoney
+        const datesWithActualChanges = new Set<string>();
+
+        for (const key of snapshotKeys) {
+          const [acc, snapshotDate] = key.split('::');
+          if (!snapshotDate) continue;
+
+          // Get existing positions for this snapshot
+          const existingPositions = await db
+            .select({
+              conid: positions.conid,
+              symbol: positions.symbol,
+              expiry: positions.expiry,
+              strike: positions.strike,
+              optionRight: positions.optionRight,
+              quantity: positions.quantity,
+              spot: positions.spot,
+              unrealizedPnl: positions.unrealizedPnl,
+              avgPrice: positions.avgPrice,
+              costBasisMoney: positions.costBasisMoney,
+            })
+            .from(positions)
+            .where(and(eq(positions.accountId, acc), eq(positions.snapshotDate, snapshotDate)));
+
+          // Get incoming positions for this snapshot
+          const incomingForDate = normalizedRows.filter(r => r.data.snapshotDate === snapshotDate);
+
+          // Quick check: if count differs, there are changes
+          if (existingPositions.length !== incomingForDate.length) {
+            datesWithActualChanges.add(snapshotDate);
+            console.log(`[Change Detection] ${snapshotDate}: Position count changed (${existingPositions.length} → ${incomingForDate.length})`);
+            continue;
+          }
+
+          // If no existing positions, this is new data
+          if (existingPositions.length === 0 && incomingForDate.length > 0) {
+            datesWithActualChanges.add(snapshotDate);
+            console.log(`[Change Detection] ${snapshotDate}: New data (no existing positions)`);
+            continue;
+          }
+
+          // Build lookup map for existing positions by conid (primary) or symbol+expiry+strike+right (fallback)
+          const existingMap = new Map<string, typeof existingPositions[0]>();
+          for (const pos of existingPositions) {
+            const key = pos.conid
+              ? `conid:${pos.conid}`
+              : `sym:${pos.symbol}|${pos.expiry}|${pos.strike}|${pos.optionRight}`;
+            existingMap.set(key, pos);
+          }
+
+          // Compare each incoming position against existing
+          let hasChanges = false;
+          for (const { data } of incomingForDate) {
+            const key = data.conid
+              ? `conid:${data.conid}`
+              : `sym:${data.symbol}|${data.expiry}|${data.strike}|${data.optionRight}`;
+            const existing = existingMap.get(key);
+
+            if (!existing) {
+              // New position not in existing set
+              hasChanges = true;
+              console.log(`[Change Detection] ${snapshotDate}: New position ${data.symbol} (${key})`);
+              break;
+            }
+
+            // Compare key fields (using string comparison to handle nulls)
+            const qtyChanged = String(data.quantity || '') !== String(existing.quantity || '');
+            const spotChanged = String(data.spot || '') !== String(existing.spot || '');
+            const pnlChanged = String(data.unrealizedPnl || '') !== String(existing.unrealizedPnl || '');
+            const avgPriceChanged = String(data.avgPrice || '') !== String(existing.avgPrice || '');
+            const costBasisChanged = String(data.costBasisMoney || '') !== String(existing.costBasisMoney || '');
+
+            if (qtyChanged || spotChanged || pnlChanged || avgPriceChanged || costBasisChanged) {
+              hasChanges = true;
+              const changes: string[] = [];
+              if (qtyChanged) changes.push(`qty: ${existing.quantity}→${data.quantity}`);
+              if (spotChanged) changes.push(`spot: ${existing.spot}→${data.spot}`);
+              if (pnlChanged) changes.push(`pnl: ${existing.unrealizedPnl}→${data.unrealizedPnl}`);
+              if (avgPriceChanged) changes.push(`avgPrice: ${existing.avgPrice}→${data.avgPrice}`);
+              if (costBasisChanged) changes.push(`costBasis: ${existing.costBasisMoney}→${data.costBasisMoney}`);
+              console.log(`[Change Detection] ${snapshotDate}: ${data.symbol} changed - ${changes.join(', ')}`);
+              break;
+            }
+          }
+
+          if (hasChanges) {
+            datesWithActualChanges.add(snapshotDate);
+          } else {
+            console.log(`[Change Detection] ${snapshotDate}: No changes detected, will skip recompute`);
+          }
+        }
+
         // Backfill avg_price and calculate unrealized_pnl from previous snapshots before deleting
         // This preserves values when IBKR hasn't calculated them yet (defaults to 0)
         // We use previous day's avg_price and calculate unrealized_pnl as (spot - avg_price) * quantity * multiplier
@@ -298,21 +396,22 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
             .where(and(eq(positions.accountId, acc), eq(positions.snapshotDate, snapshotDate)));
         }
 
-        // Insert positions and track which dates have changes
+        // Insert positions (change detection already done above)
         for (const { data, rowNumber } of normalizedRows) {
           try {
             await db.insert(positions).values(data);
             results.post.inserted++;
-            // Mark this date as having changes (for egress optimization)
-            if (data.snapshotDate) {
-              datesWithChanges.add(data.snapshotDate);
-            }
           } catch (error) {
             results.post.errors.push({
               row: rowNumber,
               errors: [error instanceof Error ? error.message : 'Insert failed'],
             });
           }
+        }
+
+        // Use the pre-computed change detection results instead of marking all dates
+        for (const date of datesWithActualChanges) {
+          datesWithChanges.add(date);
         }
       }
     }
