@@ -60,7 +60,8 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_DTE": ["MONITOR", "DISMISS"],
   
   // Strategy-level triggers
-  "LINK_STRATEGY_TO_THESIS": ["UPDATE"],  // Confirmation now requires asset thesis linkage
+  "CONFIRM_STRATEGY": ["UPDATE"],  // Confirmation: label, type, direction (urgent, no dismiss)
+  "LINK_STRATEGY_TO_THESIS": ["UPDATE", "DISMISS"],  // Link thesis to confirmed strategy (info, dismissable)
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
@@ -80,14 +81,15 @@ function getAvailableActions(recommendedAction: string | null, severity: string 
     // Default: monitor and dismiss available
     return ["MONITOR", "DISMISS"];
   }
-  
+
   const actions = TRIGGER_ACTIONS[recommendedAction] || ["MONITOR", "DISMISS"];
-  
+
   // Special case: DISMISS not available if severity is 'info'
-  if (severity === "info" && actions.includes("DISMISS")) {
+  // Exception: LINK_STRATEGY_TO_THESIS allows dismiss at info level (to permanently skip thesis linkage)
+  if (severity === "info" && actions.includes("DISMISS") && recommendedAction !== "LINK_STRATEGY_TO_THESIS") {
     return actions.filter((a) => a !== "DISMISS");
   }
-  
+
   return actions;
 }
 
@@ -138,7 +140,7 @@ export function TriageActionButtons({
   });
   const [loadingStrategy, setLoadingStrategy] = useState(false);
 
-  // Strategy confirmation dialog state (for LINK_STRATEGY_TO_THESIS)
+  // Strategy confirmation dialog state (for CONFIRM_STRATEGY)
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false);
 
   // Quantity change form state
@@ -164,17 +166,17 @@ export function TriageActionButtons({
   useEffect(() => {
     if (
       selectedAction === "UPDATE" &&
-      (recommendedAction === "CONFIRM_STRATEGIES" || recommendedAction === "PROVIDE_STRATEGY_METADATA") &&
+      recommendedAction === "PROVIDE_STRATEGY_METADATA" &&
       strategyId &&
       !strategyData
     ) {
       loadStrategyData();
       loadStrategyTypes();
     }
-    // For LINK_STRATEGY_TO_THESIS, open the new confirmation dialog
+    // For CONFIRM_STRATEGY or LINK_STRATEGY_TO_THESIS, open the confirmation dialog
     if (
       selectedAction === "UPDATE" &&
-      recommendedAction === "LINK_STRATEGY_TO_THESIS" &&
+      (recommendedAction === "CONFIRM_STRATEGY" || recommendedAction === "LINK_STRATEGY_TO_THESIS") &&
       strategyId
     ) {
       loadStrategyData();
@@ -1018,8 +1020,8 @@ export function TriageActionButtons({
   };
 
   const getActionDescription = (action: ActionType): string => {
-    if (action === "UPDATE" && recommendedAction === "LINK_STRATEGY_TO_THESIS") {
-      return "Confirm this strategy by selecting a strategy type and linking to an asset thesis.";
+    if (action === "UPDATE" && recommendedAction === "CONFIRM_STRATEGY") {
+      return "Confirm this strategy: set label, type, direction, and optionally link to an asset thesis.";
     }
 
     if (action === "UPDATE" && recommendedAction === "CONFIRM_STRATEGIES") {
@@ -1046,8 +1048,8 @@ export function TriageActionButtons({
     return !availableActions.includes(action);
   };
 
-  // Render strategy confirmation dialog (for LINK_STRATEGY_TO_THESIS)
-  if (showConfirmationDialog && recommendedAction === "LINK_STRATEGY_TO_THESIS") {
+  // Render strategy confirmation dialog (for CONFIRM_STRATEGY or LINK_STRATEGY_TO_THESIS)
+  if (showConfirmationDialog && (recommendedAction === "CONFIRM_STRATEGY" || recommendedAction === "LINK_STRATEGY_TO_THESIS")) {
     // Show loading state while strategy data is being fetched
     if (loadingStrategy || !strategyData) {
       return (
@@ -1068,6 +1070,7 @@ export function TriageActionButtons({
             status: strategyData.status,
             isAuto: strategyData.isAuto,
             strategyType: strategyData.strategyType,
+            direction: strategyData.direction,
             assetThesisId: strategyData.assetThesisId,
           }}
           isOpen={showConfirmationDialog}

@@ -28,7 +28,8 @@ export const ALL_TRIGGERS = [
   "SIGMA_1.0",
   "REVIEW_DTE",
   // Strategy-level triggers
-  "CONFIRM_STRATEGIES",
+  "CONFIRM_STRATEGY",  // Strategy needs confirmation: label, type, direction
+  "LINK_STRATEGY_TO_THESIS",  // Confirmed strategy without thesis linkage (soft reminder)
   "PROVIDE_STRATEGY_METADATA",
   "REVIEW_SIZE",
   "REVIEW_COMPLEXITY",

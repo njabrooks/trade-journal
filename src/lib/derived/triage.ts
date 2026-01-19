@@ -521,10 +521,11 @@ export async function computeStrategyTriageForDate(
     // Skip rejected strategies - they're abandoned and shouldn't generate triage records
     if (strategyRow?.status === 'rejected') continue;
 
-    // 1. LINK_STRATEGY_TO_THESIS - Unconfirmed auto-derived strategies need thesis link
+    // 1. CONFIRM_STRATEGY - Unconfirmed auto-derived strategies need confirmation
+    // This covers: label, strategyType, direction, and optionally thesis linkage
     if (strategyRow?.isAuto && !strategyRow.confirmedAt) {
       const computedSeverity = 'urgent';
-      const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
+      const recommendedAction = 'CONFIRM_STRATEGY';
 
       // Check for active override (sync lookup from batched cache)
       const override = lookupSeverityOverride(
@@ -544,7 +545,7 @@ export async function computeStrategyTriageForDate(
         severity: override?.severity || computedSeverity,
         direction: strategyRow?.direction ?? null,
         recommendedAction,
-        notes: 'Strategy needs confirmation: select strategy type and link to asset thesis',
+        notes: 'Strategy needs confirmation: set label, type, direction, and optionally link to asset thesis',
         ruleSet: 'strategy_workflow',
         symbol: strategyKey,
         overrideSource: override?.overrideSource ?? null,
@@ -552,9 +553,9 @@ export async function computeStrategyTriageForDate(
         overrideAt: override?.overrideAt ?? null,
       });
     }
-    // 2. LINK_STRATEGY_TO_THESIS (soft) - Confirmed but missing asset thesis link
+    // 2. LINK_STRATEGY_TO_THESIS - Confirmed but missing asset thesis link (optional follow-up)
     else if (strategyRow?.confirmedAt && !strategyRow.assetThesisId) {
-      const computedSeverity = 'attention';
+      const computedSeverity = 'info';
       const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
 
       // Check for active override (sync lookup from batched cache)
@@ -575,7 +576,7 @@ export async function computeStrategyTriageForDate(
         severity: override?.severity || computedSeverity,
         direction: strategyRow?.direction ?? null,
         recommendedAction,
-        notes: 'Strategy confirmed but missing asset thesis link',
+        notes: 'Strategy confirmed but not yet linked to an asset thesis',
         ruleSet: 'strategy_workflow',
         symbol: strategyKey,
         overrideSource: override?.overrideSource ?? null,
@@ -1190,14 +1191,16 @@ export async function computeQuantityChangeTriageForDate(
     }).join(', ');
 
     // Determine severity based on trade stage
+    // Both 'open' (new positions) and 'close' (closed positions) need user attention
+    // to capture trade metadata (rationale, context, etc.)
     let severity: 'urgent' | 'attention' | 'monitor' | 'info' = 'info';
-    if (stages.has('close')) {
-      severity = 'attention'; // Position closed - needs review
-    } else if (stages.has('open')) {
-      severity = 'monitor'; // New position - worth tracking
+    if (stages.has('close') || stages.has('open')) {
+      severity = 'attention'; // Position activity needs user attention for metadata capture
     }
 
     // Create strategy-level triage record for quantity change
+    // Use QUANTITY_CHANGE constant for recommendedAction (like TRADE_INGESTION) for UI compatibility
+    // Store descriptive details in notes
     const triageRecord: NewTriageRecord = {
       snapshotDate,
       accountId: data.accountId,
@@ -1208,8 +1211,9 @@ export async function computeQuantityChangeTriageForDate(
       symbol,
       severity,
       status: 'inbox',
-      recommendedAction: `Review ${stageStr} activity: ${changeSummary}`,
+      recommendedAction: 'QUANTITY_CHANGE',
       notes: JSON.stringify({
+        description: `Review ${stageStr} activity: ${changeSummary}`,
         tradeStages: Array.from(stages),
         positions: data.positions.map(p => ({
           symbol: p.symbol,
@@ -1248,6 +1252,9 @@ export async function computeQuantityChangeTriageForDate(
     const delta = change.currentQty - change.previousQty;
     const sign = delta > 0 ? '+' : '';
 
+    // Both 'open' and 'close' need attention (consistent with strategy-level triggers)
+    const severity = (change.tradeStage === 'close' || change.tradeStage === 'open') ? 'attention' : 'info';
+
     const triageRecord: NewTriageRecord = {
       snapshotDate,
       accountId: change.accountId,
@@ -1256,10 +1263,11 @@ export async function computeQuantityChangeTriageForDate(
       contextLevel: 'position',
       ruleSet: 'quantity_change_v1',
       symbol: change.symbol,
-      severity: change.tradeStage === 'close' ? 'attention' : 'info',
+      severity,
       status: 'inbox',
-      recommendedAction: `Review ${change.tradeStage}: ${change.symbol} ${sign}${delta}`,
+      recommendedAction: 'QUANTITY_CHANGE',
       notes: JSON.stringify({
+        description: `Review ${change.tradeStage}: ${change.symbol} ${sign}${delta}`,
         previousQty: change.previousQty,
         currentQty: change.currentQty,
         delta,
