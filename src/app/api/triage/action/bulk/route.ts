@@ -73,7 +73,9 @@ export async function POST(request: NextRequest) {
       expiresDate.setDate(expiresDate.getDate() + days);
       overrideExpiresDate = expiresDate.toISOString().split("T")[0];
     } else if (actionType === "TRADE") {
-      if (commonTrigger === "QUANTITY_CHANGE" && tradeReason && tradeStage) {
+      // For QUANTITY_CHANGE or TRADE_INGESTION triggers with trade metadata captured, mark as done
+      const isTradeMetadataTrigger = commonTrigger === "QUANTITY_CHANGE" || commonTrigger === "TRADE_INGESTION";
+      if (isTradeMetadataTrigger && tradeReason && tradeStage) {
         triageStatusUpdate = "done";
       } else {
         triageStatusUpdate = "in_progress";

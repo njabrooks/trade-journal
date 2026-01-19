@@ -71,7 +71,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
 // Helper to check if this is a trade metadata capture trigger (QUANTITY_CHANGE or TRADE_INGESTION)
 // These triggers use the TradeMetadataForm for compulsory metadata capture
 function isTradeMetadataTrigger(recommendedAction: string | null): boolean {
-  return isTradeMetadataTrigger(recommendedAction) || recommendedAction === "TRADE_INGESTION";
+  return recommendedAction === "QUANTITY_CHANGE" || recommendedAction === "TRADE_INGESTION";
 }
 
 // Helper to determine available actions for a trigger

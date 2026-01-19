@@ -70,8 +70,10 @@ export async function POST(request: NextRequest) {
       overrideExpiresDate = expiresDate.toISOString().split("T")[0];
     } else if (actionType === "TRADE") {
       // Trade: mark workflow status
-      if (triage.recommendedAction === "QUANTITY_CHANGE" && tradeReason && tradeStage) {
-        // Already validated trade - mark as done
+      // For QUANTITY_CHANGE or TRADE_INGESTION triggers with trade metadata captured, mark as done
+      const isTradeMetadataTrigger = triage.recommendedAction === "QUANTITY_CHANGE" || triage.recommendedAction === "TRADE_INGESTION";
+      if (isTradeMetadataTrigger && tradeReason && tradeStage) {
+        // Trade metadata captured - mark as done
         triageStatusUpdate = "done";
       } else {
         // Trade action in progress - will be completed when quantity change detected
