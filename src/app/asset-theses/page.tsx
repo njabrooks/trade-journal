@@ -1,7 +1,12 @@
+import { Metadata } from 'next';
 import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { CreateAssetThesisButton } from '@/components/asset-theses/CreateAssetThesisButton';
 import { UnifiedAssetThesisBrowser } from '@/components/asset-theses/UnifiedAssetThesisBrowser';
+
+export const metadata: Metadata = {
+  title: 'Asset Theses',
+};
 
 export default async function AssetThesesPage() {
   const assetTheses = await getAssetThesesList();

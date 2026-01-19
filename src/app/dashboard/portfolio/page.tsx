@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { StackedBar } from "@/components/charts/StackedBar";
@@ -8,6 +9,10 @@ import {
   formatDateLabel,
   formatPercent,
 } from "@/lib/formatters";
+
+export const metadata: Metadata = {
+  title: "Portfolio",
+};
 
 export default async function PortfolioDashboardPage() {
   const account = await getPrimaryAccount();

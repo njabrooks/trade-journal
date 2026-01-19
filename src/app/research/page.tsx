@@ -1,8 +1,13 @@
+import { Metadata } from 'next';
 import { getResearchArtifactsListWithCounts } from '@/db/queries/research';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { UnifiedResearchBrowser } from '@/components/research/UnifiedResearchBrowser';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+
+export const metadata: Metadata = {
+  title: 'Research',
+};
 
 export default async function ResearchPage() {
   const artifacts = await getResearchArtifactsListWithCounts();

@@ -1,8 +1,13 @@
+import { Metadata } from 'next';
 import { db } from '@/db';
 import { journalEntries } from '@/db/schema';
 import { desc } from 'drizzle-orm';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { JournalBrowser } from '@/components/journal/JournalBrowser';
+
+export const metadata: Metadata = {
+  title: 'Journal',
+};
 
 async function getJournalData() {
   // Fetch all journal entries (limit to 500 for performance)

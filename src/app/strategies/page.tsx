@@ -1,8 +1,13 @@
+import { Metadata } from "next";
 import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { UnifiedStrategiesBrowser } from "@/components/strategies/UnifiedStrategiesBrowser";
 import { getStrategiesForList } from "@/db/queries/strategies";
 import { formatCurrency } from "@/lib/formatters";
+
+export const metadata: Metadata = {
+  title: "Strategies",
+};
 
 interface StrategiesPageProps {
   searchParams?: Promise<{

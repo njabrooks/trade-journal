@@ -1,8 +1,13 @@
+import { Metadata } from 'next';
 import { getAllMainClaimsWithSources } from '@/db/queries/research';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+
+export const metadata: Metadata = {
+  title: 'Claims',
+};
 
 export default async function ClaimsBrowserPage() {
   const claimsWithSources = await getAllMainClaimsWithSources();

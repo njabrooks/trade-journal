@@ -1,6 +1,11 @@
+import { Metadata } from "next";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { UnifiedTriageBrowser } from "@/components/triage/UnifiedTriageBrowser";
 import { getUnifiedTriageQueue } from "@/db/queries/triage";
+
+export const metadata: Metadata = {
+  title: "Triage",
+};
 
 export default async function TriagePage() {
   // Fetch unified triage queue across all accounts (position/strategy + thesis triage combined)

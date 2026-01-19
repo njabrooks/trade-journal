@@ -1,7 +1,12 @@
+import { Metadata } from 'next';
 import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { CreateThesisButton } from '@/components/theses/CreateThesisButton';
 import { UnifiedMacroThesisBrowser } from '@/components/theses/UnifiedMacroThesisBrowser';
+
+export const metadata: Metadata = {
+  title: 'Macro Theses',
+};
 
 export default async function MacroThesesPage() {
   const theses = await getMacroThesesList();
