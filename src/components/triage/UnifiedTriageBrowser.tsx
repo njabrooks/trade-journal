@@ -136,8 +136,8 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
         PRIORITY_SEVERITIES.includes(r.severity ?? '')
       );
     } else if (baseFilter === 'inbox') {
-      // Inbox: status not done (any severity)
-      result = result.filter((r) => r.status !== 'done');
+      // Inbox: only status === inbox (not in_progress or done)
+      result = result.filter((r) => r.status === 'inbox');
     } else if (baseFilter === 'old_triage') {
       // Old Triage: status done (completed items)
       result = result.filter((r) => r.status === 'done');
