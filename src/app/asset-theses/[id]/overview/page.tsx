@@ -116,6 +116,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
           <ThesisArticulationDisplay
             articulation={articulation}
             claimCount={currentClaimCount}
+            claimsAtLastArticulation={articulationClaimCount}
           />
         )}
 

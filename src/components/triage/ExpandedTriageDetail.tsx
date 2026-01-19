@@ -285,6 +285,8 @@ function ThesisDetail({
     error?: string;
     output?: string;
   } | null>(null);
+  // Track current linked claim count from ThesisClaimsBrowserWrapper
+  const [currentLinkedClaimCount, setCurrentLinkedClaimCount] = useState<number | null>(null);
 
   const thesisRecord = record.thesisTriageRecord;
   const isMacro = record.objectType === 'macro_thesis';
@@ -412,6 +414,12 @@ function ThesisDetail({
     newClaimCount?: number;
     hasArticulation?: boolean;
   } | undefined) : undefined;
+
+  // Calculate dynamic new claim count (uses live data from claims browser, not stored snapshot)
+  const claimsAtLastArticulation = synthesisContentSummary?.claimsAtLastArticulation ?? 0;
+  const dynamicNewClaimCount = currentLinkedClaimCount !== null
+    ? Math.max(0, currentLinkedClaimCount - claimsAtLastArticulation)
+    : synthesisContentSummary?.newClaimCount ?? 0; // Fallback to stored value while loading
 
   const copySkillToClipboard = () => {
     if (suggestedSkill) {
@@ -718,8 +726,8 @@ function ThesisDetail({
                 </p>
                 <p className="text-xs text-emerald-600 mt-1">
                   {isNewClaimsAvailable
-                    ? `${synthesisContentSummary?.newClaimCount ?? 0} new claims since last articulation. Review the claims below, then update.`
-                    : `${synthesisContentSummary?.currentClaimCount ?? 0} claims linked. Review the claims below, then generate articulation and signals.`}
+                    ? `${dynamicNewClaimCount} new claims since last articulation. Review the claims below, then update.`
+                    : `${currentLinkedClaimCount ?? synthesisContentSummary?.currentClaimCount ?? 0} claims linked. Review the claims below, then generate articulation and signals.`}
                 </p>
               </div>
               <Button
@@ -741,7 +749,7 @@ function ThesisDetail({
                   <>
                     <Sparkles className="h-4 w-4" />
                     {isNewClaimsAvailable
-                      ? `Update Articulation (+${synthesisContentSummary?.newClaimCount ?? 0} claims)`
+                      ? `Update Articulation (+${dynamicNewClaimCount} claims)`
                       : 'Generate Articulation'}
                   </>
                 )}
@@ -752,6 +760,7 @@ function ThesisDetail({
           <ThesisClaimsBrowserWrapper
             thesisId={record.objectId}
             thesisType={isMacro ? 'macro' : 'asset'}
+            onClaimsLoaded={setCurrentLinkedClaimCount}
           />
         </>
       )}

@@ -360,6 +360,9 @@ async function checkAndResolveTriage(thesisId: string, thesisType: 'macro' | 'as
 
   if (count === 0) {
     // No more recommended signals - resolve the triage record
+    // Note: Check both rule names for backwards compatibility
+    // - REVIEW_DRAFT_SIGNALS: Created by computeThesisTriageForThesis() in thesisTriage.ts
+    // - REVIEW_RECOMMENDED_SIGNALS: Created by insert-thesis-articulation.ts (legacy)
     const [triageRecord] = await db
       .select()
       .from(thesisTriageRecords)
@@ -367,8 +370,8 @@ async function checkAndResolveTriage(thesisId: string, thesisType: 'macro' | 'as
         and(
           eq(thesisTriageRecords.thesisId, thesisId),
           eq(thesisTriageRecords.thesisType, thesisType),
-          eq(thesisTriageRecords.triageRule, 'REVIEW_RECOMMENDED_SIGNALS'),
-          sql`${thesisTriageRecords.status} != 'complete'`
+          sql`${thesisTriageRecords.triageRule} IN ('REVIEW_RECOMMENDED_SIGNALS', 'REVIEW_DRAFT_SIGNALS')`,
+          sql`${thesisTriageRecords.status} != 'done'`
         )
       )
       .limit(1);
@@ -377,7 +380,7 @@ async function checkAndResolveTriage(thesisId: string, thesisType: 'macro' | 'as
       await db
         .update(thesisTriageRecords)
         .set({
-          status: 'complete',
+          status: 'done',
           completedAt: new Date(),
           completedBy: 'user',
           userNotes: 'All recommended signals reviewed',
@@ -391,10 +394,10 @@ async function checkAndResolveTriage(thesisId: string, thesisType: 'macro' | 'as
         objectId: thesisId,
         objectTitle: triageRecord.thesisTitle,
         actionType: 'triage_resolved',
-        actionDescription: 'REVIEW_RECOMMENDED_SIGNALS triage resolved - all signals reviewed',
+        actionDescription: `${triageRecord.triageRule} triage resolved - all signals reviewed`,
         triageRecordId: triageRecord.id,
         previousState: { status: triageRecord.status },
-        newState: { status: 'complete' },
+        newState: { status: 'done' },
         source: 'user',
       });
     }

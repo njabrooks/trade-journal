@@ -10,6 +10,8 @@ interface ThesisClaimsBrowserWrapperProps {
   thesisId: string;
   thesisType: 'macro' | 'asset';
   className?: string;
+  /** Called when claims finish loading, provides the count of linked claims */
+  onClaimsLoaded?: (linkedCount: number) => void;
 }
 
 interface LinkedThesis {
@@ -37,6 +39,7 @@ export function ThesisClaimsBrowserWrapper({
   thesisId,
   thesisType,
   className,
+  onClaimsLoaded,
 }: ThesisClaimsBrowserWrapperProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +68,7 @@ export function ThesisClaimsBrowserWrapper({
           }
         }).length;
         setLinkedClaimsCount(linkedCount);
+        onClaimsLoaded?.(linkedCount);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {

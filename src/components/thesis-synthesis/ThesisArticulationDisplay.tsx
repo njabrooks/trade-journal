@@ -8,12 +8,15 @@ import type { ThesisArticulation } from '@/db/schema';
 interface ThesisArticulationDisplayProps {
   articulation: ThesisArticulation;
   claimCount?: number;
+  /** Claim count at time of last articulation (from thesis.claimsCountAtLastArticulation) */
+  claimsAtLastArticulation?: number;
   onViewHistory?: () => void;
 }
 
 export function ThesisArticulationDisplay({
   articulation,
   claimCount,
+  claimsAtLastArticulation,
   onViewHistory,
 }: ThesisArticulationDisplayProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
@@ -298,12 +301,12 @@ export function ThesisArticulationDisplay({
           </div>
         )}
 
-        {/* Staleness Check */}
-        {claimCount !== undefined && claimCount > claimIdsUsed.length && (
+        {/* Staleness Check - compare current claims with claims at last articulation, not claimIdsUsed */}
+        {claimCount !== undefined && claimsAtLastArticulation !== undefined && claimCount > claimsAtLastArticulation && (
           <div className="mt-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md">
             <p className="text-xs text-amber-700">
               <AlertTriangle className="w-3 h-3 inline mr-1" />
-              {claimCount - claimIdsUsed.length} new claims added since this articulation.
+              {claimCount - claimsAtLastArticulation} new claims added since this articulation.
               Consider re-synthesizing with <code className="px-1 bg-amber-100 rounded">/synthesize-thesis</code>
             </p>
           </div>

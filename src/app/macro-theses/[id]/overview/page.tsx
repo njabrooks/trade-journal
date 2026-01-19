@@ -94,6 +94,7 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
           <ThesisArticulationDisplay
             articulation={articulation}
             claimCount={claimsWithSources.length}
+            claimsAtLastArticulation={thesis.claimsCountAtLastArticulation ?? undefined}
           />
         ) : thesis.description ? (
           <div className="space-y-4">

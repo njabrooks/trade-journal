@@ -195,6 +195,7 @@ export function AssetThesisDetailSections({
               <ThesisArticulationDisplay
                 articulation={articulation}
                 claimCount={currentClaimCount}
+                claimsAtLastArticulation={articulationClaimCount}
               />
             )}
 
