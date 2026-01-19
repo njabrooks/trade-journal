@@ -106,6 +106,9 @@ export function TradeMetadataForm({
     }
   }, [tradeDetails, selectedTradeIds.size]);
 
+  // Check if trades exist (trade selection is only required when trades are available)
+  const hasTrades = tradeDetails && tradeDetails.length > 0;
+
   const handleSubmit = async () => {
     // Validate required fields
     if (!tradeStage) {
@@ -116,7 +119,8 @@ export function TradeMetadataForm({
       setInternalError('Trade reason is required');
       return;
     }
-    if (selectedTradeIds.size === 0) {
+    // Only require trade selection if trades exist
+    if (hasTrades && selectedTradeIds.size === 0) {
       setInternalError('At least one trade must be selected');
       return;
     }
@@ -134,7 +138,8 @@ export function TradeMetadataForm({
   };
 
   const error = externalError || internalError;
-  const isValid = tradeStage !== '' && tradeReason.trim() !== '' && selectedTradeIds.size > 0;
+  // Trade selection only required when trades exist
+  const isValid = tradeStage !== '' && tradeReason.trim() !== '' && (!hasTrades || selectedTradeIds.size > 0);
 
   return (
     <div className="space-y-4">
@@ -149,37 +154,47 @@ export function TradeMetadataForm({
       {/* Trade Details Section */}
       {loadingTrades ? (
         <div className="text-sm text-slate-500 py-4">Loading trade executions...</div>
-      ) : tradeDetails && tradeDetails.length > 0 ? (
+      ) : (
         <div className="space-y-4">
-          {/* Trade Execution Details with checkboxes */}
-          <TradeDetailsCard
-            tradeDetails={tradeDetails}
-            editMode={true}
-            selectedTradeIds={selectedTradeIds}
-            onTradeSelect={(tradeId, selected) => {
-              const newSelected = new Set(selectedTradeIds);
-              if (selected) {
-                newSelected.add(tradeId);
-              } else {
-                newSelected.delete(tradeId);
-              }
-              setSelectedTradeIds(newSelected);
-            }}
-            tradeQuantities={tradeQuantities}
-            onQuantityChange={(tradeId, quantity) => {
-              const newQuantities = new Map(tradeQuantities);
-              newQuantities.set(tradeId, quantity);
-              setTradeQuantities(newQuantities);
-            }}
-            onSelectAll={() => {
-              if (tradeDetails) {
-                setSelectedTradeIds(new Set(tradeDetails.map(t => t.id)));
-              }
-            }}
-            onDeselectAll={() => {
-              setSelectedTradeIds(new Set());
-            }}
-          />
+          {/* Trade Execution Details with checkboxes - only show if trades exist */}
+          {hasTrades ? (
+            <TradeDetailsCard
+              tradeDetails={tradeDetails}
+              editMode={true}
+              selectedTradeIds={selectedTradeIds}
+              onTradeSelect={(tradeId, selected) => {
+                const newSelected = new Set(selectedTradeIds);
+                if (selected) {
+                  newSelected.add(tradeId);
+                } else {
+                  newSelected.delete(tradeId);
+                }
+                setSelectedTradeIds(newSelected);
+              }}
+              tradeQuantities={tradeQuantities}
+              onQuantityChange={(tradeId, quantity) => {
+                const newQuantities = new Map(tradeQuantities);
+                newQuantities.set(tradeId, quantity);
+                setTradeQuantities(newQuantities);
+              }}
+              onSelectAll={() => {
+                if (tradeDetails) {
+                  setSelectedTradeIds(new Set(tradeDetails.map(t => t.id)));
+                }
+              }}
+              onDeselectAll={() => {
+                setSelectedTradeIds(new Set());
+              }}
+            />
+          ) : (
+            /* No trades available - show info message */
+            <div className="bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
+              <div className="text-xs text-blue-800 font-medium">No trade executions found</div>
+              <p className="text-xs text-blue-600 mt-1">
+                This quantity change has no matching ingested trades. You can still record the trade context (stage and reason) for the journal.
+              </p>
+            </div>
+          )}
 
           {/* Trade Stage - REQUIRED */}
           <div className="bg-white rounded-md border border-slate-200 p-3">
@@ -285,8 +300,6 @@ export function TradeMetadataForm({
             </div>
           </div>
         </div>
-      ) : (
-        <div className="text-sm text-slate-500 py-4">No trade executions found</div>
       )}
     </div>
   );

@@ -1232,62 +1232,64 @@ export function TriageActionButtons({
       setError(null);
 
       try {
-        // For QUANTITY_CHANGE, use trade details with selected trades and edited quantities
-        if (!tradeDetails || tradeDetails.length === 0) {
-          throw new Error("No trade details available");
-        }
-
-        const selectedTrades = tradeDetails.filter(t => formData.selectedTradeIds.has(t.id));
-
-        if (selectedTrades.length === 0) {
-          throw new Error("At least one trade execution must be selected");
-        }
-
-        // Map trade details to positions by matching symbol
-        const positionsResponse = await fetch(`/api/positions?strategyId=${strategyId}`);
-        if (!positionsResponse.ok) {
-          throw new Error("Failed to load positions for trade action");
-        }
-        const positionsData = await positionsResponse.json();
-        const positionsList = Array.isArray(positionsData) ? positionsData : [positionsData];
-
-        // Match trades to positions by symbol and create trade positions
-        const matchedPositions: Array<{ positionId: string; quantity: number }> = [];
-        for (const trade of selectedTrades) {
-          const position = positionsList.find((p: any) => p.symbol === trade.symbol);
-          if (position && position.id) {
-            const quantity = formData.tradeQuantities?.get(trade.id) ?? trade.quantity;
-            matchedPositions.push({
-              positionId: position.id,
-              quantity: quantity,
-            });
-          }
-        }
-
-        if (matchedPositions.length === 0) {
-          throw new Error("Could not match trades to positions");
-        }
-
         // Build notes with trade reason and additional notes
-        let notesParts = [formData.tradeReason];
+        const notesParts = [formData.tradeReason];
         if (formData.additionalNotes) {
           notesParts.push(formData.additionalNotes);
         }
 
+        // Check if we have trade details to match
+        const hasTrades = tradeDetails && tradeDetails.length > 0;
+        let matchedPositions: Array<{ positionId: string; quantity: number }> = [];
+
+        if (hasTrades && formData.selectedTradeIds.size > 0) {
+          // We have trades - match them to positions
+          const selectedTrades = tradeDetails.filter(t => formData.selectedTradeIds.has(t.id));
+
+          // Map trade details to positions by matching symbol
+          const positionsResponse = await fetch(`/api/positions?strategyId=${strategyId}`);
+          if (!positionsResponse.ok) {
+            throw new Error("Failed to load positions for trade action");
+          }
+          const positionsData = await positionsResponse.json();
+          const positionsList = Array.isArray(positionsData) ? positionsData : [positionsData];
+
+          // Match trades to positions by symbol and create trade positions
+          for (const trade of selectedTrades) {
+            const position = positionsList.find((p: any) => p.symbol === trade.symbol);
+            if (position && position.id) {
+              const quantity = formData.tradeQuantities?.get(trade.id) ?? trade.quantity;
+              matchedPositions.push({
+                positionId: position.id,
+                quantity: quantity,
+              });
+            }
+          }
+        }
+        // If no trades available (historical data case), we proceed without tradePositions
+        // The API will still record the trade metadata to the journal
+
         // Call triage action API
+        // Note: When matchedPositions is empty, the API handles this by just recording the metadata
+        const requestBody: Record<string, unknown> = {
+          triageId,
+          actionType: "TRADE",
+          strategyId,
+          positionId,
+          tradeReason: formData.tradeReason,
+          tradeStage: formData.tradeStage,
+          notes: notesParts.join("\n\n"),
+        };
+
+        // Only include tradePositions if we have matched positions
+        if (matchedPositions.length > 0) {
+          requestBody.tradePositions = matchedPositions;
+        }
+
         const response = await fetch("/api/triage/action", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            triageId,
-            actionType: "TRADE",
-            strategyId,
-            positionId,
-            tradeReason: formData.tradeReason,
-            tradeStage: formData.tradeStage,
-            tradePositions: matchedPositions,
-            notes: notesParts.join("\n\n"),
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {

@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Handle non-TRADE actions (DISMISS, MONITOR, UPDATE)
+    // Handle actions without tradePositions (DISMISS, MONITOR, UPDATE, or TRADE without linked trades)
     // Update triage record with status, severity, and override fields
     const triageUpdateNonTrade: Record<string, unknown> = { updatedAt: new Date() };
     if (triageStatusUpdate) {
@@ -239,12 +239,18 @@ export async function POST(request: NextRequest) {
       MANAGE_ASSIGNMENT: 'triage_assignment_managed',
     };
 
+    // For TRADE actions without tradePositions (historical data case), include trade metadata in journal
+    const isTradeWithoutPositions = actionType === "TRADE" && !tradePositions;
+    const tradeActionDescription = isTradeWithoutPositions && tradeReason
+      ? `User recorded TRADE action for ${triage.recommendedAction || 'triage'} trigger (no linked trades). Stage: ${tradeStage || 'unknown'}. Reason: ${tradeReason}`
+      : `User ${actionType.toLowerCase().replace('_', ' ')} triage: ${triage.recommendedAction || 'general'}${notes ? `. Notes: ${notes}` : ''}`;
+
     await logToJournal({
       objectType: triage.strategyId ? 'strategy' : 'position',
       objectId: triage.strategyId || triage.positionId || triageId,
       objectTitle: strategyKey || triage.symbol || 'Unknown',
       actionType: actionTypeMap[actionType] || 'triage_action',
-      actionDescription: `User ${actionType.toLowerCase().replace('_', ' ')} triage: ${triage.recommendedAction || 'general'}${notes ? `. Notes: ${notes}` : ''}`,
+      actionDescription: tradeActionDescription,
       triageRecordId: triageId,
       previousState: {
         severity: previousSeverity,
@@ -258,12 +264,16 @@ export async function POST(request: NextRequest) {
         overrideSource,
         monitorDays: monitorDaysValue,
         overrideExpiresDate,
+        // Include trade metadata for TRADE actions without positions
+        ...(isTradeWithoutPositions && { tradeReason, tradeStage }),
       },
-      rationale: notes || undefined,
+      rationale: isTradeWithoutPositions ? tradeReason : (notes || undefined),
       source: 'user',
       metadata: {
         positionId: positionId || triage.positionId,
         strategyId: strategyId || triage.strategyId,
+        // Include trade metadata for historical data case
+        ...(isTradeWithoutPositions && { tradeReason, tradeStage, noLinkedTrades: true }),
       },
     });
 
