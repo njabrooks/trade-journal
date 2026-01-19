@@ -199,8 +199,16 @@ interface MainClaim {
 | `trade_ingestion_v1` | `processCsv.ts` | Trades ingested via Flex CSV |
 | `quantity_change_v1` | `triage.ts` | Position quantity changed (non-trade) |
 | `options_v1` | `triage.ts` | Position-level (DTE, ITM, SIGMA, SIZE) |
-| `strategy_v1` | `triage.ts` | Strategy-level (LINK_TO_THESIS, SIZE, COMPLEXITY) |
+| `strategy_v1` | `triage.ts` | Strategy-level (CONFIRM_STRATEGY, LINK_TO_THESIS, SIZE, COMPLEXITY) |
 | `thesis_*` | `thesisTriage.ts` | Thesis-level (NEEDS_RESEARCH, PRODUCE_CORE_ARGUMENT, etc.) |
+
+**Key Workflow Triggers:**
+- `CONFIRM_STRATEGY` (urgent) - Auto-derived strategy needs confirmation (label, type, direction; assetThesisId optional)
+- `LINK_STRATEGY_TO_THESIS` (info) - Confirmed strategy missing asset thesis link (soft reminder)
+
+**Account-Agnostic Triage:**
+- Triage queue displays records from all accounts by default
+- Query functions: `getTriageQueueAllAccounts()`, `getUnifiedTriageQueue()` (accountId optional)
 
 **Key Files:**
 - `src/lib/ingestion/flex/processCsv.ts` - Trade ingestion triage creation

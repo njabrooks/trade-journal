@@ -584,7 +584,11 @@ source .env.local && /opt/homebrew/opt/postgresql@16/bin/psql "$DATABASE_URL_POO
 **Common pitfall**: Ensure `.env.local` has valid syntax (all lines must have `KEY=value` format, not just `KEY`).
 
 ### When Working with Triage/Signals/Journal
-- **Triage** (`/src/lib/derived/triage.ts`) - Evaluates positions, creates `triage_records`
+- **Triage** (`/src/lib/derived/triage.ts`) - Evaluates positions/strategies, creates `triage_records`
+  - **Account-agnostic**: Triage queue shows records from all accounts by default
+  - **Key triggers**: `CONFIRM_STRATEGY` (urgent, for unconfirmed auto-derived strategies), `LINK_STRATEGY_TO_THESIS` (info, for confirmed strategies without thesis)
+  - **Strategy confirmation**: Requires label, strategyType, direction; assetThesisId is optional (can be linked later)
+  - **Strategy merging**: Confirmation dialog includes merge functionality for calendar spreads and multi-leg strategies
 - **Thesis Triage** (`/src/lib/derived/thesisTriage.ts`) - Evaluates theses for articulation needs, new claims
 - **Signals** (`/src/lib/derived/signalEvaluation.ts`) - Evaluates strategy signals, creates triggers
 - **Journal** (`/src/lib/workflow/lifecycleDetection.ts`) - `logToJournal()` captures all events
@@ -730,7 +734,12 @@ Strategy signals can be triggered by TradingView price alerts via Supabase Edge 
 - **Macro Theses** → `/src/app/theses/` + `/src/db/schema.ts` (macro_theses table)
 - **Asset Theses** → `/src/app/asset-theses/` + `/src/db/schema.ts` (asset_theses table)
 - **Strategy Management** → `/src/lib/services/strategies.ts` + `/src/app/admin/strategies/`
+  - Strategy confirmation → `/src/components/strategies/StrategyConfirmationDialog.tsx` (includes merge functionality)
+  - Related strategies API → `/src/app/api/strategies/related/route.ts`
+  - Merge API → `/src/app/api/strategies/merge/route.ts`
 - **Triage Alerts** → `/src/lib/derived/triage.ts` + `/src/components/triage/`
+  - Account-agnostic queue → `/src/db/queries/triage.ts` (`getTriageQueueAllAccounts()`)
+  - Triage page → `/src/app/triage/page.tsx` (shows all accounts by default)
 - **Trade Ingestion** → `/src/lib/ingestion/flex/trades.ts` + `/src/app/api/ingest/flex/trades/route.ts`
 - **IBKR Integration** → `/src/lib/services/ibkr/` + `/src/app/admin/ingestion/ibkr/`
 - **Journal** → `/src/lib/workflow/lifecycleDetection.ts` + `/src/components/journal/`

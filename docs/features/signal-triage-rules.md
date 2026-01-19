@@ -208,8 +208,13 @@ Journal entry logged, triage marked done
 
 | Trigger | Condition | Severity |
 |---------|-----------|----------|
-| `LINK_STRATEGY_TO_THESIS` | Auto-derived strategy not confirmed | `urgent` |
-| `LINK_STRATEGY_TO_THESIS` | Confirmed strategy missing asset thesis link | `attention` |
+| `CONFIRM_STRATEGY` | Auto-derived strategy not confirmed | `urgent` |
+| `LINK_STRATEGY_TO_THESIS` | Confirmed strategy missing asset thesis link | `info` |
+
+**Notes:**
+- `CONFIRM_STRATEGY` requires setting label, strategyType, direction; assetThesisId is optional
+- `LINK_STRATEGY_TO_THESIS` is a soft reminder for confirmed strategies that haven't been linked to an asset thesis yet
+- Confirmation workflow includes optional strategy merging for calendar spreads and multi-leg strategies
 
 #### 3. Size/Risk Management
 
