@@ -193,8 +193,18 @@ interface MainClaim {
 - `signals` - Trigger rules attached to strategies
 - `thesis_triage_records` - Thesis-level triage (needs articulation, new claims)
 
+**Triage Rule Sets:**
+| Rule Set | Source | Trigger |
+|----------|--------|---------|
+| `trade_ingestion_v1` | `processCsv.ts` | Trades ingested via Flex CSV |
+| `quantity_change_v1` | `triage.ts` | Position quantity changed (non-trade) |
+| `options_v1` | `triage.ts` | Position-level (DTE, ITM, SIGMA, SIZE) |
+| `strategy_v1` | `triage.ts` | Strategy-level (LINK_TO_THESIS, SIZE, COMPLEXITY) |
+| `thesis_*` | `thesisTriage.ts` | Thesis-level (NEEDS_RESEARCH, PRODUCE_CORE_ARGUMENT, etc.) |
+
 **Key Files:**
-- `src/lib/derived/triage.ts` (1259 lines) - Position triage computation
+- `src/lib/ingestion/flex/processCsv.ts` - Trade ingestion triage creation
+- `src/lib/derived/triage.ts` (1259 lines) - Position/strategy triage computation
 - `src/lib/derived/signalEvaluation.ts` (365 lines) - Auto signal evaluation
 - `src/lib/derived/thesisTriage.ts` (550 lines) - Thesis triage rules
 - `supabase/functions/tv-webhook/` - TradingView webhook handler
@@ -233,12 +243,17 @@ overrideExpiresDate: Date | null  // Position expiration or 30 days
 overrideAt: Date | null           // When override was applied
 ```
 
-**Journal Categories:**
-- `trade_ingestion` - Trade execution events
-- `triage_action` - Triage-driven actions
-- `signal_triggered` - Signal events
-- `thesis_event` - Thesis lifecycle events
-- `manual` - User-created entries
+**Journal Action Types:**
+| Type | Description |
+|------|-------------|
+| `trade_ingested` | Trades ingested for strategy (Flex CSV ingestion) |
+| `triage_trade_action` | User captured trade metadata (stage, reason, notes) |
+| `triage_detected` | System detected new trigger |
+| `triage_dismissed` | User dismissed triage |
+| `triage_monitored` | User set to monitor |
+| `signal_triggered` | Strategy signal triggered |
+| `claim_converted` | Claim converted to thesis |
+| `claim_linked` | Claim linked to existing thesis |
 
 **Key Files:**
 - `src/lib/workflow/lifecycleDetection.ts` (521 lines) - Lifecycle detection & `logToJournal()`

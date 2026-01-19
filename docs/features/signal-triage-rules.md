@@ -174,16 +174,44 @@ const TRIAGE_RULES_V1 = {
 
 ## Strategy Triage Rules
 
-### Strategy-Level Triggers (4 Types)
+### Strategy-Level Triggers (6 Types)
 
-#### 1. Workflow Triggers
+#### 1. Trade Ingestion & Quantity Change
+
+| Trigger | Rule Set | Condition | Severity |
+|---------|----------|-----------|----------|
+| `TRADE_INGESTION` | `trade_ingestion_v1` | Trades ingested for strategy | `attention` |
+| `QUANTITY_CHANGE` | `quantity_change_v1` | Position quantity changed (no trade ingestion) | `attention` |
+
+**Trade Ingestion Flow:**
+```
+Flex CSV Ingestion → trades table → createTradeIngestionRecords()
+    ↓
+Triage record with unmatchedTradeExecutions JSONB
+    ↓
+User captures metadata (stage, reason, notes) via TradeMetadataForm
+    ↓
+Journal entry logged, triage marked done
+```
+
+**Key Points:**
+- `TRADE_INGESTION` created during Flex CSV ingestion (in `processCsv.ts`)
+- `QUANTITY_CHANGE` created during triage computation (in `triage.ts`) - skipped if `TRADE_INGESTION` already exists
+- Both use `unmatchedTradeExecutions` JSONB to store: `{conid, ticker, qtyChange, tradeIds[]}`
+- `isTradeMetadataTrigger()` helper identifies both triggers for special UI handling
+
+**Source Files:**
+- `src/lib/ingestion/flex/processCsv.ts` → `createTradeIngestionRecords()`
+- `src/lib/derived/triage.ts` → `computeQuantityChangeTriageForDate()`
+
+#### 2. Workflow Triggers
 
 | Trigger | Condition | Severity |
 |---------|-----------|----------|
 | `LINK_STRATEGY_TO_THESIS` | Auto-derived strategy not confirmed | `urgent` |
 | `LINK_STRATEGY_TO_THESIS` | Confirmed strategy missing asset thesis link | `attention` |
 
-#### 2. Size/Risk Management
+#### 3. Size/Risk Management
 
 | Trigger | Condition | Severity |
 |---------|-----------|----------|
@@ -191,7 +219,7 @@ const TRIAGE_RULES_V1 = {
 | `REVIEW_SIZE` | Strategy size 25-50% NAV | `attention` |
 | `REVIEW_SIZE` | Strategy size 10-25% NAV | `info` |
 
-#### 3. Complexity
+#### 4. Complexity
 
 | Trigger | Condition | Severity |
 |---------|-----------|----------|
@@ -428,6 +456,13 @@ PRODUCE_CORE_ARGUMENT or UPDATE_CORE_ARGUMENT triage
 ---
 
 ## Journal Entry Types
+
+### Trade Ingestion
+
+| Type | Description |
+|------|-------------|
+| `trade_ingested` | Trades ingested for strategy (during Flex CSV ingestion) |
+| `triage_trade_action` | User captured trade metadata (stage, reason, notes) |
 
 ### Position/Strategy Triage
 

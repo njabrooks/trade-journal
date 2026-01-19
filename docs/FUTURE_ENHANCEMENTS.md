@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for planned enhancements with PRD traceability.
 
-**Last Updated**: 2026-01-16 (Audit - moved ENH-035/036/037/042F to completed)
+**Last Updated**: 2026-01-19 (Bugfix - restored trade ingestion triage flow)
 
 ---
 
@@ -605,6 +605,7 @@ For detailed specifications of completed work, see [docs/archive/completed-enhan
 
 | Phase | Date | Key Deliverables |
 |-------|------|------------------|
+| Bugfix | 2026-01-19 | Trade ingestion triage fix - restored `TRADE_INGESTION` triage records after blotter migration |
 | #ENH-035 | 2026-01-16 | Thesis articulation generation - `/synthesize-thesis` skill, versioned articulations |
 | #ENH-036 | 2026-01-16 | Signal extraction from articulation - signals table, explicit/judgment classification |
 | #ENH-037 | 2026-01-16 | Manual status tracking & audit trail - signal_status_history, StatusTimeline UI |
