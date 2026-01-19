@@ -255,6 +255,197 @@ export async function getTriageQueue(
   };
 }
 
+/**
+ * Get triage queue across ALL accounts (no account filtering)
+ * Used by the main triage page which shows records from all accounts
+ */
+export async function getTriageQueueAllAccounts(
+  filters: TriageQueueFilters = {}
+): Promise<TriageQueueResult> {
+  // Get latest snapshot date across all accounts
+  const latestDateRow = await db
+    .select({ snapshotDate: triageRecords.snapshotDate })
+    .from(triageRecords)
+    .orderBy(desc(triageRecords.snapshotDate))
+    .limit(1);
+
+  const snapshotDate = latestDateRow[0]?.snapshotDate ?? null;
+
+  if (!snapshotDate) {
+    return { snapshotDate: null, records: [] };
+  }
+
+  // Categorize triggers (same logic as getTriageQueue)
+  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES', 'TRADE_INGESTION'];
+
+  // No accountId filter - this is the key difference
+  const conditions = [
+    // For historical triggers, show across all dates. For time-bound triggers, only show latest date
+    or(
+      inArray(triageRecords.recommendedAction, historicalTriggers),
+      eq(triageRecords.snapshotDate, snapshotDate)
+    ),
+  ];
+
+  // Handle status filtering (workflow state)
+  if (filters.status) {
+    const statusArray = Array.isArray(filters.status)
+      ? filters.status
+      : filters.status !== "all"
+      ? [filters.status]
+      : [];
+    if (statusArray.length > 0) {
+      conditions.push(inArray(triageRecords.status, statusArray));
+    }
+  } else {
+    // Exclude completed records by default
+    conditions.push(ne(triageRecords.status, 'done'));
+  }
+
+  // Handle severity filtering
+  if (filters.severity) {
+    const severityArray = Array.isArray(filters.severity)
+      ? filters.severity
+      : filters.severity !== "all"
+      ? [filters.severity]
+      : [];
+    if (severityArray.length > 0) {
+      conditions.push(inArray(triageRecords.severity, severityArray));
+    }
+  }
+
+  if (filters.contextLevel) {
+    const contextArray = Array.isArray(filters.contextLevel)
+      ? filters.contextLevel
+      : filters.contextLevel !== "all"
+      ? [filters.contextLevel]
+      : [];
+    if (contextArray.length > 0) {
+      conditions.push(inArray(triageRecords.contextLevel, contextArray));
+    }
+  }
+
+  if (filters.recommendedAction && filters.recommendedAction.length > 0) {
+    conditions.push(inArray(triageRecords.recommendedAction, filters.recommendedAction));
+  }
+
+  if (filters.strategyKey && filters.strategyKey.length > 0) {
+    conditions.push(inArray(strategies.strategyKey, filters.strategyKey));
+  }
+
+  // Severity order for sorting
+  const severityOrder = sql<number>`CASE
+    WHEN ${triageRecords.severity} = 'urgent' THEN 4
+    WHEN ${triageRecords.severity} = 'attention' THEN 3
+    WHEN ${triageRecords.severity} = 'monitor' THEN 2
+    WHEN ${triageRecords.severity} = 'info' THEN 1
+    ELSE 0
+  END`;
+
+  // Build orderBy clause
+  const orderByClauses = [];
+  if (filters.sort) {
+    const direction = filters.direction === "asc" ? asc : desc;
+    switch (filters.sort) {
+      case "symbol":
+        orderByClauses.push(direction(triageRecords.symbol));
+        break;
+      case "recommendedAction":
+        orderByClauses.push(direction(triageRecords.recommendedAction));
+        break;
+      case "severity":
+        orderByClauses.push(direction(severityOrder));
+        break;
+      case "snapshotDate":
+        orderByClauses.push(direction(triageRecords.snapshotDate));
+        break;
+      default:
+        orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
+    }
+  } else {
+    orderByClauses.push(desc(triageRecords.snapshotDate), desc(severityOrder));
+  }
+
+  // Exclude triage records for rejected strategies
+  conditions.push(
+    or(
+      isNull(strategies.status),
+      ne(strategies.status, 'rejected')
+    )
+  );
+
+  const rows = await db
+    .select({
+      id: triageRecords.id,
+      status: triageRecords.status,
+      severity: triageRecords.severity,
+      contextLevel: triageRecords.contextLevel,
+      symbol: triageRecords.symbol,
+      recommendedAction: triageRecords.recommendedAction,
+      notes: triageRecords.notes,
+      pctNavAbsNotional: triageRecords.pctNavAbsNotional,
+      absNotional: triageRecords.absNotional,
+      unrealizedPnl: triageRecords.unrealizedPnl,
+      snapshotDate: triageRecords.snapshotDate,
+      dte: triageRecords.dte,
+      strategyId: triageRecords.strategyId,
+      positionId: triageRecords.positionId,
+      accountId: triageRecords.accountId,
+      strategyKey: strategies.strategyKey,
+      direction: triageRecords.direction,
+    })
+    .from(triageRecords)
+    .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+    .where(and(...conditions))
+    .orderBy(...orderByClauses);
+
+  let records: TriageQueueRecord[] = rows.map((row) => ({
+    id: row.id,
+    status: row.status,
+    severity: row.severity,
+    contextLevel: row.contextLevel,
+    symbol: row.symbol,
+    recommendedAction: row.recommendedAction,
+    notes: row.notes,
+    pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
+    absNotional: toNumber(row.absNotional),
+    unrealizedPnl: toNumber(row.unrealizedPnl),
+    snapshotDate: row.snapshotDate,
+    dte: row.dte,
+    strategyId: row.strategyId,
+    positionId: row.positionId,
+    accountId: row.accountId,
+    strategyKey: row.strategyKey,
+    direction: row.direction,
+  }));
+
+  // Deduplicate CONFIRM_STRATEGIES records
+  const confirmStrategiesRecords = records.filter(r => r.recommendedAction === 'CONFIRM_STRATEGIES');
+  const otherRecords = records.filter(r => r.recommendedAction !== 'CONFIRM_STRATEGIES');
+
+  if (confirmStrategiesRecords.length > 0) {
+    const latestByStrategy = new Map<string, TriageQueueRecord>();
+    for (const record of confirmStrategiesRecords) {
+      if (!record.strategyId) {
+        latestByStrategy.set(record.id, record);
+        continue;
+      }
+
+      const existing = latestByStrategy.get(record.strategyId);
+      if (!existing || record.snapshotDate > existing.snapshotDate) {
+        latestByStrategy.set(record.strategyId, record);
+      }
+    }
+
+    records = [...Array.from(latestByStrategy.values()), ...otherRecords];
+  }
+
+  return {
+    snapshotDate,
+    records,
+  };
+}
+
 export async function getTriageQueueForStrategy(
   strategyId: string,
   filters: TriageQueueFilters = {}
@@ -1000,9 +1191,11 @@ import {
 
 /**
  * Get unified triage queue combining position/strategy and thesis triage records
+ *
+ * @param filters - Optional filters for the query
+ * @param filters.accountId - Optional account ID. If not provided, fetches from all accounts.
  */
 export async function getUnifiedTriageQueue(
-  accountId: string,
   filters: UnifiedTriageFilters = {}
 ): Promise<UnifiedTriageResult> {
   // Determine which sources to query based on objectType filter
@@ -1030,10 +1223,10 @@ export async function getUnifiedTriageQueue(
       positionFilters.recommendedAction = filters.trigger;
     }
 
-    // Use strategy-specific query when filtering by strategyId
+    // Use strategy-specific query when filtering by strategyId, otherwise fetch all accounts
     const positionResult = filters.strategyId
       ? await getTriageQueueForStrategy(filters.strategyId, positionFilters)
-      : await getTriageQueue(accountId, positionFilters);
+      : await getTriageQueueAllAccounts(positionFilters);
 
     // Map and filter by object type if specified
     for (const record of positionResult.records) {

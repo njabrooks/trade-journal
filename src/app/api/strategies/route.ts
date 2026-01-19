@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Strategy id is required' }, { status: 400 });
     }
 
-    // If confirming, require strategyType, direction, and assetThesisId
+    // If confirming, require strategyType and direction; assetThesisId is optional
     if (confirm) {
       if (!updates.strategyType) {
         return NextResponse.json(
@@ -89,12 +89,7 @@ export async function PATCH(request: NextRequest) {
           { status: 400 }
         );
       }
-      if (!updates.assetThesisId) {
-        return NextResponse.json(
-          { error: 'assetThesisId is required when confirming a strategy (link to asset thesis)' },
-          { status: 400 }
-        );
-      }
+      // Note: assetThesisId is optional - can be linked later
     }
 
     await updateStrategy(id, { ...updates, confirm });

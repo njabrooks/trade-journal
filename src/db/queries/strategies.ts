@@ -194,7 +194,7 @@ export async function getStrategiesForList(
     });
   }
 
-  // Map rows with computed status and optionally filter to active only
+  // Map rows with computed status and optionally filter
   // Standard status values: draft, active, complete, rejected
   const strategiesWithStatus = rows
     .map((row) => {
@@ -225,7 +225,9 @@ export async function getStrategiesForList(
           : [],
       };
     })
-    .filter((s) => filters?.includeClosedStrategies ? true : s.status === "active")
+    // Default: show active and draft strategies (draft needs attention for confirmation/merge)
+    // With includeClosedStrategies: show all including complete and rejected
+    .filter((s) => filters?.includeClosedStrategies ? true : (s.status === "active" || s.status === "draft"))
     .slice(0, limit);
 
   return strategiesWithStatus;
@@ -244,6 +246,7 @@ export interface StrategyDetail {
     underlyingTicker: string | null;
     templateLabel: string | null;
     strategyType: string | null;
+    direction: string | null;
     assetThesisId: string | null;
     assetViewTitle: string | null;
     linkedMacroTheses: Array<{ id: string; title: string }>;
@@ -305,6 +308,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         templateLabel: strategyTemplates.label,
         underlyingTicker: underlyings.ticker,
         strategyType: strategies.strategyType,
+        direction: strategies.direction,
         assetThesisId: strategies.assetThesisId,
         assetViewTitle: assetTheses.title,
       })
@@ -482,6 +486,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         underlyingTicker: strategyRow.underlyingTicker,
         templateLabel: strategyRow.templateLabel,
         strategyType: strategyRow.strategyType,
+        direction: strategyRow.direction,
         assetThesisId: strategyRow.assetThesisId,
         assetViewTitle: strategyRow.assetViewTitle,
         linkedMacroTheses,

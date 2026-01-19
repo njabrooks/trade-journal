@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   AccordionContent,
   AccordionItem,
@@ -8,7 +10,8 @@ import {
 } from '@/components/ui/accordion';
 import { EntitySidebar } from '@/components/layout/EntitySidebar';
 import { EntityStatusBadge } from '@/components/ui/badge';
-import { ChevronRight, Pencil } from 'lucide-react';
+import { StrategyConfirmationDialog } from '@/components/strategies/StrategyConfirmationDialog';
+import { ChevronRight, Pencil, CheckCircle } from 'lucide-react';
 
 interface LinkedMacroThesis {
   id: string;
@@ -31,6 +34,8 @@ interface StrategySidebarProps {
     underlyingTicker: string | null;
     openedAt: Date | null;
     status: string;
+    direction?: string | null;
+    assetThesisId?: string | null;
   };
   /** Counts for related entities */
   openPositionsCount?: number;
@@ -50,6 +55,18 @@ export function StrategySidebar({
   linkedMacroTheses = [],
   linkedAssetThesis,
 }: StrategySidebarProps) {
+  const router = useRouter();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Check if strategy needs confirmation (draft status or missing required fields)
+  const needsConfirmation = strategy.status === 'draft' || !strategy.strategyType || !linkedAssetThesis;
+
+  const handleConfirmSuccess = () => {
+    setShowConfirmDialog(false);
+    // Refresh the page to show updated data
+    router.refresh();
+  };
+
   // Build metadata items for Quick Stats
   const metadata = [
     { label: 'Strategy Type', value: strategy.strategyType ?? '—' },
@@ -154,19 +171,61 @@ export function StrategySidebar({
   );
 
   return (
-    <EntitySidebar
-      metadata={metadata}
-      actions={
-        <Link
-          href={`/admin/strategies/${strategy.id}/link`}
-          className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
-        >
-          <Pencil className="h-4 w-4" />
-          Edit
-        </Link>
-      }
-      additionalSections={hierarchySection}
-      defaultExpanded={['quick-stats', 'hierarchy']}
-    />
+    <>
+      <EntitySidebar
+        metadata={metadata}
+        actions={
+          <div className="space-y-2">
+            {/* Confirm Strategy button - prominent if strategy needs confirmation */}
+            {needsConfirmation && (
+              <button
+                onClick={() => setShowConfirmDialog(true)}
+                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Confirm Strategy
+              </button>
+            )}
+            {/* Edit button - for linking positions/trades */}
+            <Link
+              href={`/admin/strategies/${strategy.id}/link`}
+              className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+            >
+              <Pencil className="h-4 w-4" />
+              {needsConfirmation ? 'Link Positions' : 'Edit'}
+            </Link>
+            {/* Edit Strategy button - for already confirmed strategies */}
+            {!needsConfirmation && (
+              <button
+                onClick={() => setShowConfirmDialog(true)}
+                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-200 rounded-md hover:bg-slate-200 transition-colors"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit Strategy
+              </button>
+            )}
+          </div>
+        }
+        additionalSections={hierarchySection}
+        defaultExpanded={['quick-stats', 'hierarchy']}
+      />
+
+      {/* Strategy Confirmation Dialog */}
+      <StrategyConfirmationDialog
+        strategy={{
+          id: strategy.id,
+          strategyKey: strategy.strategyKey,
+          underlyingTicker: strategy.underlyingTicker,
+          label: strategy.label,
+          status: strategy.status,
+          strategyType: strategy.strategyType,
+          direction: strategy.direction,
+          assetThesisId: strategy.assetThesisId ?? linkedAssetThesis?.id,
+        }}
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onSuccess={handleConfirmSuccess}
+      />
+    </>
   );
 }

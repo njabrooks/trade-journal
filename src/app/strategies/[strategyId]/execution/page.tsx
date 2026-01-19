@@ -6,7 +6,6 @@ import { StrategySidebar } from '@/components/strategies/StrategySidebar';
 import { UnifiedTriageBrowser } from '@/components/triage/UnifiedTriageBrowser';
 import { getStrategyDetail } from '@/db/queries/strategies';
 import { getUnifiedTriageQueue } from '@/db/queries/triage';
-import { getPrimaryAccount } from '@/db/queries/accounts';
 import { db } from '@/db';
 import { signals } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
@@ -29,10 +28,6 @@ export async function generateMetadata({ params }: ExecutionPageProps): Promise<
 export default async function StrategyExecutionPage({ params }: ExecutionPageProps) {
   const { strategyId } = await params;
 
-  // Get primary account for triage query
-  const primaryAccount = await getPrimaryAccount();
-  const accountId = primaryAccount?.id ?? '';
-
   const [detail, strategySignals, triageResult] = await Promise.all([
     getStrategyDetail(strategyId),
     db
@@ -40,7 +35,7 @@ export default async function StrategyExecutionPage({ params }: ExecutionPagePro
       .from(signals)
       .where(and(eq(signals.entityType, 'strategy'), eq(signals.strategyId, strategyId))),
     // Fetch strategy-specific triage records using unified query
-    getUnifiedTriageQueue(accountId, { strategyId, includeAll: true }),
+    getUnifiedTriageQueue({ strategyId, includeAll: true }),
   ]);
 
   if (!detail) {
@@ -76,6 +71,8 @@ export default async function StrategyExecutionPage({ params }: ExecutionPagePro
             underlyingTicker: strategy.underlyingTicker,
             openedAt: strategy.openedAt,
             status: strategy.status,
+            direction: strategy.direction,
+            assetThesisId: strategy.assetThesisId,
           }}
           openPositionsCount={openPositionCount}
           triageCount={triageResult.records.length}

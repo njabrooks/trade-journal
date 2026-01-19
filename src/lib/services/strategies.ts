@@ -262,9 +262,9 @@ export async function updateStrategy(
 
   await db.update(strategies).set(updateData).where(eq(strategies.id, strategyId));
 
-  // If strategy was confirmed, resolve all LINK_STRATEGY_TO_THESIS triage records
+  // If strategy was confirmed, resolve all CONFIRM_STRATEGY triage records
   if (updates.confirm) {
-    // Resolve all LINK_STRATEGY_TO_THESIS triage records for this strategy to "complete"
+    // Resolve all CONFIRM_STRATEGY triage records for this strategy to "complete"
     await db
       .update(triageRecords)
       .set({
@@ -274,7 +274,7 @@ export async function updateStrategy(
       .where(
         and(
           eq(triageRecords.strategyId, strategyId),
-          eq(triageRecords.recommendedAction, 'LINK_STRATEGY_TO_THESIS')
+          eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGY')
         )
       );
 
@@ -285,6 +285,22 @@ export async function updateStrategy(
     populateStrategyEntryContext(strategyId).catch((error) => {
       console.error(`Failed to populate entry context for strategy ${strategyId} after confirmation:`, error);
     });
+  }
+
+  // If thesis was linked, resolve all LINK_STRATEGY_TO_THESIS triage records
+  if ((updates as any).assetThesisId) {
+    await db
+      .update(triageRecords)
+      .set({
+        status: 'done',
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(triageRecords.strategyId, strategyId),
+          eq(triageRecords.recommendedAction, 'LINK_STRATEGY_TO_THESIS')
+        )
+      );
   }
 
   // REMOVED: State code computation - replaced by signals system
@@ -694,12 +710,41 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
 }
 
 /**
- * Gets strategy by ID
+ * Gets strategy by ID with underlying ticker from template chain
  */
 export async function getStrategyById(strategyId: string) {
   const result = await db
-    .select()
+    .select({
+      id: strategies.id,
+      strategyKey: strategies.strategyKey,
+      strategyTemplateId: strategies.strategyTemplateId,
+      accountId: strategies.accountId,
+      openedAt: strategies.openedAt,
+      closedAt: strategies.closedAt,
+      status: strategies.status,
+      entrySpot: strategies.entrySpot,
+      entryIv30: strategies.entryIv30,
+      netPremium: strategies.netPremium,
+      entryNotional: strategies.entryNotional,
+      timeHorizon: strategies.timeHorizon,
+      totalAbsNotional: strategies.totalAbsNotional,
+      totalUnrealizedPnl: strategies.totalUnrealizedPnl,
+      isAuto: strategies.isAuto,
+      autoSource: strategies.autoSource,
+      autoDerivedLabel: strategies.autoDerivedLabel,
+      confirmedAt: strategies.confirmedAt,
+      strategyType: strategies.strategyType,
+      direction: strategies.direction,
+      assetThesisId: strategies.assetThesisId,
+      createdAt: strategies.createdAt,
+      updatedAt: strategies.updatedAt,
+      // Joined fields
+      underlyingTicker: underlyings.ticker,
+      templateLabel: strategyTemplates.label,
+    })
     .from(strategies)
+    .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
+    .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
     .where(eq(strategies.id, strategyId))
     .limit(1);
   return result[0] ?? null;

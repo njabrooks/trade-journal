@@ -20,7 +20,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_DTE": ["MONITOR", "DISMISS"],
   
   // Strategy-level triggers
-  "LINK_STRATEGY_TO_THESIS": ["UPDATE"],  // Confirmation now requires asset thesis linkage
+  "CONFIRM_STRATEGY": ["UPDATE"],  // Confirmation: label, type, direction, optional thesis linkage
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)

@@ -83,6 +83,8 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
             underlyingTicker: strategy.underlyingTicker,
             openedAt: strategy.openedAt,
             status: strategy.status,
+            direction: strategy.direction,
+            assetThesisId: strategy.assetThesisId,
           }}
           openPositionsCount={openPositionCount}
           triageCount={triageData.records.length}

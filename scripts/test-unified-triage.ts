@@ -2,8 +2,8 @@ import { db, closeDb } from './lib/db.js';
 import { getUnifiedTriageQueue } from '../src/db/queries/triage.js';
 
 async function test() {
-  const accountId = 'f5b31a5d-f80f-40a9-aee8-a8e88e0cad35';
-  const result = await getUnifiedTriageQueue(accountId);
+  // Fetch triage records across all accounts
+  const result = await getUnifiedTriageQueue({ includeAll: true });
 
   console.log('Total records:', result.records.length);
 

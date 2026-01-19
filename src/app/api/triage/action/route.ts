@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         triageStatusUpdate = "in_progress";
       }
     } else if (actionType === "UPDATE") {
-      // Update actions (like LINK_STRATEGY_TO_THESIS) - mark as done
+      // Update actions (like CONFIRM_STRATEGY) - mark as done
       triageStatusUpdate = "done";
     }
 

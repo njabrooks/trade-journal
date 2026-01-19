@@ -37,8 +37,8 @@ export default async function MacroThesisExecutionPage({ params }: ExecutionPage
     getStrategiesForList(1000, { includeClosedStrategies: true }),
     getAssetThesesForRelatedMacroThesis(id),
     getActiveValidationPoints(id, 'macro'),
-    // Fetch thesis-specific triage records (accountId not needed when filtering by thesisId)
-    getUnifiedTriageQueue('', { thesisId: id, includeAll: true }),
+    // Fetch thesis-specific triage records
+    getUnifiedTriageQueue({ thesisId: id, includeAll: true }),
   ]);
 
   if (!thesis) {
