@@ -35,9 +35,9 @@ import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
-// REMOVED: computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 import { evaluateStrategySignalsForDate } from '@/lib/derived/signalEvaluation';
-import { strategies } from '@/db/schema';
+import { strategies, triageRecords, strategyTemplates } from '@/db/schema';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
 const SECTION_CODES = {
@@ -666,6 +666,171 @@ export interface ProcessTradesResult {
 }
 
 /**
+ * Creates journal entries and triage records for newly ingested trades.
+ * Groups trades by strategy + date and creates:
+ * 1. A `trade_ingested` journal entry with trade details
+ * 2. A triage record for the user to capture trade metadata (stage, reason, notes)
+ */
+async function createTradeIngestionRecords(
+  accountId: string,
+  tradeDate: string
+): Promise<void> {
+  // Query trades for this account + date that are linked to strategies
+  const tradesForDate = await db
+    .select({
+      id: trades.id,
+      symbol: trades.symbol,
+      conid: trades.conid,
+      side: trades.side,
+      quantity: trades.quantity,
+      netAmount: trades.netAmount,
+      strategyId: trades.strategyId,
+    })
+    .from(trades)
+    .where(
+      and(
+        eq(trades.accountId, accountId),
+        eq(sql`date(${trades.tradeDate})`, tradeDate),
+        isNotNull(trades.strategyId)
+      )
+    );
+
+  if (tradesForDate.length === 0) {
+    return;
+  }
+
+  // Group trades by strategy
+  const tradesByStrategy = new Map<string, typeof tradesForDate>();
+  for (const trade of tradesForDate) {
+    if (!trade.strategyId) continue;
+    if (!tradesByStrategy.has(trade.strategyId)) {
+      tradesByStrategy.set(trade.strategyId, []);
+    }
+    tradesByStrategy.get(trade.strategyId)!.push(trade);
+  }
+
+  // For each strategy, create journal entry and triage record
+  for (const [strategyId, strategyTrades] of tradesByStrategy.entries()) {
+    // Get strategy info
+    const [strategyInfo] = await db
+      .select({
+        strategyKey: strategies.strategyKey,
+        templateLabel: strategyTemplates.label,
+      })
+      .from(strategies)
+      .innerJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
+      .where(eq(strategies.id, strategyId))
+      .limit(1);
+
+    if (!strategyInfo) continue;
+
+    // Calculate aggregates
+    // Note: quantity in the trades table is already signed (negative for SELL)
+    const totalQty = strategyTrades.reduce((sum, t) => sum + (Number(t.quantity) || 0), 0);
+    const totalPremium = strategyTrades.reduce((sum, t) => sum + (Number(t.netAmount) || 0), 0);
+    const primarySymbol = strategyTrades[0]?.symbol || 'UNKNOWN';
+    const primaryConid = strategyTrades[0]?.conid;
+    const side = totalQty >= 0 ? 'BUY' : 'SELL';
+
+    // Build unmatchedTradeExecutions for triage record (grouped by conid/symbol)
+    const tradesByPosition = new Map<string, { conid: number | null; ticker: string; tradeIds: string[]; qtyChange: number }>();
+    for (const trade of strategyTrades) {
+      const key = trade.conid ? `conid:${trade.conid}` : `symbol:${trade.symbol}`;
+      if (!tradesByPosition.has(key)) {
+        tradesByPosition.set(key, {
+          conid: trade.conid,
+          ticker: trade.symbol,
+          tradeIds: [],
+          qtyChange: 0,
+        });
+      }
+      const entry = tradesByPosition.get(key)!;
+      entry.tradeIds.push(trade.id);
+      // quantity is already signed in the database (negative for SELL)
+      entry.qtyChange += Number(trade.quantity) || 0;
+    }
+    const unmatchedTradeExecutions = Array.from(tradesByPosition.values());
+
+    // Check if we already have a triage record for this strategy + date + rule_set
+    const existingTriage = await db
+      .select({ id: triageRecords.id })
+      .from(triageRecords)
+      .where(
+        and(
+          eq(triageRecords.strategyId, strategyId),
+          eq(triageRecords.snapshotDate, tradeDate),
+          eq(triageRecords.ruleSet, 'trade_ingestion_v1')
+        )
+      )
+      .limit(1);
+
+    // Build notes with trade details (similar to QUANTITY_CHANGE pattern)
+    const notesData = {
+      side,
+      totalQty,
+      totalPremium,
+      tradeCount: strategyTrades.length,
+      executions: unmatchedTradeExecutions,
+    };
+
+    if (existingTriage.length > 0) {
+      // Update existing triage record with new trade IDs
+      await db
+        .update(triageRecords)
+        .set({
+          unmatchedTradeExecutions,
+          notes: JSON.stringify(notesData),
+          updatedAt: new Date(),
+        })
+        .where(eq(triageRecords.id, existingTriage[0].id));
+      continue;
+    }
+
+    // Create triage record
+    // Use TRADE_INGESTION as recommendedAction (like QUANTITY_CHANGE) for UI compatibility
+    const [triageRecord] = await db
+      .insert(triageRecords)
+      .values({
+        snapshotDate: tradeDate,
+        accountId,
+        strategyId,
+        positionId: null,
+        contextLevel: 'strategy',
+        ruleSet: 'trade_ingestion_v1',
+        symbol: primarySymbol,
+        severity: 'attention', // Trades need user attention to capture metadata
+        status: 'inbox',
+        recommendedAction: 'TRADE_INGESTION',
+        notes: JSON.stringify(notesData),
+        unmatchedTradeExecutions,
+      })
+      .returning({ id: triageRecords.id });
+
+    // Create journal entry
+    await logToJournal({
+      objectType: 'strategy',
+      objectId: strategyId,
+      objectTitle: strategyInfo.strategyKey,
+      actionType: 'trade_ingested',
+      actionDescription: `Trade ingested: ${side} ${Math.abs(totalQty)} ${primarySymbol} (${strategyTrades.length} execution${strategyTrades.length > 1 ? 's' : ''})`,
+      triageRecordId: triageRecord.id,
+      source: 'automation',
+      newState: {
+        conid: primaryConid,
+        qtyChange: totalQty,
+        tradeCount: strategyTrades.length,
+        premiumChange: totalPremium,
+      },
+      metadata: {
+        tradeIds: strategyTrades.map(t => t.id),
+        tradeDate,
+        triageRecordId: triageRecord.id,
+      },
+    });
+  }
+}
+
+/**
  * Process trades CSV (TRNT section)
  */
 export async function processTradesCsv(csvText: string, processRunId?: string | null): Promise<ProcessTradesResult> {
@@ -783,7 +948,11 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
         try {
           // Auto-link trades to strategies
           await autoLinkTradesToStrategies(accountId, { snapshotDate: tradeDate });
-          
+
+          // Create trade ingestion journal entries and triage records
+          // This must happen after auto-linking so trades have strategy IDs
+          await createTradeIngestionRecords(accountId, tradeDate);
+
           // Strategy metrics
           const accountStrategies = await db
             .select({ id: strategies.id })

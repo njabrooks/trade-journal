@@ -11,6 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateShort } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
+// Helper to check if this is a trade metadata capture trigger (QUANTITY_CHANGE or TRADE_INGESTION)
+function isTradeMetadataTrigger(recommendedAction: string | null): boolean {
+  return recommendedAction === "QUANTITY_CHANGE" || recommendedAction === "TRADE_INGESTION";
+}
+
 interface TriageTableRowProps {
   record: {
     id: string;
@@ -209,7 +214,7 @@ export function TriageTableRow({
                 strategyId={record.strategyId}
                 accountId={record.accountId}
                 snapshotDate={record.snapshotDate}
-                editMode={record.recommendedAction !== "QUANTITY_CHANGE"}
+                editMode={!isTradeMetadataTrigger(record.recommendedAction)}
                 selectedPositionIds={selectedPositionIds}
                 onPositionSelect={async (positionId, selected) => {
                   const newSelected = new Set(selectedPositionIds);
@@ -289,9 +294,9 @@ export function TriageTableRow({
                 }}
               />
 
-              {/* Notes (only if not QUANTITY_CHANGE or if there are additional notes) */}
-              {record.notes && 
-               record.recommendedAction !== "QUANTITY_CHANGE" && (
+              {/* Notes (only if not a trade metadata trigger or if there are additional notes) */}
+              {record.notes &&
+               !isTradeMetadataTrigger(record.recommendedAction) && (
                 <div className="space-y-3">
                   <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
                     Notes
@@ -303,7 +308,7 @@ export function TriageTableRow({
               )}
 
               {/* Actions - show trade form when positions are selected, otherwise show action buttons */}
-              {selectedPositionIds.size > 0 && record.recommendedAction !== "QUANTITY_CHANGE" ? (
+              {selectedPositionIds.size > 0 && !isTradeMetadataTrigger(record.recommendedAction) ? (
                 <TriageActionButtons
                   triageId={record.id}
                   contextLevel={record.contextLevel}

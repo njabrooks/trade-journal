@@ -34,6 +34,11 @@ import { ThesisSignalTriageCard } from './ThesisSignalTriageCard';
 import { UnifiedSignalsTable } from '@/components/signals/UnifiedSignalsTable';
 import type { Signal } from '@/db/schema';
 
+// Helper to check if this is a trade metadata capture trigger (QUANTITY_CHANGE or TRADE_INGESTION)
+function isTradeMetadataTrigger(recommendedAction: string | null): boolean {
+  return recommendedAction === "QUANTITY_CHANGE" || recommendedAction === "TRADE_INGESTION";
+}
+
 interface ExpandedTriageDetailProps {
   record: UnifiedTriageRecord;
   onDismiss: () => void;
@@ -122,7 +127,7 @@ function PositionStrategyDetail({
         strategyId={positionRecord.strategyId}
         accountId={positionRecord.accountId}
         snapshotDate={positionRecord.snapshotDate}
-        editMode={positionRecord.recommendedAction !== "QUANTITY_CHANGE"}
+        editMode={!isTradeMetadataTrigger(positionRecord.recommendedAction)}
         selectedPositionIds={selectedPositionIds}
         onPositionSelect={async (positionId, selected) => {
           const newSelected = new Set(selectedPositionIds);
@@ -202,9 +207,9 @@ function PositionStrategyDetail({
         }}
       />
 
-      {/* Notes (only if not QUANTITY_CHANGE) */}
+      {/* Notes (only if not a trade metadata trigger) */}
       {positionRecord.notes &&
-       positionRecord.recommendedAction !== "QUANTITY_CHANGE" && (
+       !isTradeMetadataTrigger(positionRecord.recommendedAction) && (
         <div className="space-y-3">
           <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
             Notes
@@ -216,7 +221,7 @@ function PositionStrategyDetail({
       )}
 
       {/* Actions - show trade form when positions are selected, otherwise show action buttons */}
-      {selectedPositionIds.size > 0 && positionRecord.recommendedAction !== "QUANTITY_CHANGE" ? (
+      {selectedPositionIds.size > 0 && !isTradeMetadataTrigger(positionRecord.recommendedAction) ? (
         <TriageActionButtons
           triageId={positionRecord.id}
           contextLevel={positionRecord.contextLevel}

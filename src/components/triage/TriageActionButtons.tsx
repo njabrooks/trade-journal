@@ -64,8 +64,15 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
+  "TRADE_INGESTION": ["TRADE"], // TRADE action for newly ingested trades
   // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
 };
+
+// Helper to check if this is a trade metadata capture trigger (QUANTITY_CHANGE or TRADE_INGESTION)
+// These triggers use the TradeMetadataForm for compulsory metadata capture
+function isTradeMetadataTrigger(recommendedAction: string | null): boolean {
+  return isTradeMetadataTrigger(recommendedAction) || recommendedAction === "TRADE_INGESTION";
+}
 
 // Helper to determine available actions for a trigger
 function getAvailableActions(recommendedAction: string | null, severity: string | null): ActionType[] {
@@ -185,7 +192,7 @@ export function TriageActionButtons({
 
   // Notify parent when TRADE action is selected/deselected (for TriageActionsTable integration)
   useEffect(() => {
-    if (recommendedAction !== "QUANTITY_CHANGE" && !externalSelectedPositionIds) {
+    if (!isTradeMetadataTrigger(recommendedAction) && !externalSelectedPositionIds) {
       const isTradeSelected = selectedAction === "TRADE" && showActionForm;
       onTradeActionSelected?.(isTradeSelected);
       
@@ -230,7 +237,7 @@ export function TriageActionButtons({
   useEffect(() => {
     if (
       selectedAction === "TRADE" &&
-      recommendedAction === "QUANTITY_CHANGE" &&
+      isTradeMetadataTrigger(recommendedAction) &&
       showActionForm &&
       !tradeDetails &&
       triageId
@@ -359,7 +366,7 @@ export function TriageActionButtons({
   useEffect(() => {
     if (
       selectedAction === "TRADE" &&
-      recommendedAction === "QUANTITY_CHANGE" &&
+      isTradeMetadataTrigger(recommendedAction) &&
       tradePositions.length > 0 &&
       selectedTradePositions.size === 0
     ) {
@@ -369,7 +376,7 @@ export function TriageActionButtons({
 
   // Extract auto-detected trade stage from notes when QUANTITY_CHANGE form is shown
   useEffect(() => {
-    if (showActionForm && selectedAction === "TRADE" && recommendedAction === "QUANTITY_CHANGE" && !tradeStage && notes) {
+    if (showActionForm && selectedAction === "TRADE" && isTradeMetadataTrigger(recommendedAction) && !tradeStage && notes) {
       // Try to extract trade stage from notes if it contains "Trade stage:"
       // This would be set by the triage computation
       const stageMatch = notes.match(/Trade stage: (\w+)/i);
@@ -461,7 +468,7 @@ export function TriageActionButtons({
       setLoadedPositions(positionsList);
 
       // For QUANTITY_CHANGE, still use the old tradePositions approach
-      if (recommendedAction === "QUANTITY_CHANGE") {
+      if (isTradeMetadataTrigger(recommendedAction)) {
         // Initialize trade positions with opposite quantities (closing by default)
         const initialPositions: TradePosition[] = positionsList.map((pos: any) => ({
           id: pos.id,
@@ -646,7 +653,7 @@ export function TriageActionButtons({
 
         // Then record the triage action
         body.notes = `Strategy confirmed: ${strategyFormData.strategyType}`;
-      } else if (selectedAction === "TRADE" && recommendedAction === "QUANTITY_CHANGE") {
+      } else if (selectedAction === "TRADE" && isTradeMetadataTrigger(recommendedAction)) {
         // Validate required fields
         if (!tradeReason || !tradeStage) {
           setError("Trade reason and trade stage are required");
@@ -771,7 +778,7 @@ export function TriageActionButtons({
         body.tradeStage = tradeStage;
         
         // For non-QUANTITY_CHANGE, use selected positions from checkboxes
-        if (recommendedAction !== "QUANTITY_CHANGE") {
+        if (!isTradeMetadataTrigger(recommendedAction)) {
           if (selectedPositionIds.size === 0) {
             setError("At least one position must be selected");
             setLoading(false);
@@ -816,7 +823,7 @@ export function TriageActionButtons({
         // Build notes from trade positions if notes not provided (optional, for display)
         if (!notes.trim()) {
           let tradeSummary = "";
-          if (recommendedAction !== "QUANTITY_CHANGE" && selectedPositionIds.size > 0) {
+          if (!isTradeMetadataTrigger(recommendedAction) && selectedPositionIds.size > 0) {
             // Use selected positions
             tradeSummary = Array.from(selectedPositionIds)
               .map((positionId) => {
@@ -1202,7 +1209,7 @@ export function TriageActionButtons({
   }
 
   // Render quantity change form (for QUANTITY_CHANGE) - uses TradeMetadataForm (compulsory completion)
-  if (showActionForm && selectedAction === "TRADE" && recommendedAction === "QUANTITY_CHANGE") {
+  if (showActionForm && selectedAction === "TRADE" && isTradeMetadataTrigger(recommendedAction)) {
     // Handler for TradeMetadataForm submission - updates state and calls handleConfirm
     const handleTradeMetadataSubmit = async (formData: TradeMetadataFormData) => {
       // Update state variables that handleConfirm reads
@@ -1481,7 +1488,7 @@ export function TriageActionButtons({
   // Trade action form
   if (showActionForm && selectedAction === "TRADE") {
     // For non-QUANTITY_CHANGE, show only the form fields (positions table is handled by parent)
-    if (recommendedAction !== "QUANTITY_CHANGE") {
+    if (!isTradeMetadataTrigger(recommendedAction)) {
       // Use external selectedPositionIds if available, otherwise use internal
       const currentSelectedIds = externalSelectedPositionIds ?? selectedPositionIds;
       const hasSelectedPositions = currentSelectedIds.size > 0;

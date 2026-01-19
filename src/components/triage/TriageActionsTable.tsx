@@ -24,6 +24,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
   "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
+  "TRADE_INGESTION": ["TRADE"], // TRADE action for newly ingested trades
   // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
 };
 

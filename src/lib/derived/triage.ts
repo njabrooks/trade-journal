@@ -6,6 +6,7 @@ import {
   strategyTemplates,
   underlyingsIvHistory,
   triageRecords,
+  trades,
   NewTriageRecord,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc, ne } from 'drizzle-orm';
@@ -700,6 +701,12 @@ async function logNewTriageDetections(
       continue;
     }
 
+    // Skip quantity_change_v1 records - they are logged separately in computeQuantityChangeTriageForDate
+    // with the quantity_change action type which includes trade IDs
+    if (rec.ruleSet === 'quantity_change_v1') {
+      continue;
+    }
+
     const entityId = rec.contextLevel === 'strategy' ? rec.strategyId : rec.positionId;
     if (!entityId) continue;
 
@@ -1096,6 +1103,26 @@ export async function computeQuantityChangeTriageForDate(
 
   // Process strategy-level quantity changes
   for (const [strategyId, data] of changesByStrategy.entries()) {
+    // Skip strategies that already have a trade_ingestion_v1 triage record for this date
+    // Trade ingestion records are created during trade CSV processing with full trade details
+    // QUANTITY_CHANGE is only for position changes without corresponding trades (e.g., corporate actions)
+    const existingTradeIngestion = await db
+      .select({ id: triageRecords.id })
+      .from(triageRecords)
+      .where(
+        and(
+          eq(triageRecords.strategyId, strategyId),
+          eq(triageRecords.snapshotDate, snapshotDate),
+          eq(triageRecords.ruleSet, 'trade_ingestion_v1')
+        )
+      )
+      .limit(1);
+
+    if (existingTradeIngestion.length > 0) {
+      // Strategy already has trade ingestion triage - skip QUANTITY_CHANGE to avoid duplicates
+      continue;
+    }
+
     // Get strategy info including template label and underlying ticker
     const [strategyInfo] = await db
       .select({
@@ -1112,6 +1139,44 @@ export async function computeQuantityChangeTriageForDate(
     // Extract underlying symbol from strategyKey (e.g., "GLXY-STK" -> "GLXY")
     const symbol = strategyInfo.strategyKey.split('-')[0] || 'UNKNOWN';
     const title = strategyInfo.templateLabel || strategyInfo.strategyKey;
+
+    // Query trades for this strategy and snapshot date to get trade IDs
+    // This populates unmatchedTradeExecutions so the UI can display trade details
+    const tradesForStrategy = await db
+      .select({
+        id: trades.id,
+        symbol: trades.symbol,
+        conid: trades.conid,
+        side: trades.side,
+        quantity: trades.quantity,
+      })
+      .from(trades)
+      .where(
+        and(
+          eq(trades.strategyId, strategyId),
+          eq(sql`date(${trades.tradeDate})`, snapshotDate)
+        )
+      );
+
+    // Group trades by conid/symbol and build unmatchedTradeExecutions
+    const tradesByPosition = new Map<string, { conid: number | null; ticker: string; tradeIds: string[]; qtyChange: number }>();
+    for (const trade of tradesForStrategy) {
+      const key = trade.conid ? `conid:${trade.conid}` : `symbol:${trade.symbol}`;
+      if (!tradesByPosition.has(key)) {
+        tradesByPosition.set(key, {
+          conid: trade.conid,
+          ticker: trade.symbol,
+          tradeIds: [],
+          qtyChange: 0,
+        });
+      }
+      const entry = tradesByPosition.get(key)!;
+      entry.tradeIds.push(trade.id);
+      const qty = trade.side === 'BUY' ? Math.abs(Number(trade.quantity)) : -Math.abs(Number(trade.quantity));
+      entry.qtyChange += qty;
+    }
+
+    const unmatchedTradeExecutions = Array.from(tradesByPosition.values());
 
     // Aggregate trade stages for the strategy
     const stages = new Set(data.positions.map(p => p.tradeStage).filter(Boolean));
@@ -1154,6 +1219,8 @@ export async function computeQuantityChangeTriageForDate(
           tradeStage: p.tradeStage,
         })),
       }),
+      // Include trade IDs so the UI can display trade details for metadata capture
+      unmatchedTradeExecutions: unmatchedTradeExecutions.length > 0 ? unmatchedTradeExecutions : null,
     };
 
     triageRecordsToCreate.push(triageRecord);
@@ -1171,6 +1238,7 @@ export async function computeQuantityChangeTriageForDate(
         snapshotDate,
         tradeStages: Array.from(stages),
         positions: data.positions,
+        tradeIds: unmatchedTradeExecutions.flatMap(e => e.tradeIds),
       },
     });
   }

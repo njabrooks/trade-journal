@@ -22,8 +22,14 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [],
   "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
+  "TRADE_INGESTION": ["TRADE"], // TRADE action for newly ingested trades
   // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
 };
+
+// Helper to check if this is a trade metadata capture trigger
+function isTradeMetadataTrigger(recommendedAction: string | null): boolean {
+  return recommendedAction === "QUANTITY_CHANGE" || recommendedAction === "TRADE_INGESTION";
+}
 
 const ACTION_LABELS: Record<ActionType, string> = {
   TRADE: "Trade",
@@ -77,10 +83,10 @@ export function TriageBulkActions({
       return;
     }
 
-    // Validate required fields for QUANTITY_CHANGE TRADE
-    if (actionType === "TRADE" && commonTrigger === "QUANTITY_CHANGE") {
+    // Validate required fields for trade metadata triggers (QUANTITY_CHANGE, TRADE_INGESTION)
+    if (actionType === "TRADE" && isTradeMetadataTrigger(commonTrigger)) {
       if (!tradeReason.trim() || !tradeStage) {
-        setError("Trade reason and trade stage are required for QUANTITY_CHANGE trade actions");
+        setError("Trade reason and trade stage are required for trade actions");
         return;
       }
     }
@@ -97,8 +103,8 @@ export function TriageBulkActions({
           actionType,
           notes: notes.trim() || undefined,
           monitorDays: actionType === "MONITOR" ? monitorDays : undefined,
-          tradeReason: actionType === "TRADE" && commonTrigger === "QUANTITY_CHANGE" ? tradeReason.trim() : undefined,
-          tradeStage: actionType === "TRADE" && commonTrigger === "QUANTITY_CHANGE" ? tradeStage : undefined,
+          tradeReason: actionType === "TRADE" && isTradeMetadataTrigger(commonTrigger) ? tradeReason.trim() : undefined,
+          tradeStage: actionType === "TRADE" && isTradeMetadataTrigger(commonTrigger) ? tradeStage : undefined,
         }),
       });
 
@@ -191,7 +197,7 @@ export function TriageBulkActions({
                   />
                 </div>
               )}
-              {selectedAction === "TRADE" && commonTrigger === "QUANTITY_CHANGE" && (
+              {selectedAction === "TRADE" && isTradeMetadataTrigger(commonTrigger) && (
                 <>
                   <input
                     type="text"
