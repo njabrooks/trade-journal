@@ -57,7 +57,7 @@ export default async function StrategyEvidencePage({ params }: EvidencePageProps
   const openPositionCount = latestMetrics?.numOpenPositions ?? detail.openPositions.length ?? 0;
 
   const showDefinePrompt =
-    pendingDefineSignals.length > 0 && pendingDefineSignals[0].severity !== 'complete';
+    pendingDefineSignals.length > 0 && pendingDefineSignals[0].status !== 'done';
 
   const statusBadge = <EntityStatusBadge status={strategy.status} />;
 

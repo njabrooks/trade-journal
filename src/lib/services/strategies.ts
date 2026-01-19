@@ -264,11 +264,12 @@ export async function updateStrategy(
 
   // If strategy was confirmed, resolve all CONFIRM_STRATEGY triage records
   if (updates.confirm) {
-    // Resolve all CONFIRM_STRATEGY triage records for this strategy to "complete"
+    // Resolve all CONFIRM_STRATEGY triage records for this strategy
+    // Set status to 'done' (workflow complete), leave severity unchanged (historical importance)
     await db
       .update(triageRecords)
       .set({
-        severity: 'complete',
+        status: 'done',
         updatedAt: new Date(),
       })
       .where(

@@ -184,7 +184,7 @@ async function checkAndResolveTriage(
   strategy: { autoDerivedLabel: string | null; strategyKey: string; accountId: string | null }
 ) {
   try {
-    // Find pending DEFINE_SIGNALS triage record (severity != 'complete')
+    // Find pending DEFINE_SIGNALS triage record (status != 'done')
     const [triageRecord] = await db
       .select()
       .from(triageRecords)
@@ -192,7 +192,7 @@ async function checkAndResolveTriage(
         and(
           eq(triageRecords.strategyId, strategyId),
           eq(triageRecords.recommendedAction, 'DEFINE_SIGNALS'),
-          sql`${triageRecords.severity} IS NULL OR ${triageRecords.severity} != 'complete'`
+          sql`${triageRecords.status} IS NULL OR ${triageRecords.status} != 'done'`
         )
       )
       .limit(1);
@@ -210,11 +210,12 @@ async function checkAndResolveTriage(
         );
 
       if (count >= 1) {
-        // At least one signal configured - mark triage as complete
+        // At least one signal configured - mark triage as done
+        // Set status to 'done' (workflow complete), leave severity unchanged (historical importance)
         await db
           .update(triageRecords)
           .set({
-            severity: 'complete',
+            status: 'done',
             updatedAt: new Date(),
           })
           .where(eq(triageRecords.id, triageRecord.id));
@@ -226,8 +227,8 @@ async function checkAndResolveTriage(
           objectTitle: strategy.autoDerivedLabel || strategy.strategyKey,
           actionType: 'triage_resolved',
           actionDescription: `DEFINE_SIGNALS triage resolved - ${count} signal(s) configured`,
-          previousState: { severity: triageRecord.severity },
-          newState: { severity: 'complete', signalCount: count },
+          previousState: { status: triageRecord.status, severity: triageRecord.severity },
+          newState: { status: 'done', signalCount: count },
           source: 'user',
           metadata: {
             triageRecordId: triageRecord.id,

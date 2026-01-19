@@ -697,8 +697,8 @@ async function logNewTriageDetections(
   previousRecordsMap: Map<string, { severity: string | null; recommendedAction: string | null }>
 ): Promise<void> {
   for (const rec of records) {
-    // Skip records with override severities (user has already taken action)
-    if (['monitor', 'complete', 'pending', 'dismissed'].includes(rec.severity || '')) {
+    // Skip records where user has already taken action (done/in_progress status or monitor severity override)
+    if (rec.status === 'done' || rec.status === 'in_progress' || rec.severity === 'monitor') {
       continue;
     }
 
