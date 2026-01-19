@@ -6,6 +6,61 @@
 
 ---
 
+## Unified Triage Action Button (2026-01-19)
+
+### #ENH-050: Unified Triage Action Button
+**Status**: Complete (2026-01-19)
+**PRD Alignment**: Section 6 (Workflow & Triage Engine)
+
+Context-aware quick action button for triage inbox that provides one-click access to primary actions without expanding rows.
+
+**Problems Solved:**
+1. User had to expand rows to discover available actions
+2. No visual cues about what action is appropriate per trigger type
+3. Inconsistent action patterns across position/strategy/thesis triggers
+4. Expanded detail showed excessive information for simple synthesis actions
+
+**Key Components Created:**
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `TriageQuickAction` | `src/components/triage/TriageQuickAction.tsx` | Context-aware action button with dropdown |
+| `ThesisClaimsBrowserWrapper` | `src/components/triage/ThesisClaimsBrowserWrapper.tsx` | Claims browser filtered by thesis |
+| `/api/claims/with-sources` | `src/app/api/claims/with-sources/route.ts` | API endpoint for client-side claims fetching |
+
+**Action Mapping:**
+| Trigger | Primary | Secondary | Behavior |
+|---------|---------|-----------|----------|
+| `ASSIGNMENT_RISK*`, `ITM_*`, `SIGMA_*` | Monitor | Dismiss | Duration dropdown (7/14/28 days) |
+| `CONFIRM_STRATEGY` | Confirm | — | Opens StrategyConfirmationDialog |
+| `LINK_STRATEGY_TO_THESIS` | Link | Dismiss | Opens StrategyConfirmationDialog |
+| `QUANTITY_CHANGE`, `TRADE_INGESTION` | Trade | — | Expands row with auto-start |
+| `PRODUCE_CORE_ARGUMENT` | Synthesize | Dismiss | Expands, shows "Generate Articulation" |
+| `UPDATE_CORE_ARGUMENT` | Update | Dismiss | Expands, shows "Update Articulation (+N claims)" |
+| `SIGNAL_TRIGGERED` | Assess | Dismiss | Expands to show signal assessment |
+| `REVIEW_RECOMMENDED_SIGNALS` | Review | Dismiss | Expands to show signals table |
+
+**Simplified Synthesis UI:**
+For PRODUCE_CORE_ARGUMENT and UPDATE_CORE_ARGUMENT triggers, the expanded view shows only:
+- Action card at top with claim counts and action button
+- Claims browser showing linked claims
+- Removed: urgency banner, info grid, purple box, suggested action section, bottom buttons
+
+**Thesis Triage Re-triggering:**
+Thesis triage is event-driven (not scheduled). Dismissed records re-trigger only when:
+- New claims are linked to the thesis
+- Manual reconciliation script is run
+
+This means dismissing a synthesis trigger means "acknowledged until new evidence arrives."
+
+**Quality Metrics:**
+- 20+ trigger types mapped to appropriate actions
+- Severity-based color scheme (rose/amber/blue/slate)
+- Full TypeScript type safety
+- Consistent UX across position, strategy, and thesis triage
+
+---
+
 ## Unified Entity Detail UX/UI (2026-01-19)
 
 ### #ENH-049: Unified Entity Detail UX/UI

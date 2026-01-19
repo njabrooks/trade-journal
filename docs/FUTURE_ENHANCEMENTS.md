@@ -19,7 +19,7 @@
 
 ## Active Work
 
-No active enhancements in progress. See [Planned](#planned---high-priority) for next priorities.
+*No active work in progress.*
 
 ---
 
@@ -257,7 +257,7 @@ AI-generated descriptions from linked macro theses and claims.
 
 ## Enhancement Registry
 
-**Next Enhancement ID**: #ENH-050
+**Next Enhancement ID**: #ENH-051
 
 ### ID Allocation
 
@@ -269,7 +269,8 @@ AI-generated descriptions from linked macro theses and claims.
 | #ENH-040 - #ENH-046 | Phase 3.2 sub-phases |
 | #ENH-047 - #ENH-048 | Status field technical debt |
 | #ENH-049 | Unified Entity Detail UX/UI |
-| #ENH-050+ | Available |
+| #ENH-050 | Unified Triage Action Button |
+| #ENH-051+ | Available |
 
 **Format**: `#ENH-XXX` or `#ENH-XXX-name` for variants
 
@@ -283,6 +284,7 @@ For detailed specifications of completed work, see [docs/archive/completed-enhan
 
 | Phase | Date | Key Deliverables |
 |-------|------|------------------|
+| #ENH-050 | 2026-01-19 | Unified Triage Action Button - TriageQuickAction component with context-aware actions, simplified synthesis UI with claim counts, ThesisClaimsBrowserWrapper |
 | #ENH-049 | 2026-01-19 | Unified Entity Detail UX/UI - 3-tab pattern (Overview/Evidence/Execution) with shared layout components across all entity types |
 | Bugfix | 2026-01-19 | Trade ingestion triage fix - restored `TRADE_INGESTION` triage records after blotter migration |
 | #ENH-035 | 2026-01-16 | Thesis articulation generation - `/synthesize-thesis` skill, versioned articulations |
