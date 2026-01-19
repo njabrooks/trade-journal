@@ -64,6 +64,10 @@ export interface UnifiedTriageFilters {
   sort?: "date" | "title" | "trigger" | "status" | "objectType";
   direction?: "asc" | "desc";
   includeAll?: boolean;  // If true, include dismissed/complete records (for "All Triage" view)
+
+  // Entity-specific filters (for filtered views on detail pages)
+  thesisId?: string;      // Filter to specific macro or asset thesis
+  strategyId?: string;    // Filter to specific strategy
 }
 
 /**

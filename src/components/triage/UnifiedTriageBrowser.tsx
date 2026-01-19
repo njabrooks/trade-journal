@@ -28,6 +28,9 @@ import { ExpandedTriageDetail } from './ExpandedTriageDetail';
 interface UnifiedTriageBrowserProps {
   records: UnifiedTriageRecord[];
   counts: UnifiedTriageFilterCounts;
+  // Entity context - when provided, hides type filters and shows entity-specific view
+  thesisId?: string;
+  strategyId?: string;
 }
 
 type ObjectTypeFilter = 'all' | TriageObjectType;
@@ -58,10 +61,13 @@ function getDetailUrl(record: UnifiedTriageRecord): string | null {
   }
 }
 
-export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserProps) {
+export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: UnifiedTriageBrowserProps) {
   const router = useRouter();
   const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Determine if we're in an entity-specific context (thesis or strategy detail page)
+  const isEntityContext = !!(thesisId || strategyId);
 
   // Quick filter states (two-tier: base filter + type filter)
   const [baseFilter, setBaseFilter] = useState<BaseFilter>('needs_action');
@@ -464,37 +470,41 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
           Needs Action
         </Button>
 
-        <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
+        {/* Type Filter Buttons (only shown on main triage page, not in entity context) */}
+        {!isEntityContext && (
+          <>
+            <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
 
-        {/* Type Filter Buttons (layered on top of base filter) */}
-        <Button
-          variant={typeFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setTypeFilter('all')}
-        >
-          All Types
-        </Button>
-        <Button
-          variant={typeFilter === 'macro_thesis' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setTypeFilter('macro_thesis')}
-        >
-          Macro Theses
-        </Button>
-        <Button
-          variant={typeFilter === 'asset_thesis' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setTypeFilter('asset_thesis')}
-        >
-          Asset Theses
-        </Button>
-        <Button
-          variant={typeFilter === 'positions_strategies' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setTypeFilter('positions_strategies')}
-        >
-          Positions & Strategies
-        </Button>
+            <Button
+              variant={typeFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTypeFilter('all')}
+            >
+              All Types
+            </Button>
+            <Button
+              variant={typeFilter === 'macro_thesis' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTypeFilter('macro_thesis')}
+            >
+              Macro Theses
+            </Button>
+            <Button
+              variant={typeFilter === 'asset_thesis' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTypeFilter('asset_thesis')}
+            >
+              Asset Theses
+            </Button>
+            <Button
+              variant={typeFilter === 'positions_strategies' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTypeFilter('positions_strategies')}
+            >
+              Positions & Strategies
+            </Button>
+          </>
+        )}
 
         <div className="ml-auto text-sm text-slate-600">
           Showing {filteredAndSortedRecords.length} of {records.length} triage items
@@ -517,24 +527,26 @@ export function UnifiedTriageBrowser({ records, counts }: UnifiedTriageBrowserPr
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {/* Object Type */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Type
-              </label>
-              <select
-                value={objectTypeFilter}
-                onChange={(e) => setObjectTypeFilter(e.target.value as ObjectTypeFilter)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Types</option>
-                <option value="position">Position ({counts.objectType.position})</option>
-                <option value="strategy">Strategy ({counts.objectType.strategy})</option>
-                <option value="asset_thesis">Asset Thesis ({counts.objectType.asset_thesis})</option>
-                <option value="macro_thesis">Macro Thesis ({counts.objectType.macro_thesis})</option>
-              </select>
-            </div>
+          <div className={`grid gap-4 ${isEntityContext ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
+            {/* Object Type - hidden in entity context */}
+            {!isEntityContext && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Type
+                </label>
+                <select
+                  value={objectTypeFilter}
+                  onChange={(e) => setObjectTypeFilter(e.target.value as ObjectTypeFilter)}
+                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="position">Position ({counts.objectType.position})</option>
+                  <option value="strategy">Strategy ({counts.objectType.strategy})</option>
+                  <option value="asset_thesis">Asset Thesis ({counts.objectType.asset_thesis})</option>
+                  <option value="macro_thesis">Macro Thesis ({counts.objectType.macro_thesis})</option>
+                </select>
+              </div>
+            )}
 
             {/* Status */}
             <div>

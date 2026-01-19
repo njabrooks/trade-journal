@@ -1016,7 +1016,8 @@ export async function getUnifiedTriageQueue(
   const results: UnifiedTriageRecord[] = [];
 
   // Query position/strategy triage
-  if (queryPositions) {
+  // Skip if filtering by thesisId (thesis-specific view doesn't include position/strategy triage)
+  if (queryPositions && !filters.thesisId) {
     const positionFilters: TriageQueueFilters = {};
 
     // Map status filter to severity (position/strategy uses "severity")
@@ -1029,7 +1030,10 @@ export async function getUnifiedTriageQueue(
       positionFilters.recommendedAction = filters.trigger;
     }
 
-    const positionResult = await getTriageQueue(accountId, positionFilters);
+    // Use strategy-specific query when filtering by strategyId
+    const positionResult = filters.strategyId
+      ? await getTriageQueueForStrategy(filters.strategyId, positionFilters)
+      : await getTriageQueue(accountId, positionFilters);
 
     // Map and filter by object type if specified
     for (const record of positionResult.records) {
@@ -1047,7 +1051,8 @@ export async function getUnifiedTriageQueue(
   }
 
   // Query thesis triage
-  if (queryTheses) {
+  // Skip if filtering by strategyId (strategy-specific view doesn't include thesis triage)
+  if (queryTheses && !filters.strategyId) {
     const thesisFilters: ThesisTriageFilters = {};
 
     // Pass through includeAll flag for "All Triage" view
@@ -1072,6 +1077,11 @@ export async function getUnifiedTriageQueue(
       if (thesisTypes.length > 0) {
         thesisFilters.thesisType = thesisTypes;
       }
+    }
+
+    // Pass through thesisId filter for entity-specific views
+    if (filters.thesisId) {
+      thesisFilters.thesisId = filters.thesisId;
     }
 
     const thesisRecords = await getThesisTriageQueueFull(thesisFilters);

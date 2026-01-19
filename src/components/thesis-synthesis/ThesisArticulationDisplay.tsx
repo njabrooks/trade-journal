@@ -72,23 +72,20 @@ export function ThesisArticulationDisplay({
 
   return (
     <div className="bg-white rounded-lg border border-slate-200">
-      {/* Header */}
+      {/* Header - Version and metadata */}
       <div className="px-4 py-3 border-b border-slate-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-slate-900">
-              Thesis Articulation
-            </h3>
             <Badge variant="outline" className="text-xs">
               v{articulation.version}
             </Badge>
-          </div>
-          <div className="flex items-center gap-3 text-xs text-slate-500">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 text-xs text-slate-500">
               <Clock className="w-3 h-3" />
               {new Date(articulation.createdAt).toLocaleDateString('en-GB')}
             </span>
-            <span>{claimIdsUsed.length} claims synthesized</span>
+            <span className="text-xs text-slate-500">{claimIdsUsed.length} claims synthesized</span>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-slate-500">
             {onViewHistory && (
               <button
                 onClick={onViewHistory}
@@ -130,9 +127,8 @@ export function ThesisArticulationDisplay({
           )}
         </div>
 
-        {/* Core Argument */}
+        {/* Core Argument Content */}
         <div>
-          <h4 className="text-sm font-semibold text-slate-700 mb-2">Core Argument</h4>
           <p className="text-sm text-slate-900 whitespace-pre-wrap leading-relaxed">
             {articulation.coreArgument}
           </p>

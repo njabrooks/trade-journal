@@ -78,31 +78,9 @@ export function SignalsSection({
     router.refresh();
   };
 
-  const confirmationCount = signals.filter(s => s.type === 'confirmation').length;
-  const warningCount = signals.filter(s => s.type === 'warning').length;
-
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-semibold">
-          Signals ({signals.length})
-          {signals.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-slate-400">
-              {confirmationCount} confirmation • {warningCount} warning
-            </span>
-          )}
-        </h3>
-        <AssessEvidenceButton
-          thesisId={thesisId}
-          thesisType={thesisType}
-          thesisTitle={thesisTitle}
-          signalCount={signals.length}
-          onComplete={() => router.refresh()}
-        />
-      </div>
-
-      {/* Content - Unified Signals Table in browse mode */}
+      {/* Content - Unified Signals Table in browse mode with AssessEvidenceButton in header */}
       <UnifiedSignalsTable
         signals={signals}
         thesisId={thesisId}
@@ -111,6 +89,15 @@ export function SignalsSection({
         mode="browse"
         onUpdateStatus={handleUpdateStatus}
         onConvertToDataDriven={handleConvertToDataDriven}
+        headerAction={
+          <AssessEvidenceButton
+            thesisId={thesisId}
+            thesisType={thesisType}
+            thesisTitle={thesisTitle}
+            signalCount={signals.length}
+            onComplete={() => router.refresh()}
+          />
+        }
       />
 
       {/* Signal Config Form Dialog for upgrading to data-driven */}

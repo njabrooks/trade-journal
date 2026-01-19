@@ -38,7 +38,7 @@ type TableMode = 'browse' | 'review';
 
 type TypeFilter = 'all' | SignalType;
 type CategoryFilter = 'all' | SignalCategory;
-type StatusFilter = 'all' | SignalStatus;
+type StatusFilter = 'all' | 'pending' | SignalStatus;
 type SortColumn = 'statement' | 'type' | 'category' | 'status' | 'importance' | 'updatedAt';
 type SortDirection = 'asc' | 'desc';
 
@@ -69,6 +69,9 @@ interface UnifiedSignalsTableProps {
 
   // Loading state for external data fetching
   isLoading?: boolean;
+
+  // Optional header action element (e.g., AssessEvidenceButton)
+  headerAction?: React.ReactNode;
 }
 
 export function UnifiedSignalsTable({
@@ -81,6 +84,7 @@ export function UnifiedSignalsTable({
   onConvertToDataDriven,
   onComplete,
   isLoading = false,
+  headerAction,
 }: UnifiedSignalsTableProps) {
   const router = useRouter();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -98,7 +102,8 @@ export function UnifiedSignalsTable({
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  // Default to 'pending' (draft + active) to hide rejected/complete by default
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
   const [showFilters, setShowFilters] = useState(false);
 
   // Sort states
@@ -156,8 +161,13 @@ export function UnifiedSignalsTable({
     }
 
     // Status filter (only in browse mode)
-    if (mode === 'browse' && statusFilter !== 'all') {
-      result = result.filter((s) => s.status === statusFilter);
+    if (mode === 'browse') {
+      if (statusFilter === 'pending') {
+        // Show draft + active (hide complete + rejected)
+        result = result.filter((s) => s.status === 'draft' || s.status === 'active');
+      } else if (statusFilter !== 'all') {
+        result = result.filter((s) => s.status === statusFilter);
+      }
     }
 
     // Search
@@ -303,7 +313,7 @@ export function UnifiedSignalsTable({
     }
   };
 
-  // Review mode actions
+  // Accept/Reject actions (used in both browse and review modes)
   const handleAccept = async (signalId: string, modifications?: SignalWithModifications['pendingModifications']) => {
     setProcessingIds((prev) => new Set(prev).add(signalId));
     try {
@@ -322,12 +332,21 @@ export function UnifiedSignalsTable({
         throw new Error(data.error || 'Failed to accept signal');
       }
 
-      setSignals((prev) => prev.filter((s) => s.id !== signalId));
-      toast.success('Signal accepted');
+      if (mode === 'browse') {
+        // In browse mode, update the signal's status to 'active' so it remains visible
+        setSignals((prev) =>
+          prev.map((s) => (s.id === signalId ? { ...s, status: 'active' as const } : s))
+        );
+        toast.success('Signal accepted and activated');
+      } else {
+        // In review mode, remove from list (processing queue behavior)
+        setSignals((prev) => prev.filter((s) => s.id !== signalId));
+        toast.success('Signal accepted');
 
-      // Check if all signals processed
-      if (signals.filter((s) => s.status === 'draft').length === 1) {
-        onComplete?.();
+        // Check if all signals processed
+        if (signals.filter((s) => s.status === 'draft').length === 1) {
+          onComplete?.();
+        }
       }
     } catch (error) {
       console.error('Error accepting signal:', error);
@@ -358,12 +377,22 @@ export function UnifiedSignalsTable({
         throw new Error(data.error || 'Failed to reject signal');
       }
 
-      setSignals((prev) => prev.filter((s) => s.id !== signalId));
-      toast.success('Signal rejected');
+      if (mode === 'browse') {
+        // In browse mode, update the signal's status to 'rejected' so it remains visible
+        // (unless filtered out by current status filter)
+        setSignals((prev) =>
+          prev.map((s) => (s.id === signalId ? { ...s, status: 'rejected' as const } : s))
+        );
+        toast.success('Signal rejected');
+      } else {
+        // In review mode, remove from list (processing queue behavior)
+        setSignals((prev) => prev.filter((s) => s.id !== signalId));
+        toast.success('Signal rejected');
 
-      // Check if all signals processed
-      if (signals.filter((s) => s.status === 'draft').length === 1) {
-        onComplete?.();
+        // Check if all signals processed
+        if (signals.filter((s) => s.status === 'draft').length === 1) {
+          onComplete?.();
+        }
       }
     } catch (error) {
       console.error('Error rejecting signal:', error);
@@ -548,8 +577,9 @@ export function UnifiedSignalsTable({
         </div>
       )}
 
-      {/* Filter Bar */}
+      {/* Filter Bar with Quick Filters */}
       <div className="flex items-center gap-2">
+        {/* Advanced Filters Toggle */}
         <Button
           variant="outline"
           size="sm"
@@ -560,9 +590,40 @@ export function UnifiedSignalsTable({
           Filters
           {showFilters && <span className="text-xs text-slate-500">(ESC)</span>}
         </Button>
+
+        {mode === 'browse' && (
+          <>
+            <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
+
+            {/* Status Quick Filter Buttons */}
+            <Button
+              variant={statusFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('all')}
+            >
+              All
+            </Button>
+            <Button
+              variant={statusFilter === 'pending' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusFilter('pending')}
+            >
+              Open Signals
+            </Button>
+          </>
+        )}
+
+        {/* Count Display */}
         <div className="text-sm text-slate-600">
           Showing {filteredAndSortedSignals.length} of {mode === 'review' ? draftCount : signals.length} signals
         </div>
+
+        {/* Header Action (e.g., AssessEvidenceButton) - pushed to right */}
+        {headerAction && (
+          <div className="ml-auto">
+            {headerAction}
+          </div>
+        )}
       </div>
 
       {/* Filter Panel */}
@@ -581,7 +642,7 @@ export function UnifiedSignalsTable({
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {/* Type */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
@@ -609,24 +670,6 @@ export function UnifiedSignalsTable({
                 <option value="data_driven">Data-Driven ({dataDrivenCount})</option>
               </select>
             </div>
-
-            {/* Status (browse mode only) */}
-            {mode === 'browse' && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="draft">Draft</option>
-                  <option value="active">Active</option>
-                  <option value="complete">Complete</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-            )}
           </div>
 
           {/* Clear Filters */}
@@ -638,10 +681,10 @@ export function UnifiedSignalsTable({
                 setSearchQuery('');
                 setTypeFilter('all');
                 setCategoryFilter('all');
-                setStatusFilter('all');
+                setStatusFilter('pending');
               }}
             >
-              Clear Filters
+              Reset Filters
             </Button>
           </div>
         </div>

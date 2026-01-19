@@ -4,13 +4,14 @@ import { getAssetThesisById, getMainClaimsWithSourcesForAssetThesis } from '@/db
 import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getActiveValidationPoints } from '@/db/queries/thesisSynthesis';
+import { getUnifiedTriageQueue } from '@/db/queries/triage';
 import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDetailLayout';
 import { EntityTabs } from '@/components/layout/EntityTabs';
 import { createEntityTabs } from '@/lib/types/entity-tabs';
 import { AssetThesisSidebar } from '@/components/asset-theses/AssetThesisSidebar';
 import { LinkedMacroThesesSection } from '@/components/asset-theses/LinkedMacroThesesSection';
 import { LinkedStrategiesSection } from '@/components/asset-theses/LinkedStrategiesSection';
-import { ThesisTriageTable } from '@/components/triage/ThesisTriageTable';
+import { UnifiedTriageBrowser } from '@/components/triage/UnifiedTriageBrowser';
 import { EntityStatusBadge } from '@/components/ui/badge';
 
 interface ExecutionPageProps {
@@ -28,12 +29,14 @@ export async function generateMetadata({ params }: ExecutionPageProps): Promise<
 export default async function AssetThesisExecutionPage({ params }: ExecutionPageProps) {
   const { id } = await params;
 
-  const [thesis, claimsWithSources, allMacroTheses, allStrategies, validationPoints] = await Promise.all([
+  const [thesis, claimsWithSources, allMacroTheses, allStrategies, validationPoints, triageResult] = await Promise.all([
     getAssetThesisById(id),
     getMainClaimsWithSourcesForAssetThesis(id),
     getMacroThesesList(),
     getStrategiesForList(1000, { includeClosedStrategies: true }),
     getActiveValidationPoints(id, 'asset'),
+    // Fetch thesis-specific triage records (accountId not needed when filtering by thesisId)
+    getUnifiedTriageQueue('', { thesisId: id, includeAll: true }),
   ]);
 
   if (!thesis) {
@@ -86,7 +89,11 @@ export default async function AssetThesisExecutionPage({ params }: ExecutionPage
     >
       {/* Triage Queue Section */}
       <EntitySection title="Triage Queue">
-        <ThesisTriageTable thesisId={thesis.id} thesisType="asset" />
+        <UnifiedTriageBrowser
+          records={triageResult.records}
+          counts={triageResult.counts}
+          thesisId={thesis.id}
+        />
       </EntitySection>
 
       {/* Linked Macro Theses */}

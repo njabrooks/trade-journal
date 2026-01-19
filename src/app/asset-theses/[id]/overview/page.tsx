@@ -113,15 +113,10 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
         }
       >
         {hasCoreArgument && articulation && (
-          <>
-            <div className="mb-2 text-xs text-slate-500">
-              v{articulation.version} • {new Date(articulation.createdAt).toLocaleDateString('en-GB')}
-            </div>
-            <ThesisArticulationDisplay
-              articulation={articulation}
-              claimCount={currentClaimCount}
-            />
-          </>
+          <ThesisArticulationDisplay
+            articulation={articulation}
+            claimCount={currentClaimCount}
+          />
         )}
 
         {!hasCoreArgument && hasLegacySummary && (

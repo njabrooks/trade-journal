@@ -6,6 +6,60 @@
 
 ---
 
+## Unified Entity Detail UX/UI (2026-01-19)
+
+### #ENH-049: Unified Entity Detail UX/UI
+**Status**: Complete (2026-01-19)
+**PRD Alignment**: Section 3 (Conceptual Model - Hierarchy)
+
+Aligned UX/UI patterns across Macro Thesis, Asset Thesis, and Strategy detail pages with consistent 3-tab navigation, two-column layout, and shared components.
+
+**Problems Solved:**
+1. Inconsistent navigation patterns - users had to learn 3 different mental models
+2. Asset Thesis accordion overload - collapsed 10 sections into 3 focused tabs
+3. Action discoverability - consolidated edit/synthesize/link actions in header dropdown
+4. Visual hierarchy unclear - now clear primary (tabs) / secondary (sidebar) distinction
+
+**Unified Design Pattern:**
+- Two-column layout: main content area + sticky sidebar
+- 3 tabs: Overview, Evidence, Execution
+- URL-based tab navigation (no client-side state)
+- Persistent sidebar with Quick Stats + Related Entities
+
+**Shared Components Created:**
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| `EntityDetailLayout` | `src/components/layout/EntityDetailLayout.tsx` | Master wrapper for all entity detail pages |
+| `EntityTabs` | `src/components/layout/EntityTabs.tsx` | Reusable tab navigation with URL-based routing |
+| `EntitySidebar` | `src/components/layout/EntitySidebar.tsx` | Sticky sidebar with accordion sections |
+| `EntityActions` | `src/components/layout/EntityActions.tsx` | Standardized actions dropdown |
+| `info-row.tsx` | `src/components/ui/info-row.tsx` | Label/value display pairs for metadata |
+| `createEntityTabs()` | `src/lib/types/entity-tabs.ts` | Helper to create standard 3-tab structure |
+
+**Entity-Specific Implementations:**
+
+| Entity | Pages | Sidebar |
+|--------|-------|---------|
+| Macro Thesis | `[id]/page.tsx` (redirect), `overview/`, `evidence/`, `execution/` | `MacroThesisSidebar.tsx` |
+| Asset Thesis | `[id]/page.tsx` (redirect), `overview/`, `evidence/`, `execution/` | `AssetThesisSidebar.tsx` |
+| Strategy | `[strategyId]/page.tsx` (redirect), `overview/`, `evidence/`, `execution/` | `StrategySidebar.tsx` |
+
+**Tab Content Mapping:**
+
+| Tab | Macro Thesis | Asset Thesis | Strategy |
+|-----|--------------|--------------|----------|
+| Overview | Core argument, notes | Core argument, market data | Performance metrics, charts |
+| Evidence | Signals, main claims | Signals, claims | Triage queue, signals |
+| Execution | Linked asset theses, strategies | Linked macro theses, strategies | Positions, trades |
+
+**Quality Metrics:**
+- Code reusability: Core layout components used across 9 page files
+- UX consistency: All three entity types follow identical structural pattern
+- Type safety: Full TypeScript with well-defined interfaces
+
+---
+
 ## Status Field Technical Debt (2026-01-16)
 
 ### #ENH-047: Triage Severity/Status Separation

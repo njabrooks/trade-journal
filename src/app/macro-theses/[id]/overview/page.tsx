@@ -86,11 +86,6 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
           />
         }
       >
-        {articulation && (
-          <div className="mb-2 text-xs text-slate-500">
-            v{articulation.version} • {new Date(articulation.createdAt).toLocaleDateString('en-GB')}
-          </div>
-        )}
         {!articulation && thesis.description && (
           <div className="mb-2 text-xs text-amber-600">(legacy description)</div>
         )}
