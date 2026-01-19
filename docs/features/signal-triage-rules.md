@@ -1,4 +1,4 @@
-# Signal & Triage Rules Reference
+ # Signal & Triage Rules Reference
 
 **Created:** 2026-01-16
 **Purpose:** Centralized documentation of all signal evaluation rules, triage triggers, and auto-promotion flows.
@@ -194,11 +194,27 @@ User captures metadata (stage, reason, notes) via TradeMetadataForm
 Journal entry logged, triage marked done
 ```
 
+**Historical Data Flow (No Ingested Trades):**
+```
+Position snapshot imported → QUANTITY_CHANGE detected (no matching trades)
+    ↓
+Triage record created (unmatchedTradeExecutions empty)
+    ↓
+TradeMetadataForm shows "No trade executions found" message
+    ↓
+User captures metadata (stage, reason) without selecting trades
+    ↓
+Journal entry logged with noLinkedTrades: true, triage marked done
+```
+
+This flow handles strategies with back data that wasn't ingested (e.g., positions from before integration started). The user can still capture trade context for the journal even without matching trade executions.
+
 **Key Points:**
 - `TRADE_INGESTION` created during Flex CSV ingestion (in `processCsv.ts`)
 - `QUANTITY_CHANGE` created during triage computation (in `triage.ts`) - skipped if `TRADE_INGESTION` already exists
 - Both use `unmatchedTradeExecutions` JSONB to store: `{conid, ticker, qtyChange, tradeIds[]}`
 - `isTradeMetadataTrigger()` helper identifies both triggers for special UI handling
+- When no trades exist, form allows submission with just stage and reason (no trade selection required)
 
 **Source Files:**
 - `src/lib/ingestion/flex/processCsv.ts` → `createTradeIngestionRecords()`
