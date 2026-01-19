@@ -57,7 +57,7 @@ export default async function ClaimsBrowserPage() {
 
         {/* Claims Browser */}
         {claimsWithSources.length > 0 ? (
-          <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
+          <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} showSourceColumn={true} />
         ) : (
           <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
             <p className="text-slate-600 mb-4">No claims found in your research library.</p>

@@ -19,6 +19,7 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -30,6 +31,7 @@ import { TriagePositionsTable } from './TriagePositionsTable';
 import { TriageActionsTable } from './TriageActionsTable';
 import { TriageActionButtons } from './TriageActionButtons';
 import { ClaimsContext } from './ClaimsContext';
+import { ThesisClaimsBrowserWrapper } from './ThesisClaimsBrowserWrapper';
 import { ThesisSignalTriageCard } from './ThesisSignalTriageCard';
 import { UnifiedSignalsTable } from '@/components/signals/UnifiedSignalsTable';
 import type { Signal } from '@/db/schema';
@@ -43,9 +45,10 @@ interface ExpandedTriageDetailProps {
   record: UnifiedTriageRecord;
   onDismiss: () => void;
   onActionComplete?: () => void;
+  initialAction?: string; // Auto-start this action when expanded (e.g., 'TRADE')
 }
 
-export function ExpandedTriageDetail({ record, onDismiss, onActionComplete }: ExpandedTriageDetailProps) {
+export function ExpandedTriageDetail({ record, onDismiss, onActionComplete, initialAction }: ExpandedTriageDetailProps) {
   // Render different content based on object type
   switch (record.objectType) {
     case 'position':
@@ -55,6 +58,7 @@ export function ExpandedTriageDetail({ record, onDismiss, onActionComplete }: Ex
           record={record}
           onDismiss={onDismiss}
           onActionComplete={onActionComplete}
+          initialAction={initialAction}
         />
       );
     case 'asset_thesis':
@@ -83,22 +87,27 @@ function PositionStrategyDetail({
   record,
   onDismiss,
   onActionComplete,
+  initialAction,
 }: {
   record: UnifiedTriageRecord;
   onDismiss: () => void;
   onActionComplete?: () => void;
+  initialAction?: string;
 }) {
   const positionRecord = record.positionTriageRecord;
 
   // State for position selection (matching TriageTableRow pattern)
   const [selectedPositionIds, setSelectedPositionIds] = useState<Set<string>>(new Set());
   const [positionQuantities, setPositionQuantities] = useState<Map<string, number>>(new Map());
+  // State for auto-starting trade action
+  const [autoStartTrade, setAutoStartTrade] = useState(initialAction === 'TRADE');
 
   // Reset selections when record changes
   useEffect(() => {
     setSelectedPositionIds(new Set());
     setPositionQuantities(new Map());
-  }, [record.id]);
+    setAutoStartTrade(initialAction === 'TRADE');
+  }, [record.id, initialAction]);
 
   if (!positionRecord) {
     return (
@@ -220,8 +229,12 @@ function PositionStrategyDetail({
         </div>
       )}
 
-      {/* Actions - show trade form when positions are selected, otherwise show action buttons */}
-      {selectedPositionIds.size > 0 && !isTradeMetadataTrigger(positionRecord.recommendedAction) ? (
+      {/* Actions - show trade form when:
+          1. Positions are selected (for non-trade-metadata triggers)
+          2. autoStartTrade is true (e.g., user clicked Trade button in quick actions)
+          Otherwise show action selection buttons */}
+      {(selectedPositionIds.size > 0 && !isTradeMetadataTrigger(positionRecord.recommendedAction)) ||
+       (autoStartTrade && isTradeMetadataTrigger(positionRecord.recommendedAction)) ? (
         <TriageActionButtons
           triageId={positionRecord.id}
           contextLevel={positionRecord.contextLevel}
@@ -230,7 +243,10 @@ function PositionStrategyDetail({
           positionId={positionRecord.positionId}
           severity={positionRecord.severity}
           initialAction="TRADE"
-          onActionComplete={handleActionComplete}
+          onActionComplete={() => {
+            setAutoStartTrade(false);
+            handleActionComplete();
+          }}
           selectedPositionIds={selectedPositionIds}
           onPositionSelectionChange={setSelectedPositionIds}
           positionQuantities={positionQuantities}
@@ -375,7 +391,11 @@ function ThesisDetail({
   const isNeedsArticulation = triageRule === 'thesis_needs_articulation' || triageRule === 'NEEDS_RESEARCH' || triageRule === 'PRODUCE_CORE_ARGUMENT';
   const isNewClaimsAvailable = triageRule === 'thesis_new_claims_available' || triageRule === 'UPDATE_CORE_ARGUMENT';
   const isSignalTriggered = triageRule === 'SIGNAL_TRIGGERED';
-  const isReviewRecommendedSignals = triageRule === 'REVIEW_RECOMMENDED_SIGNALS';
+  const isReviewRecommendedSignals = triageRule === 'REVIEW_RECOMMENDED_SIGNALS' || triageRule === 'REVIEW_DRAFT_SIGNALS';
+
+  // Synthesis triggers show simplified UI: just claims browser + confirmation button
+  const isSynthesisTrigger = triageRule === 'PRODUCE_CORE_ARGUMENT' || triageRule === 'thesis_needs_articulation' ||
+    triageRule === 'UPDATE_CORE_ARGUMENT' || triageRule === 'thesis_new_claims_available';
 
   // Parse signal-specific content summary
   const signalContentSummary = isSignalTriggered ? (thesisRecord?.contentSummary as {
@@ -383,6 +403,14 @@ function ThesisDetail({
     totalSignalCount?: number;
     triggeredSignalIds?: string[];
     currentConviction?: 'high' | 'medium' | 'low';
+  } | undefined) : undefined;
+
+  // Parse synthesis-specific content summary for claim counts
+  const synthesisContentSummary = isSynthesisTrigger ? (thesisRecord?.contentSummary as {
+    currentClaimCount?: number;
+    claimsAtLastArticulation?: number;
+    newClaimCount?: number;
+    hasArticulation?: boolean;
   } | undefined) : undefined;
 
   const copySkillToClipboard = () => {
@@ -395,8 +423,8 @@ function ThesisDetail({
 
   return (
     <div className="space-y-4">
-      {/* Urgency Banner */}
-      {thesisRecord?.urgency && thesisRecord.urgency !== 'when_convenient' && (
+      {/* Urgency Banner - hidden for synthesis triggers */}
+      {!isSynthesisTrigger && thesisRecord?.urgency && thesisRecord.urgency !== 'when_convenient' && (
         <div className={`rounded-lg p-3 flex items-center gap-3 ${
           thesisRecord.urgency === 'immediate' ? 'bg-rose-50 border border-rose-200' :
           thesisRecord.urgency === 'today' ? 'bg-amber-50 border border-amber-200' :
@@ -430,25 +458,27 @@ function ThesisDetail({
         </div>
       )}
 
-      {/* Thesis Info Grid - Including Workflow Status and Evolution State */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <InfoItem
-          label="Thesis Type"
-          value={isMacro ? 'Macro Thesis' : 'Asset Thesis'}
-        />
-        <InfoItem
-          label="Lifecycle Stage"
-          value={formatLifecycleStage(thesisRecord?.lifecycleStage)}
-        />
-        <InfoItem
-          label="Trigger"
-          value={formatTriageRule(triageRule)}
-        />
-        <InfoItem
-          label="Trigger Source"
-          value={thesisRecord?.triggerSource ?? 'N/A'}
-        />
-      </div>
+      {/* Thesis Info Grid - hidden for synthesis triggers */}
+      {!isSynthesisTrigger && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <InfoItem
+            label="Thesis Type"
+            value={isMacro ? 'Macro Thesis' : 'Asset Thesis'}
+          />
+          <InfoItem
+            label="Lifecycle Stage"
+            value={formatLifecycleStage(thesisRecord?.lifecycleStage)}
+          />
+          <InfoItem
+            label="Trigger"
+            value={formatTriageRule(triageRule)}
+          />
+          <InfoItem
+            label="Trigger Source"
+            value={thesisRecord?.triggerSource ?? 'N/A'}
+          />
+        </div>
+      )}
 
       {/* Content Summary (for monitoring triggers) */}
       {isMonitoringContent && contentSummary && (
@@ -649,8 +679,8 @@ function ThesisDetail({
         </div>
       )}
 
-      {/* Lifecycle Triage Context */}
-      {(isNeedsArticulation || isNewClaimsAvailable) && (
+      {/* Lifecycle Triage Context - hidden for synthesis triggers (shown in simplified view instead) */}
+      {!isSynthesisTrigger && (isNeedsArticulation || isNewClaimsAvailable) && (
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
             <FileText className="h-4 w-4 text-purple-600" />
@@ -664,6 +694,66 @@ function ThesisDetail({
               : 'New claims have been linked since the last articulation. Consider regenerating the articulation to incorporate new evidence.'}
           </p>
         </div>
+      )}
+
+      {/* Claims Browser for NEEDS_RESEARCH - shows existing claims or research prompt */}
+      {triageRule === 'NEEDS_RESEARCH' && (
+        <ThesisClaimsBrowserWrapper
+          thesisId={record.objectId}
+          thesisType={isMacro ? 'macro' : 'asset'}
+        />
+      )}
+
+      {/* Simplified Synthesis View - confirmation button above claims browser */}
+      {isSynthesisTrigger && (
+        <>
+          {/* Synthesis Action Card - above claims for visibility */}
+          <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-emerald-800">
+                  {isNewClaimsAvailable
+                    ? 'New evidence available for thesis articulation'
+                    : 'Ready to generate thesis articulation'}
+                </p>
+                <p className="text-xs text-emerald-600 mt-1">
+                  {isNewClaimsAvailable
+                    ? `${synthesisContentSummary?.newClaimCount ?? 0} new claims since last articulation. Review the claims below, then update.`
+                    : `${synthesisContentSummary?.currentClaimCount ?? 0} claims linked. Review the claims below, then generate articulation and signals.`}
+                </p>
+              </div>
+              <Button
+                onClick={handleRunSynthesizeThesis}
+                disabled={isExecuting || executionResult?.success}
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shrink-0"
+              >
+                {isExecuting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {isNewClaimsAvailable ? 'Updating...' : 'Synthesizing...'}
+                  </>
+                ) : executionResult?.success ? (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    Done
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    {isNewClaimsAvailable
+                      ? `Update Articulation (+${synthesisContentSummary?.newClaimCount ?? 0} claims)`
+                      : 'Generate Articulation'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+          {/* Claims Browser - below action for review */}
+          <ThesisClaimsBrowserWrapper
+            thesisId={record.objectId}
+            thesisType={isMacro ? 'macro' : 'asset'}
+          />
+        </>
       )}
 
       {/* Signal Triggered - Thesis-Level Assessment */}
@@ -698,8 +788,8 @@ function ThesisDetail({
         />
       )}
 
-      {/* Suggested Skill */}
-      {suggestedSkill && (
+      {/* Suggested Skill - hidden for synthesis triggers (integrated into simplified view) */}
+      {!isSynthesisTrigger && suggestedSkill && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-emerald-800">Suggested Action</p>
@@ -763,66 +853,68 @@ function ThesisDetail({
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 pt-2 border-t">
-        <Link href={thesisUrl}>
-          <Button variant="outline" size="sm" className="gap-1">
-            <ExternalLink className="h-3 w-3" />
-            View {isMacro ? 'Thesis' : 'Asset Thesis'}
-          </Button>
-        </Link>
+      {/* Actions - hidden for synthesis triggers (integrated into simplified view) */}
+      {!isSynthesisTrigger && (
+        <div className="flex items-center gap-2 pt-2 border-t">
+          <Link href={thesisUrl}>
+            <Button variant="outline" size="sm" className="gap-1">
+              <ExternalLink className="h-3 w-3" />
+              View {isMacro ? 'Thesis' : 'Asset Thesis'}
+            </Button>
+          </Link>
 
-        {/* Synthesize Thesis - Direct Execution */}
-        {suggestedSkill === '/synthesize-thesis' && (
+          {/* Synthesize Thesis - Direct Execution */}
+          {suggestedSkill === '/synthesize-thesis' && (
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1"
+              onClick={handleRunSynthesizeThesis}
+              disabled={isExecuting || executionResult?.success}
+            >
+              {isExecuting ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Synthesizing...
+                </>
+              ) : executionResult?.success ? (
+                <>
+                  <CheckCircle className="h-3 w-3" />
+                  Done
+                </>
+              ) : (
+                <>
+                  <Play className="h-3 w-3" />
+                  Synthesize Thesis
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Other Skills - Copy to Clipboard */}
+          {suggestedSkill && suggestedSkill !== '/synthesize-thesis' && (
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1"
+              onClick={copySkillToClipboard}
+            >
+              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {copied ? 'Copied!' : 'Copy Skill'}
+            </Button>
+          )}
+
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
-            className="gap-1"
-            onClick={handleRunSynthesizeThesis}
-            disabled={isExecuting || executionResult?.success}
+            onClick={onDismiss}
+            className="gap-1 text-slate-600"
           >
-            {isExecuting ? (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Synthesizing...
-              </>
-            ) : executionResult?.success ? (
-              <>
-                <CheckCircle className="h-3 w-3" />
-                Done
-              </>
-            ) : (
-              <>
-                <Play className="h-3 w-3" />
-                Synthesize Thesis
-              </>
-            )}
+            <X className="h-3 w-3" />
+            Dismiss
           </Button>
-        )}
-
-        {/* Other Skills - Copy to Clipboard */}
-        {suggestedSkill && suggestedSkill !== '/synthesize-thesis' && (
-          <Button
-            variant="default"
-            size="sm"
-            className="gap-1"
-            onClick={copySkillToClipboard}
-          >
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            {copied ? 'Copied!' : 'Copy Skill'}
-          </Button>
-        )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onDismiss}
-          className="gap-1 text-slate-600"
-        >
-          <X className="h-3 w-3" />
-          Dismiss
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -849,7 +941,8 @@ function RecommendedSignalsReview({
   useEffect(() => {
     async function fetchSignals() {
       try {
-        const response = await fetch(`/api/validation-points?thesisId=${thesisId}&thesisType=${thesisType}&status=recommended`);
+        // Fetch signals with status='draft' - these are AI-proposed signals needing user review
+        const response = await fetch(`/api/validation-points?thesisId=${thesisId}&thesisType=${thesisType}&status=draft`);
         if (!response.ok) {
           throw new Error('Failed to fetch signals');
         }

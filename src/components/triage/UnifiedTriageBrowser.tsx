@@ -24,6 +24,7 @@ import type {
   TriageObjectType,
 } from '@/types/triage';
 import { ExpandedTriageDetail } from './ExpandedTriageDetail';
+import { TriageQuickAction } from './TriageQuickAction';
 
 interface UnifiedTriageBrowserProps {
   records: UnifiedTriageRecord[];
@@ -64,6 +65,7 @@ function getDetailUrl(record: UnifiedTriageRecord): string | null {
 export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: UnifiedTriageBrowserProps) {
   const router = useRouter();
   const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
+  const [expandedInitialAction, setExpandedInitialAction] = useState<string | undefined>(undefined);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Determine if we're in an entity-specific context (thesis or strategy detail page)
@@ -361,19 +363,42 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
           </td>
 
           {/* Actions */}
-          <td className="px-4 py-3 text-right">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setExpandedRecord(isExpanded ? null : record.id)}
-              className="h-7 w-7 p-0"
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </Button>
+          <td className="px-4 py-3">
+            <div className="flex items-center justify-end gap-1">
+              {/* Quick Action Button */}
+              <TriageQuickAction
+                record={record}
+                onActionComplete={() => {
+                  setExpandedRecord(null);
+                  setExpandedInitialAction(undefined);
+                  router.refresh();
+                }}
+                onExpand={(initialAction) => {
+                  if (isExpanded) {
+                    setExpandedRecord(null);
+                    setExpandedInitialAction(undefined);
+                  } else {
+                    setExpandedRecord(record.id);
+                    setExpandedInitialAction(initialAction);
+                  }
+                }}
+              />
+
+              {/* Expand Button */}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setExpandedRecord(isExpanded ? null : record.id)}
+                className="h-7 w-7 p-0"
+                title={isExpanded ? 'Collapse details' : 'Expand details'}
+              >
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </td>
         </tr>
 
@@ -384,7 +409,8 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
               <ExpandedTriageDetail
                 record={record}
                 onDismiss={() => handleDismiss(record.id, record)}
-                onActionComplete={() => handleActionComplete(record.id)}
+                onActionComplete={handleActionComplete}
+                initialAction={expandedInitialAction}
               />
             </td>
           </tr>
@@ -394,7 +420,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
   };
 
   // Handle action completion (TRADE, MONITOR, etc.)
-  const handleActionComplete = (recordId: string) => {
+  const handleActionComplete = () => {
     setExpandedRecord(null);
     router.refresh();
   };
@@ -789,7 +815,7 @@ function getStatusBadgeColor(status: string): string {
   return colors[status] ?? 'bg-slate-100 text-slate-700';
 }
 
-function getTriggerBadgeColor(trigger: string): string {
+function getTriggerBadgeColor(_trigger: string): string {
   // Use a consistent neutral style for triggers - they describe the action, not severity
   // Using a cyan/teal color to differentiate from status (warm colors) and type (cool colors)
   return 'bg-cyan-50 text-cyan-700 border border-cyan-200';

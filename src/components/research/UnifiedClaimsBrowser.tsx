@@ -36,6 +36,9 @@ interface ClaimWithSource {
 interface UnifiedClaimsBrowserProps {
   claimsWithSources: ClaimWithSource[];
   filterArtifactId?: string; // Optional: filter claims to a specific research source
+  initialLinkedToFilter?: string; // Optional: pre-filter to a specific thesis/view ID
+  showSourceColumn?: boolean; // Optional: show the Research source column in table (default: false)
+  compact?: boolean; // Optional: hide filter panel and show minimal UI (default: false)
 }
 
 type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
@@ -44,7 +47,13 @@ type CategoryFilter = 'all' | 'macro' | 'asset_specific';
 type SortColumn = 'claim' | 'source' | 'confidence' | 'category' | 'status' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
 
-export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: UnifiedClaimsBrowserProps) {
+export function UnifiedClaimsBrowser({
+  claimsWithSources,
+  filterArtifactId,
+  initialLinkedToFilter,
+  showSourceColumn = false,
+  compact = false,
+}: UnifiedClaimsBrowserProps) {
   const router = useRouter();
   const [expandedClaim, setExpandedClaim] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -54,8 +63,8 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [confidenceFilter, setConfidenceFilter] = useState<ConfidenceFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
-  const [linkedToFilter, setLinkedToFilter] = useState<string>('all'); // 'all', 'unlinked', or thesis/view ID
-  const [showFilters, setShowFilters] = useState(false);
+  const [linkedToFilter, setLinkedToFilter] = useState<string>(initialLinkedToFilter || 'all'); // 'all', 'unlinked', or thesis/view ID
+  const [showFilters, setShowFilters] = useState(!compact); // Hide filters by default in compact mode
 
   // Get unique theses and views for filter dropdown
   const uniqueLinkedEntities = useMemo(() => {
@@ -543,6 +552,17 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                   <th className="px-4 py-3 text-left">
                     Linked To
                   </th>
+                  {showSourceColumn && (
+                    <th
+                      className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                      onClick={() => handleSort('source')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Source
+                        {getSortIcon('source')}
+                      </div>
+                    </th>
+                  )}
                   <th
                     className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
                     onClick={() => handleSort('confidence')}
@@ -684,6 +704,23 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                           </div>
                         </td>
 
+                        {/* Source - Research artifact title */}
+                        {showSourceColumn && (
+                          <td className="px-4 py-3">
+                            {artifact ? (
+                              <Link
+                                href={`/research/${artifact.id}`}
+                                className="text-sm text-blue-600 hover:text-blue-800 hover:underline line-clamp-1"
+                                title={artifact.title}
+                              >
+                                {artifact.title}
+                              </Link>
+                            ) : (
+                              <span className="text-xs text-slate-400">—</span>
+                            )}
+                          </td>
+                        )}
+
                         {/* Confidence */}
                         <td className="px-4 py-3 text-center">
                           {claim.qualifier ? (
@@ -758,7 +795,7 @@ export function UnifiedClaimsBrowser({ claimsWithSources, filterArtifactId }: Un
                       {/* Expanded Details Row */}
                       {isExpanded && (
                         <tr className="bg-slate-50 border-b">
-                          <td colSpan={6} className="px-4 py-4">
+                          <td colSpan={showSourceColumn ? 7 : 6} className="px-4 py-4">
                             <div className="space-y-4">
                               {/* Full Claim Text */}
                               <div>
