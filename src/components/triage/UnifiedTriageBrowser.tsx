@@ -38,12 +38,12 @@ type ObjectTypeFilter = 'all' | TriageObjectType;
 type SortColumn = 'title' | 'objectType' | 'trigger' | 'severity' | 'status' | 'date';
 type SortDirection = 'asc' | 'desc';
 type GroupBy = 'none' | 'status';
-type BaseFilter = 'needs_action' | 'all';
+type BaseFilter = 'all' | 'priority' | 'inbox' | 'old_triage';
 type TypeFilter = 'all' | 'macro_thesis' | 'asset_thesis' | 'positions_strategies';
 
-// Severities that require action (shown in "Needs Action" view)
+// Severities that require priority attention (shown in "Priority" view)
 // Note: Status is workflow state (inbox/in_progress/done), severity is importance level
-const ACTION_SEVERITIES = ['urgent', 'attention'];
+const PRIORITY_SEVERITIES = ['urgent', 'attention'];
 
 // Get detail page URL for a triage record (returns null if no detail page exists)
 function getDetailUrl(record: UnifiedTriageRecord): string | null {
@@ -72,7 +72,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
   const isEntityContext = !!(thesisId || strategyId);
 
   // Quick filter states (two-tier: base filter + type filter)
-  const [baseFilter, setBaseFilter] = useState<BaseFilter>('needs_action');
+  const [baseFilter, setBaseFilter] = useState<BaseFilter>('inbox');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
   // Filter states
@@ -129,12 +129,18 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
     let result = [...records];
 
     // Base filter (applied first)
-    if (baseFilter === 'needs_action') {
-      // Filter by severity (importance level) AND exclude completed items
+    if (baseFilter === 'priority') {
+      // Priority: severity urgent/attention AND status not done
       result = result.filter((r) =>
         r.status !== 'done' &&
-        ACTION_SEVERITIES.includes(r.severity ?? '')
+        PRIORITY_SEVERITIES.includes(r.severity ?? '')
       );
+    } else if (baseFilter === 'inbox') {
+      // Inbox: status not done (any severity)
+      result = result.filter((r) => r.status !== 'done');
+    } else if (baseFilter === 'old_triage') {
+      // Old Triage: status done (completed items)
+      result = result.filter((r) => r.status === 'done');
     }
     // 'all' shows everything
 
@@ -480,31 +486,50 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
 
         <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
 
-        {/* Base Filter Buttons */}
-        <Button
-          variant={baseFilter === 'all' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setBaseFilter('all')}
-        >
-          All Triage
-        </Button>
-        <Button
-          variant={baseFilter === 'needs_action' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setBaseFilter('needs_action')}
-        >
-          Needs Action
-        </Button>
+        {/* Status/Severity Filter Button Group */}
+        <div className="inline-flex rounded-md shadow-sm">
+          <Button
+            variant={baseFilter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setBaseFilter('all')}
+            className="rounded-r-none border-r-0"
+          >
+            All Triage
+          </Button>
+          <Button
+            variant={baseFilter === 'priority' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setBaseFilter('priority')}
+            className="rounded-none border-r-0"
+          >
+            Priority
+          </Button>
+          <Button
+            variant={baseFilter === 'inbox' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setBaseFilter('inbox')}
+            className="rounded-none border-r-0"
+          >
+            Inbox
+          </Button>
+          <Button
+            variant={baseFilter === 'old_triage' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setBaseFilter('old_triage')}
+            className="rounded-l-none"
+          >
+            Done
+          </Button>
+        </div>
 
-        {/* Type Filter Buttons (only shown on main triage page, not in entity context) */}
+        {/* Type Filter Button Group (only shown on main triage page, not in entity context) */}
         {!isEntityContext && (
-          <>
-            <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
-
+          <div className="inline-flex rounded-md shadow-sm">
             <Button
               variant={typeFilter === 'all' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTypeFilter('all')}
+              className="rounded-r-none border-r-0"
             >
               All Types
             </Button>
@@ -512,6 +537,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
               variant={typeFilter === 'macro_thesis' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTypeFilter('macro_thesis')}
+              className="rounded-none border-r-0"
             >
               Macro Theses
             </Button>
@@ -519,6 +545,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
               variant={typeFilter === 'asset_thesis' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTypeFilter('asset_thesis')}
+              className="rounded-none border-r-0"
             >
               Asset Theses
             </Button>
@@ -526,10 +553,11 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
               variant={typeFilter === 'positions_strategies' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTypeFilter('positions_strategies')}
+              className="rounded-l-none"
             >
-              Positions & Strategies
+              Strategies & Positions
             </Button>
-          </>
+          </div>
         )}
 
         <div className="ml-auto text-sm text-slate-600">

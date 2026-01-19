@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { UnderlyingSelector } from '@/components/ui/UnderlyingSelector';
 import { Loader2, Search, Plus, LinkIcon, ChevronDown, ChevronUp, GitMerge, Check } from 'lucide-react';
 
 interface Strategy {
@@ -64,6 +65,8 @@ export function StrategyConfirmationDialog({
   // Form state - core fields
   const [strategyLabel, setStrategyLabel] = useState<string>('');
   const [strategyType, setStrategyType] = useState<string>('');
+  const [customStrategyType, setCustomStrategyType] = useState<string>('');
+  const [isCustomType, setIsCustomType] = useState(false);
   const [strategyDirection, setStrategyDirection] = useState<string>('');
   const [strategyTypes, setStrategyTypes] = useState<string[]>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
@@ -102,6 +105,8 @@ export function StrategyConfirmationDialog({
     if (isOpen && strategy) {
       setStrategyLabel(strategy.label || '');
       setStrategyType(strategy.strategyType || '');
+      setCustomStrategyType('');
+      setIsCustomType(false);
       setStrategyDirection(strategy.direction || '');
       setSelectedThesisId(strategy.assetThesisId || null);
       // Show thesis section if already linked, otherwise collapsed by default
@@ -255,8 +260,11 @@ export function StrategyConfirmationDialog({
   const handleConfirm = async () => {
     if (!strategy) return;
 
+    // Determine effective strategy type (custom or selected)
+    const effectiveStrategyType = isCustomType ? customStrategyType.trim() : strategyType;
+
     // Validation - core fields are required
-    if (!strategyType) {
+    if (!effectiveStrategyType) {
       setError('Strategy type is required');
       return;
     }
@@ -297,7 +305,10 @@ export function StrategyConfirmationDialog({
 
           if (!createResponse.ok) {
             const errorData = await createResponse.json();
-            throw new Error(errorData.error || 'Failed to create asset thesis');
+            const errorMessage = errorData.details
+              ? `${errorData.error}: ${errorData.details}`
+              : errorData.error || 'Failed to create asset thesis';
+            throw new Error(errorMessage);
           }
 
           const newThesis = await createResponse.json();
@@ -316,7 +327,7 @@ export function StrategyConfirmationDialog({
     try {
       const updatePayload: Record<string, unknown> = {
         id: strategy.id,
-        strategyType,
+        strategyType: effectiveStrategyType,
         direction: strategyDirection,
         confirm: true,
       };
@@ -439,19 +450,56 @@ export function StrategyConfirmationDialog({
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Strategy Type <span className="text-red-500">*</span>
               </label>
-              <select
-                value={strategyType}
-                onChange={(e) => setStrategyType(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={submitting || loadingTypes}
-              >
-                <option value="">Select a strategy type...</option>
-                {strategyTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+              {isCustomType ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customStrategyType}
+                    onChange={(e) => setCustomStrategyType(e.target.value)}
+                    placeholder="Enter new strategy type..."
+                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={submitting}
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsCustomType(false);
+                      setCustomStrategyType('');
+                    }}
+                    disabled={submitting}
+                    className="px-3"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <select
+                  value={strategyType}
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') {
+                      setIsCustomType(true);
+                      setStrategyType('');
+                    } else {
+                      setStrategyType(e.target.value);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={submitting || loadingTypes}
+                >
+                  <option value="">Select a strategy type...</option>
+                  {strategyTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                  <option value="__new__" className="text-blue-600">
+                    + Add new type...
                   </option>
-                ))}
-              </select>
+                </select>
+              )}
               <p className="text-xs text-slate-500 mt-1">
                 Categorizes the strategy for filtering and analysis
               </p>
@@ -735,21 +783,20 @@ export function StrategyConfirmationDialog({
                 ) : (
                   /* Create New Form */
                   <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
-                    {/* Ticker Input */}
+                    {/* Underlying Selector */}
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">
-                        Ticker <span className="text-red-500">*</span>
+                        Underlying <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
+                      <UnderlyingSelector
                         value={createFormData.ticker}
-                        onChange={(e) => setCreateFormData({ ...createFormData, ticker: e.target.value.toUpperCase() })}
-                        placeholder="e.g., LLY"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(ticker) => setCreateFormData({ ...createFormData, ticker })}
+                        initialTicker={strategy?.underlyingTicker || ''}
                         disabled={submitting}
+                        required
                       />
                       <p className="text-xs text-slate-500 mt-1">
-                        The underlying ticker for this asset thesis
+                        Select an existing underlying or add a new ticker
                       </p>
                     </div>
 
@@ -858,7 +905,7 @@ export function StrategyConfirmationDialog({
           <Button
             type="button"
             onClick={handleConfirm}
-            disabled={submitting || !strategyType || !strategyDirection}
+            disabled={submitting || !(isCustomType ? customStrategyType.trim() : strategyType) || !strategyDirection}
           >
             {submitting ? (
               <>

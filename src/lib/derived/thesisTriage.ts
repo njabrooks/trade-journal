@@ -587,10 +587,11 @@ async function createTriageRecord(params: CreateTriageParams): Promise<string> {
     thesisTitle: params.thesisTitle,
     triggerType: params.triggerType,
     triggerSource: params.triggerSource,
-    // Map status to severity field for DB compatibility, and set status field
-    severity: params.status as 'critical' | 'high' | 'medium' | 'low' | 'info',
+    // severity: importance level (urgent/attention/monitor/info)
+    // status: workflow state (inbox/in_progress/done) - new records start in 'inbox'
+    severity: params.status as 'urgent' | 'attention' | 'monitor' | 'info',
     urgency: params.urgency,
-    status: params.status,
+    status: 'inbox',
     lifecycleStage: params.lifecycleStage,
     suggestedSkill: params.suggestedSkill,
     actionRequired: params.actionRequired,
@@ -615,7 +616,8 @@ async function createTriageRecord(params: CreateTriageParams): Promise<string> {
     triageRecordId: inserted.id,
     newState: {
       triageRule: params.triageRule,
-      status: params.status,
+      severity: params.status, // params.status is actually the severity level
+      status: 'inbox',
       urgency: params.urgency,
       lifecycleStage: params.lifecycleStage,
       suggestedSkill: params.suggestedSkill,

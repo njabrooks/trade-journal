@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { UnderlyingSelector } from '@/components/ui/UnderlyingSelector';
 import { Loader2 } from 'lucide-react';
 
 interface CreateAssetThesisFormData {
@@ -13,12 +14,6 @@ interface CreateAssetThesisFormData {
   confidenceLevel: 'high' | 'medium' | 'low' | 'exploratory';
   status: 'draft' | 'active' | 'complete' | 'rejected';
   primaryMacroThesisId?: string;
-}
-
-interface Underlying {
-  id: string;
-  ticker: string;
-  name: string;
 }
 
 interface CreateAssetThesisFormProps {
@@ -41,45 +36,14 @@ export function CreateAssetThesisForm({
     timeHorizon: initialData.timeHorizon || 'medium_term',
     confidenceLevel: initialData.confidenceLevel || 'medium',
     status: initialData.status || 'active',
-    ticker: '', // Will be set when underlying is selected
+    ticker: initialData.ticker || '',
     primaryMacroThesisId: macroThesisId || initialData.primaryMacroThesisId,
     title: initialData.title,
     description: initialData.description,
   });
 
-  const [underlyings, setUnderlyings] = useState<Underlying[]>([]);
-  const [selectedUnderlyingId, setSelectedUnderlyingId] = useState<string>('');
-  const [loadingUnderlyings, setLoadingUnderlyings] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Fetch underlyings
-  useEffect(() => {
-    const fetchUnderlyings = async () => {
-      try {
-        const response = await fetch('/api/underlyings');
-        if (!response.ok) throw new Error('Failed to fetch underlyings');
-        const data = await response.json();
-        setUnderlyings(data || []);
-      } catch (err) {
-        console.error('Error fetching underlyings:', err);
-        setError('Failed to load underlyings');
-      } finally {
-        setLoadingUnderlyings(false);
-      }
-    };
-    fetchUnderlyings();
-  }, []);
-
-  const selectedUnderlying = underlyings.find((u) => u.id === selectedUnderlyingId);
-
-  const handleUnderlyingChange = (underlyingId: string) => {
-    setSelectedUnderlyingId(underlyingId);
-    const underlying = underlyings.find((u) => u.id === underlyingId);
-    if (underlying) {
-      setFormData({ ...formData, ticker: underlying.ticker });
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,9 +95,9 @@ export function CreateAssetThesisForm({
         </div>
       )}
 
-      {autoGenTitle && selectedUnderlying && (
+      {autoGenTitle && formData.ticker && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-          <strong>Note:</strong> Title will be auto-generated as: {formData.direction} {selectedUnderlying.ticker} {formData.timeHorizon.replace('_', ' ')}
+          <strong>Note:</strong> Title will be auto-generated as: {formData.direction} {formData.ticker} {formData.timeHorizon.replace('_', ' ')}
         </div>
       )}
 
@@ -142,23 +106,13 @@ export function CreateAssetThesisForm({
         <label className="block text-sm font-medium text-slate-700 mb-1">
           Underlying <span className="text-red-500">*</span>
         </label>
-        <select
-          value={selectedUnderlyingId}
-          onChange={(e) => handleUnderlyingChange(e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <UnderlyingSelector
+          value={formData.ticker}
+          onChange={(ticker) => setFormData({ ...formData, ticker })}
+          initialTicker={initialData.ticker}
+          disabled={loading}
           required
-          disabled={loading || loadingUnderlyings}
-        >
-          <option value="">-- Select an underlying --</option>
-          {underlyings.map((underlying) => (
-            <option key={underlying.id} value={underlying.id}>
-              {underlying.ticker} - {underlying.name}
-            </option>
-          ))}
-        </select>
-        {loadingUnderlyings && (
-          <p className="text-xs text-slate-500 mt-1">Loading underlyings...</p>
-        )}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -262,7 +216,7 @@ export function CreateAssetThesisForm({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={loading || loadingUnderlyings}>
+        <Button type="submit" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

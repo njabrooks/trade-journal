@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SectorSelector } from '@/components/ui/SectorSelector';
+import { UnderlyingSelector } from '@/components/ui/UnderlyingSelector';
 import type { MainClaim } from '@/db/schema';
 
 interface ConvertClaimToEntityDialogProps {
@@ -689,14 +690,13 @@ export function ConvertClaimToEntityDialog({
               {entityType === 'asset_thesis' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Ticker <span className="text-red-500">*</span>
+                    Underlying <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <UnderlyingSelector
                     value={ticker}
-                    onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                    placeholder="e.g., TSLA"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono uppercase"
+                    onChange={setTicker}
+                    disabled={isSubmitting}
+                    required
                   />
                 </div>
               )}
