@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Check if any recommended signals remain and resolve triage if not
-          await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset');
+          await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset', signal.articulationId);
         }
 
         return NextResponse.json({
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Check if any recommended signals remain and resolve triage if not
-          await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset');
+          await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset', signal.articulationId);
         }
 
         return NextResponse.json({
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Log to journal
+        // Log to journal - use articulation_id as batchId for grouping
         await logToJournal({
           objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
           objectId: thesisId,
@@ -295,6 +295,7 @@ export async function POST(request: NextRequest) {
           previousState: { recommendedCount: recommendedSignals.length },
           newState: { acceptedCount: recommendedSignals.length },
           source: 'user',
+          batchId: recommendedSignals[0]?.articulationId || undefined,
         });
 
       } else {
@@ -309,7 +310,7 @@ export async function POST(request: NextRequest) {
             )
           );
 
-        // Log to journal
+        // Log to journal - use articulation_id as batchId for grouping
         await logToJournal({
           objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
           objectId: thesisId,
@@ -319,11 +320,13 @@ export async function POST(request: NextRequest) {
           previousState: { recommendedCount: recommendedSignals.length },
           newState: { deletedCount: recommendedSignals.length },
           source: 'user',
+          batchId: recommendedSignals[0]?.articulationId || undefined,
         });
       }
 
       // Resolve triage since no more recommended signals
-      await checkAndResolveTriage(thesisId, thesisType);
+      // Use articulation_id from first signal for batch grouping
+      await checkAndResolveTriage(thesisId, thesisType, recommendedSignals[0]?.articulationId);
 
       return NextResponse.json({
         success: true,
@@ -348,8 +351,13 @@ export async function POST(request: NextRequest) {
 
 /**
  * Helper to check if any recommended signals remain and resolve triage if not.
+ * articulationId is used as batchId to group the triage_resolved journal entry with signal reviews.
  */
-async function checkAndResolveTriage(thesisId: string, thesisType: 'macro' | 'asset') {
+async function checkAndResolveTriage(
+  thesisId: string,
+  thesisType: 'macro' | 'asset',
+  articulationId?: string | null
+) {
   // Count remaining recommended signals
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -392,7 +400,7 @@ async function checkAndResolveTriage(thesisId: string, thesisType: 'macro' | 'as
         })
         .where(eq(thesisTriageRecords.id, triageRecord.id));
 
-      // Log resolution
+      // Log resolution - use articulationId as batchId to group with signal reviews
       await logToJournal({
         objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
         objectId: thesisId,
@@ -403,6 +411,7 @@ async function checkAndResolveTriage(thesisId: string, thesisType: 'macro' | 'as
         previousState: { status: triageRecord.status },
         newState: { status: 'done' },
         source: 'user',
+        batchId: articulationId || undefined,
       });
     }
   }

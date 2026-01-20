@@ -201,6 +201,20 @@ export async function computeThesisTriageForThesis(
   if (evolutionState.draftSignalCount > 0) {
     // Has draft signals - create triage if not exists
     if (!existingReviewSignals) {
+      // Look up articulation_id from draft signals to use as batchId for grouping journal entries
+      const [draftSignal] = await db
+        .select({ articulationId: signals.articulationId })
+        .from(signals)
+        .where(
+          and(
+            eq(signals.thesisId, thesisId),
+            eq(signals.thesisType, thesisType),
+            eq(signals.status, 'draft'),
+            isNotNull(signals.articulationId)
+          )
+        )
+        .limit(1);
+
       await createTriageRecord({
         thesisId,
         thesisType,
@@ -217,6 +231,7 @@ export async function computeThesisTriageForThesis(
           draftSignalCount: evolutionState.draftSignalCount,
           totalSignalCount: evolutionState.hasSignals ? 'multiple' : 0,
         },
+        batchId: draftSignal?.articulationId || undefined,
       });
       // Don't overwrite triageCreated if already set (e.g., by UPDATE_CORE_ARGUMENT)
       if (!result.triageCreated) {
@@ -225,7 +240,25 @@ export async function computeThesisTriageForThesis(
     }
   } else if (existingReviewSignals) {
     // No recommended signals left - resolve existing triage
-    await resolveTriageRecord(existingReviewSignals.id, 'all_signals_reviewed');
+    // Look up articulation_id from any signal (active or recently processed) to use as batchId
+    const [anySignal] = await db
+      .select({ articulationId: signals.articulationId })
+      .from(signals)
+      .where(
+        and(
+          eq(signals.thesisId, thesisId),
+          eq(signals.thesisType, thesisType),
+          isNotNull(signals.articulationId)
+        )
+      )
+      .orderBy(desc(signals.updatedAt))
+      .limit(1);
+
+    await resolveTriageRecord(
+      existingReviewSignals.id,
+      'all_signals_reviewed',
+      anySignal?.articulationId || undefined
+    );
     result.existingTriageResolved = true;
   }
 
@@ -578,6 +611,8 @@ interface CreateTriageParams {
   suggestedSkill: string | null;
   actionRequired: string;
   contentSummary: Record<string, unknown>;
+  // Optional batch ID to group related journal entries (e.g., articulation_id for signal review workflow)
+  batchId?: string;
 }
 
 async function createTriageRecord(params: CreateTriageParams): Promise<string> {
@@ -624,6 +659,7 @@ async function createTriageRecord(params: CreateTriageParams): Promise<string> {
     },
     source: 'automation',
     metadata: params.contentSummary,
+    batchId: params.batchId,
   });
 
   console.log(
@@ -635,7 +671,8 @@ async function createTriageRecord(params: CreateTriageParams): Promise<string> {
 
 async function resolveTriageRecord(
   triageId: string,
-  reason: string
+  reason: string,
+  batchId?: string
 ): Promise<void> {
   // Fetch triage record first for journal context
   const [triageRecord] = await db
@@ -680,6 +717,7 @@ async function resolveTriageRecord(
       resolutionReason: reason,
     },
     source: 'automation',
+    batchId,
   });
 
   console.log(`Resolved thesis triage: ${triageId} (${reason})`);
