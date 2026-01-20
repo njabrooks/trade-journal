@@ -698,10 +698,17 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
             </td>
 
             {/* Description */}
-            <td className="px-4 py-2" colSpan={2}>
+            <td className="px-4 py-2">
               <div className="text-slate-600 text-xs line-clamp-2">
                 {entry.actionDescription}
               </div>
+            </td>
+
+            {/* Action Type */}
+            <td className="px-4 py-2 text-center">
+              <Badge className={`${getActionTypeBadgeColor(entry.actionType)} text-xs`}>
+                {formatActionType(entry.actionType)}
+              </Badge>
             </td>
 
             {/* Source - empty for nested */}

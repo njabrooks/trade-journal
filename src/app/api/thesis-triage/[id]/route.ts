@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateThesisTriageStatus, getThesisTriageById } from '@/db/queries/triage';
 import { logToJournal } from '@/lib/workflow';
+import { db } from '@/db';
+import { signals } from '@/db/schema';
+import { eq, and, isNotNull, desc } from 'drizzle-orm';
 
 export async function PATCH(
   request: NextRequest,
@@ -47,6 +50,25 @@ export async function PATCH(
     // body.severity = 'info' indicates dismissed (vs. just completed)
     if (body.status === 'done') {
       const isDismissed = body.severity === 'info';
+
+      // For signal-related triage rules, look up articulation_id for batch grouping
+      let batchId: string | undefined;
+      if (triageRecord.triageRule === 'REVIEW_DRAFT_SIGNALS' || triageRecord.triageRule === 'REVIEW_RECOMMENDED_SIGNALS') {
+        const [anySignal] = await db
+          .select({ articulationId: signals.articulationId })
+          .from(signals)
+          .where(
+            and(
+              eq(signals.thesisId, triageRecord.thesisId),
+              eq(signals.thesisType, triageRecord.thesisType),
+              isNotNull(signals.articulationId)
+            )
+          )
+          .orderBy(desc(signals.updatedAt))
+          .limit(1);
+        batchId = anySignal?.articulationId || undefined;
+      }
+
       await logToJournal({
         objectType: triageRecord.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
         objectId: triageRecord.thesisId,
@@ -67,6 +89,7 @@ export async function PATCH(
         },
         rationale: body.userNotes,
         source: 'user',
+        batchId,
       });
     }
 
