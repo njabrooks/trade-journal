@@ -8,6 +8,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { JournalEntry } from '@/db/schema';
 
+// Extended type for journal entries with underlying tickers (array for multi-linked entities)
+type JournalEntryWithUnderlying = JournalEntry & {
+  underlyingTickers: string[];
+};
+
 // Simple date formatting utilities
 function formatDate(date: Date): string {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -19,19 +24,21 @@ function formatTime(date: Date): string {
 }
 
 interface JournalBrowserProps {
-  entries: JournalEntry[];
+  entries: JournalEntryWithUnderlying[];
   objectTypes: string[];
   actionTypes: string[];
   sources: string[];
+  underlyings: string[];
 }
 
 type ObjectTypeFilter = string | 'all';
 type ActionTypeFilter = string | 'all';
 type SourceFilter = string | 'all';
-type SortColumn = 'timestamp' | 'objectTitle' | 'actionType' | 'objectType' | 'source';
+type UnderlyingFilter = string | 'all';
+type SortColumn = 'timestamp' | 'objectTitle' | 'actionType' | 'objectType' | 'source' | 'underlying';
 type SortDirection = 'asc' | 'desc';
 
-export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: JournalBrowserProps) {
+export function JournalBrowser({ entries, objectTypes, actionTypes, sources, underlyings }: JournalBrowserProps) {
   const router = useRouter();
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +48,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: J
   const [objectTypeFilter, setObjectTypeFilter] = useState<ObjectTypeFilter>('all');
   const [actionTypeFilter, setActionTypeFilter] = useState<ActionTypeFilter>('all');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+  const [underlyingFilter, setUnderlyingFilter] = useState<UnderlyingFilter>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   // Sort states
@@ -94,6 +102,11 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: J
       filtered = filtered.filter((e) => e.source === sourceFilter);
     }
 
+    // Filter by underlying (checks if filter value is in the array of linked underlyings)
+    if (underlyingFilter !== 'all') {
+      filtered = filtered.filter((e) => e.underlyingTickers.includes(underlyingFilter));
+    }
+
     // Search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -140,6 +153,10 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: J
           aVal = a.source.toLowerCase();
           bVal = b.source.toLowerCase();
           break;
+        case 'underlying':
+          aVal = (a.underlyingTickers[0] || '').toLowerCase();
+          bVal = (b.underlyingTickers[0] || '').toLowerCase();
+          break;
         default:
           return 0;
       }
@@ -150,7 +167,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: J
     });
 
     return filtered;
-  }, [entries, objectTypeFilter, actionTypeFilter, sourceFilter, searchQuery, sortColumn, sortDirection]);
+  }, [entries, objectTypeFilter, actionTypeFilter, sourceFilter, underlyingFilter, searchQuery, sortColumn, sortDirection]);
 
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
@@ -338,7 +355,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: J
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Object Type */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Object Type</label>
@@ -389,6 +406,23 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: J
                 ))}
               </select>
             </div>
+
+            {/* Underlying */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Underlying</label>
+              <select
+                value={underlyingFilter}
+                onChange={(e) => setUnderlyingFilter(e.target.value)}
+                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Underlyings</option>
+                {underlyings.map((underlying) => (
+                  <option key={underlying} value={underlying}>
+                    {underlying}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Clear Filters */}
@@ -401,6 +435,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: J
                 setObjectTypeFilter('all');
                 setActionTypeFilter('all');
                 setSourceFilter('all');
+                setUnderlyingFilter('all');
               }}
             >
               Clear Filters
@@ -513,6 +548,20 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources }: J
                                 ) : (
                                   <span className="text-slate-900 font-medium line-clamp-1">
                                     {entry.objectTitle}
+                                  </span>
+                                )}
+                                {entry.underlyingTickers.length > 0 && (
+                                  <span className="flex gap-1 flex-wrap">
+                                    {entry.underlyingTickers.slice(0, 3).map((ticker) => (
+                                      <Badge key={ticker} className="bg-slate-100 text-slate-600 text-xs font-mono">
+                                        {ticker}
+                                      </Badge>
+                                    ))}
+                                    {entry.underlyingTickers.length > 3 && (
+                                      <Badge className="bg-slate-100 text-slate-400 text-xs">
+                                        +{entry.underlyingTickers.length - 3}
+                                      </Badge>
+                                    )}
                                   </span>
                                 )}
                                 {objectUrl && (

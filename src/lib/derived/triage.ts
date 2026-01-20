@@ -842,13 +842,17 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
   }
 
   // Batch delete strategy records
+  // IMPORTANT: Preserve records where user has already taken action (done/in_progress status)
+  // This prevents recomputation from resurrecting triage items the user already processed
   if (strategyRecords.length > 0) {
     const strategyDeleteConditions = strategyRecords.map((record) =>
       and(
         eq(triageRecords.contextLevel, 'strategy'),
         eq(triageRecords.strategyId, record.strategyId!),
         eq(triageRecords.snapshotDate, record.snapshotDate),
-        eq(triageRecords.ruleSet, record.ruleSet!)
+        eq(triageRecords.ruleSet, record.ruleSet!),
+        // Only delete inbox records - preserve done/in_progress
+        eq(triageRecords.status, 'inbox')
       )
     );
 
@@ -858,8 +862,35 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
         .where(or(...strategyDeleteConditions));
     }
 
-    // Batch insert strategy records
-    await db.insert(triageRecords).values(strategyRecords);
+    // Check for existing done/in_progress records to avoid creating duplicates
+    const existingProcessedRecords = await db
+      .select({
+        strategyId: triageRecords.strategyId,
+        snapshotDate: triageRecords.snapshotDate,
+        ruleSet: triageRecords.ruleSet,
+      })
+      .from(triageRecords)
+      .where(
+        and(
+          eq(triageRecords.contextLevel, 'strategy'),
+          inArray(triageRecords.strategyId, strategyRecords.map(r => r.strategyId!)),
+          inArray(triageRecords.status, ['done', 'in_progress'])
+        )
+      );
+
+    const processedKeys = new Set(
+      existingProcessedRecords.map(r => `${r.strategyId}:${r.snapshotDate}:${r.ruleSet}`)
+    );
+
+    // Filter out records that already have a done/in_progress counterpart
+    const strategyRecordsToInsert = strategyRecords.filter(
+      r => !processedKeys.has(`${r.strategyId}:${r.snapshotDate}:${r.ruleSet}`)
+    );
+
+    // Batch insert strategy records (only those without existing processed records)
+    if (strategyRecordsToInsert.length > 0) {
+      await db.insert(triageRecords).values(strategyRecordsToInsert);
+    }
   }
 
   // Batch delete position records
@@ -877,7 +908,9 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
         eq(triageRecords.positionId, record.positionId!),
         eq(triageRecords.strategyId, record.strategyId!),
         eq(triageRecords.snapshotDate, record.snapshotDate),
-        eq(triageRecords.ruleSet, record.ruleSet!)
+        eq(triageRecords.ruleSet, record.ruleSet!),
+        // Only delete inbox records - preserve done/in_progress
+        eq(triageRecords.status, 'inbox')
           )
         );
 
@@ -887,9 +920,35 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
         .where(or(...positionDeleteConditions));
     }
 
-    // Batch insert position records (only valid ones)
-    if (validPositionRecords.length > 0) {
-      await db.insert(triageRecords).values(validPositionRecords);
+    // Check for existing done/in_progress records to avoid creating duplicates
+    const existingProcessedPositionRecords = await db
+      .select({
+        positionId: triageRecords.positionId,
+        strategyId: triageRecords.strategyId,
+        snapshotDate: triageRecords.snapshotDate,
+        ruleSet: triageRecords.ruleSet,
+      })
+      .from(triageRecords)
+      .where(
+        and(
+          eq(triageRecords.contextLevel, 'position'),
+          inArray(triageRecords.positionId, validPositionRecords.map(r => r.positionId!)),
+          inArray(triageRecords.status, ['done', 'in_progress'])
+        )
+      );
+
+    const processedPositionKeys = new Set(
+      existingProcessedPositionRecords.map(r => `${r.positionId}:${r.strategyId}:${r.snapshotDate}:${r.ruleSet}`)
+    );
+
+    // Filter out records that already have a done/in_progress counterpart
+    const positionRecordsToInsert = validPositionRecords.filter(
+      r => !processedPositionKeys.has(`${r.positionId}:${r.strategyId}:${r.snapshotDate}:${r.ruleSet}`)
+    );
+
+    // Batch insert position records (only those without existing processed records)
+    if (positionRecordsToInsert.length > 0) {
+      await db.insert(triageRecords).values(positionRecordsToInsert);
     }
   }
 

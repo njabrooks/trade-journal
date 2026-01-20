@@ -50,6 +50,8 @@ export const underlyings = pgTable('underlyings', {
   rv20: numeric('rv20'),
   nextEarningsDate: date('next_earnings_date'),
   nextExDivDate: date('next_ex_div_date'),
+  // For ETFs/wrappers, references the economic underlying (e.g., IBIT -> BTC, GLD -> gold)
+  parentUnderlyingId: uuid('parent_underlying_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
