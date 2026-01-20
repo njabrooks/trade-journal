@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Log to journal and check triage (only for thesis signals)
+        // Use articulation_id as batchId to group journal entries from the same synthesis
         if (signal.entityType === 'thesis' && signal.thesisId && signal.thesisType) {
           await logToJournal({
             objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
@@ -173,6 +174,7 @@ export async function POST(request: NextRequest) {
             previousState: { status: 'draft', category: signal.category },
             newState,
             source: 'user',
+            batchId: signal.articulationId || undefined,
           });
 
           // Check if any recommended signals remain and resolve triage if not
@@ -190,6 +192,7 @@ export async function POST(request: NextRequest) {
         await db.delete(signals).where(eq(signals.id, signalId));
 
         // Log to journal and check triage (only for thesis signals)
+        // Use articulation_id as batchId to group journal entries from the same synthesis
         if (signal.entityType === 'thesis' && signal.thesisId && signal.thesisType) {
           await logToJournal({
             objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
@@ -200,6 +203,7 @@ export async function POST(request: NextRequest) {
             previousState: { status: 'draft', statement: signal.statement },
             newState: { deleted: true },
             source: 'user',
+            batchId: signal.articulationId || undefined,
           });
 
           // Check if any recommended signals remain and resolve triage if not
