@@ -8,8 +8,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { JournalEntry } from '@/db/schema';
 
-// Extended type for journal entries with underlying tickers (array for multi-linked entities)
+// Extended type for journal entries with underlying tickers and batch_id
 type JournalEntryWithUnderlying = JournalEntry & {
+  underlyingTickers: string[];
+  batchId: string | null;
+};
+
+// A display row can be either a single entry or a collapsed batch
+type DisplayRow =
+  | { type: 'single'; entry: JournalEntryWithUnderlying }
+  | { type: 'batch'; batchId: string; entries: JournalEntryWithUnderlying[]; summary: BatchSummary };
+
+type BatchSummary = {
+  timestamp: Date;
+  objectTitle: string;
+  objectType: string;
+  actionTypes: string[];
+  totalCount: number;
+  source: string;
   underlyingTickers: string[];
 };
 
@@ -41,6 +57,7 @@ type SortDirection = 'asc' | 'desc';
 export function JournalBrowser({ entries, objectTypes, actionTypes, sources, underlyings }: JournalBrowserProps) {
   const router = useRouter();
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
+  const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Filter states
@@ -169,6 +186,86 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
     return filtered;
   }, [entries, objectTypeFilter, actionTypeFilter, sourceFilter, underlyingFilter, searchQuery, sortColumn, sortDirection]);
 
+  // Group entries by batch_id to create display rows
+  const displayRows = useMemo((): DisplayRow[] => {
+    const rows: DisplayRow[] = [];
+    const batchMap = new Map<string, JournalEntryWithUnderlying[]>();
+
+    // Group entries by batch_id
+    for (const entry of filteredAndSortedEntries) {
+      if (entry.batchId) {
+        const existing = batchMap.get(entry.batchId) || [];
+        existing.push(entry);
+        batchMap.set(entry.batchId, existing);
+      } else {
+        // No batch - add as single entry
+        rows.push({ type: 'single', entry });
+      }
+    }
+
+    // Convert batch groups to display rows
+    for (const [batchId, batchEntries] of batchMap) {
+      if (batchEntries.length === 1) {
+        // Single entry in batch - treat as individual
+        rows.push({ type: 'single', entry: batchEntries[0] });
+      } else {
+        // Multiple entries - create batch summary
+        const actionTypeCounts = new Map<string, number>();
+        for (const e of batchEntries) {
+          actionTypeCounts.set(e.actionType, (actionTypeCounts.get(e.actionType) || 0) + 1);
+        }
+        const actionTypes = Array.from(actionTypeCounts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .map(([type]) => type);
+
+        const allUnderlyings = new Set<string>();
+        for (const e of batchEntries) {
+          for (const t of e.underlyingTickers) {
+            allUnderlyings.add(t);
+          }
+        }
+
+        const summary: BatchSummary = {
+          timestamp: new Date(Math.max(...batchEntries.map(e => new Date(e.timestamp).getTime()))),
+          objectTitle: batchEntries[0].objectTitle || 'Multiple items',
+          objectType: batchEntries[0].objectType,
+          actionTypes,
+          totalCount: batchEntries.length,
+          source: batchEntries[0].source,
+          underlyingTickers: Array.from(allUnderlyings),
+        };
+
+        rows.push({ type: 'batch', batchId, entries: batchEntries, summary });
+      }
+    }
+
+    // Sort rows by timestamp (using latest timestamp for batches)
+    rows.sort((a, b) => {
+      const aTime = a.type === 'single'
+        ? new Date(a.entry.timestamp).getTime()
+        : a.summary.timestamp.getTime();
+      const bTime = b.type === 'single'
+        ? new Date(b.entry.timestamp).getTime()
+        : b.summary.timestamp.getTime();
+
+      return sortDirection === 'desc' ? bTime - aTime : aTime - bTime;
+    });
+
+    return rows;
+  }, [filteredAndSortedEntries, sortDirection]);
+
+  const toggleBatch = (batchId: string) => {
+    setExpandedBatches(prev => {
+      const next = new Set(prev);
+      if (next.has(batchId)) {
+        next.delete(batchId);
+      } else {
+        next.add(batchId);
+      }
+      return next;
+    });
+  };
+
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -269,6 +366,413 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
       .split('_')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
+  };
+
+  const renderSingleEntry = (entry: JournalEntryWithUnderlying) => {
+    const isExpanded = expandedEntry === entry.id;
+    const objectUrl = getObjectTypeUrl(entry.objectType, entry.objectId);
+    const rationale = entry.rationale as string | null;
+    const metadata = entry.metadata as Record<string, unknown> | null;
+
+    return (
+      <Fragment key={entry.id}>
+        {/* Main Row */}
+        <tr className="border-b hover:bg-slate-50 transition-colors">
+          {/* Timestamp */}
+          <td className="px-4 py-3 whitespace-nowrap">
+            <div className="space-y-0.5">
+              <div className="text-slate-900 text-xs">
+                {formatDate(new Date(entry.timestamp))}
+              </div>
+              <div className="text-slate-500 text-xs">
+                {formatTime(new Date(entry.timestamp))}
+              </div>
+            </div>
+          </td>
+
+          {/* Object Type */}
+          <td className="px-4 py-3">
+            <Badge className={`${getObjectTypeBadgeColor(entry.objectType)} text-xs`}>
+              {formatObjectType(entry.objectType)}
+            </Badge>
+          </td>
+
+          {/* Title / Description */}
+          <td className="px-4 py-3">
+            <div className="space-y-1">
+              {entry.objectTitle && (
+                <div className="flex items-center gap-2">
+                  {objectUrl ? (
+                    <Link
+                      href={objectUrl}
+                      className="text-slate-900 font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
+                    >
+                      {entry.objectTitle}
+                    </Link>
+                  ) : (
+                    <span className="text-slate-900 font-medium line-clamp-1">
+                      {entry.objectTitle}
+                    </span>
+                  )}
+                  {entry.underlyingTickers.length > 0 && (
+                    <span className="flex gap-1 flex-wrap">
+                      {entry.underlyingTickers.slice(0, 3).map((ticker) => (
+                        <Badge key={ticker} className="bg-slate-100 text-slate-600 text-xs font-mono">
+                          {ticker}
+                        </Badge>
+                      ))}
+                      {entry.underlyingTickers.length > 3 && (
+                        <Badge className="bg-slate-100 text-slate-400 text-xs">
+                          +{entry.underlyingTickers.length - 3}
+                        </Badge>
+                      )}
+                    </span>
+                  )}
+                  {objectUrl && (
+                    <Link href={objectUrl} className="text-slate-400 hover:text-blue-600">
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  )}
+                </div>
+              )}
+              <div className="text-slate-500 text-xs line-clamp-2">
+                {entry.actionDescription}
+              </div>
+            </div>
+          </td>
+
+          {/* Action Type */}
+          <td className="px-4 py-3 text-center">
+            <Badge className={`${getActionTypeBadgeColor(entry.actionType)} text-xs`}>
+              {formatActionType(entry.actionType)}
+            </Badge>
+          </td>
+
+          {/* Source */}
+          <td className="px-4 py-3 text-center">
+            <Badge className={`${getSourceBadgeColor(entry.source)} text-xs`}>
+              {entry.source}
+            </Badge>
+            {entry.skillInvoked && (
+              <div className="text-xs text-slate-500 mt-1 font-mono">
+                {entry.skillInvoked}
+              </div>
+            )}
+          </td>
+
+          {/* Expand/Collapse */}
+          <td className="px-4 py-3 text-right">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandedEntry(isExpanded ? null : entry.id)}
+              className="gap-1"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  More
+                </>
+              )}
+            </Button>
+          </td>
+        </tr>
+
+        {/* Expanded Row */}
+        {isExpanded && (
+          <tr className="bg-slate-50 border-b">
+            <td colSpan={6} className="px-4 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* State Changes */}
+                <div>
+                  <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                    State Changes
+                  </h4>
+                  <div className="bg-white rounded-lg border border-slate-200 p-3">
+                    {renderStateChanges(entry)}
+                  </div>
+                </div>
+
+                {/* Additional Info */}
+                <div className="space-y-4">
+                  {/* Rationale */}
+                  {rationale ? (
+                    <div>
+                      <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                        Rationale
+                      </h4>
+                      <div className="bg-white rounded-lg border border-slate-200 p-3 text-sm text-slate-600">
+                        {rationale}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Metadata */}
+                  {metadata && Object.keys(metadata).length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                        Metadata
+                      </h4>
+                      <div className="bg-white rounded-lg border border-slate-200 p-3">
+                        <pre className="text-xs text-slate-600 overflow-auto">
+                          {JSON.stringify(metadata, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IDs */}
+                  <div>
+                    <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                      References
+                    </h4>
+                    <div className="bg-white rounded-lg border border-slate-200 p-3 space-y-1 text-xs">
+                      <div>
+                        <span className="text-slate-500">Entry ID:</span>{' '}
+                        <code className="font-mono text-slate-700">{entry.id}</code>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Object ID:</span>{' '}
+                        <code className="font-mono text-slate-700">{entry.objectId}</code>
+                      </div>
+                      {entry.triageRecordId && (
+                        <div>
+                          <span className="text-slate-500">Triage ID:</span>{' '}
+                          <code className="font-mono text-slate-700">{entry.triageRecordId}</code>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        )}
+      </Fragment>
+    );
+  };
+
+  const renderBatchRow = (row: Extract<DisplayRow, { type: 'batch' }>) => {
+    const { batchId, entries: batchEntries, summary } = row;
+    const isExpanded = expandedBatches.has(batchId);
+    const objectUrl = getObjectTypeUrl(summary.objectType, batchEntries[0].objectId);
+
+    // Create a summary description based on action types
+    const actionSummary = summary.actionTypes
+      .map(type => {
+        const count = batchEntries.filter(e => e.actionType === type).length;
+        return `${count} ${formatActionType(type).toLowerCase()}`;
+      })
+      .join(', ');
+
+    return (
+      <Fragment key={batchId}>
+        {/* Batch Summary Row */}
+        <tr
+          className="border-b hover:bg-blue-50 transition-colors cursor-pointer bg-blue-50/30"
+          onClick={() => toggleBatch(batchId)}
+        >
+          {/* Timestamp */}
+          <td className="px-4 py-3 whitespace-nowrap">
+            <div className="space-y-0.5">
+              <div className="text-slate-900 text-xs">
+                {formatDate(summary.timestamp)}
+              </div>
+              <div className="text-slate-500 text-xs">
+                {formatTime(summary.timestamp)}
+              </div>
+            </div>
+          </td>
+
+          {/* Object Type */}
+          <td className="px-4 py-3">
+            <Badge className={`${getObjectTypeBadgeColor(summary.objectType)} text-xs`}>
+              {formatObjectType(summary.objectType)}
+            </Badge>
+          </td>
+
+          {/* Title / Description */}
+          <td className="px-4 py-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                {objectUrl ? (
+                  <Link
+                    href={objectUrl}
+                    className="text-slate-900 font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {summary.objectTitle}
+                  </Link>
+                ) : (
+                  <span className="text-slate-900 font-medium line-clamp-1">
+                    {summary.objectTitle}
+                  </span>
+                )}
+                <Badge className="bg-blue-100 text-blue-700 text-xs">
+                  {summary.totalCount} entries
+                </Badge>
+                {summary.underlyingTickers.length > 0 && (
+                  <span className="flex gap-1 flex-wrap">
+                    {summary.underlyingTickers.slice(0, 2).map((ticker) => (
+                      <Badge key={ticker} className="bg-slate-100 text-slate-600 text-xs font-mono">
+                        {ticker}
+                      </Badge>
+                    ))}
+                    {summary.underlyingTickers.length > 2 && (
+                      <Badge className="bg-slate-100 text-slate-400 text-xs">
+                        +{summary.underlyingTickers.length - 2}
+                      </Badge>
+                    )}
+                  </span>
+                )}
+              </div>
+              <div className="text-slate-500 text-xs">
+                Batch: {actionSummary}
+              </div>
+            </div>
+          </td>
+
+          {/* Action Type - show badges for each type */}
+          <td className="px-4 py-3 text-center">
+            <div className="flex flex-wrap gap-1 justify-center">
+              {summary.actionTypes.slice(0, 2).map((type) => (
+                <Badge key={type} className={`${getActionTypeBadgeColor(type)} text-xs`}>
+                  {formatActionType(type)}
+                </Badge>
+              ))}
+              {summary.actionTypes.length > 2 && (
+                <Badge className="bg-slate-100 text-slate-500 text-xs">
+                  +{summary.actionTypes.length - 2}
+                </Badge>
+              )}
+            </div>
+          </td>
+
+          {/* Source */}
+          <td className="px-4 py-3 text-center">
+            <Badge className={`${getSourceBadgeColor(summary.source)} text-xs`}>
+              {summary.source}
+            </Badge>
+          </td>
+
+          {/* Expand/Collapse */}
+          <td className="px-4 py-3 text-right">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Collapse
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Expand
+                </>
+              )}
+            </Button>
+          </td>
+        </tr>
+
+        {/* Expanded Batch Entries */}
+        {isExpanded && batchEntries.map((entry) => (
+          <tr key={entry.id} className="border-b bg-slate-50/50 hover:bg-slate-100 transition-colors">
+            {/* Timestamp - indented */}
+            <td className="px-4 py-2 whitespace-nowrap pl-8">
+              <div className="text-slate-500 text-xs">
+                {formatTime(new Date(entry.timestamp))}
+              </div>
+            </td>
+
+            {/* Object Type - empty for nested */}
+            <td className="px-4 py-2">
+              <div className="w-2 h-2 rounded-full bg-slate-300 ml-4" />
+            </td>
+
+            {/* Description */}
+            <td className="px-4 py-2" colSpan={2}>
+              <div className="text-slate-600 text-xs line-clamp-2">
+                {entry.actionDescription}
+              </div>
+            </td>
+
+            {/* Source - empty for nested */}
+            <td className="px-4 py-2" />
+
+            {/* Details button */}
+            <td className="px-4 py-2 text-right">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpandedEntry(expandedEntry === entry.id ? null : entry.id)}
+                className="gap-1 text-xs"
+              >
+                {expandedEntry === entry.id ? 'Hide' : 'Details'}
+              </Button>
+            </td>
+          </tr>
+        ))}
+
+        {/* Expanded entry details (when a batch entry's details are shown) */}
+        {isExpanded && batchEntries.map((entry) => {
+          if (expandedEntry !== entry.id) return null;
+          const metadata = entry.metadata as Record<string, unknown> | null;
+          const rationale = entry.rationale as string | null;
+
+          return (
+            <tr key={`${entry.id}-details`} className="bg-slate-100 border-b">
+              <td colSpan={6} className="px-4 py-4 pl-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* State Changes */}
+                  <div>
+                    <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                      State Changes
+                    </h4>
+                    <div className="bg-white rounded-lg border border-slate-200 p-3">
+                      {renderStateChanges(entry)}
+                    </div>
+                  </div>
+
+                  {/* Additional Info */}
+                  <div className="space-y-3">
+                    {rationale && (
+                      <div>
+                        <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                          Rationale
+                        </h4>
+                        <div className="bg-white rounded-lg border border-slate-200 p-3 text-sm text-slate-600">
+                          {rationale}
+                        </div>
+                      </div>
+                    )}
+                    {metadata && Object.keys(metadata).length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                          Metadata
+                        </h4>
+                        <div className="bg-white rounded-lg border border-slate-200 p-3">
+                          <pre className="text-xs text-slate-600 overflow-auto">
+                            {JSON.stringify(metadata, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </Fragment>
+    );
   };
 
   const renderStateChanges = (entry: JournalEntry) => {
@@ -504,193 +1008,12 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedEntries.map((entry) => {
-                  const isExpanded = expandedEntry === entry.id;
-                  const objectUrl = getObjectTypeUrl(entry.objectType, entry.objectId);
-                  const rationale = entry.rationale as string | null;
-                  const metadata = entry.metadata as Record<string, unknown> | null;
-
-                  return (
-                    <Fragment key={entry.id}>
-                      {/* Main Row */}
-                      <tr className="border-b hover:bg-slate-50 transition-colors">
-                        {/* Timestamp */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="space-y-0.5">
-                            <div className="text-slate-900 text-xs">
-                              {formatDate(new Date(entry.timestamp))}
-                            </div>
-                            <div className="text-slate-500 text-xs">
-                              {formatTime(new Date(entry.timestamp))}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Object Type */}
-                        <td className="px-4 py-3">
-                          <Badge className={`${getObjectTypeBadgeColor(entry.objectType)} text-xs`}>
-                            {formatObjectType(entry.objectType)}
-                          </Badge>
-                        </td>
-
-                        {/* Title / Description */}
-                        <td className="px-4 py-3">
-                          <div className="space-y-1">
-                            {entry.objectTitle && (
-                              <div className="flex items-center gap-2">
-                                {objectUrl ? (
-                                  <Link
-                                    href={objectUrl}
-                                    className="text-slate-900 font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
-                                  >
-                                    {entry.objectTitle}
-                                  </Link>
-                                ) : (
-                                  <span className="text-slate-900 font-medium line-clamp-1">
-                                    {entry.objectTitle}
-                                  </span>
-                                )}
-                                {entry.underlyingTickers.length > 0 && (
-                                  <span className="flex gap-1 flex-wrap">
-                                    {entry.underlyingTickers.slice(0, 3).map((ticker) => (
-                                      <Badge key={ticker} className="bg-slate-100 text-slate-600 text-xs font-mono">
-                                        {ticker}
-                                      </Badge>
-                                    ))}
-                                    {entry.underlyingTickers.length > 3 && (
-                                      <Badge className="bg-slate-100 text-slate-400 text-xs">
-                                        +{entry.underlyingTickers.length - 3}
-                                      </Badge>
-                                    )}
-                                  </span>
-                                )}
-                                {objectUrl && (
-                                  <Link href={objectUrl} className="text-slate-400 hover:text-blue-600">
-                                    <ExternalLink className="h-3 w-3" />
-                                  </Link>
-                                )}
-                              </div>
-                            )}
-                            <div className="text-slate-500 text-xs line-clamp-2">
-                              {entry.actionDescription}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Action Type */}
-                        <td className="px-4 py-3 text-center">
-                          <Badge className={`${getActionTypeBadgeColor(entry.actionType)} text-xs`}>
-                            {formatActionType(entry.actionType)}
-                          </Badge>
-                        </td>
-
-                        {/* Source */}
-                        <td className="px-4 py-3 text-center">
-                          <Badge className={`${getSourceBadgeColor(entry.source)} text-xs`}>
-                            {entry.source}
-                          </Badge>
-                          {entry.skillInvoked && (
-                            <div className="text-xs text-slate-500 mt-1 font-mono">
-                              {entry.skillInvoked}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Expand/Collapse */}
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setExpandedEntry(isExpanded ? null : entry.id)}
-                            className="gap-1"
-                          >
-                            {isExpanded ? (
-                              <>
-                                <ChevronUp className="h-4 w-4" />
-                                Less
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="h-4 w-4" />
-                                More
-                              </>
-                            )}
-                          </Button>
-                        </td>
-                      </tr>
-
-                      {/* Expanded Row */}
-                      {isExpanded && (
-                        <tr className="bg-slate-50 border-b">
-                          <td colSpan={6} className="px-4 py-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {/* State Changes */}
-                              <div>
-                                <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
-                                  State Changes
-                                </h4>
-                                <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                  {renderStateChanges(entry)}
-                                </div>
-                              </div>
-
-                              {/* Additional Info */}
-                              <div className="space-y-4">
-                                {/* Rationale */}
-                                {rationale ? (
-                                  <div>
-                                    <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
-                                      Rationale
-                                    </h4>
-                                    <div className="bg-white rounded-lg border border-slate-200 p-3 text-sm text-slate-600">
-                                      {rationale}
-                                    </div>
-                                  </div>
-                                ) : null}
-
-                                {/* Metadata */}
-                                {metadata && Object.keys(metadata).length > 0 && (
-                                  <div>
-                                    <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
-                                      Metadata
-                                    </h4>
-                                    <div className="bg-white rounded-lg border border-slate-200 p-3">
-                                      <pre className="text-xs text-slate-600 overflow-auto">
-                                        {JSON.stringify(metadata, null, 2)}
-                                      </pre>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* IDs */}
-                                <div>
-                                  <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
-                                    References
-                                  </h4>
-                                  <div className="bg-white rounded-lg border border-slate-200 p-3 space-y-1 text-xs">
-                                    <div>
-                                      <span className="text-slate-500">Entry ID:</span>{' '}
-                                      <code className="font-mono text-slate-700">{entry.id}</code>
-                                    </div>
-                                    <div>
-                                      <span className="text-slate-500">Object ID:</span>{' '}
-                                      <code className="font-mono text-slate-700">{entry.objectId}</code>
-                                    </div>
-                                    {entry.triageRecordId && (
-                                      <div>
-                                        <span className="text-slate-500">Triage ID:</span>{' '}
-                                        <code className="font-mono text-slate-700">{entry.triageRecordId}</code>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
+                {displayRows.map((row) => {
+                  if (row.type === 'single') {
+                    return renderSingleEntry(row.entry);
+                  } else {
+                    return renderBatchRow(row);
+                  }
                 })}
               </tbody>
             </table>
