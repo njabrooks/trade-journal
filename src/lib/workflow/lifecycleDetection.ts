@@ -17,6 +17,9 @@ export type ThesisType = 'macro' | 'asset';
 
 /**
  * Log an action to the journal (utility function for other modules)
+ *
+ * @param entry - The journal entry data
+ * @param entry.batchId - Optional UUID to group related entries from the same operation
  */
 export async function logToJournal(entry: {
   objectType: string;
@@ -31,6 +34,7 @@ export async function logToJournal(entry: {
   rationale?: string;
   source: 'user' | 'skill' | 'automation';
   metadata?: Record<string, unknown>;
+  batchId?: string;
 }): Promise<string> {
   const now = new Date();
   const result = await db
@@ -45,6 +49,13 @@ export async function logToJournal(entry: {
     .returning({ id: journalEntries.id });
 
   return result[0].id;
+}
+
+/**
+ * Generate a new batch ID for grouping related journal entries
+ */
+export function generateBatchId(): string {
+  return crypto.randomUUID();
 }
 
 /**

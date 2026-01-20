@@ -7,6 +7,7 @@ import {
   underlyingsIvHistory,
   triageRecords,
   trades,
+  journalEntries,
   NewTriageRecord,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, lte, gte, inArray, or, isNull, desc, ne } from 'drizzle-orm';
@@ -744,33 +745,51 @@ async function logNewTriageDetections(
           },
         });
       } else {
-        // Detection: Use dedup function to update existing or create new
-        // This prevents duplicate entries when the same condition persists
-        await logTriageToJournalWithDedup({
-          objectType: rec.contextLevel === 'strategy' ? 'strategy' : 'position',
-          objectId: entityId,
-          objectTitle: rec.symbol || 'Unknown',
-          actionType: 'triage_detected',
-          actionDescription: `System detected ${rec.recommendedAction}${rec.notes ? `: ${rec.notes}` : ''}`,
-          triggerKey: rec.recommendedAction || 'unknown',
-          previousState: previousRec
-            ? { severity: previousRec.severity, recommendedAction: previousRec.recommendedAction }
-            : {},
-          newState: {
-            severity: rec.severity,
-            recommendedAction: rec.recommendedAction,
-            contextLevel: rec.contextLevel,
-          },
-          source: 'automation',
-          metadata: {
-            snapshotDate: rec.snapshotDate,
-            ruleSet: rec.ruleSet,
-            ...(rec.dte !== undefined && rec.dte !== null && { dte: rec.dte }),
-            ...(rec.sigmaToStrike && { sigmaToStrike: rec.sigmaToStrike }),
-            ...(rec.isItm !== null && { isItm: rec.isItm }),
-            ...(rec.flagAssignment && { flagAssignment: rec.flagAssignment }),
-          },
-        });
+        // Detection: Only log on FIRST detection, not on subsequent runs
+        // This prevents journal pollution from ongoing triage monitoring
+        // Note: Use objectTitle (symbol) for dedup, not objectId, because position UUIDs
+        // can change across ingestion runs while the symbol remains stable
+        const existingEntry = await db
+          .select({ id: journalEntries.id })
+          .from(journalEntries)
+          .where(
+            and(
+              eq(journalEntries.objectTitle, rec.symbol || 'Unknown'),
+              eq(journalEntries.actionType, 'triage_detected'),
+              eq(journalEntries.status, 'active'),
+              sql`${journalEntries.metadata}->>'trigger' = ${rec.recommendedAction || 'unknown'}`
+            )
+          )
+          .limit(1);
+
+        // Only create journal entry if this is the first detection
+        if (existingEntry.length === 0) {
+          await logToJournal({
+            objectType: rec.contextLevel === 'strategy' ? 'strategy' : 'position',
+            objectId: entityId,
+            objectTitle: rec.symbol || 'Unknown',
+            actionType: 'triage_detected',
+            actionDescription: `System detected ${rec.recommendedAction}${rec.notes ? `: ${rec.notes}` : ''}`,
+            previousState: previousRec
+              ? { severity: previousRec.severity, recommendedAction: previousRec.recommendedAction }
+              : {},
+            newState: {
+              severity: rec.severity,
+              recommendedAction: rec.recommendedAction,
+              contextLevel: rec.contextLevel,
+            },
+            source: 'automation',
+            metadata: {
+              trigger: rec.recommendedAction || 'unknown',
+              snapshotDate: rec.snapshotDate,
+              ruleSet: rec.ruleSet,
+              ...(rec.dte !== undefined && rec.dte !== null && { dte: rec.dte }),
+              ...(rec.sigmaToStrike && { sigmaToStrike: rec.sigmaToStrike }),
+              ...(rec.isItm !== null && { isItm: rec.isItm }),
+              ...(rec.flagAssignment && { flagAssignment: rec.flagAssignment }),
+            },
+          });
+        }
       }
     } catch (error) {
       // Log error but don't fail the entire operation

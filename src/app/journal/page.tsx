@@ -10,9 +10,10 @@ export const metadata: Metadata = {
   title: 'Journal',
 };
 
-// Extended type for journal entries with underlying tickers (array for macro theses with multiple links)
+// Extended type for journal entries with underlying tickers and batch_id
 export type JournalEntryWithUnderlying = JournalEntry & {
   underlyingTickers: string[];
+  batchId: string | null;
 };
 
 async function getJournalData() {
@@ -35,6 +36,7 @@ async function getJournalData() {
       rationale,
       source,
       metadata,
+      batch_id AS "batchId",
       first_detected_at AS "firstDetectedAt",
       last_seen_at AS "lastSeenAt",
       occurrence_count AS "occurrenceCount",
@@ -43,7 +45,7 @@ async function getJournalData() {
     FROM journal_entries_with_underlying
     GROUP BY id, timestamp, object_type, object_id, object_title, action_type, action_description,
              triage_record_id, skill_invoked, previous_state, new_state, rationale, source, metadata,
-             first_detected_at, last_seen_at, occurrence_count, status
+             batch_id, first_detected_at, last_seen_at, occurrence_count, status
     ORDER BY timestamp DESC
     LIMIT 500
   `);

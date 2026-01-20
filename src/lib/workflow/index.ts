@@ -10,5 +10,6 @@ export {
   logTriageToJournalWithDedup,
   resolveJournalEntry,
   dismissJournalEntry,
+  generateBatchId,
   type ThesisType,
 } from './lifecycleDetection';

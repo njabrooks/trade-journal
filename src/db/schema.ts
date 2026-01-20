@@ -1820,6 +1820,9 @@ export const journalEntries = pgTable(
     // Additional metadata
     metadata: jsonb('metadata').default({}),
 
+    // Batch grouping - entries from the same operation share a batch_id
+    batchId: uuid('batch_id'),
+
     // Deduplication / lifecycle tracking
     firstDetectedAt: timestamp('first_detected_at', { withTimezone: true }),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
@@ -1832,6 +1835,7 @@ export const journalEntries = pgTable(
     actionTypeIdx: index('idx_journal_action_type').on(table.actionType),
     sourceIdx: index('idx_journal_source').on(table.source),
     dedupLookupIdx: index('idx_journal_dedup_lookup').on(table.objectId, table.actionType, table.status),
+    batchIdx: index('idx_journal_batch').on(table.batchId),
   })
 );
 
