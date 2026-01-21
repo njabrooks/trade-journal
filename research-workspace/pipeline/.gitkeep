@@ -1,0 +1,7 @@
+# Pipeline Directory
+
+This directory contains active ideas progressing through the research playbook stages.
+
+Each idea gets its own subdirectory: `idea-XXX-{slug}/`
+
+See research-playbook-v1.1.md for the full workflow documentation.

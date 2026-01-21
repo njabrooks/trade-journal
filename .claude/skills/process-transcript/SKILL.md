@@ -138,6 +138,19 @@ tags: []  # Will be populated during extraction
 - Counter-evidence mentioned in transcript
 - Example: "Current AI reliability issues (15% hallucination rate) may delay adoption beyond 2026"
 
+**7. Consensus View** (What the market currently assumes) - **MAIN CLAIMS ONLY**
+- What is the prevailing market view on this topic?
+- Be specific about what most investors/analysts believe
+- Example: "Market assumes AI adoption will be gradual, with hyperscalers maintaining current capex trajectories"
+
+**8. Novelty Score** (How differentiated from consensus) - **MAIN CLAIMS ONLY**
+- Score from 0.0 to 1.0
+- 0.0 = completely consensus, widely accepted view
+- 0.5 = somewhat differentiated, some debate exists
+- 1.0 = highly contrarian, challenges fundamental assumptions
+- Consider: Is this insight priced in? Would most investors disagree?
+- Example: 0.7 (challenges mainstream capex assumptions)
+
 #### Claim Categorization
 
 **Level** (hierarchical position):
@@ -214,6 +227,8 @@ evidence_claims: 15
 **Tickers**: GOOGL, MSFT, META
 **Time Horizon**: medium_term
 **Qualifier**: medium
+**Novelty Score**: 0.72
+**Consensus View**: Market assumes AI adoption will be gradual with apps evolving to include AI features rather than being replaced; 2026 is seen as early for structural disruption.
 
 **Claim**:
 AI agents will replace traditional application interfaces by 2026, shifting value from application wrappers to underlying AI capabilities.
@@ -248,6 +263,8 @@ Historical precedent: Mobile apps disrupted desktop software when mobile hardwar
 **Tickers**: NVDA
 **Time Horizon**: medium_term
 **Qualifier**: low
+**Novelty Score**: 0.45
+**Consensus View**: Market is aware of custom chip competition but believes NVDA's ecosystem moat (CUDA) and execution advantage will sustain margins; most analysts have Buy ratings with high price targets.
 
 **Claim**:
 NVIDIA's GPU margins will compress as hyperscalers deploy custom AI accelerators (Google TPU, Amazon Trainium, Microsoft Maia).
@@ -390,6 +407,12 @@ Main Claim 2 (NVIDIA margin pressure)
 - Medium: 12 claims
 - Low: 4 claims
 
+**Novelty Score Distribution** (main claims only):
+- High novelty (≥0.7): 3 claims
+- Medium novelty (0.4-0.69): 4 claims
+- Low novelty (<0.4): 1 claim
+- Average novelty: 0.58
+
 **Tickers Mentioned**: GOOGL, MSFT, META, NVDA, AMZN
 
 **Time Horizons**:
@@ -475,6 +498,13 @@ For example (with default env vars):
 - Reasoning explains WHY Evidence supports Claim
 - Qualifier reflects strength of Evidence + Reasoning
 - Rebuttal captures counter-arguments
+
+**Novelty Assessment** (main claims only):
+- Consensus View: Be specific about what most investors currently believe
+- Novelty Score: Evaluate how differentiated this claim is from consensus
+- Consider: Is this priced in? Would most analysts disagree?
+- Be calibrated: Not everything is novel (many scores should be 0.3-0.6)
+- Gate implication: Claims with novelty ≥0.6 are candidates for pipeline advancement
 
 **Hierarchical Structure**:
 - Main claims can stand alone (thesis/view candidates)

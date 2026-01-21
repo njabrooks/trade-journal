@@ -71,8 +71,11 @@ scripts/test-output-*.json
 # Launchd job logs
 logs/
 
-# Research workspace (local research files)
-research-workspace/
+# Research workspace (local research files - audits and transcripts excluded)
+research-workspace/*
+!research-workspace/templates/
+!research-workspace/pipeline/
+!research-workspace/kill-log/
 
 # Deprecated code archive (local reference only)
 /archive/

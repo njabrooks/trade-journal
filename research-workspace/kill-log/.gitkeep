@@ -1,0 +1,10 @@
+# Kill Log Directory
+
+This directory contains archived ideas that were killed during pipeline progression.
+
+Each killed idea is documented with:
+- Kill reason and category
+- Stage where killed
+- Lessons learned
+
+Periodic review of this log helps identify patterns and improve idea quality.

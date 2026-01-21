@@ -1,0 +1,35 @@
+# Pipeline Idea Metadata Template
+# This file tracks an idea's progression through the research playbook stages
+
+# Idea Identification
+idea_id: "idea-XXX"  # Format: idea-001, idea-002, etc.
+title: ""            # Descriptive title for the idea
+slug: ""             # URL-friendly slug (lowercase, hyphens)
+
+# Progression State
+current_stage: 1     # 1-5 (Signal Triage through Expression)
+status: active       # active | hold | killed | archived | expressed
+
+# Source Reference (from Stage 1)
+source_claim_id: ""  # e.g., "claim-7" from the audit
+source_audit: ""     # Path to the audit file
+
+# Confidence Tracking
+confidence: 0.0      # Current confidence level (0.0-1.0)
+confidence_history:
+  - stage: 1
+    value: 0.0       # Initial novelty score from extraction
+    date: ""         # ISO date
+    note: ""
+
+# Stage History
+stage_history:
+  - stage: 1
+    started_at: ""   # ISO timestamp
+    completed_at: "" # ISO timestamp (null if in progress)
+    decision: null   # advance | hold | kill | null (if in progress)
+    note: ""
+
+# Timestamps
+created_at: ""       # ISO timestamp
+updated_at: ""       # ISO timestamp
