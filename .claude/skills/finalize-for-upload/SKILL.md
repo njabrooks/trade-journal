@@ -231,7 +231,9 @@ RETURNING id;
 
 -- Step 4: Auto-promote claims to main_claims table
 -- After creating the insight with claims_structure, automatically promote all
--- main claims to the main_claims table with status='unconfirmed' for user review
+-- main claims to the main_claims table with status='draft' for user review
+-- NOTE: Valid status values are: 'draft', 'active', 'complete', 'rejected'
+-- Use 'draft' for newly promoted claims pending review
 npx tsx scripts/auto-promote-claims.ts $insight_id
 ```
 
@@ -325,11 +327,11 @@ Evidence claims are NOT abbreviated - they receive complete argumentation struct
 
 🔄 Auto-promoting claims to main_claims table...
 ✅ Successfully auto-promoted 14 claims to main_claims table
-   Status: unconfirmed (ready for manual review and confirmation)
+   Status: draft (ready for manual review and activation)
 
 → View in app: /research/xyz-789-ghi
 → Browse all claims: /claims
-→ Promote claims from unconfirmed → confirmed in Claims Browser
+→ Review claims and change status from draft → active in Claims Browser
 ```
 
 **Then suggest**: "Open the Claims Browser at /claims to review and promote high-priority claims"
@@ -713,7 +715,7 @@ The `main_claims` table uses **camelCase** field names in Drizzle:
   sourceClaimId: claim.id,         // NOT claimId
   claim: claim.claim,              // NOT claimText
   relevantTickers: claim.tickers,  // NOT tickers
-  status: 'unconfirmed',           // required
+  status: 'draft',                 // required - valid values: 'draft', 'active', 'complete', 'rejected'
 }
 ```
 
@@ -795,7 +797,7 @@ async function main() {
       reasoning: claim.reasoning || null,
       backing: claim.backing || null,
       rebuttal: claim.rebuttal.length > 0 ? claim.rebuttal : null,
-      status: 'unconfirmed',
+      status: 'draft',  // Valid values: 'draft', 'active', 'complete', 'rejected'
     });
   }
 
