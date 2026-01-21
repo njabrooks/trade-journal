@@ -1,19 +1,22 @@
 ---
 name: synthesize-evidence
-description: Stage 4B - Synthesize all research findings into belief update with posterior confidence. Completes Stage 4 Evidence Resolution.
-allowed-tools: Read, Write
+description: Stage 4B - Consolidate research files and synthesize findings into belief update with posterior confidence. Completes Stage 4 Evidence Resolution.
+allowed-tools: Read, Write, Glob
 ---
 
 # Synthesize Evidence (Stage 4B)
 
 ## Purpose
 
-After running `/research-unknown` multiple times, this skill:
-1. Synthesizes all findings into coherent themes
-2. Weights evidence by source credibility
-3. Identifies contradictions
-4. Calculates belief update (prior → posterior confidence)
-5. Makes gate recommendation (advance/hold/kill/modify)
+After running Deep Research via Claude desktop (`/research-unknown-desktop`), this skill:
+1. **Consolidates** individual research files into `stage-4-evidence.md`
+2. Synthesizes all findings into coherent themes
+3. Weights evidence by source credibility
+4. Identifies contradictions
+5. Calculates belief update (prior → posterior confidence)
+6. Makes gate recommendation (advance/hold/kill/modify)
+
+**Workflow Note**: This skill handles the full Stage 4 completion, including consolidation of individual research files that were created via Claude desktop (which cannot write directly to the repo).
 
 ## Input
 
@@ -33,16 +36,117 @@ When the user asks to synthesize evidence:
 - "Complete Stage 4 for this idea"
 - "What does the evidence say?"
 
-### Step 1: Read All Materials
+### Step 1: Consolidate Research Files (if needed)
+
+**This step handles the workflow where Deep Research was run in Claude desktop.**
+
+Scan the idea directory for individual research analysis files. These may follow various naming patterns:
+
+**Expected patterns from `/research-unknown-desktop` skill:**
+- `unknown-{N}-{track}-analysis.md` (e.g., `unknown-3-falsification-analysis.md`)
+
+**Legacy patterns (from ad-hoc Deep Research runs):**
+- `Unknown {N} - {title} - {Track} Analysis.md`
+- `{unknown-title}-{track}.md`
+- Any `.md` file containing research findings for an unknown
+
+**Consolidation process:**
+
+1. **Check if `stage-4-evidence.md` exists with Research Findings**
+   - If it has a complete "Research Findings" section with all unknowns, skip consolidation
+   - If missing or incomplete, proceed with consolidation
+
+2. **Scan for individual research files**
+   - List all `.md` files in the idea directory (excluding `_meta.yaml`, `stage-1-*.md`, `stage-2-*.md`, `stage-3-*.md`)
+   - Identify files that contain research findings (look for "Kill Condition", "Findings", "Analysis" sections)
+
+3. **Create or update `stage-4-evidence.md`**
+   - Use the template from `research-workspace/templates/stage-4-evidence-template.md`
+   - For each unknown from `stage-3-unknowns.md`, find and consolidate relevant research files
+   - Organize by unknown, then by track (falsification, validation, analogues)
+
+4. **Consolidation output format:**
+
+```markdown
+---
+stage: 4
+title: "Evidence Resolution"
+source_thesis: "{thesis from stage-2}"
+prior_confidence: {from _meta.yaml}
+created_at: "{timestamp}"
+---
+
+# Evidence Resolution: {thesis_title}
+
+## Research Findings
+
+### Unknown 1: {title from stage-3}
+
+#### Falsification Track
+
+**Research Date**: {from file metadata or YAML frontmatter}
+**Objective**: Find evidence that this thesis is WRONG
+
+**Kill Condition Assessment**:
+> {Quote the kill condition from stage-3-unknowns.md}
+
+**Status**: {NOT TRIGGERED | PARTIALLY TRIGGERED | TRIGGERED}
+
+**Findings**:
+{Consolidate findings from the falsification analysis file}
+
+- {Finding 1}
+  - Source: {type}
+  - Credibility: {0.0-1.0}
+  - Bearing on thesis: {explanation}
+
+**Caveats**: {from original analysis}
+
+#### Validation Track
+
+{Same structure, from validation analysis file}
+
+#### Analogues Track (if exists)
+
+{Same structure, from analogues analysis file}
+
+---
+
+### Unknown 2: {title}
+
+{Repeat structure}
+
+---
+
+### Unknown 3: {title}
+
+{Repeat structure}
+```
+
+5. **After consolidation, report:**
+   ```
+   Consolidated {N} research files into stage-4-evidence.md:
+   - Unknown 1: falsification ✓, validation ✓
+   - Unknown 2: falsification ✓, validation ✓
+   - Unknown 3: validation ✓
+
+   Missing tracks: Unknown 3 falsification (not found)
+
+   Proceeding to synthesis...
+   ```
+
+**Note**: If no individual research files are found AND `stage-4-evidence.md` doesn't exist, stop and inform the user that research files are needed before synthesis can proceed.
+
+### Step 2: Read All Materials
 
 Read from the idea directory:
 
 1. `_meta.yaml` - Get current confidence (prior)
 2. `stage-2-thesis.md` - Get the thesis and failure modes
 3. `stage-3-unknowns.md` - Get the unknowns and their conditions
-4. `stage-4-evidence.md` - Get all research findings
+4. `stage-4-evidence.md` - Get all research findings (now consolidated from Step 1)
 
-### Step 2: Organize Findings by Theme
+### Step 3: Organize Findings by Theme
 
 Don't organize by source - organize by what the evidence tells us.
 
@@ -64,7 +168,7 @@ Identify 3-5 major themes that emerge from the research:
    - Strength: {strong | moderate | weak}
 ```
 
-### Step 3: Weight Evidence by Source
+### Step 4: Weight Evidence by Source
 
 Create source weighting table:
 
@@ -83,7 +187,7 @@ Create source weighting table:
 **Diversity Score**: {good | adequate | poor} - {explanation}
 ```
 
-### Step 4: Document Contradictions
+### Step 5: Document Contradictions
 
 Flag evidence that conflicts - don't resolve it, just note it:
 
@@ -98,7 +202,7 @@ Flag evidence that conflicts - don't resolve it, just note it:
 **Critical Contradictions**: {count} - {do any affect thesis validity?}
 ```
 
-### Step 5: Evaluate Unknown Resolution
+### Step 6: Evaluate Unknown Resolution
 
 For each unknown from Stage 3, assess resolution:
 
@@ -115,7 +219,7 @@ For each unknown from Stage 3, assess resolution:
 **Decision Criticality**: {do unresolved unknowns matter for the thesis?}
 ```
 
-### Step 6: Calculate Belief Update
+### Step 7: Calculate Belief Update
 
 ```markdown
 ### Belief Update
@@ -141,7 +245,7 @@ For each unknown from Stage 3, assess resolution:
 - 0.35-0.49: Low conviction, significant concerns or contradictions
 - Below 0.35: Very low conviction, evidence contradicts thesis
 
-### Step 7: Make Gate Recommendation
+### Step 8: Make Gate Recommendation
 
 ```markdown
 ### Gate Assessment
@@ -168,7 +272,7 @@ For each unknown from Stage 3, assess resolution:
 | Kill condition triggered | **KILL** - evidence contradicts thesis |
 | Core insight valid but framing wrong | **MODIFY** - refine thesis and re-evaluate |
 
-### Step 8: Write Modification Notes (if applicable)
+### Step 9: Write Modification Notes (if applicable)
 
 If recommending MODIFY:
 
@@ -192,7 +296,7 @@ If recommending MODIFY:
 4. Re-run relevant research tracks
 ```
 
-### Step 9: Update Files
+### Step 10: Update Files
 
 **Update `stage-4-evidence.md`** - Add entire synthesis section after Research Findings.
 
@@ -218,7 +322,7 @@ stage_history:
     note: "{Gate decision rationale}"
 ```
 
-### Step 10: Output Summary
+### Step 11: Output Summary
 
 ```
 ## Evidence Synthesis Complete: {thesis_title}
