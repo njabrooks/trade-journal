@@ -1,5 +1,5 @@
 ---
-name: research-unknown
+name: stage-4a-research-unknown
 description: Stage 4A - Research a single unknown using one of three tracks (falsification, validation, analogues). Appends findings to stage-4-evidence.md.
 allowed-tools: Read, Write, WebSearch, WebFetch
 ---

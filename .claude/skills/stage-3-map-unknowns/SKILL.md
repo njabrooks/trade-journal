@@ -1,5 +1,5 @@
 ---
-name: map-unknowns
+name: stage-3-map-unknowns
 description: Stage 3 of the research playbook - Unknown Mapping. Identifies decision-critical unknowns and determines whether research is worthwhile. This is the most important gate - ideas that pass have earned research effort.
 allowed-tools: Read, Write
 ---

@@ -1,5 +1,5 @@
 ---
-name: express-thesis
+name: stage-5-express-thesis
 description: Stage 5 - Translate conviction into actionable positioning. Maps value chain, classifies order of effects, and compiles sizing inputs for human decision.
 allowed-tools: Read, Write
 ---

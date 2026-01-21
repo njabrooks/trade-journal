@@ -62,14 +62,23 @@ This document captures the adaptations made from `research-playbook-v1.1.md` bas
 
 ### Stage 4: Evidence Resolution
 
-**Major adaptation: Claude Desktop Workflow**
+**Major adaptation: Two research paths**
 
-The playbook assumes Claude Deep Research as API. Our workflow:
+The playbook assumes Claude Deep Research as API. We support two approaches:
 
-1. `/research-unknown-desktop` generates prompts for Claude desktop
-2. User runs Deep Research in Claude desktop
-3. User saves output as `Unknown {N} - {title} - {Track} Analysis.md`
-4. `/synthesize-evidence` consolidates files + synthesizes
+**Option A: Claude Desktop (Deep Research)** - recommended for high-stakes unknowns
+1. `/stage-4a-prep-desktop-research` generates a self-contained prompt with all context
+2. User pastes prompt into Claude Desktop (no project setup or file attachments needed)
+3. Claude Desktop runs Deep Research
+4. User saves output as `unknown-{N}-{track}-analysis.md`
+5. `/stage-4b-synthesize-evidence` consolidates files + synthesizes
+
+**Option B: Claude Code (WebSearch)** - for quick research or lower-priority unknowns
+1. `/stage-4a-research-unknown` runs research directly in Claude Code
+2. Appends findings to `stage-4-evidence.md`
+3. `/stage-4b-synthesize-evidence` when all unknowns researched
+
+Both options run once per unknown per track (e.g., unknown-1 falsification, unknown-1 validation, etc.).
 
 **Key insight (idea-001)**: Falsification tracks were most valuable. The falsification track on Unknown 3 (TSMC dominance) partially triggered a kill condition (85% share) AND revealed the complement thesis. Validation mostly confirmed priors.
 
@@ -114,13 +123,13 @@ This modification sharpened the investable expression rather than weakening it.
 
 | Skill | Stage | Playbook Equivalent |
 |-------|-------|---------------------|
-| `/init-idea` | 1 | Stage 1 gate |
-| `/formalize-thesis` | 2 | Prompts 2A + 2B |
-| `/map-unknowns` | 3 | Prompts 3A + 3B |
-| `/research-unknown` | 4A | Prompts 4A-4C (for Claude Code) |
-| `/research-unknown-desktop` | 4A | Prompts 4A-4C (for Claude desktop) |
-| `/synthesize-evidence` | 4B | Prompt 4D + consolidation |
-| `/express-thesis` | 5 | Prompts 5A-5F |
+| `/stage-1-init-idea` | 1 | Stage 1 gate |
+| `/stage-2-formalize-thesis` | 2 | Prompts 2A + 2B |
+| `/stage-3-map-unknowns` | 3 | Prompts 3A + 3B |
+| `/stage-4a-research-unknown` | 4A | Prompts 4A-4C (runs in Claude Code via WebSearch) |
+| `/stage-4a-prep-desktop-research` | 4A | Generates prompt for Claude Desktop Deep Research |
+| `/stage-4b-synthesize-evidence` | 4B | Prompt 4D + consolidation |
+| `/stage-5-express-thesis` | 5 | Prompts 5A-5F |
 | `/advance-or-kill` | Any | Gate evaluation |
 | `/pipeline-status` | N/A | Status dashboard |
 

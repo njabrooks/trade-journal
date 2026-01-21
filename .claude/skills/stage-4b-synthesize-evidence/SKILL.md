@@ -1,5 +1,5 @@
 ---
-name: synthesize-evidence
+name: stage-4b-synthesize-evidence
 description: Stage 4B - Consolidate research files and synthesize findings into belief update with posterior confidence. Completes Stage 4 Evidence Resolution.
 allowed-tools: Read, Write, Glob
 ---

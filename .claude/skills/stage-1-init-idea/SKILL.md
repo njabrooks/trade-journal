@@ -1,5 +1,5 @@
 ---
-name: init-idea
+name: stage-1-init-idea
 description: Initialize a new pipeline idea from a claim (audit file) or transcript. Creates the idea directory structure with _meta.yaml and stage-1-triage.md. Use this to begin tracking an idea through the research playbook stages.
 allowed-tools: Read, Write, Bash, Skill
 ---

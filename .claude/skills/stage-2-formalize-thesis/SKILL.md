@@ -1,5 +1,5 @@
 ---
-name: formalize-thesis
+name: stage-2-formalize-thesis
 description: Stage 2 of the research playbook - Theme Formalisation. Takes a pipeline idea and produces a falsifiable thesis with failure modes. Transforms intuition into something that can be proven wrong.
 allowed-tools: Read, Write
 ---
