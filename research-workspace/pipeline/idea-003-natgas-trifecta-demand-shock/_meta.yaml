@@ -1,0 +1,69 @@
+# Pipeline Idea Metadata
+idea_id: "idea-003"
+title: "Natural Gas Demand Will Experience 10x Growth Shock from Trifecta"
+slug: "natgas-trifecta-demand-shock"
+
+# Progression State
+current_stage: 5
+status: watching
+
+# Source Reference
+source_claim_id: "claim-3"
+source_audit: "research-workspace/transcripts-audits/20260114-AI-Electrification-Hidden-Energy-Bottleneck-audit.md"
+
+# Confidence Tracking
+confidence: 0.55
+confidence_history:
+  - stage: 1
+    value: 0.70
+    date: "2026-01-21"
+    note: "High qualifier rating from audit. No novelty score available (pre-enhancement audit). Estimated 0.70 based on clear mechanism and quantified baseline shift."
+  - stage: 2
+    value: 0.70
+    date: "2026-01-21"
+    note: "Thesis formalized with 5 failure modes. Core mechanism confirmed sound and testable. Maintaining confidence."
+  - stage: 3
+    value: 0.70
+    date: "2026-01-21"
+    note: "3 high-impact unknowns identified, all externally resolvable. Clear kill conditions defined. Research plan: ~15-18 hours."
+  - stage: 4
+    value: 0.55
+    date: "2026-01-22"
+    note: "Demand acceleration weaker than thesis (1.7% actual vs 2.5-5% claimed). Supply constraints validated. Electrification pillar collapsing. Thesis direction right but magnitude wrong. MODIFY recommended."
+  - stage: 5
+    value: 0.55
+    date: "2026-01-22"
+    note: "Expression complete. Decision: WATCH. Thesis direction valid but magnitude overstated. Monitor demand data for trigger to act."
+
+# Stage History
+stage_history:
+  - stage: 1
+    started_at: "2026-01-21T00:00:00Z"
+    completed_at: "2026-01-21T00:00:00Z"
+    decision: advance
+    note: "Claim selected from Michael Kao (Aanthos Capital) interview audit. Strong supporting evidence (4 claims), clear mechanism (trifecta convergence), quantified baseline change (0.5% to 2.5-5% growth). Acknowledged rebuttal (AI pillar fragility) adds credibility."
+  - stage: 2
+    started_at: "2026-01-21T00:00:00Z"
+    completed_at: "2026-01-21T00:00:00Z"
+    decision: advance
+    note: "Core thesis crisp and falsifiable. 5 specific failure modes identified (2 structural, 1 execution, 1 external). Primary driver isolated: demand growth rate vs supply/infrastructure capacity."
+  - stage: 3
+    started_at: "2026-01-21T00:00:00Z"
+    completed_at: "2026-01-21T00:00:00Z"
+    decision: advance
+    note: "High-impact resolvable unknowns with clear kill conditions. Worth researching. Priority: (1) demand convergence, (2) supply response, (3) nuclear timeline."
+  - stage: 4
+    started_at: "2026-01-21T00:00:00Z"
+    completed_at: "2026-01-22T00:00:00Z"
+    decision: modify
+    note: "Evidence synthesis complete. Demand kill condition partially triggered (1.7% vs 2%). Supply constraints strongly validated. Nuclear not a threat. Thesis direction valid but magnitude overstated. Recommend refining thesis from 5x to 2-3x demand acceleration."
+  - stage: 5
+    started_at: "2026-01-22T00:00:00Z"
+    completed_at: "2026-01-22T00:00:00Z"
+    decision: watch
+    note: "Value chain mapped. Order of effects classified. Confidence 0.55 below 0.65 threshold. Recommend WATCH with clear triggers for demand confirmation or supply tightness. Review date: April 2026."
+
+# Timestamps
+created_at: "2026-01-21T00:00:00Z"
+updated_at: "2026-01-22T00:00:00Z"
+review_date: "2026-04-01"
