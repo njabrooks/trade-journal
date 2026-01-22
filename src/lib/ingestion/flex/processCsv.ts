@@ -786,6 +786,19 @@ async function createTradeIngestionRecords(
       continue;
     }
 
+    // Delete any existing quantity_change_v1 records for this strategy + date
+    // This handles the race condition where positions are processed before trades,
+    // creating QUANTITY_CHANGE records that should be superseded by TRADE_INGESTION
+    await db
+      .delete(triageRecords)
+      .where(
+        and(
+          eq(triageRecords.strategyId, strategyId),
+          eq(triageRecords.snapshotDate, tradeDate),
+          eq(triageRecords.ruleSet, 'quantity_change_v1')
+        )
+      );
+
     // Create triage record
     // Use TRADE_INGESTION as recommendedAction (like QUANTITY_CHANGE) for UI compatibility
     const [triageRecord] = await db
