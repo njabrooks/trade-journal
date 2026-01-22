@@ -82,8 +82,8 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
   const [triggerFilter, setTriggerFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Sort states (default to status/severity order)
-  const [sortColumn, setSortColumn] = useState<SortColumn>('status');
+  // Sort states (default to severity order: urgent > attention > monitor > info)
+  const [sortColumn, setSortColumn] = useState<SortColumn>('severity');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Group by state
@@ -187,7 +187,8 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
       });
     }
 
-    // Sort
+    // Sort with multi-level tie-breakers
+    // Primary: selected column, Secondary: date (desc), Tertiary: objectType (reverse alpha)
     result.sort((a, b) => {
       let aVal: string | number;
       let bVal: string | number;
@@ -222,8 +223,20 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
           break;
       }
 
+      // Primary sort
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+
+      // Secondary sort: date (descending - most recent first)
+      const aDate = a.date.getTime();
+      const bDate = b.date.getTime();
+      if (aDate !== bDate) return bDate - aDate;
+
+      // Tertiary sort: objectType (reverse alphabetical: strategy > position > macro_thesis > asset_thesis)
+      if (a.objectType !== b.objectType) {
+        return b.objectType.localeCompare(a.objectType);
+      }
+
       return 0;
     });
 

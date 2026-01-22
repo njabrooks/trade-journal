@@ -811,7 +811,7 @@ async function createTradeIngestionRecords(
         contextLevel: 'strategy',
         ruleSet: 'trade_ingestion_v1',
         symbol: primarySymbol,
-        severity: 'attention', // Trades need user attention to capture metadata
+        severity: 'urgent', // Trades require immediate attention to capture metadata
         status: 'inbox',
         recommendedAction: 'TRADE_INGESTION',
         notes: JSON.stringify(notesData),
