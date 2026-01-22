@@ -1,6 +1,6 @@
 ---
 name: process-transcript
-description: Process research transcripts with forensic claim extraction using Toulmin framework. Auto-formats YouTube transcripts, extracts all claims without information loss, structures with Evidence/Reasoning/Backing, categorizes as thesis/view candidates. Use for rigorous research ingestion.
+description: Process research transcripts with forensic claim extraction using Toulmin framework. Auto-formats YouTube transcripts, extracts all claims without information loss, structures with Evidence/Reasoning/Backing, categorizes as macro thesis or asset thesis candidates. Use for rigorous research ingestion.
 allowed-tools: Read, Write, mcp__supabase__execute_sql, Bash
 ---
 
@@ -11,27 +11,37 @@ allowed-tools: Read, Write, mcp__supabase__execute_sql, Bash
 Process raw research transcripts with **forensic-level detail preservation**:
 1. **Auto-format** YouTube transcripts → proper markdown with metadata
 2. **Extract ALL claims** using Toulmin framework (no summarization)
-3. **Categorize claims** as main (thesis/view candidates) or evidence (supporting/rebutting)
+3. **Categorize claims** as main (macro thesis/asset thesis candidates) or evidence (supporting/rebutting)
 4. **Structure arguments** with Claim, Evidence, Reasoning, Backing, Qualifier, Rebuttal
 5. **Preserve context** for iterative refinement and synthesis
+6. **Move processed files** from inbox to transcripts-audits folder
 
 This is **Stage 1** of the research workflow: forensic extraction before synthesis.
+
+## Document Flow
+
+```
+research-workspace/inbox/           ← Raw transcripts land here
+         ↓ (process-transcript)
+research-workspace/transcripts-audits/  ← Completed audits + original transcripts move here
+```
 
 ## Workflow
 
 ```
-Input: Raw YouTube transcript OR formatted markdown
+Input: File from research-workspace/inbox/
   ↓
 1. Auto-format (if needed): Extract title, URL, date → markdown frontmatter
 2. Forensic claim extraction: ALL claims with full Toulmin structure
-3. Categorize claims: Main (thesis/view candidates) vs Evidence (supporting/rebutting)
+3. Categorize claims: Main (macro thesis/asset thesis candidates) vs Evidence (supporting/rebutting)
 4. Identify relationships: Which evidence claims support which main claims
 5. Generate audit document with all claims, relationships, statistics
 6. Update transcript with populated tags (tickers + themes from claims)
+7. Move original file from inbox/ to transcripts-audits/
   ↓
 Output:
-  - research-workspace/audits/[file]-audit.md (preserves ALL information)
-  - Updated transcript with metadata tags for organization
+  - research-workspace/transcripts-audits/[file]-audit.md (audit document)
+  - research-workspace/transcripts-audits/[file].md (original transcript, moved from inbox)
 ```
 
 ## Instructions
@@ -43,24 +53,17 @@ When the user asks to process a transcript:
 
 Follow these steps:
 
-### Step 0: Read Environment Variables and Construct Paths
+### Step 0: Determine Paths
 
-Before processing, read the Obsidian directory configuration from `.env.local`:
+The document flow uses these directories within the project:
+- **Inbox**: `research-workspace/inbox/` - where raw transcripts land
+- **Transcripts-Audits**: `research-workspace/transcripts-audits/` - where processed files go
 
-```bash
-# Read environment variables
-cat /Users/njb/Desktop/trade-journal/.env.local | grep OBSIDIAN
-```
-
-Construct the full paths:
-- **Transcripts directory**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}`
-- **Audits directory**: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_AUDITS_DIR}`
-
-For example, with defaults:
-- Transcripts: `/Users/njb/Desktop/nick/investing/research/transcripts`
-- Audits: `/Users/njb/Desktop/nick/investing/research/audits`
-
-Use these paths throughout the skill execution. If env vars are not set, fall back to project-local `research-workspace/` directories.
+When processing a file:
+1. If user provides a path, use it directly
+2. If user provides just a filename, look in `research-workspace/inbox/`
+3. Output audits to `research-workspace/transcripts-audits/`
+4. Move original files from inbox to `transcripts-audits/` after processing
 
 ### Step 1: Read and Format Transcript
 
@@ -81,7 +84,7 @@ title: "From Apps to Agents: Why 2026 Is the Real AI Inflection Point"
 source_type: transcript
 source_url: "https://www.youtube.com/watch?v=0Hcw9toVRNg"
 author: "YouTube"
-published_date: "2025-01-20"  # Extract from title or use today's date
+published_date: "20250120"  # Extract from title or use today's date
 tags: []  # Will be populated during extraction
 ---
 
@@ -95,9 +98,9 @@ tags: []  # Will be populated during extraction
 (02:15) The key insight is that agents will replace apps...
 ```
 
-**Save formatted version** back to the Obsidian transcripts directory with proper filename:
-- Input: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}/raw-youtube-paste.md`
-- Output: `${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}/2025-01-20-apps-to-agents.md`
+**Save formatted version** to the inbox with proper filename (will be moved after processing):
+- Input: `research-workspace/inbox/raw-youtube-paste.md`
+- Formatted: `research-workspace/inbox/20250120-apps-to-agents.md` (rename in place)
 
 **If already formatted**: Skip to Step 2
 
@@ -154,12 +157,12 @@ tags: []  # Will be populated during extraction
 #### Claim Categorization
 
 **Level** (hierarchical position):
-- **main**: Could be a thesis/view (stands alone)
+- **main**: Could be a macro thesis or asset thesis (stands alone)
 - **evidence**: Supports/refutes another claim (nested)
 
 **Type** (function):
-- **thesis_candidate**: Macro-level, cross-asset
-- **view_candidate**: Asset-specific, ticker-focused
+- **macro_macro_thesis_candidate**: Macro-level, cross-asset themes
+- **asset_macro_thesis_candidate**: Asset-specific, ticker-focused
 - **supporting**: Evidence supporting a main claim
 - **rebutting**: Evidence against a main claim
 
@@ -198,12 +201,12 @@ This creates a **claim hierarchy**:
 
 ### Step 4: Generate Audit Document
 
-Create a forensic audit document in the Obsidian audits directory (constructed from env vars in Step 0) with this structure:
+Create a forensic audit document in `research-workspace/transcripts-audits/` with this structure:
 
 ```markdown
 ---
-source_transcript: "${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_TRANSCRIPTS_DIR}/2025-01-20-apps-to-agents.md"
-audit_date: "2025-01-20"
+source_transcript: "research-workspace/transcripts-audits/20250120-apps-to-agents.md"
+audit_date: "20250120"
 total_claims: 23
 main_claims: 8
 evidence_claims: 15
@@ -212,17 +215,17 @@ evidence_claims: 15
 # Forensic Audit: From Apps to Agents
 
 **Source**: [YouTube](https://www.youtube.com/watch?v=0Hcw9toVRNg)
-**Processed**: 2025-01-20
+**Processed**: 20250120
 **Total Claims**: 23 (8 main, 15 evidence)
 
 ---
 
-## Main Claims (Thesis/View Candidates)
+## Main Claims (Macro Thesis / Asset Macro Thesis Candidates)
 
 ### Claim 1: AI Agents Will Replace Traditional Applications by 2026
 
 **Level**: main
-**Type**: thesis_candidate
+**Type**: macro_thesis_candidate
 **Category**: macro
 **Tickers**: GOOGL, MSFT, META
 **Time Horizon**: medium_term
@@ -258,7 +261,7 @@ Historical precedent: Mobile apps disrupted desktop software when mobile hardwar
 ### Claim 2: NVIDIA Will Face Margin Pressure from Custom AI Chips
 
 **Level**: main
-**Type**: view_candidate
+**Type**: asset_thesis_candidate
 **Category**: asset_specific
 **Tickers**: NVDA
 **Time Horizon**: medium_term
@@ -395,8 +398,8 @@ Main Claim 2 (NVIDIA margin pressure)
 ## Summary Statistics
 
 **Main Claims**:
-- Thesis Candidates: 5 (macro-level)
-- View Candidates: 3 (asset-specific)
+- Macro Thesis Candidates: 5 (macro-level)
+- Asset Macro Thesis Candidates: 3 (asset-specific)
 
 **Evidence Claims**:
 - Supporting: 9
@@ -427,17 +430,17 @@ Main Claim 2 (NVIDIA margin pressure)
 This audit preserves ALL claims from the transcript. Next:
 
 1. **Synthesize** (`/synthesize-claims`):
-   - Cross-reference claims against existing theses/views
+   - Cross-reference claims against existing macro theses/asset theses
    - Generate recommendations for what to create/enhance
    - Map claims to hierarchy
 
 2. **Deep Dive** (`/deep-dive`):
    - Select promising claims to develop further
    - Strengthen Toulmin structure with additional research
-   - Develop into full theses/views
+   - Develop into full macro theses/asset theses
 
 3. **Upload** (`/finalize-for-upload`):
-   - Commit finalized theses/views to database
+   - Commit finalized macro theses/asset theses to database
    - Link claims as evidence
 ```
 
@@ -458,7 +461,7 @@ Add or update the YAML frontmatter at the top of the transcript file:
 title: "From Apps to Agents: Why 2026 Is the Real AI Inflection Point"
 author: "YouTube" # Or extract from source if available
 source_type: "transcript"
-published_date: "2025-01-20"
+published_date: "20250120"
 source_url: "https://www.youtube.com/watch?v=0Hcw9toVRNg"
 tags: ["AI agents", "enterprise adoption", "GOOGL", "MSFT", "META", "NVDA", "infrastructure"]
 ---
@@ -467,23 +470,34 @@ tags: ["AI agents", "enterprise adoption", "GOOGL", "MSFT", "META", "NVDA", "inf
 **Tag population strategy**:
 - Include major themes from thesis candidates (e.g., "AI agents", "labor deflation", "multimodality")
 - Include all ticker symbols mentioned (e.g., "GOOGL", "NVDA", "TSLA", "BTC")
-- Include key topics from view candidates (e.g., "autonomous driving", "infrastructure", "semiconductors")
+- Include key topics from asset thesis candidates (e.g., "autonomous driving", "infrastructure", "semiconductors")
 - Limit to 5-10 most relevant tags for organization
 - Use consistent tag naming (lowercase for themes, UPPERCASE for tickers)
 
 **Write updated transcript**:
 Use the Edit or Write tool to update the transcript file with the new frontmatter while preserving all transcript content.
 
+### Step 6: Move Original File from Inbox to Transcripts-Audits
+
+After completing the audit and updating the transcript with tags, move the original file from `inbox/` to `transcripts-audits/`:
+
+```bash
+mv research-workspace/inbox/20250120-apps-to-agents.md research-workspace/transcripts-audits/
+```
+
+This keeps the inbox clean and consolidates processed materials in one location.
+
 ## Output Format
 
-Save audit to the Obsidian audits directory (from env vars):
+Save audit to transcripts-audits directory:
 ```
-${OBSIDIAN_VAULT_PATH}/${OBSIDIAN_AUDITS_DIR}/[date]-[slug]-audit.md
+research-workspace/transcripts-audits/YYYYMMDD-slug-audit.md
 ```
 
-For example (with default env vars):
-- Input: `/Users/njb/Desktop/nick/investing/research/transcripts/2025-01-20-apps-to-agents.md`
-- Output: `/Users/njb/Desktop/nick/investing/research/audits/2025-01-20-apps-to-agents-audit.md`
+For example:
+- Input: `research-workspace/inbox/20250120-apps-to-agents.md`
+- Audit: `research-workspace/transcripts-audits/20250120-apps-to-agents-audit.md`
+- Moved: `research-workspace/transcripts-audits/20250120-apps-to-agents.md`
 
 ## Key Principles
 
@@ -507,7 +521,7 @@ For example (with default env vars):
 - Gate implication: Claims with novelty ≥0.6 are candidates for pipeline advancement
 
 **Hierarchical Structure**:
-- Main claims can stand alone (thesis/view candidates)
+- Main claims can stand alone (thesis/asset thesis candidates)
 - Evidence claims are nested (support/refute main claims)
 - Clear relationships between levels
 
@@ -546,4 +560,5 @@ This ensures users don't forget to upload and provides clear guidance on workflo
 - When in doubt, extract more claims rather than fewer
 - Preserve exact quotes with timestamps for traceability
 - ALWAYS update the original transcript file with populated tags after completing the audit (Step 5)
+- ALWAYS move the original file from inbox/ to transcripts-audits/ after processing (Step 6)
 - ALWAYS prompt user about uploading after audit completion (see Post-Processing Workflow above)
