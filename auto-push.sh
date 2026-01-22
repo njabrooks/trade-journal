@@ -4,8 +4,9 @@ set -euo pipefail
 REPO_ROOT="/Users/twotrees/Projects/trade-journal"
 cd "$REPO_ROOT"
 
-# Stage only the inbox folder (clippings)
-git add research-workspace/inbox/
+# Stage only clipping folders
+# (keep this surgical so we don't accidentally commit other repo changes)
+git add research-workspace/inbox/ research-workspace/news/
 
 # If nothing staged, exit
 if git diff --cached --quiet; then
