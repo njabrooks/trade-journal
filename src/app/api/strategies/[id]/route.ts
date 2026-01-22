@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { strategies } from '@/db/schema';
+import { strategies, strategyTemplates, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function PATCH(
@@ -11,18 +11,24 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
-    // Extract fields that can be updated
-    // Note: macroThesisId is no longer supported - strategies inherit via assetThesis
-    const { assetThesisId, label, description, rationale, status } = body;
+    // Extract fields that can be updated on the strategies table
+    // Note: label/description/rationale don't exist on strategies - use /api/strategies PATCH for full updates
+    const { assetThesisId, status, strategyType, direction } = body;
 
     // Build update object with only provided fields
-    const updates: any = {};
-    
+    const updates: Record<string, unknown> = {};
+
     if (assetThesisId !== undefined) updates.assetThesisId = assetThesisId;
-    if (label !== undefined) updates.label = label;
-    if (description !== undefined) updates.description = description;
-    if (rationale !== undefined) updates.rationale = rationale;
     if (status !== undefined) updates.status = status;
+    if (strategyType !== undefined) updates.strategyType = strategyType;
+    if (direction !== undefined) updates.direction = direction;
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: 'No valid fields to update' },
+        { status: 400 }
+      );
+    }
 
     // Perform the update
     const [updated] = await db
@@ -52,26 +58,57 @@ export async function PATCH(
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
 
-    const [strategy] = await db
-      .select()
+    // Join through strategyTemplates to underlyings to get the ticker
+    const [result] = await db
+      .select({
+        id: strategies.id,
+        strategyKey: strategies.strategyKey,
+        strategyTemplateId: strategies.strategyTemplateId,
+        accountId: strategies.accountId,
+        assetThesisId: strategies.assetThesisId,
+        status: strategies.status,
+        openedAt: strategies.openedAt,
+        closedAt: strategies.closedAt,
+        isAuto: strategies.isAuto,
+        autoSource: strategies.autoSource,
+        autoDerivedLabel: strategies.autoDerivedLabel,
+        confirmedAt: strategies.confirmedAt,
+        strategyType: strategies.strategyType,
+        direction: strategies.direction,
+        timeHorizon: strategies.timeHorizon,
+        entrySpot: strategies.entrySpot,
+        entryIv30: strategies.entryIv30,
+        netPremium: strategies.netPremium,
+        entryNotional: strategies.entryNotional,
+        totalAbsNotional: strategies.totalAbsNotional,
+        totalUnrealizedPnl: strategies.totalUnrealizedPnl,
+        createdAt: strategies.createdAt,
+        updatedAt: strategies.updatedAt,
+        // From template
+        label: strategyTemplates.label,
+        // From underlying (via template)
+        underlyingTicker: underlyings.ticker,
+      })
       .from(strategies)
+      .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
+      .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
       .where(eq(strategies.id, id))
       .limit(1);
 
-    if (!strategy) {
+    if (!result) {
       return NextResponse.json(
         { error: 'Strategy not found' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(strategy);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Strategy fetch error:', error);
     return NextResponse.json(
@@ -85,7 +122,7 @@ export async function GET(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
