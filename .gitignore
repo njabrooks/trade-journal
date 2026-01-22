@@ -76,6 +76,7 @@ research-workspace/*
 !research-workspace/templates/
 !research-workspace/pipeline/
 !research-workspace/kill-log/
+!research-workspace/inbox/
 
 # Deprecated code archive (local reference only)
 /archive/
