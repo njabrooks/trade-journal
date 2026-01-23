@@ -1042,14 +1042,26 @@ export async function computeQuantityChangeTriageForDate(
         )
     : [];
 
+  // Helper to create a fallback key from symbol+expiry+strike+optionRight
+  // Used when conid is not available or doesn't match
+  const createSymbolKey = (pos: { symbol: string; expiry: string | null; strike: string | null; optionRight: string | null }) => {
+    return `sym:${pos.symbol}|${pos.expiry || ''}|${pos.strike || ''}|${pos.optionRight || ''}`;
+  };
+
   // Create maps for efficient lookup
+  // Primary: by conid (most reliable)
+  // Fallback: by symbol+expiry+strike+optionRight (handles cases where conid is null or changes between days)
   const previousByConid = new Map<number, typeof previousPositions[0]>();
+  const previousBySymbolKey = new Map<string, typeof previousPositions[0]>();
   previousPositions.forEach((pos) => {
     if (pos.conid) {
       previousByConid.set(pos.conid, pos);
     }
+    // Always add to symbol key map as fallback
+    const symbolKey = createSymbolKey(pos);
+    previousBySymbolKey.set(symbolKey, pos);
   });
-  
+
   // First pass: Collect all positions with quantity changes, grouped by strategy
   // This allows us to aggregate at the strategy level per day
   const changesByStrategy = new Map<string, {
@@ -1062,7 +1074,7 @@ export async function computeQuantityChangeTriageForDate(
       tradeStage: string | null;
     }>;
   }>();
-  
+
   const unlinkedChanges: Array<{
     accountId: string;
     positionId: string;
@@ -1072,19 +1084,29 @@ export async function computeQuantityChangeTriageForDate(
     tradeStage: string | null;
   }> = [];
 
-  // Create a set of current conids for efficient lookup
+  // Create sets for current positions for efficient lookup (used in second pass)
   const currentConids = new Set<number>();
+  const currentSymbolKeys = new Set<string>();
   for (const currentPos of currentPositions) {
     if (currentPos.conid) {
       currentConids.add(currentPos.conid);
     }
+    const symbolKey = createSymbolKey(currentPos);
+    currentSymbolKeys.add(symbolKey);
   }
 
   // First pass: Process current positions (existing or changed)
   for (const currentPos of currentPositions) {
-    if (!currentPos.conid || !currentPos.accountId) continue;
+    if (!currentPos.accountId) continue;
 
-    const previousPos = previousByConid.get(currentPos.conid);
+    // Try to find previous position: first by conid, then by symbol key
+    let previousPos = currentPos.conid ? previousByConid.get(currentPos.conid) : undefined;
+    if (!previousPos) {
+      // Fallback: try matching by symbol+expiry+strike+optionRight
+      // This handles cases where conid was null on previous day or changed
+      const symbolKey = createSymbolKey(currentPos);
+      previousPos = previousBySymbolKey.get(symbolKey);
+    }
     const currentQty = Number(currentPos.quantity) || 0;
     const previousQty = previousPos ? Number(previousPos.quantity) || 0 : 0;
 
@@ -1149,15 +1171,84 @@ export async function computeQuantityChangeTriageForDate(
 
   // Second pass: Detect positions that existed on previous date but don't exist on current date
   // These are positions that closed/expired (no position record on current date)
+  //
+  // IMPORTANT: Skip this pass if currentPositions is empty but previousPositions has data.
+  // This indicates that positions for the current date haven't been ingested yet (e.g., when
+  // trades are processed before positions). We don't want to falsely mark all previous
+  // positions as "closed" just because current day's positions aren't in the database yet.
+  // When positions ARE ingested later, triage will run again and correctly detect any actual changes.
+  const skipCloseDetection = currentPositions.length === 0 && previousPositions.length > 0;
+
+  // Track which previous positions we've already processed to avoid duplicates
+  const processedPreviousPositions = new Set<string>();
+
   for (const [conid, previousPos] of previousByConid.entries()) {
+    // Skip close detection entirely if current positions haven't been ingested yet
+    if (skipCloseDetection) {
+      break;
+    }
     // Skip if this position exists in current positions (already processed above)
+    // Check both by conid and by symbol key to handle conid changes
     if (currentConids.has(conid)) {
+      continue;
+    }
+    const symbolKey = createSymbolKey(previousPos);
+    if (currentSymbolKeys.has(symbolKey)) {
+      // Position exists in current by symbol key - already processed in first pass
+      continue;
+    }
+
+    // Mark as processed
+    processedPreviousPositions.add(previousPos.id);
+
+    // This position existed before but doesn't exist now - it closed/expired
+    const previousQty = Number(previousPos.quantity) || 0;
+
+    // Only create QUANTITY_CHANGE if previous quantity was non-zero
+    if (previousQty !== 0 && previousPos.accountId && previousPos.strategyId) {
+      // Group by strategy
+      if (!changesByStrategy.has(previousPos.strategyId)) {
+        changesByStrategy.set(previousPos.strategyId, {
+          accountId: previousPos.accountId,
+          positions: [],
+        });
+      }
+      changesByStrategy.get(previousPos.strategyId)!.positions.push({
+        positionId: previousPos.id,
+        symbol: previousPos.symbol,
+        previousQty,
+        currentQty: 0, // Position no longer exists
+        tradeStage: 'close', // Position closed/expired
+      });
+    }
+  }
+
+  // Second pass (part 2): Check positions that had null conid on previous day
+  // These won't be in previousByConid, so we need to check previousBySymbolKey separately
+  for (const [symbolKey, previousPos] of previousBySymbolKey.entries()) {
+    // Skip close detection entirely if current positions haven't been ingested yet
+    if (skipCloseDetection) {
+      break;
+    }
+
+    // Skip if already processed (had a conid)
+    if (processedPreviousPositions.has(previousPos.id)) {
+      continue;
+    }
+
+    // Skip if this position exists in current positions
+    if (currentSymbolKeys.has(symbolKey)) {
+      continue;
+    }
+
+    // Also check if there's a matching current position by conid (in case conid was added on current day)
+    if (previousPos.conid && currentConids.has(previousPos.conid)) {
       continue;
     }
 
     // This position existed before but doesn't exist now - it closed/expired
     const previousQty = Number(previousPos.quantity) || 0;
-    
+
     // Only create QUANTITY_CHANGE if previous quantity was non-zero
     if (previousQty !== 0 && previousPos.accountId && previousPos.strategyId) {
       // Group by strategy
