@@ -47,16 +47,16 @@ export function CreateAssetThesisDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border">
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-slate-900">Create Asset Thesis</h2>
+            <h2 className="text-lg font-semibold text-foreground">Create Asset Thesis</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -73,15 +73,15 @@ export function CreateAssetThesisDialog({
 
         {/* Pre-linked items badges */}
         {(prefilledMainClaimIds.length > 0 || prefilledThesisIds.length > 0) && (
-          <div className="px-6 py-3 border-t border-slate-200 bg-purple-50 space-y-2">
+          <div className="px-6 py-3 border-t border bg-purple-50 dark:bg-purple-900/20 space-y-2">
             {prefilledMainClaimIds.length > 0 && (
-              <p className="text-sm text-purple-900">
+              <p className="text-sm text-purple-900 dark:text-purple-100">
                 <strong>Linked Claims:</strong> {prefilledMainClaimIds.length} main claim
                 {prefilledMainClaimIds.length !== 1 ? 's' : ''} will be linked
               </p>
             )}
             {prefilledThesisIds.length > 0 && (
-              <p className="text-sm text-purple-900">
+              <p className="text-sm text-purple-900 dark:text-purple-100">
                 <strong>Linked Macro Theses:</strong> {prefilledThesisIds.length} macro thesis
                 {prefilledThesisIds.length !== 1 ? 'es' : ''} will be linked
               </p>

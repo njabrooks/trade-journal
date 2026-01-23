@@ -140,14 +140,14 @@ export function ManageRelatedMacroThesesDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-foreground">
               Manage Related Macro Theses
             </h2>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {assetThesisTitle}
             </p>
           </div>
@@ -165,31 +165,31 @@ export function ManageRelatedMacroThesesDialog({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-800 dark:text-red-300">
               {error}
             </div>
           )}
 
           {/* Current Related Theses */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">
+            <h3 className="text-sm font-semibold text-foreground mb-3">
               Current Related Macro Theses ({currentRelated.length})
             </h3>
             {currentRelated.length === 0 ? (
-              <p className="text-sm text-slate-500 italic">No related macro theses yet.</p>
+              <p className="text-sm text-muted-foreground italic">No related macro theses yet.</p>
             ) : (
               <div className="space-y-2">
                 {currentRelated.map((related) => (
                   <div
                     key={related.id}
-                    className="flex items-start gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg"
+                    className="flex items-start gap-3 p-3 bg-muted border rounded-lg"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-slate-900">
+                      <div className="text-sm font-medium text-foreground">
                         {related.title}
                       </div>
                       {related.relationshipNote && (
-                        <div className="text-xs text-slate-600 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {related.relationshipNote}
                         </div>
                       )}
@@ -214,13 +214,13 @@ export function ManageRelatedMacroThesesDialog({
           </div>
 
           {/* Add New Related Thesis */}
-          <div className="pt-4 border-t border-slate-200">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">
+          <div className="pt-4 border-t border-border">
+            <h3 className="text-sm font-semibold text-foreground mb-3">
               Add Related Macro Thesis
             </h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-xs font-medium text-foreground mb-1">
                   Select Macro Thesis
                 </label>
                 {loadingTheses ? (
@@ -228,7 +228,7 @@ export function ManageRelatedMacroThesesDialog({
                     <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                   </div>
                 ) : availableTheses.length === 0 ? (
-                  <p className="text-sm text-slate-500 italic">
+                  <p className="text-sm text-muted-foreground italic">
                     All available macro theses are already linked.
                   </p>
                 ) : (
@@ -236,7 +236,7 @@ export function ManageRelatedMacroThesesDialog({
                     value={selectedThesisId}
                     onChange={(e) => setSelectedThesisId(e.target.value)}
                     disabled={adding}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                   >
                     <option value="">Select a thesis...</option>
                     {availableTheses.map((thesis) => (
@@ -250,7 +250,7 @@ export function ManageRelatedMacroThesesDialog({
 
               {selectedThesisId && (
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">
+                  <label className="block text-xs font-medium text-foreground mb-1">
                     Relationship Note (Optional)
                   </label>
                   <Input
@@ -288,7 +288,7 @@ export function ManageRelatedMacroThesesDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-4 border-t border-slate-200">
+        <div className="flex justify-end gap-3 p-4 border-t border-border">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>

@@ -142,49 +142,49 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200';
       case 'high':
-        return 'bg-orange-50 border-orange-200 text-orange-800';
+        return 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-200';
       case 'medium':
-        return 'bg-amber-50 border-amber-200 text-amber-800';
+        return 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200';
       case 'low':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200';
       case 'info':
-        return 'bg-slate-50 border-slate-200 text-slate-700';
+        return 'bg-muted border text-foreground';
       default:
-        return 'bg-slate-50 border-slate-200 text-slate-700';
+        return 'bg-muted border text-foreground';
     }
   };
 
   const getSeverityBadgeColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
       case 'high':
-        return 'bg-orange-100 text-orange-700';
+        return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300';
       case 'medium':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
       case 'low':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
       case 'info':
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-muted text-muted-foreground';
       default:
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const getEvidenceTypeColor = (evidenceType: string) => {
     switch (evidenceType) {
       case 'strong_validation':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
       case 'weak_validation':
-        return 'bg-emerald-50 text-emerald-600';
+        return 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400';
       case 'strong_invalidation':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
       case 'weak_invalidation':
-        return 'bg-red-50 text-red-600';
+        return 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400';
       default:
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -200,8 +200,8 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
   if (loading) {
     return (
       <div className="py-4 text-center">
-        <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-slate-200 border-t-slate-600"></div>
-        <p className="mt-2 text-sm text-slate-500">Loading triage alerts...</p>
+        <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-muted border-t-foreground"></div>
+        <p className="mt-2 text-sm text-muted-foreground">Loading triage alerts...</p>
       </div>
     );
   }
@@ -216,8 +216,8 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
     return (
       <div className="py-6 text-center">
         <CheckCircle className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
-        <p className="text-sm text-slate-600 font-medium">No pending alerts</p>
-        <p className="text-xs text-slate-400 mt-1">All triage items have been addressed</p>
+        <p className="text-sm text-foreground font-medium">No pending alerts</p>
+        <p className="text-xs text-muted-foreground mt-1">All triage items have been addressed</p>
       </div>
     );
   }
@@ -296,7 +296,7 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
                   </h4>
                   <div className="space-y-2">
                     {record.aiAnalysis.validationPointsAffected.map((vp, i) => (
-                      <div key={i} className="bg-white/50 rounded-md p-2.5 text-sm">
+                      <div key={i} className="bg-card/50 rounded-md p-2.5 text-sm">
                         <div className="flex items-start justify-between gap-2">
                           <p className="font-medium">{vp.pointStatement}</p>
                           <span className={`px-1.5 py-0.5 text-xs rounded flex-shrink-0 ${getEvidenceTypeColor(vp.evidenceType)}`}>
@@ -343,7 +343,7 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
                         href={result.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block bg-white/50 rounded-md p-2 hover:bg-white/80 transition-colors group"
+                        className="block bg-card/50 rounded-md p-2 hover:bg-card/80 transition-colors group"
                       >
                         <div className="flex items-start gap-2">
                           <ExternalLink className="w-3.5 h-3.5 mt-0.5 opacity-40 group-hover:opacity-70 flex-shrink-0" />
@@ -371,10 +371,10 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
 
               {/* Action Required (for non-REVIEW_CONTENT records) */}
               {record.actionRequired && record.triageRule !== 'REVIEW_CONTENT' && (
-                <div className="bg-white/50 rounded-md p-3">
+                <div className="bg-card/50 rounded-md p-3">
                   <p className="text-sm">{record.actionRequired}</p>
                   {record.suggestedSkill && (
-                    <p className="text-xs mt-2 font-mono bg-white/50 px-2 py-1 rounded inline-block">
+                    <p className="text-xs mt-2 font-mono bg-muted px-2 py-1 rounded inline-block">
                       {record.suggestedSkill}
                     </p>
                   )}
@@ -419,7 +419,7 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-slate-500"
+                  className="text-muted-foreground"
                   disabled={actioningId === record.id}
                   onClick={() => handleAction(record.id, 'dismissed', 'Dismissed by user')}
                 >

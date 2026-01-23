@@ -64,9 +64,9 @@ export function AccountSelector({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:ring-offset-background"
       >
-        <span className="uppercase tracking-wide text-slate-400">{label}:</span>
+        <span className="uppercase tracking-wide text-muted-foreground">{label}:</span>
         <span>{displayText}</span>
         <svg
           className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -84,14 +84,14 @@ export function AccountSelector({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 z-50 mt-2 w-64 rounded-lg border border-slate-200 bg-white shadow-lg">
+        <div className="absolute left-0 z-50 mt-2 w-64 rounded-lg border bg-card shadow-lg">
           <div className="max-h-60 overflow-auto py-1">
             {showAllOption && (
               <button
                 type="button"
                 onClick={() => updateAccount(null)}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 ${
-                  !selectedAccountId ? "bg-blue-50 text-blue-700" : "text-slate-700"
+                className={`w-full px-4 py-2 text-left text-sm hover:bg-muted ${
+                  !selectedAccountId ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" : "text-foreground"
                 }`}
               >
                 All Accounts
@@ -102,17 +102,17 @@ export function AccountSelector({
                 key={account.id}
                 type="button"
                 onClick={() => updateAccount(account.id)}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-50 ${
+                className={`w-full px-4 py-2 text-left text-sm hover:bg-muted ${
                   selectedAccountId === account.id
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-slate-700"
+                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                    : "text-foreground"
                 }`}
               >
                 <div className="font-medium">
                   {account.label || account.brokerAccountId}
                 </div>
                 {account.label && (
-                  <div className="text-xs text-slate-500">{account.brokerAccountId}</div>
+                  <div className="text-xs text-muted-foreground">{account.brokerAccountId}</div>
                 )}
               </button>
             ))}

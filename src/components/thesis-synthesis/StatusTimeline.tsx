@@ -41,16 +41,16 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
   };
 
   const statusColors: Record<string, string> = {
-    draft: 'border-purple-300 bg-purple-50',
-    active: 'border-blue-400 bg-blue-50',
-    complete: 'border-emerald-400 bg-emerald-50',
-    rejected: 'border-slate-200 bg-slate-50',
+    draft: 'border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20',
+    active: 'border-blue-400 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20',
+    complete: 'border-emerald-400 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20',
+    rejected: 'border-border bg-muted',
   };
 
   const confidenceColors: Record<string, string> = {
-    low: 'bg-red-100 text-red-700',
-    medium: 'bg-amber-100 text-amber-700',
-    high: 'bg-emerald-100 text-emerald-700',
+    low: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+    medium: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
+    high: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
   };
 
   const formatTimestamp = (date: Date) => {
@@ -80,14 +80,14 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-4">
+      <div className="bg-card rounded-lg border p-4">
         <div className="animate-pulse space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-slate-200 rounded-full" />
+              <div className="w-8 h-8 bg-muted rounded-full" />
               <div className="flex-1">
-                <div className="h-4 bg-slate-200 rounded w-1/2 mb-2" />
-                <div className="h-3 bg-slate-100 rounded w-full" />
+                <div className="h-4 bg-muted rounded w-1/2 mb-2" />
+                <div className="h-3 bg-muted rounded w-full" />
               </div>
             </div>
           ))}
@@ -98,10 +98,10 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
 
   if (history.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-6 text-center">
-        <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-        <p className="text-sm text-slate-500">No status history recorded yet.</p>
-        <p className="text-xs text-slate-400 mt-1">
+      <div className="bg-card rounded-lg border p-6 text-center">
+        <Clock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">No status history recorded yet.</p>
+        <p className="text-xs text-muted-foreground mt-1">
           Status changes will appear here as evidence is recorded.
         </p>
       </div>
@@ -114,19 +114,19 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
   );
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200">
-      <div className="px-4 py-3 border-b border-slate-100">
-        <h4 className="text-sm font-semibold text-slate-900">Status History</h4>
-        <p className="text-xs text-slate-500 mt-0.5">
+    <div className="bg-card rounded-lg border">
+      <div className="px-4 py-3 border-b border-border">
+        <h4 className="text-sm font-semibold text-foreground">Status History</h4>
+        <p className="text-xs text-muted-foreground mt-0.5">
           {history.length} status change{history.length !== 1 ? 's' : ''} recorded
         </p>
       </div>
 
       <div className="relative">
         {/* Timeline line */}
-        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-200" />
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border" />
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-border">
           {sortedHistory.map((record, index) => {
             const isExpanded = expandedItems.has(record.id);
             const evidence = record.evidence as {
@@ -144,8 +144,8 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
                 {/* Timeline node */}
                 <div
                   className={`absolute left-4 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    statusColors[record.newStatus] || 'border-slate-300 bg-white'
-                  } ${isFirst ? 'ring-2 ring-offset-2 ring-blue-200' : ''}`}
+                    statusColors[record.newStatus] || 'border-border bg-card'
+                  } ${isFirst ? 'ring-2 ring-offset-2 ring-blue-200 dark:ring-blue-800 ring-offset-background' : ''}`}
                 >
                   {statusIcons[record.newStatus]}
                 </div>
@@ -165,7 +165,7 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
                             >
                               {record.previousStatus || 'initial'}
                             </span>
-                            <span className="text-slate-400">&rarr;</span>
+                            <span className="text-muted-foreground">&rarr;</span>
                             <span
                               className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded ${
                                 statusColors[record.newStatus]
@@ -187,14 +187,14 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
                         {/* Confidence */}
                         <span
                           className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
-                            confidenceColors[record.confidence] || 'bg-slate-100 text-slate-600'
+                            confidenceColors[record.confidence] || 'bg-muted text-muted-foreground'
                           }`}
                         >
                           {record.confidence} confidence
                         </span>
 
                         {/* Assessed by */}
-                        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                           {record.assessedBy === 'claude' ? (
                             <Bot className="w-3 h-3" />
                           ) : (
@@ -205,7 +205,7 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
                       </div>
 
                       {/* Timestamp */}
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {formatRelativeTime(record.timestamp)}
                         <span className="mx-1">&bull;</span>
                         {formatTimestamp(record.timestamp)}
@@ -215,7 +215,7 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
                     {/* Expand button */}
                     <button
                       onClick={() => toggleItem(record.id)}
-                      className="p-1 text-slate-400 hover:text-slate-600 rounded"
+                      className="p-1 text-muted-foreground hover:text-foreground rounded"
                     >
                       {isExpanded ? (
                         <ChevronDown className="w-4 h-4" />
@@ -227,11 +227,11 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
 
                   {/* Evidence (always show summary) */}
                   {evidence && (
-                    <div className="mt-2 text-sm text-slate-700">
-                      <span className="text-xs text-slate-500">Source: </span>
+                    <div className="mt-2 text-sm text-foreground">
+                      <span className="text-xs text-muted-foreground">Source: </span>
                       <span className="font-medium">{evidence.source}</span>
                       {!isExpanded && (
-                        <p className="mt-1 text-slate-600 line-clamp-2">{evidence.summary}</p>
+                        <p className="mt-1 text-muted-foreground line-clamp-2">{evidence.summary}</p>
                       )}
                     </div>
                   )}
@@ -241,11 +241,11 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
                     <div className="mt-3 space-y-2">
                       {evidence && (
                         <>
-                          <div className="bg-slate-50 rounded-md p-3">
-                            <h6 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                          <div className="bg-muted rounded-md p-3">
+                            <h6 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                               Evidence Summary
                             </h6>
-                            <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                            <p className="text-sm text-foreground whitespace-pre-wrap">
                               {evidence.summary}
                             </p>
                           </div>
@@ -266,22 +266,22 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
 
                       {/* User action */}
                       {record.userActionRequired && (
-                        <div className="bg-amber-50 rounded-md p-3 border border-amber-100">
-                          <h6 className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-1">
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-md p-3 border border-amber-100 dark:border-amber-800">
+                          <h6 className="text-xs font-medium text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">
                             Action Required
                           </h6>
                           {record.userActionTaken ? (
-                            <p className="text-sm text-amber-900">
+                            <p className="text-sm text-amber-900 dark:text-amber-100">
                               <CheckCircle2 className="w-3 h-3 inline mr-1 text-green-600" />
                               {record.userActionTaken}
                               {record.userActionTimestamp && (
-                                <span className="ml-2 text-xs text-amber-600">
+                                <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">
                                   ({formatTimestamp(record.userActionTimestamp)})
                                 </span>
                               )}
                             </p>
                           ) : (
-                            <p className="text-sm text-amber-700">
+                            <p className="text-sm text-amber-700 dark:text-amber-300">
                               <AlertTriangle className="w-3 h-3 inline mr-1" />
                               Action pending
                             </p>

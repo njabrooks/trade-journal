@@ -4,7 +4,10 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Sun, Moon } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/components/theme-provider";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -45,6 +48,7 @@ function isUuid(str: string): boolean {
 export function PersistentHeader() {
   const pathname = usePathname();
   const [entityLabels, setEntityLabels] = useState<Record<string, string>>({});
+  const { theme, toggleTheme } = useTheme();
 
   // Extract entity IDs from various routes
   const strategyMatch = pathname.match(/^\/strategies\/([^/]+)/);
@@ -149,7 +153,7 @@ export function PersistentHeader() {
         alt="Capital Logo"
         width={2265}
         height={478}
-        className="h-9 w-auto"
+        className="h-9 w-auto dark:invert"
         quality={100}
         priority
       />
@@ -176,6 +180,21 @@ export function PersistentHeader() {
           </BreadcrumbList>
         </Breadcrumb>
       )}
+      <div className="ml-auto">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={toggleTheme}
+          className="h-5 w-5"
+          aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+        >
+          {theme === "light" ? (
+            <Moon className="h-3.5 w-3.5" />
+          ) : (
+            <Sun className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      </div>
     </header>
   );
 }

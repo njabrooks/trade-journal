@@ -135,7 +135,7 @@ export default function RecomputePage() {
       subtitle="Trigger recomputation of portfolio snapshots, strategy metrics, and triage records"
     >
 
-      <div className="bg-blue-50 border border-blue-200 rounded p-4 mb-6 text-blue-800 text-sm">
+      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded p-4 mb-6 text-blue-800 dark:text-blue-200 text-sm">
         <p className="font-semibold mb-2">What gets recomputed:</p>
         <ul className="list-disc list-inside space-y-1">
           <li>
@@ -160,13 +160,13 @@ export default function RecomputePage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4 mb-6 text-red-800">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded p-4 mb-6 text-red-800 dark:text-red-200">
           <p className="font-semibold">Error:</p>
           <p>{error}</p>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-card rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Recompute Configuration</h2>
 
         <div className="space-y-4">
@@ -280,7 +280,7 @@ export default function RecomputePage() {
           <button
             onClick={handleRecompute}
             disabled={recomputing || !selectedAccountId}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold"
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed font-semibold"
           >
             {recomputing ? 'Recomputing...' : 'Recompute All Derived Data'}
           </button>
@@ -290,13 +290,13 @@ export default function RecomputePage() {
       {/* Note: Backfill Blotter Matching section removed - blotter system deprecated (2026-01-16) */}
 
       {result && (
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-card rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4 text-green-800">
             {result.success ? 'Recompute Successful' : 'Recompute Failed'}
           </h2>
 
           {result.message && (
-            <p className="mb-4 text-gray-700">{result.message}</p>
+            <p className="mb-4 text-foreground">{result.message}</p>
           )}
 
           {result.results && (
@@ -309,7 +309,7 @@ export default function RecomputePage() {
                       {result.results.autoStrategies.error}
                     </p>
                   ) : (
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                       <p>Strategies created: {result.results.autoStrategies.strategiesCreated}</p>
                       <p>Positions linked: {result.results.autoStrategies.positionsLinked}</p>
                       {typeof result.results.autoStrategies.tradesLinked === 'number' && (
@@ -325,7 +325,7 @@ export default function RecomputePage() {
                 {result.results.portfolio && 'error' in result.results.portfolio ? (
                   <p className="text-red-600 text-sm">{result.results.portfolio.error}</p>
                 ) : (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     <p>
                       Account-level: {result.results.portfolio?.account ?? 0} snapshots
                     </p>
@@ -345,7 +345,7 @@ export default function RecomputePage() {
                     {result.results.strategyMetrics.error}
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {result.results.strategyMetrics?.count ?? 0} strategy-date combinations
                   </p>
                 )}
@@ -356,7 +356,7 @@ export default function RecomputePage() {
                 {result.results.triage && 'error' in result.results.triage ? (
                   <p className="text-red-600 text-sm">{result.results.triage.error}</p>
                 ) : (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     <p>Position-level: {result.results.triage?.position ?? 0} records</p>
                     <p>Strategy-level: {result.results.triage?.strategy ?? 0} records</p>
                     {typeof result.results.triage?.quantityChange === 'number' && (
@@ -370,7 +370,7 @@ export default function RecomputePage() {
 
               {result.results.datesProcessed && (
                 <div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     Total dates processed: {result.results.datesProcessed}
                   </p>
                 </div>
@@ -378,7 +378,7 @@ export default function RecomputePage() {
 
               {result.snapshotDate && (
                 <div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Snapshot date: {result.snapshotDate}
                   </p>
                 </div>
@@ -386,7 +386,7 @@ export default function RecomputePage() {
 
               {result.dateRange && (
                 <div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Date range: {result.dateRange.startDate} to {result.dateRange.endDate}
                   </p>
                 </div>
@@ -396,7 +396,7 @@ export default function RecomputePage() {
         </div>
       )}
 
-      <div className="mt-6 bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+      <div className="mt-6 bg-muted rounded-lg p-4 text-sm text-muted-foreground">
         <p className="font-semibold mb-2">Tips:</p>
         <ul className="list-disc list-inside space-y-1">
           <li>

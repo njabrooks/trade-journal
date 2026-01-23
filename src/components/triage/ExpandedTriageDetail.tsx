@@ -71,7 +71,7 @@ export function ExpandedTriageDetail({ record, onDismiss, onActionComplete, init
       );
     default:
       return (
-        <div className="text-slate-500">
+        <div className="text-muted-foreground">
           Unknown object type: {record.objectType}
         </div>
       );
@@ -111,7 +111,7 @@ function PositionStrategyDetail({
 
   if (!positionRecord) {
     return (
-      <div className="text-slate-500">
+      <div className="text-muted-foreground">
         No position/strategy data available.
       </div>
     );
@@ -220,11 +220,11 @@ function PositionStrategyDetail({
       {positionRecord.notes &&
        !isTradeMetadataTrigger(positionRecord.recommendedAction) && (
         <div className="space-y-3">
-          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             Notes
           </p>
           <div className="px-0">
-            <p className="text-sm text-slate-700 leading-relaxed">{positionRecord.notes}</p>
+            <p className="text-sm text-foreground leading-relaxed">{positionRecord.notes}</p>
           </div>
         </div>
       )}
@@ -372,7 +372,7 @@ function ThesisDetail({
     const config: Record<string, { icon: React.ReactNode; bgColor: string; textColor: string; label: string }> = {
       strong_validation: { icon: <TrendingUp className="h-4 w-4" />, bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', label: 'Strong Validation' },
       weak_validation: { icon: <TrendingUp className="h-4 w-4" />, bgColor: 'bg-green-50', textColor: 'text-green-600', label: 'Weak Validation' },
-      neutral: { icon: <Minus className="h-4 w-4" />, bgColor: 'bg-slate-50', textColor: 'text-slate-600', label: 'Neutral' },
+      neutral: { icon: <Minus className="h-4 w-4" />, bgColor: 'bg-slate-50', textColor: 'text-muted-foreground', label: 'Neutral' },
       weak_invalidation: { icon: <TrendingDown className="h-4 w-4" />, bgColor: 'bg-orange-50', textColor: 'text-orange-600', label: 'Weak Invalidation' },
       strong_invalidation: { icon: <TrendingDown className="h-4 w-4" />, bgColor: 'bg-red-50', textColor: 'text-red-700', label: 'Strong Invalidation' },
     };
@@ -490,37 +490,37 @@ function ThesisDetail({
 
       {/* Content Summary (for monitoring triggers) */}
       {isMonitoringContent && contentSummary && (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+        <div className="bg-slate-50 border border rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Newspaper className="h-4 w-4 text-slate-600" />
-            <p className="text-sm font-semibold text-slate-800">Content Summary</p>
+            <Newspaper className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-semibold text-foreground">Content Summary</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             {contentSummary.totalArticles !== undefined && (
               <div>
-                <p className="text-slate-500">Articles Scanned</p>
-                <p className="font-medium text-slate-900">{contentSummary.totalArticles}</p>
+                <p className="text-muted-foreground">Articles Scanned</p>
+                <p className="font-medium text-foreground">{contentSummary.totalArticles}</p>
               </div>
             )}
             {contentSummary.relevantArticles !== undefined && (
               <div>
-                <p className="text-slate-500">Relevant Found</p>
-                <p className="font-medium text-slate-900">{contentSummary.relevantArticles}</p>
+                <p className="text-muted-foreground">Relevant Found</p>
+                <p className="font-medium text-foreground">{contentSummary.relevantArticles}</p>
               </div>
             )}
             {contentSummary.sources && contentSummary.sources.length > 0 && (
               <div className="col-span-2">
-                <p className="text-slate-500">Sources</p>
-                <p className="font-medium text-slate-900">{contentSummary.sources.join(', ')}</p>
+                <p className="text-muted-foreground">Sources</p>
+                <p className="font-medium text-foreground">{contentSummary.sources.join(', ')}</p>
               </div>
             )}
           </div>
 
           {contentSummary.searchQuery && (
             <div className="text-xs">
-              <p className="text-slate-500">Search Query</p>
-              <p className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded mt-1">
+              <p className="text-muted-foreground">Search Query</p>
+              <p className="font-mono text-foreground bg-slate-100 px-2 py-1 rounded mt-1">
                 {contentSummary.searchQuery}
               </p>
             </div>
@@ -540,7 +540,7 @@ function ThesisDetail({
               <Badge className={`${
                 aiAnalysis.relevanceScore >= 0.7 ? 'bg-emerald-100 text-emerald-700' :
                 aiAnalysis.relevanceScore >= 0.4 ? 'bg-amber-100 text-amber-700' :
-                'bg-slate-100 text-slate-700'
+                'bg-slate-100 text-foreground'
               }`}>
                 {Math.round(aiAnalysis.relevanceScore * 100)}% relevant
               </Badge>
@@ -569,11 +569,11 @@ function ThesisDetail({
 
       {/* Validation Points Affected - V&I Point Review */}
       {aiAnalysis?.validationPointsAffected && aiAnalysis.validationPointsAffected.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-          <div className="px-4 py-2 bg-slate-50 border-b border-slate-200">
+        <div className="bg-card border border rounded-lg overflow-hidden">
+          <div className="px-4 py-2 bg-slate-50 border-b border">
             <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-slate-600" />
-              <p className="text-sm font-semibold text-slate-700">Validation Points Affected</p>
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm font-semibold text-foreground">Validation Points Affected</p>
               <Badge variant="outline" className="text-xs">
                 {aiAnalysis.validationPointsAffected.length}
               </Badge>
@@ -601,7 +601,7 @@ function ThesisDetail({
                         </span>
                       </div>
                       {vp.recommendedAction && (
-                        <p className="text-xs text-slate-600 mt-2 bg-white/50 px-2 py-1 rounded">
+                        <p className="text-xs text-muted-foreground mt-2 bg-card/50 px-2 py-1 rounded">
                           {vp.recommendedAction}
                         </p>
                       )}
@@ -636,24 +636,24 @@ function ThesisDetail({
 
       {/* Matched Headlines */}
       {matchedResults && matchedResults.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-          <div className="px-4 py-2 bg-slate-50 border-b border-slate-200">
-            <p className="text-sm font-semibold text-slate-700">Key Headlines</p>
+        <div className="bg-card border border rounded-lg overflow-hidden">
+          <div className="px-4 py-2 bg-slate-50 border-b border">
+            <p className="text-sm font-semibold text-foreground">Key Headlines</p>
           </div>
           <div className="divide-y divide-slate-100">
             {matchedResults.slice(0, 5).map((result, idx) => (
               <div key={idx} className="px-4 py-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {result.title ?? 'Untitled'}
                     </p>
                     {result.snippet && (
-                      <p className="text-xs text-slate-600 mt-1 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                         {result.snippet}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                       {result.source && <span>{result.source}</span>}
                       {result.publishedDate && (
                         <>
@@ -678,8 +678,8 @@ function ThesisDetail({
             ))}
           </div>
           {matchedResults.length > 5 && (
-            <div className="px-4 py-2 bg-slate-50 border-t border-slate-200">
-              <p className="text-xs text-slate-500">
+            <div className="px-4 py-2 bg-slate-50 border-t border">
+              <p className="text-xs text-muted-foreground">
                 +{matchedResults.length - 5} more results
               </p>
             </div>
@@ -826,8 +826,8 @@ function ThesisDetail({
       {/* User Notes */}
       {thesisRecord?.userNotes && (
         <div className="bg-slate-100 rounded-lg p-3">
-          <p className="text-sm font-medium text-slate-700">Notes</p>
-          <p className="text-sm text-slate-600 mt-1">{thesisRecord.userNotes}</p>
+          <p className="text-sm font-medium text-foreground">Notes</p>
+          <p className="text-sm text-muted-foreground mt-1">{thesisRecord.userNotes}</p>
         </div>
       )}
 
@@ -917,7 +917,7 @@ function ThesisDetail({
             variant="outline"
             size="sm"
             onClick={onDismiss}
-            className="gap-1 text-slate-600"
+            className="gap-1 text-muted-foreground"
           >
             <X className="h-3 w-3" />
             Dismiss
@@ -1005,8 +1005,8 @@ function InfoItem({
 }) {
   return (
     <div>
-      <p className="text-xs text-slate-500 uppercase tracking-wide">{label}</p>
-      <p className={`text-sm font-medium text-slate-900 ${valueClassName}`}>
+      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className={`text-sm font-medium text-foreground ${valueClassName}`}>
         {value}
       </p>
     </div>

@@ -144,16 +144,16 @@ export function TradeMetadataForm({
   return (
     <div className="space-y-4">
       {/* Header - Emphasizes compulsory nature */}
-      <div className="border-b border-slate-200 bg-amber-50 px-4 py-3 -mx-4 -mt-4 mb-4 rounded-t-lg">
-        <h4 className="text-sm font-semibold text-amber-900">Record Trade Context</h4>
-        <p className="mt-0.5 text-xs text-amber-700">
+      <div className="border-b border bg-amber-50 dark:bg-amber-900/20 px-4 py-3 -mx-4 -mt-4 mb-4 rounded-t-lg">
+        <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100">Record Trade Context</h4>
+        <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
           Complete this form to record your trade decision. All trades require context for the journal.
         </p>
       </div>
 
       {/* Trade Details Section */}
       {loadingTrades ? (
-        <div className="text-sm text-slate-500 py-4">Loading trade executions...</div>
+        <div className="text-sm text-muted-foreground py-4">Loading trade executions...</div>
       ) : (
         <div className="space-y-4">
           {/* Trade Execution Details with checkboxes - only show if trades exist */}
@@ -188,23 +188,23 @@ export function TradeMetadataForm({
             />
           ) : (
             /* No trades available - show info message */
-            <div className="bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
-              <div className="text-xs text-blue-800 font-medium">No trade executions found</div>
-              <p className="text-xs text-blue-600 mt-1">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md px-3 py-2">
+              <div className="text-xs text-blue-800 dark:text-blue-200 font-medium">No trade executions found</div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                 This quantity change has no matching ingested trades. You can still record the trade context (stage and reason) for the journal.
               </p>
             </div>
           )}
 
           {/* Trade Stage - REQUIRED */}
-          <div className="bg-white rounded-md border border-slate-200 p-3">
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <div className="bg-card rounded-md border p-3">
+            <label className="block text-xs font-medium text-foreground mb-1.5">
               Trade Stage <span className="text-red-500">*</span>
             </label>
             <select
               value={tradeStage}
               onChange={(e) => setTradeStage(e.target.value as TradeStage | '')}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full rounded-md border bg-background text-foreground px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="">Select trade stage...</option>
@@ -214,7 +214,7 @@ export function TradeMetadataForm({
                 </option>
               ))}
             </select>
-            <p className="mt-1.5 text-xs text-slate-500">
+            <p className="mt-1.5 text-xs text-muted-foreground">
               {tradeStage
                 ? TRADE_STAGES.find(s => s.value === tradeStage)?.description
                 : 'What type of trade action is this?'}
@@ -222,33 +222,33 @@ export function TradeMetadataForm({
           </div>
 
           {/* Trade Reason - REQUIRED */}
-          <div className="bg-white rounded-md border border-slate-200 p-3">
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">
+          <div className="bg-card rounded-md border p-3">
+            <label className="block text-xs font-medium text-foreground mb-1.5">
               Trade Reason <span className="text-red-500">*</span>
             </label>
             <textarea
               value={tradeReason}
               onChange={(e) => setTradeReason(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full rounded-md border bg-background text-foreground px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               rows={3}
               placeholder="Explain why this trade was made..."
               required
             />
-            <p className="mt-1.5 text-xs text-slate-500">
+            <p className="mt-1.5 text-xs text-muted-foreground">
               Brief narrative explaining the reasoning behind this trade
             </p>
           </div>
 
           {/* Signal Link - OPTIONAL */}
           {showSignalLink && availableSignals.length > 0 && (
-            <div className="bg-white rounded-md border border-slate-200 p-3">
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                Triggered by Signal <span className="text-slate-400">(optional)</span>
+            <div className="bg-card rounded-md border p-3">
+              <label className="block text-xs font-medium text-foreground mb-1.5">
+                Triggered by Signal <span className="text-muted-foreground">(optional)</span>
               </label>
               <select
                 value={signalLink}
                 onChange={(e) => setSignalLink(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full rounded-md border bg-background text-foreground px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">No signal link</option>
                 {availableSignals.map((signal) => (
@@ -257,21 +257,21 @@ export function TradeMetadataForm({
                   </option>
                 ))}
               </select>
-              <p className="mt-1.5 text-xs text-slate-500">
+              <p className="mt-1.5 text-xs text-muted-foreground">
                 Was this trade triggered by a signal? Linking helps track signal effectiveness.
               </p>
             </div>
           )}
 
           {/* Additional Notes - OPTIONAL */}
-          <div className="bg-white rounded-md border border-slate-200 p-3">
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">
-              Additional Notes <span className="text-slate-400">(optional)</span>
+          <div className="bg-card rounded-md border p-3">
+            <label className="block text-xs font-medium text-foreground mb-1.5">
+              Additional Notes <span className="text-muted-foreground">(optional)</span>
             </label>
             <textarea
               value={additionalNotes}
               onChange={(e) => setAdditionalNotes(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full rounded-md border bg-background text-foreground px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               rows={2}
               placeholder="Any additional context or notes..."
             />
@@ -279,15 +279,15 @@ export function TradeMetadataForm({
 
           {/* Error Display */}
           {error && (
-            <div className="bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
-              <div className="text-xs text-rose-600 font-medium">{error}</div>
+            <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-md px-3 py-2">
+              <div className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</div>
             </div>
           )}
 
           {/* Submit Button - NO CANCEL OPTION */}
-          <div className="pt-2 border-t border-slate-200">
+          <div className="pt-2 border-t border">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 <span className="text-red-500">*</span> Required fields must be completed
               </p>
               <button

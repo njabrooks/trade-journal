@@ -98,9 +98,9 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
           />
         ) : thesis.description ? (
           <div className="space-y-4">
-            <p className="text-sm text-slate-700 whitespace-pre-wrap">{thesis.description}</p>
-            <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-xs text-blue-700">
+            <p className="text-sm text-foreground whitespace-pre-wrap">{thesis.description}</p>
+            <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
                 Run{' '}
                 <code className="px-1 bg-blue-100 rounded font-mono">/synthesize-thesis</code>
                 {' '}to create a full articulation with key drivers, assumptions, and validation points.
@@ -109,12 +109,12 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
           </div>
         ) : (
           <div className="text-center py-4">
-            <p className="text-sm text-slate-500 mb-2">
+            <p className="text-sm text-muted-foreground mb-2">
               No articulation exists yet for this thesis.
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Use{' '}
-              <code className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">
+              <code className="px-1.5 py-0.5 bg-muted rounded font-mono">
                 /synthesize-thesis
               </code>{' '}
               to generate a Core Argument with key drivers, assumptions, and validation points.
@@ -126,7 +126,7 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
       {/* Notes Section (if present) */}
       {thesis.notes !== null && thesis.notes !== undefined && (
         <EntitySection title="Notes">
-          <pre className="text-sm text-slate-700 whitespace-pre-wrap">
+          <pre className="text-sm text-foreground whitespace-pre-wrap">
             {JSON.stringify(thesis.notes, null, 2)}
           </pre>
         </EntitySection>

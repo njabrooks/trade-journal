@@ -59,10 +59,10 @@ export function ThesisArticulationDisplay({
   const claimIdsUsed = (articulation.claimIdsUsed as string[]) || [];
 
   const confidenceColors: Record<string, string> = {
-    low: 'bg-red-100 text-red-700 border-red-200',
-    medium: 'bg-amber-100 text-amber-700 border-amber-200',
-    high: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    very_high: 'bg-blue-100 text-blue-700 border-blue-200',
+    low: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+    medium: 'bg-amber-100 text-amber-700 dark:text-amber-300 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+    high: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+    very_high: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
   };
 
   const horizonLabels: Record<string, string> = {
@@ -74,21 +74,21 @@ export function ThesisArticulationDisplay({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200">
+    <div className="bg-card rounded-lg border border">
       {/* Header - Version and metadata */}
-      <div className="px-4 py-3 border-b border-slate-100">
+      <div className="px-4 py-3 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
               v{articulation.version}
             </Badge>
-            <span className="flex items-center gap-1 text-xs text-slate-500">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />
               {new Date(articulation.createdAt).toLocaleDateString('en-GB')}
             </span>
-            <span className="text-xs text-slate-500">{claimIdsUsed.length} claims synthesized</span>
+            <span className="text-xs text-muted-foreground">{claimIdsUsed.length} claims synthesized</span>
           </div>
-          <div className="flex items-center gap-3 text-xs text-slate-500">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
             {onViewHistory && (
               <button
                 onClick={onViewHistory}
@@ -105,10 +105,10 @@ export function ThesisArticulationDisplay({
         {/* Confidence & Timeframe Row */}
         <div className="flex flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-slate-500">Confidence:</span>
+            <span className="text-xs font-medium text-muted-foreground">Confidence:</span>
             <span
               className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full border ${
-                confidenceColors[articulation.confidenceLevel] || 'bg-slate-100 text-slate-700'
+                confidenceColors[articulation.confidenceLevel] || 'bg-slate-100 text-foreground'
               }`}
             >
               {articulation.confidenceLevel.replace('_', ' ')}
@@ -116,34 +116,34 @@ export function ThesisArticulationDisplay({
           </div>
           {timeframe?.horizon && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-slate-500">Horizon:</span>
-              <span className="text-xs text-slate-700">
+              <span className="text-xs font-medium text-muted-foreground">Horizon:</span>
+              <span className="text-xs text-foreground">
                 {horizonLabels[timeframe.horizon] || timeframe.horizon}
               </span>
             </div>
           )}
           {timeframe?.expectedResolution && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-slate-500">Expected:</span>
-              <span className="text-xs text-slate-700">{timeframe.expectedResolution}</span>
+              <span className="text-xs font-medium text-muted-foreground">Expected:</span>
+              <span className="text-xs text-foreground">{timeframe.expectedResolution}</span>
             </div>
           )}
         </div>
 
         {/* Core Argument Content */}
         <div>
-          <p className="text-sm text-slate-900 whitespace-pre-wrap leading-relaxed">
+          <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
             {articulation.coreArgument}
           </p>
         </div>
 
         {/* Confidence Rationale */}
         {articulation.confidenceRationale && (
-          <div className="bg-slate-50 rounded-md p-3">
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          <div className="bg-muted rounded-md p-3">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
               Confidence Rationale
             </h4>
-            <p className="text-sm text-slate-700">{articulation.confidenceRationale}</p>
+            <p className="text-sm text-foreground">{articulation.confidenceRationale}</p>
           </div>
         )}
 
@@ -152,7 +152,7 @@ export function ThesisArticulationDisplay({
           <div>
             <button
               onClick={() => toggleSection('drivers')}
-              className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
+              className="flex items-center gap-1 text-sm font-semibold text-foreground hover:text-foreground"
             >
               {expandedSections.has('drivers') ? (
                 <ChevronDown className="w-4 h-4" />
@@ -165,13 +165,13 @@ export function ThesisArticulationDisplay({
             {expandedSections.has('drivers') && (
               <ul className="mt-2 ml-6 space-y-2">
                 {keyDrivers.map((driver, idx) => (
-                  <li key={idx} className="text-sm text-slate-700">
+                  <li key={idx} className="text-sm text-foreground">
                     <div className="flex items-start gap-2">
                       <span className="text-emerald-500 mt-1">•</span>
                       <div>
                         <span className="font-medium">{driver.driver}</span>
                         {driver.detail && (
-                          <p className="text-xs text-slate-500 mt-0.5">{driver.detail}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{driver.detail}</p>
                         )}
                       </div>
                     </div>
@@ -187,7 +187,7 @@ export function ThesisArticulationDisplay({
           <div>
             <button
               onClick={() => toggleSection('assumptions')}
-              className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
+              className="flex items-center gap-1 text-sm font-semibold text-foreground hover:text-foreground"
             >
               {expandedSections.has('assumptions') ? (
                 <ChevronDown className="w-4 h-4" />
@@ -200,13 +200,13 @@ export function ThesisArticulationDisplay({
             {expandedSections.has('assumptions') && (
               <ul className="mt-2 ml-6 space-y-2">
                 {keyAssumptions.map((assumption, idx) => (
-                  <li key={idx} className="text-sm text-slate-700">
+                  <li key={idx} className="text-sm text-foreground">
                     <div className="flex items-start gap-2">
                       <span className="text-amber-500 mt-1">•</span>
                       <div>
                         <span className="font-medium">{assumption.assumption}</span>
                         {assumption.detail && (
-                          <p className="text-xs text-slate-500 mt-0.5">{assumption.detail}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{assumption.detail}</p>
                         )}
                       </div>
                     </div>
@@ -222,7 +222,7 @@ export function ThesisArticulationDisplay({
           <div>
             <button
               onClick={() => toggleSection('gaps')}
-              className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
+              className="flex items-center gap-1 text-sm font-semibold text-foreground hover:text-foreground"
             >
               {expandedSections.has('gaps') ? (
                 <ChevronDown className="w-4 h-4" />
@@ -235,7 +235,7 @@ export function ThesisArticulationDisplay({
             {expandedSections.has('gaps') && (
               <ul className="mt-2 ml-6 space-y-1">
                 {evidenceGaps.map((gap, idx) => (
-                  <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                  <li key={idx} className="text-sm text-foreground flex items-start gap-2">
                     <span className="text-blue-500 mt-1">•</span>
                     <span>{gap}</span>
                   </li>
@@ -250,7 +250,7 @@ export function ThesisArticulationDisplay({
           <div>
             <button
               onClick={() => toggleSection('dependencies')}
-              className="flex items-center gap-1 text-sm font-semibold text-slate-700 hover:text-slate-900"
+              className="flex items-center gap-1 text-sm font-semibold text-foreground hover:text-foreground"
             >
               {expandedSections.has('dependencies') ? (
                 <ChevronDown className="w-4 h-4" />
@@ -265,24 +265,24 @@ export function ThesisArticulationDisplay({
                 {referencedTheses.map((dep, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-2 text-sm p-2 bg-purple-50 rounded-md"
+                    className="flex items-start gap-2 text-sm p-2 bg-purple-50 dark:bg-purple-900/20 rounded-md"
                   >
                     <span
                       className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
                         dep.relationship === 'depends_on'
-                          ? 'bg-purple-200 text-purple-800'
+                          ? 'bg-purple-200 text-purple-800 dark:bg-purple-800 dark:text-purple-200'
                           : dep.relationship === 'supports'
-                          ? 'bg-emerald-200 text-emerald-800'
-                          : 'bg-red-200 text-red-800'
+                          ? 'bg-emerald-200 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-200'
+                          : 'bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200'
                       }`}
                     >
                       {dep.relationship.replace('_', ' ')}
                     </span>
                     <div>
-                      <span className="font-medium text-slate-900">{dep.title || dep.thesisTitle}</span>
-                      <span className="text-slate-500 ml-1">({dep.thesisType})</span>
+                      <span className="font-medium text-foreground">{dep.title || dep.thesisTitle}</span>
+                      <span className="text-muted-foreground ml-1">({dep.thesisType})</span>
                       {dep.notes && (
-                        <p className="text-xs text-slate-600 mt-0.5">{dep.notes}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{dep.notes}</p>
                       )}
                     </div>
                   </div>
@@ -294,8 +294,8 @@ export function ThesisArticulationDisplay({
 
         {/* User Edits Note */}
         {articulation.userEdits && (
-          <div className="mt-4 pt-3 border-t border-slate-100">
-            <p className="text-xs text-slate-500">
+          <div className="mt-4 pt-3 border-t border-border">
+            <p className="text-xs text-muted-foreground">
               <span className="font-medium">User modifications:</span> {articulation.userEdits}
             </p>
           </div>
@@ -303,11 +303,11 @@ export function ThesisArticulationDisplay({
 
         {/* Staleness Check - compare current claims with claims at last articulation, not claimIdsUsed */}
         {claimCount !== undefined && claimsAtLastArticulation !== undefined && claimCount > claimsAtLastArticulation && (
-          <div className="mt-4 px-3 py-2 bg-amber-50 border border-amber-200 rounded-md">
-            <p className="text-xs text-amber-700">
+          <div className="mt-4 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
+            <p className="text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="w-3 h-3 inline mr-1" />
               {claimCount - claimsAtLastArticulation} new claims added since this articulation.
-              Consider re-synthesizing with <code className="px-1 bg-amber-100 rounded">/synthesize-thesis</code>
+              Consider re-synthesizing with <code className="px-1 bg-amber-100 dark:bg-amber-900/30 rounded">/synthesize-thesis</code>
             </p>
           </div>
         )}

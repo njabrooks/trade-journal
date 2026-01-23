@@ -28,7 +28,7 @@ export function LinkedStrategiesSection({
   const content = (
     <>
       {linkedStrategies.length === 0 ? (
-        <p className="text-sm text-slate-500">No strategies linked to this asset thesis yet.</p>
+        <p className="text-sm text-muted-foreground">No strategies linked to this asset thesis yet.</p>
       ) : (
         <UnifiedStrategiesBrowser strategies={linkedStrategies} />
       )}
@@ -58,7 +58,7 @@ export function LinkedStrategiesSection({
 
   // Standalone mode: full container with header
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
+    <div className="bg-card rounded-lg border p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-base font-semibold">
           Linked Strategies ({linkedStrategies.length})

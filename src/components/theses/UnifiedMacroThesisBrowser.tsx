@@ -223,7 +223,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
       case 'exploratory':
         return 'bg-purple-100 text-purple-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -236,9 +236,9 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
       case 'complete':
         return 'bg-emerald-100 text-emerald-700';
       case 'rejected':
-        return 'bg-slate-100 text-slate-500';
+        return 'bg-slate-100 text-muted-foreground';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -249,9 +249,9 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
       case 'bearish':
         return 'bg-rose-100 text-rose-700';
       case 'neutral':
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -264,7 +264,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
       case 'structural':
         return 'bg-indigo-100 text-indigo-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -280,19 +280,19 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
         >
           <Filter className="h-4 w-4" />
           Filters
-          {showFilters && <span className="text-xs text-slate-500">(ESC to close)</span>}
+          {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredAndSortedTheses.length} of {theses.length} theses
         </div>
       </div>
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+        <div className="bg-card rounded-lg border border p-4 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
               type="text"
@@ -306,7 +306,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {/* Thesis Type */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Thesis Type
               </label>
               <select
@@ -323,7 +323,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
             {/* Time Horizon */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Time Horizon
               </label>
               <select
@@ -340,7 +340,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
             {/* Confidence */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Confidence
               </label>
               <select
@@ -358,7 +358,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Status
               </label>
               <select
@@ -376,7 +376,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
             {/* Direction */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Direction
               </label>
               <select
@@ -413,18 +413,18 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
       )}
 
       {/* Theses Table */}
-      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <section className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           {filteredAndSortedTheses.length === 0 ? (
-            <div className="p-10 text-center text-slate-400">
+            <div className="p-10 text-center text-muted-foreground">
               No theses match the selected filters.
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('title')}
                   >
                     <div className="flex items-center gap-2">
@@ -433,7 +433,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('thesisType')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -442,7 +442,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('timeHorizon')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -451,7 +451,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('confidence')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -460,7 +460,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -469,7 +469,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('assetTheses')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -478,7 +478,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('claims')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -487,7 +487,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('strategies')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -505,12 +505,12 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                   return (
                     <Fragment key={thesis.id}>
                       {/* Main Row */}
-                      <tr className="border-b hover:bg-slate-50 transition-colors">
+                      <tr className="border-b hover:bg-muted transition-colors">
                         {/* Title */}
                         <td className="px-4 py-3">
                           <Link
                             href={`/macro-theses/${thesis.id}`}
-                            className="text-slate-900 font-medium hover:text-blue-600 truncate block"
+                            className="text-foreground font-medium hover:text-blue-600 truncate block"
                             title={thesis.title}
                           >
                             {thesis.title.split(/(\bbullish\b|\bbearish\b|\bneutral\b)/gi).map((part, i) => {
@@ -520,7 +520,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                               } else if (lower === 'bearish') {
                                 return <span key={i} className="text-rose-600 font-semibold">{part}</span>;
                               } else if (lower === 'neutral') {
-                                return <span key={i} className="text-slate-600 font-semibold">{part}</span>;
+                                return <span key={i} className="text-muted-foreground font-semibold">{part}</span>;
                               }
                               return part;
                             })}
@@ -543,7 +543,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                                 {horizonBadge.label}
                               </Badge>
                             ) : (
-                              <span className="text-xs text-slate-400">—</span>
+                              <span className="text-xs text-muted-foreground">—</span>
                             );
                           })()}
                         </td>
@@ -555,7 +555,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                               {thesis.confidenceLevel}
                             </Badge>
                           ) : (
-                            <span className="text-xs text-slate-400">—</span>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </td>
 
@@ -582,7 +582,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
                         {/* Claims */}
                         <td className="px-4 py-3 text-center">
-                          <span className="text-sm text-slate-700 font-medium">
+                          <span className="text-sm text-foreground font-medium">
                             {thesis.claimCount}
                           </span>
                         </td>
@@ -630,23 +630,23 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
                       {/* Expanded Details Row */}
                       {isExpanded && (
-                        <tr className="bg-slate-50 border-b">
+                        <tr className="bg-muted border-b">
                           <td colSpan={9} className="px-4 py-4">
                             <div className="space-y-4">
                               {/* Description */}
                               {thesis.description && (
                                 <div>
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                                  <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                                     Description
                                   </h4>
-                                  <p className="text-sm text-slate-900">{thesis.description}</p>
+                                  <p className="text-sm text-foreground">{thesis.description}</p>
                                 </div>
                               )}
 
                               {/* Sectors */}
                               {thesis.sectors && thesis.sectors.length > 0 && (
                                 <div>
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+                                  <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Sectors
                                   </h4>
                                   <div className="flex flex-wrap gap-2">
@@ -682,16 +682,16 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                               )}
 
                               {/* Metadata */}
-                              <div className="grid grid-cols-3 gap-4 pt-2 border-t border-slate-200">
+                              <div className="grid grid-cols-3 gap-4 pt-2 border-t border">
                                 <div>
-                                  <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Created:</span>
-                                  <span className="ml-2 text-sm text-slate-600">
+                                  <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Created:</span>
+                                  <span className="ml-2 text-sm text-muted-foreground">
                                     {new Date(thesis.createdAt).toLocaleDateString('en-GB')}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Updated:</span>
-                                  <span className="ml-2 text-sm text-slate-600">
+                                  <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Updated:</span>
+                                  <span className="ml-2 text-sm text-muted-foreground">
                                     {new Date(thesis.updatedAt).toLocaleDateString('en-GB')}
                                   </span>
                                 </div>

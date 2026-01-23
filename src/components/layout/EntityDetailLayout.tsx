@@ -118,7 +118,7 @@ export function EntitySection({
   return (
     <div
       className={cn(
-        'bg-white rounded-lg border border-slate-200 shadow-sm',
+        'bg-card rounded-lg border shadow-sm',
         compact ? 'p-3' : 'p-4',
         className
       )}
@@ -152,10 +152,10 @@ export function EmptySectionState({
 }: EmptySectionStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-8 text-center">
-      {icon && <div className="mb-3 text-slate-400">{icon}</div>}
-      <p className="text-sm font-medium text-slate-900">{message}</p>
+      {icon && <div className="mb-3 text-muted-foreground">{icon}</div>}
+      <p className="text-sm font-medium text-foreground">{message}</p>
       {description && (
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       )}
       {action && <div className="mt-4">{action}</div>}
     </div>
@@ -194,7 +194,7 @@ export function CollapsibleEntitySection({
     <Collapsible.Root open={open} onOpenChange={setOpen}>
       <div
         className={cn(
-          'bg-white rounded-lg border border-slate-200 shadow-sm',
+          'bg-card rounded-lg border shadow-sm',
           className
         )}
       >
@@ -202,24 +202,24 @@ export function CollapsibleEntitySection({
           className={cn(
             'flex items-center justify-between',
             compact ? 'p-3' : 'p-4',
-            open && 'border-b border-slate-100'
+            open && 'border-b border-border'
           )}
         >
           <Collapsible.Trigger asChild>
             <button
               type="button"
-              className="flex items-center gap-2 text-left hover:text-slate-600 transition-colors"
+              className="flex items-center gap-2 text-left hover:text-muted-foreground transition-colors"
             >
               <ChevronDown
                 className={cn(
-                  'h-4 w-4 text-slate-400 transition-transform duration-200',
+                  'h-4 w-4 text-muted-foreground transition-transform duration-200',
                   !open && '-rotate-90'
                 )}
               />
               <h3 className="text-base font-semibold">
                 {title}
                 {count !== undefined && (
-                  <span className="ml-1.5 text-sm font-normal text-slate-500">
+                  <span className="ml-1.5 text-sm font-normal text-muted-foreground">
                     ({count})
                   </span>
                 )}

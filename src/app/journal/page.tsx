@@ -119,32 +119,32 @@ export default async function JournalPage() {
     <DashboardShell title="Decision Journal" subtitle="Audit trail of all decisions and actions" activeNav="journal">
       <div className="space-y-6">
         {/* Statistics Card */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
+        <div className="bg-card rounded-lg border border p-6">
           <h3 className="text-lg font-semibold mb-4">Overview</h3>
           <dl className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <div>
-              <dt className="text-sm font-medium text-slate-500">Total Entries</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-900">{totalEntries}</dd>
+              <dt className="text-sm font-medium text-muted-foreground">Total Entries</dt>
+              <dd className="mt-1 text-2xl font-semibold text-foreground">{totalEntries}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Today</dt>
+              <dt className="text-sm font-medium text-muted-foreground">Today</dt>
               <dd className="mt-1 text-2xl font-semibold text-blue-600">{todayCount}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Created</dt>
+              <dt className="text-sm font-medium text-muted-foreground">Created</dt>
               <dd className="mt-1 text-2xl font-semibold text-emerald-600">{createdCount}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Updated</dt>
+              <dt className="text-sm font-medium text-muted-foreground">Updated</dt>
               <dd className="mt-1 text-2xl font-semibold text-blue-600">{updatedCount}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Deleted</dt>
+              <dt className="text-sm font-medium text-muted-foreground">Deleted</dt>
               <dd className="mt-1 text-2xl font-semibold text-red-600">{deletedCount}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">User Actions</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-900">{userActions}</dd>
+              <dt className="text-sm font-medium text-muted-foreground">User Actions</dt>
+              <dd className="mt-1 text-2xl font-semibold text-foreground">{userActions}</dd>
             </div>
           </dl>
         </div>
@@ -159,9 +159,9 @@ export default async function JournalPage() {
             underlyings={underlyings}
           />
         ) : (
-          <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
-            <p className="text-slate-600 mb-4">No journal entries found.</p>
-            <p className="text-sm text-slate-500">
+          <div className="bg-card rounded-lg border border p-12 text-center">
+            <p className="text-muted-foreground mb-4">No journal entries found.</p>
+            <p className="text-sm text-muted-foreground">
               Journal entries are automatically created when you make changes to theses, claims, signals, and
               other entities.
             </p>

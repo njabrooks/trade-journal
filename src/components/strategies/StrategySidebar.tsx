@@ -88,63 +88,63 @@ export function StrategySidebar({
   // Hierarchy accordion section
   const hierarchySection = (
     <AccordionItem value="hierarchy" className="border-b">
-      <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:no-underline">
+      <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
         Hierarchy
       </AccordionTrigger>
       <AccordionContent className="px-4 pb-4">
         <div className="space-y-3">
           {/* Linked Macro Theses (upstream) */}
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-1.5">Macro Theses</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Macro Theses</p>
             {linkedMacroTheses.length > 0 ? (
               <div className="space-y-1">
                 {linkedMacroTheses.map((mt) => (
                   <Link
                     key={mt.id}
                     href={`/macro-theses/${mt.id}`}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-muted rounded px-2 py-1 -mx-2 transition-colors"
                   >
                     <span className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
                     <span className="truncate">{mt.title}</span>
-                    <ChevronRight className="h-3 w-3 ml-auto text-slate-400 flex-shrink-0" />
+                    <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground flex-shrink-0" />
                   </Link>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 italic px-2">No linked macro theses</p>
+              <p className="text-xs text-muted-foreground italic px-2">No linked macro theses</p>
             )}
           </div>
 
           {/* Linked Asset Thesis */}
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-1.5">Asset Thesis</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Asset Thesis</p>
             {linkedAssetThesis ? (
               <Link
                 href={`/asset-theses/${linkedAssetThesis.id}`}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-muted rounded px-2 py-1 -mx-2 transition-colors"
               >
                 <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
                 <span className="truncate">{linkedAssetThesis.title}</span>
                 {linkedAssetThesis.ticker && (
-                  <span className="text-xs text-slate-500 font-mono flex-shrink-0">
+                  <span className="text-xs text-muted-foreground font-mono flex-shrink-0">
                     {linkedAssetThesis.ticker}
                   </span>
                 )}
-                <ChevronRight className="h-3 w-3 ml-auto text-slate-400 flex-shrink-0" />
+                <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground flex-shrink-0" />
               </Link>
             ) : (
-              <p className="text-xs text-slate-400 italic px-2">No linked asset thesis</p>
+              <p className="text-xs text-muted-foreground italic px-2">No linked asset thesis</p>
             )}
           </div>
 
           {/* Current Strategy */}
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-1.5">Current</p>
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-900 bg-emerald-50 rounded px-2 py-1.5 -mx-2 border border-emerald-200">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Current</p>
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground bg-emerald-50 dark:bg-emerald-900/30 rounded px-2 py-1.5 -mx-2 border border-emerald-200 dark:border-emerald-800">
               <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
               <span className="truncate">{strategy.label ?? strategy.strategyKey}</span>
               {strategy.underlyingTicker && (
-                <span className="text-xs text-slate-500 font-mono ml-auto flex-shrink-0">
+                <span className="text-xs text-muted-foreground font-mono ml-auto flex-shrink-0">
                   {strategy.underlyingTicker}
                 </span>
               )}
@@ -154,14 +154,14 @@ export function StrategySidebar({
           {/* Positions (downstream) */}
           {openPositionsCount !== undefined && openPositionsCount > 0 && (
             <div>
-              <p className="text-xs font-medium text-slate-500 mb-1.5">Positions</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Positions</p>
               <Link
                 href={`/strategies/${strategy.id}/overview`}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-muted rounded px-2 py-1 -mx-2 transition-colors"
               >
                 <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
                 <span>{openPositionsCount} open position{openPositionsCount !== 1 ? 's' : ''}</span>
-                <ChevronRight className="h-3 w-3 ml-auto text-slate-400 flex-shrink-0" />
+                <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground flex-shrink-0" />
               </Link>
             </div>
           )}
@@ -189,7 +189,7 @@ export function StrategySidebar({
             {/* Edit button - for linking positions/trades */}
             <Link
               href={`/admin/strategies/${strategy.id}/link`}
-              className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-foreground bg-card border rounded-md hover:bg-muted transition-colors"
             >
               <Pencil className="h-4 w-4" />
               {needsConfirmation ? 'Link Positions' : 'Edit'}
@@ -198,7 +198,7 @@ export function StrategySidebar({
             {!needsConfirmation && (
               <button
                 onClick={() => setShowConfirmDialog(true)}
-                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 border border-slate-200 rounded-md hover:bg-slate-200 transition-colors"
+                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-muted-foreground bg-muted border rounded-md hover:bg-accent transition-colors"
               >
                 <Pencil className="h-4 w-4" />
                 Edit Strategy

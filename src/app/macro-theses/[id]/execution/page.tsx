@@ -94,7 +94,7 @@ export default async function MacroThesisExecutionPage({ params }: ExecutionPage
       {/* Linked Strategies */}
       <EntitySection title={`Linked Strategies (${linkedStrategies.length})`}>
         {linkedStrategies.length === 0 ? (
-          <p className="text-sm text-slate-500">No strategies linked to this macro thesis yet.</p>
+          <p className="text-sm text-muted-foreground">No strategies linked to this macro thesis yet.</p>
         ) : (
           <UnifiedStrategiesBrowser strategies={linkedStrategies} />
         )}

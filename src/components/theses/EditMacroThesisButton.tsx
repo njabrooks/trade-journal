@@ -19,7 +19,7 @@ export function EditMacroThesisButton({ thesis, className }: EditMacroThesisButt
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors",
+          "inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium text-foreground bg-card border rounded-md hover:bg-muted transition-colors",
           className
         )}
       >

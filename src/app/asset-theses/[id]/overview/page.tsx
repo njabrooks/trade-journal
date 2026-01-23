@@ -55,9 +55,9 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
   // Direction badge for subtitle
   const directionBadge = thesis.direction ? (
     <span className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
-      thesis.direction === 'bullish' ? 'bg-emerald-100 text-emerald-700' :
-      thesis.direction === 'bearish' ? 'bg-red-100 text-red-700' :
-      'bg-slate-200 text-slate-700'
+      thesis.direction === 'bullish' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300' :
+      thesis.direction === 'bearish' ? 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300' :
+      'bg-muted text-muted-foreground'
     }`}>
       {thesis.direction}
     </span>
@@ -79,7 +79,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
       title={thesis.title}
       subtitle={
         <span className="inline-flex items-center gap-2">
-          Asset Thesis {thesis.underlying?.ticker && <span className="font-mono text-slate-600">({thesis.underlying.ticker})</span>}
+          Asset Thesis {thesis.underlying?.ticker && <span className="font-mono text-muted-foreground">({thesis.underlying.ticker})</span>}
           {directionBadge}
         </span>
       }
@@ -123,35 +123,35 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
         {!hasCoreArgument && hasLegacySummary && (
           <div className="space-y-4">
             <div className="mb-2 text-xs text-amber-600">(legacy summary)</div>
-            <div className="text-sm whitespace-pre-wrap text-slate-900">
+            <div className="text-sm whitespace-pre-wrap text-foreground">
               {thesis.aiSummary}
             </div>
 
             {newClaimsSinceSummary >= 3 && (
-              <div className="px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+              <div className="px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-700 dark:text-amber-300">
                 {newClaimsSinceSummary} new claims added since generation
               </div>
             )}
             {newClaimsSinceSummary < 3 && summaryDaysOld >= 30 && (
-              <div className="px-2 py-1 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+              <div className="px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-700 dark:text-amber-300">
                 Summary is {summaryDaysOld} days old
               </div>
             )}
 
-            <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-xs text-blue-700">
+            <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
                 This is a legacy summary. Run{' '}
-                <code className="px-1 bg-blue-100 rounded font-mono">/synthesize-thesis</code>
+                <code className="px-1 bg-blue-100 dark:bg-blue-900/50 rounded font-mono">/synthesize-thesis</code>
                 {' '}to create a full articulation with key drivers, assumptions, and validation points.
               </p>
             </div>
 
             {hasDescription && (
-              <div className="pt-3 border-t border-slate-200">
-                <span className="text-xs font-medium text-slate-500 block mb-2">
+              <div className="pt-3 border-t border-border">
+                <span className="text-xs font-medium text-muted-foreground block mb-2">
                   MANUAL DESCRIPTION
                 </span>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                <p className="text-sm text-foreground whitespace-pre-wrap">
                   {thesis.description}
                 </p>
               </div>
@@ -161,11 +161,11 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
 
         {!hasCoreArgument && !hasLegacySummary && hasDescription && (
           <div className="space-y-4">
-            <p className="text-sm text-slate-700 whitespace-pre-wrap">{thesis.description}</p>
-            <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
-              <p className="text-xs text-blue-700">
+            <p className="text-sm text-foreground whitespace-pre-wrap">{thesis.description}</p>
+            <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
                 Run{' '}
-                <code className="px-1 bg-blue-100 rounded font-mono">/synthesize-thesis</code>
+                <code className="px-1 bg-blue-100 dark:bg-blue-900/50 rounded font-mono">/synthesize-thesis</code>
                 {' '}to create an articulation with key drivers, assumptions, and validation points.
               </p>
             </div>
@@ -174,12 +174,12 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
 
         {!hasCoreArgument && !hasLegacySummary && !hasDescription && (
           <div className="text-center py-4">
-            <p className="text-sm text-slate-500 mb-2">
+            <p className="text-sm text-muted-foreground mb-2">
               No articulation exists yet for this thesis.
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Use{' '}
-              <code className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">
+              <code className="px-1.5 py-0.5 bg-muted rounded font-mono">
                 /synthesize-thesis
               </code>{' '}
               to generate a Core Argument with key drivers, assumptions, and validation points.
@@ -191,7 +191,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
       {/* Notes Section (if present) */}
       {thesis.notes !== null && thesis.notes !== undefined && (
         <EntitySection title="Notes">
-          <pre className="text-sm text-slate-700 whitespace-pre-wrap">
+          <pre className="text-sm text-foreground whitespace-pre-wrap">
             {JSON.stringify(thesis.notes, null, 2)}
           </pre>
         </EntitySection>

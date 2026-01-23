@@ -61,26 +61,26 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
         {/* Compact Metadata & Workflow Status - Side by Side */}
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Metadata Card - Compact */}
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="bg-card rounded-lg border border p-4">
             <h3 className="text-base font-semibold mb-3">Metadata</h3>
 
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
               <div>
-                <dt className="text-xs font-medium text-slate-500">Source</dt>
-                <dd className="mt-0.5 text-sm text-slate-900 capitalize">{artifact.sourceType}</dd>
+                <dt className="text-xs font-medium text-muted-foreground">Source</dt>
+                <dd className="mt-0.5 text-sm text-foreground capitalize">{artifact.sourceType}</dd>
               </div>
               <div>
-                <dt className="text-xs font-medium text-slate-500">Status</dt>
+                <dt className="text-xs font-medium text-muted-foreground">Status</dt>
                 <dd className="mt-0.5">
                   <span
                     className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                       artifact.status === 'structured'
-                        ? 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
                         : artifact.status === 'processing'
-                          ? 'bg-blue-100 text-blue-700'
+                          ? 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
                           : artifact.status === 'error'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-slate-200 text-slate-700'
+                            ? 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300'
+                            : 'bg-muted text-foreground'
                     }`}
                   >
                     {artifact.status}
@@ -89,27 +89,27 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
               </div>
               {artifact.author && (
                 <div>
-                  <dt className="text-xs font-medium text-slate-500">Author</dt>
-                  <dd className="mt-0.5 text-sm text-slate-900 line-clamp-1">{artifact.author}</dd>
+                  <dt className="text-xs font-medium text-muted-foreground">Author</dt>
+                  <dd className="mt-0.5 text-sm text-foreground line-clamp-1">{artifact.author}</dd>
                 </div>
               )}
               {artifact.publishedDate && (
                 <div>
-                  <dt className="text-xs font-medium text-slate-500">Published</dt>
-                  <dd className="mt-0.5 text-sm text-slate-900">
+                  <dt className="text-xs font-medium text-muted-foreground">Published</dt>
+                  <dd className="mt-0.5 text-sm text-foreground">
                     {new Date(artifact.publishedDate).toLocaleDateString('en-GB')}
                   </dd>
                 </div>
               )}
               <div>
-                <dt className="text-xs font-medium text-slate-500">Ingested</dt>
-                <dd className="mt-0.5 text-sm text-slate-900">
+                <dt className="text-xs font-medium text-muted-foreground">Ingested</dt>
+                <dd className="mt-0.5 text-sm text-foreground">
                   {new Date(artifact.ingestedAt).toLocaleDateString('en-GB')}
                 </dd>
               </div>
               {artifact.sourceUrl && (
                 <div className="col-span-2">
-                  <dt className="text-xs font-medium text-slate-500">Source URL</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">Source URL</dt>
                   <dd className="mt-0.5 text-xs">
                     <a
                       href={artifact.sourceUrl}
@@ -125,12 +125,12 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
               )}
               {artifact.tags && artifact.tags.length > 0 && (
                 <div className="col-span-2">
-                  <dt className="text-xs font-medium text-slate-500 mb-1">Tags</dt>
+                  <dt className="text-xs font-medium text-muted-foreground mb-1">Tags</dt>
                   <dd className="flex flex-wrap gap-1">
                     {artifact.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="inline-flex px-1.5 py-0.5 text-xs bg-slate-100 text-slate-700 rounded"
+                        className="inline-flex px-1.5 py-0.5 text-xs bg-muted text-foreground rounded"
                       >
                         {tag}
                       </span>
@@ -143,16 +143,16 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
 
           {/* Workflow Status Card - Compact */}
           {insight && (
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 p-4">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg border border-blue-200 dark:border-blue-800 p-4">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="text-base font-semibold text-slate-900">Workflow Status</h3>
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <h3 className="text-base font-semibold text-foreground">Workflow Status</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Processing progress
                   </p>
                 </div>
                 {draftCount === 0 && activeCount > 0 && (
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
                     <CheckCircle2 className="h-3 w-3" />
                     Complete
                   </div>
@@ -163,21 +163,21 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
                 {/* Step 1: Uploaded */}
                 <div className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-slate-900 font-medium">Uploaded to database</span>
+                  <span className="text-sm text-foreground font-medium">Uploaded to database</span>
                 </div>
 
                 {/* Step 2: Claims Extracted */}
                 <div className="flex items-start gap-2">
                   {hasClaimsStructure ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                   ) : (
-                    <Circle className="h-4 w-4 text-slate-300 flex-shrink-0 mt-0.5" />
+                    <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                   )}
-                  <span className={`text-sm ${hasClaimsStructure ? 'text-slate-900 font-medium' : 'text-slate-500'}`}>
+                  <span className={`text-sm ${hasClaimsStructure ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                     {hasClaimsStructure ? (
                       <>
                         Claims extracted{' '}
-                        <span className="text-slate-600 font-normal">
+                        <span className="text-muted-foreground font-normal">
                           ({mainClaimsCount} main, {evidenceClaimsCount} evidence)
                         </span>
                       </>
@@ -190,9 +190,9 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
                 {/* Step 3: Conversion Status */}
                 {hasClaimsStructure && draftCount > 0 && (
                   <div className="flex items-start gap-2">
-                    <Clock className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-blue-700 font-medium">
-                      <span className="text-blue-700">{draftCount}</span> claim
+                    <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                      <span className="text-blue-700 dark:text-blue-300">{draftCount}</span> claim
                       {draftCount !== 1 ? 's' : ''} ready to link
                     </span>
                   </div>
@@ -201,9 +201,9 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
                 {/* Step 4: Linked Count */}
                 {activeCount > 0 && (
                   <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-slate-900 font-medium">
-                      <span className="text-emerald-600">{activeCount}</span> claim
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-foreground font-medium">
+                      <span className="text-emerald-600 dark:text-emerald-400">{activeCount}</span> claim
                       {activeCount !== 1 ? 's' : ''} linked to theses
                     </span>
                   </div>
@@ -228,28 +228,28 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
 
         {/* Error Display */}
         {artifact.status === 'error' && artifact.processingError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-red-900 mb-2">Processing Error</h3>
-            <p className="text-sm text-red-800">{artifact.processingError}</p>
+          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-red-900 dark:text-red-200 mb-2">Processing Error</h3>
+            <p className="text-sm text-red-800 dark:text-red-300">{artifact.processingError}</p>
           </div>
         )}
 
         {/* Raw Content - Collapsible */}
-        <details className="bg-white rounded-lg border border-slate-200 group">
-          <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-slate-50 transition-colors">
+        <details className="bg-card rounded-lg border border group">
+          <summary className="flex items-center justify-between p-6 cursor-pointer hover:bg-muted transition-colors">
             <div>
               <h3 className="text-lg font-semibold">Raw Content</h3>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {artifact.rawContent.split(/\s+/).filter(Boolean).length} words •{' '}
                 {Math.ceil(artifact.rawContent.split(/\s+/).filter(Boolean).length / 200)} min read
               </p>
             </div>
-            <ChevronDown className="h-5 w-5 text-slate-400 group-open:hidden" />
-            <ChevronUp className="h-5 w-5 text-slate-400 hidden group-open:block" />
+            <ChevronDown className="h-5 w-5 text-muted-foreground group-open:hidden" />
+            <ChevronUp className="h-5 w-5 text-muted-foreground hidden group-open:block" />
           </summary>
-          <div className="px-6 pb-6 pt-2 border-t border-slate-200">
+          <div className="px-6 pb-6 pt-2 border-t border">
             <div className="prose prose-sm max-w-none">
-              <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans">
+              <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
                 {artifact.rawContent}
               </pre>
             </div>

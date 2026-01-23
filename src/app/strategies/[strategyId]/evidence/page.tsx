@@ -67,7 +67,7 @@ export default async function StrategyEvidencePage({ params }: EvidencePageProps
       subtitle={
         <span className="inline-flex items-center gap-2">
           Strategy
-          <span className="font-mono text-slate-600">({strategy.strategyKey})</span>
+          <span className="font-mono text-muted-foreground">({strategy.strategyKey})</span>
         </span>
       }
       statusBadge={statusBadge}
@@ -107,11 +107,11 @@ export default async function StrategyEvidencePage({ params }: EvidencePageProps
 
       {/* Information Box */}
       <EntitySection title="About Strategy Signals">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-muted-foreground">
           Signals define trigger conditions for your strategy. When conditions are met, a triage
           record is created with the recommended action.
         </p>
-        <ul className="mt-3 space-y-1 text-sm text-slate-600">
+        <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
           <li className="flex items-start gap-2">
             <span className="text-emerald-600 font-medium">Take Profit</span>
             <span>signals trigger when favorable conditions are met (e.g., price targets, profit %)</span>
@@ -121,7 +121,7 @@ export default async function StrategyEvidencePage({ params }: EvidencePageProps
             <span>signals trigger for risk management (e.g., stop loss, DTE thresholds)</span>
           </li>
         </ul>
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-muted-foreground">
           Price conditions require TradingView webhook integration. Position metrics (DTE, PnL%,
           sigma) are evaluated during triage computation.
         </p>

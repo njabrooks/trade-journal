@@ -42,7 +42,7 @@ export default async function StrategiesPage({ searchParams }: StrategiesPagePro
       actions={
         <Link
           href="/admin/strategies"
-          className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+          className="rounded-full border border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-border hover:text-foreground"
         >
           Manage Strategies
         </Link>
@@ -59,7 +59,7 @@ export default async function StrategiesPage({ searchParams }: StrategiesPagePro
       </section>
 
       {allStrategies.length === 0 ? (
-        <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-500">
+        <div className="bg-card rounded-lg border border p-12 text-center text-muted-foreground">
           No strategies yet. Confirm or create one to get started.
         </div>
       ) : (
@@ -79,9 +79,9 @@ function SummaryCard({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-2xl border bg-white p-6 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className={`mt-2 text-2xl font-semibold ${valueClass ?? "text-slate-900"}`}>
+    <div className="rounded-2xl border bg-card p-6 shadow-sm">
+      <p className="text-sm font-medium text-muted-foreground">{label}</p>
+      <p className={`mt-2 text-2xl font-semibold ${valueClass ?? "text-foreground"}`}>
         {value}
       </p>
     </div>

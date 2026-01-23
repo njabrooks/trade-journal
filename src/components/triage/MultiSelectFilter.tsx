@@ -89,9 +89,9 @@ export function MultiSelectFilter({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
-        <span className="uppercase tracking-wide text-slate-400">{label}:</span>
+        <span className="uppercase tracking-wide text-muted-foreground">{label}:</span>
         <span>{displayText}</span>
         {selected.length > 0 && (
           <span className="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
@@ -114,20 +114,20 @@ export function MultiSelectFilter({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg border border-slate-200 bg-white shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg border bg-card shadow-lg">
           <div className="max-h-64 overflow-y-auto p-2">
-            <div className="mb-2 flex gap-2 border-b border-slate-100 pb-2">
+            <div className="mb-2 flex gap-2 border-b border-border pb-2">
               <button
                 type="button"
                 onClick={selectAll}
-                className="flex-1 rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                className="flex-1 rounded px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
               >
                 Select All
               </button>
               <button
                 type="button"
                 onClick={clearAll}
-                className="flex-1 rounded px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                className="flex-1 rounded px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
               >
                 Clear
               </button>
@@ -138,17 +138,17 @@ export function MultiSelectFilter({
               return (
                 <label
                   key={option}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-slate-50"
+                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
                 >
                   <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => toggleOption(option)}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="flex-1 text-xs text-slate-700">{option}</span>
+                  <span className="flex-1 text-xs text-foreground">{option}</span>
                   {count > 0 && (
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                       {count}
                     </span>
                   )}

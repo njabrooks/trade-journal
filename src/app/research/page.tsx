@@ -20,7 +20,7 @@ export default async function ResearchPage() {
     >
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-muted-foreground">
             {artifacts.length} {artifacts.length === 1 ? 'artifact' : 'artifacts'}
           </div>
           <Link href="/research/upload">

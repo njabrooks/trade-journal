@@ -138,7 +138,15 @@
   background-color: rgb(241 245 249) !important; /* slate-100 */
 }
 
+.dark [data-slot="sidebar-inner"] {
+  background-color: rgb(38 38 38) !important; /* neutral-800 */
+}
+
 /* Main body background - light grey */
 [data-slot="sidebar-inset"] {
   background-color: rgb(248 250 252) !important; /* slate-50 */
+}
+
+.dark [data-slot="sidebar-inset"] {
+  background-color: rgb(23 23 23) !important; /* neutral-900 */
 }

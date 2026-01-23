@@ -593,7 +593,7 @@ function StrategiesPageContent() {
           <button
             onClick={handleRecomputeStatuses}
             disabled={recomputingStatuses}
-            className="bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 disabled:bg-gray-400 flex items-center gap-2"
+            className="bg-gray-600 dark:bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-700 dark:hover:bg-gray-400 disabled:bg-muted disabled:text-muted-foreground flex items-center gap-2"
           >
             {recomputingStatuses && <Spinner className="size-4" />}
             {recomputingStatuses ? 'Recomputing...' : 'Fix Statuses'}
@@ -609,13 +609,13 @@ function StrategiesPageContent() {
     >
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4 mb-4 text-red-800">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded p-4 mb-4 text-red-800 dark:text-red-200">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded p-4 mb-4 text-green-800">
+        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded p-4 mb-4 text-green-800 dark:text-green-200">
           {success}
         </div>
       )}
@@ -632,7 +632,7 @@ function StrategiesPageContent() {
       )}
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-card rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Create New Strategy</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -841,14 +841,14 @@ function StrategiesPageContent() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground"
               >
                 {submitting ? 'Creating...' : 'Create Strategy'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
+                className="bg-muted text-foreground py-2 px-4 rounded-md hover:bg-muted/80"
               >
                 Cancel
               </button>
@@ -861,7 +861,7 @@ function StrategiesPageContent() {
         <div>
           <h2 className="text-2xl font-semibold mb-4">All Strategies</h2>
           <div className="flex justify-between items-center mb-3">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Status: <span className="font-medium">draft</span> = auto-derived (suggested), <span className="font-medium">open/closed</span> = confirmed
             </p>
             <div className="flex gap-2">
@@ -874,7 +874,7 @@ function StrategiesPageContent() {
                       (id) => allStrategies.find((s) => s.id === id)?.status === 'draft'
                     )
                   }
-                  className="bg-green-600 text-white py-1 px-3 rounded-md text-sm hover:bg-green-700 disabled:bg-gray-300"
+                  className="bg-green-600 text-white py-1 px-3 rounded-md text-sm hover:bg-green-700 disabled:bg-muted disabled:text-muted-foreground"
                 >
                   Confirm Selected (
                   {
@@ -888,9 +888,9 @@ function StrategiesPageContent() {
             </div>
           </div>
           {mergeSelection.size >= 2 && (
-            <div className="flex items-center gap-3 mb-3 text-sm bg-purple-50 p-3 rounded-lg border border-purple-200">
+            <div className="flex items-center gap-3 mb-3 text-sm bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
               <div>
-                <label className="mr-2 font-medium text-gray-700">Merge target:</label>
+                <label className="mr-2 font-medium text-foreground">Merge target:</label>
                 <select
                   value={mergeTargetId}
                   onChange={(e) => setMergeTargetId(e.target.value)}
@@ -911,7 +911,7 @@ function StrategiesPageContent() {
               <button
                 onClick={handleMerge}
                 disabled={!mergeTargetId || merging}
-                className="bg-purple-600 text-white px-4 py-1 rounded-md hover:bg-purple-700 disabled:bg-gray-400 flex items-center gap-2"
+                className="bg-purple-600 text-white px-4 py-1 rounded-md hover:bg-purple-700 disabled:bg-muted disabled:text-muted-foreground flex items-center gap-2"
               >
                 {merging && <Spinner className="size-4" />}
                 {merging ? 'Merging...' : `Merge ${mergeSelection.size} strategies`}
@@ -919,10 +919,10 @@ function StrategiesPageContent() {
             </div>
           )}
           {mergeSelection.size >= 1 && (
-            <div className="flex items-center gap-3 mb-3 text-sm bg-blue-50 p-3 rounded-lg border border-blue-200">
-              <span className="font-medium text-gray-700">Assign to:</span>
+            <div className="flex items-center gap-3 mb-3 text-sm bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              <span className="font-medium text-foreground">Assign to:</span>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-600">Thesis:</label>
+                <label className="text-xs text-muted-foreground">Thesis:</label>
                 <select
                   value={bulkAssignThesisId}
                   onChange={(e) => setBulkAssignThesisId(e.target.value)}
@@ -937,7 +937,7 @@ function StrategiesPageContent() {
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-gray-600">View:</label>
+                <label className="text-xs text-muted-foreground">View:</label>
                 <select
                   value={bulkAssignViewId}
                   onChange={(e) => setBulkAssignViewId(e.target.value)}
@@ -954,7 +954,7 @@ function StrategiesPageContent() {
               <button
                 onClick={handleBulkAssignHierarchy}
                 disabled={(!bulkAssignThesisId && !bulkAssignViewId) || assigningBulk}
-                className="bg-blue-600 text-white px-4 py-1 rounded-md hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
+                className="bg-blue-600 text-white px-4 py-1 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground flex items-center gap-2"
               >
                 {assigningBulk && <Spinner className="size-4" />}
                 {assigningBulk
@@ -963,9 +963,9 @@ function StrategiesPageContent() {
               </button>
             </div>
           )}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="bg-card rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted">
                 <tr>
                   <th className="px-4 py-3">
                     <input
@@ -987,36 +987,36 @@ function StrategiesPageContent() {
                       }}
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Strategy Key
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Label
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Thesis
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     View
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Opened
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-border">
                 {allStrategies.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-4 text-center text-muted-foreground">
                       No strategies yet. Run a recompute to auto-generate strategies or create one manually.
                     </td>
                   </tr>
@@ -1030,7 +1030,7 @@ function StrategiesPageContent() {
                     return (
                       <tr 
                         key={strategy.id}
-                        className={isDraft ? 'bg-amber-50/30' : ''}
+                        className={isDraft ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''}
                       >
                         <td className="px-4 py-4 text-center">
                           <input
@@ -1040,7 +1040,7 @@ function StrategiesPageContent() {
                             disabled={isEditing || isEditingMetadata}
                           />
                         </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                               {isEditing ? (
                                 <input
                                   type="text"
@@ -1056,7 +1056,7 @@ function StrategiesPageContent() {
                                 strategy.strategyKey
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {isEditing ? (
                                 <input
                                   type="text"
@@ -1072,7 +1072,7 @@ function StrategiesPageContent() {
                                 strategy.autoDerivedLabel || strategy.strategyKey
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-muted-foreground">
                               {isEditingMetadata ? (
                                 <select
                                   value={metadataValues?.strategyType ?? ''}
@@ -1137,14 +1137,14 @@ function StrategiesPageContent() {
                                   </button>
                                   <button
                                     onClick={cancelEditingStrategyType}
-                                    className="text-gray-500 hover:text-gray-700 text-xs"
+                                    className="text-muted-foreground hover:text-foreground text-xs"
                                   >
                                     ✕
                                   </button>
                                 </div>
                               ) : (
                                 <span
-                                  className={`${strategy.strategyType ? 'text-gray-900 cursor-pointer hover:text-blue-600' : 'text-gray-400 cursor-pointer hover:text-blue-600'}`}
+                                  className={`${strategy.strategyType ? 'text-foreground cursor-pointer hover:text-blue-600' : 'text-muted-foreground cursor-pointer hover:text-blue-600'}`}
                                   onClick={() => startEditingStrategyType(strategy)}
                                   title="Click to edit strategy type"
                                 >
@@ -1152,7 +1152,7 @@ function StrategiesPageContent() {
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-400 italic" title="Inherited from asset thesis">
+                            <td className="px-6 py-4 text-sm text-muted-foreground italic" title="Inherited from asset thesis">
                               {(() => {
                                 const assetThesis = assetTheses.find((v) => v.id === strategy.assetThesisId);
                                 // For now, we can't show the inherited macro thesis without fetching it
@@ -1160,7 +1160,7 @@ function StrategiesPageContent() {
                                 return assetThesis ? `(via ${assetThesis.title})` : '—';
                               })()}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-500">
+                            <td className="px-6 py-4 text-sm text-muted-foreground">
                               {editingHierarchyId === strategy.id ? (
                                 <select
                                   value={hierarchyEditValues?.assetThesisId ?? ''}
@@ -1188,22 +1188,22 @@ function StrategiesPageContent() {
                                 </span>
                               )}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
                                 strategy.status === 'draft'
                                   ? 'bg-purple-100 text-purple-700'
                                   : strategy.status === 'active'
-                                  ? 'bg-blue-100 text-blue-700'
+                                  ? 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
                                   : strategy.status === 'complete'
-                                  ? 'bg-emerald-100 text-emerald-700'
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
                                   : strategy.status === 'rejected'
-                                  ? 'bg-slate-100 text-slate-500'
-                                  : 'bg-slate-100 text-slate-700'
+                                  ? 'bg-muted text-muted-foreground'
+                                  : 'bg-muted text-foreground'
                               }`}>
                                 {strategy.status}
                               </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                               {strategy.openedAt
                                 ? new Date(strategy.openedAt).toLocaleDateString('en-GB')
                                 : '-'}
@@ -1219,7 +1219,7 @@ function StrategiesPageContent() {
                                   </button>
                                   <button
                                     onClick={cancelEditingHierarchy}
-                                    className="text-gray-500 hover:text-gray-700 text-xs"
+                                    className="text-muted-foreground hover:text-foreground text-xs"
                                   >
                                     Cancel
                                   </button>
@@ -1234,7 +1234,7 @@ function StrategiesPageContent() {
                                   </button>
                                   <button
                                     onClick={cancelEditing}
-                                    className="text-gray-500 hover:text-gray-700 text-xs"
+                                    className="text-muted-foreground hover:text-foreground text-xs"
                                   >
                                     Cancel
                                   </button>
@@ -1249,7 +1249,7 @@ function StrategiesPageContent() {
                                   </button>
                                   <button
                                     onClick={cancelEditingMetadata}
-                                    className="text-gray-500 hover:text-gray-700 text-xs"
+                                    className="text-muted-foreground hover:text-foreground text-xs"
                                   >
                                     Cancel
                                   </button>
@@ -1258,7 +1258,7 @@ function StrategiesPageContent() {
                                 <>
                                   <button
                                     onClick={() => startEditing(strategy)}
-                                    className="text-gray-600 hover:text-gray-900 text-xs"
+                                    className="text-muted-foreground hover:text-foreground text-xs"
                                   >
                                     Edit
                                   </button>
@@ -1298,10 +1298,10 @@ function StrategiesPageContent() {
 
       {/* Strategy Type Selection Modal */}
       {showStrategyTypeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
             <h2 className="text-xl font-semibold mb-4">Select Strategy Type</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Please select the strategy type for the {pendingConfirmIds.length} strategy(ies) you're confirming.
               This categorizes the strategy for filtering and signal evaluation.
             </p>
@@ -1331,14 +1331,14 @@ function StrategiesPageContent() {
                   setSelectedStrategyType('');
                   setPendingConfirmIds([]);
                 }}
-                className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
+                className="bg-muted text-foreground py-2 px-4 rounded-md hover:bg-muted/80"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmWithStrategyType}
                 disabled={!selectedStrategyType || confirming}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground flex items-center gap-2"
               >
                 {confirming && <Spinner className="size-4" />}
                 {confirming ? 'Confirming...' : 'Confirm'}
@@ -1350,10 +1350,10 @@ function StrategiesPageContent() {
 
       {/* Strategy Metadata Edit Modal */}
       {editingMetadataId && metadataValues && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
             <h2 className="text-xl font-semibold mb-4">Edit Strategy Metadata</h2>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-sm text-muted-foreground mb-6">
               Changing the strategy type will trigger state code recomputation.
             </p>
 
@@ -1404,7 +1404,7 @@ function StrategiesPageContent() {
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 bg-blue-50 p-3 rounded">
+              <p className="text-xs text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/30 p-3 rounded">
                 Note: Strategy thesis and rules now come from the linked asset thesis.
                 Use the triage workflow to link strategies to asset theses.
               </p>
@@ -1413,13 +1413,13 @@ function StrategiesPageContent() {
             <div className="flex gap-2 justify-end mt-6 pt-4 border-t">
               <button
                 onClick={cancelEditingMetadata}
-                className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
+                className="bg-muted text-foreground py-2 px-4 rounded-md hover:bg-muted/80"
               >
                 Cancel
               </button>
               <button
                 onClick={saveMetadata}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground"
               >
                 Save
               </button>
@@ -1437,7 +1437,7 @@ export default function StrategiesPage() {
       <DashboardShell activeNav="admin-strategies" title="Strategy Management" subtitle="Loading...">
         <div className="flex items-center justify-center py-12">
           <Spinner className="size-8" />
-          <span className="ml-3 text-slate-600">Loading strategies...</span>
+          <span className="ml-3 text-muted-foreground">Loading strategies...</span>
         </div>
       </DashboardShell>
     }>

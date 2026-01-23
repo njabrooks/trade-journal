@@ -21,13 +21,13 @@ export function LinkedAssetThesesSection({
   linkedAssetTheses,
 }: LinkedAssetThesesSectionProps) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-4">
+    <div className="bg-card rounded-lg border p-4">
       <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="text-base font-semibold">
             Asset Theses ({linkedAssetTheses.length})
           </h3>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Includes asset theses where this is the primary macro thesis, or a related macro thesis.
           </p>
         </div>
@@ -38,7 +38,7 @@ export function LinkedAssetThesesSection({
         />
       </div>
       {linkedAssetTheses.length === 0 ? (
-        <p className="text-sm text-slate-500">No asset theses linked to this macro thesis yet.</p>
+        <p className="text-sm text-muted-foreground">No asset theses linked to this macro thesis yet.</p>
       ) : (
         <UnifiedAssetThesisBrowser assetTheses={linkedAssetTheses} />
       )}

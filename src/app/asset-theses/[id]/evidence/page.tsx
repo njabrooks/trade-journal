@@ -52,9 +52,9 @@ export default async function AssetThesisEvidencePage({ params }: EvidencePagePr
   // Direction badge for subtitle
   const directionBadge = thesis.direction ? (
     <span className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
-      thesis.direction === 'bullish' ? 'bg-emerald-100 text-emerald-700' :
-      thesis.direction === 'bearish' ? 'bg-red-100 text-red-700' :
-      'bg-slate-200 text-slate-700'
+      thesis.direction === 'bullish' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300' :
+      thesis.direction === 'bearish' ? 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300' :
+      'bg-muted text-muted-foreground'
     }`}>
       {thesis.direction}
     </span>
@@ -65,7 +65,7 @@ export default async function AssetThesisEvidencePage({ params }: EvidencePagePr
       title={thesis.title}
       subtitle={
         <span className="inline-flex items-center gap-2">
-          Asset Thesis {thesis.underlying?.ticker && <span className="font-mono text-slate-600">({thesis.underlying.ticker})</span>}
+          Asset Thesis {thesis.underlying?.ticker && <span className="font-mono text-muted-foreground">({thesis.underlying.ticker})</span>}
           {directionBadge}
         </span>
       }
@@ -105,7 +105,7 @@ export default async function AssetThesisEvidencePage({ params }: EvidencePagePr
         defaultOpen={claimsWithSources.length > 0 && claimsWithSources.length <= 5}
       >
         {claimsWithSources.length === 0 ? (
-          <p className="text-sm text-slate-500">No main claims linked to this thesis yet.</p>
+          <p className="text-sm text-muted-foreground">No main claims linked to this thesis yet.</p>
         ) : (
           <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
         )}

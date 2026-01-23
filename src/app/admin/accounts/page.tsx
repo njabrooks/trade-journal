@@ -185,19 +185,19 @@ export default function AccountsPage() {
     >
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4 mb-4 text-red-800">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded p-4 mb-4 text-red-800 dark:text-red-200">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded p-4 mb-4 text-green-800">
+        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded p-4 mb-4 text-green-800 dark:text-green-200">
           {success}
         </div>
       )}
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
+        <div className="bg-card rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">
             {editingAccount ? 'Edit Account' : 'Create New Account'}
           </h2>
@@ -215,11 +215,11 @@ export default function AccountsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, brokerAccountId: e.target.value })
                 }
-                className="w-full border rounded px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full border rounded px-3 py-2 disabled:bg-muted disabled:cursor-not-allowed"
                 placeholder="e.g., U1234567"
               />
               {editingAccount && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Broker Account ID cannot be changed
                 </p>
               )}
@@ -280,7 +280,7 @@ export default function AccountsPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground"
               >
                 {submitting
                   ? editingAccount
@@ -293,7 +293,7 @@ export default function AccountsPage() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300"
+                className="bg-muted text-foreground py-2 px-4 rounded-md hover:bg-muted/80"
               >
                 Cancel
               </button>
@@ -303,10 +303,10 @@ export default function AccountsPage() {
       )}
 
       {deletingAccount && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Delete Account</h3>
-            <p className="text-gray-700 mb-4">
+            <p className="text-foreground mb-4">
               Are you sure you want to delete account{' '}
               <span className="font-medium">{deletingAccount.brokerAccountId}</span>?
             </p>
@@ -318,14 +318,14 @@ export default function AccountsPage() {
               <button
                 onClick={() => setDeletingAccount(null)}
                 disabled={deleting}
-                className="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 disabled:bg-gray-100"
+                className="bg-muted text-foreground py-2 px-4 rounded-md hover:bg-muted/80 disabled:bg-muted"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 disabled:bg-gray-400"
+                className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 disabled:bg-muted disabled:text-muted-foreground"
               >
                 {deleting ? 'Deleting...' : 'Delete Account'}
               </button>
@@ -334,53 +334,53 @@ export default function AccountsPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-muted">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Broker Account ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Broker Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Base Currency
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Label
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Created
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-border">
             {accounts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-4 text-center text-muted-foreground">
                   No accounts found. Create your first account above.
                 </td>
               </tr>
             ) : (
               accounts.map((account) => (
                 <tr key={account.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                     {account.brokerAccountId}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {account.brokerName}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {account.baseCurrency || 'N/A'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {account.label || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                     {account.createdAt
                       ? new Date(account.createdAt).toLocaleDateString('en-GB')
                       : '-'}
@@ -389,13 +389,13 @@ export default function AccountsPage() {
                     <div className="flex gap-2 justify-end">
                       <button
                         onClick={() => handleEdit(account)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-blue-600 hover:text-blue-400 font-medium"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => setDeletingAccount(account)}
-                        className="text-red-600 hover:text-red-800 font-medium"
+                        className="text-red-600 hover:text-red-400 font-medium"
                       >
                         Delete
                       </button>

@@ -442,7 +442,7 @@ function PromptCard({
               <> • Last used: {new Date(prompt.lastUsedAt).toLocaleDateString('en-GB')}</>
             )}
           </div>
-          <div className="text-xs text-muted-foreground font-mono bg-slate-50 p-2 rounded mt-2 line-clamp-3">
+          <div className="text-xs text-muted-foreground font-mono bg-muted p-2 rounded mt-2 line-clamp-3">
             {prompt.content}
           </div>
         </div>
@@ -530,7 +530,7 @@ function TestPromptDialog({
           {rendered && (
             <div>
               <Label>Rendered Prompt</Label>
-              <div className="bg-slate-50 p-4 rounded border font-mono text-sm whitespace-pre-wrap">
+              <div className="bg-muted p-4 rounded border font-mono text-sm whitespace-pre-wrap">
                 {rendered}
               </div>
             </div>

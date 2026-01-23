@@ -73,15 +73,15 @@ export function SectorSelector({
   return (
     <div className="relative">
       {/* Selected Items Display */}
-      <div className="min-h-[42px] p-2 border border-slate-300 rounded-lg bg-white">
+      <div className="min-h-[42px] p-2 border rounded-lg bg-card">
         {value.length === 0 ? (
-          <span className="text-sm text-slate-400">{placeholder}</span>
+          <span className="text-sm text-muted-foreground">{placeholder}</span>
         ) : (
           <div className="flex flex-wrap gap-2">
             {value.map(itemValue => (
               <span
                 key={itemValue}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-sm rounded-md"
               >
                 {itemValue}
                 {!disabled && (
@@ -104,7 +104,7 @@ export function SectorSelector({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="mt-2 px-4 py-2 text-sm bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+          className="mt-2 px-4 py-2 text-sm bg-card border rounded-lg hover:bg-muted"
         >
           {isOpen ? 'Close' : 'Add Sectors/Topics'}
         </button>
@@ -112,27 +112,27 @@ export function SectorSelector({
 
       {/* Dropdown Panel */}
       {isOpen && !disabled && (
-        <div className="absolute z-10 mt-2 w-full max-w-2xl bg-white border border-slate-300 rounded-lg shadow-lg">
+        <div className="absolute z-10 mt-2 w-full max-w-2xl bg-card border rounded-lg shadow-lg">
           {/* Search */}
-          <div className="p-3 border-b border-slate-200">
+          <div className="p-3 border-b border-border">
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search taxonomy..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+              className="w-full px-3 py-2 border rounded-lg text-sm bg-background text-foreground"
             />
           </div>
 
           {/* Category Tabs */}
-          <div className="flex gap-2 p-3 border-b border-slate-200 overflow-x-auto">
+          <div className="flex gap-2 p-3 border-b border-border overflow-x-auto">
             <button
               type="button"
               onClick={() => setSelectedCategory(null)}
               className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                 selectedCategory === null
                   ? 'bg-blue-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-muted text-foreground hover:bg-accent'
               }`}
             >
               All
@@ -145,7 +145,7 @@ export function SectorSelector({
                 className={`px-3 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
                   selectedCategory === category.id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    : 'bg-muted text-foreground hover:bg-accent'
                 }`}
               >
                 {category.name}
@@ -156,7 +156,7 @@ export function SectorSelector({
           {/* Items List */}
           <div className="max-h-[300px] overflow-y-auto p-3">
             {filteredItems.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-4">No items found</p>
+              <p className="text-sm text-muted-foreground text-center py-4">No items found</p>
             ) : (
               <div className="space-y-1">
                 {filteredItems.map(item => {
@@ -173,17 +173,17 @@ export function SectorSelector({
                       disabled={isDisabled}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
                         isSelected
-                          ? 'bg-blue-50 border border-blue-200'
+                          ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800'
                           : isDisabled
-                          ? 'text-slate-400 cursor-not-allowed'
-                          : 'hover:bg-slate-50'
+                          ? 'text-muted-foreground cursor-not-allowed'
+                          : 'hover:bg-muted'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="font-medium">{item.label}</div>
                           {item.description && (
-                            <div className="text-xs text-slate-500 mt-0.5">
+                            <div className="text-xs text-muted-foreground mt-0.5">
                               {item.description}
                             </div>
                           )}
@@ -211,7 +211,7 @@ export function SectorSelector({
 
           {/* Footer */}
           {maxSelections && (
-            <div className="p-3 border-t border-slate-200 text-xs text-slate-500">
+            <div className="p-3 border-t border-border text-xs text-muted-foreground">
               {value.length} / {maxSelections} selected
             </div>
           )}
