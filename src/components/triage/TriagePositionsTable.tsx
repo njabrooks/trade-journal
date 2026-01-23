@@ -136,10 +136,10 @@ export function TriagePositionsTable({
   if (loading) {
     return (
       <div className="space-y-3">
-        <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Positions
         </p>
-        <div className="text-sm text-slate-400">Loading positions...</div>
+        <div className="text-sm text-muted-foreground">Loading positions...</div>
       </div>
     );
   }
@@ -147,7 +147,7 @@ export function TriagePositionsTable({
   if (error) {
     return (
       <div className="space-y-3">
-        <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Positions
         </p>
         <div className="text-sm text-rose-600">{error}</div>
@@ -183,12 +183,12 @@ export function TriagePositionsTable({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         Positions
       </p>
       <div className="space-y-2">
         {/* Headers */}
-        <div className="flex items-center gap-4 text-xs font-medium text-slate-600 pb-1 border-b border-slate-300/50">
+        <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground pb-1 border-b border-border/50">
           {editMode ? (
             <div className="w-8 flex items-center justify-center">
               <input
@@ -246,7 +246,7 @@ export function TriagePositionsTable({
                 <div className="w-8">{/* Spacer for checkbox column alignment */}</div>
               )}
               <div className="flex-[1.5] min-w-0">
-                <span className="font-medium text-slate-900 font-mono text-xs">{formatSymbol(pos)}</span>
+                <span className="font-medium text-foreground font-mono text-xs">{formatSymbol(pos)}</span>
               </div>
               <div className="flex-1 text-right">
                 {editMode && isSelected && onQuantityChange ? (
@@ -254,23 +254,23 @@ export function TriagePositionsTable({
                     type="number"
                     value={displayQuantity}
                     onChange={(e) => onQuantityChange?.(pos.id, parseFloat(e.target.value) || 0)}
-                    className="w-full text-right text-slate-900 border border-slate-300 rounded px-1.5 py-0.5 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full text-right text-foreground border border rounded px-1.5 py-0.5 text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 ) : (
-                  <span className="text-slate-900">
+                  <span className="text-foreground">
                     {displayQuantity.toLocaleString()}
                   </span>
                 )}
               </div>
-              <div className="flex-1 text-right text-slate-600">
+              <div className="flex-1 text-right text-muted-foreground">
                 {pos.spot !== null && pos.spot !== undefined
                   ? formatCurrency(pos.spot, 'USD', 2)
                   : "—"}
               </div>
-              <div className="flex-1 text-right font-medium text-slate-900">
+              <div className="flex-1 text-right font-medium text-foreground">
                 {formatCurrency(Math.abs(pos.absNotional || 0))}
               </div>
-              <div className="flex-1 text-right text-slate-600">
+              <div className="flex-1 text-right text-muted-foreground">
                 {costBasisMoney !== null ? formatCurrency(costBasisMoney) : "—"}
               </div>
               <div
@@ -285,10 +285,10 @@ export function TriagePositionsTable({
                   ? formatCurrency(pos.unrealizedPnl)
                   : "—"}
               </div>
-              <div className="flex-1 text-right text-slate-600">
+              <div className="flex-1 text-right text-muted-foreground">
                 {percentOfNAV !== null ? formatPercent(percentOfNAV) : "—"}
               </div>
-              <div className="flex-1 text-center text-slate-600">
+              <div className="flex-1 text-center text-muted-foreground">
                 {dte !== null ? dte : "—"}
               </div>
             </div>
@@ -296,21 +296,21 @@ export function TriagePositionsTable({
         })}
         {/* Totals Row */}
         {showAggregation && (
-          <div className="flex items-center gap-4 text-sm pt-2 border-t border-slate-300/50">
+          <div className="flex items-center gap-4 text-sm pt-2 border-t border-border/50">
             <div className="w-8">{/* Spacer for checkbox column alignment */}</div>
             <div className="flex-[1.5] min-w-0">
-              <span className="font-semibold text-slate-700">Total</span>
+              <span className="font-semibold text-foreground">Total</span>
             </div>
             <div className="flex-1 text-right">
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-foreground">
                 {totals.quantity.toLocaleString()}
               </span>
             </div>
             <div className="flex-1"></div>
-            <div className="flex-1 text-right font-semibold text-slate-900">
+            <div className="flex-1 text-right font-semibold text-foreground">
               {formatCurrency(totals.absNotional)}
             </div>
-            <div className="flex-1 text-right font-semibold text-slate-900">
+            <div className="flex-1 text-right font-semibold text-foreground">
               {formatCurrency(totals.costBasisMoney)}
             </div>
             <div
@@ -321,7 +321,7 @@ export function TriagePositionsTable({
             >
               {formatCurrency(totals.unrealizedPnl)}
             </div>
-            <div className="flex-1 text-right font-semibold text-slate-900">
+            <div className="flex-1 text-right font-semibold text-foreground">
               {formatPercent(totalPercentOfNAV)}
             </div>
             <div className="flex-1"></div>

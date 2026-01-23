@@ -45,7 +45,7 @@ export function DashboardShell({
       <PersistentHeader />
       <AppSidebar />
       <SidebarInset className="pt-7">
-        <div className="flex shrink-0 items-center gap-4 border-b bg-white px-6 py-3 h-[4rem]">
+        <div className="flex shrink-0 items-center gap-4 border-b bg-card px-6 py-3 h-[4rem]">
           <div className="flex-1">
             <h2 className="text-lg font-semibold leading-tight">{title}</h2>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}

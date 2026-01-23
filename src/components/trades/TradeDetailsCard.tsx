@@ -39,7 +39,7 @@ export function TradeDetailsCard({
 }: TradeDetailsCardProps) {
   if (!tradeDetails || tradeDetails.length === 0) {
     return (
-      <div className="text-sm text-slate-500 py-2">
+      <div className="text-sm text-muted-foreground py-2">
         No trade details available
       </div>
     );
@@ -48,7 +48,7 @@ export function TradeDetailsCard({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Trade Executions ({tradeDetails.length})
         </p>
         {editMode && (onSelectAll || onDeselectAll) && (
@@ -66,7 +66,7 @@ export function TradeDetailsCard({
               <button
                 type="button"
                 onClick={onDeselectAll}
-                className="text-xs text-slate-500 hover:text-slate-600"
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
                 Deselect All
               </button>
@@ -86,8 +86,8 @@ export function TradeDetailsCard({
               key={trade.id}
               className={`rounded-md border p-3 ${
                 editMode && isSelected
-                  ? "border-blue-300 bg-blue-50"
-                  : "border-slate-200 bg-white"
+                  ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30"
+                  : "border bg-card"
               }`}
             >
               <div className="flex items-start gap-3">
@@ -96,26 +96,26 @@ export function TradeDetailsCard({
                     type="checkbox"
                     checked={isSelected}
                     onChange={(e) => onTradeSelect(trade.id, e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="mt-1 h-4 w-4 rounded border text-blue-600 focus:ring-blue-500"
                   />
                 )}
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-medium text-slate-900">
+                      <span className="font-mono text-sm font-medium text-foreground">
                         {trade.symbol}
                       </span>
                       <span className={`text-xs font-medium ${sideColor}`}>
                         {trade.side}
                       </span>
                       {trade.assetClass && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-muted-foreground">
                           {trade.assetClass}
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-muted-foreground">
                       {new Date(trade.tradeDate).toLocaleDateString()}
                     </div>
                   </div>
@@ -123,32 +123,32 @@ export function TradeDetailsCard({
                   <div className="mt-1 flex items-center gap-4 text-sm">
                     {editMode && onQuantityChange ? (
                       <div className="flex items-center gap-1">
-                        <span className="text-xs text-slate-500">Qty:</span>
+                        <span className="text-xs text-muted-foreground">Qty:</span>
                         <input
                           type="number"
                           value={displayQuantity}
                           onChange={(e) => onQuantityChange(trade.id, parseFloat(e.target.value) || 0)}
-                          className="w-20 rounded border border-slate-300 px-2 py-0.5 text-sm"
+                          className="w-20 rounded border px-2 py-0.5 text-sm bg-background text-foreground"
                         />
                       </div>
                     ) : (
-                      <span className="text-slate-700">
+                      <span className="text-foreground">
                         Qty: <span className="font-medium">{displayQuantity}</span>
                       </span>
                     )}
 
-                    <span className="text-slate-700">
+                    <span className="text-foreground">
                       @ <span className="font-medium">{formatCurrency(trade.price)}</span>
                     </span>
 
                     {trade.netAmount !== null && (
-                      <span className="text-slate-500">
+                      <span className="text-muted-foreground">
                         Net: {formatCurrency(trade.netAmount)}
                       </span>
                     )}
 
                     {trade.fees !== null && trade.fees !== 0 && (
-                      <span className="text-slate-400 text-xs">
+                      <span className="text-muted-foreground text-xs">
                         Fees: {formatCurrency(trade.fees)}
                       </span>
                     )}

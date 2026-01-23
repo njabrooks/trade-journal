@@ -138,7 +138,7 @@ export default function ProcessesPage() {
                   {activeProcesses.map((process) => (
                     <div
                       key={process.id}
-                      className="flex items-center justify-between p-2 bg-white rounded border"
+                      className="flex items-center justify-between p-2 bg-card rounded border"
                     >
                       <div className="flex items-center gap-3">
                         <Badge className={STATUS_COLORS[process.status]}>

@@ -19,14 +19,14 @@ export default async function MacroThesesPage() {
     >
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-muted-foreground">
             {theses.length} {theses.length === 1 ? 'thesis' : 'theses'}
           </div>
           <CreateThesisButton />
         </div>
 
         {theses.length === 0 ? (
-          <div className="bg-white rounded-lg border border-slate-200 p-12 text-center text-slate-500">
+          <div className="bg-card rounded-lg border border p-12 text-center text-muted-foreground">
             No macro theses yet. Create your first thesis to get started.
           </div>
         ) : (

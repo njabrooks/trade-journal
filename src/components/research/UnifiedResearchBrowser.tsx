@@ -186,7 +186,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
       case 'error':
         return 'bg-red-100 text-red-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -202,19 +202,19 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
         >
           <Filter className="h-4 w-4" />
           Filters
-          {showFilters && <span className="text-xs text-slate-500">(ESC to close)</span>}
+          {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredAndSortedArtifacts.length} of {artifacts.length} artifacts
         </div>
       </div>
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+        <div className="bg-card rounded-lg border border p-4 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
               type="text"
@@ -228,7 +228,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Status
               </label>
               <select
@@ -246,7 +246,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
 
             {/* Source Type */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Source Type
               </label>
               <select
@@ -282,18 +282,18 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
       )}
 
       {/* Artifacts Table */}
-      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <section className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           {filteredAndSortedArtifacts.length === 0 ? (
-            <div className="p-10 text-center text-slate-400">
+            <div className="p-10 text-center text-muted-foreground">
               No artifacts match the selected filters.
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('title')}
                   >
                     <div className="flex items-center gap-2">
@@ -302,7 +302,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('sourceType')}
                   >
                     <div className="flex items-center gap-2">
@@ -311,7 +311,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('author')}
                   >
                     <div className="flex items-center gap-2">
@@ -320,7 +320,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -329,7 +329,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('claims')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -338,7 +338,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('unconfirmedClaims')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -347,7 +347,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('ingestedAt')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -365,12 +365,12 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                   return (
                     <Fragment key={artifact.id}>
                       {/* Main Row */}
-                      <tr className="border-b hover:bg-slate-50 transition-colors">
+                      <tr className="border-b hover:bg-muted transition-colors">
                         {/* Title */}
                         <td className="px-4 py-3">
                           <Link
                             href={`/research/${artifact.id}`}
-                            className="text-slate-900 font-medium hover:text-blue-600 hover:underline block line-clamp-2"
+                            className="text-foreground font-medium hover:text-blue-600 hover:underline block line-clamp-2"
                             title={artifact.title}
                           >
                             {artifact.title}
@@ -380,7 +380,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                               href={artifact.sourceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1 mt-1"
+                              className="text-xs text-muted-foreground hover:text-blue-600 flex items-center gap-1 mt-1"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <ExternalLink className="h-3 w-3" />
@@ -390,13 +390,13 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                         </td>
 
                         {/* Source Type */}
-                        <td className="px-4 py-3 text-sm text-slate-600 capitalize">
+                        <td className="px-4 py-3 text-sm text-muted-foreground capitalize">
                           {artifact.sourceType}
                         </td>
 
                         {/* Author */}
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          {artifact.author || <span className="text-slate-400">—</span>}
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {artifact.author || <span className="text-muted-foreground">—</span>}
                         </td>
 
                         {/* Status */}
@@ -408,7 +408,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
 
                         {/* Claims */}
                         <td className="px-4 py-3 text-center">
-                          <span className="text-sm text-slate-700 font-medium">
+                          <span className="text-sm text-foreground font-medium">
                             {artifact.claimCount}
                           </span>
                         </td>
@@ -420,12 +420,12 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                               {artifact.unconfirmedClaimCount}
                             </Badge>
                           ) : (
-                            <span className="text-xs text-slate-400">—</span>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </td>
 
                         {/* Ingested */}
-                        <td className="px-4 py-3 text-center text-xs text-slate-600">
+                        <td className="px-4 py-3 text-center text-xs text-muted-foreground">
                           {new Date(artifact.ingestedAt).toLocaleDateString('en-GB')}
                         </td>
 
@@ -450,11 +450,11 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
 
                       {/* Expanded Details Row */}
                       {isExpanded && (
-                        <tr className="bg-slate-50 border-b">
+                        <tr className="bg-muted border-b">
                           <td colSpan={8} className="px-4 py-4">
                             <div className="space-y-4">
                               {/* Artifact Metadata Header */}
-                              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                              <div className="flex items-center justify-between pb-3 border-b border">
                                 <div className="flex items-center gap-4">
                                   {artifact.tags && artifact.tags.length > 0 && (
                                     <div className="flex flex-wrap gap-1">
@@ -466,7 +466,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                                     </div>
                                   )}
                                   {artifact.publishedDate && (
-                                    <span className="text-xs text-slate-500">
+                                    <span className="text-xs text-muted-foreground">
                                       Published: {new Date(artifact.publishedDate).toLocaleDateString('en-GB')}
                                     </span>
                                   )}
@@ -484,7 +484,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                               {artifact.hasInsight && artifact.claimCount > 0 ? (
                                 <ArtifactClaimsBrowser artifactId={artifact.id} />
                               ) : (
-                                <div className="py-4 text-center text-sm text-slate-500">
+                                <div className="py-4 text-center text-sm text-muted-foreground">
                                   No claims have been extracted from this research artifact yet.
                                 </div>
                               )}

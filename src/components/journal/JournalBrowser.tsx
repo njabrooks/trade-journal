@@ -313,12 +313,12 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
       case 'claim':
         return 'bg-amber-100 text-amber-700';
       case 'position':
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
       case 'signal':
       case 'validation_point':
         return 'bg-cyan-100 text-cyan-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -338,7 +338,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
     if (actionType.includes('TRIGGERED')) {
       return 'bg-orange-100 text-orange-700';
     }
-    return 'bg-slate-100 text-slate-700';
+    return 'bg-slate-100 text-foreground';
   };
 
   const getSourceBadgeColor = (source: string) => {
@@ -350,7 +350,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
       case 'automation':
         return 'bg-amber-100 text-amber-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -377,14 +377,14 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
     return (
       <Fragment key={entry.id}>
         {/* Main Row */}
-        <tr className="border-b hover:bg-slate-50 transition-colors">
+        <tr className="border-b hover:bg-muted transition-colors">
           {/* Timestamp */}
           <td className="px-4 py-3 whitespace-nowrap">
             <div className="space-y-0.5">
-              <div className="text-slate-900 text-xs">
+              <div className="text-foreground text-xs">
                 {formatDate(new Date(entry.timestamp))}
               </div>
-              <div className="text-slate-500 text-xs">
+              <div className="text-muted-foreground text-xs">
                 {formatTime(new Date(entry.timestamp))}
               </div>
             </div>
@@ -405,37 +405,37 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                   {objectUrl ? (
                     <Link
                       href={objectUrl}
-                      className="text-slate-900 font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
+                      className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
                     >
                       {entry.objectTitle}
                     </Link>
                   ) : (
-                    <span className="text-slate-900 font-medium line-clamp-1">
+                    <span className="text-foreground font-medium line-clamp-1">
                       {entry.objectTitle}
                     </span>
                   )}
                   {entry.underlyingTickers.length > 0 && (
                     <span className="flex gap-1 flex-wrap">
                       {entry.underlyingTickers.slice(0, 3).map((ticker) => (
-                        <Badge key={ticker} className="bg-slate-100 text-slate-600 text-xs font-mono">
+                        <Badge key={ticker} className="bg-slate-100 text-muted-foreground text-xs font-mono">
                           {ticker}
                         </Badge>
                       ))}
                       {entry.underlyingTickers.length > 3 && (
-                        <Badge className="bg-slate-100 text-slate-400 text-xs">
+                        <Badge className="bg-slate-100 text-muted-foreground text-xs">
                           +{entry.underlyingTickers.length - 3}
                         </Badge>
                       )}
                     </span>
                   )}
                   {objectUrl && (
-                    <Link href={objectUrl} className="text-slate-400 hover:text-blue-600">
+                    <Link href={objectUrl} className="text-muted-foreground hover:text-blue-600">
                       <ExternalLink className="h-3 w-3" />
                     </Link>
                   )}
                 </div>
               )}
-              <div className="text-slate-500 text-xs line-clamp-2">
+              <div className="text-muted-foreground text-xs line-clamp-2">
                 {entry.actionDescription}
               </div>
             </div>
@@ -454,7 +454,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
               {entry.source}
             </Badge>
             {entry.skillInvoked && (
-              <div className="text-xs text-slate-500 mt-1 font-mono">
+              <div className="text-xs text-muted-foreground mt-1 font-mono">
                 {entry.skillInvoked}
               </div>
             )}
@@ -485,15 +485,15 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
         {/* Expanded Row */}
         {isExpanded && (
-          <tr className="bg-slate-50 border-b">
+          <tr className="bg-muted border-b">
             <td colSpan={6} className="px-4 py-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* State Changes */}
                 <div>
-                  <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                  <h4 className="text-xs font-medium text-foreground uppercase tracking-wide mb-2">
                     State Changes
                   </h4>
-                  <div className="bg-white rounded-lg border border-slate-200 p-3">
+                  <div className="bg-card rounded-lg border border p-3">
                     {renderStateChanges(entry)}
                   </div>
                 </div>
@@ -503,10 +503,10 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                   {/* Rationale */}
                   {rationale ? (
                     <div>
-                      <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                      <h4 className="text-xs font-medium text-foreground uppercase tracking-wide mb-2">
                         Rationale
                       </h4>
-                      <div className="bg-white rounded-lg border border-slate-200 p-3 text-sm text-slate-600">
+                      <div className="bg-card rounded-lg border border p-3 text-sm text-muted-foreground">
                         {rationale}
                       </div>
                     </div>
@@ -515,11 +515,11 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                   {/* Metadata */}
                   {metadata && Object.keys(metadata).length > 0 && (
                     <div>
-                      <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                      <h4 className="text-xs font-medium text-foreground uppercase tracking-wide mb-2">
                         Metadata
                       </h4>
-                      <div className="bg-white rounded-lg border border-slate-200 p-3">
-                        <pre className="text-xs text-slate-600 overflow-auto">
+                      <div className="bg-card rounded-lg border border p-3">
+                        <pre className="text-xs text-muted-foreground overflow-auto">
                           {JSON.stringify(metadata, null, 2)}
                         </pre>
                       </div>
@@ -528,22 +528,22 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
                   {/* IDs */}
                   <div>
-                    <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                    <h4 className="text-xs font-medium text-foreground uppercase tracking-wide mb-2">
                       References
                     </h4>
-                    <div className="bg-white rounded-lg border border-slate-200 p-3 space-y-1 text-xs">
+                    <div className="bg-card rounded-lg border border p-3 space-y-1 text-xs">
                       <div>
-                        <span className="text-slate-500">Entry ID:</span>{' '}
-                        <code className="font-mono text-slate-700">{entry.id}</code>
+                        <span className="text-muted-foreground">Entry ID:</span>{' '}
+                        <code className="font-mono text-foreground">{entry.id}</code>
                       </div>
                       <div>
-                        <span className="text-slate-500">Object ID:</span>{' '}
-                        <code className="font-mono text-slate-700">{entry.objectId}</code>
+                        <span className="text-muted-foreground">Object ID:</span>{' '}
+                        <code className="font-mono text-foreground">{entry.objectId}</code>
                       </div>
                       {entry.triageRecordId && (
                         <div>
-                          <span className="text-slate-500">Triage ID:</span>{' '}
-                          <code className="font-mono text-slate-700">{entry.triageRecordId}</code>
+                          <span className="text-muted-foreground">Triage ID:</span>{' '}
+                          <code className="font-mono text-foreground">{entry.triageRecordId}</code>
                         </div>
                       )}
                     </div>
@@ -580,10 +580,10 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
           {/* Timestamp */}
           <td className="px-4 py-3 whitespace-nowrap">
             <div className="space-y-0.5">
-              <div className="text-slate-900 text-xs">
+              <div className="text-foreground text-xs">
                 {formatDate(summary.timestamp)}
               </div>
-              <div className="text-slate-500 text-xs">
+              <div className="text-muted-foreground text-xs">
                 {formatTime(summary.timestamp)}
               </div>
             </div>
@@ -603,13 +603,13 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                 {objectUrl ? (
                   <Link
                     href={objectUrl}
-                    className="text-slate-900 font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
+                    className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {summary.objectTitle}
                   </Link>
                 ) : (
-                  <span className="text-slate-900 font-medium line-clamp-1">
+                  <span className="text-foreground font-medium line-clamp-1">
                     {summary.objectTitle}
                   </span>
                 )}
@@ -619,19 +619,19 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                 {summary.underlyingTickers.length > 0 && (
                   <span className="flex gap-1 flex-wrap">
                     {summary.underlyingTickers.slice(0, 2).map((ticker) => (
-                      <Badge key={ticker} className="bg-slate-100 text-slate-600 text-xs font-mono">
+                      <Badge key={ticker} className="bg-slate-100 text-muted-foreground text-xs font-mono">
                         {ticker}
                       </Badge>
                     ))}
                     {summary.underlyingTickers.length > 2 && (
-                      <Badge className="bg-slate-100 text-slate-400 text-xs">
+                      <Badge className="bg-slate-100 text-muted-foreground text-xs">
                         +{summary.underlyingTickers.length - 2}
                       </Badge>
                     )}
                   </span>
                 )}
               </div>
-              <div className="text-slate-500 text-xs">
+              <div className="text-muted-foreground text-xs">
                 Batch: {actionSummary}
               </div>
             </div>
@@ -646,7 +646,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                 </Badge>
               ))}
               {summary.actionTypes.length > 2 && (
-                <Badge className="bg-slate-100 text-slate-500 text-xs">
+                <Badge className="bg-slate-100 text-muted-foreground text-xs">
                   +{summary.actionTypes.length - 2}
                 </Badge>
               )}
@@ -684,10 +684,10 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
         {/* Expanded Batch Entries */}
         {isExpanded && batchEntries.map((entry) => (
-          <tr key={entry.id} className="border-b bg-slate-50/50 hover:bg-slate-100 transition-colors">
+          <tr key={entry.id} className="border-b bg-muted/50 hover:bg-accent transition-colors">
             {/* Timestamp - indented */}
             <td className="px-4 py-2 whitespace-nowrap pl-8">
-              <div className="text-slate-500 text-xs">
+              <div className="text-muted-foreground text-xs">
                 {formatTime(new Date(entry.timestamp))}
               </div>
             </td>
@@ -699,7 +699,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
             {/* Description */}
             <td className="px-4 py-2">
-              <div className="text-slate-600 text-xs line-clamp-2">
+              <div className="text-muted-foreground text-xs line-clamp-2">
                 {entry.actionDescription}
               </div>
             </td>
@@ -740,10 +740,10 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* State Changes */}
                   <div>
-                    <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                    <h4 className="text-xs font-medium text-foreground uppercase tracking-wide mb-2">
                       State Changes
                     </h4>
-                    <div className="bg-white rounded-lg border border-slate-200 p-3">
+                    <div className="bg-card rounded-lg border border p-3">
                       {renderStateChanges(entry)}
                     </div>
                   </div>
@@ -752,21 +752,21 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                   <div className="space-y-3">
                     {rationale && (
                       <div>
-                        <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                        <h4 className="text-xs font-medium text-foreground uppercase tracking-wide mb-2">
                           Rationale
                         </h4>
-                        <div className="bg-white rounded-lg border border-slate-200 p-3 text-sm text-slate-600">
+                        <div className="bg-card rounded-lg border border p-3 text-sm text-muted-foreground">
                           {rationale}
                         </div>
                       </div>
                     )}
                     {metadata && Object.keys(metadata).length > 0 && (
                       <div>
-                        <h4 className="text-xs font-medium text-slate-700 uppercase tracking-wide mb-2">
+                        <h4 className="text-xs font-medium text-foreground uppercase tracking-wide mb-2">
                           Metadata
                         </h4>
-                        <div className="bg-white rounded-lg border border-slate-200 p-3">
-                          <pre className="text-xs text-slate-600 overflow-auto">
+                        <div className="bg-card rounded-lg border border p-3">
+                          <pre className="text-xs text-muted-foreground overflow-auto">
                             {JSON.stringify(metadata, null, 2)}
                           </pre>
                         </div>
@@ -786,7 +786,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
     const { previousState, newState } = entry;
 
     if (!previousState && !newState) {
-      return <span className="text-slate-400 text-xs">No state changes recorded</span>;
+      return <span className="text-muted-foreground text-xs">No state changes recorded</span>;
     }
 
     // Cast to record type for accessing properties
@@ -810,19 +810,19 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
           return (
             <div key={key} className="flex items-start gap-2 text-xs">
-              <span className="font-medium text-slate-600 min-w-[80px]">{key}:</span>
+              <span className="font-medium text-muted-foreground min-w-[80px]">{key}:</span>
               {hasChanged ? (
                 <div className="flex items-center gap-2">
                   <span className="text-red-600 line-through">
                     {prev !== undefined ? JSON.stringify(prev) : '(none)'}
                   </span>
-                  <span className="text-slate-400">→</span>
+                  <span className="text-muted-foreground">→</span>
                   <span className="text-emerald-600">
                     {next !== undefined ? JSON.stringify(next) : '(none)'}
                   </span>
                 </div>
               ) : (
-                <span className="text-slate-500">{JSON.stringify(prev)}</span>
+                <span className="text-muted-foreground">{JSON.stringify(prev)}</span>
               )}
             </div>
           );
@@ -843,19 +843,19 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
         >
           <Filter className="h-4 w-4" />
           Filters
-          {showFilters && <span className="text-xs text-slate-500">(ESC to close)</span>}
+          {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredAndSortedEntries.length} of {entries.length} entries
         </div>
       </div>
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+        <div className="bg-card rounded-lg border border p-4 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
               type="text"
@@ -869,7 +869,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Object Type */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Object Type</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Object Type</label>
               <select
                 value={objectTypeFilter}
                 onChange={(e) => setObjectTypeFilter(e.target.value)}
@@ -886,7 +886,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
             {/* Action Type */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Action Type</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Action Type</label>
               <select
                 value={actionTypeFilter}
                 onChange={(e) => setActionTypeFilter(e.target.value)}
@@ -903,7 +903,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
             {/* Source */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Source</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Source</label>
               <select
                 value={sourceFilter}
                 onChange={(e) => setSourceFilter(e.target.value)}
@@ -920,7 +920,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
             {/* Underlying */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Underlying</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Underlying</label>
               <select
                 value={underlyingFilter}
                 onChange={(e) => setUnderlyingFilter(e.target.value)}
@@ -956,18 +956,18 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
       )}
 
       {/* Journal Table */}
-      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <section className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           {filteredAndSortedEntries.length === 0 ? (
-            <div className="p-10 text-center text-slate-400">
+            <div className="p-10 text-center text-muted-foreground">
               No journal entries match the selected filters.
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('timestamp')}
                   >
                     <div className="flex items-center gap-2">
@@ -976,7 +976,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('objectType')}
                   >
                     <div className="flex items-center gap-2">
@@ -985,7 +985,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors w-1/3"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors w-1/3"
                     onClick={() => handleSort('objectTitle')}
                   >
                     <div className="flex items-center gap-2">
@@ -994,7 +994,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('actionType')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -1003,7 +1003,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('source')}
                   >
                     <div className="flex items-center justify-center gap-2">

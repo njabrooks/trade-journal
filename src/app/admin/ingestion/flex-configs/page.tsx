@@ -219,7 +219,7 @@ export default function FlexConfigsPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Flex Query Configurations</h1>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Manage automated Flex ingestion from IBKR Flex Web Service API
             </p>
           </div>
@@ -241,7 +241,7 @@ export default function FlexConfigsPage() {
         </div>
 
         {showForm && (
-          <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+          <div className="mb-6 p-4 border rounded-lg bg-muted">
             <h2 className="text-lg font-semibold mb-4">
               {editingConfig ? 'Edit Configuration' : 'New Configuration'}
             </h2>
@@ -301,7 +301,7 @@ export default function FlexConfigsPage() {
                   className="w-full px-3 py-2 border rounded"
                   placeholder="Your IBKR Flex Web Service token (or use IBKR_FLEX_TOKEN env var)"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Optional if IBKR_FLEX_TOKEN environment variable is set
                 </p>
               </div>
@@ -317,7 +317,7 @@ export default function FlexConfigsPage() {
                   className="w-full px-3 py-2 border rounded"
                   placeholder={`Your Flex query ID (or use IBKR_FLEX_${formData.queryType.toUpperCase()}_QUERY_ID env var)`}
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Optional if IBKR_FLEX_POSITIONS_QUERY_ID or IBKR_FLEX_TRADES_QUERY_ID environment variable is set
                 </p>
               </div>
@@ -331,7 +331,7 @@ export default function FlexConfigsPage() {
                   className="w-full px-3 py-2 border rounded"
                   placeholder="e.g., 0 2 * * * (daily at 2 AM)"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Cron expression for scheduled runs. Leave empty for manual-only.
                 </p>
               </div>
@@ -359,7 +359,7 @@ export default function FlexConfigsPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  className="px-4 py-2 bg-muted text-foreground rounded hover:bg-muted/80"
                 >
                   Cancel
                 </button>
@@ -370,7 +370,7 @@ export default function FlexConfigsPage() {
 
         <div className="space-y-4">
           {configs.length === 0 ? (
-            <div className="p-4 border rounded-lg text-center text-gray-500">
+            <div className="p-4 border rounded-lg text-center text-muted-foreground">
               No configurations found. Click "Add Configuration" to create one.
             </div>
           ) : (
@@ -383,8 +383,8 @@ export default function FlexConfigsPage() {
                       <span
                         className={`px-2 py-1 text-xs rounded ${
                           config.isActive
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-700'
+                            ? 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {config.isActive ? 'Active' : 'Inactive'}
@@ -393,7 +393,7 @@ export default function FlexConfigsPage() {
                         {config.queryType}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-600 space-y-1">
+                    <div className="text-sm text-muted-foreground space-y-1">
                       <div>
                         Account: {accounts.find((a) => a.id === config.accountId)?.label || config.accountId}
                       </div>
@@ -433,7 +433,7 @@ export default function FlexConfigsPage() {
                     </button>
                     <button
                       onClick={() => handleEdit(config)}
-                      className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+                      className="px-3 py-1 bg-gray-600 dark:bg-gray-500 text-white text-sm rounded hover:bg-gray-700 dark:hover:bg-gray-400"
                     >
                       Edit
                     </button>

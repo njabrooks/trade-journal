@@ -210,26 +210,26 @@ export function AssessEvidenceModal({
   const getAssessmentBadge = (assessment: SignalAssessment['assessment']) => {
     switch (assessment) {
       case 'strong_confirmation':
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full"><CheckCircle2 className="w-3 h-3" />Strong Confirmation</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-full"><CheckCircle2 className="w-3 h-3" />Strong Confirmation</span>;
       case 'weak_confirmation':
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-600 rounded-full"><CheckCircle2 className="w-3 h-3" />Weak Confirmation</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-full"><CheckCircle2 className="w-3 h-3" />Weak Confirmation</span>;
       case 'strong_warning':
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 rounded-full"><XCircle className="w-3 h-3" />Strong Warning</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded-full"><XCircle className="w-3 h-3" />Strong Warning</span>;
       case 'weak_warning':
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 rounded-full"><XCircle className="w-3 h-3" />Weak Warning</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-full"><XCircle className="w-3 h-3" />Weak Warning</span>;
       default:
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-full">Neutral</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded-full">Neutral</span>;
     }
   };
 
   const getConfidenceBadge = (confidence: string) => {
     switch (confidence) {
       case 'high':
-        return <span className="px-1.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 rounded">High</span>;
+        return <span className="px-1.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded">High</span>;
       case 'medium':
-        return <span className="px-1.5 py-0.5 text-xs bg-amber-50 text-amber-700 rounded">Medium</span>;
+        return <span className="px-1.5 py-0.5 text-xs bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 rounded">Medium</span>;
       default:
-        return <span className="px-1.5 py-0.5 text-xs bg-slate-50 text-slate-600 rounded">Low</span>;
+        return <span className="px-1.5 py-0.5 text-xs bg-muted text-muted-foreground rounded">Low</span>;
     }
   };
 
@@ -253,18 +253,18 @@ export function AssessEvidenceModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative bg-card rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-foreground">
               Assess Evidence
             </h2>
-            <p className="text-sm text-slate-500">{thesisTitle}</p>
+            <p className="text-sm text-muted-foreground">{thesisTitle}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded"
+            className="p-1 text-muted-foreground hover:text-muted-foreground rounded"
           >
             <X className="w-5 h-5" />
           </button>
@@ -275,18 +275,18 @@ export function AssessEvidenceModal({
           {/* Input Phase */}
           {phase === 'input' && (
             <div className="space-y-4">
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-muted-foreground">
                 Provide content to analyze against this thesis&apos;s signals. The AI will identify evidence of confirmation or warning for each signal.
               </p>
 
               {/* Input mode tabs */}
-              <div className="flex border-b border-slate-200">
+              <div className="flex border-b border">
                 <button
                   onClick={() => setInputMode('text')}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                     inputMode === 'text'
                       ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <FileText className="w-4 h-4" />
@@ -297,7 +297,7 @@ export function AssessEvidenceModal({
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
                     inputMode === 'url'
                       ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-slate-500 hover:text-slate-700'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   <Link2 className="w-4 h-4" />
@@ -307,7 +307,7 @@ export function AssessEvidenceModal({
 
               {inputMode === 'text' ? (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     Content to Analyze
                   </label>
                   <textarea
@@ -315,15 +315,15 @@ export function AssessEvidenceModal({
                     onChange={(e) => setContentText(e.target.value)}
                     placeholder="Paste transcript, article, earnings call notes, research report, etc..."
                     rows={12}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                    className="w-full px-3 py-2 text-sm border border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                   />
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {contentText.length.toLocaleString()} characters (minimum 100)
                   </p>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-medium text-foreground mb-1">
                     URL
                   </label>
                   <input
@@ -331,9 +331,9 @@ export function AssessEvidenceModal({
                     value={contentUrl}
                     onChange={(e) => setContentUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm border border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Content will be fetched and analyzed
                   </p>
                 </div>
@@ -351,8 +351,8 @@ export function AssessEvidenceModal({
           {phase === 'analyzing' && (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-8 h-8 text-blue-500 animate-spin mb-4" />
-              <p className="text-sm font-medium text-slate-900">Analyzing content...</p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm font-medium text-foreground">Analyzing content...</p>
+              <p className="text-xs text-muted-foreground mt-1">
                 This may take 15-30 seconds
               </p>
             </div>
@@ -363,18 +363,18 @@ export function AssessEvidenceModal({
             <div className="space-y-4">
               {/* Summary */}
               {summary && (
-                <div className="bg-slate-50 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-2">Analysis Summary</h3>
+                <div className="bg-muted rounded-lg p-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Analysis Summary</h3>
                   {overallSummary && (
-                    <p className="text-sm text-slate-700 mb-3">{overallSummary}</p>
+                    <p className="text-sm text-foreground mb-3">{overallSummary}</p>
                   )}
                   <div className="flex flex-wrap gap-4 text-sm">
                     <div>
-                      <span className="text-slate-500">Signals:</span>{' '}
+                      <span className="text-muted-foreground">Signals:</span>{' '}
                       <span className="font-medium">{summary.totalSignals}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500">With Evidence:</span>{' '}
+                      <span className="text-muted-foreground">With Evidence:</span>{' '}
                       <span className="font-medium">{summary.withEvidence}</span>
                     </div>
                     <div className="text-emerald-600">
@@ -392,8 +392,8 @@ export function AssessEvidenceModal({
               {/* Assessments List */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-900">Signal Assessments</h3>
-                  <div className="text-xs text-slate-500">
+                  <h3 className="text-sm font-semibold text-foreground">Signal Assessments</h3>
+                  <div className="text-xs text-muted-foreground">
                     {selectedAssessments.size} selected
                   </div>
                 </div>
@@ -407,7 +407,7 @@ export function AssessEvidenceModal({
                     <div
                       key={assessment.signalId}
                       className={`border rounded-lg overflow-hidden transition-colors ${
-                        isSelected ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200'
+                        isSelected ? 'border-blue-300 bg-blue-50/30' : 'border'
                       }`}
                     >
                       {/* Header */}
@@ -417,26 +417,26 @@ export function AssessEvidenceModal({
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleAssessmentSelected(assessment.signalId)}
-                            className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            className="mt-1 h-4 w-4 rounded border text-blue-600 focus:ring-blue-500"
                           />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
                               assessment.type === 'confirmation'
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-red-100 text-red-700'
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                             }`}>
                               {assessment.type}
                             </span>
                             {getAssessmentBadge(assessment.assessment)}
                             {getConfidenceBadge(assessment.confidence)}
                           </div>
-                          <p className="text-sm text-slate-900">{assessment.statement}</p>
+                          <p className="text-sm text-foreground">{assessment.statement}</p>
                         </div>
                         <button
                           onClick={() => toggleAssessmentExpanded(assessment.signalId)}
-                          className="p-1 text-slate-400 hover:text-slate-600"
+                          className="p-1 text-muted-foreground hover:text-muted-foreground"
                         >
                           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
@@ -444,14 +444,14 @@ export function AssessEvidenceModal({
 
                       {/* Expanded content */}
                       {isExpanded && (
-                        <div className="px-3 pb-3 space-y-3 border-t border-slate-100 pt-3 ml-7">
+                        <div className="px-3 pb-3 space-y-3 border-t border-border pt-3 ml-7">
                           {assessment.evidence.length > 0 && (
                             <div>
-                              <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">Evidence</h4>
-                              <ul className="text-sm text-slate-600 space-y-1">
+                              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-1">Evidence</h4>
+                              <ul className="text-sm text-muted-foreground space-y-1">
                                 {assessment.evidence.map((e, i) => (
                                   <li key={i} className="flex items-start gap-2">
-                                    <span className="text-slate-400">•</span>
+                                    <span className="text-muted-foreground">•</span>
                                     <span>{e}</span>
                                   </li>
                                 ))}
@@ -461,10 +461,10 @@ export function AssessEvidenceModal({
 
                           {assessment.quotes.length > 0 && (
                             <div>
-                              <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">Quotes</h4>
+                              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-1">Quotes</h4>
                               <div className="space-y-2">
                                 {assessment.quotes.map((q, i) => (
-                                  <blockquote key={i} className="text-sm text-slate-600 italic border-l-2 border-slate-300 pl-3">
+                                  <blockquote key={i} className="text-sm text-muted-foreground italic border-l-2 border pl-3">
                                     &ldquo;{q}&rdquo;
                                   </blockquote>
                                 ))}
@@ -474,8 +474,8 @@ export function AssessEvidenceModal({
 
                           {assessment.recommendedAction && (
                             <div>
-                              <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">Recommended Action</h4>
-                              <p className="text-sm text-slate-600">{assessment.recommendedAction}</p>
+                              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-1">Recommended Action</h4>
+                              <p className="text-sm text-muted-foreground">{assessment.recommendedAction}</p>
                             </div>
                           )}
                         </div>
@@ -487,7 +487,7 @@ export function AssessEvidenceModal({
 
               {/* Usage info */}
               {usage && (
-                <div className="text-xs text-slate-400 text-right">
+                <div className="text-xs text-muted-foreground text-right">
                   {usage.model} • {usage.inputTokens.toLocaleString()} input / {usage.outputTokens.toLocaleString()} output tokens
                 </div>
               )}
@@ -502,13 +502,13 @@ export function AssessEvidenceModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between gap-2 px-4 py-3 border-t border-slate-200 bg-slate-50 shrink-0">
+        <div className="flex justify-between gap-2 px-4 py-3 border-t border bg-muted shrink-0">
           {phase === 'input' && (
             <>
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md"
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent rounded-md"
               >
                 Cancel
               </button>
@@ -525,7 +525,7 @@ export function AssessEvidenceModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent rounded-md"
             >
               Cancel
             </button>
@@ -536,7 +536,7 @@ export function AssessEvidenceModal({
               <button
                 type="button"
                 onClick={handleReset}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md"
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent rounded-md"
               >
                 Analyze Different Content
               </button>
@@ -544,7 +544,7 @@ export function AssessEvidenceModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md"
+                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent rounded-md"
                   disabled={isApplying}
                 >
                   Close

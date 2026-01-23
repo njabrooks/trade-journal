@@ -72,7 +72,7 @@ export function CreateAssetThesisForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-800 dark:text-red-200">
           {error}
         </div>
       )}
@@ -80,14 +80,14 @@ export function CreateAssetThesisForm({
       {/* Title (optional if auto-generated) */}
       {!autoGenTitle && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             Title <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={formData.title || ''}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="e.g., Bullish AAPL Medium Term"
             required={!autoGenTitle}
             disabled={loading}
@@ -96,14 +96,14 @@ export function CreateAssetThesisForm({
       )}
 
       {autoGenTitle && formData.ticker && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-800 dark:text-blue-200">
           <strong>Note:</strong> Title will be auto-generated as: {formData.direction} {formData.ticker} {formData.timeHorizon.replace('_', ' ')}
         </div>
       )}
 
       {/* Underlying */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           Underlying <span className="text-red-500">*</span>
         </label>
         <UnderlyingSelector
@@ -118,13 +118,13 @@ export function CreateAssetThesisForm({
       <div className="grid grid-cols-2 gap-4">
         {/* Direction */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             Direction <span className="text-red-500">*</span>
           </label>
           <select
             value={formData.direction}
             onChange={(e) => setFormData({ ...formData, direction: e.target.value as any })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
             disabled={loading}
           >
@@ -136,13 +136,13 @@ export function CreateAssetThesisForm({
 
         {/* Time Horizon */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             Time Horizon <span className="text-red-500">*</span>
           </label>
           <select
             value={formData.timeHorizon}
             onChange={(e) => setFormData({ ...formData, timeHorizon: e.target.value as any })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
             disabled={loading}
           >
@@ -154,13 +154,13 @@ export function CreateAssetThesisForm({
 
         {/* Confidence Level */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             Confidence <span className="text-red-500">*</span>
           </label>
           <select
             value={formData.confidenceLevel}
             onChange={(e) => setFormData({ ...formData, confidenceLevel: e.target.value as any })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
             disabled={loading}
           >
@@ -173,13 +173,13 @@ export function CreateAssetThesisForm({
 
         {/* Status */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-sm font-medium text-foreground mb-1">
             Status <span className="text-red-500">*</span>
           </label>
           <select
             value={formData.status}
             onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
             disabled={loading}
           >
@@ -193,13 +193,13 @@ export function CreateAssetThesisForm({
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           Description (optional)
         </label>
         <textarea
           value={formData.description || ''}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows={3}
           placeholder="Brief description of the asset thesis..."
           disabled={loading}

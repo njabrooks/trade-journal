@@ -114,11 +114,11 @@ export default function ResearchUploadPage() {
     >
       <div className="max-w-3xl">
         {/* Workflow Notice */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-6">
           <div className="flex gap-4">
             <div className="flex-shrink-0">
               <svg
-                className="h-6 w-6 text-blue-600"
+                className="h-6 w-6 text-blue-600 dark:text-blue-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -132,14 +132,14 @@ export default function ResearchUploadPage() {
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-blue-900 mb-2">
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
                 For Raw Research Only
               </h3>
-              <p className="text-sm text-blue-800 mb-3">
+              <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
                 This page is for uploading <strong>raw, unprocessed research</strong> (transcripts,
                 articles, reports). For the full workflow with forensic claims extraction:
               </p>
-              <ol className="text-sm text-blue-800 space-y-2 ml-4">
+              <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-2 ml-4">
                 <li className="flex items-start gap-2">
                   <span className="font-semibold">1.</span>
                   <span>
@@ -150,7 +150,7 @@ export default function ResearchUploadPage() {
                   <span className="font-semibold">2.</span>
                   <span>
                     Process with{' '}
-                    <code className="px-1.5 py-0.5 bg-blue-100 rounded text-xs font-mono">
+                    <code className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 rounded text-xs font-mono">
                       /process-transcript
                     </code>{' '}
                     in local Claude Code
@@ -160,7 +160,7 @@ export default function ResearchUploadPage() {
                   <span className="font-semibold">3.</span>
                   <span>
                     Re-upload audit file with{' '}
-                    <code className="px-1.5 py-0.5 bg-blue-100 rounded text-xs font-mono">
+                    <code className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 rounded text-xs font-mono">
                       /finalize-for-upload
                     </code>
                   </span>
@@ -172,7 +172,7 @@ export default function ResearchUploadPage() {
                   </span>
                 </li>
               </ol>
-              <p className="text-xs text-blue-700 mt-3">
+              <p className="text-xs text-blue-700 dark:text-blue-300 mt-3">
                 Claims extraction provides structured Toulmin arguments for better analysis.
               </p>
             </div>
@@ -181,7 +181,7 @@ export default function ResearchUploadPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Upload Method */}
-          <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <div className="bg-card rounded-lg border border p-6">
             <Label className="text-base font-semibold mb-4 block">Upload Method</Label>
             <div className="flex gap-4">
               <button
@@ -189,30 +189,30 @@ export default function ResearchUploadPage() {
                 onClick={() => setUploadMethod('text')}
                 className={`flex-1 px-4 py-3 rounded-lg border-2 transition-colors ${
                   uploadMethod === 'text'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-slate-200 hover:border-slate-300'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:border-blue-400 dark:text-blue-300'
+                    : 'border hover:border'
                 }`}
               >
                 <div className="font-medium">Manual Text</div>
-                <div className="text-sm text-slate-600 mt-1">Paste or type content</div>
+                <div className="text-sm text-muted-foreground mt-1">Paste or type content</div>
               </button>
               <button
                 type="button"
                 onClick={() => setUploadMethod('url')}
                 className={`flex-1 px-4 py-3 rounded-lg border-2 transition-colors ${
                   uploadMethod === 'url'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-slate-200 hover:border-slate-300'
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:border-blue-400 dark:text-blue-300'
+                    : 'border hover:border'
                 }`}
               >
                 <div className="font-medium">From URL</div>
-                <div className="text-sm text-slate-600 mt-1">Fetch from web</div>
+                <div className="text-sm text-muted-foreground mt-1">Fetch from web</div>
               </button>
             </div>
           </div>
 
           {/* Metadata */}
-          <div className="bg-white rounded-lg border border-slate-200 p-6 space-y-4">
+          <div className="bg-card rounded-lg border border p-6 space-y-4">
             <h3 className="text-base font-semibold">Metadata</h3>
 
             <div>
@@ -224,7 +224,7 @@ export default function ResearchUploadPage() {
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-3 py-2 border border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder={uploadMethod === 'url' ? 'Auto-extracted if blank' : 'Enter title'}
                 required={uploadMethod === 'text'}
               />
@@ -238,7 +238,7 @@ export default function ResearchUploadPage() {
                 id="sourceType"
                 value={sourceType}
                 onChange={(e) => setSourceType(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-3 py-2 border border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="article">Article</option>
@@ -258,7 +258,7 @@ export default function ResearchUploadPage() {
                   type="text"
                   value={author}
                   onChange={(e) => setAuthor(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Optional"
                 />
               </div>
@@ -270,7 +270,7 @@ export default function ResearchUploadPage() {
                   type="date"
                   value={publishedDate}
                   onChange={(e) => setPublishedDate(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
@@ -282,17 +282,17 @@ export default function ResearchUploadPage() {
                 type="text"
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-3 py-2 border border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Comma-separated tags (e.g., tech, macro, earnings)"
               />
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Separate multiple tags with commas
               </p>
             </div>
           </div>
 
           {/* Content */}
-          <div className="bg-white rounded-lg border border-slate-200 p-6">
+          <div className="bg-card rounded-lg border border p-6">
             <h3 className="text-base font-semibold mb-4">Content</h3>
 
             {uploadMethod === 'text' ? (
@@ -305,11 +305,11 @@ export default function ResearchUploadPage() {
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={12}
-                  className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
                   placeholder="Paste or type your research content here..."
                   required
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-muted-foreground">
                   {content.split(/\s+/).filter(Boolean).length} words
                 </p>
               </div>
@@ -323,11 +323,11 @@ export default function ResearchUploadPage() {
                   type="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full px-3 py-2 border border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="https://example.com/article"
                   required
                 />
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-muted-foreground">
                   Content will be automatically fetched and extracted
                 </p>
               </div>
@@ -336,14 +336,14 @@ export default function ResearchUploadPage() {
 
           {/* Error/Success Messages */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-              <p className="text-sm text-emerald-800">{success}</p>
+            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
+              <p className="text-sm text-emerald-800 dark:text-emerald-200">{success}</p>
             </div>
           )}
 

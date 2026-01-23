@@ -256,9 +256,9 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
       case 'complete':
         return 'bg-emerald-100 text-emerald-700';
       case 'rejected':
-        return 'bg-slate-100 text-slate-500';
+        return 'bg-slate-100 text-muted-foreground';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -274,39 +274,39 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
         >
           <Filter className="h-4 w-4" />
           Filters
-          {showFilters && <span className="text-xs text-slate-500">(ESC to close)</span>}
+          {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredAndSortedStrategies.length} of {strategies.length} strategies
         </div>
       </div>
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+        <div className="bg-card rounded-lg border border p-4 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Search strategy, account, state code... (Press / to focus)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Status
               </label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Statuses</option>
                 <option value="draft">Draft</option>
@@ -318,13 +318,13 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
             {/* Account */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Account
               </label>
               <select
                 value={accountFilter}
                 onChange={(e) => setAccountFilter(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Accounts</option>
                 {uniqueAccounts.map((account) => (
@@ -337,13 +337,13 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
             {/* Asset Thesis */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Asset Thesis
               </label>
               <select
                 value={assetThesisFilter}
                 onChange={(e) => setAssetThesisFilter(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Theses</option>
                 {uniqueAssetTheses.map(([id, title]) => (
@@ -356,13 +356,13 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
             {/* Macro Thesis */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Macro Thesis
               </label>
               <select
                 value={macroThesisFilter}
                 onChange={(e) => setMacroThesisFilter(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Theses</option>
                 {uniqueMacroTheses.map(([id, title]) => (
@@ -394,18 +394,18 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
       )}
 
       {/* Strategies Table */}
-      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <section className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           {filteredAndSortedStrategies.length === 0 ? (
-            <div className="p-10 text-center text-slate-400">
+            <div className="p-10 text-center text-muted-foreground">
               No strategies match the selected filters.
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('label')}
                   >
                     <div className="flex items-center gap-2">
@@ -414,7 +414,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('account')}
                   >
                     <div className="flex items-center gap-2">
@@ -423,7 +423,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -435,7 +435,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                     Asset Theses
                   </th>
                   <th
-                    className="px-4 py-3 text-right cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-right cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('absNotional')}
                   >
                     <div className="flex items-center justify-end gap-2">
@@ -444,7 +444,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-right cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-right cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('unrealized')}
                   >
                     <div className="flex items-center justify-end gap-2">
@@ -453,7 +453,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-right cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-right cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('pctNav')}
                   >
                     <div className="flex items-center justify-end gap-2">
@@ -471,16 +471,16 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                   return (
                     <Fragment key={strategy.id}>
                       {/* Main Row */}
-                      <tr className="border-b hover:bg-slate-50 transition-colors">
+                      <tr className="border-b hover:bg-muted transition-colors">
                         {/* Strategy */}
                         <td className="px-4 py-3">
                           <Link
                             href={`/strategies/${strategy.id}`}
-                            className="text-slate-900 font-medium hover:text-blue-600 truncate block"
+                            className="text-foreground font-medium hover:text-blue-600 truncate block"
                             title={`${strategy.label} (${strategy.strategyKey})`}
                           >
                             <span>{strategy.label}</span>
-                            <span className="text-xs text-slate-400 font-mono ml-2">({strategy.strategyKey})</span>
+                            <span className="text-xs text-muted-foreground font-mono ml-2">({strategy.strategyKey})</span>
                           </Link>
                         </td>
 
@@ -494,7 +494,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                                 {accountBadge.label}
                               </Badge>
                             ) : (
-                              <span className="text-xs text-slate-400">—</span>
+                              <span className="text-xs text-muted-foreground">—</span>
                             );
                           })()}
                         </td>
@@ -516,12 +516,12 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                               {strategy.assetViewTitle}
                             </Link>
                           ) : (
-                            <span className="text-xs text-slate-400">Not linked</span>
+                            <span className="text-xs text-muted-foreground">Not linked</span>
                           )}
                         </td>
 
                         {/* Abs Notional */}
-                        <td className="px-4 py-3 text-right font-medium text-slate-900">
+                        <td className="px-4 py-3 text-right font-medium text-foreground">
                           {formatCurrency(strategy.latestAbsNotional)}
                         </td>
 
@@ -570,13 +570,13 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
                       {/* Expanded Details Row */}
                       {isExpanded && (
-                        <tr className="bg-slate-50 border-b">
+                        <tr className="bg-muted border-b">
                           <td colSpan={9} className="px-4 py-4">
                             <div className="space-y-4">
                               {/* Linked Theses */}
                               {(strategy.linkedMacroTheses.length > 0 || strategy.assetViewTitle) && (
                                 <div>
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+                                  <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Linked Theses
                                   </h4>
                                   <div className="flex flex-wrap gap-2">
@@ -604,17 +604,17 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                               )}
 
                               {/* Metadata */}
-                              <div className="grid grid-cols-4 gap-4 pt-2 border-t border-slate-200">
+                              <div className="grid grid-cols-4 gap-4 pt-2 border-t border">
                                 {strategy.strategyType && (
                                   <div>
-                                    <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Type:</span>
-                                    <span className="ml-2 text-sm text-slate-600">{strategy.strategyType}</span>
+                                    <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Type:</span>
+                                    <span className="ml-2 text-sm text-muted-foreground">{strategy.strategyType}</span>
                                   </div>
                                 )}
                                 {strategy.openedAt && (
                                   <div>
-                                    <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Opened:</span>
-                                    <span className="ml-2 text-sm text-slate-600">
+                                    <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Opened:</span>
+                                    <span className="ml-2 text-sm text-muted-foreground">
                                       {new Date(strategy.openedAt).toLocaleDateString('en-GB')}
                                     </span>
                                   </div>

@@ -82,7 +82,7 @@ export function TriageFilters({
           basePath={basePath}
         />
       )}
-      <span className="ml-auto text-xs text-slate-400">
+      <span className="ml-auto text-xs text-muted-foreground">
         {totalFlags} flags
       </span>
     </div>

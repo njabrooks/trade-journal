@@ -115,7 +115,7 @@ export default function UnderlyingsIvIngestionPage() {
       subtitle="Scrape and ingest implied volatility data from Option Strategist"
       tabs={<IngestionTabs />}
     >
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
+      <div className="bg-card rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">IV History Ingestion</h2>
 
         <div className="space-y-4">
@@ -132,7 +132,7 @@ export default function UnderlyingsIvIngestionPage() {
           </div>
 
           {backfillSpot && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-4 text-sm text-yellow-800">
+            <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded p-4 text-sm text-yellow-800 dark:text-yellow-200">
               <p className="font-semibold mb-2">Spot Price Backfilling:</p>
               <p className="mb-2">
                 Fetches historical spot prices from Yahoo Finance for the selected tickers and date range.
@@ -148,7 +148,7 @@ export default function UnderlyingsIvIngestionPage() {
                     id="startDate"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                    className="w-full border rounded px-2 py-1 text-sm"
                   />
                 </div>
                 <div>
@@ -160,7 +160,7 @@ export default function UnderlyingsIvIngestionPage() {
                     id="endDate"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                    className="w-full border rounded px-2 py-1 text-sm"
                   />
                 </div>
               </div>
@@ -179,7 +179,7 @@ export default function UnderlyingsIvIngestionPage() {
                 className="rounded"
                 disabled={backfillSpot}
               />
-              <span className={`text-sm font-medium ${backfillSpot ? 'text-gray-400' : ''}`}>
+              <span className={`text-sm font-medium ${backfillSpot ? 'text-muted-foreground' : ''}`}>
                 Use custom tickers
               </span>
             </label>
@@ -195,7 +195,7 @@ export default function UnderlyingsIvIngestionPage() {
                 value={customTickers}
                 onChange={(e) => setCustomTickers(e.target.value)}
                 placeholder="AAPL, MSFT, TSLA"
-                className="w-full border border-gray-300 rounded-md p-2 text-sm font-mono"
+                className="w-full border rounded-md p-2 text-sm font-mono"
                 rows={4}
               />
             </div>
@@ -220,7 +220,7 @@ export default function UnderlyingsIvIngestionPage() {
                       onChange={(e) => setRecentDays(parseInt(e.target.value) || 90)}
                       min={1}
                       max={365}
-                      className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
+                      className="w-20 border rounded px-2 py-1 text-sm"
                     />
                     <label className="text-sm">days</label>
                   </div>
@@ -232,20 +232,20 @@ export default function UnderlyingsIvIngestionPage() {
                   Available Tickers ({loadingTickers ? 'Loading...' : availableTickers.length})
                 </label>
                 {loadingTickers ? (
-                  <div className="text-sm text-gray-500">Loading tickers...</div>
+                  <div className="text-sm text-muted-foreground">Loading tickers...</div>
                 ) : availableTickers.length > 0 ? (
-                  <div className="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 text-sm font-mono">
+                  <div className="max-h-32 overflow-y-auto border rounded p-2 text-sm font-mono">
                     {availableTickers.join(', ')}
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-500">No tickers found</div>
+                  <div className="text-sm text-muted-foreground">No tickers found</div>
                 )}
               </div>
             </div>
           )}
 
           {!backfillSpot && (
-          <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded p-4 text-sm text-blue-800 dark:text-blue-200">
             <p className="font-semibold mb-2">Data Source:</p>
             <p>
               This tool scrapes Option Strategist&apos;s free volatility data page. Data is
@@ -272,7 +272,7 @@ export default function UnderlyingsIvIngestionPage() {
               (!backfillSpot && useCustomTickers && !customTickers.trim()) ||
               (!backfillSpot && !useCustomTickers && availableTickers.length === 0)
             }
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
           >
             {loading
               ? backfillSpot
@@ -288,19 +288,19 @@ export default function UnderlyingsIvIngestionPage() {
       {result && (
         <div
           className={`rounded-lg shadow p-6 ${
-            result.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
+            result.success ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800'
           }`}
         >
           <h2
             className={`text-xl font-semibold mb-4 ${
-              result.success ? 'text-green-800' : 'text-red-800'
+              result.success ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'
             }`}
           >
             {result.success ? 'Ingestion Successful' : 'Ingestion Failed'}
           </h2>
 
           {result.error && (
-            <div className="mb-4 text-red-700">
+            <div className="mb-4 text-red-700 dark:text-red-300">
               <p className="font-semibold">Error:</p>
               <p>{result.error}</p>
               {result.message && <p className="mt-1 text-sm">{result.message}</p>}
@@ -308,7 +308,7 @@ export default function UnderlyingsIvIngestionPage() {
           )}
 
           {result.message && result.success && (
-            <div className="mb-4 text-green-700">
+            <div className="mb-4 text-green-700 dark:text-green-300">
               <p>{result.message}</p>
             </div>
           )}
@@ -368,7 +368,7 @@ export default function UnderlyingsIvIngestionPage() {
               <p className="font-semibold text-sm mb-2">Errors:</p>
               <div className="max-h-48 overflow-y-auto text-xs">
                 {result.summary.errors.map((err, idx) => (
-                  <div key={idx} className="mb-1 text-red-700">
+                  <div key={idx} className="mb-1 text-red-700 dark:text-red-300">
                     {err.ticker}: {err.error}
                   </div>
                 ))}

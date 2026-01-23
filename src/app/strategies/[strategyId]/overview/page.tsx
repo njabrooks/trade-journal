@@ -64,7 +64,7 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
       subtitle={
         <span className="inline-flex items-center gap-2">
           Strategy
-          <span className="font-mono text-slate-600">
+          <span className="font-mono text-muted-foreground">
             ({strategy.strategyKey})
           </span>
         </span>
@@ -115,18 +115,18 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
       <EntitySection title="Performance">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm font-medium text-slate-500">PnL Timeline</p>
-            <p className="text-2xl font-semibold text-slate-900">
+            <p className="text-sm font-medium text-muted-foreground">PnL Timeline</p>
+            <p className="text-2xl font-semibold text-foreground">
               {formatCurrency(latestMetrics?.totalUnrealizedPnl ?? null)}
             </p>
           </div>
-          <span className="text-xs text-slate-400">{pnlSparkline.length} pts</span>
+          <span className="text-xs text-muted-foreground">{pnlSparkline.length} pts</span>
         </div>
         <div className="h-32">
           <Sparkline data={pnlSparkline} stroke="#0ea5e9" />
         </div>
         <div className="mt-6 border-t pt-4">
-          <p className="text-sm font-medium text-slate-500">Abs Notional</p>
+          <p className="text-sm font-medium text-muted-foreground">Abs Notional</p>
           <div className="mt-2 h-32">
             <Sparkline data={notionalSparkline} stroke="#2563eb" />
           </div>
@@ -138,24 +138,24 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
+              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4">Symbol</th>
                 <th className="py-2 pr-4">Qty</th>
                 <th className="py-2 pr-4">Abs Notional</th>
                 <th className="py-2">PnL</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-600">
+            <tbody className="divide-y divide-border text-muted-foreground">
               {detail.openPositions.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-slate-400">
+                  <td colSpan={4} className="py-6 text-center text-muted-foreground">
                     No open positions assigned to this strategy.
                   </td>
                 </tr>
               ) : (
                 detail.openPositions.map((position) => (
                   <tr key={position.id}>
-                    <td className="py-2 pr-4 font-medium text-slate-900">
+                    <td className="py-2 pr-4 font-medium text-foreground">
                       {position.symbol}
                       {position.expiry ? ` · ${position.expiry}` : ''}
                     </td>
@@ -185,7 +185,7 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
+              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4">Date</th>
                 <th className="py-2 pr-4">Side</th>
                 <th className="py-2 pr-4">Qty</th>
@@ -194,17 +194,17 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
                 <th className="py-2">Gross</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-600">
+            <tbody className="divide-y divide-border text-muted-foreground">
               {detail.recentTrades.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-slate-400">
+                  <td colSpan={6} className="py-6 text-center text-muted-foreground">
                     No trades linked to this strategy.
                   </td>
                 </tr>
               ) : (
                 detail.recentTrades.map((trade) => (
                   <tr key={trade.id}>
-                    <td className="py-2 pr-4 text-xs text-slate-500">
+                    <td className="py-2 pr-4 text-xs text-muted-foreground">
                       {trade.tradeDate
                         ? new Date(trade.tradeDate).toLocaleDateString('en-GB')
                         : '—'}
@@ -235,9 +235,9 @@ function Metric({
   valueClass?: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-sm font-medium text-slate-500">{label}</p>
-      <p className={`mt-1 text-xl font-semibold ${valueClass ?? 'text-slate-900'}`}>{value}</p>
+    <div className="rounded-lg border border bg-card p-4 shadow-sm">
+      <p className="text-sm font-medium text-muted-foreground">{label}</p>
+      <p className={`mt-1 text-xl font-semibold ${valueClass ?? 'text-foreground'}`}>{value}</p>
     </div>
   );
 }

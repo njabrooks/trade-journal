@@ -143,7 +143,7 @@ function NativeSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`flex h-10 w-full rounded-md border border-border bg-background text-foreground px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
     </select>
@@ -307,13 +307,13 @@ export function SignalConfigForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{getModeTitle()}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{getModeTitle()}</h2>
             {signal && (
-              <p className="text-sm text-slate-500 mt-1 line-clamp-2">{signal.statement}</p>
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{signal.statement}</p>
             )}
             {mode === 'upgrade' && (
               <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
@@ -324,7 +324,7 @@ export function SignalConfigForm({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -346,8 +346,8 @@ export function SignalConfigForm({
                   }}
                   className={`px-4 py-3 rounded-lg border-2 transition-colors text-left relative ${
                     dataSource === source.id
-                      ? 'border-blue-500 bg-blue-50 text-blue-900'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100'
+                      : 'border bg-card text-foreground hover:border-muted-foreground'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -432,7 +432,7 @@ export function SignalConfigForm({
                       className="w-24"
                     />
                     {selectedMetric?.unit && (
-                      <span className="text-sm text-slate-500">{selectedMetric.unit}</span>
+                      <span className="text-sm text-muted-foreground">{selectedMetric.unit}</span>
                     )}
                   </div>
 
@@ -452,7 +452,7 @@ export function SignalConfigForm({
 
             {/* Explanation for on_release */}
             {operator === 'on_release' && (
-              <p className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg mt-2">
+              <p className="text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-2">
                 📅 Triggers when new data is released (e.g., monthly PMI update), regardless of value.
                 Ideal for economic indicators with infrequent releases.
               </p>
@@ -462,7 +462,7 @@ export function SignalConfigForm({
           {/* Duration */}
           <div className="space-y-2">
             <Label>Duration (Optional)</Label>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Require condition to persist for multiple periods before triggering
             </p>
             <div className="flex items-center gap-3">
@@ -486,12 +486,12 @@ export function SignalConfigForm({
 
           {/* Preview */}
           {previewCondition && (
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-              <Label className="text-xs text-slate-500 uppercase tracking-wider">
+            <div className="bg-muted rounded-lg p-4 border border-border">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">
                 Trigger Preview
               </Label>
-              <p className="mt-2 text-sm font-medium text-slate-800">{previewCondition}</p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-2 text-sm font-medium text-foreground">{previewCondition}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Checked daily at 08:00 UTC
               </p>
             </div>
@@ -499,7 +499,7 @@ export function SignalConfigForm({
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

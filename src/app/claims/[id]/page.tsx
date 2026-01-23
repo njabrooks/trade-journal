@@ -67,7 +67,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
       case 'exploratory':
         return 'bg-purple-100 text-purple-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -82,7 +82,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
       case 'rejected':
         return 'bg-red-100 text-red-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -95,7 +95,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
       case 'foundation':
         return { className: 'bg-amber-100 text-amber-700', label: 'Foundation' };
       default:
-        return { className: 'bg-slate-100 text-slate-700', label: mappingType };
+        return { className: 'bg-muted text-foreground', label: mappingType };
     }
   };
 
@@ -107,20 +107,20 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
     >
       <div className="space-y-6">
         {/* Compact Overview */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <div className="bg-card rounded-lg border border p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold">Overview</h3>
             {/* TODO: Add EditMainClaimButton if needed */}
           </div>
           <dl className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-2">
             <div>
-              <dt className="text-xs font-medium text-slate-500">Category</dt>
-              <dd className="mt-0.5 text-sm text-slate-900 capitalize">
+              <dt className="text-xs font-medium text-muted-foreground">Category</dt>
+              <dd className="mt-0.5 text-sm text-foreground capitalize">
                 {claim.category.replace('_', ' ')}
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-slate-500">Status</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Status</dt>
               <dd className="mt-0.5">
                 <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${statusBadgeColor(claim.status)}`}>
                   {claim.status}
@@ -128,37 +128,37 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-slate-500">Confidence</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Confidence</dt>
               <dd className="mt-0.5">
                 {claim.qualifier ? (
                   <Badge className={`${confidenceBadgeColor(claim.qualifier)} text-xs`}>
                     {claim.qualifier}
                   </Badge>
                 ) : (
-                  <span className="text-sm text-slate-500">—</span>
+                  <span className="text-sm text-muted-foreground">—</span>
                 )}
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-slate-500">Time Horizon</dt>
-              <dd className="mt-0.5 text-sm text-slate-900">
+              <dt className="text-xs font-medium text-muted-foreground">Time Horizon</dt>
+              <dd className="mt-0.5 text-sm text-foreground">
                 {claim.timeHorizon?.replace('_', ' ') ?? '—'}
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-medium text-slate-500">Created</dt>
-              <dd className="mt-0.5 text-sm text-slate-900">
+              <dt className="text-xs font-medium text-muted-foreground">Created</dt>
+              <dd className="mt-0.5 text-sm text-foreground">
                 {new Date(claim.createdAt).toLocaleDateString('en-GB')}
               </dd>
             </div>
             {claim.relevantTickers && claim.relevantTickers.length > 0 && (
               <div className="col-span-2 md:col-span-5">
-                <dt className="text-xs font-medium text-slate-500 mb-1">Relevant Tickers</dt>
+                <dt className="text-xs font-medium text-muted-foreground mb-1">Relevant Tickers</dt>
                 <dd className="flex flex-wrap gap-1">
                   {claim.relevantTickers.map((ticker) => (
                     <span
                       key={ticker}
-                      className="inline-flex px-1.5 py-0.5 text-xs font-mono bg-slate-100 text-slate-700 rounded"
+                      className="inline-flex px-1.5 py-0.5 text-xs font-mono bg-muted text-foreground rounded"
                     >
                       ${ticker}
                     </span>
@@ -170,25 +170,25 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
         </div>
 
         {/* Toulmin Framework */}
-        <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <div className="bg-card rounded-lg border border p-4">
           <h3 className="text-base font-semibold mb-3">Toulmin Framework</h3>
 
           <div className="space-y-4">
             {/* Claim */}
             <div>
-              <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+              <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                 Claim
               </h4>
-              <p className="text-sm text-slate-900 font-medium">{claim.claim}</p>
+              <p className="text-sm text-foreground font-medium">{claim.claim}</p>
             </div>
 
             {/* Evidence */}
             {claim.evidence && claim.evidence.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                   Evidence ({claim.evidence.length})
                 </h4>
-                <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                   {claim.evidence.map((point, idx) => {
                     if (typeof point !== 'string') {
                       console.warn('Non-string evidence point:', point);
@@ -203,30 +203,30 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
             {/* Reasoning */}
             {claim.reasoning && (
               <div>
-                <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                   Reasoning
                 </h4>
-                <p className="text-sm text-slate-600 whitespace-pre-wrap">{claim.reasoning}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{claim.reasoning}</p>
               </div>
             )}
 
             {/* Backing */}
             {claim.backing && (
               <div>
-                <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                   Backing
                 </h4>
-                <p className="text-sm text-slate-600 whitespace-pre-wrap">{claim.backing}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{claim.backing}</p>
               </div>
             )}
 
             {/* Rebuttal */}
             {claim.rebuttal && claim.rebuttal.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                   Rebuttal / Limitations ({claim.rebuttal.length})
                 </h4>
-                <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                   {claim.rebuttal.map((point, idx) => {
                     if (typeof point !== 'string') {
                       console.warn('Non-string rebuttal point:', point);
@@ -240,8 +240,8 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
 
             {/* Linked Evidence Claims */}
             {(evidenceClaims.supporting.length > 0 || evidenceClaims.rebutting.length > 0) && (
-              <div className="pt-2 border-t border-slate-200">
-                <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+              <div className="pt-2 border-t border">
+                <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                   Linked Evidence Claims
                 </h4>
 
@@ -287,7 +287,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
 
         {/* Source Information */}
         {artifact && (
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="bg-card rounded-lg border border p-4">
             <h3 className="text-base font-semibold mb-3">Source</h3>
             <div className="space-y-2">
               <Link
@@ -299,33 +299,33 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
               </Link>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
                 <div>
-                  <dt className="text-xs font-medium text-slate-500">Source Type</dt>
-                  <dd className="mt-0.5 text-sm text-slate-900 capitalize">{artifact.sourceType}</dd>
+                  <dt className="text-xs font-medium text-muted-foreground">Source Type</dt>
+                  <dd className="mt-0.5 text-sm text-foreground capitalize">{artifact.sourceType}</dd>
                 </div>
                 {artifact.author && (
                   <div>
-                    <dt className="text-xs font-medium text-slate-500">Author</dt>
-                    <dd className="mt-0.5 text-sm text-slate-900">{artifact.author}</dd>
+                    <dt className="text-xs font-medium text-muted-foreground">Author</dt>
+                    <dd className="mt-0.5 text-sm text-foreground">{artifact.author}</dd>
                   </div>
                 )}
                 {artifact.publishedDate && (
                   <div>
-                    <dt className="text-xs font-medium text-slate-500">Published</dt>
-                    <dd className="mt-0.5 text-sm text-slate-900">
+                    <dt className="text-xs font-medium text-muted-foreground">Published</dt>
+                    <dd className="mt-0.5 text-sm text-foreground">
                       {new Date(artifact.publishedDate).toLocaleDateString('en-GB')}
                     </dd>
                   </div>
                 )}
                 <div>
-                  <dt className="text-xs font-medium text-slate-500">Ingested</dt>
-                  <dd className="mt-0.5 text-sm text-slate-900">
+                  <dt className="text-xs font-medium text-muted-foreground">Ingested</dt>
+                  <dd className="mt-0.5 text-sm text-foreground">
                     {new Date(artifact.ingestedAt).toLocaleDateString('en-GB')}
                   </dd>
                 </div>
               </dl>
               {artifact.sourceUrl && (
                 <div>
-                  <dt className="text-xs font-medium text-slate-500">URL</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">URL</dt>
                   <dd className="mt-0.5 text-xs">
                     <a
                       href={artifact.sourceUrl}
@@ -344,7 +344,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
 
         {/* Linked Macro Theses */}
         {linkedTheses.length > 0 && (
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="bg-card rounded-lg border border p-4">
             <h3 className="text-base font-semibold mb-3">
               Linked Macro Theses ({linkedTheses.length})
             </h3>
@@ -355,7 +355,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                   <Link
                     key={thesis.id}
                     href={`/macro-theses/${thesis.id}`}
-                    className="block p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                    className="block p-3 bg-muted hover:bg-muted rounded-lg transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
@@ -365,7 +365,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                       <span className="text-sm font-medium text-blue-600 hover:text-blue-800">
                         {thesis.title}
                       </span>
-                      <ExternalLink className="h-3 w-3 ml-auto text-slate-400" />
+                      <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
                     </div>
                   </Link>
                 );
@@ -376,7 +376,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
 
         {/* Linked Asset Theses */}
         {linkedViews.length > 0 && (
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="bg-card rounded-lg border border p-4">
             <h3 className="text-base font-semibold mb-3">
               Linked Asset Theses ({linkedViews.length})
             </h3>
@@ -387,7 +387,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                   <Link
                     key={view.id}
                     href={`/asset-theses/${view.id}`}
-                    className="block p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                    className="block p-3 bg-muted hover:bg-muted rounded-lg transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
@@ -397,8 +397,8 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                       <span className="text-sm font-medium text-blue-600 hover:text-blue-800">
                         {view.title}
                       </span>
-                      <span className="text-sm text-slate-500">({view.ticker})</span>
-                      <ExternalLink className="h-3 w-3 ml-auto text-slate-400" />
+                      <span className="text-sm text-muted-foreground">({view.ticker})</span>
+                      <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
                     </div>
                   </Link>
                 );
@@ -409,9 +409,9 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
 
         {/* No Links State */}
         {linkedTheses.length === 0 && linkedViews.length === 0 && (
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="bg-card rounded-lg border border p-4">
             <h3 className="text-base font-semibold mb-3">Linked Entities</h3>
-            <p className="text-sm text-slate-500 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               This claim has not been linked to any macro theses or asset theses yet.
             </p>
             {/* TODO: Add convert/link button if needed */}

@@ -76,7 +76,7 @@ export default function AdminTriagePage() {
   if (loading) {
     return (
       <DashboardShell activeNav="admin-triage" title="Admin: Triage Rules" subtitle="Loading...">
-        <div className="text-center text-slate-500">Loading rules...</div>
+        <div className="text-center text-muted-foreground">Loading rules...</div>
       </DashboardShell>
     );
   }
@@ -85,24 +85,24 @@ export default function AdminTriagePage() {
     <DashboardShell activeNav="admin-triage" title="Admin: Triage Rules" subtitle="Configure triage thresholds and triggers">
       <div className="space-y-6">
         {error && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+          <div className="rounded-lg border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-300">
             {error}
           </div>
         )}
         {success && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-700 dark:text-emerald-300">
             {success}
           </div>
         )}
 
-        <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border bg-card p-6 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Position-Level Rules</h2>
           <div className="space-y-4">
             <div>
-              <label htmlFor="dteThreshold" className="block text-sm font-medium text-slate-700">
+              <label htmlFor="dteThreshold" className="block text-sm font-medium text-foreground">
                 DTE Threshold (days)
               </label>
-              <p className="mb-1 text-xs text-slate-500">
+              <p className="mb-1 text-xs text-muted-foreground">
                 Create triage records for options with DTE less than or equal to this value
               </p>
               <input
@@ -114,18 +114,18 @@ export default function AdminTriagePage() {
                 onChange={(e) =>
                   setRules({ ...rules, dteThreshold: parseInt(e.target.value) || 0 })
                 }
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border px-3 py-2 text-sm"
               />
             </div>
 
             <div>
               <label
                 htmlFor="assignmentDteThreshold"
-                className="block text-sm font-medium text-slate-700"
+                className="block text-sm font-medium text-foreground"
               >
                 Assignment Risk DTE Threshold (days)
               </label>
-              <p className="mb-1 text-xs text-slate-500">
+              <p className="mb-1 text-xs text-muted-foreground">
                 Flag assignment risk for short ITM options with DTE less than or equal to this value
               </p>
               <input
@@ -140,23 +140,23 @@ export default function AdminTriagePage() {
                     assignmentDteThreshold: parseInt(e.target.value) || 0,
                   })
                 }
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border px-3 py-2 text-sm"
               />
             </div>
           </div>
         </section>
 
-        <section className="rounded-2xl border bg-white p-6 shadow-sm">
+        <section className="rounded-2xl border bg-card p-6 shadow-sm">
           <h2 className="mb-4 text-lg font-semibold">Strategy-Level Rules</h2>
           <div className="space-y-4">
             <div>
               <label
                 htmlFor="sizeAttentionThreshold"
-                className="block text-sm font-medium text-slate-700"
+                className="block text-sm font-medium text-foreground"
               >
                 Size Attention Threshold (% of NAV)
               </label>
-              <p className="mb-1 text-xs text-slate-500">
+              <p className="mb-1 text-xs text-muted-foreground">
                 Flag strategies with exposure greater than or equal to this percentage of NAV as "attention"
               </p>
               <input
@@ -172,9 +172,9 @@ export default function AdminTriagePage() {
                     sizeAttentionThreshold: parseFloat(e.target.value) || 0,
                   })
                 }
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border px-3 py-2 text-sm"
               />
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Current: {(rules.sizeAttentionThreshold * 100).toFixed(1)}%
               </p>
             </div>
@@ -182,11 +182,11 @@ export default function AdminTriagePage() {
             <div>
               <label
                 htmlFor="sizeUrgentThreshold"
-                className="block text-sm font-medium text-slate-700"
+                className="block text-sm font-medium text-foreground"
               >
                 Size Urgent Threshold (% of NAV)
               </label>
-              <p className="mb-1 text-xs text-slate-500">
+              <p className="mb-1 text-xs text-muted-foreground">
                 Flag strategies with exposure greater than or equal to this percentage of NAV as "urgent"
               </p>
               <input
@@ -202,9 +202,9 @@ export default function AdminTriagePage() {
                     sizeUrgentThreshold: parseFloat(e.target.value) || 0,
                   })
                 }
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border px-3 py-2 text-sm"
               />
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Current: {(rules.sizeUrgentThreshold * 100).toFixed(1)}%
               </p>
             </div>
@@ -212,11 +212,11 @@ export default function AdminTriagePage() {
             <div>
               <label
                 htmlFor="complexityThreshold"
-                className="block text-sm font-medium text-slate-700"
+                className="block text-sm font-medium text-foreground"
               >
                 Complexity Threshold (number of positions)
               </label>
-              <p className="mb-1 text-xs text-slate-500">
+              <p className="mb-1 text-xs text-muted-foreground">
                 Flag strategies with more than this number of open positions as "info" for complexity review
               </p>
               <input
@@ -231,7 +231,7 @@ export default function AdminTriagePage() {
                     complexityThreshold: parseInt(e.target.value) || 0,
                   })
                 }
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                className="w-full rounded-md border border px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -241,7 +241,7 @@ export default function AdminTriagePage() {
           <button
             onClick={loadRules}
             disabled={saving}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="rounded-md border border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
           >
             Reset
           </button>
@@ -254,7 +254,7 @@ export default function AdminTriagePage() {
           </button>
         </div>
 
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-800 dark:text-amber-200">
           <p className="font-medium">Note:</p>
           <p className="mt-1">
             Changes to these rules will take effect the next time triage is recomputed. Use the "Recompute Triage" button on the Triage page to apply new rules.

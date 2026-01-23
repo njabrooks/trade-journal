@@ -34,28 +34,28 @@ export default async function ClaimsBrowserPage() {
     >
       <div className="space-y-6">
         {/* Statistics Card */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
+        <div className="bg-card rounded-lg border border p-6">
           <h3 className="text-lg font-semibold mb-4">Overview</h3>
           <dl className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div>
-              <dt className="text-sm font-medium text-slate-500">Research Sources</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-900">{uniqueSources}</dd>
+              <dt className="text-sm font-medium text-muted-foreground">Research Sources</dt>
+              <dd className="mt-1 text-2xl font-semibold text-foreground">{uniqueSources}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Total Claims</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-900">{totalClaims}</dd>
+              <dt className="text-sm font-medium text-muted-foreground">Total Claims</dt>
+              <dd className="mt-1 text-2xl font-semibold text-foreground">{totalClaims}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Draft</dt>
+              <dt className="text-sm font-medium text-muted-foreground">Draft</dt>
               <dd className="mt-1 text-2xl font-semibold text-amber-600">{draftCount}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Active</dt>
+              <dt className="text-sm font-medium text-muted-foreground">Active</dt>
               <dd className="mt-1 text-2xl font-semibold text-emerald-600">{activeCount}</dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-slate-500">Rejected</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-500">{rejectedCount}</dd>
+              <dt className="text-sm font-medium text-muted-foreground">Rejected</dt>
+              <dd className="mt-1 text-2xl font-semibold text-muted-foreground">{rejectedCount}</dd>
             </div>
           </dl>
         </div>
@@ -64,10 +64,10 @@ export default async function ClaimsBrowserPage() {
         {claimsWithSources.length > 0 ? (
           <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} showSourceColumn={true} />
         ) : (
-          <div className="bg-white rounded-lg border border-slate-200 p-12 text-center">
-            <p className="text-slate-600 mb-4">No claims found in your research library.</p>
-            <p className="text-sm text-slate-500 mb-6">
-              Upload research and process it with the <code className="bg-slate-100 px-2 py-1 rounded">/process-transcript</code> skill to extract claims.
+          <div className="bg-card rounded-lg border border p-12 text-center">
+            <p className="text-muted-foreground mb-4">No claims found in your research library.</p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Upload research and process it with the <code className="bg-muted px-2 py-1 rounded">/process-transcript</code> skill to extract claims.
             </p>
             <Link href="/research/upload">
               <Button>Upload Research</Button>

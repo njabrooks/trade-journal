@@ -332,11 +332,11 @@ export function ConvertClaimToEntityDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-slate-200 p-6">
-          <h2 className="text-2xl font-semibold">Confirm Claim</h2>
-          <p className="text-sm text-slate-600 mt-1">
+        <div className="sticky top-0 bg-card border-b border-border p-6">
+          <h2 className="text-2xl font-semibold text-foreground">Confirm Claim</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Link this claim to theses/views to confirm it
           </p>
         </div>
@@ -344,13 +344,13 @@ export function ConvertClaimToEntityDialog({
         {/* Body */}
         <div className="p-6 space-y-6">
           {/* Show claim being confirmed - compact */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-blue-900 truncate">{claim.title}</p>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100 truncate">{claim.title}</p>
               </div>
               {claim.qualifier && (
-                <Badge className="bg-blue-100 text-blue-800 text-xs ml-3 flex-shrink-0">
+                <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs ml-3 flex-shrink-0">
                   {claim.qualifier}
                 </Badge>
               )}
@@ -364,19 +364,19 @@ export function ConvertClaimToEntityDialog({
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setMode('link_existing')}
-                  className="p-6 border-2 border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
                 >
-                  <div className="font-semibold text-lg mb-2">Link to Existing</div>
-                  <div className="text-sm text-slate-600">
+                  <div className="font-semibold text-lg mb-2 text-foreground">Link to Existing</div>
+                  <div className="text-sm text-muted-foreground">
                     Select existing theses or views to link this claim to
                   </div>
                 </button>
                 <button
                   onClick={() => setMode('create_new')}
-                  className="p-6 border-2 border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
                 >
-                  <div className="font-semibold text-lg mb-2">Create New</div>
-                  <div className="text-sm text-slate-600">
+                  <div className="font-semibold text-lg mb-2 text-foreground">Create New</div>
+                  <div className="text-sm text-muted-foreground">
                     Create a new macro thesis or asset thesis
                   </div>
                 </button>
@@ -388,61 +388,61 @@ export function ConvertClaimToEntityDialog({
           {mode === 'link_existing' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium">Select Theses/Views to Link</h3>
-                <div className="text-sm text-slate-600">
+                <h3 className="font-medium text-foreground">Select Theses/Views to Link</h3>
+                <div className="text-sm text-muted-foreground">
                   {selectedThesisIds.length + selectedViewIds.length} selected
                 </div>
               </div>
 
               {/* Relationship Type - Always visible at top */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+              <div className="bg-muted border border-border rounded-lg p-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Relationship Type *
                 </label>
                 <select
                   value={relationshipType}
                   onChange={(e) => setRelationshipType(e.target.value as typeof relationshipType)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="supports">✓ Supports - This claim provides evidence</option>
                   <option value="refutes">✗ Refutes - This claim contradicts or challenges</option>
                   <option value="foundation">★ Foundation - This claim is the foundational reasoning</option>
                 </select>
-                <p className="text-xs text-slate-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Select your relationship first, then choose theses/views below
                 </p>
               </div>
 
               {loadingEntities ? (
-                <div className="text-center py-8 text-slate-500">Loading...</div>
+                <div className="text-center py-8 text-muted-foreground">Loading...</div>
               ) : (
                 <div className="space-y-6">
                   {/* Currently Linked Entities */}
                   {(linkedTheses.length > 0 || linkedViews.length > 0) && (
-                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                    <div className="bg-muted border border-border rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-foreground mb-3">
                         Currently Linked ({linkedTheses.length + linkedViews.length})
                       </h4>
                       <div className="space-y-2">
                         {linkedTheses.map((thesis) => (
                           <div
                             key={thesis.id}
-                            className="flex items-center justify-between bg-white p-3 rounded border border-slate-200"
+                            className="flex items-center justify-between bg-card p-3 rounded border border-border"
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm">{thesis.title}</div>
+                              <div className="font-medium text-sm text-foreground">{thesis.title}</div>
                               <div className="flex gap-2 mt-1">
-                                <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                <Badge className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs">
                                   {thesis.thesisType}
                                 </Badge>
-                                <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                <Badge className="bg-muted text-muted-foreground text-xs">
                                   {thesis.status}
                                 </Badge>
                               </div>
                             </div>
                             <button
                               onClick={() => handleUnlinkEntity(thesis.id, 'macroThesis')}
-                              className="ml-3 p-1 text-red-600 hover:bg-red-50 rounded"
+                              className="ml-3 p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                               title="Remove link"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -454,22 +454,22 @@ export function ConvertClaimToEntityDialog({
                         {linkedViews.map((view) => (
                           <div
                             key={view.id}
-                            className="flex items-center justify-between bg-white p-3 rounded border border-slate-200"
+                            className="flex items-center justify-between bg-card p-3 rounded border border-border"
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm">{view.title}</div>
+                              <div className="font-medium text-sm text-foreground">{view.title}</div>
                               <div className="flex gap-2 mt-1">
-                                <Badge className="bg-blue-100 text-blue-700 text-xs">
+                                <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs">
                                   {view.ticker}
                                 </Badge>
-                                <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                <Badge className="bg-muted text-muted-foreground text-xs">
                                   {view.status}
                                 </Badge>
                               </div>
                             </div>
                             <button
                               onClick={() => handleUnlinkEntity(view.id, 'assetThesis')}
-                              className="ml-3 p-1 text-red-600 hover:bg-red-50 rounded"
+                              className="ml-3 p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                               title="Remove link"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -484,18 +484,18 @@ export function ConvertClaimToEntityDialog({
 
                   {/* Macro Theses */}
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                    <h4 className="text-sm font-semibold text-foreground mb-3">
                       Macro Theses ({availableTheses.length})
                     </h4>
                     {availableTheses.length === 0 ? (
-                      <p className="text-sm text-slate-500 italic">No available theses</p>
+                      <p className="text-sm text-muted-foreground italic">No available theses</p>
                     ) : (
-                      <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg">
+                      <div className="max-h-60 overflow-y-auto border border-border rounded-lg">
                         {availableTheses.map(thesis => (
                           <label
                             key={thesis.id}
-                            className={`flex items-start gap-3 p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 ${
-                              selectedThesisIds.includes(thesis.id) ? 'bg-blue-50' : ''
+                            className={`flex items-start gap-3 p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0 ${
+                              selectedThesisIds.includes(thesis.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                             }`}
                           >
                             <input
@@ -505,14 +505,14 @@ export function ConvertClaimToEntityDialog({
                               className="mt-1"
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-slate-900">
+                              <div className="text-sm font-medium text-foreground">
                                 {thesis.title}
                               </div>
                               <div className="flex gap-2 mt-1">
-                                <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                <Badge className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs">
                                   {thesis.thesisType}
                                 </Badge>
-                                <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                <Badge className="bg-muted text-muted-foreground text-xs">
                                   {thesis.status}
                                 </Badge>
                               </div>
@@ -525,35 +525,34 @@ export function ConvertClaimToEntityDialog({
 
                   {/* Asset Theses */}
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                    <h4 className="text-sm font-semibold text-foreground mb-3">
                       Asset Theses ({availableViews.length})
                     </h4>
                     {availableViews.length === 0 ? (
-                      <p className="text-sm text-slate-500 italic">No available views</p>
+                      <p className="text-sm text-muted-foreground italic">No available views</p>
                     ) : (
-                      <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg">
+                      <div className="max-h-60 overflow-y-auto border border-border rounded-lg">
                         {availableViews.map(view => (
                           <label
                             key={view.id}
-                            className={`flex items-start gap-3 p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 ${
-                              selectedViewIds.includes(view.id) ? 'bg-blue-50' : ''
+                            className={`flex items-start gap-3 p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0 ${
+                              selectedViewIds.includes(view.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                             }`}
                           >
                             <input
                               type="checkbox"
                               checked={selectedViewIds.includes(view.id)}
                               onChange={() => toggleViewSelection(view.id)}
-                              className="mt-1"
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-slate-900">
+                              <div className="text-sm font-medium text-foreground">
                                 {view.title}
                               </div>
                               <div className="flex gap-2 mt-1">
-                                <Badge className="bg-blue-100 text-blue-700 text-xs">
+                                <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs">
                                   {view.ticker}
                                 </Badge>
-                                <Badge className="bg-slate-100 text-slate-700 text-xs">
+                                <Badge className="bg-muted text-muted-foreground text-xs">
                                   {view.status}
                                 </Badge>
                               </div>
@@ -566,8 +565,8 @@ export function ConvertClaimToEntityDialog({
 
                   {/* Selection Summary */}
                   {(selectedThesisIds.length > 0 || selectedViewIds.length > 0) && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm font-medium text-blue-900">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                         {selectedThesisIds.length + selectedViewIds.length} selected · 
                         <span className="ml-1 font-normal">
                           Will be linked as <span className="font-semibold">{relationshipType}</span>
@@ -583,23 +582,23 @@ export function ConvertClaimToEntityDialog({
           {/* Create New Mode */}
           {mode === 'create_new' && !entityType && (
             <div className="space-y-3">
-              <h3 className="font-medium">What would you like to create?</h3>
+              <h3 className="font-medium text-foreground">What would you like to create?</h3>
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setEntityType('macro_thesis')}
-                  className="p-6 border-2 border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
                 >
-                  <div className="font-semibold text-lg mb-2">Macro Thesis</div>
-                  <div className="text-sm text-slate-600">
+                  <div className="font-semibold text-lg mb-2 text-foreground">Macro Thesis</div>
+                  <div className="text-sm text-muted-foreground">
                     Cross-asset belief (secular, cyclical, or structural)
                   </div>
                 </button>
                 <button
                   onClick={() => setEntityType('asset_thesis')}
-                  className="p-6 border-2 border-slate-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
                 >
-                  <div className="font-semibold text-lg mb-2">Asset Thesis</div>
-                  <div className="text-sm text-slate-600">
+                  <div className="font-semibold text-lg mb-2 text-foreground">Asset Thesis</div>
+                  <div className="text-sm text-muted-foreground">
                     Asset-specific thesis about a particular underlying
                   </div>
                 </button>
@@ -612,13 +611,13 @@ export function ConvertClaimToEntityDialog({
             <div className="space-y-6">
               {/* Common Fields */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Direction
                 </label>
                 <select
                   value={direction}
                   onChange={(e) => setDirection(e.target.value as Direction | '')}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                 >
                   <option value="">Select direction...</option>
                   <option value="bullish">Bullish</option>
@@ -628,13 +627,13 @@ export function ConvertClaimToEntityDialog({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Time Horizon
                 </label>
                 <select
                   value={timeHorizon}
                   onChange={(e) => setTimeHorizon(e.target.value as TimeHorizon | '')}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                 >
                   <option value="">Select time horizon...</option>
                   <option value="long_term">Long Term</option>
@@ -644,13 +643,13 @@ export function ConvertClaimToEntityDialog({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Confidence Level
                 </label>
                 <select
                   value={confidenceLevel}
                   onChange={(e) => setConfidenceLevel(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                 >
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
@@ -663,13 +662,13 @@ export function ConvertClaimToEntityDialog({
               {entityType === 'macro_thesis' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Thesis Type
                     </label>
                     <select
                       value={thesisType}
                       onChange={(e) => setThesisType(e.target.value as ThesisType)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                     >
                       <option value="secular">Secular</option>
                       <option value="cyclical">Cyclical</option>
@@ -678,7 +677,7 @@ export function ConvertClaimToEntityDialog({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Sectors / Topics <span className="text-red-500">*</span>
                     </label>
                     <SectorSelector value={sectors} onChange={setSectors} />
@@ -689,7 +688,7 @@ export function ConvertClaimToEntityDialog({
               {/* Asset Thesis Specific */}
               {entityType === 'asset_thesis' && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Underlying <span className="text-red-500">*</span>
                   </label>
                   <UnderlyingSelector
@@ -705,14 +704,14 @@ export function ConvertClaimToEntityDialog({
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-200 p-6 flex justify-between">
+        <div className="sticky bottom-0 bg-card border-t border-border p-6 flex justify-between">
           <div>
             {(mode || entityType) && (
               <Button

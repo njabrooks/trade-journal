@@ -71,14 +71,14 @@ interface ThesisTriageTableRowProps {
 
 function SeverityTag({ severity }: { severity: string }) {
   const classNameMap: Record<string, string> = {
-    urgent: 'bg-rose-100 text-rose-700 border-rose-200',
-    attention: 'bg-amber-100 text-amber-700 border-amber-200',
-    monitor: 'bg-blue-100 text-blue-700 border-blue-200',
-    info: 'bg-slate-200 text-slate-700 border-slate-300',
-    critical: 'bg-red-100 text-red-700 border-red-200',
-    high: 'bg-orange-100 text-orange-700 border-orange-200',
-    medium: 'bg-amber-100 text-amber-700 border-amber-200',
-    low: 'bg-blue-100 text-blue-700 border-blue-200',
+    urgent: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+    attention: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+    monitor: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+    info: 'bg-muted text-foreground border',
+    critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+    high: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
+    medium: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+    low: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
   };
 
   return (
@@ -94,15 +94,15 @@ function SeverityTag({ severity }: { severity: string }) {
 function getEvidenceTypeColor(evidenceType: string) {
   switch (evidenceType) {
     case 'strong_validation':
-      return 'bg-emerald-100 text-emerald-700';
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
     case 'weak_validation':
-      return 'bg-emerald-50 text-emerald-600';
+      return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400';
     case 'strong_invalidation':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
     case 'weak_invalidation':
-      return 'bg-red-50 text-red-600';
+      return 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400';
     default:
-      return 'bg-slate-100 text-slate-600';
+      return 'bg-muted text-muted-foreground';
   }
 }
 
@@ -162,8 +162,8 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
     <>
       <tr
         className={cn(
-          'border-b transition-colors hover:bg-slate-50 cursor-pointer',
-          isExpanded && 'bg-slate-50'
+          'border-b transition-colors hover:bg-muted cursor-pointer',
+          isExpanded && 'bg-muted'
         )}
         onClick={() => setIsExpanded(!isExpanded)}
       >
@@ -171,14 +171,14 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
           <div className="flex items-center gap-2">
             <ChevronDown
               className={cn(
-                'h-4 w-4 text-slate-400 transition-transform shrink-0',
+                'h-4 w-4 text-muted-foreground transition-transform shrink-0',
                 isExpanded && 'rotate-180'
               )}
             />
             <Link
               href={`${thesisPath}/${record.thesisId}`}
               onClick={(e) => e.stopPropagation()}
-              className="font-medium text-slate-900 hover:text-blue-600 hover:underline"
+              className="font-medium text-foreground hover:text-blue-600 hover:underline"
             >
               {record.displayTitle}
             </Link>
@@ -197,21 +197,21 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
           </div>
         </td>
         <td className="px-4 py-3 text-left">
-          <span className="text-sm text-slate-600">{getRuleDisplayName(record.triageRule)}</span>
+          <span className="text-sm text-muted-foreground">{getRuleDisplayName(record.triageRule)}</span>
         </td>
         <td className="px-4 py-3 text-center">
           <SeverityTag severity={record.severity} />
         </td>
         <td className="px-4 py-3 text-center">
-          <span className="text-xs text-slate-600 capitalize">
+          <span className="text-xs text-muted-foreground capitalize">
             {record.thesisType}
           </span>
         </td>
-        <td className="px-4 py-3 text-center text-xs text-slate-600">
+        <td className="px-4 py-3 text-center text-xs text-muted-foreground">
           {formatDateShort(record.createdAt)}
         </td>
         <td className="px-4 py-3 text-center">
-          <span className="text-xs text-slate-500 capitalize">
+          <span className="text-xs text-muted-foreground capitalize">
             {record.urgency.replace('_', ' ')}
           </span>
         </td>
@@ -219,25 +219,25 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
 
       {isExpanded && (
         <tr>
-          <td colSpan={6} className="px-4 py-4 bg-slate-50">
+          <td colSpan={6} className="px-4 py-4 bg-muted">
             <div className="space-y-4">
               {/* AI Analysis Summary */}
               {record.aiAnalysis?.summary && (
                 <div>
-                  <p className="text-sm leading-relaxed text-slate-700">{record.aiAnalysis.summary}</p>
+                  <p className="text-sm leading-relaxed text-foreground">{record.aiAnalysis.summary}</p>
                 </div>
               )}
 
               {/* Key Findings */}
               {record.aiAnalysis?.keyFindings && record.aiAnalysis.keyFindings.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
                     <Lightbulb className="w-3.5 h-3.5" />
                     Key Findings
                   </h4>
                   <ul className="space-y-1.5">
                     {record.aiAnalysis.keyFindings.map((finding, i) => (
-                      <li key={i} className="text-sm flex items-start gap-2 text-slate-700">
+                      <li key={i} className="text-sm flex items-start gap-2 text-foreground">
                         <span className="w-1 h-1 rounded-full bg-slate-400 mt-2 flex-shrink-0" />
                         <span>{finding}</span>
                       </li>
@@ -250,15 +250,15 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
               {record.aiAnalysis?.validationPointsAffected &&
                 record.aiAnalysis.validationPointsAffected.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-1.5">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
                       <Target className="w-3.5 h-3.5" />
                       Validation Points Affected
                     </h4>
                     <div className="space-y-2">
                       {record.aiAnalysis.validationPointsAffected.map((vp, i) => (
-                        <div key={i} className="bg-white rounded-md p-2.5 text-sm border border-slate-200">
+                        <div key={i} className="bg-card rounded-md p-2.5 text-sm border">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="font-medium text-slate-800">{vp.pointStatement}</p>
+                            <p className="font-medium text-foreground">{vp.pointStatement}</p>
                             <span
                               className={cn(
                                 'px-1.5 py-0.5 text-xs rounded flex-shrink-0',
@@ -268,7 +268,7 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
                               {vp.evidenceType.replace('_', ' ')}
                             </span>
                           </div>
-                          <p className="text-xs mt-1 text-slate-500">
+                          <p className="text-xs mt-1 text-muted-foreground">
                             <span className="font-medium">Action:</span> {vp.recommendedAction}
                           </p>
                         </div>
@@ -281,14 +281,14 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
               {record.aiAnalysis?.suggestedNextSteps &&
                 record.aiAnalysis.suggestedNextSteps.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2 flex items-center gap-1.5">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
                       <ArrowRight className="w-3.5 h-3.5" />
                       Suggested Next Steps
                     </h4>
                     <ul className="space-y-1">
                       {record.aiAnalysis.suggestedNextSteps.map((step, i) => (
-                        <li key={i} className="text-sm flex items-start gap-2 text-slate-700">
-                          <span className="text-xs font-mono text-slate-400">{i + 1}.</span>
+                        <li key={i} className="text-sm flex items-start gap-2 text-foreground">
+                          <span className="text-xs font-mono text-muted-foreground">{i + 1}.</span>
                           <span>{step}</span>
                         </li>
                       ))}
@@ -299,7 +299,7 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
               {/* Matched Articles */}
               {record.matchedResults && record.matchedResults.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                     Source Articles ({record.matchedResults.length})
                   </h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -310,16 +310,16 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="block bg-white rounded-md p-2 border border-slate-200 hover:border-slate-300 transition-colors group"
+                        className="block bg-card rounded-md p-2 border hover:border-slate-300 transition-colors group"
                       >
                         <div className="flex items-start gap-2">
-                          <ExternalLink className="w-3.5 h-3.5 mt-0.5 text-slate-400 group-hover:text-slate-600 flex-shrink-0" />
+                          <ExternalLink className="w-3.5 h-3.5 mt-0.5 text-muted-foreground group-hover:text-muted-foreground flex-shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-medium truncate text-slate-800 group-hover:text-blue-600">
+                            <p className="text-sm font-medium truncate text-foreground group-hover:text-blue-600">
                               {result.title}
                             </p>
                             {result.snippet && (
-                              <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
                                 {result.snippet.slice(0, 150)}...
                               </p>
                             )}
@@ -328,7 +328,7 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
                       </a>
                     ))}
                     {record.matchedResults.length > 5 && (
-                      <p className="text-xs text-center text-slate-400">
+                      <p className="text-xs text-center text-muted-foreground">
                         +{record.matchedResults.length - 5} more articles
                       </p>
                     )}
@@ -338,10 +338,10 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
 
               {/* Action Required (for non-REVIEW_CONTENT records) */}
               {record.actionRequired && record.triageRule !== 'REVIEW_CONTENT' && (
-                <div className="bg-white rounded-md p-3 border border-slate-200">
-                  <p className="text-sm text-slate-700">{record.actionRequired}</p>
+                <div className="bg-card rounded-md p-3 border">
+                  <p className="text-sm text-foreground">{record.actionRequired}</p>
                   {record.suggestedSkill && (
-                    <p className="text-xs mt-2 font-mono bg-slate-100 px-2 py-1 rounded inline-block text-slate-600">
+                    <p className="text-xs mt-2 font-mono bg-muted px-2 py-1 rounded inline-block text-muted-foreground">
                       {record.suggestedSkill}
                     </p>
                   )}
@@ -393,7 +393,7 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-slate-500"
+                  className="text-muted-foreground"
                   disabled={actioningId === record.id}
                   onClick={(e) => {
                     e.stopPropagation();

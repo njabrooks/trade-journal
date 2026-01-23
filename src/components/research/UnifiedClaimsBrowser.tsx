@@ -264,7 +264,7 @@ export function UnifiedClaimsBrowser({
       case 'exploratory':
         return 'bg-purple-100 text-purple-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -279,7 +279,7 @@ export function UnifiedClaimsBrowser({
       case 'rejected':
         return 'bg-red-100 text-red-700';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -374,7 +374,7 @@ export function UnifiedClaimsBrowser({
       case 'foundation':
         return { className: 'bg-amber-100 text-amber-700', label: 'Foundation' };
       default:
-        return { className: 'bg-slate-100 text-slate-700', label: mappingType };
+        return { className: 'bg-slate-100 text-foreground', label: mappingType };
     }
   };
 
@@ -386,7 +386,7 @@ export function UnifiedClaimsBrowser({
       case 'asset_specific':
         return { className: 'bg-blue-100 text-blue-700', label: 'Asset' };
       default:
-        return { className: 'bg-slate-100 text-slate-700', label: category };
+        return { className: 'bg-slate-100 text-foreground', label: category };
     }
   };
 
@@ -402,19 +402,19 @@ export function UnifiedClaimsBrowser({
         >
           <Filter className="h-4 w-4" />
           Filters
-          {showFilters && <span className="text-xs text-slate-500">(ESC to close)</span>}
+          {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredAndSortedClaims.length} of {claimsWithSources.length} claims
         </div>
       </div>
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+        <div className="bg-card rounded-lg border border p-4 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
               type="text"
@@ -428,7 +428,7 @@ export function UnifiedClaimsBrowser({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Status
               </label>
               <select
@@ -446,7 +446,7 @@ export function UnifiedClaimsBrowser({
 
             {/* Confidence */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Confidence</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Confidence</label>
               <select
                 value={confidenceFilter}
                 onChange={(e) => setConfidenceFilter(e.target.value as ConfidenceFilter)}
@@ -462,7 +462,7 @@ export function UnifiedClaimsBrowser({
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Category</label>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
@@ -476,7 +476,7 @@ export function UnifiedClaimsBrowser({
 
             {/* Linked To */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Linked To</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Linked To</label>
               <select
                 value={linkedToFilter}
                 onChange={(e) => setLinkedToFilter(e.target.value)}
@@ -530,18 +530,18 @@ export function UnifiedClaimsBrowser({
       )}
 
       {/* Claims Table */}
-      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <section className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           {filteredAndSortedClaims.length === 0 ? (
-            <div className="p-10 text-center text-slate-400">
+            <div className="p-10 text-center text-muted-foreground">
               No claims match the selected filters.
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <th
-                    className="px-4 py-3 text-left w-2/5 cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left w-2/5 cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('claim')}
                   >
                     <div className="flex items-center gap-2">
@@ -554,7 +554,7 @@ export function UnifiedClaimsBrowser({
                   </th>
                   {showSourceColumn && (
                     <th
-                      className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                      className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                       onClick={() => handleSort('source')}
                     >
                       <div className="flex items-center gap-2">
@@ -564,7 +564,7 @@ export function UnifiedClaimsBrowser({
                     </th>
                   )}
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('confidence')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -573,7 +573,7 @@ export function UnifiedClaimsBrowser({
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('category')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -582,7 +582,7 @@ export function UnifiedClaimsBrowser({
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -601,13 +601,13 @@ export function UnifiedClaimsBrowser({
                   return (
                     <Fragment key={claim.id}>
                       {/* Main Row */}
-                      <tr className="border-b hover:bg-slate-50 transition-colors">
+                      <tr className="border-b hover:bg-muted transition-colors">
                         {/* Claim Title (brief summary) */}
                         <td className="px-4 py-3">
                           <div className="space-y-1">
                             <Link
                               href={`/claims/${claim.id}`}
-                              className="text-slate-900 font-medium hover:text-blue-600 hover:underline transition-colors block line-clamp-2"
+                              className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors block line-clamp-2"
                             >
                               {claim.title}
                             </Link>
@@ -616,13 +616,13 @@ export function UnifiedClaimsBrowser({
                                 {claim.relevantTickers.slice(0, 3).map((ticker) => (
                                   <span
                                     key={ticker}
-                                    className="inline-flex px-1.5 py-0.5 text-xs font-mono bg-slate-100 text-slate-700 rounded"
+                                    className="inline-flex px-1.5 py-0.5 text-xs font-mono bg-slate-100 text-foreground rounded"
                                   >
                                     ${ticker}
                                   </span>
                                 ))}
                                 {claim.relevantTickers.length > 3 && (
-                                  <span className="text-xs text-slate-500">
+                                  <span className="text-xs text-muted-foreground">
                                     +{claim.relevantTickers.length - 3}
                                   </span>
                                 )}
@@ -635,7 +635,7 @@ export function UnifiedClaimsBrowser({
                         <td className="px-4 py-3">
                           <div className={isExpanded ? "space-y-1" : "flex items-center gap-1 overflow-hidden"}>
                             {linkedTheses.length === 0 && linkedViews.length === 0 ? (
-                              <span className="text-xs text-slate-400">Not linked</span>
+                              <span className="text-xs text-muted-foreground">Not linked</span>
                             ) : (
                               <>
                                 {/* Combined list of all linked entities */}
@@ -677,7 +677,7 @@ export function UnifiedClaimsBrowser({
                                             >
                                               {entity.title}
                                             </Link>
-                                            {!isExpanded && index < visibleEntities.length - 1 && !showMoreBadge && <span className="text-slate-400">,</span>}
+                                            {!isExpanded && index < visibleEntities.length - 1 && !showMoreBadge && <span className="text-muted-foreground">,</span>}
                                           </span>
                                         );
                                       })}
@@ -716,7 +716,7 @@ export function UnifiedClaimsBrowser({
                                 {artifact.title}
                               </Link>
                             ) : (
-                              <span className="text-xs text-slate-400">—</span>
+                              <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </td>
                         )}
@@ -728,7 +728,7 @@ export function UnifiedClaimsBrowser({
                               {claim.qualifier}
                             </Badge>
                           ) : (
-                            <span className="text-xs text-slate-400">—</span>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </td>
 
@@ -794,24 +794,24 @@ export function UnifiedClaimsBrowser({
 
                       {/* Expanded Details Row */}
                       {isExpanded && (
-                        <tr className="bg-slate-50 border-b">
+                        <tr className="bg-muted border-b">
                           <td colSpan={showSourceColumn ? 7 : 6} className="px-4 py-4">
                             <div className="space-y-4">
                               {/* Full Claim Text */}
                               <div>
-                                <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                                <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                                   Claim
                                 </h4>
-                                <p className="text-sm text-slate-900 font-medium">{claim.claim}</p>
+                                <p className="text-sm text-foreground font-medium">{claim.claim}</p>
                               </div>
 
                               {/* Evidence */}
                               {claim.evidence && claim.evidence.length > 0 && (
                                 <div>
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                                  <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                                     Evidence
                                   </h4>
-                                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
+                                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                                     {claim.evidence.map((point, idx) => {
                                       // Type guard: ensure point is a string
                                       if (typeof point !== 'string') {
@@ -827,30 +827,30 @@ export function UnifiedClaimsBrowser({
                               {/* Reasoning */}
                               {claim.reasoning && (
                                 <div>
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                                  <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                                     Reasoning
                                   </h4>
-                                  <p className="text-sm text-slate-600">{claim.reasoning}</p>
+                                  <p className="text-sm text-muted-foreground">{claim.reasoning}</p>
                                 </div>
                               )}
 
                               {/* Backing */}
                               {claim.backing && (
                                 <div>
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                                  <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                                     Backing
                                   </h4>
-                                  <p className="text-sm text-slate-600">{claim.backing}</p>
+                                  <p className="text-sm text-muted-foreground">{claim.backing}</p>
                                 </div>
                               )}
 
                               {/* Rebuttal */}
                               {claim.rebuttal && claim.rebuttal.length > 0 && (
                                 <div>
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-1 uppercase tracking-wide">
+                                  <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                                     Rebuttal
                                   </h4>
-                                  <ul className="list-disc list-inside space-y-1 text-sm text-slate-600">
+                                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                                     {claim.rebuttal.map((point, idx) => {
                                       // Type guard: ensure point is a string
                                       if (typeof point !== 'string') {
@@ -865,8 +865,8 @@ export function UnifiedClaimsBrowser({
 
                               {/* Evidence Claims from Audit - Full Toulmin Framework */}
                               {(evidenceClaims.supporting.length > 0 || evidenceClaims.rebutting.length > 0) && (
-                                <div className="pt-2 border-t border-slate-200">
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+                                <div className="pt-2 border-t border">
+                                  <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Linked Evidence Claims
                                   </h4>
 
@@ -910,8 +910,8 @@ export function UnifiedClaimsBrowser({
 
                               {/* Linked Theses and Views */}
                               {(linkedTheses.length > 0 || linkedViews.length > 0) && (
-                                <div className="pt-2 border-t border-slate-200">
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+                                <div className="pt-2 border-t border">
+                                  <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Linked To
                                   </h4>
                                   <div className="space-y-2">
@@ -959,8 +959,8 @@ export function UnifiedClaimsBrowser({
 
                               {/* Source */}
                               {artifact && insight && (
-                                <div className="pt-2 border-t border-slate-200">
-                                  <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">
+                                <div className="pt-2 border-t border">
+                                  <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Source
                                   </h4>
                                   <Link
@@ -970,23 +970,23 @@ export function UnifiedClaimsBrowser({
                                     <span>{artifact.title}</span>
                                     <ExternalLink className="h-3 w-3 flex-shrink-0" />
                                   </Link>
-                                  <div className="text-xs text-slate-500 capitalize mt-1">
+                                  <div className="text-xs text-muted-foreground capitalize mt-1">
                                     {artifact.sourceType}
                                   </div>
                                 </div>
                               )}
 
                               {/* Metadata */}
-                              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-200">
+                              <div className="grid grid-cols-2 gap-4 pt-2 border-t border">
                                 {claim.timeHorizon && (
                                   <div>
-                                    <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Time Horizon:</span>
-                                    <span className="ml-2 text-sm text-slate-600 capitalize">{claim.timeHorizon.replace('_', ' ')}</span>
+                                    <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Time Horizon:</span>
+                                    <span className="ml-2 text-sm text-muted-foreground capitalize">{claim.timeHorizon.replace('_', ' ')}</span>
                                   </div>
                                 )}
                                 <div>
-                                  <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Created:</span>
-                                  <span className="ml-2 text-sm text-slate-600">{new Date(claim.createdAt).toLocaleDateString('en-GB')}</span>
+                                  <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Created:</span>
+                                  <span className="ml-2 text-sm text-muted-foreground">{new Date(claim.createdAt).toLocaleDateString('en-GB')}</span>
                                 </div>
                               </div>
                             </div>

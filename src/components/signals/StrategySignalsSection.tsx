@@ -66,28 +66,28 @@ function getStatusIcon(status: string) {
     case 'draft':
       return <Clock className="w-4 h-4 text-purple-500" />;
     case 'active':
-      return <Clock className="w-4 h-4 text-slate-400" />;
+      return <Clock className="w-4 h-4 text-muted-foreground" />;
     case 'complete':
       return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
     case 'rejected':
-      return <CheckCircle2 className="w-4 h-4 text-slate-400" />;
+      return <CheckCircle2 className="w-4 h-4 text-muted-foreground" />;
     default:
-      return <Clock className="w-4 h-4 text-slate-400" />;
+      return <Clock className="w-4 h-4 text-muted-foreground" />;
   }
 }
 
 function getStatusBadge(status: string) {
   switch (status) {
     case 'draft':
-      return 'bg-purple-100 text-purple-800';
+      return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300';
     case 'active':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
     case 'complete':
-      return 'bg-emerald-100 text-emerald-800';
+      return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300';
     case 'rejected':
-      return 'bg-slate-100 text-slate-600';
+      return 'bg-muted text-muted-foreground';
     default:
-      return 'bg-slate-100 text-slate-600';
+      return 'bg-muted text-muted-foreground';
   }
 }
 
@@ -238,12 +238,12 @@ export function StrategySignalsSection({
     <>
       {/* Define Signals Prompt */}
       {showDefinePrompt && signals.length === 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <h4 className="font-medium text-amber-900">Define Signals</h4>
-              <p className="text-sm text-amber-700 mt-1">
+              <h4 className="font-medium text-amber-900 dark:text-amber-100">Define Signals</h4>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                 Configure trigger conditions for this strategy. Signals will alert you when
                 specific criteria are met (e.g., price targets, DTE thresholds, profit levels).
               </p>
@@ -265,7 +265,7 @@ export function StrategySignalsSection({
         <h3 className="text-base font-semibold">
           Strategy Signals ({signals.length})
           {signals.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-slate-400">
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
               {confirmationSignals.length} take profit • {warningSignals.length} risk
             </span>
           )}
@@ -279,7 +279,7 @@ export function StrategySignalsSection({
       {/* Signals List */}
       {signals.length === 0 ? (
         !showDefinePrompt && (
-          <div className="text-center py-8 text-slate-400 border rounded-lg bg-slate-50">
+          <div className="text-center py-8 text-muted-foreground border rounded-lg bg-muted">
             <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No signals configured yet</p>
             <p className="text-xs mt-1">Add signals to track trigger conditions</p>
@@ -295,8 +295,8 @@ export function StrategySignalsSection({
                 key={signal.id}
                 className={`border rounded-lg p-3 ${
                   signal.type === 'confirmation'
-                    ? 'border-emerald-200 bg-emerald-50/50'
-                    : 'border-amber-200 bg-amber-50/50'
+                    ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/20'
+                    : 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -305,8 +305,8 @@ export function StrategySignalsSection({
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                           signal.type === 'confirmation'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
+                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
                         }`}
                       >
                         {signal.type === 'confirmation' ? 'Take Profit' : 'Risk Alert'}
@@ -318,14 +318,14 @@ export function StrategySignalsSection({
                         <span className="ml-1">{signal.status}</span>
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-slate-800 mt-1">{signal.statement}</p>
+                    <p className="text-sm font-medium text-foreground mt-1">{signal.statement}</p>
                     {config && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Trigger: {formatConditions(config)}
                       </p>
                     )}
                     {config?.recommendedAction && (
-                      <p className="text-xs text-slate-600 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         <span className="font-medium">Action:</span> {config.recommendedAction}
                       </p>
                     )}
@@ -336,32 +336,32 @@ export function StrategySignalsSection({
                         ) : (
                           <Wifi className="w-3.5 h-3.5 text-blue-500" />
                         )}
-                        <span className="text-xs text-slate-500">
-                          TradingView: <code className="bg-slate-100 px-1 rounded">{config.tvAlertName}</code>
+                        <span className="text-xs text-muted-foreground">
+                          TradingView: <code className="bg-muted px-1 rounded">{config.tvAlertName}</code>
                         </span>
                         {signal.status === 'active' && (
-                          <span className="text-xs text-slate-400 italic">awaiting trigger</span>
+                          <span className="text-xs text-muted-foreground italic">awaiting trigger</span>
                         )}
                       </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 whitespace-nowrap">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {signal.importance}
                     </span>
                     {/* Action Menu */}
                     <div className="relative" ref={actionMenuOpen === signal.id ? menuRef : null}>
                       <button
                         onClick={() => setActionMenuOpen(actionMenuOpen === signal.id ? null : signal.id)}
-                        className="p-1 rounded hover:bg-slate-200/50 text-slate-400 hover:text-slate-600"
+                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
                       >
                         <MoreVertical className="w-4 h-4" />
                       </button>
                       {actionMenuOpen === signal.id && (
-                        <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10">
+                        <div className="absolute right-0 top-full mt-1 w-36 bg-card rounded-lg shadow-lg border py-1 z-10">
                           <button
                             onClick={() => openEditForm(signal)}
-                            className="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
+                            className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted flex items-center gap-2"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                             Edit
@@ -372,7 +372,7 @@ export function StrategySignalsSection({
                                 handleResetSignal(signal.id);
                                 setActionMenuOpen(null);
                               }}
-                              className="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2 text-blue-600"
+                              className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted flex items-center gap-2 text-blue-600"
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                               Reset
@@ -383,7 +383,7 @@ export function StrategySignalsSection({
                               setDeletingSignalId(signal.id);
                               setActionMenuOpen(null);
                             }}
-                            className="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2 text-red-600"
+                            className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted flex items-center gap-2 text-red-600"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             Delete
@@ -402,9 +402,9 @@ export function StrategySignalsSection({
       {/* Delete Confirmation Modal */}
       {deletingSignalId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm">
-            <h3 className="text-lg font-semibold text-slate-900">Delete Signal?</h3>
-            <p className="text-sm text-slate-600 mt-2">
+          <div className="bg-card rounded-lg shadow-xl p-6 max-w-sm">
+            <h3 className="text-lg font-semibold text-foreground">Delete Signal?</h3>
+            <p className="text-sm text-muted-foreground mt-2">
               This action cannot be undone. The signal and its history will be permanently deleted.
             </p>
             <div className="flex justify-end gap-3 mt-4">

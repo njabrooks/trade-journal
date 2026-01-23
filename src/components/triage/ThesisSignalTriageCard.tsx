@@ -134,18 +134,18 @@ export function ThesisSignalTriageCard({
         icon: isConfirmation
           ? <TrendingUp className="h-4 w-4 text-emerald-600" />
           : <AlertTriangle className="h-4 w-4 text-amber-600" />,
-        bgColor: isConfirmation ? 'bg-emerald-50' : 'bg-amber-50',
-        borderColor: isConfirmation ? 'border-emerald-200' : 'border-amber-200',
-        badgeColor: isConfirmation ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700',
+        bgColor: isConfirmation ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-amber-50 dark:bg-amber-900/20',
+        borderColor: isConfirmation ? 'border-emerald-200 dark:border-emerald-800' : 'border-amber-200 dark:border-amber-800',
+        badgeColor: isConfirmation ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
         label: 'Triggered',
       };
     }
 
     return {
-      icon: <Shield className="h-4 w-4 text-slate-400" />,
-      bgColor: 'bg-slate-50',
-      borderColor: 'border-slate-200',
-      badgeColor: 'bg-slate-100 text-slate-600',
+      icon: <Shield className="h-4 w-4 text-muted-foreground" />,
+      bgColor: 'bg-muted',
+      borderColor: 'border',
+      badgeColor: 'bg-muted text-muted-foreground',
       label: status === 'monitoring' ? 'Monitoring' : 'Not Triggered',
     };
   };
@@ -172,17 +172,17 @@ export function ThesisSignalTriageCard({
   return (
     <div className="space-y-4">
       {/* Signal Summary Header */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+      <div className="bg-muted border rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-amber-500" />
-            <h3 className="text-sm font-semibold text-slate-800">Signal Summary</h3>
+            <h3 className="text-sm font-semibold text-foreground">Signal Summary</h3>
           </div>
           <Badge
             className={`${
               warningsTriggered > 0
-                ? 'bg-amber-100 text-amber-800'
-                : 'bg-emerald-100 text-emerald-800'
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
             }`}
           >
             {triggeredSignalCount} of {totalSignalCount} triggered
@@ -193,27 +193,27 @@ export function ThesisSignalTriageCard({
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-emerald-600" />
-            <span className="text-slate-600">
-              Confirmations: <span className="font-medium text-slate-900">{confirmationsTriggered}</span>
+            <span className="text-muted-foreground">
+              Confirmations: <span className="font-medium text-foreground">{confirmationsTriggered}</span>
             </span>
           </div>
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <span className="text-slate-600">
-              Warnings: <span className="font-medium text-slate-900">{warningsTriggered}</span>
+            <span className="text-muted-foreground">
+              Warnings: <span className="font-medium text-foreground">{warningsTriggered}</span>
             </span>
           </div>
         </div>
 
         {/* Current Conviction */}
         {currentConviction && (
-          <div className="mt-3 pt-3 border-t border-slate-200">
-            <span className="text-xs text-slate-500 uppercase tracking-wide">Current Conviction</span>
+          <div className="mt-3 pt-3 border-t border">
+            <span className="text-xs text-muted-foreground uppercase tracking-wide">Current Conviction</span>
             <Badge
               className={`ml-2 ${
                 currentConviction === 'high' ? 'bg-emerald-100 text-emerald-700' :
                 currentConviction === 'medium' ? 'bg-amber-100 text-amber-700' :
-                'bg-slate-100 text-slate-600'
+                'bg-muted text-muted-foreground'
               }`}
             >
               {currentConviction}
@@ -223,29 +223,29 @@ export function ThesisSignalTriageCard({
       </div>
 
       {/* Signals List - Expandable */}
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div className="bg-card border rounded-lg overflow-hidden">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between bg-muted hover:bg-accent transition-colors"
         >
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-foreground">
             View All Signals ({signals.length})
           </span>
           {expanded ? (
-            <ChevronUp className="h-4 w-4 text-slate-500" />
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-slate-500" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           )}
         </button>
 
         {expanded && (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {loading ? (
               <div className="p-4 text-center">
-                <Loader2 className="h-5 w-5 animate-spin mx-auto text-slate-400" />
+                <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
               </div>
             ) : sortedSignals.length === 0 ? (
-              <div className="p-4 text-center text-sm text-slate-500">
+              <div className="p-4 text-center text-sm text-muted-foreground">
                 No signals defined for this thesis
               </div>
             ) : (
@@ -261,7 +261,7 @@ export function ThesisSignalTriageCard({
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5">{config.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${isTriggered ? 'text-slate-900' : 'text-slate-700'}`}>
+                        <p className={`text-sm font-medium ${isTriggered ? 'text-slate-900' : 'text-foreground'}`}>
                           {signal.statement}
                         </p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -274,7 +274,7 @@ export function ThesisSignalTriageCard({
                           </Badge>
                         </div>
                         {signal.rationale && (
-                          <p className="text-xs text-slate-500 mt-2 line-clamp-2">
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
                             {signal.rationale}
                           </p>
                         )}
@@ -295,9 +295,9 @@ export function ThesisSignalTriageCard({
       </div>
 
       {/* Impact Assessment UI */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-4">
-        <h4 className="text-sm font-semibold text-indigo-800">Impact Assessment</h4>
-        <p className="text-xs text-indigo-700">
+      <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 space-y-4">
+        <h4 className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">Impact Assessment</h4>
+        <p className="text-xs text-indigo-700 dark:text-indigo-300">
           Based on the triggered signals, how does this affect your thesis?
         </p>
 
@@ -310,7 +310,7 @@ export function ThesisSignalTriageCard({
             className={`flex-1 gap-1 ${
               selectedAssessment === 'strengthens'
                 ? 'bg-emerald-600 hover:bg-emerald-700'
-                : 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
+                : 'text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
             }`}
           >
             <TrendingUp className="h-4 w-4" />
@@ -323,7 +323,7 @@ export function ThesisSignalTriageCard({
             className={`flex-1 gap-1 ${
               selectedAssessment === 'weakens'
                 ? 'bg-amber-600 hover:bg-amber-700'
-                : 'text-amber-700 border-amber-300 hover:bg-amber-50'
+                : 'text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30'
             }`}
           >
             <TrendingDown className="h-4 w-4" />
@@ -336,7 +336,7 @@ export function ThesisSignalTriageCard({
             className={`flex-1 gap-1 ${
               selectedAssessment === 'no_change'
                 ? 'bg-slate-600 hover:bg-slate-700'
-                : 'text-slate-700 border-slate-300 hover:bg-slate-50'
+                : 'text-foreground border dark:border-border hover:bg-muted'
             }`}
           >
             <Minus className="h-4 w-4" />
@@ -346,8 +346,8 @@ export function ThesisSignalTriageCard({
 
         {/* Conviction Update (optional) */}
         {selectedAssessment && selectedAssessment !== 'no_change' && (
-          <div className="pt-3 border-t border-indigo-200">
-            <label className="text-xs font-medium text-indigo-700 block mb-2">
+          <div className="pt-3 border-t border-indigo-200 dark:border-indigo-800">
+            <label className="text-xs font-medium text-indigo-700 dark:text-indigo-300 block mb-2">
               Update Conviction? (optional)
             </label>
             <div className="flex gap-2">
@@ -382,14 +382,14 @@ export function ThesisSignalTriageCard({
         {/* Notes */}
         {selectedAssessment && (
           <div>
-            <label className="text-xs font-medium text-indigo-700 block mb-2">
+            <label className="text-xs font-medium text-indigo-700 dark:text-indigo-300 block mb-2">
               Notes (optional)
             </label>
             <textarea
               value={assessmentNotes}
               onChange={(e) => setAssessmentNotes(e.target.value)}
               placeholder="Add context about this assessment..."
-              className="w-full px-3 py-2 text-sm border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              className="w-full px-3 py-2 text-sm border border-indigo-300 dark:border-indigo-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-background text-foreground"
               rows={2}
             />
           </div>
@@ -418,7 +418,7 @@ export function ThesisSignalTriageCard({
       </div>
 
       {/* Link to thesis and strategies */}
-      <div className="flex items-center gap-2 pt-2 border-t border-slate-200">
+      <div className="flex items-center gap-2 pt-2 border-t border">
         <Link href={thesisUrl}>
           <Button variant="outline" size="sm" className="gap-1">
             <ExternalLink className="h-3 w-3" />

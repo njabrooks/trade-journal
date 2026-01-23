@@ -131,16 +131,16 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div>
-            <h2 className="text-xl font-semibold">Edit Macro Thesis</h2>
-            <p className="text-sm text-slate-500 mt-1">Update thesis metadata and information</p>
+            <h2 className="text-xl font-semibold text-foreground">Edit Macro Thesis</h2>
+            <p className="text-sm text-muted-foreground mt-1">Update thesis metadata and information</p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -150,7 +150,7 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
               Title *
             </label>
             <input
@@ -158,14 +158,14 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
               Description
             </label>
             <textarea
@@ -173,13 +173,13 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
             />
           </div>
 
           {/* Thesis Type */}
           <div>
-            <label htmlFor="thesisType" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="thesisType" className="block text-sm font-medium text-foreground mb-2">
               Thesis Type *
             </label>
             <select
@@ -188,7 +188,7 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
               onChange={(e) =>
                 setThesisType(e.target.value as 'secular' | 'cyclical' | 'structural' | 'tactical')
               }
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
             >
               <option value="secular">Secular (Long-term structural shifts, 5-20 years)</option>
               <option value="cyclical">Cyclical (Business cycle related, 1-5 years)</option>
@@ -199,14 +199,14 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
 
           {/* Time Horizon */}
           <div>
-            <label htmlFor="timeHorizon" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="timeHorizon" className="block text-sm font-medium text-foreground mb-2">
               Time Horizon *
             </label>
             <select
               id="timeHorizon"
               value={timeHorizon}
               onChange={(e) => setTimeHorizon(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
             >
               <option value="long_term">Long Term</option>
               <option value="medium_term">Medium Term</option>
@@ -216,14 +216,14 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
 
           {/* Confidence Level */}
           <div>
-            <label htmlFor="confidenceLevel" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="confidenceLevel" className="block text-sm font-medium text-foreground mb-2">
               Confidence Level *
             </label>
             <select
               id="confidenceLevel"
               value={confidenceLevel}
               onChange={(e) => setConfidenceLevel(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
             >
               <option value="high">High</option>
               <option value="medium">Medium</option>
@@ -234,14 +234,14 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
 
           {/* Status */}
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="status" className="block text-sm font-medium text-foreground mb-2">
               Status *
             </label>
             <select
               id="status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
             >
               <option value="draft">Draft</option>
               <option value="active">Active</option>
@@ -252,14 +252,14 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
 
           {/* Direction */}
           <div>
-            <label htmlFor="direction" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="direction" className="block text-sm font-medium text-foreground mb-2">
               Direction
             </label>
             <select
               id="direction"
               value={direction}
               onChange={(e) => setDirection(e.target.value as typeof direction)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
             >
               <option value="neutral">Neutral (Observational)</option>
               <option value="bullish">Bullish (Positive)</option>
@@ -270,7 +270,7 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
           {/* Position Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="positionStartDate" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="positionStartDate" className="block text-sm font-medium text-foreground mb-2">
                 Position Start Date
               </label>
               <input
@@ -278,11 +278,11 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
                 type="date"
                 value={positionStartDate}
                 onChange={(e) => setPositionStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
               />
             </div>
             <div>
-              <label htmlFor="positionEndDate" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="positionEndDate" className="block text-sm font-medium text-foreground mb-2">
                 Position End Date
               </label>
               <input
@@ -290,14 +290,14 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
                 type="date"
                 value={positionEndDate}
                 onChange={(e) => setPositionEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
               />
             </div>
           </div>
 
           {/* Sectors */}
           <div>
-            <label htmlFor="sectors" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="sectors" className="block text-sm font-medium text-foreground mb-2">
               Sectors / Topics
             </label>
             <div className="relative">
@@ -310,29 +310,29 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
                   setShowSectorDropdown(true);
                 }}
                 onFocus={() => setShowSectorDropdown(true)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                 placeholder="Search sectors, industries, regions..."
                 disabled={loading}
               />
               {showSectorDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-64 overflow-y-auto">
                   {filteredTaxonomyItems.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-slate-500">No matches found</div>
+                    <div className="px-3 py-2 text-sm text-muted-foreground">No matches found</div>
                   ) : (
                     filteredTaxonomyItems.map((item) => (
                       <button
                         key={item.value}
                         type="button"
                         onClick={() => handleAddSector(item)}
-                        className="w-full text-left px-3 py-2 hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                        className="w-full text-left px-3 py-2 hover:bg-muted border-b border-border last:border-b-0"
                         disabled={sectors.includes(item.value)}
                       >
-                        <div className="font-medium text-sm text-slate-900">{item.label}</div>
+                        <div className="font-medium text-sm text-foreground">{item.label}</div>
                         {item.description && (
-                          <div className="text-xs text-slate-500">{item.description}</div>
+                          <div className="text-xs text-muted-foreground">{item.description}</div>
                         )}
                         {sectors.includes(item.value) && (
-                          <Badge className="mt-1 bg-green-100 text-green-700 text-xs">Selected</Badge>
+                          <Badge className="mt-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs">Selected</Badge>
                         )}
                       </button>
                     ))
@@ -356,7 +356,7 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
                       <button
                         type="button"
                         onClick={() => handleRemoveSector(sectorValue)}
-                        className="ml-1 hover:bg-slate-300 rounded-full p-0.5"
+                        className="ml-1 hover:bg-muted rounded-full p-0.5"
                         disabled={loading}
                       >
                         <X className="h-3 w-3" />
@@ -366,21 +366,21 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
                 })}
               </div>
             )}
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Search and select from structured taxonomy
             </p>
           </div>
 
           {/* Outcome */}
           <div>
-            <label htmlFor="outcome" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="outcome" className="block text-sm font-medium text-foreground mb-2">
               Outcome
             </label>
             <select
               id="outcome"
               value={outcome}
               onChange={(e) => setOutcome(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
             >
               <option value="">Not Set</option>
               <option value="validated">Validated</option>
@@ -392,7 +392,7 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
 
           {/* Outcome Notes */}
           <div>
-            <label htmlFor="outcomeNotes" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="outcomeNotes" className="block text-sm font-medium text-foreground mb-2">
               Outcome Notes
             </label>
             <textarea
@@ -400,20 +400,20 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
               value={outcomeNotes}
               onChange={(e) => setOutcomeNotes(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
               placeholder="Notes about the outcome or current status..."
             />
           </div>
 
           {/* Error Display */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+          <div className="flex items-center justify-between pt-4 border-t border-border">
             <div>
               {!showDeleteConfirm ? (
                 <Button

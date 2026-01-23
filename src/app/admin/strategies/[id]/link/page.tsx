@@ -152,13 +152,13 @@ export default function StrategyLinkingPage() {
     >
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-4 mb-4 text-red-800">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded p-4 mb-4 text-red-800 dark:text-red-200">
           {error}
         </div>
       )}
 
       {result && (
-        <div className="bg-green-50 border border-green-200 rounded p-4 mb-4 text-green-800">
+        <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded p-4 mb-4 text-green-800 dark:text-green-200">
           <p className="font-semibold">Linking Complete</p>
           <p>
             Linked: {result.linked}, Skipped: {result.skipped}
@@ -168,9 +168,9 @@ export default function StrategyLinkingPage() {
 
       <div className="space-y-6">
         {/* Auto-link Section */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-card rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Automatic Linking</h2>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Automatically link positions and trades to this strategy based on heuristics (date
             proximity, account matching, etc.)
           </p>
@@ -178,14 +178,14 @@ export default function StrategyLinkingPage() {
             <button
               onClick={() => handleAutoLink('positions')}
               disabled={linking}
-              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground"
             >
               {linking ? 'Linking...' : 'Auto-Link Positions'}
             </button>
             <button
               onClick={() => handleAutoLink('trades')}
               disabled={linking}
-              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+              className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground"
             >
               {linking ? 'Linking...' : 'Auto-Link Trades'}
             </button>
@@ -193,13 +193,13 @@ export default function StrategyLinkingPage() {
         </div>
 
         {/* Manual Linking Section */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-card rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Manual Linking</h2>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-muted-foreground mb-4">
             Manually select and link specific positions or trades. (Note: This requires API
             endpoints to fetch unlinked items - currently shows placeholder)
           </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded p-4 text-yellow-800 text-sm">
+          <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded p-4 text-yellow-800 dark:text-yellow-200 text-sm">
             <p className="font-semibold mb-2">Note:</p>
             <p>
               For manual linking, you'll need to query unlinked positions/trades from the database
@@ -208,7 +208,7 @@ export default function StrategyLinkingPage() {
             <p className="mt-2">
               You can also link via API directly:
             </p>
-            <code className="block mt-2 p-2 bg-yellow-100 rounded text-xs">
+            <code className="block mt-2 p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded text-xs">
               POST /api/strategies/link
               {`\n`}
               {`{ "type": "position", "positionId": "...", "strategyId": "${strategyId}" }`}
@@ -217,7 +217,7 @@ export default function StrategyLinkingPage() {
         </div>
 
         {/* Info Section */}
-        <div className="bg-blue-50 border border-blue-200 rounded p-4 text-blue-800 text-sm">
+        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded p-4 text-blue-800 dark:text-blue-200 text-sm">
           <p className="font-semibold mb-2">How Linking Works:</p>
           <ul className="list-disc list-inside space-y-1">
             <li>

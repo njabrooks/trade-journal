@@ -391,11 +391,11 @@ export function StrategyConfirmationDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="border-b px-6 py-4">
-          <h2 className="text-xl font-semibold text-slate-900">Confirm Strategy</h2>
-          <p className="text-sm text-slate-600 mt-1">
+          <h2 className="text-xl font-semibold text-foreground">Confirm Strategy</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Set strategy details and optionally link to an asset thesis
           </p>
         </div>
@@ -408,27 +408,27 @@ export function StrategyConfirmationDialog({
           )}
 
           {/* Strategy Info */}
-          <div className="bg-slate-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-slate-700 mb-2">Strategy Details</h3>
+          <div className="bg-muted rounded-lg p-4">
+            <h3 className="text-sm font-medium text-foreground mb-2">Strategy Details</h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-slate-500">Key:</span>{' '}
-                <span className="font-mono text-slate-900">{strategy.strategyKey}</span>
+                <span className="text-muted-foreground">Key:</span>{' '}
+                <span className="font-mono text-foreground">{strategy.strategyKey}</span>
               </div>
               <div>
-                <span className="text-slate-500">Underlying:</span>{' '}
-                <span className="font-mono font-medium text-slate-900">{strategy.underlyingTicker || '-'}</span>
+                <span className="text-muted-foreground">Underlying:</span>{' '}
+                <span className="font-mono font-medium text-foreground">{strategy.underlyingTicker || '-'}</span>
               </div>
               <div>
-                <span className="text-slate-500">Status:</span>{' '}
-                <span className="text-slate-900">{strategy.status}</span>
+                <span className="text-muted-foreground">Status:</span>{' '}
+                <span className="text-foreground">{strategy.status}</span>
               </div>
             </div>
           </div>
 
           {/* Strategy Label */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Label
             </label>
             <input
@@ -436,10 +436,10 @@ export function StrategyConfirmationDialog({
               value={strategyLabel}
               onChange={(e) => setStrategyLabel(e.target.value)}
               placeholder={strategy.strategyKey}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
               disabled={submitting}
             />
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Human-readable name for this strategy (defaults to strategy key)
             </p>
           </div>
@@ -447,7 +447,7 @@ export function StrategyConfirmationDialog({
           {/* Strategy Type and Direction Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Strategy Type <span className="text-red-500">*</span>
               </label>
               {isCustomType ? (
@@ -486,7 +486,7 @@ export function StrategyConfirmationDialog({
                       setStrategyType(e.target.value);
                     }
                   }}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                   disabled={submitting || loadingTypes}
                 >
                   <option value="">Select a strategy type...</option>
@@ -500,19 +500,19 @@ export function StrategyConfirmationDialog({
                   </option>
                 </select>
               )}
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Categorizes the strategy for filtering and analysis
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Direction <span className="text-red-500">*</span>
               </label>
               <select
                 value={strategyDirection}
                 onChange={(e) => setStrategyDirection(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                 disabled={submitting}
               >
                 <option value="">Select direction...</option>
@@ -520,7 +520,7 @@ export function StrategyConfirmationDialog({
                 <option value="bearish">Bearish</option>
                 <option value="neutral">Neutral</option>
               </select>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Net directional bias
               </p>
             </div>
@@ -536,10 +536,10 @@ export function StrategyConfirmationDialog({
               >
                 <div className="flex items-center gap-2">
                   <GitMerge className="h-4 w-4 text-purple-500" />
-                  <span className="text-sm font-medium text-slate-700">
+                  <span className="text-sm font-medium text-foreground">
                     Merge Other Strategies
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-muted-foreground">
                     ({relatedStrategies.length} related)
                   </span>
                   {selectedMergeIds.size > 0 && (
@@ -549,15 +549,15 @@ export function StrategyConfirmationDialog({
                   )}
                 </div>
                 {showMergeSection ? (
-                  <ChevronUp className="h-4 w-4 text-slate-400" />
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
                 ) : (
-                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 )}
               </button>
 
               {showMergeSection && (
                 <div className="px-4 pb-4 pt-2 border-t border-purple-100">
-                  <p className="text-xs text-slate-500 mb-3">
+                  <p className="text-xs text-muted-foreground mb-3">
                     Select strategies with the same underlying to merge into this one.
                     All positions and trades will be moved to this strategy.
                   </p>
@@ -577,7 +577,7 @@ export function StrategyConfirmationDialog({
                           className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
                             selectedMergeIds.has(rs.id)
                               ? 'border-purple-500 bg-purple-50'
-                              : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                              : 'border hover:border-muted-foreground hover:bg-muted'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -585,11 +585,11 @@ export function StrategyConfirmationDialog({
                               {selectedMergeIds.has(rs.id) && (
                                 <Check className="h-4 w-4 text-purple-600" />
                               )}
-                              <span className="font-mono text-sm text-slate-900">
+                              <span className="font-mono text-sm text-foreground">
                                 {rs.strategyKey}
                               </span>
                               {rs.label && rs.label !== rs.strategyKey && (
-                                <span className="text-sm text-slate-500">
+                                <span className="text-sm text-muted-foreground">
                                   ({rs.label})
                                 </span>
                               )}
@@ -600,11 +600,11 @@ export function StrategyConfirmationDialog({
                                   ? 'bg-emerald-100 text-emerald-700'
                                   : rs.status === 'draft'
                                   ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-slate-100 text-slate-700'
+                                  : 'bg-muted text-foreground'
                               }`}>
                                 {rs.status}
                               </span>
-                              <span className="text-xs text-slate-500">
+                              <span className="text-xs text-muted-foreground">
                                 {rs.openPositionsCount} pos
                               </span>
                             </div>
@@ -630,26 +630,26 @@ export function StrategyConfirmationDialog({
             <button
               type="button"
               onClick={() => setShowThesisSection(!showThesisSection)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted transition-colors"
             >
               <div className="flex items-center gap-2">
                 <LinkIcon className="h-4 w-4 text-slate-500" />
-                <span className="text-sm font-medium text-slate-700">
+                <span className="text-sm font-medium text-foreground">
                   Link to Asset Thesis
                 </span>
-                <span className="text-xs text-slate-400">(optional)</span>
+                <span className="text-xs text-muted-foreground">(optional)</span>
               </div>
               {showThesisSection ? (
-                <ChevronUp className="h-4 w-4 text-slate-400" />
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
-                <ChevronDown className="h-4 w-4 text-slate-400" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
             </button>
 
             {showThesisSection && (
               <div className="px-4 pb-4 pt-2 border-t">
                 <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-slate-700">
+                  <label className="block text-sm font-medium text-foreground">
                     Asset Thesis
                   </label>
                   <div className="flex gap-2">
@@ -659,7 +659,7 @@ export function StrategyConfirmationDialog({
                       className={`px-3 py-1 text-xs rounded-full transition-colors ${
                         mode === 'select'
                           ? 'bg-blue-100 text-blue-700'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
                     >
                       <LinkIcon className="h-3 w-3 inline mr-1" />
@@ -671,7 +671,7 @@ export function StrategyConfirmationDialog({
                       className={`px-3 py-1 text-xs rounded-full transition-colors ${
                         mode === 'create'
                           ? 'bg-blue-100 text-blue-700'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
                     >
                       <Plus className="h-3 w-3 inline mr-1" />
@@ -684,7 +684,7 @@ export function StrategyConfirmationDialog({
                   <div className="space-y-3">
                     {/* Search */}
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <input
                         type="text"
                         placeholder="Search by title or ticker..."
@@ -707,7 +707,7 @@ export function StrategyConfirmationDialog({
                         <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
                       </div>
                     ) : filteredTheses.length === 0 ? (
-                      <div className="text-center py-6 text-slate-500">
+                      <div className="text-center py-6 text-muted-foreground">
                         <p>No asset theses found.</p>
                         <button
                           type="button"
@@ -734,16 +734,16 @@ export function StrategyConfirmationDialog({
                                   ? 'border-blue-500 bg-blue-50'
                                   : isMatchingTicker
                                   ? 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300'
-                                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                                  : 'border hover:border-muted-foreground hover:bg-muted'
                               }`}
                             >
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-slate-900">{thesis.title}</span>
+                                <span className="font-medium text-foreground">{thesis.title}</span>
                                 {thesis.underlyingTicker && (
                                   <span className={`inline-flex px-1.5 py-0.5 text-xs font-mono rounded ${
                                     isMatchingTicker
                                       ? 'bg-emerald-100 text-emerald-800'
-                                      : 'bg-slate-100 text-slate-700'
+                                      : 'bg-muted text-foreground'
                                   }`}>
                                     {thesis.underlyingTicker}
                                   </span>
@@ -757,7 +757,7 @@ export function StrategyConfirmationDialog({
                                         ? 'bg-emerald-100 text-emerald-700'
                                         : thesis.direction === 'bearish'
                                         ? 'bg-red-100 text-red-700'
-                                        : 'bg-slate-100 text-slate-700'
+                                        : 'bg-muted text-foreground'
                                     }`}
                                   >
                                     {thesis.direction}
@@ -769,7 +769,7 @@ export function StrategyConfirmationDialog({
                                   </span>
                                 )}
                                 {thesis.timeHorizon && (
-                                  <span className="text-xs text-slate-500">
+                                  <span className="text-xs text-muted-foreground">
                                     {thesis.timeHorizon.replace('_', ' ')}
                                   </span>
                                 )}
@@ -782,10 +782,10 @@ export function StrategyConfirmationDialog({
                   </div>
                 ) : (
                   /* Create New Form */
-                  <div className="space-y-4 border rounded-lg p-4 bg-slate-50">
+                  <div className="space-y-4 border rounded-lg p-4 bg-muted">
                     {/* Underlying Selector */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Underlying <span className="text-red-500">*</span>
                       </label>
                       <UnderlyingSelector
@@ -795,20 +795,20 @@ export function StrategyConfirmationDialog({
                         disabled={submitting}
                         required
                       />
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Select an existing underlying or add a new ticker
                       </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-sm font-medium text-foreground mb-1">
                           Direction <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={createFormData.direction}
                           onChange={(e) => setCreateFormData({ ...createFormData, direction: e.target.value as CreateAssetThesisFormData['direction'] })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                           disabled={submitting}
                         >
                           <option value="bullish">Bullish</option>
@@ -818,13 +818,13 @@ export function StrategyConfirmationDialog({
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-sm font-medium text-foreground mb-1">
                           Time Horizon <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={createFormData.timeHorizon}
                           onChange={(e) => setCreateFormData({ ...createFormData, timeHorizon: e.target.value as CreateAssetThesisFormData['timeHorizon'] })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                           disabled={submitting}
                         >
                           <option value="long_term">Long Term</option>
@@ -834,13 +834,13 @@ export function StrategyConfirmationDialog({
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-sm font-medium text-foreground mb-1">
                           Confidence <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={createFormData.confidenceLevel}
                           onChange={(e) => setCreateFormData({ ...createFormData, confidenceLevel: e.target.value as CreateAssetThesisFormData['confidenceLevel'] })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                           disabled={submitting}
                         >
                           <option value="high">High</option>
@@ -851,13 +851,13 @@ export function StrategyConfirmationDialog({
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                        <label className="block text-sm font-medium text-foreground mb-1">
                           Status <span className="text-red-500">*</span>
                         </label>
                         <select
                           value={createFormData.status}
                           onChange={(e) => setCreateFormData({ ...createFormData, status: e.target.value as CreateAssetThesisFormData['status'] })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                           disabled={submitting}
                         >
                           <option value="draft">Draft</option>
@@ -869,20 +869,20 @@ export function StrategyConfirmationDialog({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                      <label className="block text-sm font-medium text-foreground mb-1">
                         Description (optional)
                       </label>
                       <textarea
                         value={createFormData.description || ''}
                         onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
                         rows={2}
                         placeholder="Brief description of the thesis..."
                         disabled={submitting}
                       />
                     </div>
 
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                       Title will be auto-generated: {createFormData.direction} {createFormData.ticker} {createFormData.timeHorizon.replace('_', ' ')}
                     </p>
                   </div>

@@ -50,12 +50,12 @@ function SeverityTag({ severity }: { severity: string | null }) {
   };
   
   const classNameMap: Record<string, string> = {
-    urgent: "bg-rose-100 text-rose-700 border-rose-200",
-    attention: "bg-amber-100 text-amber-700 border-amber-200",
-    monitor: "bg-blue-100 text-blue-700 border-blue-200",
-    info: "bg-slate-200 text-slate-700 border-slate-300",
-    pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    complete: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    urgent: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800",
+    attention: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800",
+    monitor: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800",
+    info: "bg-muted text-foreground border",
+    pending: "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800",
+    complete: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800",
   };
   
   return (
@@ -139,8 +139,8 @@ export function TriageTableRow({
     <>
       <tr 
         className={cn(
-          "border-b transition-colors hover:bg-slate-50",
-          isSelected && "bg-blue-50"
+          "border-b transition-colors hover:bg-muted",
+          isSelected && "bg-blue-50 dark:bg-blue-900/20"
         )}
       >
         <td 
@@ -161,26 +161,26 @@ export function TriageTableRow({
           <div className="flex items-center gap-2">
             <ChevronDownIcon
               className={cn(
-                "h-4 w-4 text-slate-400 transition-transform shrink-0",
+                "h-4 w-4 text-muted-foreground transition-transform shrink-0",
                 isExpanded && "rotate-180"
               )}
             />
-            <span className="font-medium text-slate-900">{record.symbol}</span>
+            <span className="font-medium text-foreground">{record.symbol}</span>
           </div>
         </td>
         <td className="px-4 py-3 text-left">
-          <span className="text-sm text-slate-600">{record.recommendedAction || "Review"}</span>
+          <span className="text-sm text-muted-foreground">{record.recommendedAction || "Review"}</span>
         </td>
           <td className="px-4 py-3 text-center">
             <SeverityTag severity={record.severity} />
           </td>
           <td className="px-4 py-3 text-center">
-            <span className="text-xs text-slate-600">{record.contextLevel}</span>
+            <span className="text-xs text-muted-foreground">{record.contextLevel}</span>
           </td>
-          <td className="px-4 py-3 text-center text-xs text-slate-600">
+          <td className="px-4 py-3 text-center text-xs text-muted-foreground">
             {formatDateShort(record.snapshotDate)}
           </td>
-          <td className="px-4 py-3 text-center text-xs text-slate-600">
+          <td className="px-4 py-3 text-center text-xs text-muted-foreground">
             {minDte !== null ? minDte : "—"}
           </td>
           {showStrategyColumn && (
@@ -194,14 +194,14 @@ export function TriageTableRow({
                   View
                 </Link>
               ) : (
-                <span className="text-xs text-slate-400">—</span>
+                <span className="text-xs text-muted-foreground">—</span>
               )}
             </td>
           )}
       </tr>
       {isExpanded && (
         <tr>
-          <td colSpan={columnCount + 1} className="px-4 py-4 bg-slate-50">
+          <td colSpan={columnCount + 1} className="px-4 py-4 bg-muted">
             <div className="space-y-4">
               {/* Evidence Context - Shows claims linked to this strategy's asset thesis */}
               {record.strategyId && (
@@ -298,11 +298,11 @@ export function TriageTableRow({
               {record.notes &&
                !isTradeMetadataTrigger(record.recommendedAction) && (
                 <div className="space-y-3">
-                  <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Notes
                   </p>
                   <div className="px-0">
-                    <p className="text-sm text-slate-700 leading-relaxed">{record.notes}</p>
+                    <p className="text-sm text-foreground leading-relaxed">{record.notes}</p>
                   </div>
                 </div>
               )}

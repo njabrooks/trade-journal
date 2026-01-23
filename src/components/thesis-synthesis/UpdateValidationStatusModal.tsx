@@ -48,7 +48,7 @@ export function UpdateValidationStatusModal({
       value: 'active',
       label: 'Active',
       description: 'Condition is being monitored',
-      icon: <Eye className="w-4 h-4 text-slate-400" />,
+      icon: <Eye className="w-4 h-4 text-muted-foreground" />,
     },
     {
       value: 'complete',
@@ -60,7 +60,7 @@ export function UpdateValidationStatusModal({
       value: 'rejected',
       label: 'Rejected',
       description: 'No longer relevant',
-      icon: <Archive className="w-4 h-4 text-slate-400" />,
+      icon: <Archive className="w-4 h-4 text-muted-foreground" />,
     },
   ];
 
@@ -111,28 +111,28 @@ export function UpdateValidationStatusModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-card rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">
+        <div className="flex items-center justify-between px-4 py-3 border-b border">
+          <h2 className="text-lg font-semibold text-foreground">
             Update Validation Point Status
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded"
+            className="p-1 text-muted-foreground hover:text-muted-foreground rounded"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Point Summary */}
-        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+        <div className="px-4 py-3 bg-muted border-b border">
           <div className="flex items-center gap-2 mb-1">
             <span
               className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
                 point.type === 'validation'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-red-100 text-red-700'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
               }`}
             >
               {point.type}
@@ -140,22 +140,22 @@ export function UpdateValidationStatusModal({
             <span
               className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
                 point.importance === 'critical'
-                  ? 'bg-red-100 text-red-700'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                   : point.importance === 'significant'
-                  ? 'bg-amber-100 text-amber-700'
-                  : 'bg-slate-100 text-slate-600'
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                  : 'bg-muted text-muted-foreground'
               }`}
             >
               {point.importance}
             </span>
           </div>
-          <p className="text-sm text-slate-900">{point.statement}</p>
+          <p className="text-sm text-foreground">{point.statement}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* New Status */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               New Status
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -166,16 +166,16 @@ export function UpdateValidationStatusModal({
                   onClick={() => setNewStatus(option.value)}
                   className={`flex items-start gap-2 p-2 rounded-md border text-left transition-colors ${
                     newStatus === option.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                      : 'border hover:border-muted-foreground'
                   }`}
                 >
                   {option.icon}
                   <div>
-                    <span className="text-sm font-medium text-slate-900 block">
+                    <span className="text-sm font-medium text-foreground block">
                       {option.label}
                     </span>
-                    <span className="text-xs text-slate-500">{option.description}</span>
+                    <span className="text-xs text-muted-foreground">{option.description}</span>
                   </div>
                 </button>
               ))}
@@ -184,13 +184,13 @@ export function UpdateValidationStatusModal({
 
           {/* Response Protocol Reminder (if triggered) */}
           {newStatus === 'triggered' && responseProtocol?.description && (
-            <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-              <h4 className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+              <h4 className="text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wide mb-1">
                 Response Protocol Reminder
               </h4>
-              <p className="text-sm text-amber-900">{responseProtocol.description}</p>
+              <p className="text-sm text-amber-900 dark:text-amber-100">{responseProtocol.description}</p>
               {responseProtocol.escalation && (
-                <p className="mt-1 text-xs text-amber-700">
+                <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
                   Escalation: {responseProtocol.escalation.replace('_', ' ')}
                 </p>
               )}
@@ -199,49 +199,49 @@ export function UpdateValidationStatusModal({
 
           {/* Evidence Section */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-slate-700">
+            <h4 className="text-sm font-medium text-foreground">
               Evidence <span className="text-red-500">*</span>
             </h4>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Source</label>
+              <label className="block text-xs text-muted-foreground mb-1">Source</label>
               <input
                 type="text"
                 value={evidenceSource}
                 onChange={(e) => setEvidenceSource(e.target.value)}
                 placeholder="e.g., Q4 Earnings Report, Bloomberg article..."
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Summary</label>
+              <label className="block text-xs text-muted-foreground mb-1">Summary</label>
               <textarea
                 value={evidenceSummary}
                 onChange={(e) => setEvidenceSummary(e.target.value)}
                 placeholder="What did you observe? What changed?"
                 rows={3}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-500 mb-1">Link (optional)</label>
+              <label className="block text-xs text-muted-foreground mb-1">Link (optional)</label>
               <input
                 type="url"
                 value={evidenceLink}
                 onChange={(e) => setEvidenceLink(e.target.value)}
                 placeholder="https://..."
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           {/* Confidence */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Confidence in this assessment
             </label>
             <div className="flex gap-2">
@@ -253,11 +253,11 @@ export function UpdateValidationStatusModal({
                   className={`flex-1 py-2 text-sm font-medium rounded-md border transition-colors ${
                     confidence === level
                       ? level === 'low'
-                        ? 'border-red-500 bg-red-50 text-red-700'
+                        ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                         : level === 'medium'
-                        ? 'border-amber-500 bg-amber-50 text-amber-700'
-                        : 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                        : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                      : 'border text-muted-foreground hover:border-muted-foreground'
                   }`}
                 >
                   {level.charAt(0).toUpperCase() + level.slice(1)}
@@ -269,10 +269,10 @@ export function UpdateValidationStatusModal({
           {/* Action Taken (if triggered) */}
           {newStatus === 'triggered' && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Action Taken (optional)
               </label>
-              <p className="text-xs text-slate-500 mb-2">
+              <p className="text-xs text-muted-foreground mb-2">
                 Record what you did in response to this trigger.
               </p>
               <textarea
@@ -280,14 +280,14 @@ export function UpdateValidationStatusModal({
                 onChange={(e) => setUserActionTaken(e.target.value)}
                 placeholder="What action did you take? If none yet, leave blank."
                 rows={2}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 text-sm border border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           )}
 
           {/* Error */}
           {error && (
-            <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+            <div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-sm text-red-700 dark:text-red-300">
               {error}
             </div>
           )}
@@ -297,7 +297,7 @@ export function UpdateValidationStatusModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-md"
               disabled={isSubmitting}
             >
               Cancel

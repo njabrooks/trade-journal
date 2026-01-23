@@ -305,13 +305,13 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
     return (
       <Fragment key={record.id}>
         {/* Main Row */}
-        <tr className="border-b hover:bg-slate-50 transition-colors">
+        <tr className="border-b hover:bg-muted transition-colors">
           {/* Title with Direction Icon */}
           <td className="px-4 py-3">
             {detailUrl ? (
               <Link
                 href={detailUrl}
-                className="text-slate-900 font-medium hover:text-blue-600 transition-colors text-left flex items-center gap-1.5"
+                className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left flex items-center gap-1.5"
               >
                 {/* Direction indicator for thesis records */}
                 {record.direction && (
@@ -322,7 +322,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
             ) : (
               <button
                 onClick={() => setExpandedRecord(isExpanded ? null : record.id)}
-                className="text-slate-900 font-medium hover:text-blue-600 transition-colors text-left flex items-center gap-1.5"
+                className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left flex items-center gap-1.5"
               >
                 {/* Direction indicator for thesis records */}
                 {record.direction && (
@@ -364,7 +364,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
           </td>
 
           {/* Date */}
-          <td className="px-4 py-3 text-slate-600">
+          <td className="px-4 py-3 text-muted-foreground">
             {formatDate(record.date)}
           </td>
 
@@ -410,7 +410,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
 
         {/* Expanded Details Row */}
         {isExpanded && (
-          <tr className="bg-slate-50 border-b">
+          <tr className="bg-muted border-b">
             <td colSpan={7} className="px-4 py-4">
               <ExpandedTriageDetail
                 record={record}
@@ -472,7 +472,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
         >
           <Filter className="h-4 w-4" />
           Filters
-          {showFilters && <span className="text-xs text-slate-500">(ESC to close)</span>}
+          {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
         <Button
           variant={groupBy === 'status' ? 'default' : 'outline'}
@@ -484,7 +484,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
           Group by Severity
         </Button>
 
-        <div className="w-px h-6 bg-slate-200" /> {/* Divider */}
+        <div className="w-px h-6 bg-border" /> {/* Divider */}
 
         {/* Status/Severity Filter Button Group */}
         <div className="inline-flex rounded-md shadow-sm">
@@ -560,24 +560,24 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
           </div>
         )}
 
-        <div className="ml-auto text-sm text-slate-600">
+        <div className="ml-auto text-sm text-muted-foreground">
           Showing {filteredAndSortedRecords.length} of {records.length} triage items
         </div>
       </div>
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+        <div className="bg-card rounded-lg border p-4 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Search by title, trigger, status... (Press / to focus)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -585,13 +585,13 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
             {/* Object Type - hidden in entity context */}
             {!isEntityContext && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   Type
                 </label>
                 <select
                   value={objectTypeFilter}
                   onChange={(e) => setObjectTypeFilter(e.target.value as ObjectTypeFilter)}
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                   <option value="all">All Types</option>
                   <option value="position">Position ({counts.objectType.position})</option>
@@ -604,13 +604,13 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Status
               </label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="all">All Statuses</option>
                 {uniqueStatuses.map((status) => (
@@ -623,13 +623,13 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
 
             {/* Trigger */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Trigger
               </label>
               <select
                 value={triggerFilter}
                 onChange={(e) => setTriggerFilter(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="all">All Triggers</option>
                 {uniqueTriggers.map((trigger) => (
@@ -660,18 +660,18 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
       )}
 
       {/* Triage Table */}
-      <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <section className="rounded-2xl border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           {filteredAndSortedRecords.length === 0 ? (
-            <div className="p-10 text-center text-slate-400">
+            <div className="p-10 text-center text-muted-foreground">
               No triage items match the selected filters.
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('title')}
                   >
                     <div className="flex items-center gap-2">
@@ -680,7 +680,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('objectType')}
                   >
                     <div className="flex items-center gap-2">
@@ -689,7 +689,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('trigger')}
                   >
                     <div className="flex items-center gap-2">
@@ -698,7 +698,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('severity')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -707,7 +707,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -716,7 +716,7 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('date')}
                   >
                     <div className="flex items-center gap-2">
@@ -770,13 +770,13 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
  */
 function DirectionIcon({ direction }: { direction: string }) {
   if (direction === 'bullish') {
-    return <TrendingUp className="h-4 w-4 text-emerald-600 flex-shrink-0" />;
+    return <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />;
   }
   if (direction === 'bearish') {
-    return <TrendingDown className="h-4 w-4 text-rose-600 flex-shrink-0" />;
+    return <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />;
   }
   // Neutral
-  return <Minus className="h-4 w-4 text-slate-400 flex-shrink-0" />;
+  return <Minus className="h-4 w-4 text-muted-foreground flex-shrink-0" />;
 }
 
 // Helper functions
@@ -815,46 +815,46 @@ function getWorkflowStatusOrder(status: string): number {
 // Severity badge colors (importance level: urgent > attention > monitor > info)
 function getSeverityBadgeColor(severity: string): string {
   const colors: Record<string, string> = {
-    urgent: 'bg-rose-100 text-rose-700',
-    critical: 'bg-rose-100 text-rose-700',  // Legacy alias
-    attention: 'bg-amber-100 text-amber-700',
-    high: 'bg-amber-100 text-amber-700',  // Legacy alias
-    monitor: 'bg-blue-100 text-blue-700',
-    medium: 'bg-blue-100 text-blue-700',  // Legacy alias
-    info: 'bg-slate-100 text-slate-600',
-    low: 'bg-slate-100 text-slate-600',  // Legacy alias
+    urgent: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+    critical: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',  // Legacy alias
+    attention: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    high: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',  // Legacy alias
+    monitor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',  // Legacy alias
+    info: 'bg-muted text-muted-foreground',
+    low: 'bg-muted text-muted-foreground',  // Legacy alias
   };
-  return colors[severity] ?? 'bg-slate-100 text-slate-600';
+  return colors[severity] ?? 'bg-muted text-muted-foreground';
 }
 
 // Status badge colors (workflow state: inbox > in_progress > done)
 function getStatusBadgeColor(status: string): string {
   const colors: Record<string, string> = {
-    inbox: 'bg-yellow-100 text-yellow-700',
-    in_progress: 'bg-purple-100 text-purple-700',
-    done: 'bg-emerald-100 text-emerald-700',
+    inbox: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+    in_progress: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+    done: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
     // Legacy values (for backwards compatibility)
-    pending: 'bg-yellow-100 text-yellow-700',
-    in_review: 'bg-purple-100 text-purple-700',
-    complete: 'bg-emerald-100 text-emerald-700',
-    actioned: 'bg-emerald-100 text-emerald-700',
-    dismissed: 'bg-slate-100 text-slate-500',
+    pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+    in_review: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+    complete: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    actioned: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    dismissed: 'bg-muted text-muted-foreground',
   };
-  return colors[status] ?? 'bg-slate-100 text-slate-700';
+  return colors[status] ?? 'bg-muted text-muted-foreground';
 }
 
 function getTriggerBadgeColor(_trigger: string): string {
   // Use a consistent neutral style for triggers - they describe the action, not severity
   // Using a cyan/teal color to differentiate from status (warm colors) and type (cool colors)
-  return 'bg-cyan-50 text-cyan-700 border border-cyan-200';
+  return 'bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800';
 }
 
 function getObjectTypeBadgeColor(objectType: TriageObjectType): string {
   const colors: Record<TriageObjectType, string> = {
-    position: 'bg-blue-100 text-blue-700',
-    strategy: 'bg-green-100 text-green-700',
-    asset_thesis: 'bg-purple-100 text-purple-700',
-    macro_thesis: 'bg-indigo-100 text-indigo-700',
+    position: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    strategy: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+    asset_thesis: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+    macro_thesis: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
   };
   return colors[objectType];
 }
@@ -893,13 +893,13 @@ function formatDate(date: Date): string {
 
 function getSeverityGroupHeaderColor(groupKey: string): string {
   const colors: Record<string, string> = {
-    urgent: 'bg-rose-100 text-rose-800 border-b-2 border-rose-200',
-    attention: 'bg-amber-100 text-amber-800 border-b-2 border-amber-200',
-    monitor: 'bg-blue-100 text-blue-800 border-b-2 border-blue-200',
-    info: 'bg-slate-100 text-slate-700 border-b-2 border-slate-200',
-    done: 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-200',
-    complete: 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-200',  // Legacy alias
-    other: 'bg-gray-100 text-gray-700 border-b-2 border-gray-200',
+    urgent: 'bg-rose-100 text-rose-800 border-b-2 border-rose-200 dark:bg-rose-900/30 dark:text-rose-200 dark:border-rose-800',
+    attention: 'bg-amber-100 text-amber-800 border-b-2 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800',
+    monitor: 'bg-blue-100 text-blue-800 border-b-2 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800',
+    info: 'bg-muted text-muted-foreground border-b-2 border-border',
+    done: 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800',
+    complete: 'bg-emerald-50 text-emerald-700 border-b-2 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800',  // Legacy alias
+    other: 'bg-muted text-muted-foreground border-b-2 border-border',
   };
-  return colors[groupKey] ?? 'bg-slate-100 text-slate-700';
+  return colors[groupKey] ?? 'bg-muted text-muted-foreground';
 }

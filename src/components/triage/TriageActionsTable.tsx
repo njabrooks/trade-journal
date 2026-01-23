@@ -95,10 +95,10 @@ export function TriageActionsTable({
   if (availableActions.length === 0) {
     return (
       <div className="space-y-3">
-        <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Actions
         </p>
-        <div className="text-sm text-slate-500">No actions available for this trigger type.</div>
+        <div className="text-sm text-muted-foreground">No actions available for this trigger type.</div>
       </div>
     );
   }
@@ -108,12 +108,12 @@ export function TriageActionsTable({
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {ACTION_LABELS[selectedAction]} Action
           </p>
           <button
             onClick={() => setSelectedAction(null)}
-            className="text-xs font-medium text-slate-600 hover:text-slate-900 underline"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground underline"
           >
             ← Back
           </button>
@@ -142,7 +142,7 @@ export function TriageActionsTable({
   // Show action selection
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
         Actions
       </p>
       <div className="flex flex-wrap gap-2">
@@ -152,8 +152,8 @@ export function TriageActionsTable({
             onClick={() => setSelectedAction(action)}
             className={cn(
               "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-              "border border-slate-300 bg-white text-slate-700",
-              "hover:bg-slate-50 hover:border-slate-400",
+              "border bg-card text-foreground",
+              "hover:bg-muted hover:border-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             )}
           >

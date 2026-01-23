@@ -92,7 +92,7 @@ export default async function MacroThesisEvidencePage({ params }: EvidencePagePr
         defaultOpen={claimsWithSources.length > 0 && claimsWithSources.length <= 5}
       >
         {claimsWithSources.length === 0 ? (
-          <p className="text-sm text-slate-500">No main claims linked to this thesis yet.</p>
+          <p className="text-sm text-muted-foreground">No main claims linked to this thesis yet.</p>
         ) : (
           <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
         )}

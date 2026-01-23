@@ -485,13 +485,13 @@ export function UnifiedSignalsTable({
       case 'draft':
         return 'bg-purple-100 text-purple-700';
       case 'active':
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
       case 'complete':
         return 'bg-emerald-100 text-emerald-700';
       case 'rejected':
-        return 'bg-slate-100 text-slate-500';
+        return 'bg-slate-100 text-muted-foreground';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-slate-100 text-foreground';
     }
   };
 
@@ -502,9 +502,9 @@ export function UnifiedSignalsTable({
       case 'significant':
         return 'bg-amber-100 text-amber-700';
       case 'supporting':
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-slate-100 text-muted-foreground';
       default:
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-slate-100 text-muted-foreground';
     }
   };
 
@@ -517,8 +517,8 @@ export function UnifiedSignalsTable({
   // Loading state
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-8">
-        <div className="flex items-center justify-center gap-2 text-slate-500">
+      <div className="bg-card rounded-lg border border p-8">
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span>Loading signals...</span>
         </div>
@@ -529,12 +529,12 @@ export function UnifiedSignalsTable({
   // Empty state
   if (signals.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-6 text-center">
-        <p className="text-sm text-slate-500">
+      <div className="bg-card rounded-lg border border p-6 text-center">
+        <p className="text-sm text-muted-foreground">
           {mode === 'review' ? 'No recommended signals to review.' : 'No signals defined yet.'}
         </p>
         {mode === 'browse' && (
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Use <code className="px-1 bg-slate-100 rounded">/synthesize-thesis</code> to create signals.
           </p>
         )}
@@ -549,7 +549,7 @@ export function UnifiedSignalsTable({
       {/* Header with bulk actions (review mode) */}
       {mode === 'review' && draftCount > 0 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-muted-foreground">
             {draftCount} signal{draftCount !== 1 ? 's' : ''} to review
           </div>
           <div className="flex items-center gap-2">
@@ -588,7 +588,7 @@ export function UnifiedSignalsTable({
         >
           <Filter className="h-4 w-4" />
           Filters
-          {showFilters && <span className="text-xs text-slate-500">(ESC)</span>}
+          {showFilters && <span className="text-xs text-muted-foreground">(ESC)</span>}
         </Button>
 
         {mode === 'browse' && (
@@ -614,7 +614,7 @@ export function UnifiedSignalsTable({
         )}
 
         {/* Count Display */}
-        <div className="text-sm text-slate-600">
+        <div className="text-sm text-muted-foreground">
           Showing {filteredAndSortedSignals.length} of {mode === 'review' ? draftCount : signals.length} signals
         </div>
 
@@ -628,10 +628,10 @@ export function UnifiedSignalsTable({
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-4">
+        <div className="bg-card rounded-lg border border p-4 space-y-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               ref={searchInputRef}
               type="text"
@@ -645,7 +645,7 @@ export function UnifiedSignalsTable({
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {/* Type */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Type</label>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
@@ -659,7 +659,7 @@ export function UnifiedSignalsTable({
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Category</label>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
@@ -691,20 +691,20 @@ export function UnifiedSignalsTable({
       )}
 
       {/* Signals Table */}
-      <section className="rounded-lg border bg-white shadow-sm overflow-hidden">
+      <section className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           {filteredAndSortedSignals.length === 0 ? (
-            <div className="p-10 text-center text-slate-400">
+            <div className="p-10 text-center text-muted-foreground">
               No signals match the selected filters.
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-3 w-8"></th>
                   <th className="px-2 py-3 w-8"></th>
                   <th
-                    className="px-4 py-3 text-left cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('statement')}
                   >
                     <div className="flex items-center gap-2">
@@ -713,7 +713,7 @@ export function UnifiedSignalsTable({
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('category')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -722,7 +722,7 @@ export function UnifiedSignalsTable({
                     </div>
                   </th>
                   <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('importance')}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -732,7 +732,7 @@ export function UnifiedSignalsTable({
                   </th>
                   {mode === 'browse' && (
                     <th
-                      className="px-4 py-3 text-center cursor-pointer hover:bg-slate-100 transition-colors"
+                      className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
                       onClick={() => handleSort('status')}
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -761,7 +761,7 @@ export function UnifiedSignalsTable({
                     <Fragment key={signal.id}>
                       {/* Main Row */}
                       <tr
-                        className={`border-b hover:bg-slate-50 transition-colors ${
+                        className={`border-b hover:bg-muted transition-colors ${
                           isProcessing ? 'opacity-50' : ''
                         }`}
                       >
@@ -769,12 +769,12 @@ export function UnifiedSignalsTable({
                         <td className="px-2 py-3">
                           <button
                             onClick={() => toggleExpanded(signal.id)}
-                            className="p-1 hover:bg-slate-100 rounded"
+                            className="p-1 hover:bg-accent rounded"
                           >
                             {isExpanded ? (
-                              <ChevronDown className="w-4 h-4 text-slate-400" />
+                              <ChevronDown className="w-4 h-4 text-muted-foreground" />
                             ) : (
-                              <ChevronRight className="w-4 h-4 text-slate-400" />
+                              <ChevronRight className="w-4 h-4 text-muted-foreground" />
                             )}
                           </button>
                         </td>
@@ -788,12 +788,12 @@ export function UnifiedSignalsTable({
                             {mode === 'browse' ? (
                               <Link
                                 href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${signal.id}`}
-                                className="text-slate-900 font-medium hover:text-blue-600 hover:underline transition-colors block line-clamp-2"
+                                className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors block line-clamp-2"
                               >
                                 {signal.statement}
                               </Link>
                             ) : (
-                              <span className="text-slate-900 font-medium line-clamp-2">
+                              <span className="text-foreground font-medium line-clamp-2">
                                 {signal.statement}
                               </span>
                             )}
@@ -804,7 +804,7 @@ export function UnifiedSignalsTable({
                         <td className="px-4 py-3 text-center">
                           <Badge
                             variant="outline"
-                            className="gap-1 text-xs font-normal bg-slate-50"
+                            className="gap-1 text-xs font-normal bg-muted"
                           >
                             {categoryIcon(signal.category)}
                             {signal.category === 'data_driven' ? 'Data-Driven' : 'Judgment'}
@@ -901,14 +901,14 @@ export function UnifiedSignalsTable({
 
                       {/* Expanded Row */}
                       {isExpanded && (
-                        <tr className="bg-slate-50">
+                        <tr className="bg-muted">
                           <td colSpan={mode === 'browse' ? 7 : 6} className="px-4 py-4">
                             <div className="ml-8 space-y-3">
                               {isEditing ? (
                                 // Edit Form
                                 <div className="space-y-4">
                                   <div>
-                                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                    <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                                       Statement
                                     </label>
                                     <textarea
@@ -920,7 +920,7 @@ export function UnifiedSignalsTable({
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                    <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                                       Notes
                                     </label>
                                     <textarea
@@ -961,42 +961,42 @@ export function UnifiedSignalsTable({
                                   {/* Notes (simplified - replaces rationale, judgmentDetails, responseProtocol) */}
                                   {signal.notes && (
                                     <div>
-                                      <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                                         Notes
                                       </h5>
-                                      <p className="text-sm text-slate-700 whitespace-pre-wrap">{signal.notes}</p>
+                                      <p className="text-sm text-foreground whitespace-pre-wrap">{signal.notes}</p>
                                     </div>
                                   )}
 
                                   {/* Data-Driven Trigger Criteria (for configured data-driven signals) */}
                                   {signal.category === 'data_driven' && explicitDetails && (
-                                    <div className="bg-white rounded-md p-3 border border-slate-200">
-                                      <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                                    <div className="bg-card rounded-md p-3 border border">
+                                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                                         Trigger Criteria
                                       </h5>
                                       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                                         {explicitDetails.metric && (
                                           <>
-                                            <dt className="text-slate-500">Metric:</dt>
-                                            <dd className="text-slate-900">{explicitDetails.metric}</dd>
+                                            <dt className="text-muted-foreground">Metric:</dt>
+                                            <dd className="text-foreground">{explicitDetails.metric}</dd>
                                           </>
                                         )}
                                         {explicitDetails.threshold && (
                                           <>
-                                            <dt className="text-slate-500">Threshold:</dt>
-                                            <dd className="text-slate-900 font-mono">{explicitDetails.threshold}</dd>
+                                            <dt className="text-muted-foreground">Threshold:</dt>
+                                            <dd className="text-foreground font-mono">{explicitDetails.threshold}</dd>
                                           </>
                                         )}
                                         {explicitDetails.dataSources && explicitDetails.dataSources.length > 0 && (
                                           <>
-                                            <dt className="text-slate-500">Sources:</dt>
-                                            <dd className="text-slate-900">{explicitDetails.dataSources.join(', ')}</dd>
+                                            <dt className="text-muted-foreground">Sources:</dt>
+                                            <dd className="text-foreground">{explicitDetails.dataSources.join(', ')}</dd>
                                           </>
                                         )}
                                         {explicitDetails.monitoringFrequency && (
                                           <>
-                                            <dt className="text-slate-500">Frequency:</dt>
-                                            <dd className="text-slate-900">{explicitDetails.monitoringFrequency}</dd>
+                                            <dt className="text-muted-foreground">Frequency:</dt>
+                                            <dd className="text-foreground">{explicitDetails.monitoringFrequency}</dd>
                                           </>
                                         )}
                                       </dl>

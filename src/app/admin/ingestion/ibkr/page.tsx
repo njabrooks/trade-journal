@@ -12,11 +12,11 @@ export default function IbkrIngestionPage() {
       subtitle="Sync spot prices and IV data from IBKR Client Portal Gateway"
       tabs={<IngestionTabs />}
     >
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-card rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">IBKR Gateway Connection</h2>
         <p className="text-sm text-muted-foreground mb-6">
           Connect to your local IBKR Gateway to sync spot prices and IV data. The gateway must be running
-          and authenticated at <code className="text-xs bg-slate-100 px-1 py-0.5 rounded">https://localhost:5001</code>.
+          and authenticated at <code className="text-xs bg-muted px-1 py-0.5 rounded">https://localhost:5001</code>.
         </p>
         <DataSyncBanner />
       </div>

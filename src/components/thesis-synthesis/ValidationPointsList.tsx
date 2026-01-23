@@ -69,16 +69,16 @@ export function ValidationPointsList({
   };
 
   const statusColors: Record<string, string> = {
-    draft: 'bg-purple-100 text-purple-700',
-    active: 'bg-blue-100 text-blue-700',
-    complete: 'bg-emerald-100 text-emerald-700',
-    rejected: 'bg-slate-100 text-slate-400',
+    draft: 'bg-purple-100 text-purple-700 dark:text-purple-300 dark:bg-purple-900/30 dark:text-purple-300',
+    active: 'bg-blue-100 text-blue-700 dark:text-blue-300 dark:bg-blue-900/30 dark:text-blue-300',
+    complete: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    rejected: 'bg-muted text-muted-foreground',
   };
 
   const importanceColors: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700 border-red-200',
-    significant: 'bg-amber-100 text-amber-700 border-amber-200',
-    supporting: 'bg-slate-100 text-slate-600 border-slate-200',
+    critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+    significant: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+    supporting: 'bg-muted text-muted-foreground border',
   };
 
   const categoryIcons: Record<string, React.ReactNode> = {
@@ -88,23 +88,23 @@ export function ValidationPointsList({
 
   if (validationPoints.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-slate-200 p-6 text-center">
-        <p className="text-sm text-slate-500">
+      <div className="bg-card rounded-lg border border p-6 text-center">
+        <p className="text-sm text-muted-foreground">
           No validation points defined yet.
         </p>
-        <p className="text-xs text-slate-400 mt-1">
-          Use <code className="px-1 bg-slate-100 rounded">/synthesize-thesis</code> to create articulation with validation points.
+        <p className="text-xs text-muted-foreground mt-1">
+          Use <code className="px-1 bg-muted rounded">/synthesize-thesis</code> to create articulation with validation points.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200">
+    <div className="bg-card rounded-lg border border">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-100">
+      <div className="px-4 py-3 border-b border-border">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-slate-900">
+          <h3 className="text-base font-semibold text-foreground">
             Validation Points
           </h3>
           <div className="flex items-center gap-2 text-xs">
@@ -128,11 +128,11 @@ export function ValidationPointsList({
         {/* Filters */}
         <div className="flex items-center gap-4 mt-3">
           <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-500">Type:</span>
+            <span className="text-xs text-muted-foreground">Type:</span>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as typeof filterType)}
-              className="text-xs border-slate-200 rounded px-1.5 py-0.5"
+              className="text-xs border rounded px-1.5 py-0.5"
             >
               <option value="all">All</option>
               <option value="confirmation">Confirmation</option>
@@ -140,11 +140,11 @@ export function ValidationPointsList({
             </select>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-slate-500">Status:</span>
+            <span className="text-xs text-muted-foreground">Status:</span>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-              className="text-xs border-slate-200 rounded px-1.5 py-0.5"
+              className="text-xs border rounded px-1.5 py-0.5"
             >
               <option value="all">All ({validationPoints.length})</option>
               <option value="draft">Draft</option>
@@ -183,7 +183,7 @@ export function ValidationPointsList({
               <div className="flex items-start gap-3">
                 <button
                   onClick={() => togglePoint(point.id)}
-                  className="mt-0.5 text-slate-400 hover:text-slate-600"
+                  className="mt-0.5 text-muted-foreground hover:text-muted-foreground"
                 >
                   {isExpanded ? (
                     <ChevronDown className="w-4 h-4" />
@@ -198,8 +198,8 @@ export function ValidationPointsList({
                     <span
                       className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded ${
                         point.type === 'confirmation'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-amber-100 text-amber-700'
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                       }`}
                     >
                       {point.type === 'confirmation' ? (
@@ -220,7 +220,7 @@ export function ValidationPointsList({
                     </span>
 
                     {/* Category badge */}
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-slate-600 bg-slate-100 rounded">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs text-muted-foreground bg-muted rounded">
                       {categoryIcons[point.category]}
                       {point.category.replace('_', ' ')}
                     </span>
@@ -237,11 +237,11 @@ export function ValidationPointsList({
                   </div>
 
                   {/* Statement */}
-                  <p className="mt-1.5 text-sm text-slate-900">{point.statement}</p>
+                  <p className="mt-1.5 text-sm text-foreground">{point.statement}</p>
 
                   {/* Rationale (if not expanded) */}
                   {!isExpanded && point.rationale && (
-                    <p className="mt-1 text-xs text-slate-500 line-clamp-1">
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
                       {point.rationale}
                     </p>
                   )}
@@ -253,7 +253,7 @@ export function ValidationPointsList({
                   {onConvertToExplicit && point.category === 'judgment' && point.status !== 'rejected' && (
                     <button
                       onClick={() => onConvertToExplicit(point)}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 rounded"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
                       title="Convert to data-driven signal with measurable triggers"
                     >
                       <Zap className="w-3 h-3" />
@@ -263,7 +263,7 @@ export function ValidationPointsList({
                   {onUpdateStatus && point.status !== 'rejected' && (
                     <button
                       onClick={() => onUpdateStatus(point.id)}
-                      className="px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"
+                      className="px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
                     >
                       Update Status
                     </button>
@@ -271,14 +271,14 @@ export function ValidationPointsList({
                   {onViewHistory && (
                     <button
                       onClick={() => onViewHistory(point.id)}
-                      className="px-2 py-1 text-xs text-slate-500 hover:bg-slate-50 rounded"
+                      className="px-2 py-1 text-xs text-muted-foreground hover:bg-muted rounded"
                     >
                       History
                     </button>
                   )}
                   <Link
                     href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${point.id}`}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded"
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded"
                   >
                     <ExternalLink className="w-3 h-3" />
                     Details
@@ -292,44 +292,44 @@ export function ValidationPointsList({
                   {/* Rationale */}
                   {point.rationale && (
                     <div>
-                      <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                         Rationale
                       </h5>
-                      <p className="mt-1 text-sm text-slate-700">{point.rationale}</p>
+                      <p className="mt-1 text-sm text-foreground">{point.rationale}</p>
                     </div>
                   )}
 
                   {/* Data-Driven Details */}
                   {point.category === 'data_driven' && explicitDetails && (
-                    <div className="bg-slate-50 rounded-md p-3">
-                      <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    <div className="bg-muted rounded-md p-3">
+                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                         Measurement Criteria
                       </h5>
                       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         {explicitDetails.metric && (
                           <>
-                            <dt className="text-slate-500">Metric:</dt>
-                            <dd className="text-slate-900">{explicitDetails.metric}</dd>
+                            <dt className="text-muted-foreground">Metric:</dt>
+                            <dd className="text-foreground">{explicitDetails.metric}</dd>
                           </>
                         )}
                         {explicitDetails.threshold && (
                           <>
-                            <dt className="text-slate-500">Threshold:</dt>
-                            <dd className="text-slate-900 font-mono">{explicitDetails.threshold}</dd>
+                            <dt className="text-muted-foreground">Threshold:</dt>
+                            <dd className="text-foreground font-mono">{explicitDetails.threshold}</dd>
                           </>
                         )}
                         {explicitDetails.dataSources && explicitDetails.dataSources.length > 0 && (
                           <>
-                            <dt className="text-slate-500">Sources:</dt>
-                            <dd className="text-slate-900">
+                            <dt className="text-muted-foreground">Sources:</dt>
+                            <dd className="text-foreground">
                               {explicitDetails.dataSources.join(', ')}
                             </dd>
                           </>
                         )}
                         {explicitDetails.monitoringFrequency && (
                           <>
-                            <dt className="text-slate-500">Frequency:</dt>
-                            <dd className="text-slate-900">{explicitDetails.monitoringFrequency}</dd>
+                            <dt className="text-muted-foreground">Frequency:</dt>
+                            <dd className="text-foreground">{explicitDetails.monitoringFrequency}</dd>
                           </>
                         )}
                       </dl>
@@ -338,15 +338,15 @@ export function ValidationPointsList({
 
                   {/* Judgment Details */}
                   {point.category === 'judgment' && judgmentDetails && (
-                    <div className="bg-slate-50 rounded-md p-3">
-                      <h5 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    <div className="bg-muted rounded-md p-3">
+                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                         Judgment Criteria
                       </h5>
                       {judgmentDetails.observableProxies &&
                         judgmentDetails.observableProxies.length > 0 && (
                           <div className="mb-2">
-                            <span className="text-xs text-slate-500">Observable Proxies:</span>
-                            <ul className="mt-1 text-sm text-slate-700 list-disc list-inside">
+                            <span className="text-xs text-muted-foreground">Observable Proxies:</span>
+                            <ul className="mt-1 text-sm text-foreground list-disc list-inside">
                               {judgmentDetails.observableProxies.map((proxy, idx) => (
                                 <li key={idx}>{proxy}</li>
                               ))}
@@ -355,16 +355,16 @@ export function ValidationPointsList({
                         )}
                       {judgmentDetails.judgmentCriteria && (
                         <div className="mb-2">
-                          <span className="text-xs text-slate-500">How to decide:</span>
-                          <p className="mt-1 text-sm text-slate-700">
+                          <span className="text-xs text-muted-foreground">How to decide:</span>
+                          <p className="mt-1 text-sm text-foreground">
                             {judgmentDetails.judgmentCriteria}
                           </p>
                         </div>
                       )}
                       {judgmentDetails.reviewFrequency && (
                         <div>
-                          <span className="text-xs text-slate-500">Review:</span>
-                          <span className="ml-1 text-sm text-slate-700">
+                          <span className="text-xs text-muted-foreground">Review:</span>
+                          <span className="ml-1 text-sm text-foreground">
                             {judgmentDetails.reviewFrequency}
                           </span>
                         </div>
@@ -374,15 +374,15 @@ export function ValidationPointsList({
 
                   {/* Response Protocol */}
                   {responseProtocol && (
-                    <div className="bg-blue-50 rounded-md p-3 border border-blue-100">
-                      <h5 className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-2">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-md p-3 border border-blue-100 dark:border-blue-800">
+                      <h5 className="text-xs font-medium text-blue-700 dark:text-blue-300 dark:text-blue-300 uppercase tracking-wide mb-2">
                         Response Protocol
                       </h5>
                       {responseProtocol.description && (
-                        <p className="text-sm text-blue-900">{responseProtocol.description}</p>
+                        <p className="text-sm text-blue-900 dark:text-blue-100">{responseProtocol.description}</p>
                       )}
                       {responseProtocol.escalation && (
-                        <p className="mt-1 text-xs text-blue-700">
+                        <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
                           <span className="font-medium">Escalation:</span>{' '}
                           {responseProtocol.escalation.replace('_', ' ')}
                         </p>
@@ -392,11 +392,11 @@ export function ValidationPointsList({
 
                   {/* Dependent Thesis */}
                   {point.dependentThesisId && (
-                    <div className="bg-purple-50 rounded-md p-3 border border-purple-100">
-                      <h5 className="text-xs font-medium text-purple-700 uppercase tracking-wide mb-1">
+                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-md p-3 border border-purple-100 dark:border-purple-800">
+                      <h5 className="text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide mb-1">
                         Dependent Thesis Trigger
                       </h5>
-                      <p className="text-sm text-purple-900">
+                      <p className="text-sm text-purple-900 dark:text-purple-100">
                         Triggers when {point.dependentThesisType} thesis{' '}
                         <span className="font-medium">{point.dependentThesisCondition}</span>
                         {point.dependentThesisConditionDetail && (
@@ -407,7 +407,7 @@ export function ValidationPointsList({
                   )}
 
                   {/* Metadata */}
-                  <div className="flex items-center gap-4 text-xs text-slate-500">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     {point.timeframe && (
                       <span>
                         <Clock className="w-3 h-3 inline mr-1" />
@@ -426,7 +426,7 @@ export function ValidationPointsList({
       </div>
 
       {filteredPoints.length === 0 && (
-        <div className="px-4 py-6 text-center text-sm text-slate-500">
+        <div className="px-4 py-6 text-center text-sm text-muted-foreground">
           No points match the current filters.
         </div>
       )}

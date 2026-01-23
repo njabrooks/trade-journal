@@ -341,16 +341,16 @@ export function StandardLinkDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold">Link {sourceTitle}</h2>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Link this {sourceType} to existing or create new entities
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -361,7 +361,7 @@ export function StandardLinkDialog({
         <div className="px-6 py-4 space-y-6">
           {/* Error Display */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
               {error}
             </div>
           )}
@@ -373,19 +373,19 @@ export function StandardLinkDialog({
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setMode('link_existing')}
-                  className="p-6 border-2 border-slate-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border-border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
                 >
                   <div className="font-medium text-lg mb-2">Link to Existing</div>
-                  <div className="text-sm text-slate-600">
+                  <div className="text-sm text-muted-foreground">
                     Connect to entities that already exist
                   </div>
                 </button>
                 <button
                   onClick={() => setMode('create_new')}
-                  className="p-6 border-2 border-slate-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="p-6 border-2 border-border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
                 >
                   <div className="font-medium text-lg mb-2">Create New & Link</div>
-                  <div className="text-sm text-slate-600">
+                  <div className="text-sm text-muted-foreground">
                     Create a new entity and link to it
                   </div>
                 </button>
@@ -398,7 +398,7 @@ export function StandardLinkDialog({
             <div className="space-y-4">
               <button
                 onClick={() => setMode(null)}
-                className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm flex items-center gap-1"
               >
                 ← Back
               </button>
@@ -408,7 +408,7 @@ export function StandardLinkDialog({
                   <button
                     key={type}
                     onClick={() => setTargetType(type)}
-                    className="w-full p-4 border-2 border-slate-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                    className="w-full p-4 border-2 border-border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
                   >
                     <div className="font-medium">{getTargetTypeLabel(type)}</div>
                   </button>
@@ -428,7 +428,7 @@ export function StandardLinkDialog({
                     setMode(null);
                   }
                 }}
-                className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm flex items-center gap-1"
               >
                 ← Back
               </button>
@@ -439,8 +439,8 @@ export function StandardLinkDialog({
 
               {/* Relationship Type Selector (Claims only) */}
               {requireRelationshipType && (
-                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Relationship Type
                   </label>
                   <div className="flex gap-3">
@@ -463,20 +463,20 @@ export function StandardLinkDialog({
 
               {/* Currently Linked Entities */}
               {currentlyLinkedEntities.length > 0 && (
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-slate-700 mb-3">
+                <div className="bg-muted border rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-foreground mb-3">
                     Currently Linked ({currentlyLinkedEntities.length})
                   </h4>
                   <div className="space-y-2">
                     {currentlyLinkedEntities.map((entity) => (
                       <div
                         key={entity.id}
-                        className="flex items-center justify-between bg-white p-3 rounded border border-slate-200"
+                        className="flex items-center justify-between bg-card p-3 rounded border"
                       >
                         <div className="flex-1">
                           <div className="font-medium text-sm">{entity.title}</div>
                           {entity.ticker && (
-                            <div className="text-xs text-slate-500">{entity.ticker}</div>
+                            <div className="text-xs text-muted-foreground">{entity.ticker}</div>
                           )}
                         </div>
                         <button
@@ -500,23 +500,23 @@ export function StandardLinkDialog({
                 placeholder="Search available entities..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
               />
 
               {/* Available Entities List */}
-              <div className="border border-slate-200 rounded-lg max-h-96 overflow-y-auto">
+              <div className="border rounded-lg max-h-96 overflow-y-auto">
                 {loadingEntities ? (
-                  <div className="p-8 text-center text-slate-500">Loading...</div>
+                  <div className="p-8 text-center text-muted-foreground">Loading...</div>
                 ) : filteredEntities.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500">
+                  <div className="p-8 text-center text-muted-foreground">
                     No available {getTargetTypeLabel(targetType).toLowerCase()}s found
                   </div>
                 ) : (
-                  <div className="divide-y">
+                  <div className="divide-y divide-border">
                     {filteredEntities.map((entity) => (
                       <label
                         key={entity.id}
-                        className="flex items-start gap-3 p-4 hover:bg-slate-50 cursor-pointer"
+                        className="flex items-start gap-3 p-4 hover:bg-muted cursor-pointer"
                       >
                         <input
                           type={allowMultipleTargets ? 'checkbox' : 'radio'}
@@ -526,15 +526,15 @@ export function StandardLinkDialog({
                         />
                         <div className="flex-1">
                           <div className="font-medium">{entity.title}</div>
-                          <div className="text-sm text-slate-600 flex items-center gap-2 mt-1">
+                          <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                             {entity.ticker && <Badge className="text-xs">{entity.ticker}</Badge>}
                             {entity.status && (
-                              <Badge className="text-xs bg-slate-100 text-slate-700">
+                              <Badge className="text-xs bg-muted text-foreground">
                                 {entity.status}
                               </Badge>
                             )}
                             {entity.thesisType && (
-                              <Badge className="text-xs bg-purple-100 text-purple-700">
+                              <Badge className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
                                 {entity.thesisType}
                               </Badge>
                             )}
@@ -548,7 +548,7 @@ export function StandardLinkDialog({
 
               {/* Selection Summary */}
               {selectedEntityIds.length > 0 && (
-                <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg text-sm">
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 rounded-lg text-sm">
                   <span className="font-medium">{selectedEntityIds.length}</span> {getTargetTypeLabel(targetType).toLowerCase()}
                   {selectedEntityIds.length > 1 ? 's' : ''} selected
                   {requireRelationshipType && (
@@ -572,7 +572,7 @@ export function StandardLinkDialog({
                     setMode(null);
                   }
                 }}
-                className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm flex items-center gap-1"
               >
                 ← Back
               </button>
@@ -606,7 +606,7 @@ export function StandardLinkDialog({
 
         {/* Footer (for Link to Existing mode) */}
         {mode === 'link_existing' && targetType && (
-          <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex items-center justify-end gap-3">
+          <div className="sticky bottom-0 bg-card border-t border-border px-6 py-4 flex items-center justify-end gap-3">
             <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>

@@ -54,7 +54,7 @@ export default async function StrategyExecutionPage({ params }: ExecutionPagePro
       subtitle={
         <span className="inline-flex items-center gap-2">
           Strategy
-          <span className="font-mono text-slate-600">({strategy.strategyKey})</span>
+          <span className="font-mono text-muted-foreground">({strategy.strategyKey})</span>
         </span>
       }
       statusBadge={statusBadge}

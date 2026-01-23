@@ -114,16 +114,16 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+        <div className="flex items-center justify-between p-6 border-b border">
           <div>
-            <h2 className="text-xl font-semibold">Edit Asset Thesis</h2>
-            <p className="text-sm text-slate-500 mt-1">Update asset thesis metadata and information</p>
+            <h2 className="text-xl font-semibold text-foreground">Edit Asset Thesis</h2>
+            <p className="text-sm text-muted-foreground mt-1">Update asset thesis metadata and information</p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -133,7 +133,7 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
               Title *
             </label>
             <input
@@ -141,14 +141,14 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
               Description
             </label>
             <textarea
@@ -156,13 +156,13 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={6}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {/* Narrative */}
           <div>
-            <label htmlFor="narrative" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="narrative" className="block text-sm font-medium text-foreground mb-2">
               Narrative
             </label>
             <textarea
@@ -170,14 +170,14 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
               value={narrative}
               onChange={(e) => setNarrative(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           {/* Context Fields */}
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label htmlFor="fundamentalContext" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="fundamentalContext" className="block text-sm font-medium text-foreground mb-2">
                 Fundamental Context
               </label>
               <textarea
@@ -185,11 +185,11 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
                 value={fundamentalContext}
                 onChange={(e) => setFundamentalContext(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label htmlFor="positioningContext" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="positioningContext" className="block text-sm font-medium text-foreground mb-2">
                 Positioning Context
               </label>
               <textarea
@@ -197,11 +197,11 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
                 value={positioningContext}
                 onChange={(e) => setPositioningContext(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label htmlFor="regimeContext" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="regimeContext" className="block text-sm font-medium text-foreground mb-2">
                 Regime Context
               </label>
               <textarea
@@ -209,21 +209,21 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
                 value={regimeContext}
                 onChange={(e) => setRegimeContext(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           {/* Time Horizon */}
           <div>
-            <label htmlFor="timeHorizon" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="timeHorizon" className="block text-sm font-medium text-foreground mb-2">
               Time Horizon *
             </label>
             <select
               id="timeHorizon"
               value={timeHorizon}
               onChange={(e) => setTimeHorizon(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="long_term">Long Term</option>
               <option value="medium_term">Medium Term</option>
@@ -233,14 +233,14 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
 
           {/* Confidence Level */}
           <div>
-            <label htmlFor="confidenceLevel" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="confidenceLevel" className="block text-sm font-medium text-foreground mb-2">
               Confidence Level *
             </label>
             <select
               id="confidenceLevel"
               value={confidenceLevel}
               onChange={(e) => setConfidenceLevel(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="high">High</option>
               <option value="medium">Medium</option>
@@ -251,14 +251,14 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
 
           {/* Status */}
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="status" className="block text-sm font-medium text-foreground mb-2">
               Status *
             </label>
             <select
               id="status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="draft">Draft</option>
               <option value="active">Active</option>
@@ -269,14 +269,14 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
 
           {/* Direction */}
           <div>
-            <label htmlFor="direction" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="direction" className="block text-sm font-medium text-foreground mb-2">
               Direction
             </label>
             <select
               id="direction"
               value={direction}
               onChange={(e) => setDirection(e.target.value as typeof direction)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="neutral">Neutral (Observational)</option>
               <option value="bullish">Bullish (Positive)</option>
@@ -287,7 +287,7 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
           {/* Position Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="positionStartDate" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="positionStartDate" className="block text-sm font-medium text-foreground mb-2">
                 Position Start Date
               </label>
               <input
@@ -295,11 +295,11 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
                 type="date"
                 value={positionStartDate}
                 onChange={(e) => setPositionStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label htmlFor="positionEndDate" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="positionEndDate" className="block text-sm font-medium text-foreground mb-2">
                 Position End Date
               </label>
               <input
@@ -307,7 +307,7 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
                 type="date"
                 value={positionEndDate}
                 onChange={(e) => setPositionEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -315,7 +315,7 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
           {/* Price Targets */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="targetPrice" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="targetPrice" className="block text-sm font-medium text-foreground mb-2">
                 Target Price
               </label>
               <input
@@ -324,12 +324,12 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
                 step="0.01"
                 value={targetPrice}
                 onChange={(e) => setTargetPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label htmlFor="entryReferencePrice" className="block text-sm font-medium text-slate-700 mb-2">
+              <label htmlFor="entryReferencePrice" className="block text-sm font-medium text-foreground mb-2">
                 Entry Reference Price
               </label>
               <input
@@ -338,7 +338,7 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
                 step="0.01"
                 value={entryReferencePrice}
                 onChange={(e) => setEntryReferencePrice(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="0.00"
               />
             </div>
@@ -346,14 +346,14 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
 
           {/* Outcome */}
           <div>
-            <label htmlFor="outcome" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="outcome" className="block text-sm font-medium text-foreground mb-2">
               Outcome
             </label>
             <select
               id="outcome"
               value={outcome}
               onChange={(e) => setOutcome(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Not Set</option>
               <option value="validated">Validated</option>
@@ -365,7 +365,7 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
 
           {/* Outcome Notes */}
           <div>
-            <label htmlFor="outcomeNotes" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="outcomeNotes" className="block text-sm font-medium text-foreground mb-2">
               Outcome Notes
             </label>
             <textarea
@@ -373,14 +373,14 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
               value={outcomeNotes}
               onChange={(e) => setOutcomeNotes(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Notes about the outcome or current status..."
             />
           </div>
 
           {/* Actual Price */}
           <div>
-            <label htmlFor="actualPrice" className="block text-sm font-medium text-slate-700 mb-2">
+            <label htmlFor="actualPrice" className="block text-sm font-medium text-foreground mb-2">
               Actual Price (at outcome)
             </label>
             <input
@@ -389,20 +389,20 @@ export function EditAssetThesisDialog({ thesis, onClose }: EditAssetThesisDialog
               step="0.01"
               value={actualPrice}
               onChange={(e) => setActualPrice(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border bg-background text-foreground rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="0.00"
             />
           </div>
 
           {/* Error Display */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+          <div className="flex items-center justify-between pt-4 border-t border">
             <div>
               {!showDeleteConfirm ? (
                 <Button

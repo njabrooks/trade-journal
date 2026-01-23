@@ -294,20 +294,20 @@ export function StrategySignalConfigForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-card rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-foreground">
               {isEditMode ? 'Edit Signal' : 'Configure Strategy Signal'}
             </h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {strategyKey} {underlyingTicker ? `(${underlyingTicker})` : ''}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -327,13 +327,13 @@ export function StrategySignalConfigForm({
                   className={`px-4 py-3 rounded-lg border-2 transition-colors text-left ${
                     signalType === type.id
                       ? type.color === 'emerald'
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                        : 'border-amber-500 bg-amber-50 text-amber-900'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-100'
+                        : 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100'
+                      : 'border bg-card text-foreground hover:border-muted-foreground'
                   }`}
                 >
                   <div className="font-medium">{type.label}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{type.description}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{type.description}</div>
                 </button>
               ))}
             </div>
@@ -350,8 +350,8 @@ export function StrategySignalConfigForm({
                   onClick={() => setImportance(level.id)}
                   className={`px-3 py-2 rounded-md border text-sm transition-colors ${
                     importance === level.id
-                      ? 'border-blue-500 bg-blue-50 text-blue-900'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100'
+                      : 'border bg-card text-foreground hover:border-muted-foreground'
                   }`}
                 >
                   {level.label}
@@ -365,16 +365,16 @@ export function StrategySignalConfigForm({
             <div className="flex items-center justify-between">
               <Label>Trigger Conditions *</Label>
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-slate-500">Match</span>
+                <span className="text-muted-foreground">Match</span>
                 <select
                   value={logic}
                   onChange={(e) => setLogic(e.target.value as 'all' | 'any')}
-                  className="border rounded px-2 py-1 text-sm"
+                  className="border border-border bg-background text-foreground rounded px-2 py-1 text-sm"
                 >
                   <option value="any">ANY (OR)</option>
                   <option value="all">ALL (AND)</option>
                 </select>
-                <span className="text-slate-500">conditions</span>
+                <span className="text-muted-foreground">conditions</span>
               </div>
             </div>
 
@@ -386,10 +386,10 @@ export function StrategySignalConfigForm({
                 return (
                   <div
                     key={condition.id}
-                    className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200"
+                    className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-border"
                   >
                     {index > 0 && (
-                      <span className="text-xs font-medium text-slate-400 w-10 text-center">
+                      <span className="text-xs font-medium text-muted-foreground w-10 text-center">
                         {logic === 'all' ? 'AND' : 'OR'}
                       </span>
                     )}
@@ -400,7 +400,7 @@ export function StrategySignalConfigForm({
                       onChange={(e) =>
                         updateCondition(condition.id, { type: e.target.value as ConditionType })
                       }
-                      className="border rounded px-2 py-1.5 text-sm flex-1"
+                      className="border border-border bg-background text-foreground rounded px-2 py-1.5 text-sm flex-1"
                     >
                       <optgroup label="Price Conditions (TradingView)">
                         {Object.entries(CONDITION_TYPES)
@@ -453,14 +453,14 @@ export function StrategySignalConfigForm({
                         placeholder="Value"
                         className="w-24"
                       />
-                      <span className="text-sm text-slate-500 w-8">{conditionConfig.unit}</span>
+                      <span className="text-sm text-muted-foreground w-8">{conditionConfig.unit}</span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => removeCondition(condition.id)}
                       disabled={conditions.length === 1}
-                      className="text-slate-400 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="text-muted-foreground hover:text-red-500 dark:hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -505,7 +505,7 @@ export function StrategySignalConfigForm({
           {/* Statement Override */}
           <div className="space-y-2">
             <Label htmlFor="statement">
-              Signal Statement <span className="text-slate-400 font-normal">(auto-generated if blank)</span>
+              Signal Statement <span className="text-muted-foreground font-normal">(auto-generated if blank)</span>
             </Label>
             <Input
               id="statement"
@@ -529,18 +529,18 @@ export function StrategySignalConfigForm({
 
           {/* Preview */}
           {previewCondition && (
-            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-              <Label className="text-xs text-slate-500 uppercase tracking-wider">
+            <div className="bg-muted rounded-lg p-4 border border-border">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">
                 Trigger Preview
               </Label>
-              <p className="mt-2 text-sm font-medium text-slate-800">
+              <p className="mt-2 text-sm font-medium text-foreground">
                 When {logic === 'all' ? 'ALL' : 'ANY'} of these conditions are met:
               </p>
-              <p className="mt-1 text-sm text-slate-600">{previewCondition}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{previewCondition}</p>
               {recommendedAction && (
                 <p className="mt-2 text-sm">
-                  <span className="text-slate-500">Action:</span>{' '}
-                  <span className="font-medium text-slate-800">{recommendedAction}</span>
+                  <span className="text-muted-foreground">Action:</span>{' '}
+                  <span className="font-medium text-foreground">{recommendedAction}</span>
                 </p>
               )}
             </div>
@@ -548,23 +548,23 @@ export function StrategySignalConfigForm({
 
           {/* TradingView Integration Section */}
           {hasPriceConditions && (
-            <div className="bg-blue-50 rounded-lg border border-blue-200 overflow-hidden">
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 overflow-hidden">
               <button
                 type="button"
                 onClick={() => setShowTvSetup(!showTvSetup)}
-                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-blue-100/50 transition-colors"
+                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
                   </svg>
-                  <span className="font-medium text-blue-900">TradingView Integration</span>
-                  <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">Required for price alerts</span>
+                  <span className="font-medium text-blue-900 dark:text-blue-100">TradingView Integration</span>
+                  <span className="text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full">Required for price alerts</span>
                 </div>
                 {showTvSetup ? (
-                  <ChevronUp className="w-5 h-5 text-blue-600" />
+                  <ChevronUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-blue-600" />
+                  <ChevronDown className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 )}
               </button>
 
@@ -572,7 +572,7 @@ export function StrategySignalConfigForm({
                 <div className="px-4 pb-4 space-y-4">
                   {/* TV Alert Name Input */}
                   <div className="space-y-2">
-                    <Label htmlFor="tvAlertName" className="text-blue-900">
+                    <Label htmlFor="tvAlertName" className="text-blue-900 dark:text-blue-100">
                       TradingView Alert Name *
                     </Label>
                     <Input
@@ -580,25 +580,25 @@ export function StrategySignalConfigForm({
                       value={tvAlertName}
                       onChange={(e) => setTvAlertName(e.target.value)}
                       placeholder="e.g., AAPL-TP-200"
-                      className="bg-white"
+                      className="bg-background"
                     />
-                    <p className="text-xs text-blue-700">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
                       Enter the exact alert name you&apos;ll use in TradingView. This is used to match incoming webhooks.
                     </p>
                   </div>
 
                   {/* Setup Instructions */}
-                  <div className="bg-white rounded-lg p-4 space-y-4">
-                    <h4 className="font-medium text-slate-800 text-sm">Setup Instructions</h4>
+                  <div className="bg-card rounded-lg p-4 space-y-4">
+                    <h4 className="font-medium text-foreground text-sm">Setup Instructions</h4>
 
                     {/* Step 1: Webhook URL */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-medium">1</span>
-                        <span className="text-sm font-medium text-slate-700">Copy Webhook URL</span>
+                        <span className="text-sm font-medium text-foreground">Copy Webhook URL</span>
                       </div>
                       <div className="flex items-center gap-2 ml-7">
-                        <code className="flex-1 text-xs bg-slate-100 px-3 py-2 rounded border font-mono overflow-x-auto">
+                        <code className="flex-1 text-xs bg-muted px-3 py-2 rounded border border-border font-mono overflow-x-auto text-foreground">
                           {WEBHOOK_URL}
                         </code>
                         <Button
@@ -621,11 +621,11 @@ export function StrategySignalConfigForm({
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-medium">2</span>
-                        <span className="text-sm font-medium text-slate-700">Create TradingView Alert</span>
+                        <span className="text-sm font-medium text-foreground">Create TradingView Alert</span>
                       </div>
-                      <ul className="ml-7 text-xs text-slate-600 space-y-1 list-disc list-inside">
+                      <ul className="ml-7 text-xs text-muted-foreground space-y-1 list-disc list-inside">
                         <li>Open TradingView and create your price alert</li>
-                        <li>Set the alert name to: <code className="bg-slate-100 px-1 rounded">{tvAlertName || 'your-alert-name'}</code></li>
+                        <li>Set the alert name to: <code className="bg-muted px-1 rounded">{tvAlertName || 'your-alert-name'}</code></li>
                         <li>Enable &quot;Webhook URL&quot; and paste the URL above</li>
                       </ul>
                     </div>
@@ -634,10 +634,10 @@ export function StrategySignalConfigForm({
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-medium">3</span>
-                        <span className="text-sm font-medium text-slate-700">Set Alert Message (JSON Payload)</span>
+                        <span className="text-sm font-medium text-foreground">Set Alert Message (JSON Payload)</span>
                       </div>
                       <div className="ml-7 space-y-2">
-                        <pre className="text-xs bg-slate-100 px-3 py-2 rounded border font-mono overflow-x-auto whitespace-pre">
+                        <pre className="text-xs bg-muted px-3 py-2 rounded border border-border font-mono overflow-x-auto whitespace-pre text-foreground">
                           {TV_PAYLOAD_TEMPLATE}
                         </pre>
                         <Button
@@ -656,12 +656,12 @@ export function StrategySignalConfigForm({
                     </div>
 
                     {/* Help Link */}
-                    <div className="pt-2 border-t border-slate-200">
+                    <div className="pt-2 border-t border-border">
                       <a
                         href="https://www.tradingview.com/support/solutions/43000529348-about-webhooks/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1"
                       >
                         <ExternalLink className="w-3 h-3" />
                         TradingView Webhooks Documentation
@@ -675,7 +675,7 @@ export function StrategySignalConfigForm({
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

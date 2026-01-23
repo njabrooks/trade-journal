@@ -66,7 +66,7 @@ export function EntitySidebar({
 }: EntitySidebarProps) {
   return (
     <div className={cn('sticky top-6 h-fit w-full lg:w-[22rem] self-start', className)}>
-      <div className="rounded-lg border bg-white shadow-sm">
+      <div className="rounded-lg border bg-card shadow-sm">
         <Accordion
           type="multiple"
           className="w-full"
@@ -74,7 +74,7 @@ export function EntitySidebar({
         >
           {/* Quick Stats Section */}
           <AccordionItem value="quick-stats" className="border-b">
-            <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:no-underline">
+            <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
               Quick Stats
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
@@ -89,7 +89,7 @@ export function EntitySidebar({
           {/* Related Entities Section */}
           {relatedEntities.length > 0 && (
             <AccordionItem value="related" className="border-b-0">
-              <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:no-underline">
+              <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
                 Related
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
@@ -119,20 +119,20 @@ export function EntitySidebar({
 
 function RelatedEntityLink({ entity }: { entity: SidebarRelatedEntity }) {
   const typeColors: Record<string, string> = {
-    'macro-thesis': 'bg-purple-100 text-purple-700',
-    'asset-thesis': 'bg-blue-100 text-blue-700',
-    'strategy': 'bg-emerald-100 text-emerald-700',
-    'claim': 'bg-amber-100 text-amber-700',
+    'macro-thesis': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+    'asset-thesis': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    'strategy': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    'claim': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   };
 
-  const colorClass = entity.type ? typeColors[entity.type] : 'bg-slate-100 text-slate-700';
+  const colorClass = entity.type ? typeColors[entity.type] : 'bg-muted text-muted-foreground';
 
   return (
     <Link
       href={entity.href}
-      className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-slate-50 transition-colors group"
+      className="flex items-center justify-between rounded-md px-2 py-1.5 text-sm hover:bg-muted transition-colors group"
     >
-      <span className="text-slate-600 group-hover:text-slate-900">{entity.label}</span>
+      <span className="text-muted-foreground group-hover:text-foreground">{entity.label}</span>
       <span className={cn('inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded-full text-xs font-medium', colorClass)}>
         {entity.count}
       </span>

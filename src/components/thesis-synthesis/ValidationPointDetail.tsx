@@ -89,20 +89,20 @@ export function ValidationPointDetail({
     draft: <Clock className="w-5 h-5 text-purple-400" />,
     active: <Eye className="w-5 h-5 text-blue-500" />,
     complete: <AlertTriangle className="w-5 h-5 text-emerald-500" />,
-    rejected: <Archive className="w-5 h-5 text-slate-300" />,
+    rejected: <Archive className="w-5 h-5 text-muted-foreground" />,
   };
 
   const statusColors: Record<string, string> = {
-    draft: 'bg-purple-100 text-purple-700 border-purple-200',
-    active: 'bg-blue-100 text-blue-700 border-blue-200',
-    complete: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    rejected: 'bg-slate-50 text-slate-500 border-slate-200',
+    draft: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
+    active: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+    complete: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+    rejected: 'bg-muted text-muted-foreground border',
   };
 
   const importanceColors: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700 border-red-200',
-    significant: 'bg-amber-100 text-amber-700 border-amber-200',
-    supporting: 'bg-slate-100 text-slate-600 border-slate-200',
+    critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+    significant: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+    supporting: 'bg-muted text-muted-foreground border',
   };
 
   const categoryIcons: Record<string, React.ReactNode> = {
@@ -124,14 +124,14 @@ export function ValidationPointDetail({
       {/* Back link */}
       <button
         onClick={() => router.push(backUrl)}
-        className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to {thesisTitle}
       </button>
 
       {/* Header */}
-      <div className="bg-white rounded-lg border border-slate-200 p-6">
+      <div className="bg-card rounded-lg border border p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             {/* Badges */}
@@ -139,8 +139,8 @@ export function ValidationPointDetail({
               <span
                 className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded ${
                   validationPoint.type === 'confirmation'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-amber-100 text-amber-700'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                 }`}
               >
                 {validationPoint.type === 'confirmation' ? (
@@ -159,20 +159,20 @@ export function ValidationPointDetail({
                 {validationPoint.importance}
               </span>
 
-              <span className="inline-flex items-center gap-1 px-2 py-1 text-sm text-slate-600 bg-slate-100 rounded">
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-sm text-muted-foreground bg-muted rounded">
                 {categoryIcons[validationPoint.category]}
                 {validationPoint.category.replace('_', ' ')}
               </span>
             </div>
 
             {/* Statement */}
-            <h1 className="text-xl font-semibold text-slate-900 mb-2">
+            <h1 className="text-xl font-semibold text-foreground mb-2">
               {validationPoint.statement}
             </h1>
 
             {/* Notes */}
             {validationPoint.notes && (
-              <p className="text-slate-600 whitespace-pre-wrap">{validationPoint.notes}</p>
+              <p className="text-muted-foreground whitespace-pre-wrap">{validationPoint.notes}</p>
             )}
           </div>
 
@@ -199,7 +199,7 @@ export function ValidationPointDetail({
         </div>
 
         {/* Metadata */}
-        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100 text-sm text-slate-500">
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border text-sm text-muted-foreground">
           {validationPoint.timeframe && (
             <span>
               <Clock className="w-4 h-4 inline mr-1" />
@@ -221,33 +221,33 @@ export function ValidationPointDetail({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Data-driven trigger criteria */}
         {validationPoint.category === 'data_driven' && explicitDetails && (
-          <div className="bg-white rounded-lg border border-slate-200 p-4">
-            <h3 className="text-sm font-semibold text-slate-900 mb-3">
+          <div className="bg-card rounded-lg border border p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">
               Trigger Criteria
             </h3>
             <dl className="space-y-2 text-sm">
               {explicitDetails.metric && (
                 <div>
-                  <dt className="text-slate-500">Metric</dt>
-                  <dd className="text-slate-900 font-medium">{explicitDetails.metric}</dd>
+                  <dt className="text-muted-foreground">Metric</dt>
+                  <dd className="text-foreground font-medium">{explicitDetails.metric}</dd>
                 </div>
               )}
               {explicitDetails.threshold && (
                 <div>
-                  <dt className="text-slate-500">Threshold</dt>
-                  <dd className="text-slate-900 font-mono">{explicitDetails.threshold}</dd>
+                  <dt className="text-muted-foreground">Threshold</dt>
+                  <dd className="text-foreground font-mono">{explicitDetails.threshold}</dd>
                 </div>
               )}
               {explicitDetails.dataSources && explicitDetails.dataSources.length > 0 && (
                 <div>
-                  <dt className="text-slate-500">Data Sources</dt>
-                  <dd className="text-slate-900">{explicitDetails.dataSources.join(', ')}</dd>
+                  <dt className="text-muted-foreground">Data Sources</dt>
+                  <dd className="text-foreground">{explicitDetails.dataSources.join(', ')}</dd>
                 </div>
               )}
               {explicitDetails.monitoringFrequency && (
                 <div>
-                  <dt className="text-slate-500">Monitoring Frequency</dt>
-                  <dd className="text-slate-900">{explicitDetails.monitoringFrequency}</dd>
+                  <dt className="text-muted-foreground">Monitoring Frequency</dt>
+                  <dd className="text-foreground">{explicitDetails.monitoringFrequency}</dd>
                 </div>
               )}
             </dl>
@@ -256,11 +256,11 @@ export function ValidationPointDetail({
 
         {/* Dependent thesis */}
         {validationPoint.dependentThesisId && (
-          <div className="bg-purple-50 rounded-lg border border-purple-100 p-4">
-            <h3 className="text-sm font-semibold text-purple-900 mb-2">
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800 p-4">
+            <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-2">
               Dependent Thesis Trigger
             </h3>
-            <p className="text-sm text-purple-800">
+            <p className="text-sm text-purple-800 dark:text-purple-200">
               This signal triggers when the{' '}
               <span className="font-medium">{validationPoint.dependentThesisType}</span> thesis is{' '}
               <span className="font-medium">{validationPoint.dependentThesisCondition}</span>
@@ -273,11 +273,11 @@ export function ValidationPointDetail({
       </div>
 
       {/* Status History */}
-      <div className="bg-white rounded-lg border border-slate-200">
-        <div className="px-4 py-3 border-b border-slate-200">
-          <h3 className="text-sm font-semibold text-slate-900">
+      <div className="bg-card rounded-lg border border">
+        <div className="px-4 py-3 border-b border">
+          <h3 className="text-sm font-semibold text-foreground">
             Status History
-            <span className="ml-2 text-xs font-normal text-slate-500">
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
               ({statusHistory.length} {statusHistory.length === 1 ? 'entry' : 'entries'})
             </span>
           </h3>

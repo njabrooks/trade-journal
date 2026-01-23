@@ -56,7 +56,7 @@ export function TriagePageClient({ records }: TriagePageClientProps) {
   const someSelected = selectedIds.size > 0 && selectedIds.size < records.length;
 
   return (
-    <section className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+    <section className="rounded-2xl border bg-card shadow-sm overflow-hidden">
       <TriageBulkActions
         selectedIds={Array.from(selectedIds)}
         records={records}
@@ -64,13 +64,13 @@ export function TriagePageClient({ records }: TriagePageClientProps) {
       />
       <div className="overflow-x-auto">
         {records.length === 0 ? (
-          <div className="p-10 text-center text-slate-400">
+          <div className="p-10 text-center text-muted-foreground">
             No triage flags match the selected filters.
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+              <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="px-4 py-3 text-center">
                   <input
                     type="checkbox"
