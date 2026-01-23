@@ -50,18 +50,18 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
     // Use hash to pick from a set of pleasant color combinations
     const colors = [
-      'bg-rose-100 text-rose-700',
-      'bg-pink-100 text-pink-700',
-      'bg-fuchsia-100 text-fuchsia-700',
-      'bg-violet-100 text-violet-700',
-      'bg-indigo-100 text-indigo-700',
-      'bg-sky-100 text-sky-700',
-      'bg-cyan-100 text-cyan-700',
-      'bg-teal-100 text-teal-700',
-      'bg-emerald-100 text-emerald-700',
-      'bg-lime-100 text-lime-700',
-      'bg-amber-100 text-amber-700',
-      'bg-orange-100 text-orange-700',
+      'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
+      'bg-pink-50 text-pink-700 border border-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800',
+      'bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200 dark:bg-fuchsia-900/30 dark:text-fuchsia-300 dark:border-fuchsia-800',
+      'bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800',
+      'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
+      'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800',
+      'bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800',
+      'bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800',
+      'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+      'bg-lime-50 text-lime-700 border border-lime-200 dark:bg-lime-900/30 dark:text-lime-300 dark:border-lime-800',
+      'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+      'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
     ];
 
     const colorIndex = Math.abs(hash) % colors.length;
@@ -250,15 +250,15 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   const statusBadgeColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'draft':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
       case 'active':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
       case 'complete':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
       case 'rejected':
-        return 'bg-slate-100 text-muted-foreground';
+        return 'bg-slate-50 text-muted-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-400 dark:border-slate-700';
       default:
-        return 'bg-slate-100 text-foreground';
+        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
     }
   };
 

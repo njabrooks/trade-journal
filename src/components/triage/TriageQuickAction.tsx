@@ -245,14 +245,14 @@ const DEFAULT_CONFIG: TriggerConfig = {
 function getSeverityButtonStyles(severity: string | null): string {
   switch (severity) {
     case 'urgent':
-      return 'bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200';
+      return 'bg-rose-100 text-rose-700 hover:bg-rose-200 border-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:hover:bg-rose-900/60 dark:border-rose-700';
     case 'attention':
-      return 'bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200';
+      return 'bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:hover:bg-amber-900/60 dark:border-amber-700';
     case 'monitor':
-      return 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200';
+      return 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 dark:border-blue-700';
     case 'info':
     default:
-      return 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200';
+      return 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:border-slate-600';
   }
 }
 

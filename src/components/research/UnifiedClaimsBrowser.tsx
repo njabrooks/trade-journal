@@ -256,30 +256,30 @@ export function UnifiedClaimsBrowser({
   const confidenceBadgeColor = (confidence: string | null) => {
     switch (confidence) {
       case 'high':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
       case 'medium':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
       case 'low':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
       case 'exploratory':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
       default:
-        return 'bg-slate-100 text-foreground';
+        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
     }
   };
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
       case 'draft':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
       case 'complete':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
       case 'rejected':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
       default:
-        return 'bg-slate-100 text-foreground';
+        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
     }
   };
 
@@ -368,13 +368,13 @@ export function UnifiedClaimsBrowser({
   const getRelationshipBadge = (mappingType: string) => {
     switch (mappingType) {
       case 'supports':
-        return { className: 'bg-emerald-100 text-emerald-700', label: 'Supports' };
+        return { className: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800', label: 'Supports' };
       case 'refutes':
-        return { className: 'bg-red-100 text-red-700', label: 'Refutes' };
+        return { className: 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800', label: 'Refutes' };
       case 'foundation':
-        return { className: 'bg-amber-100 text-amber-700', label: 'Foundation' };
+        return { className: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800', label: 'Foundation' };
       default:
-        return { className: 'bg-slate-100 text-foreground', label: mappingType };
+        return { className: 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700', label: mappingType };
     }
   };
 
@@ -382,11 +382,11 @@ export function UnifiedClaimsBrowser({
   const getCategoryBadge = (category: string) => {
     switch (category) {
       case 'macro':
-        return { className: 'bg-purple-100 text-purple-700', label: 'Macro' };
+        return { className: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800', label: 'Macro' };
       case 'asset_specific':
-        return { className: 'bg-blue-100 text-blue-700', label: 'Asset' };
+        return { className: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800', label: 'Asset' };
       default:
-        return { className: 'bg-slate-100 text-foreground', label: category };
+        return { className: 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700', label: category };
     }
   };
 
