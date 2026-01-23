@@ -99,9 +99,15 @@ export function mapPositionTriageToUnified(record: TriageQueueRecord): UnifiedTr
   const objectType: TriageObjectType =
     record.contextLevel === "strategy" ? "strategy" : "position";
 
+  // For strategy-level records, use strategyLabel if available, otherwise fall back to strategyKey, then symbol
+  // For position-level records, use symbol
+  const title = objectType === "strategy"
+    ? (record.strategyLabel || record.strategyKey || record.symbol)
+    : record.symbol;
+
   return {
     id: record.id,
-    title: record.symbol,
+    title,
     objectType,
     objectId: objectType === "strategy" ? (record.strategyId ?? record.id) : (record.positionId ?? record.id),
     trigger: record.recommendedAction ?? "unknown",

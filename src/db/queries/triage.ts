@@ -1,6 +1,6 @@
 import { and, desc, asc, eq, sql, ne, or, isNull, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { strategies, triageRecords, thesisTriageRecords, macroTheses, assetTheses, underlyings } from "@/db/schema";
+import { strategies, strategyTemplates, triageRecords, thesisTriageRecords, macroTheses, assetTheses, underlyings } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
 
 export interface TriageQueueFilters {
@@ -28,6 +28,7 @@ export interface TriageQueueRecord {
   dte: number | null;
   strategyId: string | null;
   strategyKey: string | null;
+  strategyLabel: string | null; // Human-readable label for the strategy
   positionId: string | null;
   accountId: string;
   direction: string | null; // 'bullish' | 'bearish' | 'neutral'
@@ -197,10 +198,12 @@ export async function getTriageQueue(
       positionId: triageRecords.positionId,
       accountId: triageRecords.accountId,
       strategyKey: strategies.strategyKey,
+      strategyLabel: strategyTemplates.label,
       direction: triageRecords.direction,
     })
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+    .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
     .where(and(...conditions))
     .orderBy(...orderByClauses);
 
@@ -221,6 +224,7 @@ export async function getTriageQueue(
     positionId: row.positionId,
     accountId: row.accountId,
     strategyKey: row.strategyKey,
+    strategyLabel: row.strategyLabel,
     direction: row.direction,
   }));
 
@@ -392,10 +396,12 @@ export async function getTriageQueueAllAccounts(
       positionId: triageRecords.positionId,
       accountId: triageRecords.accountId,
       strategyKey: strategies.strategyKey,
+      strategyLabel: strategyTemplates.label,
       direction: triageRecords.direction,
     })
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+    .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
     .where(and(...conditions))
     .orderBy(...orderByClauses);
 
@@ -416,6 +422,7 @@ export async function getTriageQueueAllAccounts(
     positionId: row.positionId,
     accountId: row.accountId,
     strategyKey: row.strategyKey,
+    strategyLabel: row.strategyLabel,
     direction: row.direction,
   }));
 
@@ -598,10 +605,12 @@ export async function getTriageQueueForStrategy(
       positionId: triageRecords.positionId,
       accountId: triageRecords.accountId,
       strategyKey: strategies.strategyKey,
+      strategyLabel: strategyTemplates.label,
       direction: triageRecords.direction,
     })
     .from(triageRecords)
     .leftJoin(strategies, eq(triageRecords.strategyId, strategies.id))
+    .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
     .where(and(...conditions))
     .orderBy(...orderByClauses);
 
@@ -622,6 +631,7 @@ export async function getTriageQueueForStrategy(
     positionId: row.positionId,
     accountId: row.accountId,
     strategyKey: row.strategyKey,
+    strategyLabel: row.strategyLabel,
     direction: row.direction,
   }));
 
