@@ -305,52 +305,52 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
   const getObjectTypeBadgeColor = (objectType: string) => {
     switch (objectType) {
       case 'macro_thesis':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
       case 'asset_thesis':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
       case 'strategy':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
       case 'claim':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
       case 'position':
-        return 'bg-slate-100 text-foreground';
+        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
       case 'signal':
       case 'validation_point':
-        return 'bg-cyan-100 text-cyan-700';
+        return 'bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800';
       default:
-        return 'bg-slate-100 text-foreground';
+        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
     }
   };
 
   const getActionTypeBadgeColor = (actionType: string) => {
     if (actionType.includes('CREATED')) {
-      return 'bg-emerald-100 text-emerald-700';
+      return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
     }
     if (actionType.includes('UPDATED') || actionType.includes('CHANGED')) {
-      return 'bg-blue-100 text-blue-700';
+      return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
     }
     if (actionType.includes('DELETED')) {
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
     }
     if (actionType.includes('LINKED')) {
-      return 'bg-purple-100 text-purple-700';
+      return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
     }
     if (actionType.includes('TRIGGERED')) {
-      return 'bg-orange-100 text-orange-700';
+      return 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
     }
-    return 'bg-slate-100 text-foreground';
+    return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
   };
 
   const getSourceBadgeColor = (source: string) => {
     switch (source) {
       case 'user':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
       case 'skill':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
       case 'automation':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
       default:
-        return 'bg-slate-100 text-foreground';
+        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
     }
   };
 
