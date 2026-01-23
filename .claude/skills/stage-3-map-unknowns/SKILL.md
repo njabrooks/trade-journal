@@ -241,6 +241,19 @@ If **kill** or **archive**: Leave for `/advance-or-kill` skill
 
 ### Step 8: Output Summary
 
+Based on the Research Plan from Step 6, output copy-paste ready commands for the recommended research tracks.
+
+**Use judgment to select which tracks to recommend**:
+- Always start with **falsification** on the most foundational unknown (can kill thesis early)
+- Include **validation** tracks for unknowns where positive evidence would materially increase conviction
+- Skip tracks that wouldn't change the decision or where the unknown isn't resolvable
+- Typically recommend 2-4 tracks total, not exhaustive coverage
+
+**Research track definitions**:
+- **falsification**: Look for evidence AGAINST the thesis
+- **validation**: Look for evidence SUPPORTING the thesis
+- **analogues**: (optional) Historical parallels or similar situations
+
 ```
 Stage 3 Complete: Unknown Mapping
 
@@ -256,12 +269,17 @@ Gate Decision: {advance | kill | archive}
 {If advance}
 Research effort required: ~{X} hours
 
-Next step: Run `/research-unknown {idea_path} unknown-1 falsification` to begin Stage 4.
+## Stage 4 Research Commands (copy-paste ready)
 
-Research tracks to run:
-- `/research-unknown {idea_path} unknown-1 falsification`
-- `/research-unknown {idea_path} unknown-1 validation`
-- `/research-unknown {idea_path} unknown-1 analogues`
+{Based on your Research Plan, output the recommended tracks in priority order.
+Include brief context for why each track and when to stop.
+Format each as a code block for easy copying.}
+
+Example format:
+### 1. {Unknown N} {Track} - {brief rationale}
+```
+/stage-4a-prep-desktop-research {idea_path} unknown-N {track}
+```
 
 {If kill}
 Run `/advance-or-kill {idea_path}` to formally kill and log the reason.

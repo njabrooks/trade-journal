@@ -1,0 +1,50 @@
+# Pipeline Idea Metadata
+idea_id: "idea-004"
+title: "Physical World AI is the #1 Theme for 2026"
+slug: "physical-world-ai-2026"
+
+# Progression State
+current_stage: 3
+status: active
+
+# Source Reference
+source_claim_id: "claim-3"
+source_audit: "research-workspace/transcripts-audits/20260104-AI-Physical-World-Inflection-audit.md"
+
+# Confidence Tracking
+confidence: 0.70
+confidence_history:
+  - stage: 1
+    value: 0.75
+    date: "2026-01-22"
+    note: "High qualifier from forensic extraction. Novelty score estimated (audit predates enhancement)."
+  - stage: 2
+    value: 0.75
+    date: "2026-01-22"
+    note: "Thesis formalized with 5 failure modes. Confidence maintained - thesis is crisp and falsifiable."
+  - stage: 3
+    value: 0.70
+    date: "2026-01-22"
+    note: "3 high-impact unknowns identified. Slight confidence reduction due to execution risk (Unknown 3 only partially resolvable). Research plan defined."
+
+# Stage History
+stage_history:
+  - stage: 1
+    started_at: "2026-01-22T18:30:00Z"
+    completed_at: "2026-01-22T18:30:00Z"
+    decision: advance
+    note: "Claim selected from audit. High qualifier, mechanism plausible. Theme encompasses edge devices, NPUs, humanoids, BYOG power."
+  - stage: 2
+    started_at: "2026-01-22T18:45:00Z"
+    completed_at: "2026-01-22T18:45:00Z"
+    decision: advance
+    note: "Core thesis crisp and falsifiable. 5 specific failure modes identified with observable indicators. 2 structural, 1 execution, 1 timing, 1 external."
+  - stage: 3
+    started_at: "2026-01-22T19:00:00Z"
+    completed_at: "2026-01-22T19:00:00Z"
+    decision: advance
+    note: "3 high-impact resolvable unknowns with clear kill conditions. Worth researching. ~20-25 hours estimated effort."
+
+# Timestamps
+created_at: "2026-01-22T18:30:00Z"
+updated_at: "2026-01-22T19:00:00Z"
