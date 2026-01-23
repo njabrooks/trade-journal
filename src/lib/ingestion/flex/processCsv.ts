@@ -711,11 +711,12 @@ async function createTradeIngestionRecords(
 
   // For each strategy, create journal entry and triage record
   for (const [strategyId, strategyTrades] of tradesByStrategy.entries()) {
-    // Get strategy info
+    // Get strategy info including direction for triage display
     const [strategyInfo] = await db
       .select({
         strategyKey: strategies.strategyKey,
         templateLabel: strategyTemplates.label,
+        direction: strategies.direction,
       })
       .from(strategies)
       .innerJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
@@ -813,6 +814,7 @@ async function createTradeIngestionRecords(
         symbol: primarySymbol,
         severity: 'urgent', // Trades require immediate attention to capture metadata
         status: 'inbox',
+        direction: strategyInfo.direction,
         recommendedAction: 'TRADE_INGESTION',
         notes: JSON.stringify(notesData),
         unmatchedTradeExecutions,

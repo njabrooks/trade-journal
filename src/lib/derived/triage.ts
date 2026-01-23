@@ -1293,11 +1293,12 @@ export async function computeQuantityChangeTriageForDate(
       continue;
     }
 
-    // Get strategy info including template label and underlying ticker
+    // Get strategy info including template label, underlying ticker, and direction
     const [strategyInfo] = await db
       .select({
         strategyKey: strategies.strategyKey,
         templateLabel: strategyTemplates.label,
+        direction: strategies.direction,
       })
       .from(strategies)
       .innerJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
@@ -1309,6 +1310,7 @@ export async function computeQuantityChangeTriageForDate(
     // Extract underlying symbol from strategyKey (e.g., "GLXY-STK" -> "GLXY")
     const symbol = strategyInfo.strategyKey.split('-')[0] || 'UNKNOWN';
     const title = strategyInfo.templateLabel || strategyInfo.strategyKey;
+    const strategyDirection = strategyInfo.direction;
 
     // Query trades for this strategy and snapshot date to get trade IDs
     // This populates unmatchedTradeExecutions so the UI can display trade details
@@ -1380,6 +1382,7 @@ export async function computeQuantityChangeTriageForDate(
       symbol,
       severity,
       status: 'inbox',
+      direction: strategyDirection,
       recommendedAction: 'QUANTITY_CHANGE',
       notes: JSON.stringify({
         description: `Review ${stageStr} activity: ${changeSummary}`,
