@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type ActionType = "TRADE" | "MONITOR" | "DISMISS" | "UPDATE";
@@ -208,22 +215,24 @@ export function TriageBulkActions({
                     disabled={loading}
                     required
                   />
-                  <select
-                    value={tradeStage}
-                    onChange={(e) => setTradeStage(e.target.value)}
-                    className="w-32 px-2 py-1 text-xs border border-slate-300 rounded"
+                  <Select
+                    value={tradeStage || undefined}
+                    onValueChange={setTradeStage}
                     disabled={loading}
-                    required
                   >
-                    <option value="">Stage (required)</option>
-                    <option value="open">Open</option>
-                    <option value="close">Close</option>
-                    <option value="hedge">Hedge</option>
-                    <option value="roll">Roll</option>
-                    <option value="reduce">Reduce</option>
-                    <option value="add">Add</option>
-                    <option value="assignment">Assignment</option>
-                  </select>
+                    <SelectTrigger className="w-32 h-7 text-xs">
+                      <SelectValue placeholder="Stage (required)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="close">Close</SelectItem>
+                      <SelectItem value="hedge">Hedge</SelectItem>
+                      <SelectItem value="roll">Roll</SelectItem>
+                      <SelectItem value="reduce">Reduce</SelectItem>
+                      <SelectItem value="add">Add</SelectItem>
+                      <SelectItem value="assignment">Assignment</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </>
               )}
               <input

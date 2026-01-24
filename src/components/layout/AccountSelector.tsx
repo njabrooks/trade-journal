@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Account } from "@/db/schema";
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface AccountSelectorProps {
   accounts: Account[];
@@ -64,12 +65,12 @@ export function AccountSelector({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:ring-offset-background"
+        className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 dark:ring-offset-background"
       >
         <span className="uppercase tracking-wide text-muted-foreground">{label}:</span>
         <span>{displayText}</span>
         <svg
-          className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={cn("h-4 w-4 opacity-50 transition-transform", isOpen && "rotate-180")}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -84,15 +85,16 @@ export function AccountSelector({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 z-50 mt-2 w-64 rounded-lg border bg-card shadow-lg">
-          <div className="max-h-60 overflow-auto py-1">
+        <div className="absolute left-0 z-50 mt-2 w-64 rounded-lg border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95">
+          <div className="max-h-60 overflow-auto p-1">
             {showAllOption && (
               <button
                 type="button"
                 onClick={() => updateAccount(null)}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-muted ${
-                  !selectedAccountId ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" : "text-foreground"
-                }`}
+                className={cn(
+                  "w-full rounded-sm px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground",
+                  !selectedAccountId && "bg-accent text-accent-foreground"
+                )}
               >
                 All Accounts
               </button>
@@ -102,11 +104,10 @@ export function AccountSelector({
                 key={account.id}
                 type="button"
                 onClick={() => updateAccount(account.id)}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-muted ${
-                  selectedAccountId === account.id
-                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                    : "text-foreground"
-                }`}
+                className={cn(
+                  "w-full rounded-sm px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground",
+                  selectedAccountId === account.id && "bg-accent text-accent-foreground"
+                )}
               >
                 <div className="font-medium">
                   {account.label || account.brokerAccountId}
