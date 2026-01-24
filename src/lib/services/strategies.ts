@@ -576,6 +576,30 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
     })
     .where(inArray(strategies.id, sourceIds));
 
+  // Inherit asset thesis from source strategies if target doesn't have one
+  // This preserves the thesis link when merging older strategies into newer ones
+  const targetStrategy = rows.find((row) => row.id === targetId);
+  const sourceStrategies = rows.filter((row) => sourceIds.includes(row.id));
+
+  let inheritedAssetThesisId: string | null = null;
+  if (!targetStrategy?.assetThesisId) {
+    // Find the earliest source strategy with an asset thesis (prefer oldest for continuity)
+    const sourcesWithThesis = sourceStrategies
+      .filter((s) => s.assetThesisId)
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+
+    if (sourcesWithThesis.length > 0) {
+      inheritedAssetThesisId = sourcesWithThesis[0].assetThesisId;
+      console.log(
+        `Inheriting asset thesis ${inheritedAssetThesisId} from source strategy ${sourcesWithThesis[0].id}`
+      );
+    }
+  }
+
   // Recompute target strategy status based on positions (may have changed after merge)
   const targetStatus = await recomputeStrategyStatus(targetId);
   await db
@@ -583,123 +607,140 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
     .set({
       status: targetStatus,
       updatedAt: now,
+      // Inherit asset thesis if target doesn't have one and a source does
+      ...(inheritedAssetThesisId ? { assetThesisId: inheritedAssetThesisId } : {}),
     })
     .where(eq(strategies.id, targetId));
 
   // Auto-trigger recompute: Find all snapshot dates where target strategy has positions
-  const targetStrategy = rows.find((row) => row.id === targetId);
-  if (targetStrategy?.accountId) {
-    const snapshotDates = await db
-      .selectDistinct({ snapshotDate: positions.snapshotDate })
-      .from(positions)
-      .where(
-        and(
-          eq(positions.strategyId, targetId),
-          eq(positions.accountId, targetStrategy.accountId),
-          isNotNull(positions.snapshotDate),
-          sql`${positions.quantity} != 0`
-        )
+  // NOTE: After merge, strategy may have positions from multiple accounts, so we:
+  // 1. Get ALL positions for the strategy (regardless of account)
+  // 2. Get all distinct accounts from those positions
+  // 3. Compute metrics for each account separately
+  // 4. Compute triage without account filter
+  const snapshotDates = await db
+    .selectDistinct({ snapshotDate: positions.snapshotDate })
+    .from(positions)
+    .where(
+      and(
+        eq(positions.strategyId, targetId),
+        isNotNull(positions.snapshotDate),
+        sql`${positions.quantity} != 0`
       )
-      .orderBy(positions.snapshotDate);
+    )
+    .orderBy(positions.snapshotDate);
 
-    if (snapshotDates.length > 0) {
-      const dates = snapshotDates.map((d) => d.snapshotDate).filter(Boolean) as string[];
-      const minDate = dates[0];
-      const maxDate = dates[dates.length - 1];
+  // Get all distinct accounts that have positions in this strategy
+  const distinctAccounts = await db
+    .selectDistinct({ accountId: positions.accountId })
+    .from(positions)
+    .where(eq(positions.strategyId, targetId));
 
-      if (minDate && maxDate) {
-        // Fire off recompute operations in the background (don't await)
-        // This allows the merge to complete immediately while recompute happens asynchronously
-        // Track this background process so it's visible in the Process Monitor
-        (async () => {
-          let backgroundProcessId: string | null = null;
-          try {
-            // Start tracking the background recompute
-            backgroundProcessId = await startProcess(
-              'recompute_strategy_metrics',
-              'auto',
-              {
-                accountId: targetStrategy.accountId ?? undefined,
-                targetId,
-                sourceIds,
-                startDate: minDate,
-                endDate: maxDate,
-                dates: dates.length,
-                reason: 'post_merge_recompute',
-              }
-            );
+  const accountIds = distinctAccounts.map((a) => a.accountId).filter(Boolean) as string[];
 
-            // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
+  if (snapshotDates.length > 0) {
+    const dates = snapshotDates.map((d) => d.snapshotDate).filter(Boolean) as string[];
+    const minDate = dates[0];
+    const maxDate = dates[dates.length - 1];
 
-            // Recompute strategy metrics for all dates where target strategy has positions
-            if (targetStrategy.accountId) {
-              await computeStrategyMetricsForDateRange(
-                targetStrategy.accountId,
-                targetId,
-                minDate,
-                maxDate
-              );
+    if (minDate && maxDate) {
+      // Fire off recompute operations in the background (don't await)
+      // This allows the merge to complete immediately while recompute happens asynchronously
+      // Track this background process so it's visible in the Process Monitor
+      (async () => {
+        let backgroundProcessId: string | null = null;
+        try {
+          // Start tracking the background recompute
+          backgroundProcessId = await startProcess(
+            'recompute_strategy_metrics',
+            'auto',
+            {
+              accountIds, // Now tracking all accounts, not just one
+              targetId,
+              sourceIds,
+              startDate: minDate,
+              endDate: maxDate,
+              dates: dates.length,
+              reason: 'post_merge_recompute',
             }
+          );
 
-            // Trigger targeted triage recompute for target strategy on affected dates
-            // Clean first to ensure stale records are removed (e.g., if underlying data changed)
-            let triageCount = 0;
-            for (const date of dates) {
-              if (date) {
-                try {
-                  await computeTriageForDate(date, targetStrategy.accountId ?? undefined, targetId, true);
-                  triageCount++;
-                } catch (error) {
-                  console.error(
-                    `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,
-                    error
-                  );
-                  // Continue with other dates
-                }
-              }
-            }
-            
-            // Complete the background process tracking
-            if (backgroundProcessId) {
-              await completeProcess(backgroundProcessId, {
-                success: true,
-                datesProcessed: dates.length,
-                triageRecordsCreated: triageCount,
-                message: `Background recompute completed for merged strategy ${targetId}`,
-              });
-            }
-            
-            console.log(
-              `Background recompute completed for merged strategy ${targetId} (${dates.length} dates)`
-            );
-            
-            // Show browser notification when recompute completes
-            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-              new Notification('Recompute Complete', {
-                body: `Strategy metrics and triage recomputed for ${dates.length} date(s)`,
-                icon: '/favicon.ico',
-                tag: `recompute-${targetId}`,
-              });
-            } else if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-              // Request permission for future notifications
-              Notification.requestPermission();
-            }
-          } catch (error) {
-            console.error(
-              `Failed to auto-recompute after merging strategies into ${targetId}:`,
-              error
-            );
-            // Mark background process as failed
-            if (backgroundProcessId) {
-              await failProcess(
-                backgroundProcessId,
-                error instanceof Error ? error.message : 'Background recompute failed'
-              );
-            }
-            // Don't fail the merge if recompute fails
+          // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
+
+          // Recompute strategy metrics for all dates where target strategy has positions
+          // Compute for EACH account that has positions in this strategy
+          for (const accountId of accountIds) {
+            await computeStrategyMetricsForDateRange(accountId, targetId, minDate, maxDate);
           }
-        })();
-      }
+
+          // Trigger targeted triage recompute for target strategy on affected dates
+          // Clean first to ensure stale records are removed (e.g., if underlying data changed)
+          // Pass undefined for accountId to handle ALL accounts' positions for this strategy
+          let triageCount = 0;
+          for (const date of dates) {
+            if (date) {
+              try {
+                await computeTriageForDate(date, undefined, targetId, true);
+                triageCount++;
+              } catch (error) {
+                console.error(
+                  `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,
+                  error
+                );
+                // Continue with other dates
+              }
+            }
+          }
+
+          // Complete the background process tracking
+          if (backgroundProcessId) {
+            await completeProcess(backgroundProcessId, {
+              success: true,
+              datesProcessed: dates.length,
+              accountsProcessed: accountIds.length,
+              triageRecordsCreated: triageCount,
+              message: `Background recompute completed for merged strategy ${targetId} (${accountIds.length} accounts)`,
+            });
+          }
+
+          console.log(
+            `Background recompute completed for merged strategy ${targetId} (${dates.length} dates, ${accountIds.length} accounts)`
+          );
+
+          // Show browser notification when recompute completes
+          if (
+            typeof window !== 'undefined' &&
+            'Notification' in window &&
+            Notification.permission === 'granted'
+          ) {
+            new Notification('Recompute Complete', {
+              body: `Strategy metrics and triage recomputed for ${dates.length} date(s) across ${accountIds.length} account(s)`,
+              icon: '/favicon.ico',
+              tag: `recompute-${targetId}`,
+            });
+          } else if (
+            typeof window !== 'undefined' &&
+            'Notification' in window &&
+            Notification.permission === 'default'
+          ) {
+            // Request permission for future notifications
+            Notification.requestPermission();
+          }
+        } catch (error) {
+          console.error(
+            `Failed to auto-recompute after merging strategies into ${targetId}:`,
+            error
+          );
+          // Mark background process as failed
+          if (backgroundProcessId) {
+            await failProcess(
+              backgroundProcessId,
+              error instanceof Error ? error.message : 'Background recompute failed'
+            );
+          }
+          // Don't fail the merge if recompute fails
+        }
+      })();
     }
   }
 

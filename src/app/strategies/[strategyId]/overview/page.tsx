@@ -44,7 +44,8 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
 
   const { strategy } = detail;
   const latestMetrics = detail.metricsTimeline.at(-1);
-  const openPositionCount = latestMetrics?.numOpenPositions ?? detail.openPositions.length ?? 0;
+  // Prefer actual positions count over metrics snapshot (metrics may be per-account, positions query is complete)
+  const openPositionCount = detail.openPositions.length || latestMetrics?.numOpenPositions || 0;
 
   const pnlSparkline = detail.metricsTimeline.map((point) => ({
     label: formatDateLabel(point.snapshotDate),
