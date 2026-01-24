@@ -2,6 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2, Search } from 'lucide-react';
 
 interface MacroThesis {
@@ -130,46 +137,49 @@ export function MacroThesisSelector({
       {/* Filters */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Thesis Type</label>
-          <select
-            value={thesisTypeFilter}
-            onChange={(e) => setThesisTypeFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg"
-          >
-            <option value="all">All Types</option>
-            <option value="secular">Secular</option>
-            <option value="cyclical">Cyclical</option>
-            <option value="structural">Structural</option>
-          </select>
+          <label className="block text-xs font-medium text-foreground mb-1">Thesis Type</label>
+          <Select value={thesisTypeFilter} onValueChange={setThesisTypeFilter}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="secular">Secular</SelectItem>
+              <SelectItem value="cyclical">Cyclical</SelectItem>
+              <SelectItem value="structural">Structural</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Direction</label>
-          <select
-            value={directionFilter}
-            onChange={(e) => setDirectionFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg"
-          >
-            <option value="all">All Directions</option>
-            <option value="bullish">Bullish</option>
-            <option value="bearish">Bearish</option>
-            <option value="neutral">Neutral</option>
-          </select>
+          <label className="block text-xs font-medium text-foreground mb-1">Direction</label>
+          <Select value={directionFilter} onValueChange={setDirectionFilter}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Directions</SelectItem>
+              <SelectItem value="bullish">Bullish</SelectItem>
+              <SelectItem value="bearish">Bearish</SelectItem>
+              <SelectItem value="neutral">Neutral</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-slate-700 mb-1">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg"
-          >
-            <option value="all">All Statuses</option>
-            <option value="draft">Draft</option>
-            <option value="active">Active</option>
-            <option value="complete">Complete</option>
-            <option value="rejected">Rejected</option>
-          </select>
+          <label className="block text-xs font-medium text-foreground mb-1">Status</label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="complete">Complete</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

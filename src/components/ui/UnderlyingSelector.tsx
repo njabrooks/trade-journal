@@ -2,6 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Underlying {
   id: string;
@@ -81,9 +89,7 @@ export function UnderlyingSelector({
     }
   }, [loading, initialTicker, underlyings]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedValue = e.target.value;
-
+  const handleDropdownChange = (selectedValue: string) => {
     if (selectedValue === '__new__') {
       setIsCustomMode(true);
       setSelectedUnderlyingId('');
@@ -149,23 +155,26 @@ export function UnderlyingSelector({
   }
 
   return (
-    <select
-      value={selectedUnderlyingId}
-      onChange={handleDropdownChange}
-      className={`w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+    <Select
+      value={selectedUnderlyingId || undefined}
+      onValueChange={handleDropdownChange}
       disabled={disabled || loading}
-      required={required}
     >
-      <option value="">
-        {loading ? 'Loading underlyings...' : '-- Select an underlying --'}
-      </option>
-      {underlyings.map((underlying) => (
-        <option key={underlying.id} value={underlying.id}>
-          {underlying.ticker}
-          {underlying.name ? ` - ${underlying.name}` : ''}
-        </option>
-      ))}
-      <option value="__new__">+ Add new ticker...</option>
-    </select>
+      <SelectTrigger className={className}>
+        <SelectValue
+          placeholder={loading ? 'Loading underlyings...' : '-- Select an underlying --'}
+        />
+      </SelectTrigger>
+      <SelectContent>
+        {underlyings.map((underlying) => (
+          <SelectItem key={underlying.id} value={underlying.id}>
+            {underlying.ticker}
+            {underlying.name ? ` - ${underlying.name}` : ''}
+          </SelectItem>
+        ))}
+        <SelectSeparator />
+        <SelectItem value="__new__">+ Add new ticker...</SelectItem>
+      </SelectContent>
+    </Select>
   );
 }

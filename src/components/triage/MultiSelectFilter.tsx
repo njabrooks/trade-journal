@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface MultiSelectFilterProps {
   label: string;
@@ -89,17 +90,17 @@ export function MultiSelectFilter({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs font-medium text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 dark:ring-offset-background"
       >
         <span className="uppercase tracking-wide text-muted-foreground">{label}:</span>
         <span>{displayText}</span>
         {selected.length > 0 && (
-          <span className="ml-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+          <span className="ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
             {selected.length}
           </span>
         )}
         <svg
-          className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={cn("h-4 w-4 opacity-50 transition-transform", isOpen && "rotate-180")}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -114,13 +115,13 @@ export function MultiSelectFilter({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg border bg-card shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-lg border bg-popover text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95">
           <div className="max-h-64 overflow-y-auto p-2">
             <div className="mb-2 flex gap-2 border-b border-border pb-2">
               <button
                 type="button"
                 onClick={selectAll}
-                className="flex-1 rounded px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                className="flex-1 rounded px-2 py-1 text-xs font-medium text-primary hover:bg-accent"
               >
                 Select All
               </button>
@@ -138,15 +139,32 @@ export function MultiSelectFilter({
               return (
                 <label
                   key={option}
-                  className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted"
+                  className="flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
                 >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleOption(option)}
-                    className="h-4 w-4 rounded border text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="flex-1 text-xs text-foreground">{option}</span>
+                  <div
+                    className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
+                      isSelected
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-input"
+                    )}
+                  >
+                    {isSelected && (
+                      <svg
+                        className="h-3 w-3"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="flex-1 text-xs">{option}</span>
                   {count > 0 && (
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                       {count}
