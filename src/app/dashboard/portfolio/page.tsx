@@ -1,63 +1,207 @@
-import { Metadata } from "next";
+"use client";
+
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Sparkline } from "@/components/charts/Sparkline";
 import { StackedBar } from "@/components/charts/StackedBar";
-import { getPrimaryAccount } from "@/db/queries/accounts";
-import { getPortfolioDashboardData } from "@/db/queries/portfolio";
+import { AccountMultiSelect } from "@/components/ui/AccountMultiSelect";
 import {
   formatCurrency,
   formatDateLabel,
   formatPercent,
 } from "@/lib/formatters";
+import type { Account } from "@/db/schema";
+import type { PortfolioDashboardData } from "@/db/queries/portfolio";
 
-export const metadata: Metadata = {
-  title: "Portfolio",
-};
+export default function PortfolioDashboardPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-export default async function PortfolioDashboardPage() {
-  const account = await getPrimaryAccount();
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [dashboardData, setDashboardData] = useState<PortfolioDashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!account) {
+  // Parse selected account IDs from URL
+  const selectedAccountIds = useMemo(() => {
+    const param = searchParams.get("accountIds");
+    if (!param) return null; // null means "all accounts"
+    if (param === "none") return []; // explicit empty selection
+    return param.split(",").filter(Boolean);
+  }, [searchParams]);
+
+  // Fetch accounts on mount
+  useEffect(() => {
+    async function fetchAccounts() {
+      try {
+        const res = await fetch("/api/accounts");
+        if (!res.ok) throw new Error("Failed to fetch accounts");
+        const data = await res.json();
+        setAccounts(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load accounts");
+      }
+    }
+    fetchAccounts();
+  }, []);
+
+  // Effective selected IDs: either from URL or all accounts (null = all)
+  const effectiveSelectedIds = useMemo(() => {
+    if (selectedAccountIds === null) {
+      // No param = default to all accounts
+      return accounts.map((a) => a.id);
+    }
+    // Explicit selection (including empty)
+    return selectedAccountIds;
+  }, [selectedAccountIds, accounts]);
+
+  // Fetch dashboard data when selection changes
+  useEffect(() => {
+    async function fetchDashboardData() {
+      if (accounts.length === 0) return;
+
+      setIsLoading(true);
+      try {
+        const accountIdsParam = effectiveSelectedIds.join(",");
+        const res = await fetch(`/api/dashboard/portfolio?accountIds=${accountIdsParam}`);
+        if (!res.ok) throw new Error("Failed to fetch dashboard data");
+        const data = await res.json();
+        setDashboardData(data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load dashboard data");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchDashboardData();
+  }, [accounts, effectiveSelectedIds]);
+
+  // Update URL when selection changes
+  const handleAccountSelectionChange = useCallback(
+    (newSelection: string[]) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (newSelection.length === accounts.length) {
+        // All selected: clear the param (defaults to all)
+        params.delete("accountIds");
+      } else if (newSelection.length === 0) {
+        // None selected: explicitly set empty (different from "all")
+        params.set("accountIds", "none");
+      } else {
+        params.set("accountIds", newSelection.join(","));
+      }
+
+      const query = params.toString();
+      router.push(`/dashboard/portfolio${query ? `?${query}` : ""}`, { scroll: false });
+    },
+    [router, searchParams, accounts.length]
+  );
+
+  // Compute subtitle based on selection
+  const subtitle = useMemo(() => {
+    if (effectiveSelectedIds.length === accounts.length && accounts.length > 0) {
+      return "All Accounts";
+    }
+    if (effectiveSelectedIds.length === 0) {
+      return "No Accounts Selected";
+    }
+    if (effectiveSelectedIds.length === 1) {
+      const account = accounts.find((a) => a.id === effectiveSelectedIds[0]);
+      return account?.label || account?.brokerAccountId || "1 Account";
+    }
+    return `${effectiveSelectedIds.length} Accounts`;
+  }, [effectiveSelectedIds, accounts]);
+
+  // Render loading state
+  if (accounts.length === 0 && isLoading) {
+    return (
+      <DashboardShell
+        activeNav="portfolio"
+        title="Portfolio Overview"
+        subtitle="Loading..."
+      >
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-muted-foreground">Loading accounts...</div>
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  // Render error state
+  if (error && accounts.length === 0) {
+    return (
+      <DashboardShell
+        activeNav="portfolio"
+        title="Portfolio Overview"
+        subtitle="Error"
+      >
+        <div className="rounded-2xl border border-dashed bg-card p-10 text-center text-muted-foreground">
+          {error}
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  // Render no accounts state
+  if (accounts.length === 0) {
     return (
       <DashboardShell
         activeNav="portfolio"
         title="Portfolio Overview"
         subtitle="Create an account to see aggregated exposure."
       >
-        <div className="rounded-2xl border border-dashed border bg-card p-10 text-center text-muted-foreground">
-          No accounts found. Head to <a href="/admin/accounts" className="text-blue-600 underline">Admin &gt; Accounts</a> to add one.
+        <div className="rounded-2xl border border-dashed bg-card p-10 text-center text-muted-foreground">
+          No accounts found. Head to{" "}
+          <a href="/admin/accounts" className="text-blue-600 underline">
+            Admin &gt; Accounts
+          </a>{" "}
+          to add one.
         </div>
       </DashboardShell>
     );
   }
 
-  const dashboardData = await getPortfolioDashboardData(account.id);
-
-  const latestNav = dashboardData.navTrend.at(-1)?.nav ?? null;
-  const latestSnapshot = dashboardData.latestAccountSnapshot;
+  // Prepare data for rendering
+  const latestNav = dashboardData?.navTrend.at(-1)?.nav ?? null;
+  const latestSnapshot = dashboardData?.latestAccountSnapshot ?? null;
   const latestStockNotional = Math.abs(latestSnapshot?.absStockNotional ?? 0);
   const latestOptionNotional = Math.abs(latestSnapshot?.absOptionNotional ?? 0);
 
-  const navSparklineData = dashboardData.navTrend.map((point) => ({
+  const navSparklineData = (dashboardData?.navTrend ?? []).map((point) => ({
     label: formatDateLabel(point.date),
     value: point.nav,
   }));
 
-  const notionalSparklineData = dashboardData.accountSnapshots.map((point) => ({
+  const notionalSparklineData = (dashboardData?.accountSnapshots ?? []).map((point) => ({
     label: formatDateLabel(point.date),
     value: point.totalAbsNotional,
   }));
 
-  const snapshotRows = dashboardData.accountSnapshots.slice(-8).reverse();
+  const snapshotRows = (dashboardData?.accountSnapshots ?? []).slice(-8).reverse();
 
   return (
-    <DashboardShell
-      activeNav="portfolio"
-      title="Portfolio Overview"
-      subtitle={account.label || account.brokerAccountId}
-    >
+    <DashboardShell activeNav="portfolio" title="Portfolio Overview" subtitle={subtitle}>
+      {/* Account Filter Bar */}
+      <div className="flex items-center gap-4">
+        <AccountMultiSelect
+          accounts={accounts}
+          selected={effectiveSelectedIds}
+          onChange={handleAccountSelectionChange}
+        />
+        {isLoading && (
+          <span className="text-xs text-muted-foreground">Updating...</span>
+        )}
+      </div>
+
+      {/* Metric Cards */}
       <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="NAV" value={formatCurrency(latestNav)} delta={navSparklineData.at(-1)?.label} />
+        <MetricCard
+          label="NAV"
+          value={formatCurrency(latestNav)}
+          delta={navSparklineData.at(-1)?.label}
+        />
         <MetricCard
           label="Total Abs Notional"
           value={formatCurrency(latestSnapshot?.totalAbsNotional ?? null)}
@@ -66,10 +210,15 @@ export default async function PortfolioDashboardPage() {
         <MetricCard
           label="Unrealized PnL"
           value={formatCurrency(latestSnapshot?.totalUnrealizedPnl ?? null)}
-          valueClass={(latestSnapshot?.totalUnrealizedPnl ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"}
+          valueClass={
+            (latestSnapshot?.totalUnrealizedPnl ?? 0) >= 0
+              ? "text-emerald-600"
+              : "text-rose-600"
+          }
         />
       </section>
 
+      {/* Charts Section */}
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="rounded-2xl border bg-card p-6 shadow-sm lg:col-span-2">
           <div className="flex items-center justify-between">
@@ -143,6 +292,7 @@ export default async function PortfolioDashboardPage() {
         </div>
       </section>
 
+      {/* Tables Section */}
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <div className="flex items-center justify-between">
@@ -153,7 +303,7 @@ export default async function PortfolioDashboardPage() {
               </p>
             </div>
             <span className="text-xs text-muted-foreground">
-              {dashboardData.underlyingBreakdown.length} rows
+              {dashboardData?.underlyingBreakdown.length ?? 0} rows
             </span>
           </div>
           <div className="mt-4 overflow-x-auto">
@@ -167,31 +317,31 @@ export default async function PortfolioDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border text-muted-foreground">
-                {dashboardData.underlyingBreakdown.length === 0 ? (
+                {(dashboardData?.underlyingBreakdown ?? []).length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-6 text-center text-muted-foreground">
                       No underlying level snapshots captured for the latest date.
                     </td>
                   </tr>
                 ) : (
-                  dashboardData.underlyingBreakdown.map((row) => (
+                  (dashboardData?.underlyingBreakdown ?? []).map((row) => (
                     <tr key={row.underlyingId}>
                       <td className="py-2 pr-4 font-medium text-foreground">
                         {row.ticker || row.underlyingId.slice(0, 6)}
                       </td>
                       <td className="py-2 pr-4">{formatCurrency(row.totalAbsNotional ?? null)}</td>
-                      <td
-                        className="py-2 pr-4"
-                      >
+                      <td className="py-2 pr-4">
                         <span
-                          className={row.totalUnrealizedPnl && row.totalUnrealizedPnl >= 0 ? "text-emerald-600" : "text-rose-600"}
+                          className={
+                            row.totalUnrealizedPnl && row.totalUnrealizedPnl >= 0
+                              ? "text-emerald-600"
+                              : "text-rose-600"
+                          }
                         >
                           {formatCurrency(row.totalUnrealizedPnl ?? null)}
                         </span>
                       </td>
-                      <td className="py-2">
-                        {formatPercent(row.pctNavAbsNotional ?? null)}
-                      </td>
+                      <td className="py-2">{formatPercent(row.pctNavAbsNotional ?? null)}</td>
                     </tr>
                   ))
                 )}
@@ -203,7 +353,9 @@ export default async function PortfolioDashboardPage() {
         <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-muted-foreground">Recent Snapshots</p>
-            <span className="text-xs text-muted-foreground">Last {snapshotRows.length} days</span>
+            <span className="text-xs text-muted-foreground">
+              Last {snapshotRows.length} days
+            </span>
           </div>
           <div className="mt-4 overflow-x-auto">
             <table className="min-w-full text-sm">
@@ -229,7 +381,11 @@ export default async function PortfolioDashboardPage() {
                       <td className="py-2 pr-4">{formatCurrency(row.totalAbsNotional ?? null)}</td>
                       <td className="py-2 pr-4">
                         <span
-                          className={row.totalUnrealizedPnl && row.totalUnrealizedPnl >= 0 ? "text-emerald-600" : "text-rose-600"}
+                          className={
+                            row.totalUnrealizedPnl && row.totalUnrealizedPnl >= 0
+                              ? "text-emerald-600"
+                              : "text-rose-600"
+                          }
                         >
                           {formatCurrency(row.totalUnrealizedPnl ?? null)}
                         </span>
@@ -263,4 +419,3 @@ function MetricCard({ label, value, delta, valueClass }: MetricCardProps) {
     </div>
   );
 }
-
