@@ -39,6 +39,8 @@ export interface StrategyListItem {
   assetViewTitle: string | null;
   // Linked macro theses (via asset thesis junction)
   linkedMacroTheses: Array<{ id: string; title: string }>;
+  // Position-derived account IDs (strategies can span multiple accounts after merges)
+  positionAccountIds: string[];
 }
 
 export async function getStrategiesForList(
@@ -108,7 +110,8 @@ export async function getStrategiesForList(
 
   const strategyIds = rows.map((row) => row.id);
 
-  // Get latest metrics for all strategies from snapshots
+  // Compute metrics directly from positions table (not snapshots)
+  // This ensures we aggregate across all accounts since strategies can span multiple accounts after merges
   const metricsByStrategy = new Map<
     string,
     {
@@ -118,25 +121,46 @@ export async function getStrategiesForList(
     }
   >();
 
-  if (strategyIds.length > 0) {
-    const metricsRows = await db
+  if (strategyIds.length > 0 && latestSnapshotDate) {
+    // Compute metrics directly from positions for the latest snapshot date
+    const positionMetrics = await db
       .select({
-        strategyId: strategyMetricsSnapshots.strategyId,
-        snapshotDate: strategyMetricsSnapshots.snapshotDate,
-        totalAbsNotional: strategyMetricsSnapshots.totalAbsNotional,
-        totalUnrealizedPnl: strategyMetricsSnapshots.totalUnrealizedPnl,
-        pctNavAbsNotional: strategyMetricsSnapshots.pctNavAbsNotional,
+        strategyId: positions.strategyId,
+        totalAbsNotional: sql<string>`SUM(ABS(COALESCE(${positions.absNotional}, 0)))`,
+        totalUnrealizedPnl: sql<string>`SUM(COALESCE(${positions.unrealizedPnl}, 0))`,
       })
-      .from(strategyMetricsSnapshots)
-      .where(inArray(strategyMetricsSnapshots.strategyId, strategyIds))
-      .orderBy(desc(strategyMetricsSnapshots.snapshotDate));
+      .from(positions)
+      .where(
+        and(
+          inArray(positions.strategyId, strategyIds),
+          eq(positions.snapshotDate, latestSnapshotDate),
+          sql`${positions.quantity} != 0`
+        )
+      )
+      .groupBy(positions.strategyId);
 
-    for (const row of metricsRows) {
-      if (!metricsByStrategy.has(row.strategyId)) {
+    // Get latest NAV for pct calculation (sum across all accounts for the latest date)
+    const latestNavResult = await db
+      .select({
+        totalNav: sql<string>`SUM(${navSnapshots.total})`,
+      })
+      .from(navSnapshots)
+      .where(
+        sql`${navSnapshots.reportDate} = (
+          SELECT MAX(report_date) FROM nav_snapshots
+        )`
+      );
+
+    const latestNav = toNumber(latestNavResult[0]?.totalNav) ?? 0;
+
+    for (const row of positionMetrics) {
+      if (row.strategyId) {
+        const absNotional = toNumber(row.totalAbsNotional) ?? 0;
+        const pctNav = latestNav > 0 ? (absNotional / latestNav) * 100 : null;
         metricsByStrategy.set(row.strategyId, {
           totalAbsNotional: toNumber(row.totalAbsNotional),
           totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
-          pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
+          pctNavAbsNotional: pctNav,
         });
       }
     }
@@ -194,6 +218,53 @@ export async function getStrategiesForList(
     });
   }
 
+  // Get position-derived account labels for each strategy with abs notional for sorting
+  // Strategies can span multiple accounts after merges
+  const positionAccountsByStrategy = new Map<string, Array<{ label: string; absNotional: number }>>();
+  if (strategyIds.length > 0) {
+    const positionAccountRows = await db
+      .select({
+        strategyId: positions.strategyId,
+        accountLabel: accounts.label,
+        brokerAccountId: accounts.brokerAccountId,
+        totalAbsNotional: sql<string>`SUM(ABS(COALESCE(${positions.absNotional}, 0)))`,
+      })
+      .from(positions)
+      .innerJoin(accounts, eq(positions.accountId, accounts.id))
+      .where(
+        and(
+          inArray(positions.strategyId, strategyIds),
+          sql`${positions.quantity} != 0`
+        )
+      )
+      .groupBy(positions.strategyId, accounts.label, accounts.brokerAccountId);
+
+    positionAccountRows.forEach(row => {
+      if (row.strategyId) {
+        // Prefer label, fallback to broker account ID
+        const accountDisplay = row.accountLabel || row.brokerAccountId;
+        if (accountDisplay) {
+          if (!positionAccountsByStrategy.has(row.strategyId)) {
+            positionAccountsByStrategy.set(row.strategyId, []);
+          }
+          const accountEntries = positionAccountsByStrategy.get(row.strategyId)!;
+          // Check if this account is already added
+          if (!accountEntries.some(e => e.label === accountDisplay)) {
+            accountEntries.push({
+              label: accountDisplay,
+              absNotional: toNumber(row.totalAbsNotional) ?? 0,
+            });
+          }
+        }
+      }
+    });
+
+    // Sort accounts by descending abs notional within each strategy
+    positionAccountsByStrategy.forEach((accounts, strategyId) => {
+      accounts.sort((a, b) => b.absNotional - a.absNotional);
+    });
+  }
+
   // Map rows with computed status and optionally filter
   // Standard status values: draft, active, complete, rejected
   const strategiesWithStatus = rows
@@ -206,6 +277,12 @@ export async function getStrategiesForList(
           ? dbStatus
           : (statusByStrategy.get(row.id) ?? "complete");
       const metrics = metricsByStrategy.get(row.id);
+      // Get position-derived account labels (already sorted by desc abs notional)
+      const posAccountEntries = positionAccountsByStrategy.get(row.id) ?? [];
+      const posAccountLabels = posAccountEntries.map(e => e.label);
+      // If no position accounts found, use strategy-level account as fallback (prefer label)
+      const fallbackAccountLabel = row.accountLabel || row.accountBrokerId;
+      const fallbackAccountLabels = fallbackAccountLabel ? [fallbackAccountLabel] : [];
       return {
         id: row.id,
         strategyKey: row.strategyKey,
@@ -223,6 +300,7 @@ export async function getStrategiesForList(
         linkedMacroTheses: row.assetThesisId
           ? macroThesesByAssetThesis.get(row.assetThesisId) ?? []
           : [],
+        positionAccountIds: posAccountLabels.length > 0 ? posAccountLabels : fallbackAccountLabels,
       };
     })
     // Default: show active and draft strategies (draft needs attention for confirmation/merge)

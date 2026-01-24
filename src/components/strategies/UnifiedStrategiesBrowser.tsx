@@ -21,6 +21,7 @@ type SortDirection = 'asc' | 'desc';
 export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowserProps) {
   const router = useRouter();
   const [expandedStrategy, setExpandedStrategy] = useState<string | null>(null);
+  const [expandedAccounts, setExpandedAccounts] = useState<string | null>(null); // Strategy ID with expanded accounts
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Filter states
@@ -68,12 +69,19 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
     return { className: colors[colorIndex], label: account };
   };
 
-  // Get unique values for filters
+  // Get unique values for filters (include position-derived account labels)
   const uniqueAccounts = useMemo(() => {
     const accounts = new Set<string>();
     strategies.forEach((strategy) => {
-      const accountLabel = strategy.accountLabel || strategy.accountBrokerId;
-      if (accountLabel) accounts.add(accountLabel);
+      // Include position-derived account labels (from actual positions)
+      strategy.positionAccountIds?.forEach((accountLabel) => {
+        if (accountLabel) accounts.add(accountLabel);
+      });
+      // Fallback to strategy-level account if no positions (prefer label)
+      if (!strategy.positionAccountIds?.length) {
+        const accountDisplay = strategy.accountLabel || strategy.accountBrokerId;
+        if (accountDisplay) accounts.add(accountDisplay);
+      }
     });
     return Array.from(accounts).sort();
   }, [strategies]);
@@ -138,6 +146,11 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
 
     if (accountFilter !== 'all') {
       filtered = filtered.filter((s) => {
+        // Check position-derived accounts first
+        if (s.positionAccountIds?.length > 0) {
+          return s.positionAccountIds.includes(accountFilter);
+        }
+        // Fallback to strategy-level account
         const accountLabel = s.accountLabel || s.accountBrokerId;
         return accountLabel === accountFilter;
       });
@@ -487,14 +500,60 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                         {/* Account */}
                         <td className="px-4 py-3">
                           {(() => {
-                            const account = strategy.accountLabel || strategy.accountBrokerId;
-                            const accountBadge = getAccountBadge(account);
-                            return accountBadge ? (
-                              <Badge className={`${accountBadge.className} text-xs`}>
-                                {accountBadge.label}
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">—</span>
+                            // Use position-derived accounts, fallback to strategy-level account
+                            const accounts = strategy.positionAccountIds?.length > 0
+                              ? strategy.positionAccountIds
+                              : strategy.accountLabel || strategy.accountBrokerId
+                                ? [strategy.accountLabel || strategy.accountBrokerId!]
+                                : [];
+
+                            if (accounts.length === 0) {
+                              return <span className="text-xs text-muted-foreground">—</span>;
+                            }
+
+                            const isAccountsExpanded = expandedAccounts === strategy.id;
+                            const visibleAccounts = isAccountsExpanded ? accounts : accounts.slice(0, 1);
+                            const remainingCount = accounts.length - 1;
+                            const showMoreBadge = !isAccountsExpanded && remainingCount > 0;
+
+                            return (
+                              <div className={isAccountsExpanded ? "space-y-1" : "flex items-center gap-1"}>
+                                {visibleAccounts.map((account, index) => {
+                                  const accountBadge = getAccountBadge(account);
+                                  return accountBadge ? (
+                                    <Badge key={account} className={`${accountBadge.className} text-xs`}>
+                                      {accountBadge.label}
+                                    </Badge>
+                                  ) : null;
+                                })}
+                                {showMoreBadge && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setExpandedAccounts(strategy.id);
+                                    }}
+                                    title={`Show all ${accounts.length} accounts:\n${accounts.slice(1).map(a => `• ${a}`).join('\n')}`}
+                                    className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer shrink-0 group"
+                                  >
+                                    <Badge className="bg-blue-50 text-blue-700 group-hover:bg-blue-100 group-hover:underline text-xs transition-colors dark:bg-blue-900/30 dark:text-blue-300 dark:group-hover:bg-blue-900/50">
+                                      +{remainingCount}
+                                    </Badge>
+                                  </button>
+                                )}
+                                {isAccountsExpanded && accounts.length > 1 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setExpandedAccounts(null);
+                                    }}
+                                    className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                                  >
+                                    (collapse)
+                                  </button>
+                                )}
+                              </div>
                             );
                           })()}
                         </td>

@@ -45,6 +45,9 @@ interface RelatedStrategy {
   label: string | null;
   status: string;
   openPositionsCount: number;
+  accountIds: string[]; // Broker account IDs from positions (strategy can span multiple accounts)
+  assetThesisId: string | null; // Whether strategy has an asset thesis link
+  createdAt: string; // For showing age/order
 }
 
 interface StrategyConfirmationDialogProps {
@@ -576,7 +579,7 @@ export function StrategyConfirmationDialog({
                           disabled={submitting}
                           className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
                             selectedMergeIds.has(rs.id)
-                              ? 'border-purple-500 bg-purple-50'
+                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-950'
                               : 'border hover:border-muted-foreground hover:bg-muted'
                           }`}
                         >
@@ -593,13 +596,22 @@ export function StrategyConfirmationDialog({
                                   ({rs.label})
                                 </span>
                               )}
+                              {/* Thesis link indicator */}
+                              {rs.assetThesisId && (
+                                <span
+                                  className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded"
+                                  title="Has asset thesis link"
+                                >
+                                  📋 Thesis
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
                                 rs.status === 'active'
-                                  ? 'bg-emerald-100 text-emerald-700'
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
                                   : rs.status === 'draft'
-                                  ? 'bg-amber-100 text-amber-700'
+                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
                                   : 'bg-muted text-foreground'
                               }`}>
                                 {rs.status}
@@ -609,15 +621,38 @@ export function StrategyConfirmationDialog({
                               </span>
                             </div>
                           </div>
+                          {/* Show accounts if strategy spans multiple accounts */}
+                          {rs.accountIds && rs.accountIds.length > 0 && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {rs.accountIds.length === 1 ? (
+                                <span>Account: {rs.accountIds[0]}</span>
+                              ) : (
+                                <span className="text-amber-600 dark:text-amber-400">
+                                  {rs.accountIds.length} accounts: {rs.accountIds.join(', ')}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </button>
                       ))}
                     </div>
                   )}
 
                   {selectedMergeIds.size > 0 && (
-                    <div className="mt-3 bg-purple-50 border border-purple-200 rounded-lg p-2 text-xs text-purple-700">
-                      {selectedMergeIds.size} strategy(ies) will be merged into this one on confirm.
-                      Their positions and trades will be moved here.
+                    <div className="mt-3 space-y-2">
+                      <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-2 text-xs text-purple-700 dark:text-purple-300">
+                        {selectedMergeIds.size} strategy(ies) will be merged into this one on confirm.
+                        Their positions and trades will be moved here.
+                      </div>
+                      {/* Show thesis inheritance notice if applicable */}
+                      {!selectedThesisId &&
+                        relatedStrategies.some(
+                          (rs) => selectedMergeIds.has(rs.id) && rs.assetThesisId
+                        ) && (
+                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-xs text-blue-700 dark:text-blue-300">
+                            Asset thesis link will be inherited from merged strategy.
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>
