@@ -30,12 +30,13 @@ if (!connectionString) {
 
 // Disable prefetch as it's not supported in serverless environments
 // Connection pooling is handled by Supabase
-const client = postgres(connectionString, { 
+const client = postgres(connectionString, {
   prepare: false,
   max: 10, // Allow multiple connections to prevent blocking (pooler handles pooling)
   connect_timeout: 10, // Connection timeout in seconds
   idle_timeout: 20, // Idle timeout in seconds
   max_lifetime: 60 * 30, // Max connection lifetime in seconds (30 minutes)
+  ssl: 'require', // Required for external connections (GitHub Actions, etc.)
 });
 
 export const db = drizzle(client, { schema });
