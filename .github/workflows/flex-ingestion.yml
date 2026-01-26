@@ -36,31 +36,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Debug environment
-        env:
-          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
-        run: |
-          echo "DATABASE_URL_POOLER is set: $([[ -n "$DATABASE_URL_POOLER" ]] && echo 'YES' || echo 'NO')"
-          echo "URL length: ${#DATABASE_URL_POOLER}"
-          echo "URL starts with: ${DATABASE_URL_POOLER:0:30}..."
-          echo "URL contains db.wvukk: $([[ "$DATABASE_URL_POOLER" == *"db.wvukk"* ]] && echo 'YES' || echo 'NO')"
-
-      - name: Test raw database connection
-        env:
-          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
-        run: |
-          # Install psql
-          sudo apt-get update && sudo apt-get install -y postgresql-client
-          # Test direct connection (what's in the secret)
-          echo "Testing direct connection (current secret)..."
-          timeout 10 psql "$DATABASE_URL_POOLER" -c "SELECT 'direct works' as status;" || echo "Direct connection failed/timed out"
-          # Test pooler connection (IPv6)
-          echo "Testing pooler connection (IPv6)..."
-          timeout 10 psql "postgresql://postgres.wvukkvsrmgumzhvemjfb:cjq2UNE7kfe2jzc%40qfy@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?sslmode=require" -c "SELECT 'pooler works' as status;" || echo "Pooler connection failed/timed out"
-
       - name: Run Flex ingestion
         env:
-          # Database connection (direct connection for IPv4 compatibility)
+          # Database connection (pooler for GitHub Actions IPv4 compatibility)
           DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
           DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
           USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
