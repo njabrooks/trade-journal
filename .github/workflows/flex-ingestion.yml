@@ -51,9 +51,12 @@ jobs:
         run: |
           # Install psql
           sudo apt-get update && sudo apt-get install -y postgresql-client
-          # Test connection with psql
-          echo "Testing psql connection..."
-          psql "$DATABASE_URL_POOLER" -c "SELECT 'psql direct works' as status;" || echo "psql failed with exit code $?"
+          # Test direct connection (what's in the secret)
+          echo "Testing direct connection (current secret)..."
+          timeout 10 psql "$DATABASE_URL_POOLER" -c "SELECT 'direct works' as status;" || echo "Direct connection failed/timed out"
+          # Test pooler connection (IPv6)
+          echo "Testing pooler connection (IPv6)..."
+          timeout 10 psql "postgresql://postgres.wvukkvsrmgumzhvemjfb:cjq2UNE7kfe2jzc%40qfy@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?sslmode=require" -c "SELECT 'pooler works' as status;" || echo "Pooler connection failed/timed out"
 
       - name: Run Flex ingestion
         env:
