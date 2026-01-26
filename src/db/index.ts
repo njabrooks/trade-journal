@@ -3,6 +3,12 @@ import postgres from 'postgres';
 import dns from 'dns';
 import * as schema from './schema';
 
+// Debug: Log connection info on initialization
+const poolerUrl = process.env.DATABASE_URL_POOLER || '';
+console.log(`[db/index.ts] DATABASE_URL_POOLER set: ${poolerUrl ? 'YES' : 'NO'}`);
+console.log(`[db/index.ts] URL length: ${poolerUrl.length}`);
+console.log(`[db/index.ts] URL host: ${poolerUrl.includes('db.wvukk') ? 'direct' : poolerUrl.includes('pooler.supabase') ? 'pooler' : 'unknown'}`);
+
 // Configure DNS to use Google DNS for better resolution
 // This helps with IPv6-only hostnames like Supabase direct connections
 dns.setServers(['8.8.8.8', '8.8.4.4']);
@@ -37,6 +43,12 @@ const client = postgres(connectionString, {
   idle_timeout: 20, // Idle timeout in seconds
   max_lifetime: 60 * 30, // Max connection lifetime in seconds (30 minutes)
   ssl: { rejectUnauthorized: false }, // Required for Supabase direct connections
+  onnotice: (notice) => console.log('[postgres] Notice:', notice),
+  debug: (connection, query, params) => {
+    if (process.env.DEBUG_DB === 'true') {
+      console.log('[postgres] Query:', query?.substring(0, 100));
+    }
+  },
 });
 
 export const db = drizzle(client, { schema });
