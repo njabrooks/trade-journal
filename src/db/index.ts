@@ -36,7 +36,7 @@ const client = postgres(connectionString, {
   connect_timeout: 10, // Connection timeout in seconds
   idle_timeout: 20, // Idle timeout in seconds
   max_lifetime: 60 * 30, // Max connection lifetime in seconds (30 minutes)
-  ssl: 'require', // Required for external connections (GitHub Actions, etc.)
+  ssl: { rejectUnauthorized: false }, // Required for Supabase direct connections
 });
 
 export const db = drizzle(client, { schema });
