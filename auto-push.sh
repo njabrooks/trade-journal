@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="/Users/twotrees/Projects/trade-journal"
+REPO_ROOT="/Users/assistant/Projects/trade-journal"
 cd "$REPO_ROOT"
 
 # Stage only clipping folders
