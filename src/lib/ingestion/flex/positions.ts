@@ -145,6 +145,18 @@ function derivePositionType(assetClass: string | null, side: 'LONG' | 'SHORT' | 
     return 'option';
   }
 
+  if (normalized === 'CRYPTO') {
+    if (side === 'LONG') return 'crypto_long';
+    if (side === 'SHORT') return 'crypto_short';
+    return 'crypto';
+  }
+
+  if (normalized === 'PERP') {
+    if (side === 'LONG') return 'perp_long';
+    if (side === 'SHORT') return 'perp_short';
+    return 'perp';
+  }
+
   return 'other';
 }
 

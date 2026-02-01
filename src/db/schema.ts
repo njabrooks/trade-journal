@@ -904,6 +904,32 @@ export type IngestionRun = typeof ingestionRuns.$inferSelect;
 export type NewIngestionRun = typeof ingestionRuns.$inferInsert;
 
 // ============================================================================
+// Ingestion Cursors - Track incremental ingestion state per exchange
+// ============================================================================
+
+export const ingestionCursors = pgTable(
+  'ingestion_cursors',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    exchange: text('exchange').notNull(), // 'hyperliquid' | 'coinbase_prime' | 'kraken'
+    cursorType: text('cursor_type').notNull(), // 'fills' | 'positions'
+    cursorValue: text('cursor_value').notNull(), // timestamp (ms or ISO), page cursor, etc.
+    metadata: jsonb('metadata'), // extra context (e.g., last fill ID)
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueCursor: unique().on(table.accountId, table.exchange, table.cursorType),
+    exchangeIdx: index('idx_ingestion_cursors_exchange').on(table.exchange),
+  })
+);
+
+export type IngestionCursor = typeof ingestionCursors.$inferSelect;
+export type NewIngestionCursor = typeof ingestionCursors.$inferInsert;
+
+// ============================================================================
 // Flex Query Configs
 // ============================================================================
 

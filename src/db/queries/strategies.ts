@@ -51,17 +51,10 @@ export async function getStrategiesForList(
     includeClosedStrategies?: boolean;
   }
 ): Promise<StrategyListItem[]> {
-  // Get the most recent snapshot date from positions
-  const latestSnapshotResult = await db
-    .select({
-      snapshotDate: positions.snapshotDate,
-    })
-    .from(positions)
-    .where(sql`${positions.quantity} != 0`)
-    .orderBy(desc(positions.snapshotDate))
-    .limit(1);
-
-  const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
+  // Note: We use per-account latest snapshot dates (not a single global date)
+  // because different data sources (IBKR, HyperLiquid, etc.) ingest on different schedules.
+  // A global MAX(snapshot_date) would cause strategies from slower-ingesting accounts
+  // to appear "complete" when a faster-ingesting account pushes the date forward.
 
   // Build where clause based on filters
   const whereConditions = [];
@@ -121,8 +114,10 @@ export async function getStrategiesForList(
     }
   >();
 
-  if (strategyIds.length > 0 && latestSnapshotDate) {
-    // Compute metrics directly from positions for the latest snapshot date
+  if (strategyIds.length > 0) {
+    // Compute metrics from positions using each account's latest snapshot date.
+    // The subquery ensures we use the most recent data per account, so strategies
+    // from accounts with different ingestion schedules all show correct metrics.
     const positionMetrics = await db
       .select({
         strategyId: positions.strategyId,
@@ -133,8 +128,12 @@ export async function getStrategiesForList(
       .where(
         and(
           inArray(positions.strategyId, strategyIds),
-          eq(positions.snapshotDate, latestSnapshotDate),
-          sql`${positions.quantity} != 0`
+          sql`${positions.quantity} != 0`,
+          sql`${positions.snapshotDate} = (
+            SELECT MAX(p2.snapshot_date)
+            FROM positions p2
+            WHERE p2.account_id = ${positions.accountId}
+          )`
         )
       )
       .groupBy(positions.strategyId);
@@ -167,10 +166,10 @@ export async function getStrategiesForList(
   }
 
 
-  // Determine actual status based on positions for latest snapshot date
-  // Uses standardized values: 'active' (has positions) or 'complete' (no positions)
+  // Determine actual status based on positions for each account's latest snapshot date.
+  // A strategy is "active" if it has open positions in the most recent snapshot for any of its accounts.
   const statusByStrategy = new Map<string, "active" | "complete">();
-  if (latestSnapshotDate && strategyIds.length > 0) {
+  if (strategyIds.length > 0) {
     const positionRows = await db
       .select({
         strategyId: positions.strategyId,
@@ -179,8 +178,12 @@ export async function getStrategiesForList(
       .where(
         and(
           inArray(positions.strategyId, strategyIds),
-          eq(positions.snapshotDate, latestSnapshotDate),
-          sql`${positions.quantity} != 0`
+          sql`${positions.quantity} != 0`,
+          sql`${positions.snapshotDate} = (
+            SELECT MAX(p2.snapshot_date)
+            FROM positions p2
+            WHERE p2.account_id = ${positions.accountId}
+          )`
         )
       )
       .groupBy(positions.strategyId);

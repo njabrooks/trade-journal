@@ -48,6 +48,14 @@ export function deriveStrategyKeyFromPosition(pos: PositionMinimal): string | nu
     return `${pos.symbol}-STK`;
   }
 
+  if (pos.assetClass === 'CRYPTO') {
+    return `${pos.symbol}-CRYPTO`;
+  }
+
+  if (pos.assetClass === 'PERP') {
+    return `${pos.symbol}-PERP`;
+  }
+
   if (pos.assetClass === 'OPT') {
     // For options, extract ticker from symbol and use expiry from position
     // Symbol format is like "IBIT  260918C00060000" where ticker is before the digits
@@ -74,6 +82,14 @@ export function deriveStrategyLabelFromPosition(pos: PositionMinimal): string | 
     return `${pos.symbol} Stock`;
   }
 
+  if (pos.assetClass === 'CRYPTO') {
+    return `${pos.symbol} Spot`;
+  }
+
+  if (pos.assetClass === 'PERP') {
+    return `${pos.symbol} Perp`;
+  }
+
   if (pos.assetClass === 'OPT') {
     if (pos.expiry) {
       return `${pos.symbol} ${pos.expiry}`;
@@ -96,6 +112,14 @@ export function deriveStrategyKeyFromTrade(trade: TradeMinimal): string | null {
     return `${trade.symbol}-STK`;
   }
 
+  if (trade.assetClass === 'CRYPTO') {
+    return `${trade.symbol}-CRYPTO`;
+  }
+
+  if (trade.assetClass === 'PERP') {
+    return `${trade.symbol}-PERP`;
+  }
+
   if (trade.assetClass === 'OPT') {
     const { ticker, expiry } = extractTickerAndExpiryFromSymbol(trade.symbol);
     if (expiry) {
@@ -110,6 +134,14 @@ export function deriveStrategyKeyFromTrade(trade: TradeMinimal): string | null {
 export function deriveStrategyLabelFromTrade(trade: TradeMinimal): string | null {
   if (trade.assetClass === 'STK' || trade.assetClass === 'FUT' || trade.assetClass === 'CFD') {
     return `${trade.symbol} Stock`;
+  }
+
+  if (trade.assetClass === 'CRYPTO') {
+    return `${trade.symbol} Spot`;
+  }
+
+  if (trade.assetClass === 'PERP') {
+    return `${trade.symbol} Perp`;
   }
 
   if (trade.assetClass === 'OPT') {

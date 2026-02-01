@@ -77,7 +77,7 @@ async function computeAccountLevelSnapshot(
     totalNotionalSum += notional;
     totalPnlSum += pnl;
 
-    if (pos.assetClass === 'STK') {
+    if (pos.assetClass === 'STK' || pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
       stockNotionalSum += notional;
     } else if (pos.assetClass === 'OPT') {
       optionNotionalSum += notional;
@@ -174,7 +174,7 @@ async function computeUnderlyingLevelSnapshot(
     totalNotionalSum += notional;
     totalPnlSum += pnl;
 
-    if (pos.assetClass === 'STK') {
+    if (pos.assetClass === 'STK' || pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
       stockNotionalSum += notional;
     } else if (pos.assetClass === 'OPT') {
       optionNotionalSum += notional;
