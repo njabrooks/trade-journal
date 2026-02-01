@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCurrency, formatPercent } from "@/lib/formatters";
+import { formatCurrency, formatPercent, formatSymbol, calculateDTE, calculateCostBasis } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 
 interface Position {
@@ -38,38 +38,11 @@ interface TriagePositionsTableProps {
   onQuantityChange?: (positionId: string, quantity: number) => void;
 }
 
-function formatSymbol(position: Position): string {
-  if (position.assetClass === 'OPT' && position.underlyingTicker) {
-    // Format: TSLA 260618 C350 (with space before put/call)
-    const expiry = position.expiry ? position.expiry.replace(/-/g, '').slice(2) : '';
-    const strike = position.strike ? Math.round(position.strike).toString() : '';
-    const right = position.optionRight || '';
-    return `${position.underlyingTicker} ${expiry} ${right}${strike}`;
-  }
-  return position.symbol;
-}
-
-function calculateCostBasisMoney(position: Position): number | null {
-  if (position.quantity != null && position.avgPrice != null && position.multiplier != null) {
-    return Math.abs(position.quantity * position.avgPrice * position.multiplier);
-  }
-  return null;
-}
-
 function calculatePercentOfNAV(position: Position): number | null {
   if (position.absNotional && position.nav && position.nav > 0) {
     return (Math.abs(position.absNotional) / position.nav) * 100;
   }
   return null;
-}
-
-function calculateDTE(expiry: string | null, snapshotDate: string): number | null {
-  if (!expiry) return null;
-  const expiryDate = new Date(expiry + 'T00:00:00Z');
-  const snapshotDateObj = new Date(snapshotDate + 'T00:00:00Z');
-  const diffTime = expiryDate.getTime() - snapshotDateObj.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays >= 0 ? diffDays : null;
 }
 
 export function TriagePositionsTable({
@@ -162,7 +135,7 @@ export function TriagePositionsTable({
   // Calculate totals for aggregation row
   const totals = positions.reduce(
     (acc, pos) => {
-      const costBasis = calculateCostBasisMoney(pos);
+      const costBasis = calculateCostBasis(pos);
       return {
         quantity: acc.quantity + pos.quantity,
         absNotional: acc.absNotional + Math.abs(pos.absNotional || 0),
@@ -223,7 +196,7 @@ export function TriagePositionsTable({
         </div>
         {/* Position Rows */}
         {positions.map((pos) => {
-          const costBasisMoney = calculateCostBasisMoney(pos);
+          const costBasisMoney = calculateCostBasis(pos);
           const percentOfNAV = calculatePercentOfNAV(pos);
           const dte = calculateDTE(pos.expiry, pos.snapshotDate || snapshotDate);
           const isSelected = editMode ? selectedPositionIds.has(pos.id) : true;
