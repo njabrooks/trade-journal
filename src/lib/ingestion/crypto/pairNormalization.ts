@@ -14,6 +14,7 @@ const KRAKEN_ASSET_MAP: Record<string, string> = {
   XXLM: 'XLM',
   XDOT: 'DOT',
   XXDG: 'DOGE',
+  XDG: 'DOGE',
   XZEC: 'ZEC',
   XXMR: 'XMR',
   XREP: 'REP',
