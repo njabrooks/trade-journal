@@ -1,8 +1,11 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  assetTheses,
   navSnapshots,
   portfolioSnapshots,
+  positions,
+  strategies,
   underlyings,
 } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
@@ -283,3 +286,214 @@ export async function getPortfolioDashboardDataMultiAccount(
   };
 }
 
+// ============================================================================
+// Portfolio Positions (live position-level data for the portfolio page)
+// ============================================================================
+
+export interface PortfolioPositionRow {
+  id: string;
+  symbol: string;
+  assetClass: string | null;
+  underlyingTicker: string | null;
+  underlyingId: string | null;
+  expiry: string | null;
+  strike: number | null;
+  optionRight: string | null;
+  side: string | null;
+  quantity: number;
+  avgPrice: number | null;
+  costBasisMoney: number | null;
+  spot: number | null;
+  absNotional: number | null;
+  unrealizedPnl: number | null;
+  multiplier: number | null;
+  snapshotDate: string | null;
+  accountId: string;
+  strategyId: string | null;
+  nav: number | null;
+}
+
+export interface PortfolioStrategyRow {
+  id: string;
+  strategyKey: string;
+  label: string;
+  status: string;
+  strategyType: string | null;
+  direction: string | null;
+  assetThesisId: string | null;
+  assetThesisTitle: string | null;
+  positions: PortfolioPositionRow[];
+}
+
+export interface PortfolioPositionsData {
+  strategies: PortfolioStrategyRow[];
+  unlinkedPositions: PortfolioPositionRow[];
+  nav: number | null;
+  snapshotDate: string | null;
+}
+
+/**
+ * Get all open positions grouped by strategy for the portfolio page.
+ * Returns positions with IBKR-aligned fields, grouped by strategy.
+ */
+export async function getPortfolioPositionsData(
+  accountIds: string[]
+): Promise<PortfolioPositionsData> {
+  if (accountIds.length === 0) {
+    return { strategies: [], unlinkedPositions: [], nav: null, snapshotDate: null };
+  }
+
+  // Find the latest snapshot date across all selected accounts
+  const latestDateResult = await db
+    .select({ snapshotDate: positions.snapshotDate })
+    .from(positions)
+    .where(
+      and(
+        inArray(positions.accountId, accountIds),
+        sql`${positions.quantity} != 0`
+      )
+    )
+    .orderBy(desc(positions.snapshotDate))
+    .limit(1);
+
+  const snapshotDate = latestDateResult[0]?.snapshotDate ?? null;
+  if (!snapshotDate) {
+    return { strategies: [], unlinkedPositions: [], nav: null, snapshotDate: null };
+  }
+
+  // Get aggregated NAV across all selected accounts for the snapshot date
+  const navResult = await db
+    .select({
+      nav: sql<string>`SUM(CAST(${navSnapshots.total} AS NUMERIC))`,
+    })
+    .from(navSnapshots)
+    .where(
+      and(
+        inArray(navSnapshots.accountId, accountIds),
+        eq(navSnapshots.reportDate, snapshotDate)
+      )
+    );
+
+  const nav = toNumber(navResult[0]?.nav);
+
+  // Fetch all open positions at the latest snapshot date
+  const positionRows = await db
+    .select({
+      id: positions.id,
+      symbol: positions.symbol,
+      assetClass: positions.assetClass,
+      underlyingTicker: underlyings.ticker,
+      underlyingId: positions.underlyingId,
+      expiry: positions.expiry,
+      strike: positions.strike,
+      optionRight: positions.optionRight,
+      side: positions.side,
+      quantity: positions.quantity,
+      avgPrice: positions.avgPrice,
+      costBasisMoney: positions.costBasisMoney,
+      spot: positions.spot,
+      absNotional: positions.absNotional,
+      unrealizedPnl: positions.unrealizedPnl,
+      multiplier: positions.multiplier,
+      snapshotDate: positions.snapshotDate,
+      accountId: positions.accountId,
+      strategyId: positions.strategyId,
+    })
+    .from(positions)
+    .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
+    .where(
+      and(
+        inArray(positions.accountId, accountIds),
+        eq(positions.snapshotDate, snapshotDate),
+        sql`${positions.quantity} != 0`
+      )
+    )
+    .orderBy(asc(positions.symbol));
+
+  const allPositions: PortfolioPositionRow[] = positionRows.map((row) => ({
+    id: row.id,
+    symbol: row.symbol,
+    assetClass: row.assetClass,
+    underlyingTicker: row.underlyingTicker,
+    underlyingId: row.underlyingId,
+    expiry: row.expiry,
+    strike: toNumber(row.strike),
+    optionRight: row.optionRight,
+    side: row.side,
+    quantity: Number(row.quantity),
+    avgPrice: toNumber(row.avgPrice),
+    costBasisMoney: toNumber(row.costBasisMoney),
+    spot: toNumber(row.spot),
+    absNotional: toNumber(row.absNotional),
+    unrealizedPnl: toNumber(row.unrealizedPnl),
+    multiplier: toNumber(row.multiplier),
+    snapshotDate: row.snapshotDate,
+    accountId: row.accountId,
+    strategyId: row.strategyId,
+    nav,
+  }));
+
+  // Collect unique strategy IDs
+  const strategyIds = [...new Set(
+    allPositions
+      .map((p) => p.strategyId)
+      .filter((id): id is string => id !== null)
+  )];
+
+  // Fetch strategy metadata
+  const strategyMap = new Map<string, PortfolioStrategyRow>();
+  if (strategyIds.length > 0) {
+    const strategyRows = await db
+      .select({
+        id: strategies.id,
+        strategyKey: strategies.strategyKey,
+        label: strategies.autoDerivedLabel,
+        status: strategies.status,
+        strategyType: strategies.strategyType,
+        direction: strategies.direction,
+        assetThesisId: strategies.assetThesisId,
+        assetThesisTitle: assetTheses.title,
+      })
+      .from(strategies)
+      .leftJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
+      .where(inArray(strategies.id, strategyIds));
+
+    for (const row of strategyRows) {
+      strategyMap.set(row.id, {
+        id: row.id,
+        strategyKey: row.strategyKey,
+        label: row.label ?? row.strategyKey,
+        status: row.status,
+        strategyType: row.strategyType,
+        direction: row.direction,
+        assetThesisId: row.assetThesisId,
+        assetThesisTitle: row.assetThesisTitle,
+        positions: [],
+      });
+    }
+  }
+
+  // Group positions by strategy
+  const unlinkedPositions: PortfolioPositionRow[] = [];
+  for (const pos of allPositions) {
+    if (pos.strategyId && strategyMap.has(pos.strategyId)) {
+      strategyMap.get(pos.strategyId)!.positions.push(pos);
+    } else {
+      unlinkedPositions.push(pos);
+    }
+  }
+
+  // Sort strategies by total abs notional descending
+  const strategyList = [...strategyMap.values()].sort((a, b) => {
+    const aNotional = a.positions.reduce((sum, p) => sum + Math.abs(p.absNotional ?? 0), 0);
+    const bNotional = b.positions.reduce((sum, p) => sum + Math.abs(p.absNotional ?? 0), 0);
+    return bNotional - aNotional;
+  });
+
+  return {
+    strategies: strategyList,
+    unlinkedPositions,
+    nav,
+    snapshotDate,
+  };
+}

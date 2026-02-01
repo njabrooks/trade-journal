@@ -95,6 +95,58 @@ export function formatRelativeTime(date: string | Date | null | undefined): stri
   return formatDateShort(parsed.toISOString());
 }
 
+/**
+ * Format a position symbol for display.
+ * Options are formatted as "TSLA 260618 C350" (underlying YYMMDD right+strike).
+ * Stocks show their raw symbol.
+ */
+export function formatSymbol(position: {
+  assetClass: string | null;
+  symbol: string;
+  underlyingTicker: string | null;
+  expiry: string | null;
+  strike: number | null;
+  optionRight: string | null;
+}): string {
+  if (position.assetClass === 'OPT' && position.underlyingTicker) {
+    const expiry = position.expiry ? position.expiry.replace(/-/g, '').slice(2) : '';
+    const strike = position.strike ? Math.round(position.strike).toString() : '';
+    const right = position.optionRight || '';
+    return `${position.underlyingTicker} ${expiry} ${right}${strike}`;
+  }
+  return position.symbol;
+}
+
+/**
+ * Calculate days to expiration from expiry date and a reference snapshot date.
+ * Returns null for non-options or expired positions.
+ */
+export function calculateDTE(expiry: string | null, snapshotDate: string): number | null {
+  if (!expiry) return null;
+  const expiryDate = new Date(expiry + 'T00:00:00Z');
+  const snapshotDateObj = new Date(snapshotDate + 'T00:00:00Z');
+  const diffTime = expiryDate.getTime() - snapshotDateObj.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays >= 0 ? diffDays : null;
+}
+
+/**
+ * Calculate cost basis money from position fields.
+ * Returns |quantity * avgPrice * multiplier| or null if any field is missing.
+ */
+export function calculateCostBasis(position: {
+  quantity: number;
+  avgPrice: number | null;
+  multiplier: number | null;
+  costBasisMoney?: number | null;
+}): number | null {
+  if (position.costBasisMoney != null) return Math.abs(position.costBasisMoney);
+  if (position.avgPrice != null && position.multiplier != null) {
+    return Math.abs(position.quantity * position.avgPrice * position.multiplier);
+  }
+  return null;
+}
+
 export function formatPosition(
   assetClass: string | null,
   quantity: number,
