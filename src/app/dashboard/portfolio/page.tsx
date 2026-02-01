@@ -128,7 +128,12 @@ function PortfolioDashboardContent() {
 
       // Asset class filter
       if (assetClassFilter !== "all") {
-        filtered = filtered.filter((p) => p.assetClass === assetClassFilter);
+        if (assetClassFilter === "CRYPTO") {
+          // "Crypto" filter matches both spot (CRYPTO) and perpetuals (PERP)
+          filtered = filtered.filter((p) => p.assetClass === "CRYPTO" || p.assetClass === "PERP");
+        } else {
+          filtered = filtered.filter((p) => p.assetClass === assetClassFilter);
+        }
       }
 
       // Search filter

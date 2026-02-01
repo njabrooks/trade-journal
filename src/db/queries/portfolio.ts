@@ -222,44 +222,102 @@ export async function getPortfolioDashboardDataMultiAccount(
     })
     .reverse();
 
-  const latestAccountSnapshot =
-    accountSnapshots.length > 0 ? accountSnapshots[accountSnapshots.length - 1] : null;
+  // Compute latestAccountSnapshot from per-account latest dates (not a single global date).
+  // This ensures all accounts contribute regardless of ingestion schedule differences.
+  const latestSnapshotRows = await db
+    .select({
+      totalAbsNotional: sql<string>`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC))`,
+      totalUnrealizedPnl: sql<string>`SUM(CAST(${portfolioSnapshots.totalUnrealizedPnl} AS NUMERIC))`,
+      absStockNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absStockNotional} AS NUMERIC))`,
+      absOptionNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absOptionNotional} AS NUMERIC))`,
+      maxDate: sql<string>`MAX(${portfolioSnapshots.snapshotDate})`,
+    })
+    .from(portfolioSnapshots)
+    .where(
+      and(
+        inArray(portfolioSnapshots.accountId, accountIds),
+        eq(portfolioSnapshots.level, "account"),
+        sql`${portfolioSnapshots.snapshotDate} = (
+          SELECT MAX(ps2.snapshot_date)
+          FROM portfolio_snapshots ps2
+          WHERE ps2.account_id = ${portfolioSnapshots.accountId}
+            AND ps2.level = 'account'
+        )`
+      )
+    );
 
-  const latestDate = latestAccountSnapshot?.date ?? null;
+  const latestRow = latestSnapshotRows[0];
+  const latestTotalAbsNotional = toNumber(latestRow?.totalAbsNotional);
+  // Get latest per-account NAV for leverage calculation
+  const latestNavResult = await db
+    .select({
+      nav: sql<string>`SUM(CAST(${navSnapshots.total} AS NUMERIC))`,
+    })
+    .from(navSnapshots)
+    .where(
+      and(
+        inArray(navSnapshots.accountId, accountIds),
+        sql`${navSnapshots.reportDate} = (
+          SELECT MAX(n2.report_date)
+          FROM nav_snapshots n2
+          WHERE n2.account_id = ${navSnapshots.accountId}
+        )`
+      )
+    );
+  const latestNav = toNumber(latestNavResult[0]?.nav);
+
+  let latestPctNav: number | null = null;
+  if (latestTotalAbsNotional !== null && latestNav && latestNav > 0) {
+    latestPctNav = (latestTotalAbsNotional / latestNav) * 100;
+  }
+
+  const latestAccountSnapshot: PortfolioTrendPoint | null = latestRow?.maxDate
+    ? {
+        date: latestRow.maxDate,
+        totalAbsNotional: latestTotalAbsNotional,
+        totalUnrealizedPnl: toNumber(latestRow.totalUnrealizedPnl),
+        pctNavAbsNotional: latestPctNav,
+        absStockNotional: toNumber(latestRow.absStockNotional),
+        absOptionNotional: toNumber(latestRow.absOptionNotional),
+      }
+    : null;
 
   // --- Aggregate underlying-level snapshots by ticker ---
-  const underlyingRows = latestDate
-    ? await db
-        .select({
-          underlyingId: portfolioSnapshots.underlyingId,
-          ticker: underlyings.ticker,
-          name: underlyings.name,
-          totalAbsNotional: sql<string>`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC))`,
-          totalUnrealizedPnl: sql<string>`SUM(CAST(${portfolioSnapshots.totalUnrealizedPnl} AS NUMERIC))`,
-        })
-        .from(portfolioSnapshots)
-        .leftJoin(underlyings, eq(portfolioSnapshots.underlyingId, underlyings.id))
-        .where(
-          and(
-            inArray(portfolioSnapshots.accountId, accountIds),
-            eq(portfolioSnapshots.level, "underlying"),
-            eq(portfolioSnapshots.snapshotDate, latestDate)
-          )
-        )
-        .groupBy(portfolioSnapshots.underlyingId, underlyings.ticker, underlyings.name)
-        .orderBy(sql`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC)) DESC`)
-        .limit(15)
-    : [];
+  // Uses per-account latest dates so all exchanges contribute.
+  const underlyingRows = await db
+    .select({
+      underlyingId: portfolioSnapshots.underlyingId,
+      ticker: underlyings.ticker,
+      name: underlyings.name,
+      totalAbsNotional: sql<string>`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC))`,
+      totalUnrealizedPnl: sql<string>`SUM(CAST(${portfolioSnapshots.totalUnrealizedPnl} AS NUMERIC))`,
+    })
+    .from(portfolioSnapshots)
+    .leftJoin(underlyings, eq(portfolioSnapshots.underlyingId, underlyings.id))
+    .where(
+      and(
+        inArray(portfolioSnapshots.accountId, accountIds),
+        eq(portfolioSnapshots.level, "underlying"),
+        sql`${portfolioSnapshots.snapshotDate} = (
+          SELECT MAX(ps2.snapshot_date)
+          FROM portfolio_snapshots ps2
+          WHERE ps2.account_id = ${portfolioSnapshots.accountId}
+            AND ps2.level = 'underlying'
+        )`
+      )
+    )
+    .groupBy(portfolioSnapshots.underlyingId, underlyings.ticker, underlyings.name)
+    .orderBy(sql`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC)) DESC`)
+    .limit(15);
 
-  // Calculate pctNavAbsNotional for each underlying using total NAV
-  const totalNav = latestDate ? navByDate.get(latestDate) : null;
+  // Calculate pctNavAbsNotional for each underlying using latest per-account NAV
   const underlyingBreakdown: UnderlyingBreakdownRow[] = underlyingRows
     .filter((row) => !!row.underlyingId)
     .map((row) => {
       const notional = toNumber(row.totalAbsNotional);
       let pctNavAbsNotional: number | null = null;
-      if (notional !== null && totalNav && totalNav > 0) {
-        pctNavAbsNotional = (notional / totalNav) * 100;
+      if (notional !== null && latestNav && latestNav > 0) {
+        pctNavAbsNotional = (notional / latestNav) * 100;
       }
       return {
         underlyingId: row.underlyingId!,
@@ -343,40 +401,9 @@ export async function getPortfolioPositionsData(
     return { strategies: [], unlinkedPositions: [], nav: null, snapshotDate: null };
   }
 
-  // Find the latest snapshot date across all selected accounts
-  const latestDateResult = await db
-    .select({ snapshotDate: positions.snapshotDate })
-    .from(positions)
-    .where(
-      and(
-        inArray(positions.accountId, accountIds),
-        sql`${positions.quantity} != 0`
-      )
-    )
-    .orderBy(desc(positions.snapshotDate))
-    .limit(1);
-
-  const snapshotDate = latestDateResult[0]?.snapshotDate ?? null;
-  if (!snapshotDate) {
-    return { strategies: [], unlinkedPositions: [], nav: null, snapshotDate: null };
-  }
-
-  // Get aggregated NAV across all selected accounts for the snapshot date
-  const navResult = await db
-    .select({
-      nav: sql<string>`SUM(CAST(${navSnapshots.total} AS NUMERIC))`,
-    })
-    .from(navSnapshots)
-    .where(
-      and(
-        inArray(navSnapshots.accountId, accountIds),
-        eq(navSnapshots.reportDate, snapshotDate)
-      )
-    );
-
-  const nav = toNumber(navResult[0]?.nav);
-
-  // Fetch all open positions at the latest snapshot date
+  // Fetch all open positions at each account's latest snapshot date.
+  // Uses per-account correlated subquery because different exchanges
+  // (IBKR, HyperLiquid, Coinbase, Kraken) ingest on different schedules.
   const positionRows = await db
     .select({
       id: positions.id,
@@ -404,11 +431,45 @@ export async function getPortfolioPositionsData(
     .where(
       and(
         inArray(positions.accountId, accountIds),
-        eq(positions.snapshotDate, snapshotDate),
-        sql`${positions.quantity} != 0`
+        sql`${positions.quantity} != 0`,
+        sql`${positions.snapshotDate} = (
+          SELECT MAX(p2.snapshot_date)
+          FROM positions p2
+          WHERE p2.account_id = ${positions.accountId}
+        )`
       )
     )
     .orderBy(asc(positions.symbol));
+
+  if (positionRows.length === 0) {
+    return { strategies: [], unlinkedPositions: [], nav: null, snapshotDate: null };
+  }
+
+  // Compute display snapshot date (max across all accounts' latest dates)
+  const snapshotDate = positionRows.reduce((max, r) => {
+    if (!r.snapshotDate) return max;
+    return !max || r.snapshotDate > max ? r.snapshotDate : max;
+  }, null as string | null);
+
+  // Get aggregated NAV: latest per-account NAV summed across selected accounts.
+  // Crypto accounts without NAV snapshots simply don't contribute.
+  const navResult = await db
+    .select({
+      nav: sql<string>`SUM(CAST(${navSnapshots.total} AS NUMERIC))`,
+    })
+    .from(navSnapshots)
+    .where(
+      and(
+        inArray(navSnapshots.accountId, accountIds),
+        sql`${navSnapshots.reportDate} = (
+          SELECT MAX(n2.report_date)
+          FROM nav_snapshots n2
+          WHERE n2.account_id = ${navSnapshots.accountId}
+        )`
+      )
+    );
+
+  const nav = toNumber(navResult[0]?.nav);
 
   const allPositions: PortfolioPositionRow[] = positionRows.map((row) => ({
     id: row.id,
