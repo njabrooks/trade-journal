@@ -12,7 +12,7 @@ The application features a **local-first research workflow** using Toulmin frame
 
 - **Frontend:** Next.js 16 (React 19), TypeScript 5, Tailwind CSS 4, Radix UI
 - **Backend:** Next.js API Routes, Drizzle ORM 0.44, PostgreSQL (Supabase)
-- **External APIs:** IBKR (Flex API + Client Portal Gateway), Massive.com, Yahoo Finance
+- **External APIs:** IBKR (Flex API + Client Portal Gateway), Massive.com, Yahoo Finance, HyperLiquid
 - **Build Tools:** tsx (script execution), ESLint 9
 
 ## Common Development Commands
@@ -30,6 +30,8 @@ npx tsx scripts/<script-name>.ts
 # Common scripts
 npx tsx scripts/run-flex-ingestion.ts           # IBKR Flex ingestion
 npx tsx scripts/ingest-underlyings-massive.ts   # Massive.com IV/spot ingestion
+npx tsx scripts/ingest-hyperliquid.ts           # HyperLiquid crypto ingestion
+npx tsx scripts/ingest-hyperliquid.ts --full    # HyperLiquid full backfill
 
 # Research workflow scripts
 npx tsx scripts/test-claims-integration.ts      # Test claims parsing & DB integration
@@ -238,6 +240,14 @@ Contains business logic for calculating derived insights from raw data:
   - `trades.ts` - Trade normalization & validation
   - `positions.ts` - Position processing with multiplier handling
   - `processCsv.ts` - Generic CSV parsing/validation framework (uses PapaParse)
+- **`crypto/`** - Shared crypto exchange modules
+  - `types.ts` - `CryptoTradeInput`, `CryptoPositionInput`, converters to schema types
+  - `pairNormalization.ts` - Exchange-specific ticker normalization (HyperLiquid, Coinbase Prime, Kraken)
+  - `cursors.ts` - Incremental ingestion cursor helpers using `ingestion_cursors` table
+- **`hyperliquid/`** - HyperLiquid API integration
+  - `api.ts` - HTTP client (single POST endpoint, no auth), types, retry/backoff
+  - `fills.ts` - Fill normalization + time-based pagination (500/query, 10K limit)
+  - `positions.ts` - Perp, spot, and staked HYPE position normalization
 - **`massive/`** - Massive.com integration for daily IV/spot snapshots
 - **`underlyingsIvHistory.ts`** - IV history management
 
@@ -328,6 +338,7 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`strategy_templates`** - Reusable strategy patterns for auto-linking
 - **`triage_rules`** - Configurable triage logic
 - **`ingestion_runs`** - Process tracking for all data imports
+- **`ingestion_cursors`** - Incremental ingestion state per exchange/account (high-water mark timestamps)
 
 ### Research Tables
 - **`research_artifacts`** - Raw research content (transcripts, articles, notes) with metadata
@@ -398,10 +409,12 @@ See `docs/features/terminology.md` for the authoritative terminology guide. Key 
 Ingestion runs automatically via GitHub Actions (all times UTC):
 - **Flex ingestion**: Hourly from 4 AM to 2 PM UTC (covers US market hours)
 - **Massive ingestion**: 9:30 PM UTC (4:30 PM ET, 30 min after market close)
+- **HyperLiquid ingestion**: Every 4 hours, 24/7 (crypto markets)
 
 Workflows:
 - `.github/workflows/flex-ingestion.yml` - IBKR Flex API trades/positions
 - `.github/workflows/massive-ingestion.yml` - Massive.com IV/spot data
+- `.github/workflows/hyperliquid-ingestion.yml` - HyperLiquid fills/positions/staking
 
 Manual trigger available from GitHub UI for testing.
 
@@ -457,6 +470,9 @@ IBKR_GATEWAY_PASSWORD=<password>
 # Massive.com
 MASSIVE_API_KEY=<api-key>
 MASSIVE_API_BASE_URL=https://api.massive.com
+
+# HyperLiquid (no auth needed, just wallet address)
+HYPERLIQUID_WALLET_ADDRESS=0x...
 
 # TradingView Webhooks (optional - for strategy signals)
 NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-webhook
@@ -694,6 +710,9 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 12. **No Bidirectional Sync** - One-way upload from local Markdown to Supabase; no automatic sync back to files
 13. **TradingView Webhooks** - Price alerts via Edge Function (`supabase/functions/tv-webhook`), matched by `tvAlertName` in signal config
 14. **Universal Status Model** - All lifecycle entities (theses, claims, signals, strategies) use unified status: draft, active, complete, rejected
+15. **Multi-Exchange Position Snapshots** - Strategy status/metrics use per-account latest snapshot dates (not global) to handle different ingestion schedules across IBKR and crypto exchanges
+16. **Crypto Asset Classes** - `CRYPTO` (spot holdings) and `PERP` (perpetual futures) alongside existing `STK`/`OPT`. Position types: `crypto_long`, `crypto_short`, `crypto_staked`, `perp_long`, `perp_short`
+17. **HyperLiquid Integration** - No auth needed for reads. Fills (trades), perp/spot positions, staked HYPE (delegations), and mark prices via single POST endpoint. Incremental fill ingestion via `ingestion_cursors` table
 
 ## TradingView Webhook Integration
 

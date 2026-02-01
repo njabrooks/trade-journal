@@ -48,23 +48,28 @@ Data flows into this hierarchy from two primary sources:
 | Source | Data Type | Frequency | Method |
 |--------|-----------|-----------|--------|
 | IBKR Flex API | Trades, Positions | Hourly (GitHub Actions) | XML/CSV via Flex Web Service |
+| HyperLiquid | Fills, Perps, Spot, Staking | Every 4h (GitHub Actions) | POST to `/info` endpoint |
 | Massive.com | IV, Spot prices | Daily (4:30 PM ET) | REST API |
 | Yahoo Finance | Spot prices | On-demand | Fallback source |
 | IBKR Gateway | IV, Historical | On-demand | Client Portal API |
 
 **Key Tables:**
 - `ingestion_runs` - Process tracking for all imports
+- `ingestion_cursors` - Incremental ingestion state per exchange/account
 - `flex_query_configs` - Flex query configuration
-- `trades` - Individual trade executions
-- `positions` - Current/closed positions with MTM
+- `trades` - Individual trade executions (IBKR + HyperLiquid)
+- `positions` - Current/closed positions with MTM (STK, OPT, CRYPTO, PERP)
 - `underlyings` - Ticker metadata (spot, IV30, conid)
 - `underlyings_iv_history` - Time-series IV/spot snapshots
 - `options_chain_snapshots` - Full options chains
 
 **Key Files:**
-- `src/lib/ingestion/flex/` - Flex API integration
+- `src/lib/ingestion/flex/` - IBKR Flex API integration
+- `src/lib/ingestion/crypto/` - Shared crypto exchange modules (types, pair normalization, cursors)
+- `src/lib/ingestion/hyperliquid/` - HyperLiquid API client, fill/position normalization
 - `src/lib/services/processTracking.ts` - Process tracking service
-- `scripts/run-flex-ingestion.ts` - GitHub Actions runner
+- `scripts/run-flex-ingestion.ts` - IBKR GitHub Actions runner
+- `scripts/ingest-hyperliquid.ts` - HyperLiquid GitHub Actions runner
 - `scripts/ingest-underlyings-massive.ts` - Daily IV/spot ingestion
 
 ---

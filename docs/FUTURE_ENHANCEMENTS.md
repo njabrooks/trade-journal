@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for planned enhancements with PRD traceability.
 
-**Last Updated**: 2026-01-19 (#ENH-049 verified complete)
+**Last Updated**: 2026-02-01 (#ENH-043 Phase 0+1 complete — HyperLiquid)
 
 ---
 
@@ -154,12 +154,42 @@ Target percentage allocations, current vs target display, allocation-based trigg
 ---
 
 ### #ENH-043: Multi-Exchange Crypto Ingestion
-**Priority**: Medium | **Effort**: 2-3 weeks | **Phase**: 5+
+**Status**: In Progress (Phase 1 complete) | **Priority**: Medium | **Phase**: 5+
 **PRD**: Section 4 (Data Ingestion)
 
-Support Coinbase, Kraken, HyperLiquid, DEX. Schema extensions for crypto instruments.
+Phased crypto exchange integration: HyperLiquid → Coinbase Prime → Kraken.
 
-**Dependencies**: #ENH-044
+**Phase 0 (Foundation) — COMPLETE (2026-02-01):**
+- `ingestion_cursors` table for incremental state tracking
+- CRYPTO/PERP asset classes in position types, strategy auto-linking, portfolio bucketing
+- Shared crypto modules: `src/lib/ingestion/crypto/` (types, pairNormalization, cursors)
+- Per-account snapshot date fix in `src/db/queries/strategies.ts` (multi-exchange compatibility)
+
+**Phase 1 (HyperLiquid) — COMPLETE (2026-02-01):**
+- API client: `src/lib/ingestion/hyperliquid/` (api, fills, positions)
+- Ingestion script: `scripts/ingest-hyperliquid.ts`
+- GitHub Action: `.github/workflows/hyperliquid-ingestion.yml` (every 4h)
+- Fills (trades), perp positions, spot positions, staked HYPE (delegations)
+- No auth needed — reads use wallet address only
+- Env: `HYPERLIQUID_WALLET_ADDRESS`
+
+**Phase 2 (Coinbase Prime) — PLANNED:**
+- HMAC-SHA256 auth (4 headers: key, passphrase, signature, timestamp)
+- Fills via `GET /v1/portfolios/{id}/fills` (3K/page, cursor pagination)
+- Balances via `GET /v1/portfolios/{id}/balances` (quantities only, no cost basis)
+- Key challenge: FIFO lot tracking for cost basis from fills — shared module for Kraken reuse
+- New: `src/lib/ingestion/coinbase-prime/` (api, fills, balances)
+- New: `src/lib/ingestion/crypto/costBasis.ts` (shared FIFO tracker)
+- Env: `COINBASE_PRIME_API_KEY`, `COINBASE_PRIME_API_SECRET` (base64), `COINBASE_PRIME_PASSPHRASE`, `COINBASE_PRIME_PORTFOLIO_ID`
+
+**Phase 3 (Kraken) — PLANNED:**
+- HMAC-SHA512 auth with monotonic nonce (most complex, prevents parallelization)
+- Trades via `POST /0/private/TradesHistory` (50/page, rate cost 2/call — 10K trades ~ 7 min)
+- Balances via `POST /0/private/Balance`, margin via `POST /0/private/OpenPositions`
+- Gotcha: Non-standard pair naming (`XXBTZUSD` → `BTC`) requires mapping table
+- Spot balances reuse shared FIFO cost basis; margin positions have cost/value/net PnL directly
+- New: `src/lib/ingestion/kraken/` (api, trades, positions, pairMapping)
+- Env: `KRAKEN_API_KEY`, `KRAKEN_API_SECRET` (base64)
 
 ---
 
