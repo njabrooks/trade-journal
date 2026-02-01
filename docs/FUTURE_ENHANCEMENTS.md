@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for planned enhancements with PRD traceability.
 
-**Last Updated**: 2026-02-01 (#ENH-043 Phase 0+1 complete — HyperLiquid)
+**Last Updated**: 2026-02-01 (#ENH-043 Phase 2 complete — Coinbase Prime)
 
 ---
 
@@ -154,7 +154,7 @@ Target percentage allocations, current vs target display, allocation-based trigg
 ---
 
 ### #ENH-043: Multi-Exchange Crypto Ingestion
-**Status**: In Progress (Phase 1 complete) | **Priority**: Medium | **Phase**: 5+
+**Status**: In Progress (Phase 2 complete) | **Priority**: Medium | **Phase**: 5+
 **PRD**: Section 4 (Data Ingestion)
 
 Phased crypto exchange integration: HyperLiquid → Coinbase Prime → Kraken.
@@ -173,23 +173,45 @@ Phased crypto exchange integration: HyperLiquid → Coinbase Prime → Kraken.
 - No auth needed — reads use wallet address only
 - Env: `HYPERLIQUID_WALLET_ADDRESS`
 
-**Phase 2 (Coinbase Prime) — PLANNED:**
+**Phase 2 (Coinbase Prime) — COMPLETE (2026-02-01):**
 - HMAC-SHA256 auth (4 headers: key, passphrase, signature, timestamp)
-- Fills via `GET /v1/portfolios/{id}/fills` (3K/page, cursor pagination)
-- Balances via `GET /v1/portfolios/{id}/balances` (quantities only, no cost basis)
-- Key challenge: FIFO lot tracking for cost basis from fills — shared module for Kraken reuse
-- New: `src/lib/ingestion/coinbase-prime/` (api, fills, balances)
-- New: `src/lib/ingestion/crypto/costBasis.ts` (shared FIFO tracker)
-- Env: `COINBASE_PRIME_API_KEY`, `COINBASE_PRIME_API_SECRET` (base64), `COINBASE_PRIME_PASSPHRASE`, `COINBASE_PRIME_PORTFOLIO_ID`
+- API client: `src/lib/ingestion/coinbase-prime/` (api, fills, balances)
+- Ingestion script: `scripts/ingest-coinbase-prime.ts`
+- GitHub Action: `.github/workflows/coinbase-prime-ingestion.yml` (every 4h, offset 15min from HL)
+- Fills via `GET /v1/portfolios/{id}/fills` (cursor pagination)
+- Balances via `GET /v1/portfolios/{id}/balances` (USD fiat_amount, implied mark price)
+- No cost basis on positions — deferred to #ENH-051
+- Env: `COINBASE_PRIME_ACCESS_KEY`, `COINBASE_PRIME_SIGNING_KEY` (base64), `COINBASE_PRIME_PASSPHRASE`, `COINBASE_PRIME_PORTFOLIO_ID`
 
 **Phase 3 (Kraken) — PLANNED:**
 - HMAC-SHA512 auth with monotonic nonce (most complex, prevents parallelization)
 - Trades via `POST /0/private/TradesHistory` (50/page, rate cost 2/call — 10K trades ~ 7 min)
 - Balances via `POST /0/private/Balance`, margin via `POST /0/private/OpenPositions`
 - Gotcha: Non-standard pair naming (`XXBTZUSD` → `BTC`) requires mapping table
-- Spot balances reuse shared FIFO cost basis; margin positions have cost/value/net PnL directly
+- Spot balances: no cost basis (deferred to #ENH-051); margin positions have cost/value/net PnL directly
 - New: `src/lib/ingestion/kraken/` (api, trades, positions, pairMapping)
 - Env: `KRAKEN_API_KEY`, `KRAKEN_API_SECRET` (base64)
+
+---
+
+### #ENH-051: Crypto Position Cost Basis
+**Priority**: Medium | **Effort**: 3-5 days | **Phase**: 5+
+**PRD**: Section 4 (Data Ingestion)
+**Dependencies**: #ENH-043 (at least one exchange complete)
+
+Compute cost basis for crypto positions from historical fills in the trades table.
+Currently, positions from Coinbase Prime (and future Kraken spot) have null `avgPrice`, `costBasisMoney`, and `unrealizedPnl`.
+
+**Options to evaluate**:
+- FIFO (First In, First Out) — standard tax lot method
+- Average cost — simpler, common for crypto
+
+**Implementation**:
+- Shared module: `src/lib/ingestion/crypto/costBasis.ts`
+- Reads fills from `trades` table, computes running cost basis per symbol per account
+- Populates `avgPrice`, `costBasisMoney`, `unrealizedPnl` on positions during ingestion
+- Reusable across all crypto exchanges (Coinbase Prime, Kraken, HyperLiquid spot)
+- May also need retroactive backfill for existing positions
 
 ---
 
@@ -287,7 +309,7 @@ AI-generated descriptions from linked macro theses and claims.
 
 ## Enhancement Registry
 
-**Next Enhancement ID**: #ENH-051
+**Next Enhancement ID**: #ENH-052
 
 ### ID Allocation
 
@@ -300,7 +322,8 @@ AI-generated descriptions from linked macro theses and claims.
 | #ENH-047 - #ENH-048 | Status field technical debt |
 | #ENH-049 | Unified Entity Detail UX/UI |
 | #ENH-050 | Unified Triage Action Button |
-| #ENH-051+ | Available |
+| #ENH-051 | Crypto Position Cost Basis |
+| #ENH-052+ | Available |
 
 **Format**: `#ENH-XXX` or `#ENH-XXX-name` for variants
 
