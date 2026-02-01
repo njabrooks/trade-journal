@@ -12,7 +12,7 @@ The application features a **local-first research workflow** using Toulmin frame
 
 - **Frontend:** Next.js 16 (React 19), TypeScript 5, Tailwind CSS 4, Radix UI
 - **Backend:** Next.js API Routes, Drizzle ORM 0.44, PostgreSQL (Supabase)
-- **External APIs:** IBKR (Flex API + Client Portal Gateway), Massive.com, Yahoo Finance, HyperLiquid, Coinbase Prime
+- **External APIs:** IBKR (Flex API + Client Portal Gateway), Massive.com, Yahoo Finance, HyperLiquid, Coinbase Prime, Kraken
 - **Build Tools:** tsx (script execution), ESLint 9
 
 ## Common Development Commands
@@ -34,6 +34,8 @@ npx tsx scripts/ingest-hyperliquid.ts           # HyperLiquid crypto ingestion
 npx tsx scripts/ingest-hyperliquid.ts --full    # HyperLiquid full backfill
 npx tsx scripts/ingest-coinbase-prime.ts        # Coinbase Prime crypto ingestion
 npx tsx scripts/ingest-coinbase-prime.ts --full # Coinbase Prime full backfill
+npx tsx scripts/ingest-kraken.ts               # Kraken crypto ingestion
+npx tsx scripts/ingest-kraken.ts --full        # Kraken full backfill
 
 # Research workflow scripts
 npx tsx scripts/test-claims-integration.ts      # Test claims parsing & DB integration
@@ -248,6 +250,7 @@ Contains business logic for calculating derived insights from raw data:
   - `cursors.ts` - Incremental ingestion cursor helpers using `ingestion_cursors` table
 - **`coinbase-prime/`** - Coinbase Prime API integration (HMAC-SHA256 auth, fills, balances)
 - **`hyperliquid/`** - HyperLiquid API integration
+- **`kraken/`** - Kraken API integration (HMAC-SHA512 auth, trades, balances, margin positions)
   - `api.ts` - HTTP client (single POST endpoint, no auth), types, retry/backoff
   - `fills.ts` - Fill normalization + time-based pagination (500/query, 10K limit)
   - `positions.ts` - Perp, spot, and staked HYPE position normalization
@@ -414,12 +417,14 @@ Ingestion runs automatically via GitHub Actions (all times UTC):
 - **Massive ingestion**: 9:30 PM UTC (4:30 PM ET, 30 min after market close)
 - **HyperLiquid ingestion**: Every 4 hours, 24/7 (crypto markets)
 - **Coinbase Prime ingestion**: Every 4 hours (offset 15min from HL), 24/7
+- **Kraken ingestion**: Every 4 hours (offset 30min from HL), 24/7
 
 Workflows:
 - `.github/workflows/flex-ingestion.yml` - IBKR Flex API trades/positions
 - `.github/workflows/massive-ingestion.yml` - Massive.com IV/spot data
 - `.github/workflows/hyperliquid-ingestion.yml` - HyperLiquid fills/positions/staking
 - `.github/workflows/coinbase-prime-ingestion.yml` - Coinbase Prime fills/balances
+- `.github/workflows/kraken-ingestion.yml` - Kraken trades/balances/margin positions
 
 Manual trigger available from GitHub UI for testing.
 
@@ -484,6 +489,10 @@ COINBASE_PRIME_PORTFOLIO_ID=<portfolio-id>
 
 # HyperLiquid (no auth needed, just wallet address)
 HYPERLIQUID_WALLET_ADDRESS=0x...
+
+# Kraken
+KRAKEN_API_KEY=<api-key>
+KRAKEN_API_SECRET=<base64-encoded-api-secret>
 
 # TradingView Webhooks (optional - for strategy signals)
 NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-webhook
@@ -725,6 +734,7 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 16. **Crypto Asset Classes** - `CRYPTO` (spot holdings) and `PERP` (perpetual futures) alongside existing `STK`/`OPT`. Position types: `crypto_long`, `crypto_short`, `crypto_staked`, `perp_long`, `perp_short`
 17. **HyperLiquid Integration** - No auth needed for reads. Fills (trades), perp/spot positions, staked HYPE (delegations), and mark prices via single POST endpoint. Incremental fill ingestion via `ingestion_cursors` table
 18. **Coinbase Prime Integration** - HMAC-SHA256 auth with base64-decoded secret. Fills (trades) with cursor pagination, balances (positions) with USD fiat_amount. No cost basis on positions (deferred to #ENH-051). Spot-only (no perps)
+19. **Kraken Integration** - HMAC-SHA512 auth with base64-decoded secret + nonce. TradesHistory (offset pagination, 50/page, rate cost 2), Balance (spot positions with Ticker price enrichment), OpenPositions (margin with cost basis/PnL from API). No cost basis on spot positions (deferred to #ENH-051)
 
 ## TradingView Webhook Integration
 

@@ -50,6 +50,7 @@ Data flows into this hierarchy from two primary sources:
 | IBKR Flex API | Trades, Positions | Hourly (GitHub Actions) | XML/CSV via Flex Web Service |
 | HyperLiquid | Fills, Perps, Spot, Staking | Every 4h (GitHub Actions) | POST to `/info` endpoint |
 | Coinbase Prime | Fills, Balances | Every 4h (GitHub Actions) | HMAC-SHA256 authenticated REST |
+| Kraken | Trades, Balances, Margin Positions | Every 4h (GitHub Actions) | HMAC-SHA512 authenticated REST |
 | Massive.com | IV, Spot prices | Daily (4:30 PM ET) | REST API |
 | Yahoo Finance | Spot prices | On-demand | Fallback source |
 | IBKR Gateway | IV, Historical | On-demand | Client Portal API |
@@ -58,7 +59,7 @@ Data flows into this hierarchy from two primary sources:
 - `ingestion_runs` - Process tracking for all imports
 - `ingestion_cursors` - Incremental ingestion state per exchange/account
 - `flex_query_configs` - Flex query configuration
-- `trades` - Individual trade executions (IBKR + HyperLiquid + Coinbase Prime)
+- `trades` - Individual trade executions (IBKR + HyperLiquid + Coinbase Prime + Kraken)
 - `positions` - Current/closed positions with MTM (STK, OPT, CRYPTO, PERP)
 - `underlyings` - Ticker metadata (spot, IV30, conid)
 - `underlyings_iv_history` - Time-series IV/spot snapshots
@@ -69,10 +70,12 @@ Data flows into this hierarchy from two primary sources:
 - `src/lib/ingestion/crypto/` - Shared crypto exchange modules (types, pair normalization, cursors)
 - `src/lib/ingestion/hyperliquid/` - HyperLiquid API client, fill/position normalization
 - `src/lib/ingestion/coinbase-prime/` - Coinbase Prime API client (HMAC auth), fill/balance normalization
+- `src/lib/ingestion/kraken/` - Kraken API client (HMAC-SHA512 auth), trade/balance/margin normalization
 - `src/lib/services/processTracking.ts` - Process tracking service
 - `scripts/run-flex-ingestion.ts` - IBKR GitHub Actions runner
 - `scripts/ingest-hyperliquid.ts` - HyperLiquid GitHub Actions runner
 - `scripts/ingest-coinbase-prime.ts` - Coinbase Prime GitHub Actions runner
+- `scripts/ingest-kraken.ts` - Kraken GitHub Actions runner
 - `scripts/ingest-underlyings-massive.ts` - Daily IV/spot ingestion
 
 ---

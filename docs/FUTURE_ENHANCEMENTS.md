@@ -2,7 +2,7 @@
 
 **Purpose**: Single source of truth for planned enhancements with PRD traceability.
 
-**Last Updated**: 2026-02-01 (#ENH-043 Phase 2 complete — Coinbase Prime)
+**Last Updated**: 2026-02-01 (#ENH-043 complete — all 3 phases: HyperLiquid, Coinbase Prime, Kraken)
 
 ---
 
@@ -154,7 +154,7 @@ Target percentage allocations, current vs target display, allocation-based trigg
 ---
 
 ### #ENH-043: Multi-Exchange Crypto Ingestion
-**Status**: In Progress (Phase 2 complete) | **Priority**: Medium | **Phase**: 5+
+**Status**: Complete (all 3 phases) | **Priority**: Medium | **Phase**: 5+
 **PRD**: Section 4 (Data Ingestion)
 
 Phased crypto exchange integration: HyperLiquid → Coinbase Prime → Kraken.
@@ -183,13 +183,16 @@ Phased crypto exchange integration: HyperLiquid → Coinbase Prime → Kraken.
 - No cost basis on positions — deferred to #ENH-051
 - Env: `COINBASE_PRIME_ACCESS_KEY`, `COINBASE_PRIME_SIGNING_KEY` (base64), `COINBASE_PRIME_PASSPHRASE`, `COINBASE_PRIME_PORTFOLIO_ID`
 
-**Phase 3 (Kraken) — PLANNED:**
-- HMAC-SHA512 auth with monotonic nonce (most complex, prevents parallelization)
-- Trades via `POST /0/private/TradesHistory` (50/page, rate cost 2/call — 10K trades ~ 7 min)
-- Balances via `POST /0/private/Balance`, margin via `POST /0/private/OpenPositions`
-- Gotcha: Non-standard pair naming (`XXBTZUSD` → `BTC`) requires mapping table
-- Spot balances: no cost basis (deferred to #ENH-051); margin positions have cost/value/net PnL directly
-- New: `src/lib/ingestion/kraken/` (api, trades, positions, pairMapping)
+**Phase 3 (Kraken) — COMPLETE (2026-02-01):**
+- HMAC-SHA512 auth with monotonic nonce + base64-decoded secret
+- API client: `src/lib/ingestion/kraken/` (api, fills, positions)
+- Ingestion script: `scripts/ingest-kraken.ts`
+- GitHub Action: `.github/workflows/kraken-ingestion.yml` (every 4h, offset 30min from HL)
+- Trades via `POST /0/private/TradesHistory` (offset pagination, 50/page, rate cost 2)
+- Balances via `POST /0/private/Balance` (spot prices via public Ticker endpoint)
+- Margin positions via `POST /0/private/OpenPositions` (with `docalcs=true` for cost/value/PnL)
+- Non-standard pair naming (`XXBTZUSD` → `BTC`) handled by `normalizeKrakenPair()` + `extractKrakenQuoteCurrency()`
+- No cost basis on spot positions — deferred to #ENH-051; margin positions have cost/value/net from API
 - Env: `KRAKEN_API_KEY`, `KRAKEN_API_SECRET` (base64)
 
 ---
@@ -200,7 +203,7 @@ Phased crypto exchange integration: HyperLiquid → Coinbase Prime → Kraken.
 **Dependencies**: #ENH-043 (at least one exchange complete)
 
 Compute cost basis for crypto positions from historical fills in the trades table.
-Currently, positions from Coinbase Prime (and future Kraken spot) have null `avgPrice`, `costBasisMoney`, and `unrealizedPnl`.
+Currently, spot positions from Coinbase Prime and Kraken have null `avgPrice`, `costBasisMoney`, and `unrealizedPnl`. (Kraken margin positions get cost basis directly from the API.)
 
 **Options to evaluate**:
 - FIFO (First In, First Out) — standard tax lot method

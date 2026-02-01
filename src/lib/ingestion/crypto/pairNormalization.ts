@@ -56,6 +56,19 @@ export function extractCoinbasePrimeQuoteCurrency(productId: string): string {
 }
 
 /**
+ * Extract quote currency from Kraken pair name.
+ * "XXBTZUSD" → "USD", "XETHZEUR" → "EUR", "SOLUSD" → "USD"
+ */
+export function extractKrakenQuoteCurrency(pair: string): string {
+  for (const suffix of KRAKEN_QUOTE_SUFFIXES.sort((a, b) => b.length - a.length)) {
+    if (pair.endsWith(suffix)) {
+      return suffix.startsWith('Z') ? suffix.slice(1) : suffix;
+    }
+  }
+  return 'USD';
+}
+
+/**
  * Normalize Kraken pair names to canonical ticker.
  * "XXBTZUSD" → "BTC", "XETHZEUR" → "ETH", "SOLUSD" → "SOL"
  */
