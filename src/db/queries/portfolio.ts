@@ -535,17 +535,17 @@ export async function getPortfolioPositionsData(
       .where(inArray(strategies.id, strategyIds));
 
     for (const row of strategyRows) {
-      // Compute status: strategies are fetched because they have open positions,
-      // so override stored status to 'active' unless it's draft/rejected/manually closed.
-      // This prevents stale DB status (e.g. after merges) from showing incorrectly.
-      const computedStatus = (row.status === 'draft' || row.status === 'rejected' || row.closedAt)
-        ? row.status
-        : 'active';
+      // Portfolio only shows active strategies. Strategies with open positions
+      // are considered active unless explicitly draft/rejected/closed.
+      const isActive = row.status !== 'draft' && row.status !== 'rejected'
+        && row.status !== 'complete' && !row.closedAt;
+      if (!isActive) continue;
+
       strategyMap.set(row.id, {
         id: row.id,
         strategyKey: row.strategyKey,
         label: row.label ?? row.strategyKey,
-        status: computedStatus,
+        status: 'active',
         strategyType: row.strategyType,
         direction: row.direction,
         assetThesisId: row.assetThesisId,
@@ -555,10 +555,16 @@ export async function getPortfolioPositionsData(
     }
   }
 
-  // Group positions by strategy
+  // Group positions by strategy.
+  // Positions linked to non-active strategies (filtered out above) are hidden entirely.
+  const excludedStrategyIds = new Set(
+    strategyIds.filter((id) => !strategyMap.has(id))
+  );
   const unlinkedPositions: PortfolioPositionRow[] = [];
   for (const pos of allPositions) {
-    if (pos.strategyId && strategyMap.has(pos.strategyId)) {
+    if (pos.strategyId && excludedStrategyIds.has(pos.strategyId)) {
+      continue; // belongs to a non-active strategy — hide from portfolio
+    } else if (pos.strategyId && strategyMap.has(pos.strategyId)) {
       strategyMap.get(pos.strategyId)!.positions.push(pos);
     } else {
       unlinkedPositions.push(pos);

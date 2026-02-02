@@ -33,6 +33,7 @@ import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 // REMOVED: computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 import { strategies } from '@/db/schema';
+import { recomputeStrategyStatus } from '@/lib/services/strategies';
 import { trackProcess, startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
 const SECTION_CODES = {
@@ -466,7 +467,7 @@ export async function POST(request: NextRequest) {
           // Get all strategies for this account (including newly created ones)
           // Exclude merged/rejected strategies - they're no longer active
           const accountStrategies = await db
-            .select({ id: strategies.id })
+            .select({ id: strategies.id, status: strategies.status })
             .from(strategies)
             .where(
               and(
@@ -479,6 +480,17 @@ export async function POST(request: NextRequest) {
           // Compute strategy metrics for all strategies
           for (const strategy of accountStrategies) {
             await computeStrategyMetricsForDateRange(accountId, strategy.id, minDate, maxDate);
+          }
+
+          // Recompute strategy statuses (detects active→complete transitions)
+          for (const strategy of accountStrategies) {
+            const newStatus = await recomputeStrategyStatus(strategy.id);
+            if (newStatus !== strategy.status) {
+              await db
+                .update(strategies)
+                .set({ status: newStatus, updatedAt: new Date() })
+                .where(eq(strategies.id, strategy.id));
+            }
           }
 
         // If strategies were created or positions were linked, also link trades and create trade blotter entries
@@ -557,7 +569,7 @@ export async function POST(request: NextRequest) {
         // Get all strategies for this account (including newly created ones)
         // Exclude merged/rejected strategies - they're no longer active
         const accountStrategies = await db
-          .select({ id: strategies.id })
+          .select({ id: strategies.id, status: strategies.status })
           .from(strategies)
           .where(
             and(
@@ -570,6 +582,17 @@ export async function POST(request: NextRequest) {
         // Compute strategy metrics for all strategies
         for (const strategy of accountStrategies) {
           await computeStrategyMetricsForDateRange(accountId, strategy.id, minDate, maxDate);
+        }
+
+        // Recompute strategy statuses (detects active→complete transitions)
+        for (const strategy of accountStrategies) {
+          const newStatus = await recomputeStrategyStatus(strategy.id);
+          if (newStatus !== strategy.status) {
+            await db
+              .update(strategies)
+              .set({ status: newStatus, updatedAt: new Date() })
+              .where(eq(strategies.id, strategy.id));
+          }
         }
 
         // Compute triage for each snapshot date
