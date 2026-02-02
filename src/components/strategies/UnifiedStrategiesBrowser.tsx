@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import type { StrategyListItem } from '@/db/queries/strategies';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, Link2, Layers } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, Layers } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency, formatPercent } from '@/lib/formatters';
-import { StandardLinkDialog } from '@/components/linking/StandardLinkDialog';
+import { StrategyQuickAction } from '@/components/strategies/StrategyQuickAction';
 
 interface UnifiedStrategiesBrowserProps {
   strategies: StrategyListItem[];
@@ -40,9 +40,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   // Sort states
   const [sortColumn, setSortColumn] = useState<SortColumn>('openedAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-
-  // Standard Link Dialog
-  const [linkingStrategy, setLinkingStrategy] = useState<{ id: string; label: string } | null>(null);
 
   // Get badge styling for account (generate consistent color based on account name)
   const getAccountBadge = (account: string | null) => {
@@ -445,14 +442,10 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
           {/* Actions */}
           <td className="px-4 py-3 text-right">
             <div className="flex items-center justify-end gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setLinkingStrategy({ id: strategy.id, label: strategy.label || strategy.strategyKey })}
-                className="h-7 w-7 p-0"
-              >
-                <Link2 className="h-4 w-4" />
-              </Button>
+              <StrategyQuickAction
+                strategy={strategy}
+                onActionComplete={() => router.refresh()}
+              />
               <Button
                 size="sm"
                 variant="ghost"
@@ -826,20 +819,6 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
         </div>
       </section>
 
-      {/* Standard Link Dialog */}
-      {linkingStrategy && (
-        <StandardLinkDialog
-          sourceType="strategy"
-          sourceId={linkingStrategy.id}
-          sourceTitle={linkingStrategy.label}
-          isOpen={!!linkingStrategy}
-          onClose={() => setLinkingStrategy(null)}
-          onSuccess={() => {
-            setLinkingStrategy(null);
-            router.refresh();
-          }}
-        />
-      )}
     </div>
   );
 }

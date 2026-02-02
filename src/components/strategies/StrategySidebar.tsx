@@ -11,7 +11,7 @@ import {
 import { EntitySidebar } from '@/components/layout/EntitySidebar';
 import { EntityStatusBadge } from '@/components/ui/badge';
 import { StrategyConfirmationDialog } from '@/components/strategies/StrategyConfirmationDialog';
-import { ChevronRight, Pencil, CheckCircle, CheckCircle2, RotateCcw } from 'lucide-react';
+import { ChevronRight, Pencil, CheckCircle } from 'lucide-react';
 
 interface LinkedMacroThesis {
   id: string;
@@ -58,67 +58,23 @@ export function StrategySidebar({
 }: StrategySidebarProps) {
   const router = useRouter();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [closingStrategy, setClosingStrategy] = useState(false);
-  const [confirmingClose, setConfirmingClose] = useState(false);
-  const [reopeningStrategy, setReopeningStrategy] = useState(false);
 
   // Check if strategy needs confirmation (draft status or missing required fields)
   const needsConfirmation = strategy.status === 'draft' || !strategy.strategyType || !linkedAssetThesis;
 
   const handleConfirmSuccess = () => {
     setShowConfirmDialog(false);
-    // Refresh the page to show updated data
     router.refresh();
   };
 
-  const handleCloseStrategy = async () => {
-    if (strategy.status === 'active' && !confirmingClose) {
-      setConfirmingClose(true);
-      return;
-    }
-    setClosingStrategy(true);
-    try {
-      const response = await fetch(`/api/strategies/${strategy.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(strategy.status === 'active' ? { forceClose: true } : { status: 'complete' }),
-      });
-
-      if (!response.ok) {
-        console.error('Failed to close strategy');
-        return;
-      }
-
-      setConfirmingClose(false);
-      router.refresh();
-    } catch (err) {
-      console.error('Failed to close strategy:', err);
-    } finally {
-      setClosingStrategy(false);
-    }
+  // Contextual hint text based on strategy state
+  const getContextualHint = (): string | null => {
+    if (strategy.status === 'draft') return 'Needs type, direction, and thesis link';
+    if (strategy.status === 'active' && !linkedAssetThesis) return 'No thesis linked';
+    if (strategy.status === 'complete' && strategy.closedAt) return 'Manually closed — can reopen';
+    return null;
   };
-
-  const handleReopenStrategy = async () => {
-    setReopeningStrategy(true);
-    try {
-      const response = await fetch(`/api/strategies/${strategy.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ forceClose: false }),
-      });
-
-      if (!response.ok) {
-        console.error('Failed to reopen strategy');
-        return;
-      }
-
-      router.refresh();
-    } catch (err) {
-      console.error('Failed to reopen strategy:', err);
-    } finally {
-      setReopeningStrategy(false);
-    }
-  };
+  const contextualHint = getContextualHint();
 
   // Build metadata items for Quick Stats
   const metadata = [
@@ -229,71 +185,33 @@ export function StrategySidebar({
         metadata={metadata}
         actions={
           <div className="space-y-2">
-            {/* Confirm Strategy button - prominent if strategy needs confirmation */}
-            {needsConfirmation && (
-              <button
-                onClick={() => setShowConfirmDialog(true)}
-                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Confirm Strategy
-              </button>
+            {/* Primary action: Confirm or Edit Strategy */}
+            <button
+              onClick={() => setShowConfirmDialog(true)}
+              className={
+                needsConfirmation
+                  ? 'inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors'
+                  : 'inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-foreground bg-card border rounded-md hover:bg-muted transition-colors'
+              }
+            >
+              {needsConfirmation ? (
+                <><CheckCircle className="h-4 w-4" /> Confirm Strategy</>
+              ) : (
+                <><Pencil className="h-4 w-4" /> Edit Strategy</>
+              )}
+            </button>
+            {/* Contextual hint */}
+            {contextualHint && (
+              <p className="text-xs text-muted-foreground px-1">{contextualHint}</p>
             )}
-            {/* Close Strategy button - for draft and active strategies */}
-            {(strategy.status === 'draft' || strategy.status === 'active') && (
-              <>
-                <button
-                  onClick={handleCloseStrategy}
-                  disabled={closingStrategy}
-                  className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-amber-700 dark:text-amber-400 bg-card border border-amber-300 dark:border-amber-700 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950 transition-colors disabled:opacity-50"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  {closingStrategy ? 'Closing...' : confirmingClose ? 'Confirm Close' : 'Close Strategy'}
-                </button>
-                {confirmingClose && (
-                  <div className="flex items-start gap-2 px-2">
-                    <p className="text-xs text-muted-foreground">
-                      Remaining positions will be treated as dust. This can be undone.
-                    </p>
-                    <button
-                      onClick={() => setConfirmingClose(false)}
-                      className="text-xs text-muted-foreground hover:text-foreground underline flex-shrink-0"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-            {/* Reopen Strategy button - for manually closed strategies */}
-            {strategy.status === 'complete' && strategy.closedAt && (
-              <button
-                onClick={handleReopenStrategy}
-                disabled={reopeningStrategy}
-                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-foreground bg-card border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
-              >
-                <RotateCcw className="h-4 w-4" />
-                {reopeningStrategy ? 'Reopening...' : 'Reopen Strategy'}
-              </button>
-            )}
-            {/* Edit button - for linking positions/trades */}
+            {/* Link Positions - separate operation */}
             <Link
               href={`/admin/strategies/${strategy.id}/link`}
               className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-foreground bg-card border rounded-md hover:bg-muted transition-colors"
             >
               <Pencil className="h-4 w-4" />
-              {needsConfirmation ? 'Link Positions' : 'Edit'}
+              Link Positions
             </Link>
-            {/* Edit Strategy button - for already confirmed strategies */}
-            {!needsConfirmation && (
-              <button
-                onClick={() => setShowConfirmDialog(true)}
-                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-muted-foreground bg-muted border rounded-md hover:bg-accent transition-colors"
-              >
-                <Pencil className="h-4 w-4" />
-                Edit Strategy
-              </button>
-            )}
           </div>
         }
         additionalSections={hierarchySection}
@@ -311,6 +229,7 @@ export function StrategySidebar({
           strategyType: strategy.strategyType,
           direction: strategy.direction,
           assetThesisId: strategy.assetThesisId ?? linkedAssetThesis?.id,
+          closedAt: strategy.closedAt,
         }}
         isOpen={showConfirmDialog}
         onClose={() => setShowConfirmDialog(false)}

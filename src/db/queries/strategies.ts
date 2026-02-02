@@ -29,6 +29,7 @@ export interface StrategyListItem {
   label: string | null;
   status: string;
   openedAt: Date | null;
+  closedAt: Date | null;
   accountLabel: string | null;
   accountBrokerId: string | null;
   latestAbsNotional: number | null;
@@ -297,6 +298,7 @@ export async function getStrategiesForList(
         label: row.label ?? row.strategyKey,
         status: computedStatus,
         openedAt: row.openedAt,
+        closedAt: row.closedAt,
         accountLabel: row.accountLabel,
         accountBrokerId: row.accountBrokerId,
         latestAbsNotional: metrics?.totalAbsNotional ?? null,
