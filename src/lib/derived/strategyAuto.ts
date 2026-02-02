@@ -235,7 +235,8 @@ async function findOrCreateStrategyFromPosition(
       and(
         eq(strategies.accountId, pos.accountId),
         eq(strategies.strategyKey, derivedKey),
-        ne(strategies.status, 'rejected')
+        ne(strategies.status, 'rejected'),
+        ne(strategies.status, 'merged')
       )
     )
     .orderBy(
@@ -423,7 +424,8 @@ export async function autoLinkPositionsToStrategies(
           .where(
             and(
               eq(strategies.id, existingPosition[0].strategyId),
-              ne(strategies.status, 'rejected')
+              ne(strategies.status, 'rejected'),
+              ne(strategies.status, 'merged')
             )
           )
           .limit(1);
@@ -437,30 +439,65 @@ export async function autoLinkPositionsToStrategies(
     // FALLBACK: Only for brand new positions (no conid match in history)
     // Before creating a new strategy, try to find existing strategies by:
     // 1. Matching by derived strategy key (e.g., "IBIT 260918")
-    // 2. Matching by underlying ticker + expiry (for complete strategies being reopened)
+    // 2. Cross-account merge target detection (for merged strategies)
+    // 3. Matching by underlying ticker + expiry (for complete strategies being reopened)
     if (!strategyId) {
       // First, try to find by derived key (this should match existing strategies)
       const derivedKey = deriveStrategyKeyFromPosition(pos);
       if (derivedKey) {
-        // Look for existing strategies with this key that have positions
-        // This will catch existing strategies that have other positions
+        // Look for existing strategies with this key, preferring active/draft over complete
         const existingByKey = await db
           .select({
             id: strategies.id,
             strategyKey: strategies.strategyKey,
+            status: strategies.status,
           })
           .from(strategies)
           .where(
             and(
               eq(strategies.accountId, pos.accountId),
               eq(strategies.strategyKey, derivedKey),
-              ne(strategies.status, 'rejected')
+              ne(strategies.status, 'rejected'),
+              ne(strategies.status, 'merged')
             )
+          )
+          .orderBy(
+            sql`CASE WHEN ${strategies.status} = 'active' THEN 0 WHEN ${strategies.status} = 'draft' THEN 1 ELSE 2 END`
           )
           .limit(1);
 
         if (existingByKey.length > 0) {
-          strategyId = existingByKey[0].id;
+          const matched = existingByKey[0];
+
+          // If the best account-matched strategy is complete, check if there's a
+          // cross-account merge target: another active/draft strategy with the same key
+          // that already has positions from this account (indicating a prior merge).
+          if (matched.status === 'complete' || matched.status === 'merged') {
+            const mergeTarget = await db
+              .selectDistinct({
+                strategyId: positions.strategyId,
+              })
+              .from(positions)
+              .innerJoin(strategies, eq(positions.strategyId, strategies.id))
+              .where(
+                and(
+                  eq(positions.accountId, pos.accountId),
+                  eq(strategies.strategyKey, derivedKey),
+                  ne(strategies.id, matched.id),
+                  ne(strategies.status, 'rejected'),
+                  ne(strategies.status, 'complete'),
+                  ne(strategies.status, 'merged'),
+                  sql`${positions.quantity} != 0`
+                )
+              )
+              .limit(1);
+
+            strategyId = mergeTarget.length > 0 && mergeTarget[0].strategyId
+              ? mergeTarget[0].strategyId
+              : matched.id;
+          } else {
+            strategyId = matched.id;
+          }
         } else if (pos.underlyingId && pos.expiry && pos.assetClass === 'OPT') {
           // If no exact key match, try to find strategies that have positions with same underlying + expiry
           // This catches existing strategies where the key might have been edited
@@ -489,7 +526,8 @@ export async function autoLinkPositionsToStrategies(
               .where(
                 and(
                   eq(strategies.id, strategiesWithSameUnderlying[0].strategyId),
-                  ne(strategies.status, 'rejected')
+                  ne(strategies.status, 'rejected'),
+                  ne(strategies.status, 'merged')
                 )
               )
               .limit(1);

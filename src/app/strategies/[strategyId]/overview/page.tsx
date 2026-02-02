@@ -83,6 +83,7 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
             templateLabel: strategy.templateLabel,
             underlyingTicker: strategy.underlyingTicker,
             openedAt: strategy.openedAt,
+            closedAt: strategy.closedAt,
             status: strategy.status,
             direction: strategy.direction,
             assetThesisId: strategy.assetThesisId,

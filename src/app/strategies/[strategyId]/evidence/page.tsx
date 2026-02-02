@@ -83,6 +83,7 @@ export default async function StrategyEvidencePage({ params }: EvidencePageProps
             templateLabel: strategy.templateLabel,
             underlyingTicker: strategy.underlyingTicker,
             openedAt: strategy.openedAt,
+            closedAt: strategy.closedAt,
             status: strategy.status,
           }}
           openPositionsCount={openPositionCount}

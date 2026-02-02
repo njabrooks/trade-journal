@@ -22,6 +22,7 @@ const badgeVariants = cva(
         active: "border-transparent bg-blue-100 text-blue-700",
         complete: "border-transparent bg-emerald-100 text-emerald-700",
         rejected: "border-transparent bg-slate-100 text-slate-500",
+        merged: "border-transparent bg-orange-100 text-orange-600",
       },
     },
     defaultVariants: {
@@ -49,7 +50,7 @@ function Badge({
 }
 
 // Entity status type for type-safe status badges
-type EntityStatus = 'draft' | 'active' | 'complete' | 'rejected';
+type EntityStatus = 'draft' | 'active' | 'complete' | 'rejected' | 'merged';
 
 // Helper component for entity status badges
 function EntityStatusBadge({
@@ -58,7 +59,7 @@ function EntityStatusBadge({
   ...props
 }: Omit<React.ComponentProps<"span">, 'children'> & { status: EntityStatus | string }) {
   // Map status to variant, defaulting to secondary for unknown statuses
-  const variant = ['draft', 'active', 'complete', 'rejected'].includes(status)
+  const variant = ['draft', 'active', 'complete', 'rejected', 'merged'].includes(status)
     ? (status as EntityStatus)
     : 'secondary';
 

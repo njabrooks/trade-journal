@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { strategies, strategyTemplates, underlyings } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
+import { recomputeStrategyStatus } from '@/lib/services/strategies';
 
 export async function PATCH(
   request: NextRequest,
@@ -10,6 +12,69 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
+
+    // Handle force close / reopen flow
+    if (body.forceClose !== undefined) {
+      // Fetch strategy for journal logging
+      const [strategy] = await db
+        .select({ id: strategies.id, autoDerivedLabel: strategies.autoDerivedLabel, status: strategies.status })
+        .from(strategies)
+        .where(eq(strategies.id, id))
+        .limit(1);
+
+      if (!strategy) {
+        return NextResponse.json({ error: 'Strategy not found' }, { status: 404 });
+      }
+
+      if (body.forceClose) {
+        // Force close: set status to complete and record closedAt
+        const now = new Date();
+        const [updated] = await db
+          .update(strategies)
+          .set({ status: 'complete', closedAt: now, updatedAt: now })
+          .where(eq(strategies.id, id))
+          .returning();
+
+        await logToJournal({
+          objectType: 'strategy',
+          objectId: id,
+          objectTitle: strategy.autoDerivedLabel ?? id,
+          actionType: 'strategy_force_closed',
+          actionDescription: `Strategy manually closed (dust positions remain)`,
+          previousState: { status: strategy.status },
+          newState: { status: 'complete', closedAt: now.toISOString() },
+          source: 'user',
+        });
+
+        return NextResponse.json({ success: true, strategy: updated });
+      } else {
+        // Reopen: clear closedAt and recompute status from positions
+        await db
+          .update(strategies)
+          .set({ closedAt: null, updatedAt: new Date() })
+          .where(eq(strategies.id, id));
+
+        const newStatus = await recomputeStrategyStatus(id);
+        const [updated] = await db
+          .update(strategies)
+          .set({ status: newStatus, updatedAt: new Date() })
+          .where(eq(strategies.id, id))
+          .returning();
+
+        await logToJournal({
+          objectType: 'strategy',
+          objectId: id,
+          objectTitle: strategy.autoDerivedLabel ?? id,
+          actionType: 'strategy_reopened',
+          actionDescription: `Strategy reopened (status recomputed to ${newStatus})`,
+          previousState: { status: strategy.status },
+          newState: { status: newStatus, closedAt: null },
+          source: 'user',
+        });
+
+        return NextResponse.json({ success: true, strategy: updated });
+      }
+    }
 
     // Extract fields that can be updated on the strategies table
     // Note: label/description/rationale don't exist on strategies - use /api/strategies PATCH for full updates

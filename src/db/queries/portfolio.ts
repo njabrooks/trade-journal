@@ -510,6 +510,7 @@ export async function getPortfolioPositionsData(
         strategyKey: strategies.strategyKey,
         label: strategies.autoDerivedLabel,
         status: strategies.status,
+        closedAt: strategies.closedAt,
         strategyType: strategies.strategyType,
         direction: strategies.direction,
         assetThesisId: strategies.assetThesisId,
@@ -520,11 +521,17 @@ export async function getPortfolioPositionsData(
       .where(inArray(strategies.id, strategyIds));
 
     for (const row of strategyRows) {
+      // Compute status: strategies are fetched because they have open positions,
+      // so override stored status to 'active' unless it's draft/rejected/manually closed.
+      // This prevents stale DB status (e.g. after merges) from showing incorrectly.
+      const computedStatus = (row.status === 'draft' || row.status === 'rejected' || row.closedAt)
+        ? row.status
+        : 'active';
       strategyMap.set(row.id, {
         id: row.id,
         strategyKey: row.strategyKey,
         label: row.label ?? row.strategyKey,
-        status: row.status,
+        status: computedStatus,
         strategyType: row.strategyType,
         direction: row.direction,
         assetThesisId: row.assetThesisId,

@@ -70,6 +70,7 @@ export async function getStrategiesForList(
       label: strategies.autoDerivedLabel,
       status: strategies.status,
       openedAt: strategies.openedAt,
+      closedAt: strategies.closedAt,
       accountId: strategies.accountId,
       accountLabel: accounts.label,
       accountBrokerId: accounts.brokerAccountId,
@@ -269,16 +270,20 @@ export async function getStrategiesForList(
   }
 
   // Map rows with computed status and optionally filter
-  // Standard status values: draft, active, complete, rejected
+  // Standard status values: draft, active, complete, rejected, merged
   const strategiesWithStatus = rows
     .map((row) => {
-      // Respect database status for special statuses (draft, rejected)
-      // Only compute status for active/complete strategies based on positions
+      // Status computation:
+      // - draft, rejected, merged, manually closed (closedAt) → trust DB
+      // - active → check positions; if none remain, downgrade to complete
+      // - complete → trust DB (don't override to active for dust positions)
       const dbStatus = row.status;
       const computedStatus =
-        dbStatus === "draft" || dbStatus === "rejected"
+        dbStatus === "draft" || dbStatus === "rejected" || dbStatus === "merged" || row.closedAt
           ? dbStatus
-          : (statusByStrategy.get(row.id) ?? "complete");
+          : dbStatus === "active"
+            ? (statusByStrategy.get(row.id) ?? "complete")
+            : dbStatus;
       const metrics = metricsByStrategy.get(row.id);
       // Get position-derived account labels (already sorted by desc abs notional)
       const posAccountEntries = positionAccountsByStrategy.get(row.id) ?? [];

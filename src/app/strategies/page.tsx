@@ -9,19 +9,9 @@ export const metadata: Metadata = {
   title: "Strategies",
 };
 
-interface StrategiesPageProps {
-  searchParams?: Promise<{
-    includeClosed?: string;
-  }>;
-}
-
-export default async function StrategiesPage({ searchParams }: StrategiesPageProps) {
-  const params = await searchParams;
-
-  // Fetch only open strategies by default (reduces egress from ~1.5MB to ~300KB)
-  // Users can add ?includeClosed=true to URL to see all strategies
-  const includeClosed = params?.includeClosed === 'true';
-  const allStrategies = await getStrategiesForList(200, { includeClosedStrategies: includeClosed });
+export default async function StrategiesPage() {
+  // Fetch all strategies — client-side quick filters handle status filtering
+  const allStrategies = await getStrategiesForList(200, { includeClosedStrategies: true });
 
   // Calculate totals for active strategies only
   const openStrategies = allStrategies.filter((s) => s.status === 'active');
