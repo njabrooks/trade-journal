@@ -24,10 +24,10 @@ function sleep(ms: number): Promise<void> {
 }
 
 function getConfig() {
-  const accessKey = process.env.COINBASE_PRIME_ACCESS_KEY;
-  const signingKey = process.env.COINBASE_PRIME_SIGNING_KEY;
-  const passphrase = process.env.COINBASE_PRIME_PASSPHRASE;
-  const portfolioId = process.env.COINBASE_PRIME_PORTFOLIO_ID;
+  const accessKey = process.env.COINBASE_PRIME_ACCESS_KEY?.trim();
+  const signingKey = process.env.COINBASE_PRIME_SIGNING_KEY?.trim();
+  const passphrase = process.env.COINBASE_PRIME_PASSPHRASE?.trim();
+  const portfolioId = process.env.COINBASE_PRIME_PORTFOLIO_ID?.trim();
 
   if (!accessKey || !signingKey || !passphrase || !portfolioId) {
     throw new Error(
