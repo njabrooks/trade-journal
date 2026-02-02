@@ -3,10 +3,76 @@ import {
   positions,
   navSnapshots,
   portfolioSnapshots,
-  underlyings,
   NewPortfolioSnapshot,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, gte, lte } from 'drizzle-orm';
+
+interface NotionalSums {
+  totalAbsNotional: string | null;
+  totalUnrealizedPnl: string | null;
+  absStockNotional: string | null;
+  absOptionNotional: string | null;
+  absCryptoSpotNotional: string | null;
+  absPerpNotional: string | null;
+}
+
+/**
+ * Computes notional sums by asset class from a set of positions.
+ * Splits into 4 segments: STK, OPT, CRYPTO, PERP.
+ */
+function computeNotionalSums(
+  positionRows: { absNotional: string | null; spot: string | null; multiplier: string | null; quantity: string | null; unrealizedPnl: string | null; assetClass: string | null }[]
+): NotionalSums {
+  let totalNotionalSum = 0;
+  let totalPnlSum = 0;
+  let stockNotionalSum = 0;
+  let optionNotionalSum = 0;
+  let cryptoSpotNotionalSum = 0;
+  let perpNotionalSum = 0;
+
+  for (const pos of positionRows) {
+    // Policy: Absolute notional is always positive
+    let notional = 0;
+    if (pos.absNotional) {
+      const val = parseFloat(pos.absNotional);
+      if (!isNaN(val)) {
+        notional = Math.abs(val);
+      }
+    }
+    // Fallback: compute from quantity * spot * multiplier if absNotional is missing
+    if (notional === 0 && pos.spot && pos.multiplier && pos.quantity) {
+      const qty = parseFloat(pos.quantity);
+      const spot = parseFloat(pos.spot);
+      const mult = parseFloat(pos.multiplier);
+      if (!isNaN(qty) && !isNaN(spot) && !isNaN(mult)) {
+        notional = Math.abs(qty * spot * mult);
+      }
+    }
+    const pnl = pos.unrealizedPnl ? parseFloat(pos.unrealizedPnl) : 0;
+
+    totalNotionalSum += notional;
+    totalPnlSum += pnl;
+
+    if (pos.assetClass === 'STK') {
+      stockNotionalSum += notional;
+    } else if (pos.assetClass === 'OPT') {
+      optionNotionalSum += notional;
+    } else if (pos.assetClass === 'CRYPTO') {
+      cryptoSpotNotionalSum += notional;
+    } else if (pos.assetClass === 'PERP') {
+      perpNotionalSum += notional;
+    }
+  }
+
+  return {
+    totalAbsNotional: totalNotionalSum > 0 ? totalNotionalSum.toString() : null,
+    totalUnrealizedPnl: totalPnlSum !== 0 ? totalPnlSum.toString() : null,
+    absStockNotional: stockNotionalSum > 0 ? stockNotionalSum.toString() : null,
+    absOptionNotional: optionNotionalSum > 0 ? optionNotionalSum.toString() : null,
+    absCryptoSpotNotional: cryptoSpotNotionalSum > 0 ? cryptoSpotNotionalSum.toString() : null,
+    absPerpNotional: perpNotionalSum > 0 ? perpNotionalSum.toString() : null,
+  };
+}
 
 export interface PortfolioSnapshotInput {
   accountId: string;
@@ -44,55 +110,12 @@ async function computeAccountLevelSnapshot(
   const navAtSnapshot = navResult[0]?.total ?? null;
 
   // Compute aggregates
-  let totalAbsNotional: string | null = null;
-  let totalUnrealizedPnl: string | null = null;
-  let absStockNotional: string | null = null;
-  let absOptionNotional: string | null = null;
-
-  let totalNotionalSum = 0;
-  let totalPnlSum = 0;
-  let stockNotionalSum = 0;
-  let optionNotionalSum = 0;
-
-  accountPositions.forEach((pos) => {
-    // Policy: Absolute notional is always positive - take absolute value of each position's notional
-    let notional = 0;
-    if (pos.absNotional) {
-      const val = parseFloat(pos.absNotional);
-      if (!isNaN(val)) {
-        notional = Math.abs(val);
-      }
-    }
-    // Fallback: compute from quantity * spot * multiplier if absNotional is missing
-    if (notional === 0 && pos.spot && pos.multiplier && pos.quantity) {
-      const qty = parseFloat(pos.quantity);
-      const spot = parseFloat(pos.spot);
-      const mult = parseFloat(pos.multiplier);
-      if (!isNaN(qty) && !isNaN(spot) && !isNaN(mult)) {
-        notional = Math.abs(qty * spot * mult);
-      }
-    }
-    const pnl = pos.unrealizedPnl ? parseFloat(pos.unrealizedPnl) : 0;
-
-    totalNotionalSum += notional;
-    totalPnlSum += pnl;
-
-    if (pos.assetClass === 'STK' || pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
-      stockNotionalSum += notional;
-    } else if (pos.assetClass === 'OPT') {
-      optionNotionalSum += notional;
-    }
-  });
-
-  totalAbsNotional = totalNotionalSum > 0 ? totalNotionalSum.toString() : null;
-  totalUnrealizedPnl = totalPnlSum !== 0 ? totalPnlSum.toString() : null;
-  absStockNotional = stockNotionalSum > 0 ? stockNotionalSum.toString() : null;
-  absOptionNotional = optionNotionalSum > 0 ? optionNotionalSum.toString() : null;
+  const sums = computeNotionalSums(accountPositions);
 
   // Compute pct_nav_abs_notional
   let pctNavAbsNotional: string | null = null;
-  if (navAtSnapshot && parseFloat(navAtSnapshot) > 0 && totalAbsNotional) {
-    const pct = (parseFloat(totalAbsNotional) / parseFloat(navAtSnapshot)) * 100;
+  if (navAtSnapshot && parseFloat(navAtSnapshot) > 0 && sums.totalAbsNotional) {
+    const pct = (parseFloat(sums.totalAbsNotional) / parseFloat(navAtSnapshot)) * 100;
     pctNavAbsNotional = pct.toString();
   }
 
@@ -101,12 +124,9 @@ async function computeAccountLevelSnapshot(
     snapshotDate,
     level: 'account',
     underlyingId: null,
-    totalAbsNotional,
-    totalUnrealizedPnl,
+    ...sums,
     navAtSnapshot,
     pctNavAbsNotional,
-    absStockNotional,
-    absOptionNotional,
   };
 }
 
@@ -141,55 +161,12 @@ async function computeUnderlyingLevelSnapshot(
   const navAtSnapshot = navResult[0]?.total ?? null;
 
   // Compute aggregates
-  let totalAbsNotional: string | null = null;
-  let totalUnrealizedPnl: string | null = null;
-  let absStockNotional: string | null = null;
-  let absOptionNotional: string | null = null;
-
-  let totalNotionalSum = 0;
-  let totalPnlSum = 0;
-  let stockNotionalSum = 0;
-  let optionNotionalSum = 0;
-
-  underlyingPositions.forEach((pos) => {
-    // Policy: Absolute notional is always positive - take absolute value of each position's notional
-    let notional = 0;
-    if (pos.absNotional) {
-      const val = parseFloat(pos.absNotional);
-      if (!isNaN(val)) {
-        notional = Math.abs(val);
-      }
-    }
-    // Fallback: compute from quantity * spot * multiplier if absNotional is missing
-    if (notional === 0 && pos.spot && pos.multiplier && pos.quantity) {
-      const qty = parseFloat(pos.quantity);
-      const spot = parseFloat(pos.spot);
-      const mult = parseFloat(pos.multiplier);
-      if (!isNaN(qty) && !isNaN(spot) && !isNaN(mult)) {
-        notional = Math.abs(qty * spot * mult);
-      }
-    }
-    const pnl = pos.unrealizedPnl ? parseFloat(pos.unrealizedPnl) : 0;
-
-    totalNotionalSum += notional;
-    totalPnlSum += pnl;
-
-    if (pos.assetClass === 'STK' || pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
-      stockNotionalSum += notional;
-    } else if (pos.assetClass === 'OPT') {
-      optionNotionalSum += notional;
-    }
-  });
-
-  totalAbsNotional = totalNotionalSum > 0 ? totalNotionalSum.toString() : null;
-  totalUnrealizedPnl = totalPnlSum !== 0 ? totalPnlSum.toString() : null;
-  absStockNotional = stockNotionalSum > 0 ? stockNotionalSum.toString() : null;
-  absOptionNotional = optionNotionalSum > 0 ? optionNotionalSum.toString() : null;
+  const sums = computeNotionalSums(underlyingPositions);
 
   // Compute pct_nav_abs_notional
   let pctNavAbsNotional: string | null = null;
-  if (navAtSnapshot && parseFloat(navAtSnapshot) > 0 && totalAbsNotional) {
-    const pct = (parseFloat(totalAbsNotional) / parseFloat(navAtSnapshot)) * 100;
+  if (navAtSnapshot && parseFloat(navAtSnapshot) > 0 && sums.totalAbsNotional) {
+    const pct = (parseFloat(sums.totalAbsNotional) / parseFloat(navAtSnapshot)) * 100;
     pctNavAbsNotional = pct.toString();
   }
 
@@ -198,12 +175,9 @@ async function computeUnderlyingLevelSnapshot(
     snapshotDate,
     level: 'underlying',
     underlyingId,
-    totalAbsNotional,
-    totalUnrealizedPnl,
+    ...sums,
     navAtSnapshot,
     pctNavAbsNotional,
-    absStockNotional,
-    absOptionNotional,
   };
 }
 

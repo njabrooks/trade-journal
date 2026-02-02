@@ -9,7 +9,6 @@ import { PortfolioFilterBar, type AssetClassFilter } from "@/components/portfoli
 import { StrategyPositionsTable } from "@/components/portfolio/StrategyPositionsTable";
 import { UnlinkedPositionsTable } from "@/components/portfolio/UnlinkedPositionsTable";
 import { PortfolioCharts } from "@/components/portfolio/PortfolioCharts";
-import { calculateCostBasis } from "@/lib/formatters";
 import { formatDateShort } from "@/lib/formatters";
 import type { Account } from "@/db/schema";
 import type { PortfolioDashboardData, PortfolioPositionsData, PortfolioPositionRow, PortfolioStrategyRow } from "@/db/queries/portfolio";
@@ -178,7 +177,7 @@ function PortfolioDashboardContent() {
 
   // Compute totals from all positions
   const totals = useMemo(() => {
-    if (!positionsData) return { marketValue: 0, costBasis: 0, unrealizedPnl: 0, positionCount: 0 };
+    if (!positionsData) return { marketValue: 0, positionCount: 0, underlyingCount: 0 };
 
     const allPositions = [
       ...positionsData.strategies.flatMap((s) => s.positions),
@@ -186,17 +185,39 @@ function PortfolioDashboardContent() {
     ];
 
     let marketValue = 0;
-    let costBasis = 0;
-    let unrealizedPnl = 0;
+    const underlyingIds = new Set<string>();
 
     for (const pos of allPositions) {
       marketValue += Math.abs(pos.absNotional ?? 0);
-      const cb = calculateCostBasis(pos);
-      if (cb != null) costBasis += cb;
-      unrealizedPnl += pos.unrealizedPnl ?? 0;
+      if (pos.underlyingId) underlyingIds.add(pos.underlyingId);
     }
 
-    return { marketValue, costBasis, unrealizedPnl, positionCount: allPositions.length };
+    return { marketValue, positionCount: allPositions.length, underlyingCount: underlyingIds.size };
+  }, [positionsData]);
+
+  // Compute exposure breakdown by asset class from positions
+  const exposureBreakdown = useMemo(() => {
+    if (!positionsData) return { equities: 0, options: 0, cryptoSpot: 0, perpetuals: 0 };
+
+    const allPositions = [
+      ...positionsData.strategies.flatMap((s) => s.positions),
+      ...positionsData.unlinkedPositions,
+    ];
+
+    let equities = 0;
+    let options = 0;
+    let cryptoSpot = 0;
+    let perpetuals = 0;
+
+    for (const pos of allPositions) {
+      const notional = Math.abs(pos.absNotional ?? 0);
+      if (pos.assetClass === "STK") equities += notional;
+      else if (pos.assetClass === "OPT") options += notional;
+      else if (pos.assetClass === "CRYPTO") cryptoSpot += notional;
+      else if (pos.assetClass === "PERP") perpetuals += notional;
+    }
+
+    return { equities, options, cryptoSpot, perpetuals };
   }, [positionsData]);
 
   // Filtered counts
@@ -274,15 +295,19 @@ function PortfolioDashboardContent() {
 
       {/* Metrics */}
       <PortfolioMetricsRow
-        nav={positionsData?.nav ?? null}
         totalMarketValue={totals.marketValue}
-        totalCostBasis={totals.costBasis}
-        totalUnrealizedPnl={totals.unrealizedPnl}
+        positionCount={totals.positionCount}
+        underlyingCount={totals.underlyingCount}
         snapshotDate={positionsData?.snapshotDate ?? null}
       />
 
       {/* Charts */}
-      {dashboardData && <PortfolioCharts dashboardData={dashboardData} />}
+      {dashboardData && (
+        <PortfolioCharts
+          dashboardData={dashboardData}
+          exposureBreakdown={exposureBreakdown}
+        />
+      )}
 
       {/* Filter bar */}
       {positionsData && (
@@ -300,13 +325,16 @@ function PortfolioDashboardContent() {
       {filteredData.strategies.length > 0 && (
         <StrategyPositionsTable
           strategies={filteredData.strategies}
-          nav={positionsData?.nav ?? null}
+          totalMarketValue={totals.marketValue}
         />
       )}
 
       {/* Unlinked positions */}
       {filteredData.unlinkedPositions.length > 0 && (
-        <UnlinkedPositionsTable positions={filteredData.unlinkedPositions} />
+        <UnlinkedPositionsTable
+          positions={filteredData.unlinkedPositions}
+          totalMarketValue={totals.marketValue}
+        />
       )}
 
       {/* Empty state */}

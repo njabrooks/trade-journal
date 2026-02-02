@@ -769,6 +769,8 @@ export const portfolioSnapshots = pgTable(
     pctNavAbsNotional: numeric('pct_nav_abs_notional'),
     absStockNotional: numeric('abs_stock_notional'),
     absOptionNotional: numeric('abs_option_notional'),
+    absCryptoSpotNotional: numeric('abs_crypto_spot_notional'),
+    absPerpNotional: numeric('abs_perp_notional'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
