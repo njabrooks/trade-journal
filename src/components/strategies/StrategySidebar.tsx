@@ -11,7 +11,7 @@ import {
 import { EntitySidebar } from '@/components/layout/EntitySidebar';
 import { EntityStatusBadge } from '@/components/ui/badge';
 import { StrategyConfirmationDialog } from '@/components/strategies/StrategyConfirmationDialog';
-import { ChevronRight, Pencil, CheckCircle, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, Pencil, CheckCircle, CheckCircle2, RotateCcw } from 'lucide-react';
 
 interface LinkedMacroThesis {
   id: string;
@@ -33,6 +33,7 @@ interface StrategySidebarProps {
     templateLabel: string | null;
     underlyingTicker: string | null;
     openedAt: Date | null;
+    closedAt: Date | null;
     status: string;
     direction?: string | null;
     assetThesisId?: string | null;
@@ -58,6 +59,8 @@ export function StrategySidebar({
   const router = useRouter();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [closingStrategy, setClosingStrategy] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
+  const [reopeningStrategy, setReopeningStrategy] = useState(false);
 
   // Check if strategy needs confirmation (draft status or missing required fields)
   const needsConfirmation = strategy.status === 'draft' || !strategy.strategyType || !linkedAssetThesis;
@@ -69,12 +72,16 @@ export function StrategySidebar({
   };
 
   const handleCloseStrategy = async () => {
+    if (strategy.status === 'active' && !confirmingClose) {
+      setConfirmingClose(true);
+      return;
+    }
     setClosingStrategy(true);
     try {
       const response = await fetch(`/api/strategies/${strategy.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'complete' }),
+        body: JSON.stringify(strategy.status === 'active' ? { forceClose: true } : { status: 'complete' }),
       });
 
       if (!response.ok) {
@@ -82,11 +89,34 @@ export function StrategySidebar({
         return;
       }
 
+      setConfirmingClose(false);
       router.refresh();
     } catch (err) {
       console.error('Failed to close strategy:', err);
     } finally {
       setClosingStrategy(false);
+    }
+  };
+
+  const handleReopenStrategy = async () => {
+    setReopeningStrategy(true);
+    try {
+      const response = await fetch(`/api/strategies/${strategy.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceClose: false }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to reopen strategy');
+        return;
+      }
+
+      router.refresh();
+    } catch (err) {
+      console.error('Failed to reopen strategy:', err);
+    } finally {
+      setReopeningStrategy(false);
     }
   };
 
@@ -209,15 +239,41 @@ export function StrategySidebar({
                 Confirm Strategy
               </button>
             )}
-            {/* Close Strategy button - for draft strategies that can be completed without confirmation */}
-            {strategy.status === 'draft' && (
+            {/* Close Strategy button - for draft and active strategies */}
+            {(strategy.status === 'draft' || strategy.status === 'active') && (
+              <>
+                <button
+                  onClick={handleCloseStrategy}
+                  disabled={closingStrategy}
+                  className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-amber-700 dark:text-amber-400 bg-card border border-amber-300 dark:border-amber-700 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950 transition-colors disabled:opacity-50"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {closingStrategy ? 'Closing...' : confirmingClose ? 'Confirm Close' : 'Close Strategy'}
+                </button>
+                {confirmingClose && (
+                  <div className="flex items-start gap-2 px-2">
+                    <p className="text-xs text-muted-foreground">
+                      Remaining positions will be treated as dust. This can be undone.
+                    </p>
+                    <button
+                      onClick={() => setConfirmingClose(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground underline flex-shrink-0"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            {/* Reopen Strategy button - for manually closed strategies */}
+            {strategy.status === 'complete' && strategy.closedAt && (
               <button
-                onClick={handleCloseStrategy}
-                disabled={closingStrategy}
-                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-amber-700 dark:text-amber-400 bg-card border border-amber-300 dark:border-amber-700 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950 transition-colors disabled:opacity-50"
+                onClick={handleReopenStrategy}
+                disabled={reopeningStrategy}
+                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-foreground bg-card border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
               >
-                <CheckCircle2 className="h-4 w-4" />
-                {closingStrategy ? 'Closing...' : 'Close Strategy'}
+                <RotateCcw className="h-4 w-4" />
+                {reopeningStrategy ? 'Reopening...' : 'Reopen Strategy'}
               </button>
             )}
             {/* Edit button - for linking positions/trades */}

@@ -642,14 +642,15 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
         await computePortfolioSnapshotsForDateRange(recomputeAccountId, minDate, maxDate);
 
         // Get all strategies for this account (including newly created ones)
-        // Exclude merged strategies - they're no longer active
+        // Exclude merged/rejected strategies - they're no longer active
         const accountStrategies = await db
           .select({ id: strategies.id })
           .from(strategies)
           .where(
             and(
               eq(strategies.accountId, recomputeAccountId),
-              ne(strategies.status, 'rejected')
+              ne(strategies.status, 'rejected'),
+              ne(strategies.status, 'merged')
             )
           );
 
@@ -1031,7 +1032,8 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
             .where(
               and(
                 eq(strategies.accountId, accountId),
-                ne(strategies.status, 'rejected')
+                ne(strategies.status, 'rejected'),
+                ne(strategies.status, 'merged')
               )
             );
 

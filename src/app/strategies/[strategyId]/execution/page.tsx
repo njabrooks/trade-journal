@@ -70,6 +70,7 @@ export default async function StrategyExecutionPage({ params }: ExecutionPagePro
             templateLabel: strategy.templateLabel,
             underlyingTicker: strategy.underlyingTicker,
             openedAt: strategy.openedAt,
+            closedAt: strategy.closedAt,
             status: strategy.status,
             direction: strategy.direction,
             assetThesisId: strategy.assetThesisId,
