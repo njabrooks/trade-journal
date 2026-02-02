@@ -6,6 +6,7 @@ import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib
 // REMOVED: blotter imports - blotter system deprecated, replaced by journal
 import { db } from '@/db';
 import { positions, ingestionRuns } from '@/db/schema';
+import { recomputeStrategyStatus } from '@/lib/services/strategies';
 import { and, eq, ne, isNotNull, gte, lte, sql, desc, inArray, gt } from 'drizzle-orm';
 import { trackProcess } from '@/lib/services/processTracking';
 
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
       try {
         const { strategies } = await import('@/db/schema');
         const accountStrategies = await db
-          .select({ id: strategies.id })
+          .select({ id: strategies.id, status: strategies.status })
           .from(strategies)
           .where(eq(strategies.accountId, accountId));
 
@@ -169,6 +170,22 @@ export async function POST(request: NextRequest) {
           strategyMetricsCount += count;
         }
         results.strategyMetrics = { count: strategyMetricsCount };
+
+        // Recompute strategy statuses (detects active→complete transitions)
+        let statusUpdates = 0;
+        for (const strategy of accountStrategies) {
+          const newStatus = await recomputeStrategyStatus(strategy.id);
+          if (newStatus !== strategy.status) {
+            await db
+              .update(strategies)
+              .set({ status: newStatus, updatedAt: new Date() })
+              .where(eq(strategies.id, strategy.id));
+            statusUpdates++;
+          }
+        }
+        if (statusUpdates > 0) {
+          (results as any).strategyStatusUpdates = statusUpdates;
+        }
       } catch (error) {
         results.strategyMetrics = { error: error instanceof Error ? error.message : 'Failed' };
       }
@@ -257,7 +274,7 @@ export async function POST(request: NextRequest) {
         const { strategies } = await import('@/db/schema');
         // Exclude merged/rejected strategies - they're no longer active
         const accountStrategies = await db
-          .select({ id: strategies.id })
+          .select({ id: strategies.id, status: strategies.status })
           .from(strategies)
           .where(
             and(
@@ -278,6 +295,22 @@ export async function POST(request: NextRequest) {
           totalCount += count;
         }
         results.strategyMetrics.count = totalCount;
+
+        // Recompute strategy statuses (detects active→complete transitions)
+        let statusUpdates = 0;
+        for (const strategy of accountStrategies) {
+          const newStatus = await recomputeStrategyStatus(strategy.id);
+          if (newStatus !== strategy.status) {
+            await db
+              .update(strategies)
+              .set({ status: newStatus, updatedAt: new Date() })
+              .where(eq(strategies.id, strategy.id));
+            statusUpdates++;
+          }
+        }
+        if (statusUpdates > 0) {
+          (results as any).strategyStatusUpdates = statusUpdates;
+        }
       } catch (error) {
         results.strategyMetrics = { error: error instanceof Error ? error.message : 'Failed' };
       }
