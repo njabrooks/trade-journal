@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { UnderlyingSelector } from '@/components/ui/UnderlyingSelector';
-import { Loader2, Search, Plus, LinkIcon, ChevronDown, ChevronUp, GitMerge, Check } from 'lucide-react';
+import { Loader2, Search, Plus, LinkIcon, ChevronDown, ChevronUp, GitMerge, Check, CheckCircle2 } from 'lucide-react';
 
 interface Strategy {
   id: string;
@@ -376,6 +376,31 @@ export function StrategyConfirmationDialog({
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to confirm strategy');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCloseStrategy = async () => {
+    if (!strategy) return;
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/strategies/${strategy.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'complete' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to close strategy');
+      }
+
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to close strategy');
     } finally {
       setSubmitting(false);
     }
@@ -937,6 +962,27 @@ export function StrategyConfirmationDialog({
           >
             Cancel
           </Button>
+          {strategy.status === 'draft' && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseStrategy}
+              disabled={submitting}
+              className="text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Closing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Close Strategy
+                </>
+              )}
+            </Button>
+          )}
           <Button
             type="button"
             onClick={handleConfirm}

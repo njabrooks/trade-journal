@@ -60,7 +60,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_DTE": ["MONITOR", "DISMISS"],
   
   // Strategy-level triggers
-  "CONFIRM_STRATEGY": ["UPDATE"],  // Confirmation: label, type, direction (urgent, no dismiss)
+  "CONFIRM_STRATEGY": ["UPDATE", "DISMISS"],  // Confirmation or close (for strategies with no open positions)
   "LINK_STRATEGY_TO_THESIS": ["UPDATE", "DISMISS"],  // Link thesis to confirmed strategy (info, dismissable)
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available

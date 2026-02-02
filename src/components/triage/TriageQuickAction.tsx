@@ -22,6 +22,7 @@ import {
 import {
   Clock,
   Check,
+  CheckCircle2,
   Link2,
   ArrowRightLeft,
   Sparkles,
@@ -74,6 +75,12 @@ const ACTIONS: Record<string, ActionConfig> = {
     type: 'DISMISS',
     label: 'Dismiss',
     icon: X,
+  },
+  close: {
+    type: 'DISMISS',
+    label: 'Close',
+    icon: CheckCircle2,
+    description: 'Mark strategy as complete (no open positions)',
   },
   confirm: {
     type: 'UPDATE',
@@ -190,7 +197,7 @@ const TRIGGER_CONFIG: Record<string, TriggerConfig> = {
   // Strategy-level triggers
   'CONFIRM_STRATEGY': {
     primaryAction: ACTIONS.confirm,
-    secondaryActions: [], // No dismiss for urgent strategy confirmation
+    secondaryActions: [ACTIONS.close],
   },
   'LINK_STRATEGY_TO_THESIS': {
     primaryAction: ACTIONS.link,
@@ -432,18 +439,22 @@ export function TriageQuickAction({
     setIsLoading(true);
 
     try {
-      switch (action.type) {
-        case 'DISMISS':
-          await executeDismissAction();
-          break;
+      if (action === ACTIONS.close) {
+        await executeCloseStrategyAction();
+      } else {
+        switch (action.type) {
+          case 'DISMISS':
+            await executeDismissAction();
+            break;
 
-        case 'MONITOR':
-          await executeMonitorAction();
-          break;
+          case 'MONITOR':
+            await executeMonitorAction();
+            break;
 
-        default:
-          // For other actions, expand and let the expanded view handle it
-          onExpand?.();
+          default:
+            // For other actions, expand and let the expanded view handle it
+            onExpand?.();
+        }
       }
     } catch (error) {
       console.error('Error executing action:', error);
@@ -504,6 +515,40 @@ export function TriageQuickAction({
         }),
       });
     }
+    onActionComplete?.();
+    router.refresh();
+  };
+
+  // Close strategy: set to 'complete' and dismiss triage record
+  const executeCloseStrategyAction = async () => {
+    if (!record.strategyId) {
+      toast.error('No strategy ID found');
+      return;
+    }
+
+    // Set strategy status to 'complete'
+    const strategyResponse = await fetch(`/api/strategies/${record.strategyId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'complete' }),
+    });
+
+    if (!strategyResponse.ok) {
+      toast.error('Failed to close strategy');
+      return;
+    }
+
+    // Dismiss the triage record
+    await fetch('/api/triage/action/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        triageIds: [record.id],
+        actionType: 'DISMISS',
+      }),
+    });
+
+    toast.success('Strategy closed');
     onActionComplete?.();
     router.refresh();
   };
