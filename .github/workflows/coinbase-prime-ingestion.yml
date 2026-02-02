@@ -23,6 +23,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify secrets are set
+        env:
+          COINBASE_PRIME_ACCESS_KEY: ${{ secrets.COINBASE_PRIME_ACCESS_KEY }}
+          COINBASE_PRIME_SIGNING_KEY: ${{ secrets.COINBASE_PRIME_SIGNING_KEY }}
+          COINBASE_PRIME_PASSPHRASE: ${{ secrets.COINBASE_PRIME_PASSPHRASE }}
+          COINBASE_PRIME_PORTFOLIO_ID: ${{ secrets.COINBASE_PRIME_PORTFOLIO_ID }}
+        run: |
+          echo "ACCESS_KEY length: ${#COINBASE_PRIME_ACCESS_KEY}"
+          echo "SIGNING_KEY length: ${#COINBASE_PRIME_SIGNING_KEY}"
+          echo "PASSPHRASE length: ${#COINBASE_PRIME_PASSPHRASE}"
+          echo "PORTFOLIO_ID length: ${#COINBASE_PRIME_PORTFOLIO_ID}"
+          echo "ACCESS_KEY first4: ${COINBASE_PRIME_ACCESS_KEY:0:4}"
+          echo "PORTFOLIO_ID last4: ${COINBASE_PRIME_PORTFOLIO_ID: -4}"
+
       - name: Run Coinbase Prime ingestion
         env:
           DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
