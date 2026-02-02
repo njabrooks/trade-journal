@@ -652,10 +652,43 @@ export const navSnapshots = pgTable(
     total: numeric('total').notNull(),
     totalLong: numeric('total_long'),
     totalShort: numeric('total_short'),
+    cash: numeric('cash'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   },
   (table) => ({
     uniqueAccountDate: unique().on(table.accountId, table.reportDate),
+  })
+);
+
+// ============================================================================
+// Cash Balances
+// ============================================================================
+
+export const cashBalances = pgTable(
+  'cash_balances',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    accountId: uuid('account_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'cascade' }),
+    snapshotDate: date('snapshot_date').notNull(),
+    currency: text('currency').notNull(),
+    balance: numeric('balance').notNull(),
+    balanceUsd: numeric('balance_usd'),
+    source: text('source').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    uniqueAccountDateCurrencySource: unique().on(
+      table.accountId,
+      table.snapshotDate,
+      table.currency,
+      table.source
+    ),
+    accountSnapshotIdx: index('idx_cash_balances_account_snapshot').on(
+      table.accountId,
+      table.snapshotDate
+    ),
   })
 );
 
@@ -771,6 +804,8 @@ export const portfolioSnapshots = pgTable(
     absOptionNotional: numeric('abs_option_notional'),
     absCryptoSpotNotional: numeric('abs_crypto_spot_notional'),
     absPerpNotional: numeric('abs_perp_notional'),
+    totalCashUsd: numeric('total_cash_usd'),
+    leverageRatio: numeric('leverage_ratio'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -866,6 +901,9 @@ export type NewMtmSnapshot = typeof mtmSnapshots.$inferInsert;
 
 export type NavSnapshot = typeof navSnapshots.$inferSelect;
 export type NewNavSnapshot = typeof navSnapshots.$inferInsert;
+
+export type CashBalance = typeof cashBalances.$inferSelect;
+export type NewCashBalance = typeof cashBalances.$inferInsert;
 
 export type TriageRecord = typeof triageRecords.$inferSelect;
 export type NewTriageRecord = typeof triageRecords.$inferInsert;

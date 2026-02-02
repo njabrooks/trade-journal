@@ -24,8 +24,9 @@ import {
 } from '../src/lib/ingestion/hyperliquid/api.js';
 
 import { normalizeHLFill, fetchAllFillsFrom } from '../src/lib/ingestion/hyperliquid/fills.js';
-import { normalizeHLPerpPositions, normalizeHLSpotPositions, normalizeHLStakedPosition } from '../src/lib/ingestion/hyperliquid/positions.js';
+import { normalizeHLPerpPositions, normalizeHLSpotPositions, normalizeHLStakedPosition, extractHLCashBalances } from '../src/lib/ingestion/hyperliquid/positions.js';
 import { toNewTrade, toNewPosition } from '../src/lib/ingestion/crypto/types.js';
+import { upsertCashBalances } from '../src/lib/ingestion/crypto/cashBalances.js';
 
 // Reuse existing infra
 import { resolveAccountId } from '../src/lib/ingestion/flex/account.js';
@@ -216,6 +217,29 @@ async function main() {
         snapshotDate
       );
       console.log(`[HL] Spot positions: ${spotPositions.length} active`);
+
+      // ── Step 4a: Store NAV snapshot + cash balances ───────────
+      {
+        const accountValue = perpState.marginSummary.accountValue;
+        const withdrawable = perpState.withdrawable;
+        // Compute total cash: withdrawable + stablecoin spot balances
+        const cashInputs = extractHLCashBalances(
+          spotState.balances,
+          withdrawable,
+          accountId,
+          spotMeta,
+          snapshotDate
+        );
+        const totalCashUsd = cashInputs.reduce((sum, c) => sum + (c.balanceUsd ? parseFloat(c.balanceUsd) : 0), 0);
+
+        // NAV is derived during portfolio computation as positions + cash
+        // (marginSummary.accountValue only covers perp margin equity, not spot)
+        console.log(`[HL] Perp margin equity: $${parseFloat(accountValue).toFixed(0)} (cash: $${totalCashUsd.toFixed(0)})`);
+
+        // Upsert cash balances
+        const cashInserted = await upsertCashBalances(cashInputs);
+        console.log(`[HL] Cash balances: ${cashInserted} inserted (${cashInputs.map(c => `${c.currency}: $${c.balanceUsd ?? '?'}`).join(', ')})`);
+      }
 
       // ── Step 4b: Fetch staked HYPE ────────────────────────────
       console.log('[HL] Fetching staked HYPE (delegations)...');

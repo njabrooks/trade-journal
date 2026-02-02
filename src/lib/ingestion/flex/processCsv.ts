@@ -7,8 +7,8 @@
 
 import Papa from 'papaparse';
 import { db } from '@/db';
-import { positions, navSnapshots, mtmSnapshots, trades, ingestionRuns } from '@/db/schema';
-import type { NewPosition, NewNavSnapshot, NewMtmSnapshot } from '@/db/schema';
+import { positions, navSnapshots, mtmSnapshots, cashBalances, trades, ingestionRuns } from '@/db/schema';
+import type { NewPosition, NewNavSnapshot, NewMtmSnapshot, NewCashBalance } from '@/db/schema';
 import {
   FlexPositionRow,
   normalizeFlexPositionRow,
@@ -47,6 +47,7 @@ const SECTION_CODES = {
   TRADES: 'TRNT',
   EXERCISES: 'OPTT',
   CASH: 'CTRN',
+  RATE: 'RATE',
 };
 
 const SUMMARY_MARKERS = new Set(['summary', 'total', 'aggregate']);
@@ -119,6 +120,7 @@ export interface ProcessPositionsResult {
   post: { inserted: number; errors: ErrorDetail[] };
   equt: { inserted: number; errors: ErrorDetail[] };
   mtmp: { inserted: number; errors: ErrorDetail[] };
+  cash: { inserted: number };
   totalInserted: number;
   totalErrors: number;
   snapshotDates: string[];
@@ -133,6 +135,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     post: { inserted: 0, errors: [] as ErrorDetail[] },
     equt: { inserted: 0, errors: [] as ErrorDetail[] },
     mtmp: { inserted: 0, errors: [] as ErrorDetail[] },
+    cash: { inserted: 0 },
   };
 
   const allSnapshotDates = new Set<string>();
@@ -153,6 +156,64 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
   }
 
   const rows = parsed.data;
+
+  // Parse RATE section (FX rates) first — needed for converting non-USD cash to USD
+  // Format: HEADER,RATE,Date/Time,FromCurrency,ToCurrency,Rate
+  // For USD-based accounts: rates are FromCurrency → USD (e.g., GBP → USD = 1.3688)
+  // For GBP-based accounts: rates are FromCurrency → GBP (e.g., EUR → GBP = 0.8657)
+  // We normalize all rates to → USD regardless of account base currency.
+  const fxRates = new Map<string, number>(); // currency → rate to USD
+  const rateHeader = rows.find(
+    (row) => row[0] === 'HEADER' && row[1] === SECTION_CODES.RATE
+  );
+  if (rateHeader) {
+    const rateFieldNames = rateHeader.slice(2);
+    const fromCurrencyIdx = rateFieldNames.indexOf('FromCurrency');
+    const toCurrencyIdx = rateFieldNames.indexOf('ToCurrency');
+    const rateIdx = rateFieldNames.indexOf('Rate');
+
+    // First pass: collect raw rates and determine the base (ToCurrency)
+    const rawRates = new Map<string, number>(); // fromCurrency → rate
+    let baseCurrency = 'USD';
+    for (const row of rows) {
+      if (row[0] !== 'DATA' || row[1] !== SECTION_CODES.RATE) continue;
+      const fromCurrency = row[fromCurrencyIdx + 2]?.trim();
+      const toCurrency = row[toCurrencyIdx + 2]?.trim();
+      const rateStr = row[rateIdx + 2]?.trim();
+      if (fromCurrency && rateStr) {
+        const rate = parseFloat(rateStr);
+        if (!isNaN(rate) && rate > 0) {
+          rawRates.set(fromCurrency, rate);
+        }
+      }
+      if (toCurrency) baseCurrency = toCurrency;
+    }
+
+    if (baseCurrency === 'USD') {
+      // Direct: all rates are already → USD
+      for (const [currency, rate] of rawRates) {
+        fxRates.set(currency, rate);
+      }
+    } else {
+      // Non-USD base (e.g., GBP): rates are → baseCurrency
+      // Find USD → baseCurrency rate to compute baseCurrency → USD
+      const usdToBase = rawRates.get('USD');
+      if (usdToBase && usdToBase > 0) {
+        const baseToUsd = 1 / usdToBase;
+        fxRates.set(baseCurrency, baseToUsd);
+        // Convert all other currencies: currency → USD = (currency → base) * (base → USD)
+        for (const [currency, rateToBase] of rawRates) {
+          if (currency === 'USD') continue;
+          fxRates.set(currency, rateToBase * baseToUsd);
+        }
+      }
+    }
+    fxRates.set('USD', 1); // USD → USD is always 1
+
+    if (fxRates.size > 1) {
+      console.log(`[FX Rates] Parsed ${fxRates.size - 1} exchange rates (base: ${baseCurrency}, e.g., GBP→USD: ${fxRates.get('GBP')?.toFixed(4) ?? 'N/A'}, EUR→USD: ${fxRates.get('EUR')?.toFixed(4) ?? 'N/A'})`);
+    }
+  }
 
   // Process POST section
   const postHeader = rows.find(
@@ -524,6 +585,50 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
           });
         }
       }
+
+      // Also insert aggregate EQUT cash into cash_balances table.
+      // If MTMP section has per-currency CASH rows, those will overwrite this
+      // (MTMP deletes all ibkr_flex cash for account+date before inserting).
+      const equtCashValues: NewCashBalance[] = [];
+      for (const { data } of normalizedRows) {
+        if (data.cash && parseFloat(data.cash) !== 0) {
+          equtCashValues.push({
+            accountId: data.accountId,
+            snapshotDate: data.reportDate,
+            currency: data.currency || 'USD',
+            balance: data.cash,
+            balanceUsd: (() => {
+              const cur = data.currency || 'USD';
+              if (cur === 'USD') return data.cash;
+              const rate = fxRates.get(cur);
+              if (rate) return (parseFloat(data.cash) * rate).toString();
+              return null;
+            })(),
+            source: 'ibkr_flex',
+          });
+        }
+      }
+      if (equtCashValues.length > 0) {
+        const seen = new Set<string>();
+        for (const v of equtCashValues) {
+          const key = `${v.accountId}::${v.snapshotDate}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            await db
+              .delete(cashBalances)
+              .where(
+                and(
+                  eq(cashBalances.accountId, v.accountId),
+                  eq(cashBalances.snapshotDate, v.snapshotDate),
+                  eq(cashBalances.source, 'ibkr_flex')
+                )
+              );
+          }
+        }
+        await db.insert(cashBalances).values(equtCashValues);
+        results.cash.inserted += equtCashValues.length;
+        console.log(`[EQUT Cash] Inserted ${equtCashValues.length} aggregate cash balance(s) from EQUT section`);
+      }
     }
   }
 
@@ -544,12 +649,108 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
       .filter(({ record }) => !isSummaryRow(record));
 
     if (mtmpDataRows.length > 0) {
+      // Separate CASH rows from regular MTM rows
+      const cashRows: RecordWithMeta<FlexMtmRow>[] = [];
+      const mtmRows: RecordWithMeta<FlexMtmRow>[] = [];
+      for (const item of mtmpDataRows) {
+        const assetClass = (
+          item.record['AssetClass'] ||
+          item.record['Asset Class'] ||
+          item.record['assetClass'] ||
+          ''
+        ).toUpperCase();
+        if (assetClass === 'CASH') {
+          cashRows.push(item);
+        } else {
+          mtmRows.push(item);
+        }
+      }
+
+      // Process CASH rows → cash_balances table
+      if (cashRows.length > 0) {
+        const cashValues: NewCashBalance[] = [];
+        for (const { record } of cashRows) {
+          const clientAccountId = extractClientAccountId(record);
+          if (!clientAccountId) continue;
+
+          let rowAccountId: string;
+          try {
+            rowAccountId = await resolveAccountId(clientAccountId, 'IBKR', accountCache);
+            accountIds.add(rowAccountId);
+            if (!accountId) accountId = rowAccountId;
+          } catch {
+            continue;
+          }
+
+          const reportDateRaw = record['ReportDate'] || record['reportDate'] || record['SnapshotDate'];
+          if (!reportDateRaw) continue;
+          const trimmed = reportDateRaw.trim();
+          let snapshotDate: string;
+          if (/^\d{8}$/.test(trimmed)) {
+            snapshotDate = `${trimmed.slice(0, 4)}-${trimmed.slice(4, 6)}-${trimmed.slice(6, 8)}`;
+          } else {
+            const d = new Date(trimmed);
+            if (isNaN(d.getTime())) continue;
+            snapshotDate = d.toISOString().split('T')[0]!;
+          }
+
+          const symbol = record['Symbol'] || record['symbol'] || '';
+          const currency = symbol.trim() || record['CurrencyPrimary'] || record['Currency'] || 'USD';
+          const marketValue = record['MarketValue'] || record['Market Value'] || record['marketValue'];
+          if (!marketValue) continue;
+
+          const amount = parseFloat(marketValue);
+          if (isNaN(amount) || amount === 0) continue;
+
+          const cur = currency.trim();
+          let balanceUsd: string | null = null;
+          if (cur === 'USD') {
+            balanceUsd = amount.toString();
+          } else {
+            const rate = fxRates.get(cur);
+            if (rate) balanceUsd = (amount * rate).toString();
+          }
+
+          cashValues.push({
+            accountId: rowAccountId,
+            snapshotDate,
+            currency: cur,
+            balance: amount.toString(),
+            balanceUsd,
+            source: 'ibkr_flex',
+          });
+        }
+
+        if (cashValues.length > 0) {
+          // Delete existing IBKR cash for these accounts + dates, then insert
+          const seen = new Set<string>();
+          for (const v of cashValues) {
+            const key = `${v.accountId}::${v.snapshotDate}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              await db
+                .delete(cashBalances)
+                .where(
+                  and(
+                    eq(cashBalances.accountId, v.accountId),
+                    eq(cashBalances.snapshotDate, v.snapshotDate),
+                    eq(cashBalances.source, 'ibkr_flex')
+                  )
+                );
+            }
+          }
+          await db.insert(cashBalances).values(cashValues);
+          results.cash.inserted = cashValues.length;
+        }
+      }
+
+      // Process regular MTM rows
       const normalizedRows: Array<{
         data: Omit<NewMtmSnapshot, 'id' | 'createdAt'>;
         rowNumber: number;
       }> = [];
 
-      for (const { record, rowNumber } of mtmpDataRows) {
+      for (const { record, rowNumber } of mtmRows) {
         const validation = validateFlexMtmRow(record);
         if (!validation.valid) {
           results.mtmp.errors.push({ row: rowNumber, errors: validation.errors });
@@ -699,7 +900,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     console.log(`[Egress Optimization] No changes detected for ${allSnapshotDates.size} date(s) across ${accountIds.size} account(s), skipping recompute`);
   }
 
-  const totalInserted = results.post.inserted + results.equt.inserted + results.mtmp.inserted;
+  const totalInserted = results.post.inserted + results.equt.inserted + results.mtmp.inserted + results.cash.inserted;
   const totalErrors =
     results.post.errors.length + results.equt.errors.length + results.mtmp.errors.length;
 

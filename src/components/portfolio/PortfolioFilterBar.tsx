@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type AssetClassFilter = "all" | "STK" | "OPT" | "CRYPTO";
+export type AssetClassFilter = "all" | "STK" | "OPT" | "CRYPTO" | "CASH";
 
 interface PortfolioFilterBarProps {
   assetClassFilter: AssetClassFilter;
@@ -51,6 +51,7 @@ export function PortfolioFilterBar({
     { label: "Stocks", value: "STK" },
     { label: "Options", value: "OPT" },
     { label: "Crypto", value: "CRYPTO" },
+    { label: "Cash", value: "CASH" },
   ];
 
   return (

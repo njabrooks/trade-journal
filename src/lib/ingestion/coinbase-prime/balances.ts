@@ -9,6 +9,7 @@
 
 import type { CBPBalance } from './api';
 import type { CryptoPositionInput } from '../crypto/types';
+import type { CashBalanceInput } from '../crypto/cashBalances';
 
 const STABLECOINS = new Set(['USD', 'USDC', 'USDT']);
 
@@ -49,6 +50,38 @@ export function normalizeCBPBalances(
       absNotional: fiatAmount > 0 ? fiatAmount.toFixed(6) : null,
       unrealizedPnl: null,    // Cannot compute without cost basis
       snapshotDate,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Extract stablecoin and fiat balances from Coinbase Prime as cash.
+ */
+export function extractCBPCashBalances(
+  balances: CBPBalance[],
+  accountId: string,
+  snapshotDate: string
+): CashBalanceInput[] {
+  const results: CashBalanceInput[] = [];
+
+  for (const balance of balances) {
+    const amount = parseFloat(balance.amount);
+    if (amount === 0) continue;
+
+    const symbol = balance.symbol.toUpperCase();
+    if (!STABLECOINS.has(symbol)) continue;
+
+    const fiatAmount = parseFloat(balance.fiat_amount);
+
+    results.push({
+      accountId,
+      snapshotDate,
+      currency: symbol,
+      balance: amount.toString(),
+      balanceUsd: fiatAmount > 0 ? fiatAmount.toString() : amount.toString(),
+      source: 'coinbase_prime',
     });
   }
 

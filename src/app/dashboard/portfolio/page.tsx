@@ -11,7 +11,8 @@ import { UnlinkedPositionsTable } from "@/components/portfolio/UnlinkedPositions
 import { PortfolioCharts } from "@/components/portfolio/PortfolioCharts";
 import { formatDateShort } from "@/lib/formatters";
 import type { Account } from "@/db/schema";
-import type { PortfolioDashboardData, PortfolioPositionsData, PortfolioPositionRow, PortfolioStrategyRow } from "@/db/queries/portfolio";
+import { formatCurrency } from "@/lib/formatters";
+import type { PortfolioDashboardData, PortfolioPositionsData, PortfolioPositionRow, PortfolioStrategyRow, CashBreakdownRow } from "@/db/queries/portfolio";
 
 export default function PortfolioDashboardPage() {
   return (
@@ -127,7 +128,10 @@ function PortfolioDashboardContent() {
 
       // Asset class filter
       if (assetClassFilter !== "all") {
-        if (assetClassFilter === "CRYPTO") {
+        if (assetClassFilter === "CASH") {
+          // Cash filter: no positions match (cash is separate from positions)
+          filtered = [];
+        } else if (assetClassFilter === "CRYPTO") {
           // "Crypto" filter matches both spot (CRYPTO) and perpetuals (PERP)
           filtered = filtered.filter((p) => p.assetClass === "CRYPTO" || p.assetClass === "PERP");
         } else {
@@ -197,7 +201,7 @@ function PortfolioDashboardContent() {
 
   // Compute exposure breakdown by asset class from positions
   const exposureBreakdown = useMemo(() => {
-    if (!positionsData) return { equities: 0, options: 0, cryptoSpot: 0, perpetuals: 0 };
+    if (!positionsData) return { equities: 0, options: 0, cryptoSpot: 0, perpetuals: 0, cash: 0 };
 
     const allPositions = [
       ...positionsData.strategies.flatMap((s) => s.positions),
@@ -217,7 +221,9 @@ function PortfolioDashboardContent() {
       else if (pos.assetClass === "PERP") perpetuals += notional;
     }
 
-    return { equities, options, cryptoSpot, perpetuals };
+    const cash = positionsData.totalCashUsd ?? 0;
+
+    return { equities, options, cryptoSpot, perpetuals, cash };
   }, [positionsData]);
 
   // Filtered counts
@@ -296,8 +302,10 @@ function PortfolioDashboardContent() {
       {/* Metrics */}
       <PortfolioMetricsRow
         totalMarketValue={totals.marketValue}
+        totalCashUsd={positionsData?.totalCashUsd ?? dashboardData?.latestAccountSnapshot?.totalCashUsd ?? null}
+        nav={positionsData?.nav ?? dashboardData?.latestAccountSnapshot?.navAtSnapshot ?? null}
+        leverageRatio={positionsData?.leverageRatio ?? dashboardData?.latestAccountSnapshot?.leverageRatio ?? null}
         positionCount={totals.positionCount}
-        underlyingCount={totals.underlyingCount}
         snapshotDate={positionsData?.snapshotDate ?? null}
       />
 
@@ -337,8 +345,14 @@ function PortfolioDashboardContent() {
         />
       )}
 
+      {/* Cash breakdown table — shown when Cash filter is active */}
+      {assetClassFilter === "CASH" && dashboardData && dashboardData.cashBreakdown.length > 0 && (
+        <CashBreakdownTable rows={dashboardData.cashBreakdown} />
+      )}
+
       {/* Empty state */}
-      {positionsData && filteredData.strategies.length === 0 && filteredData.unlinkedPositions.length === 0 && (
+      {positionsData && filteredData.strategies.length === 0 && filteredData.unlinkedPositions.length === 0
+        && assetClassFilter !== "CASH" && (
         <div className="rounded-2xl border border-dashed bg-card p-10 text-center text-muted-foreground">
           {searchQuery || assetClassFilter !== "all"
             ? "No positions match the current filters."
@@ -346,5 +360,52 @@ function PortfolioDashboardContent() {
         </div>
       )}
     </DashboardShell>
+  );
+}
+
+/** Inline cash breakdown table for the Cash filter tab */
+function CashBreakdownTable({ rows }: { rows: CashBreakdownRow[] }) {
+  const total = rows.reduce((sum, r) => sum + (r.balanceUsd ?? 0), 0);
+
+  return (
+    <div className="rounded-2xl border bg-card shadow-sm">
+      <div className="border-b px-5 py-3">
+        <h3 className="text-sm font-medium text-foreground">Cash & Equivalents</h3>
+      </div>
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b text-left text-muted-foreground">
+            <th className="px-5 py-2 font-medium">Currency</th>
+            <th className="px-5 py-2 font-medium">Source</th>
+            <th className="px-5 py-2 text-right font-medium">Balance</th>
+            <th className="px-5 py-2 text-right font-medium">USD Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={`${row.currency}-${row.source}-${i}`} className="border-b last:border-b-0">
+              <td className="px-5 py-2.5 font-medium text-foreground">{row.currency}</td>
+              <td className="px-5 py-2.5 text-muted-foreground">{row.source}</td>
+              <td className="px-5 py-2.5 text-right tabular-nums text-foreground">
+                {row.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
+              <td className="px-5 py-2.5 text-right tabular-nums text-foreground">
+                {row.balanceUsd !== null ? formatCurrency(row.balanceUsd) : "\u2014"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        {rows.length > 1 && (
+          <tfoot>
+            <tr className="border-t bg-muted/30">
+              <td colSpan={3} className="px-5 py-2.5 font-medium text-foreground">Total</td>
+              <td className="px-5 py-2.5 text-right font-medium tabular-nums text-foreground">
+                {formatCurrency(total)}
+              </td>
+            </tr>
+          </tfoot>
+        )}
+      </table>
+    </div>
   );
 }

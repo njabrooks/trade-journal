@@ -17,8 +17,9 @@ import { eq, and, ne } from 'drizzle-orm';
 
 // Solana API functions
 import { fetchTokenHoldings, fetchSolBalance, parseSolanaWallets } from '../src/lib/ingestion/solana/api.js';
-import { normalizeSolanaPositions } from '../src/lib/ingestion/solana/positions.js';
+import { normalizeSolanaPositions, extractSolanaCashBalances } from '../src/lib/ingestion/solana/positions.js';
 import { toNewPosition } from '../src/lib/ingestion/crypto/types.js';
+import { upsertCashBalances } from '../src/lib/ingestion/crypto/cashBalances.js';
 
 // Reuse existing infra
 import { upsertAccount } from '../src/lib/ingestion/flex/account.js';
@@ -78,6 +79,11 @@ async function ingestWallet(
     snapshotDate
   );
   console.log(`${tag} Positions: ${solanaPositions.length} active (non-stablecoin, non-dust)`);
+
+  // ── Step 2b: Extract cash balances ──────────────────────────
+  const cashInputs = extractSolanaCashBalances(tokens, accountId, snapshotDate);
+  const cashInserted = await upsertCashBalances(cashInputs);
+  console.log(`${tag} Cash balances: ${cashInserted} inserted (${cashInputs.map(c => `${c.currency}: $${c.balanceUsd ?? '?'}`).join(', ') || 'none'})`);
 
   // ── Step 3: Resolve underlyings and upsert positions ────────
   console.log(`${tag} Resolving underlyings and upserting positions...`);

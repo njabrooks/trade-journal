@@ -15,8 +15,9 @@ import { eq, and, ne, sql } from 'drizzle-orm';
 // Coinbase Prime API functions
 import { fetchAllFills, fetchBalances } from '../src/lib/ingestion/coinbase-prime/api.js';
 import { normalizeCBPFill } from '../src/lib/ingestion/coinbase-prime/fills.js';
-import { normalizeCBPBalances } from '../src/lib/ingestion/coinbase-prime/balances.js';
+import { normalizeCBPBalances, extractCBPCashBalances } from '../src/lib/ingestion/coinbase-prime/balances.js';
 import { toNewTrade, toNewPosition } from '../src/lib/ingestion/crypto/types.js';
+import { upsertCashBalances } from '../src/lib/ingestion/crypto/cashBalances.js';
 
 // Reuse existing infra
 import { resolveAccountId } from '../src/lib/ingestion/flex/account.js';
@@ -172,6 +173,11 @@ async function main() {
       const balances = await fetchBalances(portfolioId);
       const cbpPositions = normalizeCBPBalances(balances, accountId, snapshotDate);
       console.log(`[CBP] Positions: ${cbpPositions.length} active (non-stablecoin)`);
+
+      // ── Step 2b: Extract cash balances ──────────────────────
+      const cashInputs = extractCBPCashBalances(balances, accountId, snapshotDate);
+      const cashInserted = await upsertCashBalances(cashInputs);
+      console.log(`[CBP] Cash balances: ${cashInserted} inserted (${cashInputs.map(c => `${c.currency}: $${c.balanceUsd ?? '?'}`).join(', ') || 'none'})`);
 
       // ── Step 3: Resolve underlyings and upsert positions ──────
       console.log('\n[CBP] Resolving underlyings and upserting positions...');
