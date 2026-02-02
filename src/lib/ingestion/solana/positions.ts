@@ -5,6 +5,7 @@
 
 import type { HeliusFungibleToken } from './api';
 import type { CryptoPositionInput } from '../crypto/types';
+import type { CashBalanceInput } from '../crypto/cashBalances';
 import { normalizeSolanaTokenSymbol } from '../crypto/pairNormalization';
 
 // Skip stablecoins and wrapped settlement currencies
@@ -82,6 +83,38 @@ export function normalizeSolanaPositions(
       absNotional: absNotional?.toFixed(6) ?? null,
       unrealizedPnl: null,
       snapshotDate,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Extract stablecoin balances from Solana tokens as cash.
+ */
+export function extractSolanaCashBalances(
+  tokens: HeliusFungibleToken[],
+  accountId: string,
+  snapshotDate: string
+): CashBalanceInput[] {
+  const results: CashBalanceInput[] = [];
+
+  for (const token of tokens) {
+    const symbol = normalizeSolanaTokenSymbol(token.content.metadata.symbol);
+    if (!SKIP_TOKENS.has(symbol)) continue;
+
+    const amount = token.token_info.balance / Math.pow(10, token.token_info.decimals);
+    if (amount === 0) continue;
+
+    const totalPrice = token.token_info.price_info?.total_price ?? null;
+
+    results.push({
+      accountId,
+      snapshotDate,
+      currency: symbol,
+      balance: amount.toString(),
+      balanceUsd: totalPrice?.toString() ?? amount.toString(),
+      source: 'solana',
     });
   }
 

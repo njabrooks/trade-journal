@@ -5,6 +5,7 @@
 
 import type { HLClearinghouseState, HLSpotBalance, HLDelegatorSummary } from './api';
 import type { CryptoPositionInput } from '../crypto/types';
+import type { CashBalanceInput } from '../crypto/cashBalances';
 import { normalizeHyperliquidCoin } from '../crypto/pairNormalization';
 
 /**
@@ -93,6 +94,52 @@ export function normalizeHLSpotPositions(
       absNotional: currentValue?.toFixed(6) ?? null,
       unrealizedPnl: unrealizedPnl?.toFixed(6) ?? null,
       snapshotDate,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Extract stablecoin balances from HyperLiquid spot state as cash.
+ */
+export function extractHLCashBalances(
+  balances: HLSpotBalance[],
+  withdrawable: string,
+  accountId: string,
+  spotMeta: Map<string, string>,
+  snapshotDate: string
+): CashBalanceInput[] {
+  const results: CashBalanceInput[] = [];
+
+  // Withdrawable margin cash (USD-denominated)
+  const withdrawableAmount = parseFloat(withdrawable);
+  if (withdrawableAmount > 0) {
+    results.push({
+      accountId,
+      snapshotDate,
+      currency: 'USD',
+      balance: withdrawableAmount.toString(),
+      balanceUsd: withdrawableAmount.toString(),
+      source: 'hyperliquid',
+    });
+  }
+
+  // Stablecoin spot balances
+  for (const balance of balances) {
+    const total = parseFloat(balance.total);
+    if (total === 0) continue;
+
+    const symbol = normalizeHyperliquidCoin(balance.coin, spotMeta);
+    if (symbol !== 'USDC' && symbol !== 'USDT') continue;
+
+    results.push({
+      accountId,
+      snapshotDate,
+      currency: symbol,
+      balance: total.toString(),
+      balanceUsd: total.toString(),
+      source: 'hyperliquid',
     });
   }
 

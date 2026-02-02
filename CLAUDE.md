@@ -345,7 +345,10 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`triage_records`** - Triage alerts with severity/urgency/reasons (includes override columns)
 - **`journal_entries`** - Chronological audit trail for all events
 - **`strategy_metrics_snapshots`** - Historical strategy performance
+- **`portfolio_snapshots`** - Account/underlying-level portfolio aggregates (notionals, NAV, cash, leverage)
 - **`mtm_snapshots`** - Mark-to-market snapshots
+- **`nav_snapshots`** - Net asset value snapshots per account (IBKR EQUT, HyperLiquid marginSummary); includes cash column
+- **`cash_balances`** - Per-currency cash/stablecoin/fiat balances per account per date (USD, USDC, USDT, EUR, etc.)
 
 ### Supporting Tables
 - **`underlyings_iv_history`** - Time-series IV/spot snapshots (unique on ticker + date + source)
@@ -758,6 +761,7 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 19. **Kraken Integration** - HMAC-SHA512 auth with base64-decoded secret + nonce. TradesHistory (offset pagination, 50/page, rate cost 2), Balance (spot positions with Ticker price enrichment), OpenPositions (margin with cost basis/PnL from API). No cost basis on spot positions (deferred to #ENH-051)
 20. **Deribit Integration** - OAuth client credentials auth (token cached, auto-refreshed on expiry). Spot fills (trade history) with incremental cursor ingestion + account balance snapshots. Options/futures support deferred — shared types pre-wired with OPT asset class and expiry/strike/optionRight fields for future use. Iterates over supported currencies (BTC, ETH, SOL, USDC). Index prices fetched from public endpoint for USD conversion
 21. **Solana Integration** - Balance-only snapshot via Helius DAS API (`getAssetsByOwner`). No trade history. API key appended to RPC URL. Captures native SOL + SPL fungible tokens with USD pricing from Helius. Filters dust tokens (< $0.01) and stablecoins. Supports multiple wallets via `SOLANA_WALLETS` JSON env var with per-wallet labels. Each wallet becomes a separate account with its label set
+22. **Cash & NAV Tracking** - Cash/stablecoin/fiat balances tracked in `cash_balances` table across all sources. NAV is dual-path: authoritative from `nav_snapshots` for margin accounts (IBKR, HyperLiquid), derived as positions + cash for non-margin accounts (Coinbase, Kraken, Deribit, Solana). Portfolio page shows Market Value, Cash, NAV, Leverage (gross exposure / NAV), and Positions. Cash breakdown available via "Cash" filter tab
 
 ## TradingView Webhook Integration
 

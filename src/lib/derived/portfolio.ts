@@ -2,6 +2,7 @@ import { db } from '@/db';
 import {
   positions,
   navSnapshots,
+  cashBalances,
   portfolioSnapshots,
   NewPortfolioSnapshot,
 } from '@/db/schema';
@@ -107,16 +108,52 @@ async function computeAccountLevelSnapshot(
     .where(and(eq(navSnapshots.accountId, accountId), eq(navSnapshots.reportDate, snapshotDate)))
     .limit(1);
 
-  const navAtSnapshot = navResult[0]?.total ?? null;
+  const navRow = navResult[0] ?? null;
+  const authoritativeNav = navRow?.total ?? null;
 
   // Compute aggregates
   const sums = computeNotionalSums(accountPositions);
 
+  // Query total cash (USD equivalent) from cash_balances
+  const cashResult = await db
+    .select({
+      totalCashUsd: sql<string>`COALESCE(SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC)), 0)`,
+    })
+    .from(cashBalances)
+    .where(
+      and(
+        eq(cashBalances.accountId, accountId),
+        eq(cashBalances.snapshotDate, snapshotDate)
+      )
+    );
+  const totalCashUsd = parseFloat(cashResult[0]?.totalCashUsd ?? '0');
+
+  // Determine effective NAV:
+  // - If nav_snapshots has a row (IBKR, HyperLiquid) → use authoritative NAV
+  // - Otherwise (Coinbase, Kraken, Deribit, Solana) → NAV = positions + cash
+  let effectiveNav: number | null = null;
+  if (authoritativeNav) {
+    effectiveNav = parseFloat(authoritativeNav);
+  } else {
+    const positionValue = sums.totalAbsNotional ? parseFloat(sums.totalAbsNotional) : 0;
+    if (positionValue > 0 || totalCashUsd !== 0) {
+      effectiveNav = positionValue + totalCashUsd;
+    }
+  }
+
+  const navAtSnapshot = effectiveNav?.toString() ?? null;
+
   // Compute pct_nav_abs_notional
   let pctNavAbsNotional: string | null = null;
-  if (navAtSnapshot && parseFloat(navAtSnapshot) > 0 && sums.totalAbsNotional) {
-    const pct = (parseFloat(sums.totalAbsNotional) / parseFloat(navAtSnapshot)) * 100;
+  if (effectiveNav && effectiveNav > 0 && sums.totalAbsNotional) {
+    const pct = (parseFloat(sums.totalAbsNotional) / effectiveNav) * 100;
     pctNavAbsNotional = pct.toString();
+  }
+
+  // Compute leverage ratio (gross exposure / NAV)
+  let leverageRatio: string | null = null;
+  if (effectiveNav && effectiveNav > 0 && sums.totalAbsNotional) {
+    leverageRatio = (parseFloat(sums.totalAbsNotional) / effectiveNav).toString();
   }
 
   return {
@@ -127,6 +164,8 @@ async function computeAccountLevelSnapshot(
     ...sums,
     navAtSnapshot,
     pctNavAbsNotional,
+    totalCashUsd: totalCashUsd !== 0 ? totalCashUsd.toString() : null,
+    leverageRatio,
   };
 }
 

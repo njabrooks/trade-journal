@@ -19,6 +19,8 @@ import { fetchAllTrades, fetchAllAccountSummaries, fetchAllIndexPrices } from '.
 import { normalizeDeribitTrade } from '../src/lib/ingestion/deribit/fills.js';
 import { toNewTrade, toNewPosition } from '../src/lib/ingestion/crypto/types.js';
 import type { CryptoPositionInput } from '../src/lib/ingestion/crypto/types.js';
+import { upsertCashBalances } from '../src/lib/ingestion/crypto/cashBalances.js';
+import type { CashBalanceInput } from '../src/lib/ingestion/crypto/cashBalances.js';
 
 // Reuse existing infra
 import { upsertAccount } from '../src/lib/ingestion/flex/account.js';
@@ -180,6 +182,25 @@ async function main() {
       console.log('[Deribit] Fetching index prices...');
       const indexPrices = await fetchAllIndexPrices();
       console.log(`[Deribit] Index prices: ${Array.from(indexPrices.entries()).map(([k, v]) => `${k}=$${v.toFixed(2)}`).join(', ')}`);
+
+      // Extract cash balances from stablecoin accounts
+      const cashInputs: CashBalanceInput[] = [];
+      for (const summary of summaries) {
+        if (summary.balance === 0) continue;
+        const symbol = summary.currency.toUpperCase();
+        if (SKIP_CURRENCIES.has(symbol)) {
+          cashInputs.push({
+            accountId,
+            snapshotDate,
+            currency: symbol,
+            balance: summary.balance.toString(),
+            balanceUsd: summary.balance.toString(),
+            source: 'deribit',
+          });
+        }
+      }
+      const cashInserted = await upsertCashBalances(cashInputs);
+      console.log(`[Deribit] Cash balances: ${cashInserted} inserted (${cashInputs.map(c => `${c.currency}: $${c.balanceUsd ?? '?'}`).join(', ') || 'none'})`);
 
       // Normalize balances into positions
       const balancePositions: CryptoPositionInput[] = [];

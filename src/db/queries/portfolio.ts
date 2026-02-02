@@ -2,7 +2,7 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   assetTheses,
-  navSnapshots,
+  cashBalances,
   portfolioSnapshots,
   positions,
   strategies,
@@ -19,6 +19,9 @@ export interface PortfolioTrendPoint {
   absOptionNotional: number | null;
   absCryptoSpotNotional: number | null;
   absPerpNotional: number | null;
+  navAtSnapshot: number | null;
+  totalCashUsd: number | null;
+  leverageRatio: number | null;
 }
 
 export interface UnderlyingBreakdownRow {
@@ -35,11 +38,19 @@ export interface NavTrendPoint {
   nav: number | null;
 }
 
+export interface CashBreakdownRow {
+  currency: string;
+  balance: number;
+  balanceUsd: number | null;
+  source: string;
+}
+
 export interface PortfolioDashboardData {
   navTrend: NavTrendPoint[];
   accountSnapshots: PortfolioTrendPoint[];
   latestAccountSnapshot: PortfolioTrendPoint | null;
   underlyingBreakdown: UnderlyingBreakdownRow[];
+  cashBreakdown: CashBreakdownRow[];
 }
 
 export async function getPortfolioDashboardData(
@@ -55,6 +66,9 @@ export async function getPortfolioDashboardData(
       absOptionNotional: portfolioSnapshots.absOptionNotional,
       absCryptoSpotNotional: portfolioSnapshots.absCryptoSpotNotional,
       absPerpNotional: portfolioSnapshots.absPerpNotional,
+      navAtSnapshot: portfolioSnapshots.navAtSnapshot,
+      totalCashUsd: portfolioSnapshots.totalCashUsd,
+      leverageRatio: portfolioSnapshots.leverageRatio,
     })
     .from(portfolioSnapshots)
     .where(
@@ -76,6 +90,9 @@ export async function getPortfolioDashboardData(
       absOptionNotional: toNumber(row.absOptionNotional),
       absCryptoSpotNotional: toNumber(row.absCryptoSpotNotional),
       absPerpNotional: toNumber(row.absPerpNotional),
+      navAtSnapshot: toNumber(row.navAtSnapshot),
+      totalCashUsd: toNumber(row.totalCashUsd),
+      leverageRatio: toNumber(row.leverageRatio),
     }))
     .reverse();
 
@@ -119,28 +136,45 @@ export async function getPortfolioDashboardData(
       pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
     }));
 
-  const navRows = await db
-    .select({
-      date: navSnapshots.reportDate,
-      nav: navSnapshots.total,
-    })
-    .from(navSnapshots)
-    .where(eq(navSnapshots.accountId, accountId))
-    .orderBy(desc(navSnapshots.reportDate))
-    .limit(120);
+  // NAV trend sourced from portfolio_snapshots.navAtSnapshot
+  // This captures all accounts (authoritative NAV for IBKR/HL, derived for others)
+  const navTrend: NavTrendPoint[] = accountSnapshots
+    .filter((s) => s.navAtSnapshot !== null)
+    .map((s) => ({ date: s.date, nav: s.navAtSnapshot }));
 
-  const navTrend: NavTrendPoint[] = navRows
-    .map((row) => ({
-      date: row.date,
-      nav: toNumber(row.nav),
-    }))
-    .reverse();
+  // Cash breakdown for latest date
+  const cashRows = latestDate
+    ? await db
+        .select({
+          currency: cashBalances.currency,
+          balance: sql<string>`SUM(CAST(${cashBalances.balance} AS NUMERIC))`,
+          balanceUsd: sql<string>`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`,
+          source: cashBalances.source,
+        })
+        .from(cashBalances)
+        .where(
+          and(
+            eq(cashBalances.accountId, accountId),
+            eq(cashBalances.snapshotDate, latestDate)
+          )
+        )
+        .groupBy(cashBalances.currency, cashBalances.source)
+        .orderBy(desc(sql`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`))
+    : [];
+
+  const cashBreakdown: CashBreakdownRow[] = cashRows.map((row) => ({
+    currency: row.currency,
+    balance: parseFloat(row.balance) || 0,
+    balanceUsd: row.balanceUsd ? parseFloat(row.balanceUsd) : null,
+    source: row.source,
+  }));
 
   return {
     navTrend,
     accountSnapshots,
     latestAccountSnapshot,
     underlyingBreakdown,
+    cashBreakdown,
   };
 }
 
@@ -158,6 +192,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       accountSnapshots: [],
       latestAccountSnapshot: null,
       underlyingBreakdown: [],
+      cashBreakdown: [],
     };
   }
 
@@ -176,6 +211,8 @@ export async function getPortfolioDashboardDataMultiAccount(
       absOptionNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absOptionNotional} AS NUMERIC))`,
       absCryptoSpotNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absCryptoSpotNotional} AS NUMERIC))`,
       absPerpNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absPerpNotional} AS NUMERIC))`,
+      navAtSnapshot: sql<string>`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`,
+      totalCashUsd: sql<string>`SUM(CAST(${portfolioSnapshots.totalCashUsd} AS NUMERIC))`,
     })
     .from(portfolioSnapshots)
     .where(
@@ -188,37 +225,20 @@ export async function getPortfolioDashboardDataMultiAccount(
     .orderBy(desc(portfolioSnapshots.snapshotDate))
     .limit(90);
 
-  // --- Aggregate NAV by date ---
-  const navRows = await db
-    .select({
-      date: navSnapshots.reportDate,
-      nav: sql<string>`SUM(CAST(${navSnapshots.total} AS NUMERIC))`,
-    })
-    .from(navSnapshots)
-    .where(inArray(navSnapshots.accountId, accountIds))
-    .groupBy(navSnapshots.reportDate)
-    .orderBy(desc(navSnapshots.reportDate))
-    .limit(120);
-
-  // Build a map of date -> total NAV for leverage calculation
-  const navByDate = new Map<string, number>();
-  for (const row of navRows) {
-    const nav = toNumber(row.nav);
-    if (nav !== null) {
-      navByDate.set(row.date, nav);
-    }
-  }
-
-  // Build account snapshots with recalculated leverage
+  // Build account snapshots with leverage from navAtSnapshot
   const accountSnapshots = accountRows
     .map<PortfolioTrendPoint>((row) => {
       const totalAbsNotional = toNumber(row.totalAbsNotional);
-      const nav = navByDate.get(row.snapshotDate);
-      // Recalculate leverage: (totalAbsNotional / totalNAV) * 100
+      const nav = toNumber(row.navAtSnapshot);
+      const totalCashUsd = toNumber(row.totalCashUsd);
+
       let pctNavAbsNotional: number | null = null;
+      let leverageRatio: number | null = null;
       if (totalAbsNotional !== null && nav && nav > 0) {
         pctNavAbsNotional = (totalAbsNotional / nav) * 100;
+        leverageRatio = totalAbsNotional / nav;
       }
+
       return {
         date: row.snapshotDate,
         totalAbsNotional,
@@ -228,6 +248,9 @@ export async function getPortfolioDashboardDataMultiAccount(
         absOptionNotional: toNumber(row.absOptionNotional),
         absCryptoSpotNotional: toNumber(row.absCryptoSpotNotional),
         absPerpNotional: toNumber(row.absPerpNotional),
+        navAtSnapshot: nav,
+        totalCashUsd,
+        leverageRatio,
       };
     })
     .reverse();
@@ -242,6 +265,8 @@ export async function getPortfolioDashboardDataMultiAccount(
       absOptionNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absOptionNotional} AS NUMERIC))`,
       absCryptoSpotNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absCryptoSpotNotional} AS NUMERIC))`,
       absPerpNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absPerpNotional} AS NUMERIC))`,
+      navAtSnapshot: sql<string>`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`,
+      totalCashUsd: sql<string>`SUM(CAST(${portfolioSnapshots.totalCashUsd} AS NUMERIC))`,
       maxDate: sql<string>`MAX(${portfolioSnapshots.snapshotDate})`,
     })
     .from(portfolioSnapshots)
@@ -260,27 +285,14 @@ export async function getPortfolioDashboardDataMultiAccount(
 
   const latestRow = latestSnapshotRows[0];
   const latestTotalAbsNotional = toNumber(latestRow?.totalAbsNotional);
-  // Get latest per-account NAV for leverage calculation
-  const latestNavResult = await db
-    .select({
-      nav: sql<string>`SUM(CAST(${navSnapshots.total} AS NUMERIC))`,
-    })
-    .from(navSnapshots)
-    .where(
-      and(
-        inArray(navSnapshots.accountId, accountIds),
-        sql`${navSnapshots.reportDate} = (
-          SELECT MAX(n2.report_date)
-          FROM nav_snapshots n2
-          WHERE n2.account_id = ${navSnapshots.accountId}
-        )`
-      )
-    );
-  const latestNav = toNumber(latestNavResult[0]?.nav);
+  const latestNav = toNumber(latestRow?.navAtSnapshot);
+  const latestTotalCashUsd = toNumber(latestRow?.totalCashUsd);
 
   let latestPctNav: number | null = null;
+  let latestLeverageRatio: number | null = null;
   if (latestTotalAbsNotional !== null && latestNav && latestNav > 0) {
     latestPctNav = (latestTotalAbsNotional / latestNav) * 100;
+    latestLeverageRatio = latestTotalAbsNotional / latestNav;
   }
 
   const latestAccountSnapshot: PortfolioTrendPoint | null = latestRow?.maxDate
@@ -293,6 +305,9 @@ export async function getPortfolioDashboardDataMultiAccount(
         absOptionNotional: toNumber(latestRow.absOptionNotional),
         absCryptoSpotNotional: toNumber(latestRow.absCryptoSpotNotional),
         absPerpNotional: toNumber(latestRow.absPerpNotional),
+        navAtSnapshot: latestNav,
+        totalCashUsd: latestTotalCashUsd,
+        leverageRatio: latestLeverageRatio,
       }
     : null;
 
@@ -343,18 +358,49 @@ export async function getPortfolioDashboardDataMultiAccount(
       };
     });
 
-  const navTrend: NavTrendPoint[] = navRows
-    .map((row) => ({
-      date: row.date,
-      nav: toNumber(row.nav),
-    }))
-    .reverse();
+  // NAV trend from portfolio_snapshots.navAtSnapshot (captures all accounts)
+  const navTrend: NavTrendPoint[] = accountSnapshots
+    .filter((s) => s.navAtSnapshot !== null)
+    .map((s) => ({ date: s.date, nav: s.navAtSnapshot }));
+
+  // Cash breakdown for latest date across all selected accounts
+  const latestDate = latestAccountSnapshot?.date ?? null;
+  const cashRows = latestDate
+    ? await db
+        .select({
+          currency: cashBalances.currency,
+          balance: sql<string>`SUM(CAST(${cashBalances.balance} AS NUMERIC))`,
+          balanceUsd: sql<string>`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`,
+          source: cashBalances.source,
+        })
+        .from(cashBalances)
+        .where(
+          and(
+            inArray(cashBalances.accountId, accountIds),
+            sql`${cashBalances.snapshotDate} = (
+              SELECT MAX(cb2.snapshot_date)
+              FROM cash_balances cb2
+              WHERE cb2.account_id = ${cashBalances.accountId}
+            )`
+          )
+        )
+        .groupBy(cashBalances.currency, cashBalances.source)
+        .orderBy(desc(sql`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`))
+    : [];
+
+  const cashBreakdown: CashBreakdownRow[] = cashRows.map((row) => ({
+    currency: row.currency,
+    balance: parseFloat(row.balance) || 0,
+    balanceUsd: row.balanceUsd ? parseFloat(row.balanceUsd) : null,
+    source: row.source,
+  }));
 
   return {
     navTrend,
     accountSnapshots,
     latestAccountSnapshot,
     underlyingBreakdown,
+    cashBreakdown,
   };
 }
 
@@ -401,6 +447,8 @@ export interface PortfolioPositionsData {
   strategies: PortfolioStrategyRow[];
   unlinkedPositions: PortfolioPositionRow[];
   nav: number | null;
+  totalCashUsd: number | null;
+  leverageRatio: number | null;
   snapshotDate: string | null;
 }
 
@@ -412,7 +460,7 @@ export async function getPortfolioPositionsData(
   accountIds: string[]
 ): Promise<PortfolioPositionsData> {
   if (accountIds.length === 0) {
-    return { strategies: [], unlinkedPositions: [], nav: null, snapshotDate: null };
+    return { strategies: [], unlinkedPositions: [], nav: null, totalCashUsd: null, leverageRatio: null, snapshotDate: null };
   }
 
   // Fetch all open positions at each account's latest snapshot date.
@@ -456,7 +504,7 @@ export async function getPortfolioPositionsData(
     .orderBy(asc(positions.symbol));
 
   if (positionRows.length === 0) {
-    return { strategies: [], unlinkedPositions: [], nav: null, snapshotDate: null };
+    return { strategies: [], unlinkedPositions: [], nav: null, totalCashUsd: null, leverageRatio: null, snapshotDate: null };
   }
 
   // Compute display snapshot date (max across all accounts' latest dates)
@@ -465,25 +513,34 @@ export async function getPortfolioPositionsData(
     return !max || r.snapshotDate > max ? r.snapshotDate : max;
   }, null as string | null);
 
-  // Get aggregated NAV: latest per-account NAV summed across selected accounts.
-  // Crypto accounts without NAV snapshots simply don't contribute.
-  const navResult = await db
+  // Get aggregated NAV, cash, and leverage from portfolio_snapshots.
+  // Uses per-account latest dates so all exchanges contribute.
+  const portfolioResult = await db
     .select({
-      nav: sql<string>`SUM(CAST(${navSnapshots.total} AS NUMERIC))`,
+      nav: sql<string>`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`,
+      totalCashUsd: sql<string>`SUM(CAST(${portfolioSnapshots.totalCashUsd} AS NUMERIC))`,
+      totalAbsNotional: sql<string>`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC))`,
     })
-    .from(navSnapshots)
+    .from(portfolioSnapshots)
     .where(
       and(
-        inArray(navSnapshots.accountId, accountIds),
-        sql`${navSnapshots.reportDate} = (
-          SELECT MAX(n2.report_date)
-          FROM nav_snapshots n2
-          WHERE n2.account_id = ${navSnapshots.accountId}
+        inArray(portfolioSnapshots.accountId, accountIds),
+        eq(portfolioSnapshots.level, "account"),
+        sql`${portfolioSnapshots.snapshotDate} = (
+          SELECT MAX(ps2.snapshot_date)
+          FROM portfolio_snapshots ps2
+          WHERE ps2.account_id = ${portfolioSnapshots.accountId}
+            AND ps2.level = 'account'
         )`
       )
     );
 
-  const nav = toNumber(navResult[0]?.nav);
+  const nav = toNumber(portfolioResult[0]?.nav);
+  const totalCashUsd = toNumber(portfolioResult[0]?.totalCashUsd);
+  const totalAbsNotional = toNumber(portfolioResult[0]?.totalAbsNotional);
+  const leverageRatio = totalAbsNotional !== null && nav && nav > 0
+    ? totalAbsNotional / nav
+    : null;
 
   const allPositions: PortfolioPositionRow[] = positionRows.map((row) => ({
     id: row.id,
@@ -582,6 +639,8 @@ export async function getPortfolioPositionsData(
     strategies: strategyList,
     unlinkedPositions,
     nav,
+    totalCashUsd,
+    leverageRatio,
     snapshotDate,
   };
 }

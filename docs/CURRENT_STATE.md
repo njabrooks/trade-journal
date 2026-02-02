@@ -51,6 +51,8 @@ Data flows into this hierarchy from two primary sources:
 | HyperLiquid | Fills, Perps, Spot, Staking | Every 4h (GitHub Actions) | POST to `/info` endpoint |
 | Coinbase Prime | Fills, Balances | Every 4h (GitHub Actions) | HMAC-SHA256 authenticated REST |
 | Kraken | Trades, Balances, Margin Positions | Every 4h (GitHub Actions) | HMAC-SHA512 authenticated REST |
+| Deribit | Spot Fills, Balances | Every 4h (GitHub Actions) | OAuth client credentials REST |
+| Solana | Wallet Balances | Every 4h (GitHub Actions) | Helius DAS API |
 | Massive.com | IV, Spot prices | Daily (4:30 PM ET) | REST API |
 | Yahoo Finance | Spot prices | On-demand | Fallback source |
 | IBKR Gateway | IV, Historical | On-demand | Client Portal API |
@@ -61,6 +63,8 @@ Data flows into this hierarchy from two primary sources:
 - `flex_query_configs` - Flex query configuration
 - `trades` - Individual trade executions (IBKR + HyperLiquid + Coinbase Prime + Kraken)
 - `positions` - Current/closed positions with MTM (STK, OPT, CRYPTO, PERP)
+- `nav_snapshots` - NAV per account (IBKR EQUT, HyperLiquid marginSummary) with cash column
+- `cash_balances` - Per-currency cash/stablecoin/fiat balances per account/date/source
 - `underlyings` - Ticker metadata (spot, IV30, conid)
 - `underlyings_iv_history` - Time-series IV/spot snapshots
 - `options_chain_snapshots` - Full options chains
@@ -71,6 +75,9 @@ Data flows into this hierarchy from two primary sources:
 - `src/lib/ingestion/hyperliquid/` - HyperLiquid API client, fill/position normalization
 - `src/lib/ingestion/coinbase-prime/` - Coinbase Prime API client (HMAC auth), fill/balance normalization
 - `src/lib/ingestion/kraken/` - Kraken API client (HMAC-SHA512 auth), trade/balance/margin normalization
+- `src/lib/ingestion/deribit/` - Deribit API client (OAuth auth), spot fills/balances
+- `src/lib/ingestion/solana/` - Solana/Helius API client, token balance normalization
+- `src/lib/ingestion/crypto/cashBalances.ts` - Shared cash balance upsert helper
 - `src/lib/services/processTracking.ts` - Process tracking service
 - `scripts/run-flex-ingestion.ts` - IBKR GitHub Actions runner
 - `scripts/ingest-hyperliquid.ts` - HyperLiquid GitHub Actions runner

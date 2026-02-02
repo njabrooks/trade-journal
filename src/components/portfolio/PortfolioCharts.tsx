@@ -10,6 +10,7 @@ export interface ExposureBreakdown {
   options: number;
   cryptoSpot: number;
   perpetuals: number;
+  cash: number;
 }
 
 interface PortfolioChartsProps {
@@ -28,6 +29,7 @@ export function PortfolioCharts({ dashboardData, exposureBreakdown }: PortfolioC
     { label: "Options", value: exposureBreakdown.options, color: "oklch(0.7 0.24 30)" },
     { label: "Crypto Spot", value: exposureBreakdown.cryptoSpot, color: "oklch(0.7 0.18 150)" },
     { label: "Perpetuals", value: exposureBreakdown.perpetuals, color: "oklch(0.65 0.22 310)" },
+    { label: "Cash", value: exposureBreakdown.cash, color: "oklch(0.75 0.1 90)" },
   ];
 
   return (

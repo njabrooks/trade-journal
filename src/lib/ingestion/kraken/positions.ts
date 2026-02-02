@@ -9,6 +9,7 @@
 
 import type { KrakenOpenPosition } from './api';
 import type { CryptoPositionInput } from '../crypto/types';
+import type { CashBalanceInput } from '../crypto/cashBalances';
 import { normalizeKrakenPair } from '../crypto/pairNormalization';
 
 // Kraken balance keys to skip (fiat currencies and stablecoins)
@@ -172,6 +173,59 @@ export function normalizeKrakenOpenPositions(
       absNotional: value?.toFixed(6) ?? null,
       unrealizedPnl: net?.toFixed(6) ?? null,
       snapshotDate,
+    });
+  }
+
+  return results;
+}
+
+// Map Kraken fiat/stablecoin keys to canonical currency + USD flag
+const CASH_ASSETS: Record<string, { currency: string; isUsd: boolean }> = {
+  'ZUSD': { currency: 'USD', isUsd: true },
+  'USD': { currency: 'USD', isUsd: true },
+  'USDC': { currency: 'USDC', isUsd: true },
+  'USDT': { currency: 'USDT', isUsd: true },
+  'DAI': { currency: 'DAI', isUsd: true },
+  'PYUSD': { currency: 'PYUSD', isUsd: true },
+  'ZEUR': { currency: 'EUR', isUsd: false },
+  'EUR': { currency: 'EUR', isUsd: false },
+  'ZGBP': { currency: 'GBP', isUsd: false },
+  'GBP': { currency: 'GBP', isUsd: false },
+  'ZCAD': { currency: 'CAD', isUsd: false },
+  'CAD': { currency: 'CAD', isUsd: false },
+  'ZJPY': { currency: 'JPY', isUsd: false },
+  'JPY': { currency: 'JPY', isUsd: false },
+};
+
+/**
+ * Extract fiat and stablecoin balances from Kraken as cash.
+ * De-duplicates Kraken's double keys (e.g., ZUSD and USD for same balance).
+ */
+export function extractKrakenCashBalances(
+  balances: Record<string, string>,
+  accountId: string,
+  snapshotDate: string
+): CashBalanceInput[] {
+  const results: CashBalanceInput[] = [];
+  const seenCurrencies = new Set<string>();
+
+  for (const [key, amountStr] of Object.entries(balances)) {
+    const config = CASH_ASSETS[key];
+    if (!config) continue;
+
+    const amount = parseFloat(amountStr);
+    if (amount === 0) continue;
+
+    if (seenCurrencies.has(config.currency)) continue;
+    seenCurrencies.add(config.currency);
+
+    results.push({
+      accountId,
+      snapshotDate,
+      currency: config.currency,
+      balance: amount.toString(),
+      balanceUsd: config.isUsd ? amount.toString() : null,
+      source: 'kraken',
     });
   }
 

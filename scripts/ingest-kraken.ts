@@ -15,8 +15,9 @@ import { eq, and, ne, sql } from 'drizzle-orm';
 // Kraken API functions
 import { fetchAllTrades, fetchBalance, fetchOpenPositions, fetchTickerPrices } from '../src/lib/ingestion/kraken/api.js';
 import { normalizeKrakenTrade } from '../src/lib/ingestion/kraken/fills.js';
-import { normalizeKrakenBalances, normalizeKrakenOpenPositions, getTickerPair } from '../src/lib/ingestion/kraken/positions.js';
+import { normalizeKrakenBalances, normalizeKrakenOpenPositions, getTickerPair, extractKrakenCashBalances } from '../src/lib/ingestion/kraken/positions.js';
 import { toNewTrade, toNewPosition } from '../src/lib/ingestion/crypto/types.js';
+import { upsertCashBalances } from '../src/lib/ingestion/crypto/cashBalances.js';
 
 // Reuse existing infra
 import { resolveAccountId } from '../src/lib/ingestion/flex/account.js';
@@ -211,6 +212,11 @@ async function main() {
 
       const spotPositions = normalizeKrakenBalances(balances, tickerPrices, accountId, snapshotDate);
       console.log(`[Kraken] Spot positions: ${spotPositions.length} active (non-fiat/stablecoin)`);
+
+      // ── Step 2b: Extract cash balances ──────────────────────
+      const cashInputs = extractKrakenCashBalances(balances, accountId, snapshotDate);
+      const cashInserted = await upsertCashBalances(cashInputs);
+      console.log(`[Kraken] Cash balances: ${cashInserted} inserted (${cashInputs.map(c => `${c.currency}: ${c.balanceUsd ? '$' + parseFloat(c.balanceUsd).toFixed(0) : c.balance + ' ' + c.currency}`).join(', ') || 'none'})`);
 
       // ── Step 3: Fetch open margin positions ─────────────────────
       console.log('\n[Kraken] Fetching open margin positions...');

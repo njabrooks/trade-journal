@@ -20,31 +20,43 @@ function MetricCard({ label, value, subtitle }: MetricCardProps) {
 
 interface PortfolioMetricsRowProps {
   totalMarketValue: number;
+  totalCashUsd: number | null;
+  nav: number | null;
+  leverageRatio: number | null;
   positionCount: number;
-  underlyingCount: number;
   snapshotDate: string | null;
 }
 
 export function PortfolioMetricsRow({
   totalMarketValue,
+  totalCashUsd,
+  nav,
+  leverageRatio,
   positionCount,
-  underlyingCount,
   snapshotDate,
 }: PortfolioMetricsRowProps) {
   return (
-    <section className="grid gap-4 sm:grid-cols-3">
+    <section className="grid gap-4 sm:grid-cols-5">
       <MetricCard
         label="Market Value"
         value={formatCurrency(totalMarketValue)}
         subtitle={snapshotDate ? `As of ${snapshotDate}` : undefined}
       />
       <MetricCard
-        label="Positions"
-        value={positionCount.toLocaleString()}
+        label="Cash"
+        value={totalCashUsd !== null ? formatCurrency(totalCashUsd) : "\u2014"}
       />
       <MetricCard
-        label="Underlyings"
-        value={underlyingCount.toLocaleString()}
+        label="NAV"
+        value={nav !== null ? formatCurrency(nav) : "\u2014"}
+      />
+      <MetricCard
+        label="Leverage"
+        value={leverageRatio !== null ? `${leverageRatio.toFixed(2)}x` : "\u2014"}
+      />
+      <MetricCard
+        label="Positions"
+        value={positionCount.toLocaleString()}
       />
     </section>
   );

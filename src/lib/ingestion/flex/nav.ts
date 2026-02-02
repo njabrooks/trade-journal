@@ -11,6 +11,7 @@ const FIELD_VARIANTS = {
   total: ['NetLiquidation', 'Total', 'total'],
   totalLong: ['TotalLong', 'Total Long', 'StockMarketValue', 'Stock Market Value'],
   totalShort: ['TotalShort', 'Total Short', 'ShortMarketValue', 'Short Market Value'],
+  cash: ['Cash', 'CashBalance', 'TotalCash', 'Money Market Value'],
 };
 
 const DATE_YYYYMMDD = /^\d{8}$/;
@@ -74,6 +75,7 @@ export function normalizeFlexNavRow(
     total,
     totalLong: parseNumeric(getValue(row, FIELD_VARIANTS.totalLong)),
     totalShort: parseNumeric(getValue(row, FIELD_VARIANTS.totalShort)),
+    cash: parseNumeric(getValue(row, FIELD_VARIANTS.cash)),
   };
 }
 

@@ -312,7 +312,7 @@ AI-generated descriptions from linked macro theses and claims.
 
 ## Enhancement Registry
 
-**Next Enhancement ID**: #ENH-052
+**Next Enhancement ID**: #ENH-053
 
 ### ID Allocation
 
@@ -326,7 +326,8 @@ AI-generated descriptions from linked macro theses and claims.
 | #ENH-049 | Unified Entity Detail UX/UI |
 | #ENH-050 | Unified Triage Action Button |
 | #ENH-051 | Crypto Position Cost Basis |
-| #ENH-052+ | Available |
+| #ENH-052 | Cash Balances & NAV Tracking |
+| #ENH-053+ | Available |
 
 **Format**: `#ENH-XXX` or `#ENH-XXX-name` for variants
 
@@ -340,6 +341,7 @@ For detailed specifications of completed work, see [docs/archive/completed-enhan
 
 | Phase | Date | Key Deliverables |
 |-------|------|------------------|
+| #ENH-052 | 2026-02-02 | Cash Balances & NAV Tracking - `cash_balances` table, dual-path NAV (authoritative for IBKR/HL, derived for others), leverage ratio, portfolio UI with 5 metric cards and cash breakdown tab |
 | #ENH-050 | 2026-01-19 | Unified Triage Action Button - TriageQuickAction component with context-aware actions, simplified synthesis UI with claim counts, ThesisClaimsBrowserWrapper |
 | #ENH-049 | 2026-01-19 | Unified Entity Detail UX/UI - 3-tab pattern (Overview/Evidence/Execution) with shared layout components across all entity types |
 | Bugfix | 2026-01-19 | Trade ingestion triage fix - restored `TRADE_INGESTION` triage records after blotter migration |
