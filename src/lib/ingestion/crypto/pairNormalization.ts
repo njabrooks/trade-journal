@@ -73,6 +73,22 @@ export function extractKrakenQuoteCurrency(pair: string): string {
  * Normalize Kraken pair names to canonical ticker.
  * "XXBTZUSD" → "BTC", "XETHZEUR" → "ETH", "SOLUSD" → "SOL"
  */
+/**
+ * Normalize Deribit currency name to canonical ticker.
+ * Deribit uses clean currency names ("BTC", "ETH", "SOL").
+ */
+export function normalizeDeribitCurrency(currency: string): string {
+  return currency.toUpperCase();
+}
+
+/**
+ * Normalize Solana SPL token symbol from Helius DAS API metadata.
+ * Helius returns token symbols directly in content.metadata.
+ */
+export function normalizeSolanaTokenSymbol(symbol: string): string {
+  return symbol.toUpperCase();
+}
+
 export function normalizeKrakenPair(pair: string): string {
   // Strip quote currency suffix (try longest match first)
   let base = pair;

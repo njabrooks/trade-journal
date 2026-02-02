@@ -16,6 +16,8 @@ export type JobType =
   | 'hyperliquid_ingestion'
   | 'coinbase_prime_ingestion'
   | 'kraken_ingestion'
+  | 'deribit_ingestion'
+  | 'solana_ingestion'
   | 'recompute_all'
   | 'recompute_portfolio'
   | 'recompute_strategy_metrics'

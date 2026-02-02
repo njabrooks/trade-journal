@@ -30,7 +30,7 @@ export interface CryptoTradeInput {
 export interface CryptoPositionInput {
   accountId: string;
   underlyingId: string | null;
-  assetClass: 'CRYPTO' | 'PERP';
+  assetClass: 'CRYPTO' | 'PERP' | 'OPT';
   symbol: string;
   multiplier: string;
   side: 'LONG' | 'SHORT';
@@ -43,6 +43,10 @@ export interface CryptoPositionInput {
   absNotional: string | null;
   unrealizedPnl: string | null;
   snapshotDate: string;
+  // Options-specific fields (populated by Deribit options, null for other exchanges)
+  expiry?: string | null;
+  strike?: string | null;
+  optionRight?: 'C' | 'P' | null;
 }
 
 /**
@@ -83,9 +87,9 @@ export function toNewPosition(input: CryptoPositionInput): Omit<NewPosition, 'id
     assetClass: input.assetClass,
     symbol: input.symbol,
     conid: null,
-    expiry: null,
-    strike: null,
-    optionRight: null,
+    expiry: input.expiry ?? null,
+    strike: input.strike ?? null,
+    optionRight: input.optionRight ?? null,
     multiplier: input.multiplier,
     side: input.side,
     quantity: input.quantity,
