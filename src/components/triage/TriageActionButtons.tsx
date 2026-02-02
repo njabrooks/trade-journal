@@ -64,8 +64,8 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "LINK_STRATEGY_TO_THESIS": ["UPDATE", "DISMISS"],  // Link thesis to confirmed strategy (info, dismissable)
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
   "REVIEW_COMPLEXITY": [], // No actions available
-  "QUANTITY_CHANGE": ["TRADE"], // TRADE action for quantity change triggers (creates Trade Actions)
-  "TRADE_INGESTION": ["TRADE"], // TRADE action for newly ingested trades
+  "QUANTITY_CHANGE": ["TRADE", "DISMISS"], // TRADE action for quantity change triggers, or DISMISS for spam/airdrop
+  "TRADE_INGESTION": ["TRADE", "DISMISS"], // TRADE action for newly ingested trades, or DISMISS for spam/airdrop
   // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
 };
 
@@ -86,7 +86,7 @@ function getAvailableActions(recommendedAction: string | null, severity: string 
 
   // Special case: DISMISS not available if severity is 'info'
   // Exception: LINK_STRATEGY_TO_THESIS allows dismiss at info level (to permanently skip thesis linkage)
-  if (severity === "info" && actions.includes("DISMISS") && recommendedAction !== "LINK_STRATEGY_TO_THESIS") {
+  if (severity === "info" && actions.includes("DISMISS") && recommendedAction !== "LINK_STRATEGY_TO_THESIS" && recommendedAction !== "QUANTITY_CHANGE" && recommendedAction !== "TRADE_INGESTION") {
     return actions.filter((a) => a !== "DISMISS");
   }
 
