@@ -36,6 +36,9 @@ npx tsx scripts/ingest-coinbase-prime.ts        # Coinbase Prime crypto ingestio
 npx tsx scripts/ingest-coinbase-prime.ts --full # Coinbase Prime full backfill
 npx tsx scripts/ingest-kraken.ts               # Kraken crypto ingestion
 npx tsx scripts/ingest-kraken.ts --full        # Kraken full backfill
+npx tsx scripts/ingest-deribit.ts              # Deribit crypto ingestion
+npx tsx scripts/ingest-deribit.ts --full       # Deribit full backfill
+npx tsx scripts/ingest-solana.ts               # Solana wallet balance ingestion
 
 # Research workflow scripts
 npx tsx scripts/test-claims-integration.ts      # Test claims parsing & DB integration
@@ -246,14 +249,20 @@ Contains business logic for calculating derived insights from raw data:
   - `processCsv.ts` - Generic CSV parsing/validation framework (uses PapaParse)
 - **`crypto/`** - Shared crypto exchange modules
   - `types.ts` - `CryptoTradeInput`, `CryptoPositionInput`, converters to schema types
-  - `pairNormalization.ts` - Exchange-specific ticker normalization (HyperLiquid, Coinbase Prime, Kraken)
+  - `pairNormalization.ts` - Exchange-specific ticker normalization (HyperLiquid, Coinbase Prime, Kraken, Deribit, Solana)
   - `cursors.ts` - Incremental ingestion cursor helpers using `ingestion_cursors` table
 - **`coinbase-prime/`** - Coinbase Prime API integration (HMAC-SHA256 auth, fills, balances)
+- **`deribit/`** - Deribit API integration (OAuth client credentials auth, spot fills + balances)
+  - `api.ts` - HTTP client with OAuth token caching, types, retry/backoff
+  - `fills.ts` - Spot trade normalization
 - **`hyperliquid/`** - HyperLiquid API integration
 - **`kraken/`** - Kraken API integration (HMAC-SHA512 auth, trades, balances, margin positions)
   - `api.ts` - HTTP client (single POST endpoint, no auth), types, retry/backoff
   - `fills.ts` - Fill normalization + time-based pagination (500/query, 10K limit)
   - `positions.ts` - Perp, spot, and staked HYPE position normalization
+- **`solana/`** - Solana blockchain integration (Helius DAS API, balance snapshots only)
+  - `api.ts` - Helius RPC client, DAS API types
+  - `positions.ts` - Token balance normalization (SOL + SPL tokens)
 - **`massive/`** - Massive.com integration for daily IV/spot snapshots
 - **`underlyingsIvHistory.ts`** - IV history management
 
@@ -418,6 +427,8 @@ Ingestion runs automatically via GitHub Actions (all times UTC):
 - **HyperLiquid ingestion**: Every 4 hours, 24/7 (crypto markets)
 - **Coinbase Prime ingestion**: Every 4 hours (offset 15min from HL), 24/7
 - **Kraken ingestion**: Every 4 hours (offset 30min from HL), 24/7
+- **Deribit ingestion**: Every 4 hours (offset 45min from HL), 24/7
+- **Solana ingestion**: Every 4 hours (offset 50min from HL), 24/7
 
 Workflows:
 - `.github/workflows/flex-ingestion.yml` - IBKR Flex API trades/positions
@@ -425,6 +436,8 @@ Workflows:
 - `.github/workflows/hyperliquid-ingestion.yml` - HyperLiquid fills/positions/staking
 - `.github/workflows/coinbase-prime-ingestion.yml` - Coinbase Prime fills/balances
 - `.github/workflows/kraken-ingestion.yml` - Kraken trades/balances/margin positions
+- `.github/workflows/deribit-ingestion.yml` - Deribit spot fills/balances
+- `.github/workflows/solana-ingestion.yml` - Solana wallet balance snapshots
 
 Manual trigger available from GitHub UI for testing.
 
@@ -493,6 +506,14 @@ HYPERLIQUID_WALLET_ADDRESS=0x...
 # Kraken
 KRAKEN_API_KEY=<api-key>
 KRAKEN_API_SECRET=<base64-encoded-api-secret>
+
+# Deribit
+DERIBIT_CLIENT_ID=<client-id>
+DERIBIT_CLIENT_SECRET=<client-secret>
+
+# Solana (Helius) — supports multiple wallets with owner labels
+HELIUS_API_KEY=<api-key>
+SOLANA_WALLETS='[{"address":"<wallet-1>","label":"Owner Name 1"},{"address":"<wallet-2>","label":"Owner Name 2"}]'
 
 # TradingView Webhooks (optional - for strategy signals)
 NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-webhook
@@ -735,6 +756,8 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 17. **HyperLiquid Integration** - No auth needed for reads. Fills (trades), perp/spot positions, staked HYPE (delegations), and mark prices via single POST endpoint. Incremental fill ingestion via `ingestion_cursors` table
 18. **Coinbase Prime Integration** - HMAC-SHA256 auth with base64-decoded secret. Fills (trades) with cursor pagination, balances (positions) with USD fiat_amount. No cost basis on positions (deferred to #ENH-051). Spot-only (no perps)
 19. **Kraken Integration** - HMAC-SHA512 auth with base64-decoded secret + nonce. TradesHistory (offset pagination, 50/page, rate cost 2), Balance (spot positions with Ticker price enrichment), OpenPositions (margin with cost basis/PnL from API). No cost basis on spot positions (deferred to #ENH-051)
+20. **Deribit Integration** - OAuth client credentials auth (token cached, auto-refreshed on expiry). Spot fills (trade history) with incremental cursor ingestion + account balance snapshots. Options/futures support deferred — shared types pre-wired with OPT asset class and expiry/strike/optionRight fields for future use. Iterates over supported currencies (BTC, ETH, SOL, USDC). Index prices fetched from public endpoint for USD conversion
+21. **Solana Integration** - Balance-only snapshot via Helius DAS API (`getAssetsByOwner`). No trade history. API key appended to RPC URL. Captures native SOL + SPL fungible tokens with USD pricing from Helius. Filters dust tokens (< $0.01) and stablecoins. Supports multiple wallets via `SOLANA_WALLETS` JSON env var with per-wallet labels. Each wallet becomes a separate account with its label set
 
 ## TradingView Webhook Integration
 
