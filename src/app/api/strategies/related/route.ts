@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { strategies, strategyTemplates, underlyings, positions, accounts } from '@/db/schema';
-import { eq, and, ne, sql } from 'drizzle-orm';
+import { eq, and, ne, or, sql } from 'drizzle-orm';
 
 /**
  * GET /api/strategies/related?underlyingTicker=XXX&excludeId=YYY
  *
- * Returns strategies that share the same underlying ticker, excluding the specified strategy.
- * Used for merge candidate selection in the strategy confirmation dialog.
+ * Returns strategies that share the same underlying or parent underlying family,
+ * excluding the specified strategy. Used for merge candidate selection in the
+ * strategy confirmation dialog.
+ *
+ * Parent underlying family: if CBBTC has parent BTC, this returns strategies for
+ * BTC, CBBTC, WBTC, IBIT, etc. — any underlying that shares the same root.
  *
  * Returns account information derived from positions (not strategy-level accountId)
  * since strategies can span multiple accounts after merges.
@@ -25,7 +29,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Find all strategies with matching underlying ticker
+    // Resolve the underlying and its parent to find the whole family
+    const [underlying] = await db
+      .select({ id: underlyings.id, parentUnderlyingId: underlyings.parentUnderlyingId })
+      .from(underlyings)
+      .where(eq(sql`LOWER(${underlyings.ticker})`, underlyingTicker.toLowerCase()))
+      .limit(1);
+
+    if (!underlying) {
+      return NextResponse.json([]);
+    }
+
+    // The "root" is the parent if one exists, otherwise this underlying itself.
+    // Family = root + all underlyings whose parentUnderlyingId = root
+    const rootId = underlying.parentUnderlyingId || underlying.id;
+
+    // Find all strategies in the parent underlying family
     // Join through strategyTemplates → underlyings to get the ticker
     // Label comes from strategyTemplates.label or strategies.autoDerivedLabel as fallback
     // Account info is derived from positions (strategies can span multiple accounts)
@@ -38,6 +57,7 @@ export async function GET(request: NextRequest) {
         status: strategies.status,
         createdAt: strategies.createdAt,
         assetThesisId: strategies.assetThesisId,
+        underlyingTicker: underlyings.ticker,
         // Count open positions for this strategy
         openPositionsCount: sql<number>`(
           SELECT COUNT(*)::int
@@ -58,7 +78,10 @@ export async function GET(request: NextRequest) {
       .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
       .where(
         and(
-          eq(sql`LOWER(${underlyings.ticker})`, underlyingTicker.toLowerCase()),
+          or(
+            eq(underlyings.id, rootId),
+            eq(underlyings.parentUnderlyingId, rootId)
+          ),
           excludeId ? ne(strategies.id, excludeId) : undefined
         )
       )

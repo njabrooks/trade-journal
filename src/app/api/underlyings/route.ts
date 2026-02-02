@@ -11,6 +11,7 @@ export async function GET() {
         ticker: underlyings.ticker,
         name: underlyings.name,
         assetClass: underlyings.assetClass,
+        parentUnderlyingId: underlyings.parentUnderlyingId,
       })
       .from(underlyings)
       .orderBy(asc(underlyings.ticker));

@@ -3,18 +3,22 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { UnderlyingSelector } from '@/components/ui/UnderlyingSelector';
-import { Loader2, Search, Plus, LinkIcon, ChevronDown, ChevronUp, GitMerge, Check, CheckCircle2 } from 'lucide-react';
+import { Loader2, Search, Plus, LinkIcon, ChevronDown, ChevronUp, GitMerge, Check, CheckCircle2, RotateCcw, Ban } from 'lucide-react';
 
 interface Strategy {
   id: string;
   strategyKey: string;
   underlyingTicker?: string | null;
+  underlyingId?: string | null;
+  parentUnderlyingId?: string | null;
+  parentUnderlyingTicker?: string | null;
   label?: string | null;
   status: string;
   isAuto?: boolean;
   strategyType?: string | null;
   direction?: string | null;
   assetThesisId?: string | null;
+  closedAt?: Date | string | null;
 }
 
 interface AssetThesis {
@@ -48,6 +52,7 @@ interface RelatedStrategy {
   accountIds: string[]; // Broker account IDs from positions (strategy can span multiple accounts)
   assetThesisId: string | null; // Whether strategy has an asset thesis link
   createdAt: string; // For showing age/order
+  underlyingTicker: string | null; // Ticker of this strategy's underlying
 }
 
 interface StrategyConfirmationDialogProps {
@@ -97,6 +102,16 @@ export function StrategyConfirmationDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Force close / reopen / reject state
+  const [confirmingForceClose, setConfirmingForceClose] = useState(false);
+  const [confirmingReject, setConfirmingReject] = useState(false);
+
+  // Parent underlying state
+  const [editingParent, setEditingParent] = useState(false);
+  const [parentTicker, setParentTicker] = useState<string | null>(null);
+  const [savingParent, setSavingParent] = useState(false);
+  const [underlyingsList, setUnderlyingsList] = useState<{ id: string; ticker: string; name: string | null; parentUnderlyingId: string | null }[]>([]);
+
   // Merge strategies state
   const [showMergeSection, setShowMergeSection] = useState(false);
   const [relatedStrategies, setRelatedStrategies] = useState<RelatedStrategy[]>([]);
@@ -140,6 +155,14 @@ export function StrategyConfirmationDialog({
       setShowMergeSection(false);
       setRelatedStrategies([]);
       setSelectedMergeIds(new Set());
+
+      // Reset force close / reject state
+      setConfirmingForceClose(false);
+      setConfirmingReject(false);
+
+      // Reset parent underlying state
+      setEditingParent(false);
+      setParentTicker(strategy.parentUnderlyingTicker ?? null);
     }
   }, [isOpen, strategy]);
 
@@ -149,6 +172,13 @@ export function StrategyConfirmationDialog({
       loadRelatedStrategies(strategy.underlyingTicker, strategy.id);
     }
   }, [isOpen, strategy]);
+
+  // Load underlyings list for parent selection
+  useEffect(() => {
+    if (isOpen) {
+      loadUnderlyingsList();
+    }
+  }, [isOpen]);
 
   // Load strategy types
   useEffect(() => {
@@ -260,6 +290,72 @@ export function StrategyConfirmationDialog({
     }
   };
 
+  const loadUnderlyingsList = async () => {
+    try {
+      const response = await fetch('/api/underlyings');
+      if (response.ok) {
+        const data = await response.json();
+        setUnderlyingsList(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Failed to load underlyings:', err);
+    }
+  };
+
+  const handleSetParentUnderlying = async (selectedParentId: string) => {
+    if (!strategy?.underlyingId) return;
+
+    setSavingParent(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/underlyings/${strategy.underlyingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentUnderlyingId: selectedParentId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to set parent underlying');
+      }
+
+      // Update local state to reflect the change
+      const parent = underlyingsList.find((u) => u.id === selectedParentId);
+      setParentTicker(parent?.ticker ?? null);
+      setEditingParent(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set parent underlying');
+    } finally {
+      setSavingParent(false);
+    }
+  };
+
+  const handleClearParentUnderlying = async () => {
+    if (!strategy?.underlyingId) return;
+
+    setSavingParent(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/underlyings/${strategy.underlyingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parentUnderlyingId: null }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to clear parent underlying');
+      }
+
+      setParentTicker(null);
+      setEditingParent(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear parent underlying');
+    } finally {
+      setSavingParent(false);
+    }
+  };
+
   const handleConfirm = async () => {
     if (!strategy) return;
 
@@ -356,15 +452,23 @@ export function StrategyConfirmationDialog({
         throw new Error(errorData.error || 'Failed to confirm strategy');
       }
 
-      // If strategies were selected for merge, merge them into this one
+      // If strategies were selected for merge, determine direction based on underlying
       if (selectedMergeIds.size > 0) {
+        // Cross-underlying merge: if selected strategy has a different underlying,
+        // merge current INTO the selected (parent family merge direction)
+        const selectedIds = Array.from(selectedMergeIds);
+        const crossUnderlying = relatedStrategies.find(
+          (rs) => selectedMergeIds.has(rs.id) && rs.underlyingTicker !== strategy.underlyingTicker
+        );
+
+        const mergePayload = crossUnderlying
+          ? { targetId: crossUnderlying.id, sourceIds: [strategy.id, ...selectedIds.filter((id) => id !== crossUnderlying.id)] }
+          : { targetId: strategy.id, sourceIds: selectedIds };
+
         const mergeResponse = await fetch('/api/strategies/merge', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            targetId: strategy.id,
-            sourceIds: Array.from(selectedMergeIds),
-          }),
+          body: JSON.stringify(mergePayload),
         });
 
         if (!mergeResponse.ok) {
@@ -384,13 +488,23 @@ export function StrategyConfirmationDialog({
   const handleCloseStrategy = async () => {
     if (!strategy) return;
 
+    // For active strategies, require two-click confirmation
+    if (strategy.status === 'active' && !confirmingForceClose) {
+      setConfirmingForceClose(true);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {
+      const body = strategy.status === 'active'
+        ? { forceClose: true }
+        : { status: 'complete' };
+
       const response = await fetch(`/api/strategies/${strategy.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'complete' }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -406,9 +520,72 @@ export function StrategyConfirmationDialog({
     }
   };
 
+  const handleReopenStrategy = async () => {
+    if (!strategy) return;
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/strategies/${strategy.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceClose: false }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to reopen strategy');
+      }
+
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reopen strategy');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRejectStrategy = async () => {
+    if (!strategy) return;
+
+    // For active strategies, require two-click confirmation
+    if (strategy.status === 'active' && !confirmingReject) {
+      setConfirmingReject(true);
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/strategies/${strategy.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to reject strategy');
+      }
+
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reject strategy');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (!isOpen || !strategy) {
     return null;
   }
+
+  // Determine if this is a first-time confirm or an edit
+  const isFirstTimeConfirm = strategy.status === 'draft' && !strategy.strategyType;
+  const dialogTitle = isFirstTimeConfirm ? 'Confirm Strategy' : 'Edit Strategy';
+  const dialogSubtitle = isFirstTimeConfirm
+    ? 'Set strategy details and optionally link to an asset thesis'
+    : 'Update strategy details, thesis link, or change status';
 
   // Count how many theses match the strategy's ticker
   const matchingTickerCount = strategy.underlyingTicker
@@ -422,9 +599,9 @@ export function StrategyConfirmationDialog({
       <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="border-b px-6 py-4">
-          <h2 className="text-xl font-semibold text-foreground">Confirm Strategy</h2>
+          <h2 className="text-xl font-semibold text-foreground">{dialogTitle}</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Set strategy details and optionally link to an asset thesis
+            {dialogSubtitle}
           </p>
         </div>
 
@@ -451,6 +628,73 @@ export function StrategyConfirmationDialog({
                 <span className="text-muted-foreground">Status:</span>{' '}
                 <span className="text-foreground">{strategy.status}</span>
               </div>
+              {strategy.underlyingId && (
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Parent:</span>{' '}
+                  {editingParent ? (
+                    <span className="inline-flex items-center gap-2">
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) handleSetParentUnderlying(e.target.value);
+                        }}
+                        disabled={savingParent}
+                        className="px-2 py-1 border rounded text-sm bg-background text-foreground"
+                      >
+                        <option value="">Select parent...</option>
+                        {underlyingsList
+                          .filter((u) => u.id !== strategy.underlyingId && u.parentUnderlyingId !== strategy.underlyingId)
+                          .map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.ticker}{u.name ? ` - ${u.name}` : ''}
+                            </option>
+                          ))}
+                      </select>
+                      {savingParent && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                      <button
+                        onClick={() => setEditingParent(false)}
+                        className="text-xs text-muted-foreground hover:text-foreground underline"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : parentTicker ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="font-mono font-medium text-foreground">{parentTicker}</span>
+                      <button
+                        onClick={() => setEditingParent(true)}
+                        disabled={savingParent}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Change
+                      </button>
+                      <button
+                        onClick={handleClearParentUnderlying}
+                        disabled={savingParent}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        {savingParent ? 'Clearing...' : 'Clear'}
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="text-muted-foreground">—</span>
+                      <button
+                        onClick={() => setEditingParent(true)}
+                        disabled={savingParent}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Set parent
+                      </button>
+                    </span>
+                  )}
+                  {(editingParent || parentTicker) && strategy.underlyingTicker && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Applies to all {strategy.underlyingTicker} strategies
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -586,8 +830,8 @@ export function StrategyConfirmationDialog({
               {showMergeSection && (
                 <div className="px-4 pb-4 pt-2 border-t border-purple-100">
                   <p className="text-xs text-muted-foreground mb-3">
-                    Select strategies with the same underlying to merge into this one.
-                    All positions and trades will be moved to this strategy.
+                    Select a related strategy to merge with. Same-underlying strategies merge into this one.
+                    Parent-family strategies absorb this one.
                   </p>
 
                   {loadingRelated ? (
@@ -619,6 +863,12 @@ export function StrategyConfirmationDialog({
                               {rs.label && rs.label !== rs.strategyKey && (
                                 <span className="text-sm text-muted-foreground">
                                   ({rs.label})
+                                </span>
+                              )}
+                              {/* Show underlying ticker badge if different from current strategy */}
+                              {rs.underlyingTicker && rs.underlyingTicker !== strategy?.underlyingTicker && (
+                                <span className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 rounded">
+                                  {rs.underlyingTicker}
                                 </span>
                               )}
                               {/* Thesis link indicator */}
@@ -665,10 +915,22 @@ export function StrategyConfirmationDialog({
 
                   {selectedMergeIds.size > 0 && (
                     <div className="mt-3 space-y-2">
-                      <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-2 text-xs text-purple-700 dark:text-purple-300">
-                        {selectedMergeIds.size} strategy(ies) will be merged into this one on confirm.
-                        Their positions and trades will be moved here.
-                      </div>
+                      {(() => {
+                        const crossUnderlying = relatedStrategies.find(
+                          (rs) => selectedMergeIds.has(rs.id) && rs.underlyingTicker !== strategy?.underlyingTicker
+                        );
+                        return crossUnderlying ? (
+                          <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-2 text-xs text-orange-700 dark:text-orange-300">
+                            This strategy will be merged INTO <span className="font-medium">{crossUnderlying.strategyKey}</span> ({crossUnderlying.underlyingTicker}).
+                            Positions and trades will move to the parent strategy.
+                          </div>
+                        ) : (
+                          <div className="bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg p-2 text-xs text-purple-700 dark:text-purple-300">
+                            {selectedMergeIds.size} strategy(ies) will be merged into this one on confirm.
+                            Their positions and trades will be moved here.
+                          </div>
+                        );
+                      })()}
                       {/* Show thesis inheritance notice if applicable */}
                       {!selectedThesisId &&
                         relatedStrategies.some(
@@ -953,58 +1215,136 @@ export function StrategyConfirmationDialog({
         </div>
 
         {/* Footer */}
-        <div className="border-t px-6 py-4 flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={submitting}
-          >
-            Cancel
-          </Button>
-          {strategy.status === 'draft' && (
+        <div className="border-t px-6 py-4 flex items-start">
+          {/* Left: status transition actions */}
+          <div className="flex flex-col gap-1">
+            {(strategy.status === 'draft' || strategy.status === 'active') && (
+              <>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCloseStrategy}
+                    disabled={submitting || confirmingReject}
+                    className="text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950"
+                  >
+                    {submitting && confirmingForceClose ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Closing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {confirmingForceClose ? 'Confirm Close' : 'Close'}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleRejectStrategy}
+                    disabled={submitting || confirmingForceClose}
+                    className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-950"
+                  >
+                    {submitting && confirmingReject ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Rejecting...
+                      </>
+                    ) : (
+                      <>
+                        <Ban className="h-4 w-4 mr-2" />
+                        {confirmingReject ? 'Confirm Reject' : 'Reject'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+                {confirmingForceClose && strategy.status === 'active' && (
+                  <div className="flex items-start gap-2 max-w-[240px]">
+                    <p className="text-xs text-muted-foreground">
+                      Remaining positions will be treated as dust. This can be undone.
+                    </p>
+                    <button
+                      onClick={() => setConfirmingForceClose(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground underline flex-shrink-0"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+                {confirmingReject && (
+                  <div className="flex items-start gap-2 max-w-[240px]">
+                    <p className="text-xs text-muted-foreground">
+                      {strategy.status === 'active'
+                        ? 'Strategy has open positions. Mark as spam/airdrop with no economic value?'
+                        : 'Mark as spam, airdrop, or no economic value.'}
+                    </p>
+                    <button
+                      onClick={() => setConfirmingReject(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground underline flex-shrink-0"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            {strategy.status === 'complete' && strategy.closedAt && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleReopenStrategy}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Reopening...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Reopen Strategy
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {/* Right: cancel + primary */}
+          <div className="flex items-center gap-3 ml-auto">
             <Button
               type="button"
               variant="outline"
-              onClick={handleCloseStrategy}
+              onClick={onClose}
               disabled={submitting}
-              className="text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirm}
+              disabled={submitting || !(isCustomType ? customStrategyType.trim() : strategyType) || !strategyDirection}
             >
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Closing...
+                  {selectedMergeIds.size > 0
+                    ? 'Confirming & Merging...'
+                    : showThesisSection && mode === 'create'
+                    ? 'Creating & Confirming...'
+                    : isFirstTimeConfirm ? 'Confirming...' : 'Saving...'}
                 </>
               ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Close Strategy
-                </>
+                selectedMergeIds.size > 0
+                  ? `Confirm & Merge ${selectedMergeIds.size} ${selectedMergeIds.size === 1 ? 'Strategy' : 'Strategies'}`
+                  : showThesisSection && mode === 'create'
+                  ? 'Create Thesis & Confirm'
+                  : isFirstTimeConfirm ? 'Confirm Strategy' : 'Save Changes'
               )}
             </Button>
-          )}
-          <Button
-            type="button"
-            onClick={handleConfirm}
-            disabled={submitting || !(isCustomType ? customStrategyType.trim() : strategyType) || !strategyDirection}
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {selectedMergeIds.size > 0
-                  ? 'Confirming & Merging...'
-                  : showThesisSection && mode === 'create'
-                  ? 'Creating & Confirming...'
-                  : 'Confirming...'}
-              </>
-            ) : (
-              selectedMergeIds.size > 0
-                ? `Confirm & Merge ${selectedMergeIds.size} ${selectedMergeIds.size === 1 ? 'Strategy' : 'Strategies'}`
-                : showThesisSection && mode === 'create'
-                ? 'Create Thesis & Confirm'
-                : 'Confirm Strategy'
-            )}
-          </Button>
+          </div>
         </div>
       </div>
     </div>

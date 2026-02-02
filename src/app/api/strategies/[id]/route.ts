@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { strategies, strategyTemplates, underlyings } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, aliasedTable } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 import { recomputeStrategyStatus } from '@/lib/services/strategies';
 
@@ -129,7 +129,10 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Join through strategyTemplates to underlyings to get the ticker
+    // Join through strategyTemplates to underlyings to get the ticker,
+    // and resolve parent underlying if set
+    const parentUnderlyings = aliasedTable(underlyings, 'parent_underlyings');
+
     const [result] = await db
       .select({
         id: strategies.id,
@@ -159,10 +162,15 @@ export async function GET(
         label: strategyTemplates.label,
         // From underlying (via template)
         underlyingTicker: underlyings.ticker,
+        underlyingId: underlyings.id,
+        parentUnderlyingId: underlyings.parentUnderlyingId,
+        // From parent underlying (via underlying.parentUnderlyingId)
+        parentUnderlyingTicker: parentUnderlyings.ticker,
       })
       .from(strategies)
       .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
       .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
+      .leftJoin(parentUnderlyings, eq(underlyings.parentUnderlyingId, parentUnderlyings.id))
       .where(eq(strategies.id, id))
       .limit(1);
 
