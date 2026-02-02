@@ -11,7 +11,7 @@ import {
 import { EntitySidebar } from '@/components/layout/EntitySidebar';
 import { EntityStatusBadge } from '@/components/ui/badge';
 import { StrategyConfirmationDialog } from '@/components/strategies/StrategyConfirmationDialog';
-import { ChevronRight, Pencil, CheckCircle } from 'lucide-react';
+import { ChevronRight, Pencil, CheckCircle, CheckCircle2 } from 'lucide-react';
 
 interface LinkedMacroThesis {
   id: string;
@@ -57,6 +57,7 @@ export function StrategySidebar({
 }: StrategySidebarProps) {
   const router = useRouter();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [closingStrategy, setClosingStrategy] = useState(false);
 
   // Check if strategy needs confirmation (draft status or missing required fields)
   const needsConfirmation = strategy.status === 'draft' || !strategy.strategyType || !linkedAssetThesis;
@@ -65,6 +66,28 @@ export function StrategySidebar({
     setShowConfirmDialog(false);
     // Refresh the page to show updated data
     router.refresh();
+  };
+
+  const handleCloseStrategy = async () => {
+    setClosingStrategy(true);
+    try {
+      const response = await fetch(`/api/strategies/${strategy.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'complete' }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to close strategy');
+        return;
+      }
+
+      router.refresh();
+    } catch (err) {
+      console.error('Failed to close strategy:', err);
+    } finally {
+      setClosingStrategy(false);
+    }
   };
 
   // Build metadata items for Quick Stats
@@ -184,6 +207,17 @@ export function StrategySidebar({
               >
                 <CheckCircle className="h-4 w-4" />
                 Confirm Strategy
+              </button>
+            )}
+            {/* Close Strategy button - for draft strategies that can be completed without confirmation */}
+            {strategy.status === 'draft' && (
+              <button
+                onClick={handleCloseStrategy}
+                disabled={closingStrategy}
+                className="inline-flex items-center justify-center gap-2 w-full px-3 py-1.5 text-sm font-medium text-amber-700 dark:text-amber-400 bg-card border border-amber-300 dark:border-amber-700 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950 transition-colors disabled:opacity-50"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {closingStrategy ? 'Closing...' : 'Close Strategy'}
               </button>
             )}
             {/* Edit button - for linking positions/trades */}

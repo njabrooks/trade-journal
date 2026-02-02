@@ -85,7 +85,7 @@ async function main() {
   }
 
   // Resolve account ID (creates if not exists)
-  const accountId = await resolveAccountId('kraken', 'Kraken');
+  const accountId = await resolveAccountId('Nick_KRAKEN', 'Kraken');
   console.log(`[Kraken] Account ID: ${accountId}`);
 
   await trackProcess(
