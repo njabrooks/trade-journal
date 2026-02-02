@@ -2,29 +2,24 @@
 
 import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { formatCurrency, formatPercent, calculateCostBasis, calculateDTE } from "@/lib/formatters";
+import { formatCurrency, formatPercent, calculateDTE } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { PortfolioStrategyRow, PortfolioPositionRow } from "@/db/queries/portfolio";
 
-type SortColumn = "label" | "type" | "positions" | "costBasis" | "marketValue" | "pnl" | "pctNav" | "dte";
+type SortColumn = "label" | "type" | "positions" | "marketValue" | "pctTotal" | "dte";
 type SortDirection = "asc" | "desc";
 
 interface StrategyPositionsTableProps {
   strategies: PortfolioStrategyRow[];
-  nav: number | null;
+  totalMarketValue: number;
 }
 
-function getStrategyAggregates(strategy: PortfolioStrategyRow, nav: number | null) {
-  let totalCostBasis = 0;
-  let totalMarketValue = 0;
-  let totalPnl = 0;
+function getStrategyAggregates(strategy: PortfolioStrategyRow, totalMarketValue: number) {
+  let totalMV = 0;
   let minDte: number | null = null;
 
   for (const pos of strategy.positions) {
-    const cb = calculateCostBasis(pos);
-    if (cb != null) totalCostBasis += cb;
-    totalMarketValue += Math.abs(pos.absNotional ?? 0);
-    totalPnl += pos.unrealizedPnl ?? 0;
+    totalMV += Math.abs(pos.absNotional ?? 0);
 
     const dte = calculateDTE(pos.expiry, pos.snapshotDate ?? "");
     if (dte != null && (minDte === null || dte < minDte)) {
@@ -32,9 +27,9 @@ function getStrategyAggregates(strategy: PortfolioStrategyRow, nav: number | nul
     }
   }
 
-  const pctNav = nav && nav > 0 ? (totalMarketValue / nav) * 100 : null;
+  const pctTotal = totalMarketValue > 0 ? (totalMV / totalMarketValue) * 100 : null;
 
-  return { totalCostBasis, totalMarketValue, totalPnl, pctNav, minDte };
+  return { totalMV, pctTotal, minDte };
 }
 
 function DirectionIcon({ direction }: { direction: string | null }) {
@@ -43,7 +38,7 @@ function DirectionIcon({ direction }: { direction: string | null }) {
   return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
-export function StrategyPositionsTable({ strategies, nav }: StrategyPositionsTableProps) {
+export function StrategyPositionsTable({ strategies, totalMarketValue }: StrategyPositionsTableProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [sortColumn, setSortColumn] = useState<SortColumn>("marketValue");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -69,7 +64,7 @@ export function StrategyPositionsTable({ strategies, nav }: StrategyPositionsTab
   const sortedStrategies = useMemo(() => {
     const withAggregates = strategies.map((s) => ({
       strategy: s,
-      agg: getStrategyAggregates(s, nav),
+      agg: getStrategyAggregates(s, totalMarketValue),
     }));
 
     withAggregates.sort((a, b) => {
@@ -84,17 +79,11 @@ export function StrategyPositionsTable({ strategies, nav }: StrategyPositionsTab
         case "positions":
           cmp = a.strategy.positions.length - b.strategy.positions.length;
           break;
-        case "costBasis":
-          cmp = a.agg.totalCostBasis - b.agg.totalCostBasis;
-          break;
         case "marketValue":
-          cmp = a.agg.totalMarketValue - b.agg.totalMarketValue;
+          cmp = a.agg.totalMV - b.agg.totalMV;
           break;
-        case "pnl":
-          cmp = a.agg.totalPnl - b.agg.totalPnl;
-          break;
-        case "pctNav":
-          cmp = (a.agg.pctNav ?? 0) - (b.agg.pctNav ?? 0);
+        case "pctTotal":
+          cmp = (a.agg.pctTotal ?? 0) - (b.agg.pctTotal ?? 0);
           break;
         case "dte":
           cmp = (a.agg.minDte ?? 9999) - (b.agg.minDte ?? 9999);
@@ -104,7 +93,7 @@ export function StrategyPositionsTable({ strategies, nav }: StrategyPositionsTab
     });
 
     return withAggregates;
-  }, [strategies, nav, sortColumn, sortDirection]);
+  }, [strategies, totalMarketValue, sortColumn, sortDirection]);
 
   if (strategies.length === 0) return null;
 
@@ -118,7 +107,7 @@ export function StrategyPositionsTable({ strategies, nav }: StrategyPositionsTab
         <span className="inline-flex items-center gap-1">
           {label}
           {sortColumn === column && (
-            <span className="text-foreground">{sortDirection === "asc" ? "↑" : "↓"}</span>
+            <span className="text-foreground">{sortDirection === "asc" ? "\u2191" : "\u2193"}</span>
           )}
         </span>
       </th>
@@ -153,10 +142,8 @@ export function StrategyPositionsTable({ strategies, nav }: StrategyPositionsTab
               {renderSortHeader("label", "Strategy")}
               {renderSortHeader("type", "Type")}
               {renderSortHeader("positions", "# Pos", "text-right")}
-              {renderSortHeader("costBasis", "Cost Basis", "text-right")}
               {renderSortHeader("marketValue", "Mkt Value", "text-right")}
-              {renderSortHeader("pnl", "Unrealized P&L", "text-right")}
-              {renderSortHeader("pctNav", "% NAV", "text-right")}
+              {renderSortHeader("pctTotal", "% Total", "text-right")}
               {renderSortHeader("dte", "Min DTE", "text-center")}
             </tr>
           </thead>
@@ -169,6 +156,7 @@ export function StrategyPositionsTable({ strategies, nav }: StrategyPositionsTab
                   key={strategy.id}
                   strategy={strategy}
                   agg={agg}
+                  totalMarketValue={totalMarketValue}
                   isExpanded={isExpanded}
                   onToggle={() => toggleExpand(strategy.id)}
                 />
@@ -184,11 +172,12 @@ export function StrategyPositionsTable({ strategies, nav }: StrategyPositionsTab
 interface StrategyGroupProps {
   strategy: PortfolioStrategyRow;
   agg: ReturnType<typeof getStrategyAggregates>;
+  totalMarketValue: number;
   isExpanded: boolean;
   onToggle: () => void;
 }
 
-function StrategyGroup({ strategy, agg, isExpanded, onToggle }: StrategyGroupProps) {
+function StrategyGroup({ strategy, agg, totalMarketValue, isExpanded, onToggle }: StrategyGroupProps) {
   return (
     <>
       {/* Strategy summary row */}
@@ -222,35 +211,21 @@ function StrategyGroup({ strategy, agg, isExpanded, onToggle }: StrategyGroupPro
               {strategy.status}
             </span>
           </div>
-          {strategy.assetThesisTitle && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-xs">
-              {strategy.assetThesisTitle}
-            </p>
-          )}
         </td>
         <td className="py-2.5 pr-3 text-xs text-muted-foreground">
-          {strategy.strategyType ?? "—"}
+          {strategy.strategyType ?? "\u2014"}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
           {strategy.positions.length}
         </td>
-        <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
-          {formatCurrency(agg.totalCostBasis)}
-        </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
-          {formatCurrency(agg.totalMarketValue)}
-        </td>
-        <td className={cn(
-          "py-2.5 pr-3 text-right text-sm tabular-nums font-medium",
-          agg.totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"
-        )}>
-          {formatCurrency(agg.totalPnl)}
+          {formatCurrency(agg.totalMV)}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
-          {agg.pctNav != null ? formatPercent(agg.pctNav) : "—"}
+          {agg.pctTotal != null ? formatPercent(agg.pctTotal) : "\u2014"}
         </td>
         <td className="py-2.5 text-center text-sm tabular-nums text-muted-foreground">
-          {agg.minDte != null ? agg.minDte : "—"}
+          {agg.minDte != null ? agg.minDte : "\u2014"}
         </td>
       </tr>
 
@@ -262,15 +237,13 @@ function StrategyGroup({ strategy, agg, isExpanded, onToggle }: StrategyGroupPro
             <td></td>
             <td className="py-1.5 pl-8 pr-3 text-[10px] uppercase tracking-wide text-muted-foreground">Symbol</td>
             <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground" colSpan={1}>Qty</td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">Avg Cost</td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">Cost Basis</td>
+            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">Mark Price</td>
             <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">Mkt Value</td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">P&L</td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">% NAV</td>
+            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">% Total</td>
             <td className="py-1.5 text-center text-[10px] uppercase tracking-wide text-muted-foreground">DTE</td>
           </tr>
           {strategy.positions.map((pos) => (
-            <PositionRowNested key={pos.id} position={pos} />
+            <PositionRowNested key={pos.id} position={pos} totalMarketValue={totalMarketValue} />
           ))}
         </>
       )}
@@ -278,12 +251,10 @@ function StrategyGroup({ strategy, agg, isExpanded, onToggle }: StrategyGroupPro
   );
 }
 
-function PositionRowNested({ position }: { position: PortfolioPositionRow }) {
-  const costBasis = calculateCostBasis(position);
+function PositionRowNested({ position, totalMarketValue }: { position: PortfolioPositionRow; totalMarketValue: number }) {
   const dte = calculateDTE(position.expiry, position.snapshotDate ?? "");
-  const pctNav = position.absNotional && position.nav && position.nav > 0
-    ? (Math.abs(position.absNotional) / position.nav) * 100
-    : null;
+  const mv = Math.abs(position.absNotional ?? 0);
+  const pctTotal = totalMarketValue > 0 ? (mv / totalMarketValue) * 100 : null;
 
   const displaySymbol = position.assetClass === 'OPT' && position.underlyingTicker
     ? (() => {
@@ -304,25 +275,16 @@ function PositionRowNested({ position }: { position: PortfolioPositionRow }) {
         {position.quantity.toLocaleString()}
       </td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
-        {position.avgPrice != null ? formatCurrency(position.avgPrice, 'USD', 2) : "—"}
-      </td>
-      <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
-        {costBasis != null ? formatCurrency(costBasis) : "—"}
+        {position.spot != null ? formatCurrency(position.spot, 'USD', 2) : "\u2014"}
       </td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
-        {formatCurrency(Math.abs(position.absNotional ?? 0))}
-      </td>
-      <td className={cn(
-        "py-1.5 pr-3 text-right tabular-nums",
-        (position.unrealizedPnl ?? 0) >= 0 ? "text-emerald-600" : "text-rose-600"
-      )}>
-        {position.unrealizedPnl != null ? formatCurrency(position.unrealizedPnl) : "—"}
+        {formatCurrency(mv)}
       </td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
-        {pctNav != null ? formatPercent(pctNav) : "—"}
+        {pctTotal != null ? formatPercent(pctTotal) : "\u2014"}
       </td>
       <td className="py-1.5 text-center tabular-nums text-muted-foreground">
-        {dte != null ? dte : "—"}
+        {dte != null ? dte : "\u2014"}
       </td>
     </tr>
   );

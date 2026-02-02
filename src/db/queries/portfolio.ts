@@ -17,6 +17,8 @@ export interface PortfolioTrendPoint {
   pctNavAbsNotional: number | null;
   absStockNotional: number | null;
   absOptionNotional: number | null;
+  absCryptoSpotNotional: number | null;
+  absPerpNotional: number | null;
 }
 
 export interface UnderlyingBreakdownRow {
@@ -51,6 +53,8 @@ export async function getPortfolioDashboardData(
       pctNavAbsNotional: portfolioSnapshots.pctNavAbsNotional,
       absStockNotional: portfolioSnapshots.absStockNotional,
       absOptionNotional: portfolioSnapshots.absOptionNotional,
+      absCryptoSpotNotional: portfolioSnapshots.absCryptoSpotNotional,
+      absPerpNotional: portfolioSnapshots.absPerpNotional,
     })
     .from(portfolioSnapshots)
     .where(
@@ -70,6 +74,8 @@ export async function getPortfolioDashboardData(
       pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
       absStockNotional: toNumber(row.absStockNotional),
       absOptionNotional: toNumber(row.absOptionNotional),
+      absCryptoSpotNotional: toNumber(row.absCryptoSpotNotional),
+      absPerpNotional: toNumber(row.absPerpNotional),
     }))
     .reverse();
 
@@ -168,6 +174,8 @@ export async function getPortfolioDashboardDataMultiAccount(
       totalUnrealizedPnl: sql<string>`SUM(CAST(${portfolioSnapshots.totalUnrealizedPnl} AS NUMERIC))`,
       absStockNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absStockNotional} AS NUMERIC))`,
       absOptionNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absOptionNotional} AS NUMERIC))`,
+      absCryptoSpotNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absCryptoSpotNotional} AS NUMERIC))`,
+      absPerpNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absPerpNotional} AS NUMERIC))`,
     })
     .from(portfolioSnapshots)
     .where(
@@ -218,6 +226,8 @@ export async function getPortfolioDashboardDataMultiAccount(
         pctNavAbsNotional,
         absStockNotional: toNumber(row.absStockNotional),
         absOptionNotional: toNumber(row.absOptionNotional),
+        absCryptoSpotNotional: toNumber(row.absCryptoSpotNotional),
+        absPerpNotional: toNumber(row.absPerpNotional),
       };
     })
     .reverse();
@@ -230,6 +240,8 @@ export async function getPortfolioDashboardDataMultiAccount(
       totalUnrealizedPnl: sql<string>`SUM(CAST(${portfolioSnapshots.totalUnrealizedPnl} AS NUMERIC))`,
       absStockNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absStockNotional} AS NUMERIC))`,
       absOptionNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absOptionNotional} AS NUMERIC))`,
+      absCryptoSpotNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absCryptoSpotNotional} AS NUMERIC))`,
+      absPerpNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absPerpNotional} AS NUMERIC))`,
       maxDate: sql<string>`MAX(${portfolioSnapshots.snapshotDate})`,
     })
     .from(portfolioSnapshots)
@@ -279,6 +291,8 @@ export async function getPortfolioDashboardDataMultiAccount(
         pctNavAbsNotional: latestPctNav,
         absStockNotional: toNumber(latestRow.absStockNotional),
         absOptionNotional: toNumber(latestRow.absOptionNotional),
+        absCryptoSpotNotional: toNumber(latestRow.absCryptoSpotNotional),
+        absPerpNotional: toNumber(latestRow.absPerpNotional),
       }
     : null;
 
