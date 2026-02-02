@@ -205,11 +205,11 @@ const TRIGGER_CONFIG: Record<string, TriggerConfig> = {
   },
   'QUANTITY_CHANGE': {
     primaryAction: ACTIONS.trade,
-    secondaryActions: [],
+    secondaryActions: [ACTIONS.dismiss],
   },
   'TRADE_INGESTION': {
     primaryAction: ACTIONS.trade,
-    secondaryActions: [],
+    secondaryActions: [ACTIONS.dismiss],
   },
 
   // Thesis-level triggers
@@ -313,8 +313,10 @@ export function TriageQuickAction({
   // Filter out dismiss for info severity (unless explicitly allowed)
   const filteredSecondaryActions = secondaryActions.filter((action) => {
     if (action.type === 'DISMISS' && record.severity === 'info') {
-      // Allow dismiss for LINK_STRATEGY_TO_THESIS even at info level
-      return record.trigger === 'LINK_STRATEGY_TO_THESIS';
+      // Allow dismiss for these triggers even at info level
+      return record.trigger === 'LINK_STRATEGY_TO_THESIS'
+        || record.trigger === 'QUANTITY_CHANGE'
+        || record.trigger === 'TRADE_INGESTION';
     }
     return true;
   });
