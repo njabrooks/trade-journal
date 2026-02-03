@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  accounts,
   assetTheses,
   cashBalances,
   portfolioSnapshots,
@@ -45,12 +46,19 @@ export interface CashBreakdownRow {
   source: string;
 }
 
+export interface OwnerBreakdownRow {
+  owner: string;
+  nav: number;
+  accountCount: number;
+}
+
 export interface PortfolioDashboardData {
   navTrend: NavTrendPoint[];
   accountSnapshots: PortfolioTrendPoint[];
   latestAccountSnapshot: PortfolioTrendPoint | null;
   underlyingBreakdown: UnderlyingBreakdownRow[];
   cashBreakdown: CashBreakdownRow[];
+  ownerBreakdown: OwnerBreakdownRow[];
 }
 
 export async function getPortfolioDashboardData(
@@ -169,12 +177,25 @@ export async function getPortfolioDashboardData(
     source: row.source,
   }));
 
+  // For single account, fetch owner from account record
+  const accountRecord = await db
+    .select({ owner: accounts.owner })
+    .from(accounts)
+    .where(eq(accounts.id, accountId))
+    .limit(1);
+
+  const owner = accountRecord[0]?.owner ?? "Unknown";
+  const ownerBreakdown: OwnerBreakdownRow[] = latestAccountSnapshot?.navAtSnapshot
+    ? [{ owner, nav: latestAccountSnapshot.navAtSnapshot, accountCount: 1 }]
+    : [];
+
   return {
     navTrend,
     accountSnapshots,
     latestAccountSnapshot,
     underlyingBreakdown,
     cashBreakdown,
+    ownerBreakdown,
   };
 }
 
@@ -193,6 +214,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       latestAccountSnapshot: null,
       underlyingBreakdown: [],
       cashBreakdown: [],
+      ownerBreakdown: [],
     };
   }
 
@@ -395,12 +417,44 @@ export async function getPortfolioDashboardDataMultiAccount(
     source: row.source,
   }));
 
+  // --- Owner NAV breakdown (for pie chart) ---
+  // Group NAV by owner using per-account latest snapshot dates
+  const ownerRows = await db
+    .select({
+      owner: accounts.owner,
+      nav: sql<string>`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`,
+      accountCount: sql<string>`COUNT(DISTINCT ${accounts.id})`,
+    })
+    .from(portfolioSnapshots)
+    .innerJoin(accounts, eq(portfolioSnapshots.accountId, accounts.id))
+    .where(
+      and(
+        inArray(portfolioSnapshots.accountId, accountIds),
+        eq(portfolioSnapshots.level, "account"),
+        sql`${portfolioSnapshots.snapshotDate} = (
+          SELECT MAX(ps2.snapshot_date)
+          FROM portfolio_snapshots ps2
+          WHERE ps2.account_id = ${portfolioSnapshots.accountId}
+            AND ps2.level = 'account'
+        )`
+      )
+    )
+    .groupBy(accounts.owner)
+    .orderBy(desc(sql`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`));
+
+  const ownerBreakdown: OwnerBreakdownRow[] = ownerRows.map((row) => ({
+    owner: row.owner ?? "Unknown",
+    nav: parseFloat(row.nav) || 0,
+    accountCount: parseInt(row.accountCount) || 0,
+  }));
+
   return {
     navTrend,
     accountSnapshots,
     latestAccountSnapshot,
     underlyingBreakdown,
     cashBreakdown,
+    ownerBreakdown,
   };
 }
 
