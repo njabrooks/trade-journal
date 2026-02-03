@@ -22,6 +22,7 @@ import { upsertCashBalances } from '../src/lib/ingestion/crypto/cashBalances.js'
 // Reuse existing infra
 import { resolveAccountId } from '../src/lib/ingestion/flex/account.js';
 import { ensureUnderlyingId } from '../src/lib/ingestion/flex/underlyings.js';
+import { createTradeIngestionRecords } from '../src/lib/ingestion/flex/processCsv.js';
 import { trackProcess } from '../src/lib/services/processTracking.js';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '../src/lib/derived/strategyAuto.js';
 import { computeTriageForDate } from '../src/lib/derived/triage.js';
@@ -120,6 +121,15 @@ async function main() {
         const normalized = normalizeKrakenTrade(id, trade, accountId);
         return toNewTrade(normalized);
       });
+
+      // Collect unique trade dates for later linking (must track BEFORE insert)
+      const tradeDates = new Set<string>();
+      for (const trade of normalizedTrades) {
+        if (trade.tradeDate) {
+          const tradeDateStr = new Date(trade.tradeDate).toISOString().split('T')[0];
+          tradeDates.add(tradeDateStr);
+        }
+      }
 
       // Batch insert in chunks
       let tradesInserted = 0;
@@ -282,10 +292,18 @@ async function main() {
       });
       console.log(`[Kraken] Strategy auto-link: ${linkResult.strategiesCreated} created, ${linkResult.positionsLinked} linked`);
 
-      const tradeLinkResult = await autoLinkTradesToStrategies(accountId, {
-        snapshotDate,
-      });
-      console.log(`[Kraken] Trade auto-link: ${tradeLinkResult.tradesLinked} linked`);
+      // Auto-link trades for each unique trade date (not just today)
+      // This ensures backfilled/historical trades get linked properly
+      let totalTradesLinked = 0;
+      for (const tradeDate of Array.from(tradeDates)) {
+        const result = await autoLinkTradesToStrategies(accountId, {
+          snapshotDate: tradeDate,
+        });
+        totalTradesLinked += result.tradesLinked;
+        // Create TRADE_INGESTION triage records for linked trades
+        await createTradeIngestionRecords(accountId, tradeDate);
+      }
+      console.log(`[Kraken] Trade auto-link: ${totalTradesLinked} linked across ${tradeDates.size} dates`);
 
       // Compute portfolio snapshots
       await computePortfolioSnapshotsForDateRange(accountId, snapshotDate, snapshotDate);

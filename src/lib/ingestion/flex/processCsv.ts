@@ -928,8 +928,11 @@ export interface ProcessTradesResult {
  * Groups trades by strategy + date and creates:
  * 1. A `trade_ingested` journal entry with trade details
  * 2. A triage record for the user to capture trade metadata (stage, reason, notes)
+ *
+ * This function is also used by crypto ingestion scripts to create TRADE_INGESTION
+ * triage records for trades that have been linked to strategies.
  */
-async function createTradeIngestionRecords(
+export async function createTradeIngestionRecords(
   accountId: string,
   tradeDate: string
 ): Promise<void> {
@@ -984,8 +987,9 @@ async function createTradeIngestionRecords(
 
     if (!strategyInfo) continue;
 
-    // Skip rejected strategies - they're abandoned and shouldn't generate triage records
-    if (strategyInfo.status === 'rejected') continue;
+    // Skip rejected and complete strategies - they're closed and shouldn't generate triage records
+    // New activity on these underlyings should create new strategies rather than trigger on closed ones
+    if (strategyInfo.status === 'rejected' || strategyInfo.status === 'complete') continue;
 
     // Calculate aggregates
     // Note: quantity in the trades table is already signed (negative for SELL)
