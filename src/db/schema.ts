@@ -29,6 +29,7 @@ export const accounts = pgTable('accounts', {
   brokerAccountId: text('broker_account_id').notNull().unique(),
   baseCurrency: text('base_currency'),
   label: text('label'),
+  owner: text('owner'), // Owner name: 'TTC', 'Nick', 'Maisy', 'Alex', 'Lily', 'Leo'
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
