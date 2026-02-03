@@ -1416,8 +1416,9 @@ export async function computeQuantityChangeTriageForDate(
 
     if (!strategyInfo) continue;
 
-    // Skip rejected strategies - they're abandoned and shouldn't generate triage records
-    if (strategyInfo.status === 'rejected') continue;
+    // Skip rejected and complete strategies - they're closed and shouldn't generate triage records
+    // New activity on these underlyings should create new strategies rather than trigger on closed ones
+    if (strategyInfo.status === 'rejected' || strategyInfo.status === 'complete') continue;
 
     // Extract underlying symbol from strategyKey (e.g., "GLXY-STK" -> "GLXY")
     const symbol = strategyInfo.strategyKey.split('-')[0] || 'UNKNOWN';
