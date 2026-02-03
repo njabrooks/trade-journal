@@ -969,12 +969,13 @@ async function createTradeIngestionRecords(
 
   // For each strategy, create journal entry and triage record
   for (const [strategyId, strategyTrades] of tradesByStrategy.entries()) {
-    // Get strategy info including direction for triage display
+    // Get strategy info including direction and status for triage display
     const [strategyInfo] = await db
       .select({
         strategyKey: strategies.strategyKey,
         templateLabel: strategyTemplates.label,
         direction: strategies.direction,
+        status: strategies.status,
       })
       .from(strategies)
       .innerJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
@@ -982,6 +983,9 @@ async function createTradeIngestionRecords(
       .limit(1);
 
     if (!strategyInfo) continue;
+
+    // Skip rejected strategies - they're abandoned and shouldn't generate triage records
+    if (strategyInfo.status === 'rejected') continue;
 
     // Calculate aggregates
     // Note: quantity in the trades table is already signed (negative for SELL)
