@@ -222,6 +222,30 @@ async function findOrCreateStrategyFromPosition(
   const underlyingId = await ensureUnderlyingId(pos.symbol, pos.underlyingId, pos.assetClass);
   if (!underlyingId) return null;
 
+  // Check if this underlying has a parent (e.g., CBBTC -> BTC, JITOSOL -> SOL)
+  // If so, we should also consider strategies for the parent underlying
+  const underlyingWithParent = await db
+    .select({
+      parentUnderlyingId: underlyings.parentUnderlyingId,
+    })
+    .from(underlyings)
+    .where(eq(underlyings.id, underlyingId))
+    .limit(1);
+
+  let parentKey: string | null = null;
+  if (underlyingWithParent[0]?.parentUnderlyingId) {
+    const parentUnderlying = await db
+      .select({ ticker: underlyings.ticker })
+      .from(underlyings)
+      .where(eq(underlyings.id, underlyingWithParent[0].parentUnderlyingId))
+      .limit(1);
+    if (parentUnderlying[0]?.ticker) {
+      // Derive the parent strategy key (e.g., BTC-CRYPTO from CBBTC-CRYPTO)
+      const assetSuffix = derivedKey.split('-').pop(); // CRYPTO, PERP, STK, etc.
+      parentKey = `${parentUnderlying[0].ticker}-${assetSuffix}`;
+    }
+  }
+
   // First, check ALL strategies for this account+key to understand the full picture
   // This includes rejected/merged/complete strategies to make informed decisions
   const allStrategiesForKey = await db
@@ -229,6 +253,7 @@ async function findOrCreateStrategyFromPosition(
       id: strategies.id,
       status: strategies.status,
       isAuto: strategies.isAuto,
+      strategyKey: strategies.strategyKey,
     })
     .from(strategies)
     .where(
@@ -255,7 +280,7 @@ async function findOrCreateStrategyFromPosition(
       ) DESC`
     );
 
-  // Process based on what we found
+  // Process based on what we found for the exact key
   for (const strategy of allStrategiesForKey) {
     if (strategy.status === 'active' || strategy.status === 'draft') {
       // Found a usable strategy - link to it
@@ -286,6 +311,53 @@ async function findOrCreateStrategyFromPosition(
     if (strategy.status === 'rejected') {
       // User explicitly rejected this strategy - DON'T create a new one
       // Return null to leave position unlinked
+      return null;
+    }
+  }
+
+  // PARENT UNDERLYING CHECK: If this underlying has a parent (e.g., CBBTC -> BTC),
+  // check if there's an active/draft/complete strategy for the parent.
+  // This handles wrapped tokens, staked tokens, etc. that should roll up to the parent.
+  if (parentKey) {
+    const parentStrategies = await db
+      .select({
+        id: strategies.id,
+        status: strategies.status,
+      })
+      .from(strategies)
+      .where(
+        and(
+          eq(strategies.accountId, pos.accountId),
+          eq(strategies.strategyKey, parentKey)
+        )
+      )
+      .orderBy(
+        sql`CASE
+          WHEN ${strategies.status} = 'active' THEN 0
+          WHEN ${strategies.status} = 'draft' THEN 1
+          WHEN ${strategies.status} = 'complete' THEN 2
+          ELSE 3
+        END`
+      );
+
+    let foundMergedParent = false;
+    for (const parentStrategy of parentStrategies) {
+      if (parentStrategy.status === 'active' || parentStrategy.status === 'draft' || parentStrategy.status === 'complete') {
+        // Found a usable parent strategy - link to it
+        return { id: parentStrategy.id, created: false };
+      }
+      if (parentStrategy.status === 'rejected') {
+        // Parent was rejected - don't create for child either
+        return null;
+      }
+      if (parentStrategy.status === 'merged') {
+        foundMergedParent = true;
+      }
+    }
+
+    // If parent was merged but no active parent exists, don't create child either
+    // (the user intentionally consolidated the parent elsewhere)
+    if (foundMergedParent) {
       return null;
     }
   }
@@ -386,6 +458,31 @@ async function findOrCreateStrategyFromTrade(
   if (!derivedKey) return null;
 
   const derivedLabel = deriveStrategyLabelFromTrade(trade);
+  const { ticker } = extractTickerAndExpiryFromSymbol(trade.symbol);
+
+  // Check if this underlying has a parent (e.g., CBBTC -> BTC, JITOSOL -> SOL)
+  // If so, we should also consider strategies for the parent underlying
+  let parentKey: string | null = null;
+  const underlyingWithParent = await db
+    .select({
+      parentUnderlyingId: underlyings.parentUnderlyingId,
+    })
+    .from(underlyings)
+    .where(eq(underlyings.ticker, ticker))
+    .limit(1);
+
+  if (underlyingWithParent[0]?.parentUnderlyingId) {
+    const parentUnderlying = await db
+      .select({ ticker: underlyings.ticker })
+      .from(underlyings)
+      .where(eq(underlyings.id, underlyingWithParent[0].parentUnderlyingId))
+      .limit(1);
+    if (parentUnderlying[0]?.ticker) {
+      // Derive the parent strategy key (e.g., BTC-CRYPTO from CBBTC-CRYPTO)
+      const assetSuffix = derivedKey.split('-').pop(); // CRYPTO, PERP, STK, etc.
+      parentKey = `${parentUnderlying[0].ticker}-${assetSuffix}`;
+    }
+  }
 
   // First, check ALL strategies for this account+key to understand the full picture
   // This includes rejected/merged/complete strategies to make informed decisions
@@ -448,10 +545,56 @@ async function findOrCreateStrategyFromTrade(
     }
   }
 
+  // PARENT UNDERLYING CHECK: If this underlying has a parent (e.g., CBBTC -> BTC),
+  // check if there's an active/draft/complete strategy for the parent.
+  // This handles wrapped tokens, staked tokens, etc. that should roll up to the parent.
+  if (parentKey) {
+    const parentStrategies = await db
+      .select({
+        id: strategies.id,
+        status: strategies.status,
+      })
+      .from(strategies)
+      .where(
+        and(
+          eq(strategies.accountId, trade.accountId),
+          eq(strategies.strategyKey, parentKey)
+        )
+      )
+      .orderBy(
+        sql`CASE
+          WHEN ${strategies.status} = 'active' THEN 0
+          WHEN ${strategies.status} = 'draft' THEN 1
+          WHEN ${strategies.status} = 'complete' THEN 2
+          ELSE 3
+        END`
+      );
+
+    let foundMergedParent = false;
+    for (const parentStrategy of parentStrategies) {
+      if (parentStrategy.status === 'active' || parentStrategy.status === 'draft' || parentStrategy.status === 'complete') {
+        // Found a usable parent strategy - link to it
+        return { id: parentStrategy.id, created: false };
+      }
+      if (parentStrategy.status === 'rejected') {
+        // Parent was rejected - don't create for child either
+        return null;
+      }
+      if (parentStrategy.status === 'merged') {
+        foundMergedParent = true;
+      }
+    }
+
+    // If parent was merged but no active parent exists, don't create child either
+    // (the user intentionally consolidated the parent elsewhere)
+    if (foundMergedParent) {
+      return null;
+    }
+  }
+
   // FALLBACK for CRYPTO/PERP: If no exact key match, try to find strategies that have
   // positions with the same symbol + asset class. This catches existing strategies where
   // the strategyKey might have been manually edited.
-  const { ticker } = extractTickerAndExpiryFromSymbol(trade.symbol);
   if (trade.assetClass === 'CRYPTO' || trade.assetClass === 'PERP') {
     const strategiesWithSameSymbol = await db
       .selectDistinct({
