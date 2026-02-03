@@ -264,6 +264,37 @@ async function findOrCreateStrategyFromPosition(
     return { id: strategy.id, created: false };
   }
 
+  // FALLBACK for CRYPTO/PERP: If no exact key match, try to find strategies that have
+  // positions with the same symbol + asset class. This catches existing strategies where
+  // the strategyKey might have been manually edited.
+  if (pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
+    const strategiesWithSameSymbol = await db
+      .selectDistinct({
+        strategyId: positions.strategyId,
+      })
+      .from(positions)
+      .innerJoin(strategies, eq(positions.strategyId, strategies.id))
+      .where(
+        and(
+          eq(positions.accountId, pos.accountId),
+          eq(positions.symbol, pos.symbol),
+          eq(positions.assetClass, pos.assetClass),
+          isNotNull(positions.strategyId),
+          ne(strategies.status, 'rejected'),
+          ne(strategies.status, 'merged')
+        )
+      )
+      // Prefer active strategies, then draft, then complete
+      .orderBy(
+        sql`CASE WHEN ${strategies.status} = 'active' THEN 0 WHEN ${strategies.status} = 'draft' THEN 1 ELSE 2 END`
+      )
+      .limit(1);
+
+    if (strategiesWithSameSymbol.length > 0 && strategiesWithSameSymbol[0].strategyId) {
+      return { id: strategiesWithSameSymbol[0].strategyId, created: false };
+    }
+  }
+
   const templateId = await ensureStrategyTemplate(derivedKey, derivedLabel ?? derivedKey, underlyingId);
   const openedAt = pos.openDate ?? (pos.snapshotDate ? new Date(pos.snapshotDate) : new Date());
 
@@ -299,11 +330,18 @@ async function findOrCreateStrategyFromTrade(
 
   const derivedLabel = deriveStrategyLabelFromTrade(trade);
 
-  // Try to find an existing strategy (including auto)
+  // Try to find an existing strategy by key (including auto)
   const existing = await db
     .select()
     .from(strategies)
-    .where(and(eq(strategies.accountId, trade.accountId), eq(strategies.strategyKey, derivedKey)))
+    .where(
+      and(
+        eq(strategies.accountId, trade.accountId),
+        eq(strategies.strategyKey, derivedKey),
+        ne(strategies.status, 'rejected'),
+        ne(strategies.status, 'merged')
+      )
+    )
     .limit(1);
 
   if (existing.length > 0) {
@@ -320,8 +358,39 @@ async function findOrCreateStrategyFromTrade(
     return { id: existing[0].id, created: false };
   }
 
-  // Need an underlying ID. Try to find by ticker extracted from symbol.
+  // FALLBACK for CRYPTO/PERP: If no exact key match, try to find strategies that have
+  // positions with the same symbol + asset class. This catches existing strategies where
+  // the strategyKey might have been manually edited.
   const { ticker } = extractTickerAndExpiryFromSymbol(trade.symbol);
+  if (trade.assetClass === 'CRYPTO' || trade.assetClass === 'PERP') {
+    const strategiesWithSameSymbol = await db
+      .selectDistinct({
+        strategyId: positions.strategyId,
+      })
+      .from(positions)
+      .innerJoin(strategies, eq(positions.strategyId, strategies.id))
+      .where(
+        and(
+          eq(positions.accountId, trade.accountId),
+          eq(positions.symbol, ticker),
+          eq(positions.assetClass, trade.assetClass),
+          isNotNull(positions.strategyId),
+          ne(strategies.status, 'rejected'),
+          ne(strategies.status, 'merged')
+        )
+      )
+      // Prefer active strategies, then draft, then complete
+      .orderBy(
+        sql`CASE WHEN ${strategies.status} = 'active' THEN 0 WHEN ${strategies.status} = 'draft' THEN 1 ELSE 2 END`
+      )
+      .limit(1);
+
+    if (strategiesWithSameSymbol.length > 0 && strategiesWithSameSymbol[0].strategyId) {
+      return { id: strategiesWithSameSymbol[0].strategyId, created: false };
+    }
+  }
+
+  // Need an underlying ID (ticker already extracted above for fallback)
   const underlyingId = await ensureUnderlyingId(ticker, null, trade.assetClass);
   if (!underlyingId) return null;
 
@@ -535,6 +604,35 @@ export async function autoLinkPositionsToStrategies(
             if (strategy.length > 0) {
               strategyId = strategy[0].id;
             }
+          }
+        } else if (pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
+          // For CRYPTO/PERP: If no exact key match, try to find strategies that have positions
+          // with the same symbol + asset class. This catches existing strategies where the
+          // strategyKey might have been manually edited (e.g., "Bitcoin Spot Long" vs "BTC-CRYPTO")
+          const strategiesWithSameSymbol = await db
+            .selectDistinct({
+              strategyId: positions.strategyId,
+            })
+            .from(positions)
+            .innerJoin(strategies, eq(positions.strategyId, strategies.id))
+            .where(
+              and(
+                eq(positions.accountId, pos.accountId),
+                eq(positions.symbol, pos.symbol),
+                eq(positions.assetClass, pos.assetClass),
+                isNotNull(positions.strategyId),
+                ne(strategies.status, 'rejected'),
+                ne(strategies.status, 'merged')
+              )
+            )
+            // Prefer active strategies, then draft, then complete
+            .orderBy(
+              sql`CASE WHEN ${strategies.status} = 'active' THEN 0 WHEN ${strategies.status} = 'draft' THEN 1 ELSE 2 END`
+            )
+            .limit(1);
+
+          if (strategiesWithSameSymbol.length > 0 && strategiesWithSameSymbol[0].strategyId) {
+            strategyId = strategiesWithSameSymbol[0].strategyId;
           }
         }
       }

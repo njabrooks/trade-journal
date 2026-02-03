@@ -671,6 +671,72 @@ export async function computeStrategyTriageForDate(
     // State code detection removed - signals now handle tactical workflow triggers
   }
 
+  // 6. Check for unconfirmed auto strategies that DON'T have metrics snapshots yet
+  // This handles the case where a strategy was just auto-created from trades but metrics
+  // haven't been computed yet (e.g., timing issues, missing position data)
+  // We need to query strategies directly to ensure CONFIRM_STRATEGY triggers are created
+  const unconfirmedAutoWhereConditions = [
+    eq(strategies.isAuto, true),
+    isNull(strategies.confirmedAt),
+    ne(strategies.status, 'rejected'),
+  ];
+  if (accountId) {
+    unconfirmedAutoWhereConditions.push(eq(strategies.accountId, accountId));
+  }
+  if (strategyId) {
+    unconfirmedAutoWhereConditions.push(eq(strategies.id, strategyId));
+  }
+
+  const unconfirmedAutoStrategies = await db
+    .select({
+      id: strategies.id,
+      key: strategies.strategyKey,
+      accountId: strategies.accountId,
+      direction: strategies.direction,
+    })
+    .from(strategies)
+    .where(and(...unconfirmedAutoWhereConditions));
+
+  // Filter to only strategies NOT already processed via metrics snapshots
+  // Also filter out strategies without accountId (shouldn't happen, but defensive)
+  const processedStrategyIds = new Set(strategyIds);
+  const missingStrategies = unconfirmedAutoStrategies.filter(
+    (s) => !processedStrategyIds.has(s.id) && s.accountId != null
+  );
+
+  // Create CONFIRM_STRATEGY triggers for these strategies
+  for (const strategy of missingStrategies) {
+    // accountId is guaranteed non-null by the filter above
+    const strategyAccountId = strategy.accountId!;
+    const recommendedAction = 'CONFIRM_STRATEGY';
+
+    // Check for active override (sync lookup from batched cache)
+    const override = lookupSeverityOverride(
+      severityOverrideCache,
+      null,
+      strategy.id,
+      recommendedAction
+    );
+
+    records.push({
+      snapshotDate,
+      accountId: strategyAccountId,
+      contextLevel: 'strategy',
+      strategyId: strategy.id,
+      absNotional: null, // No metrics available
+      unrealizedPnl: null,
+      severity: override?.severity || 'urgent',
+      direction: strategy.direction ?? null,
+      recommendedAction,
+      notes: 'Strategy needs confirmation: set label, type, direction, and optionally link to asset thesis',
+      ruleSet: 'strategy_workflow',
+      symbol: strategy.key,
+      overrideSource: override?.overrideSource ?? null,
+      overrideExpiresDate: override?.overrideExpiresDate ?? null,
+      overrideAt: override?.overrideAt ?? null,
+    });
+  }
+
   return records;
 }
 
@@ -901,7 +967,7 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
       existingProcessedRecords.map(r => `${r.strategyId}:${r.snapshotDate}:${r.ruleSet}`)
     );
 
-    // Filter out records that already have a done/in_progress counterpart
+    // Filter out records that already have a done/in_progress counterpart for same date
     const strategyRecordsToInsert = strategyRecords.filter(
       r => !processedKeys.has(`${r.strategyId}:${r.snapshotDate}:${r.ruleSet}`)
     );
@@ -960,7 +1026,7 @@ export async function upsertTriageRecords(records: NewTriageRecord[]): Promise<v
       existingProcessedPositionRecords.map(r => `${r.positionId}:${r.strategyId}:${r.snapshotDate}:${r.ruleSet}`)
     );
 
-    // Filter out records that already have a done/in_progress counterpart
+    // Filter out records that already have a done/in_progress counterpart for same date
     const positionRecordsToInsert = validPositionRecords.filter(
       r => !processedPositionKeys.has(`${r.positionId}:${r.strategyId}:${r.snapshotDate}:${r.ruleSet}`)
     );
@@ -1293,12 +1359,13 @@ export async function computeQuantityChangeTriageForDate(
       continue;
     }
 
-    // Get strategy info including template label, underlying ticker, and direction
+    // Get strategy info including template label, underlying ticker, direction, and status
     const [strategyInfo] = await db
       .select({
         strategyKey: strategies.strategyKey,
         templateLabel: strategyTemplates.label,
         direction: strategies.direction,
+        status: strategies.status,
       })
       .from(strategies)
       .innerJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
@@ -1306,6 +1373,9 @@ export async function computeQuantityChangeTriageForDate(
       .limit(1);
 
     if (!strategyInfo) continue;
+
+    // Skip rejected strategies - they're abandoned and shouldn't generate triage records
+    if (strategyInfo.status === 'rejected') continue;
 
     // Extract underlying symbol from strategyKey (e.g., "GLXY-STK" -> "GLXY")
     const symbol = strategyInfo.strategyKey.split('-')[0] || 'UNKNOWN';
