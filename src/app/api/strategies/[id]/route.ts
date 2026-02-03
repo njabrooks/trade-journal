@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { strategies, strategyTemplates, underlyings } from '@/db/schema';
-import { eq, aliasedTable } from 'drizzle-orm';
+import { strategies, strategyTemplates, underlyings, positions } from '@/db/schema';
+import { eq, aliasedTable, and, isNull, ne, sql } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 import { recomputeStrategyStatus } from '@/lib/services/strategies';
+import { deriveStrategyKeyFromPosition } from '@/lib/derived/strategyAuto';
 
 export async function PATCH(
   request: NextRequest,
@@ -107,6 +108,63 @@ export async function PATCH(
         { error: 'Strategy not found' },
         { status: 404 }
       );
+    }
+
+    // When a strategy is rejected, link all matching unlinked positions to it
+    // so they become hidden from the portfolio (instead of showing as "unlinked")
+    if (status === 'rejected' && updated.strategyKey && updated.accountId) {
+      // Find all unlinked positions that match this strategy's key
+      const unlinkedPositions = await db
+        .select({
+          id: positions.id,
+          symbol: positions.symbol,
+          assetClass: positions.assetClass,
+          expiry: positions.expiry,
+          snapshotDate: positions.snapshotDate,
+          openDate: positions.openDate,
+          underlyingId: positions.underlyingId,
+          accountId: positions.accountId,
+        })
+        .from(positions)
+        .where(
+          and(
+            eq(positions.accountId, updated.accountId),
+            isNull(positions.strategyId),
+            ne(positions.quantity, '0')
+          )
+        );
+
+      // Filter to positions that would derive the same strategy key
+      const matchingPositionIds: string[] = [];
+      for (const pos of unlinkedPositions) {
+        const derivedKey = deriveStrategyKeyFromPosition({
+          id: pos.id,
+          accountId: pos.accountId,
+          symbol: pos.symbol,
+          assetClass: pos.assetClass,
+          expiry: pos.expiry,
+          snapshotDate: pos.snapshotDate,
+          openDate: pos.openDate,
+          underlyingId: pos.underlyingId,
+        });
+        if (derivedKey === updated.strategyKey) {
+          matchingPositionIds.push(pos.id);
+        }
+      }
+
+      // Link matching positions to the rejected strategy
+      if (matchingPositionIds.length > 0) {
+        await db
+          .update(positions)
+          .set({ strategyId: id, updatedAt: new Date() })
+          .where(
+            sql`${positions.id} = ANY(${matchingPositionIds})`
+          );
+
+        console.log(
+          `Linked ${matchingPositionIds.length} unlinked positions to rejected strategy ${id} (${updated.autoDerivedLabel})`
+        );
+      }
     }
 
     return NextResponse.json({ success: true, strategy: updated });
