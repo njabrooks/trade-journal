@@ -493,6 +493,23 @@ export async function computeStrategyTriageForDate(
 
   const records: NewTriageRecord[] = [];
 
+  // Pre-fetch existing CONFIRM_STRATEGY triage records to avoid creating duplicates
+  // CONFIRM_STRATEGY is a one-time action - once seen, don't re-create on subsequent ingestions
+  const existingConfirmStrategyRecords = strategyIds.length > 0
+    ? await db
+        .select({ strategyId: triageRecords.strategyId })
+        .from(triageRecords)
+        .where(
+          and(
+            inArray(triageRecords.strategyId, strategyIds),
+            eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGY')
+          )
+        )
+    : [];
+  const strategiesWithExistingConfirm = new Set(
+    existingConfirmStrategyRecords.map((r) => r.strategyId)
+  );
+
   // Get previous snapshot date for state code change detection
   const previousDateResult = await db
     .selectDistinct({ snapshotDate: strategyMetricsSnapshots.snapshotDate })
@@ -519,12 +536,13 @@ export async function computeStrategyTriageForDate(
     const strategyRow = strategyRows.find((s) => s.id === metric.strategyId);
     const strategyKey = strategyKeyMap.get(metric.strategyId) ?? `STRATEGY-${metric.strategyId}`;
 
-    // Skip rejected strategies - they're abandoned and shouldn't generate triage records
-    if (strategyRow?.status === 'rejected') continue;
+    // Skip rejected/complete strategies - they're abandoned/finished and shouldn't generate triage records
+    if (strategyRow?.status === 'rejected' || strategyRow?.status === 'complete') continue;
 
     // 1. CONFIRM_STRATEGY - Unconfirmed auto-derived strategies need confirmation
     // This covers: label, strategyType, direction, and optionally thesis linkage
-    if (strategyRow?.isAuto && !strategyRow.confirmedAt) {
+    // Skip if strategy already has a CONFIRM_STRATEGY record (one-time action)
+    if (strategyRow?.isAuto && !strategyRow.confirmedAt && !strategiesWithExistingConfirm.has(metric.strategyId)) {
       const computedSeverity = 'urgent';
       const recommendedAction = 'CONFIRM_STRATEGY';
 
@@ -679,6 +697,7 @@ export async function computeStrategyTriageForDate(
     eq(strategies.isAuto, true),
     isNull(strategies.confirmedAt),
     ne(strategies.status, 'rejected'),
+    ne(strategies.status, 'complete'), // Complete strategies don't need confirmation
   ];
   if (accountId) {
     unconfirmedAutoWhereConditions.push(eq(strategies.accountId, accountId));
@@ -700,9 +719,32 @@ export async function computeStrategyTriageForDate(
   // Filter to only strategies NOT already processed via metrics snapshots
   // Also filter out strategies without accountId (shouldn't happen, but defensive)
   const processedStrategyIds = new Set(strategyIds);
-  const missingStrategies = unconfirmedAutoStrategies.filter(
+  let missingStrategies = unconfirmedAutoStrategies.filter(
     (s) => !processedStrategyIds.has(s.id) && s.accountId != null
   );
+
+  // IMPORTANT: Also filter out strategies that already have ANY CONFIRM_STRATEGY triage record
+  // (regardless of date or status). CONFIRM_STRATEGY is a one-time action - once the user
+  // has seen it (even if they didn't act), we shouldn't keep re-creating it every ingestion.
+  if (missingStrategies.length > 0) {
+    const missingStrategyIds = missingStrategies.map((s) => s.id);
+    const existingConfirmRecords = await db
+      .select({ strategyId: triageRecords.strategyId })
+      .from(triageRecords)
+      .where(
+        and(
+          inArray(triageRecords.strategyId, missingStrategyIds),
+          eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGY')
+        )
+      );
+
+    const strategiesWithExistingRecords = new Set(
+      existingConfirmRecords.map((r) => r.strategyId)
+    );
+    missingStrategies = missingStrategies.filter(
+      (s) => !strategiesWithExistingRecords.has(s.id)
+    );
+  }
 
   // Create CONFIRM_STRATEGY triggers for these strategies
   for (const strategy of missingStrategies) {
