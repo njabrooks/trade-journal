@@ -6,7 +6,7 @@ import {
   strategyTemplates,
   underlyings,
 } from '@/db/schema';
-import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc, or } from 'drizzle-orm';
+import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc } from 'drizzle-orm';
 import { populateStrategyEntryContext } from '@/lib/services/strategies';
 
 type DateRangeOptions =
@@ -222,9 +222,9 @@ async function findOrCreateStrategyFromPosition(
   const underlyingId = await ensureUnderlyingId(pos.symbol, pos.underlyingId, pos.assetClass);
   if (!underlyingId) return null;
 
-  // First, try to find existing non-rejected strategies with this key
-  // Prioritize strategies that already have linked positions (likely the active/confirmed strategy)
-  const existing = await db
+  // First, check ALL strategies for this account+key to understand the full picture
+  // This includes rejected/merged/complete strategies to make informed decisions
+  const allStrategiesForKey = await db
     .select({
       id: strategies.id,
       status: strategies.status,
@@ -234,34 +234,60 @@ async function findOrCreateStrategyFromPosition(
     .where(
       and(
         eq(strategies.accountId, pos.accountId),
-        eq(strategies.strategyKey, derivedKey),
-        ne(strategies.status, 'rejected'),
-        ne(strategies.status, 'merged')
+        eq(strategies.strategyKey, derivedKey)
       )
     )
     .orderBy(
+      // Prioritize: active > draft > complete > merged > rejected
+      sql`CASE
+        WHEN ${strategies.status} = 'active' THEN 0
+        WHEN ${strategies.status} = 'draft' THEN 1
+        WHEN ${strategies.status} = 'complete' THEN 2
+        WHEN ${strategies.status} = 'merged' THEN 3
+        ELSE 4
+      END`,
+      // Within same status, prefer strategies with more positions
       sql`(
-        SELECT COUNT(*) 
-        FROM ${positions} 
-        WHERE ${positions.strategyId} = ${strategies.id} 
+        SELECT COUNT(*)
+        FROM ${positions}
+        WHERE ${positions.strategyId} = ${strategies.id}
         AND ${positions.quantity} != 0
       ) DESC`
-    ) // Prioritize strategies with existing positions
-    .limit(1);
+    );
 
-  if (existing.length > 0) {
-    const strategy = existing[0];
-    if (strategy.isAuto) {
-      await db
-        .update(strategies)
-        .set({
-          autoSource: options?.source ?? 'position',
-          autoDerivedLabel: derivedLabel ?? derivedKey,
-          updatedAt: new Date(),
-        })
-        .where(eq(strategies.id, strategy.id));
+  // Process based on what we found
+  for (const strategy of allStrategiesForKey) {
+    if (strategy.status === 'active' || strategy.status === 'draft') {
+      // Found a usable strategy - link to it
+      if (strategy.isAuto) {
+        await db
+          .update(strategies)
+          .set({
+            autoSource: options?.source ?? 'position',
+            autoDerivedLabel: derivedLabel ?? derivedKey,
+            updatedAt: new Date(),
+          })
+          .where(eq(strategies.id, strategy.id));
+      }
+      return { id: strategy.id, created: false };
     }
-    return { id: strategy.id, created: false };
+
+    if (strategy.status === 'complete') {
+      // Completed strategy exists - reuse it (it will become active again with new positions)
+      return { id: strategy.id, created: false };
+    }
+
+    if (strategy.status === 'merged') {
+      // Strategy was merged - this means there should be an active strategy to link to
+      // Continue searching for the active one (already ordered by status priority)
+      continue;
+    }
+
+    if (strategy.status === 'rejected') {
+      // User explicitly rejected this strategy - DON'T create a new one
+      // Return null to leave position unlinked
+      return null;
+    }
   }
 
   // FALLBACK for CRYPTO/PERP: If no exact key match, try to find strategies that have
@@ -271,6 +297,7 @@ async function findOrCreateStrategyFromPosition(
     const strategiesWithSameSymbol = await db
       .selectDistinct({
         strategyId: positions.strategyId,
+        status: strategies.status,
       })
       .from(positions)
       .innerJoin(strategies, eq(positions.strategyId, strategies.id))
@@ -279,19 +306,49 @@ async function findOrCreateStrategyFromPosition(
           eq(positions.accountId, pos.accountId),
           eq(positions.symbol, pos.symbol),
           eq(positions.assetClass, pos.assetClass),
-          isNotNull(positions.strategyId),
-          ne(strategies.status, 'rejected'),
-          ne(strategies.status, 'merged')
+          isNotNull(positions.strategyId)
         )
       )
-      // Prefer active strategies, then draft, then complete
+      // Prefer active strategies, then draft, then complete (skip rejected/merged)
       .orderBy(
-        sql`CASE WHEN ${strategies.status} = 'active' THEN 0 WHEN ${strategies.status} = 'draft' THEN 1 ELSE 2 END`
+        sql`CASE
+          WHEN ${strategies.status} = 'active' THEN 0
+          WHEN ${strategies.status} = 'draft' THEN 1
+          WHEN ${strategies.status} = 'complete' THEN 2
+          ELSE 3
+        END`
       )
       .limit(1);
 
     if (strategiesWithSameSymbol.length > 0 && strategiesWithSameSymbol[0].strategyId) {
-      return { id: strategiesWithSameSymbol[0].strategyId, created: false };
+      const foundStatus = strategiesWithSameSymbol[0].status;
+      // Only link to active/draft/complete strategies, not rejected/merged
+      if (foundStatus === 'active' || foundStatus === 'draft' || foundStatus === 'complete') {
+        return { id: strategiesWithSameSymbol[0].strategyId, created: false };
+      }
+      // If only rejected/merged found via position lookup, check if there's a rejected strategy
+      // for this account+symbol and don't create if so
+      if (foundStatus === 'rejected') {
+        return null;
+      }
+    }
+
+    // Also check if there's a rejected strategy for this account+symbol (even without positions)
+    const rejectedStrategy = await db
+      .select({ id: strategies.id })
+      .from(strategies)
+      .where(
+        and(
+          eq(strategies.accountId, pos.accountId),
+          sql`${strategies.strategyKey} LIKE ${pos.symbol + '-%'}`,
+          eq(strategies.status, 'rejected')
+        )
+      )
+      .limit(1);
+
+    if (rejectedStrategy.length > 0) {
+      // Don't create - user previously rejected a strategy for this symbol
+      return null;
     }
   }
 
@@ -330,32 +387,65 @@ async function findOrCreateStrategyFromTrade(
 
   const derivedLabel = deriveStrategyLabelFromTrade(trade);
 
-  // Try to find an existing strategy by key (including auto)
-  const existing = await db
-    .select()
+  // First, check ALL strategies for this account+key to understand the full picture
+  // This includes rejected/merged/complete strategies to make informed decisions
+  const allStrategiesForKey = await db
+    .select({
+      id: strategies.id,
+      status: strategies.status,
+      isAuto: strategies.isAuto,
+    })
     .from(strategies)
     .where(
       and(
         eq(strategies.accountId, trade.accountId),
-        eq(strategies.strategyKey, derivedKey),
-        ne(strategies.status, 'rejected'),
-        ne(strategies.status, 'merged')
+        eq(strategies.strategyKey, derivedKey)
       )
     )
-    .limit(1);
+    .orderBy(
+      // Prioritize: active > draft > complete > merged > rejected
+      sql`CASE
+        WHEN ${strategies.status} = 'active' THEN 0
+        WHEN ${strategies.status} = 'draft' THEN 1
+        WHEN ${strategies.status} = 'complete' THEN 2
+        WHEN ${strategies.status} = 'merged' THEN 3
+        ELSE 4
+      END`
+    );
 
-  if (existing.length > 0) {
-    if (existing[0].isAuto) {
-      await db
-        .update(strategies)
-        .set({
-          autoSource: options?.source ?? 'trade',
-          autoDerivedLabel: derivedLabel ?? derivedKey,
-          updatedAt: new Date(),
-        })
-        .where(eq(strategies.id, existing[0].id));
+  // Process based on what we found
+  for (const strategy of allStrategiesForKey) {
+    if (strategy.status === 'active' || strategy.status === 'draft') {
+      // Found a usable strategy - link to it
+      if (strategy.isAuto) {
+        await db
+          .update(strategies)
+          .set({
+            autoSource: options?.source ?? 'trade',
+            autoDerivedLabel: derivedLabel ?? derivedKey,
+            updatedAt: new Date(),
+          })
+          .where(eq(strategies.id, strategy.id));
+      }
+      return { id: strategy.id, created: false };
     }
-    return { id: existing[0].id, created: false };
+
+    if (strategy.status === 'complete') {
+      // Completed strategy exists - reuse it (it will become active again with new trades)
+      return { id: strategy.id, created: false };
+    }
+
+    if (strategy.status === 'merged') {
+      // Strategy was merged - this means there should be an active strategy to link to
+      // Continue searching for the active one (already ordered by status priority)
+      continue;
+    }
+
+    if (strategy.status === 'rejected') {
+      // User explicitly rejected this strategy - DON'T create a new one
+      // Return null to leave trade unlinked
+      return null;
+    }
   }
 
   // FALLBACK for CRYPTO/PERP: If no exact key match, try to find strategies that have
@@ -366,6 +456,7 @@ async function findOrCreateStrategyFromTrade(
     const strategiesWithSameSymbol = await db
       .selectDistinct({
         strategyId: positions.strategyId,
+        status: strategies.status,
       })
       .from(positions)
       .innerJoin(strategies, eq(positions.strategyId, strategies.id))
@@ -374,19 +465,48 @@ async function findOrCreateStrategyFromTrade(
           eq(positions.accountId, trade.accountId),
           eq(positions.symbol, ticker),
           eq(positions.assetClass, trade.assetClass),
-          isNotNull(positions.strategyId),
-          ne(strategies.status, 'rejected'),
-          ne(strategies.status, 'merged')
+          isNotNull(positions.strategyId)
         )
       )
-      // Prefer active strategies, then draft, then complete
+      // Prefer active strategies, then draft, then complete (skip rejected/merged)
       .orderBy(
-        sql`CASE WHEN ${strategies.status} = 'active' THEN 0 WHEN ${strategies.status} = 'draft' THEN 1 ELSE 2 END`
+        sql`CASE
+          WHEN ${strategies.status} = 'active' THEN 0
+          WHEN ${strategies.status} = 'draft' THEN 1
+          WHEN ${strategies.status} = 'complete' THEN 2
+          ELSE 3
+        END`
       )
       .limit(1);
 
     if (strategiesWithSameSymbol.length > 0 && strategiesWithSameSymbol[0].strategyId) {
-      return { id: strategiesWithSameSymbol[0].strategyId, created: false };
+      const foundStatus = strategiesWithSameSymbol[0].status;
+      // Only link to active/draft/complete strategies, not rejected/merged
+      if (foundStatus === 'active' || foundStatus === 'draft' || foundStatus === 'complete') {
+        return { id: strategiesWithSameSymbol[0].strategyId, created: false };
+      }
+      // If only rejected found via position lookup, don't create
+      if (foundStatus === 'rejected') {
+        return null;
+      }
+    }
+
+    // Also check if there's a rejected strategy for this account+symbol (even without positions)
+    const rejectedStrategy = await db
+      .select({ id: strategies.id })
+      .from(strategies)
+      .where(
+        and(
+          eq(strategies.accountId, trade.accountId),
+          sql`${strategies.strategyKey} LIKE ${ticker + '-%'}`,
+          eq(strategies.status, 'rejected')
+        )
+      )
+      .limit(1);
+
+    if (rejectedStrategy.length > 0) {
+      // Don't create - user previously rejected a strategy for this symbol
+      return null;
     }
   }
 
