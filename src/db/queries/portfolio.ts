@@ -647,9 +647,11 @@ export async function getPortfolioPositionsData(
 
     for (const row of strategyRows) {
       // Portfolio only shows active strategies. Strategies with open positions
-      // are considered active unless explicitly draft/rejected/closed.
+      // are considered active unless explicitly draft/rejected/merged/closed.
+      // "merged" strategies have been absorbed into another strategy, so their
+      // positions should appear as unlinked (and be re-linked to the target strategy).
       const isActive = row.status !== 'draft' && row.status !== 'rejected'
-        && row.status !== 'complete' && !row.closedAt;
+        && row.status !== 'complete' && row.status !== 'merged' && !row.closedAt;
       if (!isActive) continue;
 
       strategyMap.set(row.id, {
