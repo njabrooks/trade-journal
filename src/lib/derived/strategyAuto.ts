@@ -246,8 +246,9 @@ async function findOrCreateStrategyFromPosition(
     }
   }
 
-  // First, check ALL strategies for this account+key to understand the full picture
-  // This includes rejected/merged/complete strategies to make informed decisions
+  // First, check ALL strategies globally for this key to understand the full picture.
+  // Strategies are account-agnostic - positions from any account can link to them.
+  // This includes rejected/merged/complete strategies to make informed decisions.
   const allStrategiesForKey = await db
     .select({
       id: strategies.id,
@@ -256,12 +257,7 @@ async function findOrCreateStrategyFromPosition(
       strategyKey: strategies.strategyKey,
     })
     .from(strategies)
-    .where(
-      and(
-        eq(strategies.accountId, pos.accountId),
-        eq(strategies.strategyKey, derivedKey)
-      )
-    )
+    .where(eq(strategies.strategyKey, derivedKey))
     .orderBy(
       // Prioritize: active > draft > complete > merged > rejected
       sql`CASE
@@ -318,6 +314,7 @@ async function findOrCreateStrategyFromPosition(
   // PARENT UNDERLYING CHECK: If this underlying has a parent (e.g., CBBTC -> BTC),
   // check if there's an active/draft/complete strategy for the parent.
   // This handles wrapped tokens, staked tokens, etc. that should roll up to the parent.
+  // Strategies are account-agnostic - search globally by strategy key.
   if (parentKey) {
     const parentStrategies = await db
       .select({
@@ -325,12 +322,7 @@ async function findOrCreateStrategyFromPosition(
         status: strategies.status,
       })
       .from(strategies)
-      .where(
-        and(
-          eq(strategies.accountId, pos.accountId),
-          eq(strategies.strategyKey, parentKey)
-        )
-      )
+      .where(eq(strategies.strategyKey, parentKey))
       .orderBy(
         sql`CASE
           WHEN ${strategies.status} = 'active' THEN 0
@@ -365,6 +357,7 @@ async function findOrCreateStrategyFromPosition(
   // FALLBACK for CRYPTO/PERP: If no exact key match, try to find strategies that have
   // positions with the same symbol + asset class. This catches existing strategies where
   // the strategyKey might have been manually edited.
+  // Strategies are account-agnostic - search positions from any account.
   if (pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
     const strategiesWithSameSymbol = await db
       .selectDistinct({
@@ -375,7 +368,6 @@ async function findOrCreateStrategyFromPosition(
       .innerJoin(strategies, eq(positions.strategyId, strategies.id))
       .where(
         and(
-          eq(positions.accountId, pos.accountId),
           eq(positions.symbol, pos.symbol),
           eq(positions.assetClass, pos.assetClass),
           isNotNull(positions.strategyId)
@@ -405,13 +397,12 @@ async function findOrCreateStrategyFromPosition(
       }
     }
 
-    // Also check if there's a rejected strategy for this account+symbol (even without positions)
+    // Also check if there's a rejected strategy for this symbol globally (strategies are account-agnostic)
     const rejectedStrategy = await db
       .select({ id: strategies.id })
       .from(strategies)
       .where(
         and(
-          eq(strategies.accountId, pos.accountId),
           sql`${strategies.strategyKey} LIKE ${pos.symbol + '-%'}`,
           eq(strategies.status, 'rejected')
         )
@@ -427,12 +418,14 @@ async function findOrCreateStrategyFromPosition(
   const templateId = await ensureStrategyTemplate(derivedKey, derivedLabel ?? derivedKey, underlyingId);
   const openedAt = pos.openDate ?? (pos.snapshotDate ? new Date(pos.snapshotDate) : new Date());
 
+  // Strategies are account-agnostic (accountId: null)
+  // Positions from any account can be linked to the same strategy
   const [created] = await db
     .insert(strategies)
     .values({
       strategyTemplateId: templateId,
       strategyKey: derivedKey,
-      accountId: pos.accountId,
+      accountId: null,
       openedAt,
       status: 'draft',
       isAuto: true,
@@ -484,8 +477,9 @@ async function findOrCreateStrategyFromTrade(
     }
   }
 
-  // First, check ALL strategies for this account+key to understand the full picture
-  // This includes rejected/merged/complete strategies to make informed decisions
+  // First, check ALL strategies globally for this key to understand the full picture.
+  // Strategies are account-agnostic - positions from any account can link to them.
+  // This includes rejected/merged/complete strategies to make informed decisions.
   const allStrategiesForKey = await db
     .select({
       id: strategies.id,
@@ -493,12 +487,7 @@ async function findOrCreateStrategyFromTrade(
       isAuto: strategies.isAuto,
     })
     .from(strategies)
-    .where(
-      and(
-        eq(strategies.accountId, trade.accountId),
-        eq(strategies.strategyKey, derivedKey)
-      )
-    )
+    .where(eq(strategies.strategyKey, derivedKey))
     .orderBy(
       // Prioritize: active > draft > complete > merged > rejected
       sql`CASE
@@ -548,6 +537,7 @@ async function findOrCreateStrategyFromTrade(
   // PARENT UNDERLYING CHECK: If this underlying has a parent (e.g., CBBTC -> BTC),
   // check if there's an active/draft/complete strategy for the parent.
   // This handles wrapped tokens, staked tokens, etc. that should roll up to the parent.
+  // Strategies are account-agnostic - search globally by strategy key.
   if (parentKey) {
     const parentStrategies = await db
       .select({
@@ -555,12 +545,7 @@ async function findOrCreateStrategyFromTrade(
         status: strategies.status,
       })
       .from(strategies)
-      .where(
-        and(
-          eq(strategies.accountId, trade.accountId),
-          eq(strategies.strategyKey, parentKey)
-        )
-      )
+      .where(eq(strategies.strategyKey, parentKey))
       .orderBy(
         sql`CASE
           WHEN ${strategies.status} = 'active' THEN 0
@@ -595,6 +580,7 @@ async function findOrCreateStrategyFromTrade(
   // FALLBACK for CRYPTO/PERP: If no exact key match, try to find strategies that have
   // positions with the same symbol + asset class. This catches existing strategies where
   // the strategyKey might have been manually edited.
+  // Strategies are account-agnostic - search positions from any account.
   if (trade.assetClass === 'CRYPTO' || trade.assetClass === 'PERP') {
     const strategiesWithSameSymbol = await db
       .selectDistinct({
@@ -605,7 +591,6 @@ async function findOrCreateStrategyFromTrade(
       .innerJoin(strategies, eq(positions.strategyId, strategies.id))
       .where(
         and(
-          eq(positions.accountId, trade.accountId),
           eq(positions.symbol, ticker),
           eq(positions.assetClass, trade.assetClass),
           isNotNull(positions.strategyId)
@@ -634,13 +619,12 @@ async function findOrCreateStrategyFromTrade(
       }
     }
 
-    // Also check if there's a rejected strategy for this account+symbol (even without positions)
+    // Also check if there's a rejected strategy for this symbol globally (strategies are account-agnostic)
     const rejectedStrategy = await db
       .select({ id: strategies.id })
       .from(strategies)
       .where(
         and(
-          eq(strategies.accountId, trade.accountId),
           sql`${strategies.strategyKey} LIKE ${ticker + '-%'}`,
           eq(strategies.status, 'rejected')
         )
@@ -665,12 +649,14 @@ async function findOrCreateStrategyFromTrade(
 
   const openedAt = trade.tradeDate ?? new Date();
 
+  // Strategies are account-agnostic (accountId: null)
+  // Trades from any account can be linked to the same strategy
   const [created] = await db
     .insert(strategies)
     .values({
       strategyTemplateId: templateId,
       strategyKey: derivedKey,
-      accountId: trade.accountId,
+      accountId: null,
       openedAt,
       status: 'draft',
       isAuto: true,
@@ -732,6 +718,7 @@ export async function autoLinkPositionsToStrategies(
     // This is the most reliable way - same conid = same strategy across all snapshot dates
     // This preserves strategy linkage when re-ingesting data
     // IMPORTANT: Keep the link even if strategy is rejected/merged - the link is permanent
+    // Strategies are account-agnostic - search positions from any account with same conid
     if (pos.conid) {
       const existingPosition = await db
         .select({
@@ -741,7 +728,6 @@ export async function autoLinkPositionsToStrategies(
         .where(
           and(
             eq(positions.conid, pos.conid),
-            eq(positions.accountId, pos.accountId),
             isNotNull(positions.strategyId),
             sql`${positions.quantity} != 0`
           )
@@ -775,6 +761,7 @@ export async function autoLinkPositionsToStrategies(
     // IMPORTANT: Include rejected/merged - we want to link to them, not create new
     if (!strategyId) {
       // First, try to find by derived key (this should match existing strategies)
+      // Strategies are account-agnostic - search globally by strategy key
       const derivedKey = deriveStrategyKeyFromPosition(pos);
       if (derivedKey) {
         // Look for ALL strategies with this key, ordered by preference
@@ -786,12 +773,7 @@ export async function autoLinkPositionsToStrategies(
             status: strategies.status,
           })
           .from(strategies)
-          .where(
-            and(
-              eq(strategies.accountId, pos.accountId),
-              eq(strategies.strategyKey, derivedKey)
-            )
-          )
+          .where(eq(strategies.strategyKey, derivedKey))
           .orderBy(
             // Prefer: active > draft > complete > merged > rejected
             sql`CASE
@@ -838,12 +820,12 @@ export async function autoLinkPositionsToStrategies(
 
             if (parentKey) {
               // Look for active parent strategy (e.g., SOL-CRYPTO for HSOL)
+              // Strategies are account-agnostic - search globally
               mergeTarget = await db
                 .select({ strategyId: strategies.id })
                 .from(strategies)
                 .where(
                   and(
-                    eq(strategies.accountId, pos.accountId),
                     eq(strategies.strategyKey, parentKey),
                     sql`${strategies.status} IN ('active', 'draft')`
                   )
@@ -852,6 +834,7 @@ export async function autoLinkPositionsToStrategies(
             }
 
             // If no parent strategy found, try same key
+            // Strategies are account-agnostic - search positions from any account
             if (mergeTarget.length === 0) {
               mergeTarget = await db
                 .selectDistinct({
@@ -861,7 +844,6 @@ export async function autoLinkPositionsToStrategies(
                 .innerJoin(strategies, eq(positions.strategyId, strategies.id))
                 .where(
                   and(
-                    eq(positions.accountId, pos.accountId),
                     eq(strategies.strategyKey, derivedKey),
                     ne(strategies.id, matched.id),
                     sql`${strategies.status} IN ('active', 'draft')`,
@@ -883,6 +865,7 @@ export async function autoLinkPositionsToStrategies(
         } else if (pos.underlyingId && pos.expiry && pos.assetClass === 'OPT') {
           // If no exact key match, try to find strategies that have positions with same underlying + expiry
           // This catches existing strategies where the key might have been edited
+          // Strategies are account-agnostic - search positions from any account
           const strategiesWithSameUnderlying = await db
             .selectDistinct({
               strategyId: positions.strategyId,
@@ -890,7 +873,6 @@ export async function autoLinkPositionsToStrategies(
             .from(positions)
             .where(
               and(
-                eq(positions.accountId, pos.accountId),
                 eq(positions.underlyingId, pos.underlyingId),
                 eq(positions.expiry, pos.expiry),
                 eq(positions.assetClass, 'OPT'),
@@ -918,6 +900,7 @@ export async function autoLinkPositionsToStrategies(
           // with the same symbol + asset class. This catches existing strategies where the
           // strategyKey might have been manually edited (e.g., "Bitcoin Spot Long" vs "BTC-CRYPTO")
           // IMPORTANT: Include rejected/merged - link is permanent, status filters views
+          // Strategies are account-agnostic - search positions from any account
           const strategiesWithSameSymbol = await db
             .selectDistinct({
               strategyId: positions.strategyId,
@@ -927,7 +910,6 @@ export async function autoLinkPositionsToStrategies(
             .innerJoin(strategies, eq(positions.strategyId, strategies.id))
             .where(
               and(
-                eq(positions.accountId, pos.accountId),
                 eq(positions.symbol, pos.symbol),
                 eq(positions.assetClass, pos.assetClass),
                 isNotNull(positions.strategyId)
