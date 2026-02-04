@@ -169,7 +169,18 @@ function PortfolioDashboardContent() {
   // When owner or source filter changes, update account selection
   useEffect(() => {
     if (!accountsLoaded || isInitialLoad.current) return;
-    if (ownerFilter === "all" && sourceFilter === "all") return; // No filter active
+
+    // When both filters are "all", reset to all accounts
+    if (ownerFilter === "all" && sourceFilter === "all") {
+      const allIds = accounts.map((a) => a.id);
+      const sortedAll = [...allIds].sort();
+      const sortedEffective = [...effectiveSelectedIds].sort();
+      // Only update if not already showing all accounts
+      if (JSON.stringify(sortedAll) !== JSON.stringify(sortedEffective)) {
+        handleAccountSelectionChange(allIds);
+      }
+      return;
+    }
 
     const filteredIds = filteredAccountsByOwnerAndSource.map((a) => a.id);
     // Only update if different from current selection
@@ -185,6 +196,7 @@ function PortfolioDashboardContent() {
     effectiveSelectedIds,
     handleAccountSelectionChange,
     accountsLoaded,
+    accounts,
   ]);
 
   // Apply filters to positions data

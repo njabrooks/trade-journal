@@ -70,9 +70,35 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
     const groups = new Map<string, UnderlyingGroup>();
 
     for (const strategy of strategies) {
-      // Get underlying ticker from first position
-      const underlyingTicker = strategy.positions[0]?.underlyingTicker ?? "Unknown";
-      const underlyingId = strategy.positions[0]?.underlyingId ?? null;
+      // Get the most common underlying ticker among positions (by notional value).
+      // This handles strategies with mixed underlyings (e.g., SOL + HSOL) by
+      // grouping under the dominant underlying.
+      const tickerNotionals = new Map<string, { ticker: string; id: string | null; notional: number }>();
+      for (const pos of strategy.positions) {
+        const ticker = pos.underlyingTicker ?? "Unknown";
+        const existing = tickerNotionals.get(ticker);
+        if (existing) {
+          existing.notional += Math.abs(pos.absNotional ?? 0);
+        } else {
+          tickerNotionals.set(ticker, {
+            ticker,
+            id: pos.underlyingId,
+            notional: Math.abs(pos.absNotional ?? 0),
+          });
+        }
+      }
+
+      // Find ticker with highest notional
+      let underlyingTicker = "Unknown";
+      let underlyingId: string | null = null;
+      let maxNotional = -1;
+      for (const entry of tickerNotionals.values()) {
+        if (entry.notional > maxNotional) {
+          maxNotional = entry.notional;
+          underlyingTicker = entry.ticker;
+          underlyingId = entry.id;
+        }
+      }
 
       if (!groups.has(underlyingTicker)) {
         groups.set(underlyingTicker, {
