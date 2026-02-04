@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
           eq(thesisTriageRecords.thesisId, thesisId),
           eq(thesisTriageRecords.thesisType, thesisType),
           eq(thesisTriageRecords.triageRule, 'SIGNAL_TRIGGERED'),
-          sql`${thesisTriageRecords.status} != 'complete'`
+          sql`${thesisTriageRecords.status} != 'done'`
         )
       )
       .limit(1);
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       await db
         .update(thesisTriageRecords)
         .set({
-          status: 'complete',
+          status: 'done', // thesis_triage_records uses inbox/in_progress/done
           completedAt: new Date(),
           completedBy: 'user',
           userNotes: notes || `Assessment: ${assessment}`,

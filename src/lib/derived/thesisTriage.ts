@@ -584,7 +584,7 @@ async function getExistingPendingTriage(
   thesisId: string,
   thesisType: 'macro' | 'asset'
 ) {
-  // Get all non-complete triage records (status can be urgent, attention, monitor, info, pending)
+  // Get all non-done triage records (thesis_triage_records uses inbox/in_progress/done)
   return db
     .select()
     .from(thesisTriageRecords)
@@ -592,7 +592,7 @@ async function getExistingPendingTriage(
       and(
         eq(thesisTriageRecords.thesisId, thesisId),
         eq(thesisTriageRecords.thesisType, thesisType),
-        ne(thesisTriageRecords.status, 'complete')
+        ne(thesisTriageRecords.status, 'done')
       )
     );
 }
@@ -691,7 +691,7 @@ async function resolveTriageRecord(
   await db
     .update(thesisTriageRecords)
     .set({
-      status: 'complete',
+      status: 'done', // thesis_triage_records uses inbox/in_progress/done, not complete
       completedAt: new Date(),
       completedBy: 'system',
       userNotes: `Auto-resolved: ${reason}`,
@@ -712,7 +712,7 @@ async function resolveTriageRecord(
       triageRule: triageRecord.triageRule,
     },
     newState: {
-      status: 'complete',
+      status: 'done',
       completedBy: 'system',
       resolutionReason: reason,
     },
