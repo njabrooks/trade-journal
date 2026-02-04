@@ -809,22 +809,67 @@ export async function autoLinkPositionsToStrategies(
 
           // If the best match is merged, try to find the merge target
           if (matched.status === 'merged') {
-            const mergeTarget = await db
-              .selectDistinct({
-                strategyId: positions.strategyId,
-              })
-              .from(positions)
-              .innerJoin(strategies, eq(positions.strategyId, strategies.id))
-              .where(
-                and(
-                  eq(positions.accountId, pos.accountId),
-                  eq(strategies.strategyKey, derivedKey),
-                  ne(strategies.id, matched.id),
-                  sql`${strategies.status} IN ('active', 'draft')`,
-                  sql`${positions.quantity} != 0`
+            // First, check if this underlying has a parent (e.g., HSOL -> SOL)
+            // If so, we should look for the parent's active strategy
+            let parentKey: string | null = null;
+            if (pos.underlyingId) {
+              const underlyingWithParent = await db
+                .select({ parentUnderlyingId: underlyings.parentUnderlyingId })
+                .from(underlyings)
+                .where(eq(underlyings.id, pos.underlyingId))
+                .limit(1);
+
+              if (underlyingWithParent[0]?.parentUnderlyingId) {
+                const parentUnderlying = await db
+                  .select({ ticker: underlyings.ticker })
+                  .from(underlyings)
+                  .where(eq(underlyings.id, underlyingWithParent[0].parentUnderlyingId))
+                  .limit(1);
+                if (parentUnderlying[0]?.ticker) {
+                  const assetSuffix = derivedKey.split('-').pop();
+                  parentKey = `${parentUnderlying[0].ticker}-${assetSuffix}`;
+                }
+              }
+            }
+
+            // Try to find merge target - first by parent key (for wrapped tokens),
+            // then by same key (for standard merges)
+            let mergeTarget: { strategyId: string | null }[] = [];
+
+            if (parentKey) {
+              // Look for active parent strategy (e.g., SOL-CRYPTO for HSOL)
+              mergeTarget = await db
+                .select({ strategyId: strategies.id })
+                .from(strategies)
+                .where(
+                  and(
+                    eq(strategies.accountId, pos.accountId),
+                    eq(strategies.strategyKey, parentKey),
+                    sql`${strategies.status} IN ('active', 'draft')`
+                  )
                 )
-              )
-              .limit(1);
+                .limit(1);
+            }
+
+            // If no parent strategy found, try same key
+            if (mergeTarget.length === 0) {
+              mergeTarget = await db
+                .selectDistinct({
+                  strategyId: positions.strategyId,
+                })
+                .from(positions)
+                .innerJoin(strategies, eq(positions.strategyId, strategies.id))
+                .where(
+                  and(
+                    eq(positions.accountId, pos.accountId),
+                    eq(strategies.strategyKey, derivedKey),
+                    ne(strategies.id, matched.id),
+                    sql`${strategies.status} IN ('active', 'draft')`,
+                    sql`${positions.quantity} != 0`
+                  )
+                )
+                .limit(1);
+            }
 
             // Use merge target if found, otherwise keep link to merged strategy
             strategyId = mergeTarget.length > 0 && mergeTarget[0].strategyId
