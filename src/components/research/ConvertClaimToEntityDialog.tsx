@@ -37,6 +37,8 @@ interface AvailableThesis {
   title: string;
   status: string;
   thesisType: string;
+  description?: string | null;
+  sectors?: string[] | null;
 }
 
 interface AvailableView {
@@ -44,6 +46,7 @@ interface AvailableView {
   title: string;
   ticker: string;
   status: string;
+  description?: string | null;
 }
 
 export function ConvertClaimToEntityDialog({
@@ -67,6 +70,7 @@ export function ConvertClaimToEntityDialog({
   const [selectedViewIds, setSelectedViewIds] = useState<string[]>([]);
   const [loadingEntities, setLoadingEntities] = useState(false);
   const [relationshipType, setRelationshipType] = useState<'supports' | 'refutes' | 'foundation'>('supports');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Create New mode state
   const [entityType, setEntityType] = useState<EntityType | null>(null);
@@ -104,6 +108,8 @@ export function ConvertClaimToEntityDialog({
           title: e.title,
           status: e.status,
           thesisType: e.thesisType,
+          description: e.description,
+          sectors: e.sectors,
         }));
       const views = entities
         .filter((e: any) => e.type === 'assetThesis')
@@ -112,6 +118,7 @@ export function ConvertClaimToEntityDialog({
           title: e.title,
           ticker: e.ticker,
           status: e.status,
+          description: e.description,
         }));
 
       const linkedThesesData = currentlyLinked
@@ -121,6 +128,8 @@ export function ConvertClaimToEntityDialog({
           title: e.title,
           status: e.status,
           thesisType: e.thesisType,
+          description: e.description,
+          sectors: e.sectors,
         }));
       const linkedViewsData = currentlyLinked
         .filter((e: any) => e.type === 'assetThesis')
@@ -129,6 +138,7 @@ export function ConvertClaimToEntityDialog({
           title: e.title,
           ticker: e.ticker,
           status: e.status,
+          description: e.description,
         }));
 
       setAvailableTheses(theses);
@@ -304,8 +314,46 @@ export function ConvertClaimToEntityDialog({
     setSelectedThesisIds([]);
     setSelectedViewIds([]);
     setRelationshipType('supports');
+    setSearchQuery('');
     setError(null);
   };
+
+  // Filter function for keyword search across all relevant fields
+  const matchesSearch = (
+    entity: AvailableThesis | AvailableView,
+    type: 'thesis' | 'view'
+  ): boolean => {
+    if (!searchQuery.trim()) return true;
+
+    const searchLower = searchQuery.toLowerCase();
+    const searchTerms = searchLower.split(/\s+/).filter(Boolean);
+
+    // Build searchable text from all relevant fields
+    const searchableFields: string[] = [entity.title, entity.status];
+
+    if (type === 'thesis') {
+      const thesis = entity as AvailableThesis;
+      searchableFields.push(thesis.thesisType);
+      if (thesis.description) searchableFields.push(thesis.description);
+      if (thesis.sectors) searchableFields.push(...thesis.sectors);
+    } else {
+      const view = entity as AvailableView;
+      searchableFields.push(view.ticker);
+      if (view.description) searchableFields.push(view.description);
+    }
+
+    const searchableText = searchableFields
+      .filter(Boolean)
+      .map((f) => f.toLowerCase())
+      .join(' ');
+
+    // Match if all search terms are found somewhere in the searchable text
+    return searchTerms.every((term) => searchableText.includes(term));
+  };
+
+  // Filtered lists for display
+  const filteredTheses = availableTheses.filter((t) => matchesSearch(t, 'thesis'));
+  const filteredViews = availableViews.filter((v) => matchesSearch(v, 'view'));
 
   const handleClose = () => {
     resetForm();
@@ -392,6 +440,40 @@ export function ConvertClaimToEntityDialog({
                 <div className="text-sm text-muted-foreground">
                   {selectedThesisIds.length + selectedViewIds.length} selected
                 </div>
+              </div>
+
+              {/* Keyword Search */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by keyword (title, ticker, description, sectors...)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
 
               {/* Relationship Type - Always visible at top */}
@@ -485,13 +567,15 @@ export function ConvertClaimToEntityDialog({
                   {/* Macro Theses */}
                   <div>
                     <h4 className="text-sm font-semibold text-foreground mb-3">
-                      Macro Theses ({availableTheses.length})
+                      Macro Theses ({filteredTheses.length}{searchQuery && ` of ${availableTheses.length}`})
                     </h4>
-                    {availableTheses.length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">No available theses</p>
+                    {filteredTheses.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">
+                        {searchQuery ? 'No matching theses' : 'No available theses'}
+                      </p>
                     ) : (
                       <div className="max-h-60 overflow-y-auto border border-border rounded-lg">
-                        {availableTheses.map(thesis => (
+                        {filteredTheses.map(thesis => (
                           <label
                             key={thesis.id}
                             className={`flex items-start gap-3 p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0 ${
@@ -526,13 +610,15 @@ export function ConvertClaimToEntityDialog({
                   {/* Asset Theses */}
                   <div>
                     <h4 className="text-sm font-semibold text-foreground mb-3">
-                      Asset Theses ({availableViews.length})
+                      Asset Theses ({filteredViews.length}{searchQuery && ` of ${availableViews.length}`})
                     </h4>
-                    {availableViews.length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">No available views</p>
+                    {filteredViews.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">
+                        {searchQuery ? 'No matching asset theses' : 'No available views'}
+                      </p>
                     ) : (
                       <div className="max-h-60 overflow-y-auto border border-border rounded-lg">
-                        {availableViews.map(view => (
+                        {filteredViews.map(view => (
                           <label
                             key={view.id}
                             className={`flex items-start gap-3 p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0 ${

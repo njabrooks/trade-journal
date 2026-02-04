@@ -164,7 +164,7 @@ export async function GET(
         linkedIds.add(rel.macroThesisId);
       }
 
-      // Separate into currently linked and available
+      // Separate into currently linked and available (include description and sectors for keyword search)
       const currentlyLinked = allMacroTheses
         .filter(mt => linkedIds.has(mt.id))
         .map(mt => ({
@@ -173,6 +173,8 @@ export async function GET(
           type: 'macroThesis' as const,
           thesisType: mt.thesisType,
           status: mt.status,
+          description: mt.description,
+          sectors: mt.sectors,
         }));
 
       const available = allMacroTheses
@@ -183,6 +185,8 @@ export async function GET(
           type: 'macroThesis' as const,
           thesisType: mt.thesisType,
           status: mt.status,
+          description: mt.description,
+          sectors: mt.sectors,
         }));
 
       return NextResponse.json({ entities: available, currentlyLinked });

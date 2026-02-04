@@ -115,13 +115,14 @@ export async function GET(
       );
     }
 
-    // Get all asset theses with underlying data (for ticker)
+    // Get all asset theses with underlying data (for ticker) and description for keyword search
     const allAssetThesesRaw = await db
       .select({
         id: assetTheses.id,
         title: assetTheses.title,
         status: assetTheses.status,
         ticker: underlyings.ticker,
+        description: assetTheses.description,
         createdAt: assetTheses.createdAt,
       })
       .from(assetTheses)
@@ -141,7 +142,7 @@ export async function GET(
 
     const linkedSet = new Set(linkedAssetTheses.map(r => r.assetThesisId));
 
-    // Separate into currently linked and available
+    // Separate into currently linked and available (include description for keyword search)
     const currentlyLinked = allAssetTheses
       .filter(at => linkedSet.has(at.id))
       .map(at => ({
@@ -149,6 +150,7 @@ export async function GET(
         title: at.title,
         ticker: at.ticker,
         status: at.status,
+        description: at.description,
       }));
 
     const available = allAssetTheses
@@ -158,6 +160,7 @@ export async function GET(
         title: at.title,
         ticker: at.ticker,
         status: at.status,
+        description: at.description,
       }));
 
     return NextResponse.json({ entities: available, currentlyLinked });

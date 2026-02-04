@@ -41,4 +41,6 @@ export interface AvailableEntity {
   ticker?: string;
   status?: string;
   thesisType?: string;
+  description?: string | null; // For keyword search
+  sectors?: string[] | null; // For keyword search (macro theses only)
 }

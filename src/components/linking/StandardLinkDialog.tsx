@@ -314,13 +314,32 @@ export function StandardLinkDialog({
       return false;
     }
 
-    // Filter by search query
+    // If no search query, return all matching entities
+    if (!searchQuery.trim()) {
+      return true;
+    }
+
+    // Filter by search query - search across all relevant fields
     const searchLower = searchQuery.toLowerCase();
-    return (
-      entity.title.toLowerCase().includes(searchLower) ||
-      entity.ticker?.toLowerCase().includes(searchLower) ||
-      entity.status?.toLowerCase().includes(searchLower)
-    );
+    const searchTerms = searchLower.split(/\s+/).filter(Boolean);
+
+    // Build searchable text from all relevant fields
+    const searchableFields = [
+      entity.title,
+      entity.ticker,
+      entity.status,
+      entity.thesisType,
+      entity.description,
+      // Join sectors array into searchable string
+      ...(entity.sectors || []),
+    ]
+      .filter(Boolean)
+      .map((field) => String(field).toLowerCase());
+
+    const searchableText = searchableFields.join(' ');
+
+    // Match if all search terms are found somewhere in the searchable text
+    return searchTerms.every((term) => searchableText.includes(term));
   });
 
   // Get target type label
