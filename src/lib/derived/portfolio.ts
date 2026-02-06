@@ -15,11 +15,19 @@ interface NotionalSums {
   absOptionNotional: string | null;
   absCryptoSpotNotional: string | null;
   absPerpNotional: string | null;
+  // For NAV calculation: non-perp notional + perp unrealized PnL
+  // (perp notional is exposure, not value; cash includes perp margin)
+  navPositionValue: string | null;
+  perpUnrealizedPnl: string | null;
 }
 
 /**
  * Computes notional sums by asset class from a set of positions.
  * Splits into 4 segments: STK, OPT, CRYPTO, PERP.
+ *
+ * For NAV calculation, perp positions contribute their unrealized PnL (not notional)
+ * because perp notional is exposure, not equity value. The perp margin is already
+ * included in the cash balance.
  */
 function computeNotionalSums(
   positionRows: { absNotional: string | null; spot: string | null; multiplier: string | null; quantity: string | null; unrealizedPnl: string | null; assetClass: string | null }[]
@@ -30,6 +38,7 @@ function computeNotionalSums(
   let optionNotionalSum = 0;
   let cryptoSpotNotionalSum = 0;
   let perpNotionalSum = 0;
+  let perpPnlSum = 0;
 
   for (const pos of positionRows) {
     // Policy: Absolute notional is always positive
@@ -62,8 +71,14 @@ function computeNotionalSums(
       cryptoSpotNotionalSum += notional;
     } else if (pos.assetClass === 'PERP') {
       perpNotionalSum += notional;
+      perpPnlSum += pnl;
     }
   }
+
+  // NAV position value: non-perp notional + perp unrealized PnL
+  // Perp notional is exposure (for leverage calculation), not equity value
+  const nonPerpNotional = stockNotionalSum + optionNotionalSum + cryptoSpotNotionalSum;
+  const navPositionValue = nonPerpNotional + perpPnlSum;
 
   return {
     totalAbsNotional: totalNotionalSum > 0 ? totalNotionalSum.toString() : null,
@@ -72,6 +87,8 @@ function computeNotionalSums(
     absOptionNotional: optionNotionalSum > 0 ? optionNotionalSum.toString() : null,
     absCryptoSpotNotional: cryptoSpotNotionalSum > 0 ? cryptoSpotNotionalSum.toString() : null,
     absPerpNotional: perpNotionalSum > 0 ? perpNotionalSum.toString() : null,
+    navPositionValue: navPositionValue !== 0 ? navPositionValue.toString() : null,
+    perpUnrealizedPnl: perpPnlSum !== 0 ? perpPnlSum.toString() : null,
   };
 }
 
@@ -129,14 +146,17 @@ async function computeAccountLevelSnapshot(
   const totalCashUsd = parseFloat(cashResult[0]?.totalCashUsd ?? '0');
 
   // Determine effective NAV:
-  // - If nav_snapshots has a row (IBKR, HyperLiquid) → use authoritative NAV
-  // - Otherwise (Coinbase, Kraken, Deribit, Solana) → NAV = positions + cash
+  // - If nav_snapshots has a row (IBKR) → use authoritative NAV
+  // - Otherwise → NAV = navPositionValue + cash
+  //   where navPositionValue = non-perp notional + perp unrealized PnL
+  //   (perp notional is exposure, not equity; perp margin is in cash)
   let effectiveNav: number | null = null;
   if (authoritativeNav) {
     effectiveNav = parseFloat(authoritativeNav);
   } else {
-    const positionValue = sums.totalAbsNotional ? parseFloat(sums.totalAbsNotional) : 0;
-    if (positionValue > 0 || totalCashUsd !== 0) {
+    // Use navPositionValue which correctly handles perps
+    const positionValue = sums.navPositionValue ? parseFloat(sums.navPositionValue) : 0;
+    if (positionValue !== 0 || totalCashUsd !== 0) {
       effectiveNav = positionValue + totalCashUsd;
     }
   }

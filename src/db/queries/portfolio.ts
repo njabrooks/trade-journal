@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import {
   accounts,
@@ -10,6 +11,9 @@ import {
   underlyings,
 } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
+
+// Alias for parent underlying self-join
+const parentUnderlyings = alias(underlyings, "parent_underlyings");
 
 export interface PortfolioTrendPoint {
   date: string;
@@ -468,6 +472,7 @@ export interface PortfolioPositionRow {
   assetClass: string | null;
   underlyingTicker: string | null;
   underlyingId: string | null;
+  parentUnderlyingTicker: string | null;
   expiry: string | null;
   strike: number | null;
   optionRight: string | null;
@@ -520,6 +525,8 @@ export async function getPortfolioPositionsData(
   // Fetch all open positions at each account's latest snapshot date.
   // Uses per-account correlated subquery because different exchanges
   // (IBKR, HyperLiquid, Coinbase, Kraken) ingest on different schedules.
+  // Joins with parent underlying to get the canonical ticker for grouping
+  // (e.g., HSOL -> SOL, CBBTC -> BTC).
   const positionRows = await db
     .select({
       id: positions.id,
@@ -527,6 +534,7 @@ export async function getPortfolioPositionsData(
       assetClass: positions.assetClass,
       underlyingTicker: underlyings.ticker,
       underlyingId: positions.underlyingId,
+      parentUnderlyingTicker: parentUnderlyings.ticker,
       expiry: positions.expiry,
       strike: positions.strike,
       optionRight: positions.optionRight,
@@ -544,6 +552,7 @@ export async function getPortfolioPositionsData(
     })
     .from(positions)
     .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
+    .leftJoin(parentUnderlyings, eq(underlyings.parentUnderlyingId, parentUnderlyings.id))
     .where(
       and(
         inArray(positions.accountId, accountIds),
@@ -602,6 +611,7 @@ export async function getPortfolioPositionsData(
     assetClass: row.assetClass,
     underlyingTicker: row.underlyingTicker,
     underlyingId: row.underlyingId,
+    parentUnderlyingTicker: row.parentUnderlyingTicker,
     expiry: row.expiry,
     strike: toNumber(row.strike),
     optionRight: row.optionRight,
