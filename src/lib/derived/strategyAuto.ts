@@ -365,9 +365,12 @@ async function findOrCreateStrategyFromPosition(
   // FALLBACK for CRYPTO/PERP: If no exact key match, try to find strategies that have
   // positions with the same symbol + asset class. This catches existing strategies where
   // the strategyKey might have been manually edited.
+  // Note: Using .select() not .selectDistinct() because PostgreSQL requires ORDER BY
+  // expressions to appear in SELECT DISTINCT list, and we use a CASE expression.
+  // Since we limit(1), DISTINCT is unnecessary anyway.
   if (pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
     const strategiesWithSameSymbol = await db
-      .selectDistinct({
+      .select({
         strategyId: positions.strategyId,
         status: strategies.status,
       })
@@ -596,8 +599,11 @@ async function findOrCreateStrategyFromTrade(
   // positions with the same symbol + asset class. This catches existing strategies where
   // the strategyKey might have been manually edited.
   if (trade.assetClass === 'CRYPTO' || trade.assetClass === 'PERP') {
+    // Note: Using .select() not .selectDistinct() because PostgreSQL requires ORDER BY
+    // expressions to appear in SELECT DISTINCT list, and we use a CASE expression.
+    // Since we limit(1), DISTINCT is unnecessary anyway.
     const strategiesWithSameSymbol = await db
-      .selectDistinct({
+      .select({
         strategyId: positions.strategyId,
         status: strategies.status,
       })
@@ -873,8 +879,11 @@ export async function autoLinkPositionsToStrategies(
           // with the same symbol + asset class. This catches existing strategies where the
           // strategyKey might have been manually edited (e.g., "Bitcoin Spot Long" vs "BTC-CRYPTO")
           // IMPORTANT: Include rejected/merged - link is permanent, status filters views
+          // Note: Using .select() not .selectDistinct() because PostgreSQL requires ORDER BY
+          // expressions to appear in SELECT DISTINCT list, and we use a CASE expression.
+          // Since we limit(1), DISTINCT is unnecessary anyway.
           const strategiesWithSameSymbol = await db
-            .selectDistinct({
+            .select({
               strategyId: positions.strategyId,
               status: strategies.status,
             })
