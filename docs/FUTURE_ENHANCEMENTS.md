@@ -25,6 +25,25 @@
 
 ## Planned - High Priority
 
+### #ENH-050: Thesis-Bounded Execution System
+**Priority**: High | **Effort**: 2-3 weeks | **Phase**: 4.0
+**PRD**: Section 7 (Decision Support), Section 3 (Strategies)
+**Dependencies**: Massive API (COMPLETE), Strategy entity (COMPLETE)
+**Status**: PROPOSED
+
+Generate options-based execution strategies bounded by pre-defined risk parameters. Includes pre-populated management rules for path-dependent scenarios and hard rules that cannot be overridden.
+
+**Key Features:**
+- Confidence level → % of portfolio at risk mapping
+- LLM-generated execution proposals using live Massive options chains
+- Path-dependent management playbook (quick win, vol crush, thesis invalidation, etc.)
+- Hard rules locked at position entry (max loss exit, thesis invalidation, time stop)
+- Triage integration for rule monitoring and alerts
+
+**Full Specification:** `docs/ENH-050-thesis-bounded-execution.md`
+
+---
+
 ### #ENH-038: Automated Monitoring System
 **Priority**: High | **Effort**: 1-2 days | **Phase**: 3.2
 **PRD**: Section 6.1 (Triggers - Automated Monitoring)
