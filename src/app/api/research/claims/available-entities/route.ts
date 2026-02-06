@@ -47,13 +47,15 @@ export async function GET(request: NextRequest) {
       .map(link => link.viewId)
       .filter((id): id is string => id !== null);
 
-    // Fetch all theses
+    // Fetch all theses (include description and sectors for keyword search)
     let thesesQuery = db
       .select({
         id: macroTheses.id,
         title: macroTheses.title,
         status: macroTheses.status,
         thesisType: macroTheses.thesisType,
+        description: macroTheses.description,
+        sectors: macroTheses.sectors,
       })
       .from(macroTheses)
       .orderBy(macroTheses.createdAt);
@@ -66,13 +68,14 @@ export async function GET(request: NextRequest) {
       thesis => linkedThesisIds.includes(thesis.id)
     );
 
-    // Fetch all views
+    // Fetch all views (include description for keyword search)
     const allViews = await db
       .select({
         id: assetTheses.id,
         title: assetTheses.title,
         status: assetTheses.status,
         ticker: underlyings.ticker,
+        description: assetTheses.description,
       })
       .from(assetTheses)
       .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
@@ -87,6 +90,7 @@ export async function GET(request: NextRequest) {
 
     // Combine theses and views into a single entities array
     // StandardLinkDialog expects { entities: [...], currentlyLinked: [...] } format
+    // Include description and sectors for keyword search
     const entities = [
       ...availableTheses.map(thesis => ({
         id: thesis.id,
@@ -94,6 +98,8 @@ export async function GET(request: NextRequest) {
         type: 'macroThesis' as const,
         thesisType: thesis.thesisType,
         status: thesis.status,
+        description: thesis.description,
+        sectors: thesis.sectors,
       })),
       ...availableViews.map(view => ({
         id: view.id,
@@ -101,6 +107,7 @@ export async function GET(request: NextRequest) {
         type: 'assetThesis' as const,
         ticker: view.ticker,
         status: view.status,
+        description: view.description,
       })),
     ];
 
@@ -111,6 +118,8 @@ export async function GET(request: NextRequest) {
         type: 'macroThesis' as const,
         thesisType: thesis.thesisType,
         status: thesis.status,
+        description: thesis.description,
+        sectors: thesis.sectors,
       })),
       ...linkedViews.map(view => ({
         id: view.id,
@@ -118,6 +127,7 @@ export async function GET(request: NextRequest) {
         type: 'assetThesis' as const,
         ticker: view.ticker,
         status: view.status,
+        description: view.description,
       })),
     ];
 
