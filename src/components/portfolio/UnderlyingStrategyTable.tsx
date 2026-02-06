@@ -65,17 +65,18 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
     return map;
   }, [accounts]);
 
-  // Group strategies by underlying ticker
+  // Group strategies by underlying ticker (using parent underlying if available)
   const underlyingGroups = useMemo(() => {
     const groups = new Map<string, UnderlyingGroup>();
 
     for (const strategy of strategies) {
       // Get the most common underlying ticker among positions (by notional value).
-      // This handles strategies with mixed underlyings (e.g., SOL + HSOL) by
-      // grouping under the dominant underlying.
+      // Uses parentUnderlyingTicker if available (e.g., HSOL -> SOL, CBBTC -> BTC)
+      // to ensure derivative tokens group with their parent.
       const tickerNotionals = new Map<string, { ticker: string; id: string | null; notional: number }>();
       for (const pos of strategy.positions) {
-        const ticker = pos.underlyingTicker ?? "Unknown";
+        // Use parent ticker if available, otherwise fall back to position's ticker
+        const ticker = pos.parentUnderlyingTicker ?? pos.underlyingTicker ?? "Unknown";
         const existing = tickerNotionals.get(ticker);
         if (existing) {
           existing.notional += Math.abs(pos.absNotional ?? 0);
