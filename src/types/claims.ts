@@ -12,10 +12,10 @@
  */
 
 // ============================================================================
-// Main Claim (Thesis/View Candidates)
+// Main Claim (Macro Thesis / Asset Thesis Candidates)
 // ============================================================================
 
-export type ClaimType = 'thesis_candidate' | 'view_candidate';
+export type ClaimType = 'macro_thesis_candidate' | 'asset_thesis_candidate';
 export type ClaimCategory = 'macro' | 'asset_specific';
 export type ClaimConfidence = 'high' | 'medium' | 'low' | 'exploratory';
 export type TimeHorizon = 'long_term' | 'medium_term' | 'short_term';

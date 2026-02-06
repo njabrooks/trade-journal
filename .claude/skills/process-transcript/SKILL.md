@@ -161,8 +161,8 @@ tags: []  # Will be populated during extraction
 - **evidence**: Supports/refutes another claim (nested)
 
 **Type** (function):
-- **macro_macro_thesis_candidate**: Macro-level, cross-asset themes
-- **asset_macro_thesis_candidate**: Asset-specific, ticker-focused
+- **macro_thesis_candidate**: Macro-level, cross-asset themes
+- **asset_thesis_candidate**: Asset-specific, ticker-focused
 - **supporting**: Evidence supporting a main claim
 - **rebutting**: Evidence against a main claim
 

@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       .insert(mainClaims)
       .values({
         title: claim.claim.substring(0, 100), // Use first 100 chars of claim as title
-        category: claim.type === 'thesis_candidate' ? 'macro' : 'asset_specific',
+        category: claim.type === 'macro_thesis_candidate' ? 'macro' : 'asset_specific',
         claim: claim.claim,
         evidence: claim.evidence || [],
         reasoning: claim.reasoning,

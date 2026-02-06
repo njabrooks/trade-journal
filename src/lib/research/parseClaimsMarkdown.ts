@@ -9,7 +9,7 @@ export interface MainClaim {
   id: string;
   title: string;
   level: 'main';
-  type: 'thesis_candidate' | 'view_candidate';
+  type: 'macro_thesis_candidate' | 'asset_thesis_candidate';
   category: 'macro' | 'asset_specific';
   tickers: string[];
   time_horizon: 'long_term' | 'medium_term' | 'short_term';
@@ -56,7 +56,7 @@ export function parseClaimsMarkdown(markdownContent: string): ClaimsStructure {
   const body = parts.length >= 3 ? parts.slice(2).join('---').trim() : markdownContent;
 
   // Split into main claims and evidence claims sections
-  const mainClaimsMatch = body.match(/## Main Claims \(Thesis\/View Candidates\)([\s\S]*?)(?=## Evidence Claims|$)/);
+  const mainClaimsMatch = body.match(/## Main Claims \(Macro Thesis \/ Asset Thesis Candidates\)([\s\S]*?)(?=## Evidence Claims|$)/);
   const evidenceClaimsMatch = body.match(/## Evidence Claims \(Supporting\/Rebutting\)([\s\S]*?)$/);
 
   const mainClaimsText = mainClaimsMatch ? mainClaimsMatch[1] : '';
@@ -124,7 +124,7 @@ function parseMainClaimBlock(block: string): MainClaim | null {
 
   // Extract metadata fields
   const level = extractField(block, 'Level') || 'main';
-  const type = extractField(block, 'Type') as 'thesis_candidate' | 'view_candidate' || 'thesis_candidate';
+  const type = (extractField(block, 'Type') || 'macro_thesis_candidate') as 'macro_thesis_candidate' | 'asset_thesis_candidate';
   const category = extractField(block, 'Category') as 'macro' | 'asset_specific' || 'macro';
   const tickersRaw = extractField(block, 'Tickers') || '';
   const tickers = tickersRaw === 'N/A' ? [] : tickersRaw.split(',').map(t => t.trim()).filter(Boolean);
