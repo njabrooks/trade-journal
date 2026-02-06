@@ -1,0 +1,59 @@
+# Pipeline Idea Metadata
+idea_id: "idea-005"
+title: "Met Coal Equities Offer Asymmetric Upside Due to Strong Global Steel Demand and No Viable Substitutes for Coking Coal in Blast Furnaces"
+slug: "met-coal-asymmetric-upside"
+
+# Progression State
+current_stage: 4
+status: active
+
+# Source Reference
+source_claim_id: "claim-2"
+source_audit: "research-workspace/transcripts-audits/20260203-coal-contrarian-case-audit.md"
+
+# Confidence Tracking
+confidence: 0.25
+confidence_history:
+  - stage: 1
+    value: 0.50
+    date: "2026-02-06"
+    note: "Novelty score from forensic extraction. Below 0.6 threshold — user override approved. Met coal irreplaceability and ESG discount provide differentiation."
+  - stage: 2
+    value: 0.50
+    date: "2026-02-06"
+    note: "Thesis formalized with 5 failure modes. Confidence unchanged — needs Stage 3 unknown mapping to identify research that could raise conviction."
+  - stage: 3
+    value: 0.50
+    date: "2026-02-06"
+    note: "3 high-impact unknowns identified, all externally resolvable. Key gate: valuation check (has re-rating already occurred?). Research plan defined, ~10-13 hours total."
+  - stage: 4
+    value: 0.25
+    date: "2026-02-06"
+    note: "Falsification research on 2 of 3 unknowns. HCC kill condition triggered (8-10x EV/EBITDA, CEO selling $10M+). AMR operationally marginal (4 losses, 2/3 U.S. met coal unprofitable at $170/t). U.S. equities structurally disadvantaged vs Australian alternatives ($35-55/mt freight+rail penalty, no quality premium). Gate: MODIFY — core demand insight may survive but equity expression is wrong."
+
+# Stage History
+stage_history:
+  - stage: 1
+    started_at: "2026-02-06T00:00:00Z"
+    completed_at: "2026-02-06T00:00:00Z"
+    decision: advance
+    note: "Claim selected from coal contrarian case audit. Novelty 0.50 (below threshold, user override). Asset-specific thesis targeting HCC, AMR, METC, SXC. Mechanism plausible: 70% global steel requires met coal via BF-BOF with no substitute."
+  - stage: 2
+    started_at: "2026-02-06T00:00:00Z"
+    completed_at: "2026-02-06T00:00:00Z"
+    decision: advance
+    note: "Core thesis crisp and falsifiable. 5 specific failure modes identified (2 structural, 1 execution, 1 timing, 1 external). Primary driver: global BF-BOF utilization rates."
+  - stage: 3
+    started_at: "2026-02-06T00:00:00Z"
+    completed_at: "2026-02-06T00:00:00Z"
+    decision: advance
+    note: "3 high-impact resolvable unknowns with clear kill conditions. Valuation check is fastest kill screen (3-4 hrs). Total research effort ~10-13 hrs. Worth researching."
+  - stage: 4
+    started_at: "2026-02-06T00:00:00Z"
+    completed_at: "2026-02-06T00:00:00Z"
+    decision: modify
+    note: "HCC kill triggered, AMR marginal, U.S. expression falsified. Core demand insight may survive — recommend modify to Australian pure-plays (Stanmore, Whitehaven) pending Unknown 2 (China steel) research."
+
+# Timestamps
+created_at: "2026-02-06T00:00:00Z"
+updated_at: "2026-02-06T00:00:00Z"
