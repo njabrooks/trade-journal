@@ -1482,6 +1482,17 @@ export async function computeQuantityChangeTriageForDate(
       severity = 'attention'; // Position activity needs user attention for metadata capture
     }
 
+    // Skip info-severity records (add/reduce) where all position changes are < 1%
+    // This filters out staking rewards, dust adjustments, and other micro-changes
+    if (severity === 'info') {
+      const allBelowThreshold = data.positions.every(p => {
+        if (p.previousQty === 0) return false; // New position — always surface
+        const pctChange = Math.abs((p.currentQty - p.previousQty) / p.previousQty);
+        return pctChange < 0.01;
+      });
+      if (allBelowThreshold) continue;
+    }
+
     // Create strategy-level triage record for quantity change
     // Use QUANTITY_CHANGE constant for recommendedAction (like TRADE_INGESTION) for UI compatibility
     // Store descriptive details in notes
@@ -1539,6 +1550,12 @@ export async function computeQuantityChangeTriageForDate(
 
     // Both 'open' and 'close' need attention (consistent with strategy-level triggers)
     const severity = (change.tradeStage === 'close' || change.tradeStage === 'open') ? 'attention' : 'info';
+
+    // Skip info-severity records where the change is < 1% (staking dust, micro-adjustments)
+    if (severity === 'info' && change.previousQty !== 0) {
+      const pctChange = Math.abs((change.currentQty - change.previousQty) / change.previousQty);
+      if (pctChange < 0.01) continue;
+    }
 
     const triageRecord: NewTriageRecord = {
       snapshotDate,

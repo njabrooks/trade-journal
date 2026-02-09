@@ -22,7 +22,7 @@ async function main() {
   try {
     console.log(`🔄 Auto-promoting claims from insight: ${insightId}...`);
 
-    const promotedCount = await autoPromoteAuditClaims(insightId);
+    const { promotedCount, promotedClaimIds } = await autoPromoteAuditClaims(insightId);
 
     if (promotedCount === 0) {
       console.log('ℹ️  No new claims to promote (may already be promoted or no claims_structure found)');
@@ -30,6 +30,11 @@ async function main() {
       console.log(`✅ Successfully auto-promoted ${promotedCount} claims to main_claims table`);
       console.log(`   Status: unconfirmed (ready for manual review and confirmation)`);
       console.log(`\n→ View claims at: /claims`);
+    }
+
+    // Output promoted claim IDs as JSON for downstream scripts
+    if (promotedClaimIds.length > 0) {
+      console.log(`\nPROMOTED_CLAIM_IDS=${JSON.stringify(promotedClaimIds)}`);
     }
 
     process.exit(0);

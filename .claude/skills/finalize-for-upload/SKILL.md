@@ -235,6 +235,20 @@ RETURNING id;
 -- NOTE: Valid status values are: 'draft', 'active', 'complete', 'rejected'
 -- Use 'draft' for newly promoted claims pending review
 npx tsx scripts/auto-promote-claims.ts $insight_id
+
+-- Step 5: Generate thesis linkage suggestions (Claude Code does the analysis)
+-- After promoting claims, analyze them against existing active theses and suggest linkages.
+-- Non-blocking: if this fails, claims are still promoted and available for manual linking.
+--
+-- Process:
+-- 1. Query promoted claims: SELECT id, title, claim, category, qualifier, relevant_tickers FROM main_claims WHERE source_insight_id = '$insight_id'
+-- 2. Query active theses: SELECT id, title, description, direction, sectors FROM macro_theses WHERE status = 'active'
+-- 3. Query active asset theses: SELECT at.id, at.title, at.description, u.ticker, at.direction FROM asset_theses at JOIN underlyings u ON at.underlying_id = u.id WHERE at.status = 'active'
+-- 4. Analyze each claim against theses — consider category alignment, ticker overlap, directional alignment, thematic relevance
+-- 5. For each match (max 3 per claim, confidence >= 0.4), insert into research_hierarchy_recommendations:
+--    INSERT INTO research_hierarchy_recommendations (research_insight_id, main_claim_id, recommendation_type, existing_thesis_id, existing_asset_thesis_id, mapping_type, confidence_score, reasoning, status, ai_model)
+--    VALUES ($insight_id, $claim_id, 'link_existing', $macro_thesis_id_or_null, $asset_thesis_id_or_null, 'supports'|'refutes'|'foundation', $confidence, $reasoning, 'pending', 'Claude Code (inline analysis)')
+-- 6. Report count of suggestions generated
 ```
 
 **Claims Structure Format**:

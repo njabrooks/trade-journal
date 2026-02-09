@@ -11,6 +11,8 @@ import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
 import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } from '@/types/claims';
 import { ConvertClaimToEntityDialog } from './ConvertClaimToEntityDialog';
 import { ExpandableEvidenceClaim } from './ExpandableEvidenceClaim';
+import { InlineClaimSuggestions } from './InlineClaimSuggestions';
+import type { ClaimSuggestion } from '@/db/queries/research';
 
 interface LinkedThesis {
   id: string;
@@ -31,6 +33,7 @@ interface ClaimWithSource {
   artifact: ResearchArtifact | null;
   linkedTheses?: LinkedThesis[];
   linkedViews?: LinkedView[];
+  suggestions?: ClaimSuggestion[];
 }
 
 interface UnifiedClaimsBrowserProps {
@@ -624,7 +627,7 @@ export function UnifiedClaimsBrowser({
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedClaims.map(({ claim, insight, artifact, linkedTheses = [], linkedViews = [] }) => {
+                {filteredAndSortedClaims.map(({ claim, insight, artifact, linkedTheses = [], linkedViews = [], suggestions = [] }) => {
                   const isExpanded = expandedClaim === claim.id;
                   const evidenceClaims = getEvidenceClaims({ claim, insight, artifact });
 
@@ -665,7 +668,11 @@ export function UnifiedClaimsBrowser({
                         <td className="px-4 py-3">
                           <div className={isExpanded ? "space-y-1" : "flex items-center gap-1 overflow-hidden"}>
                             {linkedTheses.length === 0 && linkedViews.length === 0 ? (
-                              <span className="text-xs text-muted-foreground">Not linked</span>
+                              suggestions.length > 0 ? (
+                                <InlineClaimSuggestions suggestions={suggestions} compact={true} />
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Not linked</span>
+                              )
                             ) : (
                               <>
                                 {/* Combined list of all linked entities */}
@@ -984,6 +991,17 @@ export function UnifiedClaimsBrowser({
                                       );
                                     })}
                                   </div>
+                                </div>
+                              )}
+
+                              {/* AI Suggested Linkages */}
+                              {suggestions.length > 0 && (
+                                <div className="pt-2 border-t border">
+                                  <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide flex items-center gap-1">
+                                    <span>Suggested Linkages</span>
+                                    <Badge className="bg-amber-100 text-amber-700 text-xs">AI</Badge>
+                                  </h4>
+                                  <InlineClaimSuggestions suggestions={suggestions} compact={false} />
                                 </div>
                               )}
 

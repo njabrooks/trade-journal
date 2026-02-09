@@ -19,6 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { SectorSelector } from '@/components/ui/SectorSelector';
 import { UnderlyingSelector } from '@/components/ui/UnderlyingSelector';
 import type { MainClaim } from '@/db/schema';
+import type { ClaimSuggestion } from '@/db/queries/research';
+import { Sparkles, Check, X as XIcon } from 'lucide-react';
 
 interface ConvertClaimToEntityDialogProps {
   claim: MainClaim;
@@ -71,6 +73,7 @@ export function ConvertClaimToEntityDialog({
   const [loadingEntities, setLoadingEntities] = useState(false);
   const [relationshipType, setRelationshipType] = useState<'supports' | 'refutes' | 'foundation'>('supports');
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<ClaimSuggestion[]>([]);
 
   // Create New mode state
   const [entityType, setEntityType] = useState<EntityType | null>(null);
@@ -81,12 +84,25 @@ export function ConvertClaimToEntityDialog({
   const [sectors, setSectors] = useState<string[]>([]);
   const [ticker, setTicker] = useState('');
 
-  // Fetch available entities when switching to link mode
+  // Fetch available entities and AI suggestions when switching to link mode
   useEffect(() => {
     if (mode === 'link_existing' && isOpen) {
       fetchAvailableEntities();
+      fetchSuggestions();
     }
   }, [mode, isOpen]);
+
+  const fetchSuggestions = async () => {
+    try {
+      const response = await fetch(`/api/research/claims/suggestions?claimId=${claim.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.suggestions || []);
+      }
+    } catch {
+      // Non-critical — suggestions are optional
+    }
+  };
 
   const fetchAvailableEntities = async () => {
     setLoadingEntities(true);
@@ -560,6 +576,69 @@ export function ConvertClaimToEntityDialog({
                             </button>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Suggested Linkages */}
+                  {suggestions.length > 0 && (
+                    <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        AI Suggested
+                      </h4>
+                      <div className="space-y-2">
+                        {suggestions.map((suggestion) => {
+                          const isMacro = !!suggestion.thesisId;
+                          const targetId = suggestion.thesisId || suggestion.assetThesisId || '';
+                          const isSelected = isMacro
+                            ? selectedThesisIds.includes(targetId)
+                            : selectedViewIds.includes(targetId);
+                          const title = suggestion.thesisTitle || suggestion.assetThesisTitle || 'Unknown';
+                          const confidence = Math.round(Number(suggestion.confidenceScore || 0) * 100);
+
+                          return (
+                            <label
+                              key={suggestion.id}
+                              className="flex items-start gap-3 p-3 rounded-md bg-card border border-border hover:bg-accent/50 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                className="mt-1 h-4 w-4 rounded border-border"
+                                checked={isSelected}
+                                onChange={() => {
+                                  if (isMacro) {
+                                    setSelectedThesisIds((prev) =>
+                                      prev.includes(targetId)
+                                        ? prev.filter((id) => id !== targetId)
+                                        : [...prev, targetId]
+                                    );
+                                  } else {
+                                    setSelectedViewIds((prev) =>
+                                      prev.includes(targetId)
+                                        ? prev.filter((id) => id !== targetId)
+                                        : [...prev, targetId]
+                                    );
+                                  }
+                                }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm text-foreground">{title}</div>
+                                <div className="flex gap-2 mt-1 flex-wrap">
+                                  <Badge className={`${isMacro ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'} text-xs`}>
+                                    {isMacro ? 'Macro' : suggestion.ticker || 'Asset'}
+                                  </Badge>
+                                  <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
+                                    {suggestion.mappingType} · {confidence}%
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {suggestion.reasoning}
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

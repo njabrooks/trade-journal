@@ -1122,6 +1122,11 @@ export const researchHierarchyRecommendations = pgTable(
     // Proposed new item data (JSONB for flexibility)
     proposedData: jsonb('proposed_data'),
 
+    // Claim-level suggestion (nullable — null for insight-level recommendations)
+    mainClaimId: uuid('main_claim_id').references(() => mainClaims.id, {
+      onDelete: 'cascade',
+    }),
+
     // Existing item reference
     existingThesisId: uuid('existing_thesis_id').references(() => macroTheses.id, {
       onDelete: 'cascade',
@@ -1155,6 +1160,7 @@ export const researchHierarchyRecommendations = pgTable(
   },
   (table) => ({
     insightIdx: index('idx_recommendations_insight').on(table.researchInsightId),
+    claimIdx: index('idx_recommendations_claim').on(table.mainClaimId),
     statusIdx: index('idx_recommendations_status').on(table.status),
     typeIdx: index('idx_recommendations_type').on(table.recommendationType),
     thesisIdx: index('idx_recommendations_thesis').on(table.existingThesisId),

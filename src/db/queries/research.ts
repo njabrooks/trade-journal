@@ -251,19 +251,20 @@ export async function updateResearchInsight(
  * @param insightId - The research insight ID
  * @returns Number of claims promoted
  */
-export async function autoPromoteAuditClaims(insightId: string): Promise<number> {
+export async function autoPromoteAuditClaims(insightId: string): Promise<{ promotedCount: number; promotedClaimIds: string[] }> {
   // Get the insight with claims structure
   const insight = await getResearchInsightById(insightId);
   if (!insight?.claimsStructure) {
-    return 0;
+    return { promotedCount: 0, promotedClaimIds: [] };
   }
 
   const claimsStructure = insight.claimsStructure as ClaimsStructure;
   if (!isValidClaimsStructure(claimsStructure)) {
-    return 0;
+    return { promotedCount: 0, promotedClaimIds: [] };
   }
 
   let promotedCount = 0;
+  const promotedClaimIds: string[] = [];
 
   // For each main claim in the audit, create or update a main_claims record
   for (const auditClaim of claimsStructure.main_claims) {
@@ -320,12 +321,13 @@ export async function autoPromoteAuditClaims(insightId: string): Promise<number>
         sourceClaimId: auditClaim.id,
       };
 
-      await db.insert(mainClaims).values(newMainClaim);
+      const [inserted] = await db.insert(mainClaims).values(newMainClaim).returning({ id: mainClaims.id });
+      promotedClaimIds.push(inserted.id);
       promotedCount++;
     }
   }
 
-  return promotedCount;
+  return { promotedCount, promotedClaimIds };
 }
 
 /**
@@ -407,11 +409,15 @@ export async function getAllMainClaimsWithSources() {
     });
   });
 
-  // Merge linked entities with claims
+  // Fetch pending suggestions for all claims
+  const suggestionsByClaimId = await getSuggestionsForClaims(claimIds);
+
+  // Merge linked entities and suggestions with claims
   return claims.map(c => ({
     ...c,
     linkedTheses: thesesByClaimId.get(c.claim.id) || [],
     linkedViews: viewsByClaimId.get(c.claim.id) || [],
+    suggestions: suggestionsByClaimId.get(c.claim.id) || [],
   }));
 }
 
@@ -495,11 +501,15 @@ export async function getMainClaimsForArtifact(artifactId: string) {
     });
   });
 
-  // Merge linked entities with claims
+  // Fetch pending suggestions for all claims
+  const suggestionsByClaimId = await getSuggestionsForClaims(claimIds);
+
+  // Merge linked entities and suggestions with claims
   return claims.map(c => ({
     ...c,
     linkedTheses: thesesByClaimId.get(c.claim.id) || [],
     linkedViews: viewsByClaimId.get(c.claim.id) || [],
+    suggestions: suggestionsByClaimId.get(c.claim.id) || [],
   }));
 }
 
@@ -567,6 +577,9 @@ export async function getMainClaimById(claimId: string) {
     .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
     .where(eq(claimThesisMappings.mainClaimId, claimId));
 
+  // Fetch pending suggestions
+  const suggestionsByClaimId = await getSuggestionsForClaims([claimId]);
+
   return {
     ...claimData,
     linkedTheses: linkedThesesData.map(row => ({
@@ -580,6 +593,7 @@ export async function getMainClaimById(claimId: string) {
       ticker: row.ticker,
       mappingType: row.mappingType,
     })),
+    suggestions: suggestionsByClaimId.get(claimId) || [],
     // Keep backward compatibility with ID-only arrays if needed
     linkedMacroThesisIds: linkedThesesData.map(row => row.thesisId),
     linkedAssetThesisIds: linkedViewsData.map(row => row.assetThesisId),
@@ -731,4 +745,122 @@ export async function deleteRecommendation(id: string): Promise<void> {
   await db
     .delete(researchHierarchyRecommendations)
     .where(eq(researchHierarchyRecommendations.id, id));
+}
+
+// ============================================================================
+// Claim-Level Suggestions (extends researchHierarchyRecommendations)
+// ============================================================================
+
+export interface ClaimSuggestion {
+  id: string;
+  claimId: string;
+  thesisId: string | null;
+  thesisTitle: string | null;
+  assetThesisId: string | null;
+  assetThesisTitle: string | null;
+  ticker: string | null;
+  mappingType: string | null;
+  confidenceScore: string | null;
+  reasoning: string;
+}
+
+/**
+ * Fetch pending claim-level suggestions for multiple claims.
+ * Returns suggestions grouped by claim ID, ordered by confidence desc.
+ */
+export async function getSuggestionsForClaims(
+  claimIds: string[]
+): Promise<Map<string, ClaimSuggestion[]>> {
+  if (claimIds.length === 0) return new Map();
+
+  // Suggestions linked to macro theses
+  const macroSuggestions = await db
+    .select({
+      id: researchHierarchyRecommendations.id,
+      claimId: researchHierarchyRecommendations.mainClaimId,
+      thesisId: macroTheses.id,
+      thesisTitle: macroTheses.title,
+      mappingType: researchHierarchyRecommendations.mappingType,
+      confidenceScore: researchHierarchyRecommendations.confidenceScore,
+      reasoning: researchHierarchyRecommendations.reasoning,
+    })
+    .from(researchHierarchyRecommendations)
+    .innerJoin(macroTheses, eq(researchHierarchyRecommendations.existingThesisId, macroTheses.id))
+    .where(
+      and(
+        inArray(researchHierarchyRecommendations.mainClaimId, claimIds),
+        eq(researchHierarchyRecommendations.status, 'pending'),
+        eq(researchHierarchyRecommendations.recommendationType, 'link_existing')
+      )
+    );
+
+  // Suggestions linked to asset theses
+  const assetSuggestions = await db
+    .select({
+      id: researchHierarchyRecommendations.id,
+      claimId: researchHierarchyRecommendations.mainClaimId,
+      assetThesisId: assetTheses.id,
+      assetThesisTitle: assetTheses.title,
+      ticker: underlyings.ticker,
+      mappingType: researchHierarchyRecommendations.mappingType,
+      confidenceScore: researchHierarchyRecommendations.confidenceScore,
+      reasoning: researchHierarchyRecommendations.reasoning,
+    })
+    .from(researchHierarchyRecommendations)
+    .innerJoin(assetTheses, eq(researchHierarchyRecommendations.existingAssetThesisId, assetTheses.id))
+    .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
+    .where(
+      and(
+        inArray(researchHierarchyRecommendations.mainClaimId, claimIds),
+        eq(researchHierarchyRecommendations.status, 'pending'),
+        eq(researchHierarchyRecommendations.recommendationType, 'link_existing')
+      )
+    );
+
+  // Combine and group by claim ID
+  const result = new Map<string, ClaimSuggestion[]>();
+
+  for (const row of macroSuggestions) {
+    if (!row.claimId) continue;
+    if (!result.has(row.claimId)) result.set(row.claimId, []);
+    result.get(row.claimId)!.push({
+      id: row.id,
+      claimId: row.claimId,
+      thesisId: row.thesisId,
+      thesisTitle: row.thesisTitle,
+      assetThesisId: null,
+      assetThesisTitle: null,
+      ticker: null,
+      mappingType: row.mappingType,
+      confidenceScore: row.confidenceScore,
+      reasoning: row.reasoning,
+    });
+  }
+
+  for (const row of assetSuggestions) {
+    if (!row.claimId) continue;
+    if (!result.has(row.claimId)) result.set(row.claimId, []);
+    result.get(row.claimId)!.push({
+      id: row.id,
+      claimId: row.claimId,
+      thesisId: null,
+      thesisTitle: null,
+      assetThesisId: row.assetThesisId,
+      assetThesisTitle: row.assetThesisTitle,
+      ticker: row.ticker,
+      mappingType: row.mappingType,
+      confidenceScore: row.confidenceScore,
+      reasoning: row.reasoning,
+    });
+  }
+
+  // Sort each claim's suggestions by confidence desc, limit to 3
+  for (const [claimId, suggestions] of result) {
+    suggestions.sort((a, b) => Number(b.confidenceScore || 0) - Number(a.confidenceScore || 0));
+    if (suggestions.length > 3) {
+      result.set(claimId, suggestions.slice(0, 3));
+    }
+  }
+
+  return result;
 }
