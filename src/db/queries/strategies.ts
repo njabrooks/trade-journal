@@ -399,6 +399,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         direction: strategies.direction,
         assetThesisId: strategies.assetThesisId,
         assetViewTitle: assetTheses.title,
+        accountId: strategies.accountId,
       })
       .from(strategies)
       .leftJoin(accounts, eq(strategies.accountId, accounts.id))
@@ -411,6 +412,30 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     const strategyRow = strategyRows[0];
     if (!strategyRow) {
       return null;
+    }
+
+    // Recompute status at query time (same logic as list page)
+    // active → check if positions exist on account's latest snapshot; if not → complete
+    let computedStatus = strategyRow.status;
+    if (strategyRow.status === 'active' && !strategyRow.closedAt && strategyRow.accountId) {
+      const hasPositions = await db
+        .select({ strategyId: positions.strategyId })
+        .from(positions)
+        .where(
+          and(
+            eq(positions.strategyId, strategyId),
+            sql`${positions.quantity} != 0`,
+            sql`${positions.snapshotDate} = (
+              SELECT MAX(p2.snapshot_date)
+              FROM positions p2
+              WHERE p2.account_id = ${positions.accountId}
+            )`
+          )
+        )
+        .limit(1);
+      if (hasPositions.length === 0) {
+        computedStatus = 'complete';
+      }
     }
 
     // Get linked macro theses via junction table
@@ -566,7 +591,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         id: strategyRow.id,
         strategyKey: strategyRow.strategyKey,
         label: strategyRow.label,
-        status: strategyRow.status,
+        status: computedStatus,
         openedAt: strategyRow.openedAt,
         closedAt: strategyRow.closedAt,
         accountLabel: strategyRow.accountLabel,

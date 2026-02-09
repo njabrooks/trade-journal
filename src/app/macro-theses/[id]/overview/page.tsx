@@ -9,6 +9,8 @@ import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDet
 import { EntityTabs } from '@/components/layout/EntityTabs';
 import { createEntityTabs } from '@/lib/types/entity-tabs';
 import { MacroThesisSidebar } from '@/components/theses/MacroThesisSidebar';
+import { LinkedAssetThesesSection } from '@/components/theses/LinkedAssetThesesSection';
+import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { EntityStatusBadge } from '@/components/ui/badge';
@@ -131,6 +133,22 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
           </pre>
         </EntitySection>
       )}
+
+      {/* Linked Asset Theses */}
+      <LinkedAssetThesesSection
+        macroThesisId={thesis.id}
+        macroThesisTitle={thesis.title}
+        linkedAssetTheses={linkedAssetTheses}
+      />
+
+      {/* Linked Strategies */}
+      <EntitySection title={`Linked Strategies (${linkedStrategies.length})`}>
+        {linkedStrategies.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No strategies linked to this macro thesis yet.</p>
+        ) : (
+          <UnifiedStrategiesBrowser strategies={linkedStrategies} />
+        )}
+      </EntitySection>
     </EntityDetailLayout>
   );
 }

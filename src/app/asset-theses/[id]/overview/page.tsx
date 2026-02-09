@@ -8,6 +8,8 @@ import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDet
 import { EntityTabs } from '@/components/layout/EntityTabs';
 import { createEntityTabs } from '@/lib/types/entity-tabs';
 import { AssetThesisSidebar } from '@/components/asset-theses/AssetThesisSidebar';
+import { LinkedMacroThesesSection } from '@/components/asset-theses/LinkedMacroThesesSection';
+import { LinkedStrategiesSection } from '@/components/asset-theses/LinkedStrategiesSection';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { EntityStatusBadge } from '@/components/ui/badge';
@@ -196,6 +198,26 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
           </pre>
         </EntitySection>
       )}
+
+      {/* Linked Macro Theses */}
+      <EntitySection title={`Linked Macro Theses (${linkedMacroTheses.length})`}>
+        <LinkedMacroThesesSection
+          assetThesisId={thesis.id}
+          assetThesisTitle={thesis.title}
+          linkedMacroTheses={linkedMacroTheses}
+          embedded={true}
+        />
+      </EntitySection>
+
+      {/* Linked Strategies */}
+      <EntitySection title={`Linked Strategies (${linkedStrategies.length})`}>
+        <LinkedStrategiesSection
+          assetThesisId={thesis.id}
+          assetThesisTitle={thesis.title}
+          linkedStrategies={linkedStrategies}
+          embedded={true}
+        />
+      </EntitySection>
     </EntityDetailLayout>
   );
 }

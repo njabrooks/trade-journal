@@ -17,6 +17,7 @@ import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib
 // REMOVED: computeTradeBlotterEntriesForDate, createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 import { strategies } from '@/db/schema';
 import { recomputeStrategyStatus } from '@/lib/services/strategies';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
 const SECTION_CODE = 'POST';
 
@@ -333,6 +334,15 @@ export async function POST(request: NextRequest) {
                 .update(strategies)
                 .set({ status: newStatus, updatedAt: new Date() })
                 .where(eq(strategies.id, strategy.id));
+              await logToJournal({
+                objectType: 'strategy',
+                objectId: strategy.id,
+                actionType: 'status_change',
+                actionDescription: `Strategy status auto-updated: ${strategy.status} → ${newStatus} (position ingestion confirmed no remaining positions)`,
+                previousState: { status: strategy.status },
+                newState: { status: newStatus },
+                source: 'automation',
+              });
             }
           }
 

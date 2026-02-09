@@ -19,7 +19,8 @@ export function createEntityTabs(
 ): EntityTab[] {
   return [
     { id: 'overview', label: 'Overview', href: `${basePath}/${entityId}/overview` },
-    { id: 'evidence', label: 'Evidence', href: `${basePath}/${entityId}/evidence` },
-    { id: 'execution', label: 'Execution', href: `${basePath}/${entityId}/execution` },
+    { id: 'evidence', label: 'Claims & Signals', href: `${basePath}/${entityId}/evidence` },
+    { id: 'triage', label: 'Triage', href: `${basePath}/${entityId}/triage` },
+    { id: 'journal', label: 'Journal', href: `${basePath}/${entityId}/journal` },
   ];
 }

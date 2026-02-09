@@ -32,6 +32,8 @@ interface UnifiedTriageBrowserProps {
   // Entity context - when provided, hides type filters and shows entity-specific view
   thesisId?: string;
   strategyId?: string;
+  // When true, shows type filter buttons even in entity context (useful when merging records from multiple object types)
+  showTypeFilters?: boolean;
 }
 
 type ObjectTypeFilter = 'all' | TriageObjectType;
@@ -62,7 +64,7 @@ function getDetailUrl(record: UnifiedTriageRecord): string | null {
   }
 }
 
-export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: UnifiedTriageBrowserProps) {
+export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId, showTypeFilters }: UnifiedTriageBrowserProps) {
   const router = useRouter();
   const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
   const [expandedInitialAction, setExpandedInitialAction] = useState<string | undefined>(undefined);
@@ -535,8 +537,8 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
           </Button>
         </div>
 
-        {/* Type Filter Button Group (only shown on main triage page, not in entity context) */}
-        {!isEntityContext && (
+        {/* Type Filter Button Group */}
+        {(!isEntityContext || showTypeFilters) && (
           <div className="inline-flex rounded-md shadow-sm">
             <Button
               variant={typeFilter === 'all' ? 'default' : 'outline'}
@@ -594,9 +596,9 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId }: 
             />
           </div>
 
-          <div className={`grid gap-4 ${isEntityContext ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
-            {/* Object Type - hidden in entity context */}
-            {!isEntityContext && (
+          <div className={`grid gap-4 ${isEntityContext && !showTypeFilters ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
+            {/* Object Type */}
+            {(!isEntityContext || showTypeFilters) && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   Type

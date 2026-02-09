@@ -833,8 +833,8 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
 
   return (
     <div className="space-y-4">
-      {/* Search and Filter Bar */}
-      <div className="flex items-center gap-2">
+      {/* Quick Filter Bar */}
+      <div className="flex items-center gap-3 flex-wrap">
         <Button
           variant="outline"
           size="sm"
@@ -845,7 +845,41 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
           Filters
           {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
-        <div className="text-sm text-muted-foreground">
+
+        {/* Object Type Quick Filters */}
+        {objectTypes.length > 1 && (() => {
+          const typeOrder = ['claim', 'macro_thesis', 'asset_thesis', 'strategy', 'position', 'signal', 'validation_point'];
+          const sorted = [...objectTypes].sort((a, b) => {
+            const ai = typeOrder.indexOf(a);
+            const bi = typeOrder.indexOf(b);
+            return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+          });
+          return (
+            <div className="inline-flex rounded-md shadow-sm">
+              <Button
+                variant={objectTypeFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setObjectTypeFilter('all')}
+                className="rounded-r-none border-r-0"
+              >
+                All Types
+              </Button>
+              {sorted.map((type, i) => (
+                <Button
+                  key={type}
+                  variant={objectTypeFilter === type ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setObjectTypeFilter(type)}
+                  className={i < sorted.length - 1 ? 'rounded-none border-r-0' : 'rounded-l-none'}
+                >
+                  {formatObjectType(type)}
+                </Button>
+              ))}
+            </div>
+          );
+        })()}
+
+        <div className="ml-auto text-sm text-muted-foreground">
           Showing {filteredAndSortedEntries.length} of {entries.length} entries
         </div>
       </div>

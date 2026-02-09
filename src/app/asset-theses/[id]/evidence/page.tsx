@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: EvidencePageProps): Promise<M
   const { id } = await params;
   const thesis = await getAssetThesisById(id);
   return {
-    title: thesis ? `${thesis.title} - Evidence` : 'Evidence',
+    title: thesis ? `${thesis.title} - Claims & Signals` : 'Claims & Signals',
   };
 }
 

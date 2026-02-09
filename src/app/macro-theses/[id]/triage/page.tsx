@@ -10,34 +10,50 @@ import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDet
 import { EntityTabs } from '@/components/layout/EntityTabs';
 import { createEntityTabs } from '@/lib/types/entity-tabs';
 import { MacroThesisSidebar } from '@/components/theses/MacroThesisSidebar';
-import { LinkedAssetThesesSection } from '@/components/theses/LinkedAssetThesesSection';
-import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
 import { UnifiedTriageBrowser } from '@/components/triage/UnifiedTriageBrowser';
 import { EntityStatusBadge } from '@/components/ui/badge';
+import type { UnifiedTriageRecord, UnifiedTriageFilterCounts, TriageObjectType } from '@/types/triage';
 
-interface ExecutionPageProps {
+interface TriagePageProps {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: ExecutionPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: TriagePageProps): Promise<Metadata> {
   const { id } = await params;
   const thesis = await getMacroThesisById(id);
   return {
-    title: thesis ? `${thesis.title} - Execution` : 'Execution',
+    title: thesis ? `${thesis.title} - Triage` : 'Triage',
   };
 }
 
-export default async function MacroThesisExecutionPage({ params }: ExecutionPageProps) {
+function computeCounts(records: UnifiedTriageRecord[]): UnifiedTriageFilterCounts {
+  const objectType: Record<string, number> = {};
+  const status: Record<string, number> = {};
+  const trigger: Record<string, number> = {};
+
+  for (const r of records) {
+    objectType[r.objectType] = (objectType[r.objectType] || 0) + 1;
+    status[r.status] = (status[r.status] || 0) + 1;
+    trigger[r.trigger] = (trigger[r.trigger] || 0) + 1;
+  }
+
+  return {
+    objectType: objectType as Record<TriageObjectType, number>,
+    status,
+    trigger,
+  };
+}
+
+export default async function MacroThesisTriagePage({ params }: TriagePageProps) {
   const { id } = await params;
 
-  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, validationPoints, triageResult] = await Promise.all([
+  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, validationPoints, thesisTriageResult] = await Promise.all([
     getMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
     getStrategiesForList(1000, { includeClosedStrategies: true }),
     getAssetThesesForRelatedMacroThesis(id),
     getActiveValidationPoints(id, 'macro'),
-    // Fetch thesis-specific triage records
     getUnifiedTriageQueue({ thesisId: id, includeAll: true }),
   ]);
 
@@ -45,12 +61,42 @@ export default async function MacroThesisExecutionPage({ params }: ExecutionPage
     notFound();
   }
 
-  // Calculate related entities
   const relatedAssetThesisIds = new Set(relatedAssetThesisLinks.map((link) => link.assetThesisId));
   const linkedAssetTheses = allAssetTheses.filter((at) => relatedAssetThesisIds.has(at.id));
   const linkedStrategies = allStrategies.filter((s) =>
     s.linkedMacroTheses.some((lmt) => lmt.id === id)
   );
+
+  // Fetch strategy/position triage for all linked strategies
+  const strategyTriageResults = await Promise.all(
+    linkedStrategies.map((s) => getUnifiedTriageQueue({ strategyId: s.id, includeAll: true }))
+  );
+
+  // Also fetch asset thesis triage for linked asset theses
+  const assetThesisTriageResults = await Promise.all(
+    linkedAssetTheses.map((at) => getUnifiedTriageQueue({ thesisId: at.id, includeAll: true }))
+  );
+
+  // Merge all triage records, deduplicate by id
+  const seenIds = new Set<string>();
+  const allRecords: UnifiedTriageRecord[] = [];
+
+  for (const record of thesisTriageResult.records) {
+    if (!seenIds.has(record.id)) {
+      seenIds.add(record.id);
+      allRecords.push(record);
+    }
+  }
+  for (const result of [...strategyTriageResults, ...assetThesisTriageResults]) {
+    for (const record of result.records) {
+      if (!seenIds.has(record.id)) {
+        seenIds.add(record.id);
+        allRecords.push(record);
+      }
+    }
+  }
+
+  const mergedCounts = computeCounts(allRecords);
 
   const tabs = createEntityTabs('/macro-theses', id);
 
@@ -75,29 +121,13 @@ export default async function MacroThesisExecutionPage({ params }: ExecutionPage
         />
       }
     >
-      {/* Triage Queue Section */}
       <EntitySection title="Triage Queue">
         <UnifiedTriageBrowser
-          records={triageResult.records}
-          counts={triageResult.counts}
+          records={allRecords}
+          counts={mergedCounts}
           thesisId={thesis.id}
+          showTypeFilters
         />
-      </EntitySection>
-
-      {/* Linked Asset Theses - with Link Button */}
-      <LinkedAssetThesesSection
-        macroThesisId={thesis.id}
-        macroThesisTitle={thesis.title}
-        linkedAssetTheses={linkedAssetTheses}
-      />
-
-      {/* Linked Strategies */}
-      <EntitySection title={`Linked Strategies (${linkedStrategies.length})`}>
-        {linkedStrategies.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No strategies linked to this macro thesis yet.</p>
-        ) : (
-          <UnifiedStrategiesBrowser strategies={linkedStrategies} />
-        )}
       </EntitySection>
     </EntityDetailLayout>
   );
