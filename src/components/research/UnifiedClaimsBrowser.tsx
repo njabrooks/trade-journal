@@ -404,7 +404,37 @@ export function UnifiedClaimsBrowser({
           Filters
           {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
-        <div className="text-sm text-muted-foreground">
+        <div className="w-px h-6 bg-border" />
+
+        {/* Status Quick Filter Button Group */}
+        <div className="inline-flex rounded-md shadow-sm">
+          <Button
+            variant={statusFilter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('all')}
+            className="rounded-r-none border-r-0"
+          >
+            All
+          </Button>
+          <Button
+            variant={statusFilter === 'draft' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('draft')}
+            className="rounded-none border-r-0"
+          >
+            Draft
+          </Button>
+          <Button
+            variant={statusFilter === 'active' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter('active')}
+            className="rounded-l-none"
+          >
+            Active
+          </Button>
+        </div>
+
+        <div className="ml-auto text-sm text-muted-foreground">
           Showing {filteredAndSortedClaims.length} of {claimsWithSources.length} claims
         </div>
       </div>
