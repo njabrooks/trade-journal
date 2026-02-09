@@ -11,7 +11,7 @@
  *     --rationale "Research complete, promoting to active"
  *
  * Valid transitions: draft→active, active→complete, active→rejected, draft→rejected
- * Supported entity types: macro_thesis, asset_thesis, main_claim, signal
+ * Supported entity types: macro_thesis, asset_thesis, main_claim, signal, strategy
  */
 
 import { db, closeDb, schema, logToJournal } from '../lib/db.js';
@@ -34,11 +34,14 @@ const ENTITY_CONFIG: Record<string, { table: any; objectType: string }> = {
   asset_thesis: { table: schema.assetTheses, objectType: 'asset_thesis' },
   main_claim: { table: schema.mainClaims, objectType: 'claim' },
   signal: { table: schema.signals, objectType: 'signal' },
+  strategy: { table: schema.strategies, objectType: 'strategy' },
 };
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   draft: ['active', 'rejected'],
   active: ['complete', 'rejected'],
+  complete: ['active'],  // reopen
+  rejected: ['draft'],   // reconsider
 };
 
 async function main() {
@@ -81,7 +84,7 @@ async function main() {
     .set({ status: newStatus, updatedAt: new Date() })
     .where(eq(config.table.id, id));
 
-  const entityTitle = (entity as any).title || (entity as any).statement || `${entityType} ${id.slice(0, 8)}`;
+  const entityTitle = (entity as any).title || (entity as any).label || (entity as any).strategyKey || (entity as any).statement || `${entityType} ${id.slice(0, 8)}`;
 
   const journalEntryId = await logToJournal({
     objectType: config.objectType,
