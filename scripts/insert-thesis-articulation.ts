@@ -3,7 +3,7 @@
  * Insert Thesis Articulation Script
  *
  * Permanent reusable script for inserting thesis articulations and validation points.
- * Called by the synthesize-thesis skill instead of generating temp scripts.
+ * Called by the build-core-argument skill instead of generating temp scripts.
  *
  * Usage:
  *   npx tsx scripts/insert-thesis-articulation.ts --input articulation-data.json
@@ -240,7 +240,7 @@ async function main() {
       objectTitle: thesis?.title,
       actionType: 'signals_superseded',
       actionDescription: `Superseded ${existingSignals.length} existing signal(s) due to re-articulation (marked as rejected)`,
-      skillInvoked: '/synthesize-thesis',
+      skillInvoked: '/build-core-argument',
       previousState: {
         activeSignalCount: existingSignals.length,
       },
@@ -365,7 +365,7 @@ async function main() {
       objectTitle: thesis.title,
       actionType: 'articulation_created',
       actionDescription: `Thesis articulation created/updated with ${currentClaimCount} claims`,
-      skillInvoked: '/synthesize-thesis',
+      skillInvoked: '/build-core-argument',
       previousState: {
         claimsCountAtLastArticulation: previousClaimsCount,
       },
@@ -417,7 +417,7 @@ async function main() {
       actionType: 'triage_resolved',
       actionDescription: `Triage record resolved: ${triage.triageRule}`,
       triageRecordId: triage.id,
-      skillInvoked: '/synthesize-thesis',
+      skillInvoked: '/build-core-argument',
       previousState: { status: triage.status },
       newState: { status: 'done', completedBy: 'articulation_created' },
       source: 'skill',
@@ -478,7 +478,7 @@ async function main() {
         actionType: 'triage_created',
         actionDescription: `Triage created: REVIEW_RECOMMENDED_SIGNALS. ${recommendedSignalsInserted.length} signal(s) need review.`,
         triageRecordId: newTriage.id,
-        skillInvoked: '/synthesize-thesis',
+        skillInvoked: '/build-core-argument',
         newState: {
           triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
           status: 'inbox',

@@ -307,7 +307,7 @@ export function ThesisArticulationDisplay({
             <p className="text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="w-3 h-3 inline mr-1" />
               {claimCount - claimsAtLastArticulation} new claims added since this articulation.
-              Consider re-synthesizing with <code className="px-1 bg-amber-100 dark:bg-amber-900/30 rounded">/synthesize-thesis</code>
+              Consider re-synthesizing with <code className="px-1 bg-amber-100 dark:bg-amber-900/30 rounded">/build-core-argument</code>
             </p>
           </div>
         )}

@@ -306,25 +306,20 @@ Feature-based component organization:
 - **`migrate-claims-structure.ts`** - Migrate existing insights to new claims structure
 - **`test-claim-conversion.ts`** - Test claim-to-thesis conversion logic
 
-### `/.cursor/skills` - Claude Code Skills
+### `/.claude/skills` - Claude Code Skills
 Research workflow automation skills (managed skills, invoked via `/skill-name`):
 
 **Research Ingestion (Bottom-Up Discovery):**
 - **`process-transcript`** - Process research transcripts with forensic Toulmin claim extraction
 - **`synthesize-claims`** - Cross-reference audit claims against existing macro theses and asset theses in database
-- **`deep-dive`** - Guide collaborative deep dive analysis on themes or tickers
+- **`deep-dive`** - Guide collaborative deep dive analysis on themes or tickers (archived)
 - **`finalize-for-upload`** - Upload finalized research (auto-detects artifact/insight/macro thesis/asset thesis)
 
-**Signal Assessment (Top-Down Evidence):**
-- **`assess-signal-evidence`** - Assess content against existing signals to identify confirmation or warning evidence
+**Thesis Synthesis:**
+- **`build-core-argument`** - Build core argument for a thesis from linked claims (generates articulation + confirmation/warning signals)
 
-**Database Operations:**
-- **`create-thesis`** - Create macro thesis in Supabase from markdown (via psql)
-- **`create-asset-thesis`** - Create asset thesis in Supabase from markdown (via psql)
-- **`read-theses`** - Query and display macro theses from database (via psql)
-- **`read-asset-theses`** - Query and display asset theses from database (via psql)
-- **`upload-artifact`** - Upload raw research artifact to database (via psql)
-- **`upload-insight`** - Upload structured insight to database (via psql)
+**Signal Assessment (Top-Down Evidence):**
+- **`assess-validation-evidence`** - Assess content against existing signals to identify confirmation or warning evidence
 
 **Database Access**: All database skills use `scripts/psql-query.ts` helper instead of Supabase MCP due to reliability issues. The helper loads env vars and executes SQL via psql directly.
 

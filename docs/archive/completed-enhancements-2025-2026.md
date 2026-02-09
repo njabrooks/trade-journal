@@ -35,7 +35,7 @@ Context-aware quick action button for triage inbox that provides one-click acces
 | `CONFIRM_STRATEGY` | Confirm | — | Opens StrategyConfirmationDialog |
 | `LINK_STRATEGY_TO_THESIS` | Link | Dismiss | Opens StrategyConfirmationDialog |
 | `QUANTITY_CHANGE`, `TRADE_INGESTION` | Trade | — | Expands row with auto-start |
-| `PRODUCE_CORE_ARGUMENT` | Synthesize | Dismiss | Expands, shows "Generate Articulation" |
+| `PRODUCE_CORE_ARGUMENT` | Synthesize | Dismiss | Expands, shows "Build Core Argument" |
 | `UPDATE_CORE_ARGUMENT` | Update | Dismiss | Expands, shows "Update Articulation (+N claims)" |
 | `SIGNAL_TRIGGERED` | Assess | Dismiss | Expands to show signal assessment |
 | `REVIEW_RECOMMENDED_SIGNALS` | Review | Dismiss | Expands to show signals table |
@@ -183,7 +183,7 @@ Standardized all entity `status` fields to use a universal lifecycle model. Buil
 Claude Code skill to synthesize linked claims into coherent thesis articulation with key drivers, assumptions, and evidence gaps. Versioned storage for belief evolution tracking.
 
 **Implemented**:
-- `/synthesize-thesis` Claude Code skill (`.claude/skills/synthesize-thesis/SKILL.md` - 1337 lines)
+- `/build-core-argument` Claude Code skill (`.claude/skills/build-core-argument/SKILL.md` - 1337 lines)
 - `thesis_articulations` table with versioning (`src/db/schema.ts`)
 - Provenance tracking via `claims_used` field storing claim IDs that were synthesized
 - Dual-write support for articulations
@@ -195,7 +195,7 @@ Claude Code skill to synthesize linked claims into coherent thesis articulation 
 - Generates structured output: Core Argument, Key Drivers, Assumptions, Evidence Gaps, Confidence Assessment
 
 **Files Changed**:
-- `.claude/skills/synthesize-thesis/SKILL.md` (skill definition)
+- `.claude/skills/build-core-argument/SKILL.md` (skill definition)
 - `src/db/schema.ts` (thesis_articulations table)
 - `src/db/queries/research.ts` (articulation queries)
 
@@ -209,7 +209,7 @@ Claude Code skill to synthesize linked claims into coherent thesis articulation 
 Extract explicit, measurable criteria for thesis validation/invalidation during articulation. Push for specificity on qualitative criteria.
 
 **Implemented**:
-- Signal extraction integrated into `/synthesize-thesis` skill
+- Signal extraction integrated into `/build-core-argument` skill
 - `signals` table with `explicit_details` JSONB for threshold configuration
 - `type` field with values: `confirmation` | `warning`
 - `classification` distinguishes `explicit` (measurable) vs `judgment` (qualitative)
@@ -229,7 +229,7 @@ interface ExplicitDetails {
 **Files Changed**:
 - `src/db/schema.ts` (signals table definition)
 - `src/components/signals/SignalConfigForm.tsx` (UI for signal configuration)
-- `.claude/skills/synthesize-thesis/SKILL.md` (signal extraction logic)
+- `.claude/skills/build-core-argument/SKILL.md` (signal extraction logic)
 
 ---
 

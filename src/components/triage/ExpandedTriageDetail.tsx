@@ -294,7 +294,7 @@ function ThesisDetail({
   // Get suggested skill command
   const suggestedSkill = thesisRecord?.suggestedSkill;
 
-  // Handler for executing synthesize-thesis skill
+  // Handler for executing build-core-argument skill
   async function handleRunSynthesizeThesis() {
     setIsExecuting(true);
     setExecutionResult(null);
@@ -304,7 +304,7 @@ function ThesisDetail({
     // Use toast.promise for persistent notification that survives UI changes
     toast.promise(
       (async () => {
-        const res = await fetch('/api/skills/synthesize-thesis', {
+        const res = await fetch('/api/skills/build-core-argument', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -328,8 +328,8 @@ function ThesisDetail({
         return data;
       })(),
       {
-        loading: `Synthesizing "${thesisTitle}"... This may take several minutes.`,
-        success: `Articulation created for "${thesisTitle}"`,
+        loading: `Building core argument for "${thesisTitle}"... This may take several minutes.`,
+        success: `Core argument created for "${thesisTitle}"`,
         error: (err) => `Failed: ${err.message}`,
         duration: 10000, // Keep success/error visible for 10 seconds
       }
@@ -693,13 +693,13 @@ function ThesisDetail({
           <div className="flex items-center gap-2 mb-2">
             <FileText className="h-4 w-4 text-purple-600" />
             <p className="text-sm font-semibold text-purple-800">
-              {isNeedsArticulation ? 'Articulation Required' : 'New Claims Available'}
+              {isNeedsArticulation ? 'Core Argument Required' : 'New Claims Available'}
             </p>
           </div>
           <p className="text-xs text-purple-700">
             {isNeedsArticulation
-              ? 'This thesis has sufficient evidence but needs a formal articulation. Run the synthesis skill to generate validation/invalidation criteria.'
-              : 'New claims have been linked since the last articulation. Consider regenerating the articulation to incorporate new evidence.'}
+              ? 'This thesis has sufficient evidence but needs a core argument. Run the skill to generate confirmation/warning signals.'
+              : 'New claims have been linked since the last core argument. Consider rebuilding to incorporate new evidence.'}
           </p>
         </div>
       )}
@@ -721,13 +721,13 @@ function ThesisDetail({
               <div className="flex-1">
                 <p className="text-sm font-medium text-emerald-800">
                   {isNewClaimsAvailable
-                    ? 'New evidence available for thesis articulation'
-                    : 'Ready to generate thesis articulation'}
+                    ? 'New evidence available — update core argument'
+                    : 'Ready to build core argument'}
                 </p>
                 <p className="text-xs text-emerald-600 mt-1">
                   {isNewClaimsAvailable
-                    ? `${dynamicNewClaimCount} new claims since last articulation. Review the claims below, then update.`
-                    : `${currentLinkedClaimCount ?? synthesisContentSummary?.currentClaimCount ?? 0} claims linked. Review the claims below, then generate articulation and signals.`}
+                    ? `${dynamicNewClaimCount} new claims since last core argument. Review the claims below, then update.`
+                    : `${currentLinkedClaimCount ?? synthesisContentSummary?.currentClaimCount ?? 0} claims linked. Review the claims below, then build core argument and signals.`}
                 </p>
               </div>
               <Button
@@ -738,7 +738,7 @@ function ThesisDetail({
                 {isExecuting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {isNewClaimsAvailable ? 'Updating...' : 'Synthesizing...'}
+                    {isNewClaimsAvailable ? 'Updating...' : 'Building...'}
                   </>
                 ) : executionResult?.success ? (
                   <>
@@ -749,8 +749,8 @@ function ThesisDetail({
                   <>
                     <Sparkles className="h-4 w-4" />
                     {isNewClaimsAvailable
-                      ? `Update Articulation (+${dynamicNewClaimCount} claims)`
-                      : 'Generate Articulation'}
+                      ? `Update Core Argument (+${dynamicNewClaimCount} claims)`
+                      : 'Build Core Argument'}
                   </>
                 )}
               </Button>
@@ -848,14 +848,14 @@ function ThesisDetail({
               executionResult.success ? 'text-emerald-800' : 'text-rose-800'
             }`}>
               {executionResult.success
-                ? 'Thesis Articulation Created'
+                ? 'Core Argument Created'
                 : 'Execution Failed'}
             </p>
             <p className={`text-xs mt-1 ${
               executionResult.success ? 'text-emerald-600' : 'text-rose-600'
             }`}>
               {executionResult.success
-                ? 'The articulation and validation points have been saved. Page will refresh shortly.'
+                ? 'The core argument and signals have been saved. Page will refresh shortly.'
                 : executionResult.error || 'An unknown error occurred.'}
             </p>
           </div>
@@ -872,8 +872,8 @@ function ThesisDetail({
             </Button>
           </Link>
 
-          {/* Synthesize Thesis - Direct Execution */}
-          {suggestedSkill === '/synthesize-thesis' && (
+          {/* Build Core Argument - Direct Execution */}
+          {suggestedSkill === '/build-core-argument' && (
             <Button
               variant="default"
               size="sm"
@@ -884,7 +884,7 @@ function ThesisDetail({
               {isExecuting ? (
                 <>
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  Synthesizing...
+                  Building...
                 </>
               ) : executionResult?.success ? (
                 <>
@@ -894,14 +894,14 @@ function ThesisDetail({
               ) : (
                 <>
                   <Play className="h-3 w-3" />
-                  Synthesize Thesis
+                  Build Core Argument
                 </>
               )}
             </Button>
           )}
 
           {/* Other Skills - Copy to Clipboard */}
-          {suggestedSkill && suggestedSkill !== '/synthesize-thesis' && (
+          {suggestedSkill && suggestedSkill !== '/build-core-argument' && (
             <Button
               variant="default"
               size="sm"
@@ -1035,7 +1035,7 @@ function formatTriageRule(rule: string | null | undefined): string {
   if (!rule) return 'N/A';
   // Action-oriented labels matching the trigger column
   const ruleLabels: Record<string, string> = {
-    thesis_needs_articulation: 'Generate Articulation',
+    thesis_needs_articulation: 'Build Core Argument',
     thesis_new_claims_available: 'Review New Claims',
     thesis_monitoring_content: 'Assess Content',
     thesis_data_trigger: 'Review V&I Status',
@@ -1043,7 +1043,7 @@ function formatTriageRule(rule: string | null | undefined): string {
     thesis_manual_assessment: 'Manual Assessment',
     // New thesis triage rules
     NEEDS_RESEARCH: 'Needs Research',
-    PRODUCE_CORE_ARGUMENT: 'Generate Articulation',
+    PRODUCE_CORE_ARGUMENT: 'Build Core Argument',
     UPDATE_CORE_ARGUMENT: 'Review New Claims',
     REVIEW_CONTENT: 'Assess Content',
     REVIEW_RECOMMENDED_SIGNALS: 'Review Signals',

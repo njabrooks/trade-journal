@@ -222,7 +222,7 @@ export function AssetThesisDetailSections({
                 <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                   <p className="text-xs text-blue-700 dark:text-blue-300">
                     💡 This is a legacy summary. Run{' '}
-                    <code className="px-1 bg-blue-100 dark:bg-blue-900/30 rounded font-mono">/synthesize-thesis</code>
+                    <code className="px-1 bg-blue-100 dark:bg-blue-900/30 rounded font-mono">/build-core-argument</code>
                     {' '}to create a full articulation with key drivers, assumptions, and validation points.
                   </p>
                 </div>
@@ -252,7 +252,7 @@ export function AssetThesisDetailSections({
                 <div className="px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
                   <p className="text-xs text-blue-700 dark:text-blue-300">
                     💡 Run{' '}
-                    <code className="px-1 bg-blue-100 dark:bg-blue-900/30 rounded font-mono">/synthesize-thesis</code>
+                    <code className="px-1 bg-blue-100 dark:bg-blue-900/30 rounded font-mono">/build-core-argument</code>
                     {' '}to create an articulation with key drivers, assumptions, and validation points.
                   </p>
                 </div>
@@ -268,7 +268,7 @@ export function AssetThesisDetailSections({
                 <p className="text-xs text-muted-foreground">
                   Use{' '}
                   <code className="px-1.5 py-0.5 bg-muted rounded font-mono">
-                    /synthesize-thesis
+                    /build-core-argument
                   </code>{' '}
                   to generate a Core Argument with key drivers, assumptions, and validation points.
                 </p>

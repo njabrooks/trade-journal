@@ -102,10 +102,10 @@ const ACTIONS: Record<string, ActionConfig> = {
   },
   synthesize: {
     type: 'SKILL',
-    label: 'Synthesize',
+    label: 'Build',
     icon: Sparkles,
-    description: 'Generate thesis articulation from claims',
-    skillCommand: '/synthesize-thesis',
+    description: 'Build core argument from claims',
+    skillCommand: '/build-core-argument',
   },
   assess: {
     type: 'SKILL',
@@ -124,8 +124,8 @@ const ACTIONS: Record<string, ActionConfig> = {
     type: 'SKILL',
     label: 'Update',
     icon: RefreshCw,
-    description: 'Update articulation with new claims',
-    skillCommand: '/synthesize-thesis',
+    description: 'Update core argument with new claims',
+    skillCommand: '/build-core-argument',
   },
   review: {
     type: 'SKILL',
@@ -389,7 +389,7 @@ export function TriageQuickAction({
     }
   };
 
-  // Execute synthesize-thesis skill via API
+  // Execute build-core-argument skill via API
   const executeSynthesizeSkill = async () => {
     const thesisId = record.objectId;
     const thesisType = record.thesisType;
@@ -406,7 +406,7 @@ export function TriageQuickAction({
     );
 
     try {
-      const response = await fetch('/api/skills/synthesize-thesis', {
+      const response = await fetch('/api/skills/build-core-argument', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ thesisId, thesisType }),
@@ -417,7 +417,7 @@ export function TriageQuickAction({
       if (result.success) {
         toast.success('Skill completed successfully', {
           id: toastId,
-          description: 'Articulation and signals have been created',
+          description: 'Core argument and signals have been created',
         });
         onActionComplete?.();
         router.refresh();
@@ -600,7 +600,7 @@ export function TriageQuickAction({
   }
 
   // Full mode: button with dropdown for secondary actions
-  // Use fixed width for all primary buttons to ensure consistent alignment (based on widest label "Synthesize")
+  // Use fixed width for all primary buttons to ensure consistent alignment
   const BUTTON_WIDTH = 'w-[100px]';
 
   return (
@@ -729,12 +729,12 @@ export function TriageQuickAction({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {record.trigger === 'UPDATE_CORE_ARGUMENT' ? 'Update Articulation?' : 'Synthesize Thesis?'}
+              {record.trigger === 'UPDATE_CORE_ARGUMENT' ? 'Update Core Argument?' : 'Build Core Argument?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {record.trigger === 'UPDATE_CORE_ARGUMENT'
-                ? 'This will update the thesis articulation and signals based on new claims. The AI skill will analyze the existing articulation alongside new evidence.'
-                : 'This will generate a thesis articulation and signals from the accumulated claims. The AI skill may take a few minutes to complete.'}
+                ? 'This will update the core argument and signals based on new claims. The AI skill will analyze the existing argument alongside new evidence.'
+                : 'This will build a core argument and signals from the accumulated claims. The AI skill may take a few minutes to complete.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -745,7 +745,7 @@ export function TriageQuickAction({
                 await executeSynthesizeSkill();
               }}
             >
-              {record.trigger === 'UPDATE_CORE_ARGUMENT' ? 'Update' : 'Synthesize'}
+              {record.trigger === 'UPDATE_CORE_ARGUMENT' ? 'Update' : 'Build'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

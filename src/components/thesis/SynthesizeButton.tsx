@@ -19,11 +19,11 @@ interface SynthesizeButtonProps {
 /**
  * SynthesizeButton
  *
- * Shows a button to run the /synthesize-thesis skill when conditions are met:
- * - Has ≥3 claims AND no articulation (new synthesis)
- * - OR has ≥3 new claims since last articulation (update synthesis)
+ * Shows a button to run the /build-core-argument skill when conditions are met:
+ * - Has ≥3 claims AND no core argument (new build)
+ * - OR has ≥3 new claims since last core argument (update)
  *
- * Clicking calls the synthesize-thesis API to generate the articulation.
+ * Clicking calls the build-core-argument API to generate the core argument.
  */
 export function SynthesizeButton({
   thesisId,
@@ -59,7 +59,7 @@ export function SynthesizeButton({
 
     toast.promise(
       (async () => {
-        const res = await fetch('/api/skills/synthesize-thesis', {
+        const res = await fetch('/api/skills/build-core-argument', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -82,8 +82,8 @@ export function SynthesizeButton({
         return data;
       })(),
       {
-        loading: `${needsInitialSynthesis ? 'Generating' : 'Updating'} articulation for "${title}"... This may take several minutes.`,
-        success: `Articulation ${needsInitialSynthesis ? 'created' : 'updated'} for "${title}"`,
+        loading: `${needsInitialSynthesis ? 'Building' : 'Updating'} core argument for "${title}"... This may take several minutes.`,
+        success: `Core argument ${needsInitialSynthesis ? 'created' : 'updated'} for "${title}"`,
         error: (err) => `Failed: ${err.message}`,
         duration: 10000,
       }
@@ -91,12 +91,12 @@ export function SynthesizeButton({
   };
 
   const buttonText = needsInitialSynthesis
-    ? 'Generate Articulation'
-    : `Update Articulation (+${newClaimsSinceArticulation} claims)`;
+    ? 'Build Core Argument'
+    : `Update Core Argument (+${newClaimsSinceArticulation} claims)`;
 
   const tooltipText = needsInitialSynthesis
-    ? `This thesis has ${claimCount} claims. Generate a Core Argument with confirmation/warning signals.`
-    : `${newClaimsSinceArticulation} new claims since last articulation. Update to incorporate new evidence.`;
+    ? `This thesis has ${claimCount} claims. Build a core argument with confirmation/warning signals.`
+    : `${newClaimsSinceArticulation} new claims since last core argument. Update to incorporate new evidence.`;
 
   return (
     <Button

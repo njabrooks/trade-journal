@@ -93,7 +93,7 @@ export function ValidationPointsList({
           No validation points defined yet.
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Use <code className="px-1 bg-muted rounded">/synthesize-thesis</code> to create articulation with validation points.
+          Use <code className="px-1 bg-muted rounded">/build-core-argument</code> to create articulation with validation points.
         </p>
       </div>
     );

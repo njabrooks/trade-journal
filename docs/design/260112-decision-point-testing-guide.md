@@ -74,7 +74,7 @@
 
 **Synthesize Button** (appears when thesis has ≥3 claims):
 - Shows "Synthesize Articulation" button in thesis header area
-- Copies the `/synthesize-thesis` skill command for execution
+- Copies the `/build-core-argument` skill command for execution
 - Available on both macro thesis and asset thesis detail pages
 
 **Signals Section Enhancements**:
@@ -88,7 +88,7 @@
 ### 2.3 Triage Queue (New Behaviors)
 
 **New Triage Types**:
-1. **REVIEW_RECOMMENDED_SIGNALS** - Appears after `/synthesize-thesis` creates recommended signals
+1. **REVIEW_RECOMMENDED_SIGNALS** - Appears after `/build-core-argument` creates recommended signals
 2. **SIGNAL_TRIGGERED** - Appears when configured signals fire (thesis-level consolidation)
 
 **Signal Batch Review** (for REVIEW_RECOMMENDED_SIGNALS):
@@ -156,7 +156,7 @@ From thesis detail page "Assess Evidence" button:
 
 | # | Scenario | Steps | Expected Result |
 |---|----------|-------|-----------------|
-| 2.1.1 | Recommended signals triage | 1. Run `/synthesize-thesis` on a thesis 2. Check triage queue | REVIEW_RECOMMENDED_SIGNALS item appears |
+| 2.1.1 | Recommended signals triage | 1. Run `/build-core-argument` on a thesis 2. Check triage queue | REVIEW_RECOMMENDED_SIGNALS item appears |
 | 2.1.2 | Expand batch review | Click expand on REVIEW_RECOMMENDED_SIGNALS triage | Shows SignalBatchReview component with signals |
 | 2.1.3 | Accept single signal | Click "Accept" on one signal | Signal status → not_triggered, removed from list |
 | 2.1.4 | Reject single signal | Click "Reject" on one signal | Signal deleted, removed from list |

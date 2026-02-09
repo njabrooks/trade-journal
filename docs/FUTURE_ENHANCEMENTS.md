@@ -364,7 +364,7 @@ For detailed specifications of completed work, see [docs/archive/completed-enhan
 | #ENH-050 | 2026-01-19 | Unified Triage Action Button - TriageQuickAction component with context-aware actions, simplified synthesis UI with claim counts, ThesisClaimsBrowserWrapper |
 | #ENH-049 | 2026-01-19 | Unified Entity Detail UX/UI - 3-tab pattern (Overview/Evidence/Execution) with shared layout components across all entity types |
 | Bugfix | 2026-01-19 | Trade ingestion triage fix - restored `TRADE_INGESTION` triage records after blotter migration |
-| #ENH-035 | 2026-01-16 | Thesis articulation generation - `/synthesize-thesis` skill, versioned articulations |
+| #ENH-035 | 2026-01-16 | Thesis articulation generation - `/build-core-argument` skill, versioned articulations |
 | #ENH-036 | 2026-01-16 | Signal extraction from articulation - signals table, explicit/judgment classification |
 | #ENH-037 | 2026-01-16 | Manual status tracking & audit trail - signal_status_history, StatusTimeline UI |
 | #ENH-042F | 2026-01-16 | IV30 & Price data integration - monitoring via daily-signal-monitoring.ts |

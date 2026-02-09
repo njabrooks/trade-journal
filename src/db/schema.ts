@@ -1591,7 +1591,7 @@ export const thesisTriageRecords = pgTable(
 
     // Lifecycle orchestration fields
     lifecycleStage: text('lifecycle_stage'),  // 'synthesis' | 'monitoring' | etc.
-    suggestedSkill: text('suggested_skill'),  // e.g., '/synthesize-thesis', '/assess-validation-evidence'
+    suggestedSkill: text('suggested_skill'),  // e.g., '/build-core-argument', '/assess-validation-evidence'
     actionRequired: text('action_required'),  // Human-readable action description
 
     // Triage rule that created this record (for filtering and analytics)
@@ -1872,7 +1872,7 @@ export const journalEntries = pgTable(
 
     // Linkage to other entities
     triageRecordId: uuid('triage_record_id'),  // References thesis_triage_records or triage_records
-    skillInvoked: text('skill_invoked'),  // e.g., '/synthesize-thesis'
+    skillInvoked: text('skill_invoked'),  // e.g., '/build-core-argument'
 
     // State change tracking
     previousState: jsonb('previous_state'),

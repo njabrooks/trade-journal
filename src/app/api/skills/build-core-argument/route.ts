@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 
 /**
- * POST /api/skills/synthesize-thesis
+ * POST /api/skills/build-core-argument
  *
- * Spawns Claude CLI to execute the synthesize-thesis skill in headless mode.
+ * Spawns Claude CLI to execute the build-core-argument skill in headless mode.
  * The skill generates an articulation with confirmation/warning signals,
  * stores them to the database, and resolves any pending triage records.
  *
@@ -150,7 +150,7 @@ IMPORTANT:
     const result = await executeClaudeCLI(prompt);
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error in synthesize-thesis API:', error);
+    console.error('Error in build-core-argument API:', error);
     return NextResponse.json(
       {
         success: false,
@@ -169,8 +169,8 @@ interface CLIResult {
 
 async function executeClaudeCLI(prompt: string): Promise<CLIResult> {
   return new Promise((resolve) => {
-    console.log('[synthesize-thesis] Starting CLI execution...');
-    console.log('[synthesize-thesis] Working directory:', process.cwd());
+    console.log('[build-core-argument] Starting CLI execution...');
+    console.log('[build-core-argument] Working directory:', process.cwd());
 
     // Write prompt to a temp file to avoid shell escaping issues
     const fs = require('fs');
@@ -180,7 +180,7 @@ async function executeClaudeCLI(prompt: string): Promise<CLIResult> {
     // Build command using file input, pipe empty stdin to prevent hanging
     const command = `echo "" | /Users/njb/.local/bin/claude -p "$(cat ${promptFile})" --allowedTools Bash,Read,Write,Edit,Grep,Glob --dangerously-skip-permissions --max-turns 50 --output-format json`;
 
-    console.log('[synthesize-thesis] Executing command...');
+    console.log('[build-core-argument] Executing command...');
 
     // Exclude ANTHROPIC_API_KEY so CLI uses Max subscription instead of API tokens
     const { ANTHROPIC_API_KEY: _removed, ...envWithoutApiKey } = process.env;
@@ -198,11 +198,11 @@ async function executeClaudeCLI(prompt: string): Promise<CLIResult> {
       // Clean up temp file
       try { fs.unlinkSync(promptFile); } catch { /* ignore */ }
 
-      console.log(`[synthesize-thesis] CLI completed`);
-      console.log(`[synthesize-thesis] stdout length: ${stdout?.length || 0}, stderr length: ${stderr?.length || 0}`);
+      console.log(`[build-core-argument] CLI completed`);
+      console.log(`[build-core-argument] stdout length: ${stdout?.length || 0}, stderr length: ${stderr?.length || 0}`);
 
       if (error) {
-        console.error(`[synthesize-thesis] Error:`, error.message);
+        console.error(`[build-core-argument] Error:`, error.message);
         resolve({
           success: false,
           error: error.message || 'CLI execution failed',
@@ -214,7 +214,7 @@ async function executeClaudeCLI(prompt: string): Promise<CLIResult> {
       try {
         // With --output-format json, stdout is a JSON object with "result" field
         const cliOutput = JSON.parse(stdout);
-        console.log(`[synthesize-thesis] CLI result type: ${cliOutput.type}, subtype: ${cliOutput.subtype}`);
+        console.log(`[build-core-argument] CLI result type: ${cliOutput.type}, subtype: ${cliOutput.subtype}`);
 
         if (cliOutput.is_error) {
           resolve({
@@ -250,7 +250,7 @@ async function executeClaudeCLI(prompt: string): Promise<CLIResult> {
           output: resultText,
         });
       } catch (parseError) {
-        console.error(`[synthesize-thesis] Failed to parse CLI output:`, parseError);
+        console.error(`[build-core-argument] Failed to parse CLI output:`, parseError);
         resolve({
           success: false,
           error: 'Failed to parse CLI output',

@@ -46,7 +46,7 @@ export interface ThesisTriageResult {
  *
  * This should be called after:
  * - Claim is linked to thesis (convert-claim API)
- * - Articulation is created (synthesize-thesis skill)
+ * - Articulation is created (build-core-argument skill)
  * - Thesis is created (create-thesis/create-view API)
  */
 export async function computeThesisTriageForThesis(
@@ -135,7 +135,7 @@ export async function computeThesisTriageForThesis(
           status: 'attention',
           urgency: 'this_week',
           lifecycleStage: 'synthesis',
-          suggestedSkill: '/synthesize-thesis',
+          suggestedSkill: '/build-core-argument',
           actionRequired:
             `Thesis has ${evolutionState.claimCount} claims. Ready to generate core argument and validation points.`,
           contentSummary: {
@@ -179,7 +179,7 @@ export async function computeThesisTriageForThesis(
           status: 'info',
           urgency: 'when_convenient',
           lifecycleStage: 'synthesis',
-          suggestedSkill: '/synthesize-thesis',
+          suggestedSkill: '/build-core-argument',
           actionRequired: `${claimsSinceArticulation} new claims since last articulation. Consider updating the core argument.`,
           contentSummary: {
             currentClaimCount: evolutionState.claimCount,
@@ -440,7 +440,7 @@ export async function onArticulationCreated(
     objectTitle: thesis.title,
     actionType: 'articulation_created',
     actionDescription: `Thesis articulation created/updated with ${evolutionState.claimCount} claims`,
-    skillInvoked: '/synthesize-thesis',
+    skillInvoked: '/build-core-argument',
     previousState: {
       claimsCountAtLastArticulation: previousClaimsCount,
     },

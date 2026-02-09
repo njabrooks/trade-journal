@@ -136,7 +136,7 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 **Effort**: 1 week
 
 **Deliverables**:
-- ✅ `/synthesize-thesis` Claude Code skill (`.claude/skills/synthesize-thesis/SKILL.md`)
+- ✅ `/build-core-argument` Claude Code skill (`.claude/skills/build-core-argument/SKILL.md`)
 - ✅ `thesis_articulations` table with versioning (`migrations/phase3_1_thesis_synthesis_monitoring.sql`)
 - ✅ Drizzle schema types (`src/db/schema.ts`)
 - ⏳ Interactive refinement workflow (pending end-to-end testing)
@@ -153,7 +153,7 @@ This feature does not add sufficient value beyond the existing `HierarchyBreadcr
 **Dependencies**: #ENH-035
 
 **Deliverables**:
-- ✅ Extraction as part of `/synthesize-thesis` skill
+- ✅ Extraction as part of `/build-core-argument` skill
 - ✅ `validation_points` table with explicit/judgment classification
 - ✅ Response protocol specification (in skill prompt)
 - ✅ Push-for-specificity interaction pattern (in skill prompt)

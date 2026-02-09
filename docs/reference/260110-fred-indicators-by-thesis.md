@@ -2,7 +2,7 @@
 
 This document maps FRED (Federal Reserve Economic Data) indicators to active macro theses in the system. Use this reference when:
 - Creating new thesis monitoring configs
-- Running the `/synthesize-thesis` skill to identify relevant data sources
+- Running the `/build-core-argument` skill to identify relevant data sources
 - Setting up auto-trigger thresholds for validation/invalidation points
 
 **Last Updated:** 2026-01-10
@@ -422,7 +422,7 @@ These indicators are relevant to multiple theses and should be monitored broadly
 ### Adding New Series
 1. Verify series exists at `https://fred.stlouisfed.org/series/{SERIES_ID}`
 2. Add to `SUPPORTED_FRED_SERIES` in `daily-thesis-monitoring.ts`
-3. Update thesis monitoring config via `/synthesize-thesis` skill or manually
+3. Update thesis monitoring config via `/build-core-argument` skill or manually
 
 ### Threshold Configuration
 ```typescript
@@ -487,4 +487,4 @@ DCOILWTICO
 
 ---
 
-*This document is auto-referenced by the `/synthesize-thesis` skill during thesis creation and monitoring config setup.*
+*This document is auto-referenced by the `/build-core-argument` skill during thesis creation and monitoring config setup.*

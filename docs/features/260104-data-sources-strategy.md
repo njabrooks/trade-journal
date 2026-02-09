@@ -5,7 +5,7 @@
 **Related**:
 - [thesis-synthesis-monitoring.md](260107-thesis-synthesis-monitoring.md) - Validation point system design
 - [OpenBB Scripts](../../scripts/openbb/) - Python scripts for data fetching
-- [/synthesize-thesis skill](../../.claude/skills/synthesize-thesis/SKILL.md) - Uses this doc during validation point definition
+- [/build-core-argument skill](../../.claude/skills/build-core-argument/SKILL.md) - Uses this doc during validation point definition
 
 ---
 
@@ -760,7 +760,7 @@ async function synthesizeNarratives() {
 
 ## Integration with Thesis Synthesis
 
-This document is the **authoritative reference** for data source availability during the `/synthesize-thesis` workflow. When Claude and the user collaborate on defining validation points, this information guides the conversation.
+This document is the **authoritative reference** for data source availability during the `/build-core-argument` workflow. When Claude and the user collaborate on defining validation points, this information guides the conversation.
 
 ### How Data Sources Inform Validation Point Design
 

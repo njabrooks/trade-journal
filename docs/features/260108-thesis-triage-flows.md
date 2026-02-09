@@ -89,7 +89,7 @@ Trigger → Triage Record Created → UI Display → User Action → Resolution 
 | **Severity** | `attention` |
 | **Urgency** | `this_week` |
 | **Lifecycle Stage** | `synthesis` |
-| **Suggested Skill** | `/synthesize-thesis` |
+| **Suggested Skill** | `/build-core-argument` |
 | **Resolution** | Articulation created via skill |
 
 **End-to-End Flow:**
@@ -106,15 +106,15 @@ Trigger → Triage Record Created → UI Display → User Action → Resolution 
        - triageRule: 'PRODUCE_CORE_ARGUMENT'
        - status: 'attention'
        - actionRequired: "Thesis has X claims. Ready for synthesis."
-       - suggestedSkill: '/synthesize-thesis'
+       - suggestedSkill: '/build-core-argument'
 
 3. UI DISPLAY
    └─► /triage page → ThesisTriageSection.tsx
        - Shows with amber/attention styling
-       - Suggested skill: /synthesize-thesis
+       - Suggested skill: /build-core-argument
 
 4. USER ACTION
-   └─► User runs /synthesize-thesis skill
+   └─► User runs /build-core-argument skill
        └─► Skill creates thesis_articulations record
        └─► Skill calls onArticulationCreated()
 
@@ -145,7 +145,7 @@ Trigger → Triage Record Created → UI Display → User Action → Resolution 
 | **Severity** | `info` |
 | **Urgency** | `when_convenient` |
 | **Lifecycle Stage** | `synthesis` |
-| **Suggested Skill** | `/synthesize-thesis` |
+| **Suggested Skill** | `/build-core-argument` |
 | **Resolution** | New articulation created OR user dismisses |
 
 **End-to-End Flow:**
@@ -168,7 +168,7 @@ Trigger → Triage Record Created → UI Display → User Action → Resolution 
 
 4. USER ACTION
    └─► User either:
-       a) Runs /synthesize-thesis to regenerate
+       a) Runs /build-core-argument to regenerate
        b) Dismisses (decides current articulation is sufficient)
 
 5. RESOLUTION
@@ -454,7 +454,7 @@ Research-to-thesis linkages now logged:
 
 **2.1 Supported Data Sources Registry**
 
-Define which sources support auto-triggering in `synthesize-thesis` skill:
+Define which sources support auto-triggering in `build-core-argument` skill:
 
 | Source | Metric Types | Auto-Trigger | Notes |
 |--------|--------------|--------------|-------|
@@ -474,7 +474,7 @@ Define which sources support auto-triggering in `synthesize-thesis` skill:
 
 **2.3 Link Thresholds to V&I Points** ✅ COMPLETE (2026-01-09)
 - [x] `thesis_monitoring_configs.explicit_thresholds[].linkedValidationPointId` already exists (in schema)
-- [x] `synthesize-thesis` skill populates this when creating explicit V&I points (Step 7.5)
+- [x] `build-core-argument` skill populates this when creating explicit V&I points (Step 7.5)
 - [x] Query: When threshold breached, lookup linked V&I point → **implemented in 2.4**
 
 **2.4 Auto-Update V&I Status on Breach** ✅ COMPLETE (2026-01-09)
@@ -489,7 +489,7 @@ Define which sources support auto-triggering in `synthesize-thesis` skill:
 When adding a new data source (e.g., Glassnode):
 1. Implement data fetch in `daily-thesis-monitoring.ts`
 2. Add to registry table in 2.1 above
-3. Update `synthesize-thesis` skill to recognize new source
+3. Update `build-core-argument` skill to recognize new source
 4. Existing V&I points using that source will auto-enable
 
 *Deferred: Will add new data sources as thesis needs dictate.*
@@ -647,7 +647,7 @@ Each new source follows pattern:
 1. Add to monitoring config schema
 2. Implement data fetch in monitoring script
 3. Add to "reliable sources" registry if appropriate for auto-triggering
-4. Update `synthesize-thesis` to suggest as data source option
+4. Update `build-core-argument` to suggest as data source option
 
 ---
 
@@ -663,7 +663,7 @@ Each new source follows pattern:
 6. ~~**Phase 2.4**: Auto-update V&I status on breach (monitoring script auto-triggers V&I)~~ ✅ (2026-01-09)
 
 **Phase 1-2 COMPLETE!** The core auto-triggering flow now works end-to-end:
-- User creates explicit V&I points via `/synthesize-thesis` with supported data sources
+- User creates explicit V&I points via `/build-core-argument` with supported data sources
 - Monitoring config auto-created with thresholds linked to V&I points
 - Daily monitoring script (08:00 UTC) checks thresholds + fetches news + runs Claude analysis
 - On breach: triage record created + V&I status auto-updated to "triggered" + journal logged
@@ -678,7 +678,7 @@ Each new source follows pattern:
 
 #### Up Next: Phase 5.4/5.5 (FRED Integration Completion)
 
-1. **Phase 5.4**: Update `synthesize-thesis` skill for FRED auto-discovery
+1. **Phase 5.4**: Update `build-core-argument` skill for FRED auto-discovery
 2. **Phase 5.5**: Implement FRED historical data ingestion script
 
 #### Deferred

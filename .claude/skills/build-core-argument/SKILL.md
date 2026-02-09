@@ -1,10 +1,10 @@
 ---
-name: synthesize-thesis
-description: Synthesize linked claims into a coherent thesis articulation with explicit confirmation/warning signals. Creates versioned articulations with provenance tracking. Use when thesis has accumulated claims and needs formal articulation.
+name: build-core-argument
+description: Build a core argument for a thesis from its linked claims. Generates a structured articulation (core argument, key drivers, assumptions, confidence assessment) plus confirmation and warning signals. Stores everything to the database and creates triage records for signal review.
 allowed-tools: Bash, Read, Write
 ---
 
-# Synthesize Thesis Skill
+# Build Core Argument Skill
 
 ## Purpose
 
@@ -21,15 +21,15 @@ This is **Layer 2** of the Thesis Synthesis & Monitoring System (see `docs/featu
 
 ## Key Distinction
 
-| generate-summary | synthesize-thesis |
-|------------------|-------------------|
+| generate-summary | build-core-argument |
+|------------------|----------------------|
 | Creates narrative summary | Creates structured articulation |
 | 2-3 paragraphs of prose | Core argument + drivers + assumptions |
-| No explicit success criteria | Validation/invalidation points |
+| No explicit success criteria | Confirmation/warning signals |
 | For quick reference | For accountability and monitoring |
 | Stored in `ai_summary` field | Stored in `thesis_articulations` table |
 
-Use `generate-summary` for quick overviews. Use `synthesize-thesis` when you want to commit to explicit success/failure criteria.
+Use `generate-summary` for quick overviews. Use `build-core-argument` when you want to commit to explicit success/failure criteria.
 
 ## Workflow
 
@@ -958,7 +958,7 @@ Signals are NOT active until you review them:
 2. Accept, modify, or reject each signal
 3. Once accepted, signals become part of your monitoring system
 4. View articulation at /macro-theses/[ID] or /asset-theses/[ID]
-5. Re-synthesize when new claims are added with /synthesize-thesis [TICKER]
+5. Re-synthesize when new claims are added with /build-core-argument [TICKER]
 
 **Note**: These confirmation/warning signals are your commitment device.
 When they trigger, you've stated in advance what action you'll take.
@@ -1004,7 +1004,7 @@ This thesis has no linked claims to synthesize.
 To create an articulation:
 1. Process research with /process-transcript
 2. Link claims with /finalize-for-upload or via UI
-3. Retry: /synthesize-thesis [TICKER]
+3. Retry: /build-core-argument [TICKER]
 
 Alternatively, you can create an articulation manually by answering the synthesis questions directly.
 ```
@@ -1056,7 +1056,7 @@ See `/docs/ACTIVE_ROADMAP.md` for roadmap context.
 ### Example 1: Synthesize NVDA Thesis
 
 ```
-User: /synthesize-thesis NVDA
+User: /build-core-argument NVDA
 
 Claude: Let me load the NVDA thesis and linked claims...
 

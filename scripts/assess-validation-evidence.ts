@@ -453,7 +453,7 @@ async function main() {
     const points = await fetchValidationPoints(thesisType, thesisId);
     if (points.length === 0) {
       console.error(`Error: No validation points found for thesis ${thesisId}`);
-      console.error('Run /synthesize-thesis first to create validation points');
+      console.error('Run /build-core-argument first to create validation points');
       await closeDb();
       process.exit(1);
     }

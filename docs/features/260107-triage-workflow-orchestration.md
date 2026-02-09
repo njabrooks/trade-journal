@@ -22,7 +22,7 @@ AUTOMATION BOUNDARY
     ─────────────────────────────────────────────────────────────────────────
     Cron jobs                         │  /process-transcript
     Perplexity search execution       │  /finalize-for-upload
-    FRED data fetch                   │  /synthesize-thesis
+    FRED data fetch                   │  /build-core-argument
     Flex ingestion                    │  /synthesize-claims
     Massive IV ingestion              │  /assess-validation-evidence
                                       │
@@ -64,7 +64,7 @@ AUTOMATION BOUNDARY
 - Hooked triage computation into:
   - `/api/research/convert-claim` - when claim creates new thesis
   - `/api/research/link-claim-to-thesis` - when claim linked to existing thesis
-  - `/synthesize-thesis` skill - calls `onArticulationCreated()` after saving articulation
+  - `/build-core-argument` skill - calls `onArticulationCreated()` after saving articulation
 - Triage rules implemented: `NEEDS_RESEARCH`, `PRODUCE_CORE_ARGUMENT`, `UPDATE_CORE_ARGUMENT`
 - Triage records auto-resolved when conditions change (e.g., articulation created resolves PRODUCE_CORE_ARGUMENT)
 
@@ -80,7 +80,7 @@ AUTOMATION BOUNDARY
   - `read-theses`, `read-views` - replaced by web UI browsing
   - `validate-templates` - obsolete Obsidian workflow
 - Archived 2 skills (prefix `archived-`): `deep-dive`, `generate-summary`
-- Active skills (5): `process-transcript`, `finalize-for-upload`, `synthesize-thesis`, `synthesize-claims`, `assess-validation-evidence`
+- Active skills (5): `process-transcript`, `finalize-for-upload`, `build-core-argument`, `synthesize-claims`, `assess-validation-evidence`
 
 **Scripts:**
 - `scripts/daily-thesis-monitoring.ts` - Automated news monitoring → triage records
@@ -179,7 +179,7 @@ Every object type follows a lifecycle with defined states. Triage surfaces when 
 │        │                │                   │                   │       │
 │        ▼                ▼                   ▼                   ▼       │
 │   USER ACTION:     USER ACTION:        USER ACTION:        USER ACTION: │
-│   Link claims      /synthesize-thesis  Extract V&I points  Configure    │
+│   Link claims      /build-core-argument  Extract V&I points  Configure    │
 │   from research    skill               from articulation   monitoring   │
 │                                                                          │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -284,7 +284,7 @@ interface UnifiedTriageRecord {
 
   // The actionable item
   actionRequired: string;           // Human-readable description
-  suggestedSkill?: string;          // Claude Code skill to invoke (e.g., '/synthesize-thesis')
+  suggestedSkill?: string;          // Claude Code skill to invoke (e.g., '/build-core-argument')
 
   // Classification
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -307,8 +307,8 @@ interface UnifiedTriageRecord {
 | Object | Lifecycle Stage | Trigger | Triage Type | Suggested Skill |
 |--------|-----------------|---------|-------------|-----------------|
 | Macro Thesis | CREATED | Manual creation | `thesis_needs_claims` | Manual claim linking |
-| Macro Thesis | CLAIMS_LINKED | Sufficient claims linked | `thesis_needs_synthesis` | `/synthesize-thesis` |
-| Macro Thesis | SYNTHESIZED | Articulation created | `thesis_needs_validation_points` | `/synthesize-thesis` (continuation) |
+| Macro Thesis | CLAIMS_LINKED | Sufficient claims linked | `thesis_needs_synthesis` | `/build-core-argument` |
+| Macro Thesis | SYNTHESIZED | Articulation created | `thesis_needs_validation_points` | `/build-core-argument` (continuation) |
 | Macro Thesis | VALIDATED | V&I points extracted | `thesis_ready_for_monitoring` | Configure monitoring |
 | Asset Thesis | (same pattern) | | | |
 
@@ -354,13 +354,13 @@ When an object completes one lifecycle stage, the system automatically creates a
 │  SYSTEM creates triage record:                                          │
 │    type: thesis_needs_synthesis                                         │
 │    action: "Thesis has sufficient claims. Ready for synthesis."         │
-│    suggestedSkill: /synthesize-thesis                                   │
+│    suggestedSkill: /build-core-argument                                   │
 │       │                                                                  │
 │       ▼                                                                  │
 │  USER sees triage record in inbox                                       │
 │       │                                                                  │
 │       ▼                                                                  │
-│  USER invokes /synthesize-thesis skill                                  │
+│  USER invokes /build-core-argument skill                                  │
 │       │                                                                  │
 │       ▼                                                                  │
 │  SKILL creates articulation + validation points                         │
@@ -503,7 +503,7 @@ interface JournalEntry {
 
 Journal enables:
 - **Object history**: "Show me all actions for thesis X"
-- **Skill usage**: "Show me all /synthesize-thesis invocations"
+- **Skill usage**: "Show me all /build-core-argument invocations"
 - **Divergence tracking**: "Show me decisions where user deviated from stated process"
 - **Time-based review**: "Show me all actions last week"
 - **Cross-object tracing**: "Show me how this claim influenced thesis Y and strategy Z"
@@ -548,7 +548,7 @@ Users can create triage records manually for:
 | `/process-transcript` | Evidence Collection | New research artifact (transcript, article) | Toulmin claims in markdown audit |
 | `/finalize-for-upload` | Evidence Collection | After audit review | Uploads artifact + claims to database |
 | `/synthesize-claims` | Evidence Collection | Cross-reference existing claims | Mapping recommendations |
-| `/synthesize-thesis` | Thesis Synthesis | After sufficient claims linked | Articulation + V&I points |
+| `/build-core-argument` | Thesis Synthesis | After sufficient claims linked | Articulation + V&I points |
 | `/assess-validation-evidence` | Monitoring | Relevant content found for thesis | Evidence assessment against V&I points |
 
 ### Archived Skills (2)
@@ -851,4 +851,4 @@ ALTER TABLE asset_theses ADD COLUMN IF NOT EXISTS lifecycle_status TEXT
 |------|--------|---------|
 | 2026-01-07 | Claude + User | Initial design specification |
 | 2026-01-07 | Claude + User | Added Implementation Progress section; Phase 1-2 complete, documented event-driven state machine as next step |
-| 2026-01-08 | Claude + User | Phase 2.5 complete: triage hooks integrated into all thesis creation/linking paths; onArticulationCreated() hooked into synthesize-thesis skill; strategy confirmation dialog creates blotter records; skills consolidated (7 deleted, 2 archived, 5 active) |
+| 2026-01-08 | Claude + User | Phase 2.5 complete: triage hooks integrated into all thesis creation/linking paths; onArticulationCreated() hooked into build-core-argument skill; strategy confirmation dialog creates blotter records; skills consolidated (7 deleted, 2 archived, 5 active) |

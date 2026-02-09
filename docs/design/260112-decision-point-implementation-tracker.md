@@ -118,7 +118,7 @@
 
 ### 1.7 Skills
 - [x] Update `.claude/skills/assess-validation-evidence/` (SQL query, skill description)
-- [x] Update `.claude/skills/synthesize-thesis/` (JSON examples: validation→confirmation, invalidation→warning)
+- [x] Update `.claude/skills/build-core-argument/` (JSON examples: validation→confirmation, invalidation→warning)
 
 ### 1.8 Documentation
 - [ ] Update `docs/features/260105-validation-assessment-workflow.md` (deferred to Phase 2)
@@ -138,7 +138,7 @@
 - [x] Update `scripts/insert-thesis-articulation.ts` to create triage record when recommended signals inserted
 - [x] Create `/api/signals/batch-review/route.ts` API endpoint (GET + POST)
 - [x] Create `src/components/signals/SignalBatchReview.tsx` component
-- [x] Update `/synthesize-thesis` skill to output `recommended` status and document workflow
+- [x] Update `/build-core-argument` skill to output `recommended` status and document workflow
 
 ### 2.2 Signal Configuration UI (DP-5.2)
 - [x] Create `src/components/signals/SignalConfigForm.tsx` (includes DataSourceSelector and CriteriaBuilder inline)

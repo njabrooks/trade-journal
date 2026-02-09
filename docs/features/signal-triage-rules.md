@@ -273,7 +273,7 @@ This flow handles strategies with back data that wasn't ingested (e.g., position
 | **Severity** | `attention` |
 | **Urgency** | `this_week` |
 | **Lifecycle Stage** | `synthesis` |
-| **Suggested Skill** | `/synthesize-thesis` |
+| **Suggested Skill** | `/build-core-argument` |
 | **Resolution** | Articulation created |
 
 #### 3. UPDATE_CORE_ARGUMENT
@@ -284,7 +284,7 @@ This flow handles strategies with back data that wasn't ingested (e.g., position
 | **Severity** | `info` |
 | **Urgency** | `when_convenient` |
 | **Lifecycle Stage** | `synthesis` |
-| **Suggested Skill** | `/synthesize-thesis` |
+| **Suggested Skill** | `/build-core-argument` |
 | **Resolution** | New articulation created OR user dismisses |
 
 **Calculation:** `claimCount - claimsCountAtLastArticulation >= 3`

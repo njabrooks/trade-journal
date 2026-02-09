@@ -35,14 +35,14 @@ const LIFECYCLE_CONFIG: Record<string, {
   },
   claims_linked: {
     actionRequired: 'Thesis has sufficient claims and is ready for synthesis',
-    suggestedSkill: '/synthesize-thesis',
+    suggestedSkill: '/build-core-argument',
     severity: 'medium',
     urgency: 'this_week',
     triggerType: 'lifecycle_transition',
   },
   synthesized: {
     actionRequired: 'Thesis needs validation and invalidation points extracted',
-    suggestedSkill: '/synthesize-thesis',
+    suggestedSkill: '/build-core-argument',
     severity: 'medium',
     urgency: 'this_week',
     triggerType: 'lifecycle_transition',

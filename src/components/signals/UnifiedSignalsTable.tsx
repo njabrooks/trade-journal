@@ -535,7 +535,7 @@ export function UnifiedSignalsTable({
         </p>
         {mode === 'browse' && (
           <p className="text-xs text-muted-foreground mt-1">
-            Use <code className="px-1 bg-slate-100 rounded">/synthesize-thesis</code> to create signals.
+            Use <code className="px-1 bg-slate-100 rounded">/build-core-argument</code> to create signals.
           </p>
         )}
       </div>

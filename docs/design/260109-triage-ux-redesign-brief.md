@@ -91,7 +91,7 @@ The system bridges these bookends with process and accountability.
 
 **Skills (Claude Code):**
 - `/process-transcript` - Extract claims from research
-- `/synthesize-thesis` - Generate articulation with V&I points
+- `/build-core-argument` - Generate articulation with V&I points
 - `/synthesize-claims` - Cross-reference claims against existing theses
 - `/assess-validation-evidence` - Evaluate content against V&I points
 

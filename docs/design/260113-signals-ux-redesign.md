@@ -100,7 +100,7 @@ Build a clean table component (like `UnifiedClaimsBrowser`) that:
 
 ### Decision 4: AI Recommends Both Types with Pre-Configuration
 
-When `/synthesize-thesis` runs:
+When `/build-core-argument` runs:
 1. Claude generates both judgment and data-driven signals
 2. For data-driven signals, Claude pre-configures API-ready criteria when possible
 3. Signals are created with `status: 'recommended'`
@@ -127,7 +127,7 @@ Reduce from current 8+ sections to:
 
 ### Issue 1: REVIEW_RECOMMENDED_SIGNALS Triage Not Triggering
 
-**Observation**: After running `/synthesize-thesis` for "Bullish Energy Sector" macro thesis at 11:09 on 2026-01-12, no `REVIEW_RECOMMENDED_SIGNALS` triage record appeared despite the implementation claiming it was complete.
+**Observation**: After running `/build-core-argument` for "Bullish Energy Sector" macro thesis at 11:09 on 2026-01-12, no `REVIEW_RECOMMENDED_SIGNALS` triage record appeared despite the implementation claiming it was complete.
 
 **Investigation needed**:
 1. Check if signals were actually created with `status: 'recommended'`
@@ -203,7 +203,7 @@ The `SignalBatchReview` component exists but is not rendered in `ExpandedTriageD
 4. ✅ **Update all code references**
    - `thesisSynthesis.ts`: Updated stats property names
    - `validation-points/[id]/route.ts`: Updated upgrade handler
-   - `synthesize-thesis/route.ts`: Updated AI prompt template (validation→confirmation, invalidation→warning)
+   - `build-core-argument/route.ts`: Updated AI prompt template (validation→confirmation, invalidation→warning)
    - `ValidationPointDetail.tsx` & `ValidationPointsList.tsx`: Updated category checks and icons
    - `batch-review/route.ts`: Updated type definitions and journal action types
    - `SignalsSection.tsx` & `SignalBatchReview.tsx`: Updated category values and messages
@@ -364,7 +364,7 @@ The `SignalBatchReview` component exists but is not rendered in `ExpandedTriageD
    - Updated `assess-impact/route.ts` to set `not_triggered` instead of `monitoring`
 
 2. ✅ **Make category derived**
-   - Updated `/api/skills/synthesize-thesis/route.ts` to not include category in AI prompt
+   - Updated `/api/skills/build-core-argument/route.ts` to not include category in AI prompt
    - Updated `scripts/insert-thesis-articulation.ts` to always set `category='judgment'` and `explicitDetails=null`
    - Updated `batch-review/route.ts` to not accept category in modifications
    - Category only becomes `data_driven` when user configures via SignalConfigForm
@@ -389,7 +389,7 @@ The `SignalBatchReview` component exists but is not rendered in `ExpandedTriageD
 ### Flow 1: After Synthesis
 
 ```
-User runs /synthesize-thesis
+User runs /build-core-argument
     ↓
 Claude generates articulation + recommended signals
     ↓
@@ -473,7 +473,7 @@ Triage resolved
 ## Success Criteria
 
 1. **REVIEW_RECOMMENDED_SIGNALS triage works end-to-end**
-   - Running /synthesize-thesis creates triage record
+   - Running /build-core-argument creates triage record
    - Expanding triage shows batch review UI
    - Accepting/rejecting signals resolves triage
 
@@ -497,7 +497,7 @@ Triage resolved
 **Goal**: Handle re-articulation properly and improve UX consistency
 
 1. ✅ **Supersede existing signals on re-articulation**
-   - When running `/synthesize-thesis` again, existing signals are marked `superseded`
+   - When running `/build-core-argument` again, existing signals are marked `superseded`
    - New signals created with `status='recommended'`
    - User can delete superseded signals or reinstate valuable ones
    - Journal entry logged for the supersede action
@@ -505,7 +505,7 @@ Triage resolved
 
 2. ✅ **SynthesizeButton calls API directly**
    - Previously: button copied skill command to clipboard
-   - Now: button calls `/api/skills/synthesize-thesis` API directly (like triage does)
+   - Now: button calls `/api/skills/build-core-argument` API directly (like triage does)
    - Shows loading spinner and toast notifications
    - Auto-refreshes page when articulation is created/updated
    - Implementation: `src/components/thesis/SynthesizeButton.tsx`

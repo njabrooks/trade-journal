@@ -1,0 +1,5 @@
+{
+  "name": "build-core-argument",
+  "description": "Build a core argument for a thesis from its linked claims. Generates a structured articulation (core argument, key drivers, assumptions, confidence assessment) plus confirmation and warning signals. Stores everything to the database and creates triage records for signal review.",
+  "instructions": "SKILL.md"
+}

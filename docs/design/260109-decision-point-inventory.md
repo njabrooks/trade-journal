@@ -402,7 +402,7 @@
 | **Stage** | Thesis Lifecycle |
 | **Trigger** | Automatic: thesis has ≥3 claims, no articulation exists |
 | **Context Needed** | Claim count, claim summaries, thesis title |
-| **Available Actions** | (1) Dismiss, (2) Monitor, (3) Run `/synthesize-thesis` |
+| **Available Actions** | (1) Dismiss, (2) Monitor, (3) Run `/build-core-argument` |
 | **Downstream Effects** | Creates articulation with signals (core argument, key drivers, assumptions, gaps, dependencies); advances lifecycle stage |
 | **Complexity** | Quick (dismiss) / Medium (synthesis review) |
 | **Current Location** | Thesis Triage queue, `PRODUCE_CORE_ARGUMENT` rule |
@@ -417,7 +417,7 @@
 | **Stage** | Thesis Lifecycle |
 | **Trigger** | Automatic: ≥3 new claims linked since last articulation |
 | **Context Needed** | Claims at last articulation, new claims delta, articulation date |
-| **Available Actions** | (1) Dismiss, (2) Monitor, (3) Re-run `/synthesize-thesis` |
+| **Available Actions** | (1) Dismiss, (2) Monitor, (3) Re-run `/build-core-argument` |
 | **Downstream Effects** | Updated articulation, potentially new signals; **should keep articulation history for reference** *(future: allow targeted tweaks vs full re-synthesis)* |
 | **Complexity** | Quick (dismiss) / Medium (re-synthesis) |
 | **Current Location** | Thesis Triage queue, `UPDATE_CORE_ARGUMENT` rule |
@@ -481,7 +481,7 @@
 > - ❌ **TradingView**: Future - webhooks for price targets + indicator triggers
 > - ℹ️ **News/Semantic**: Supports judgment-based signals, not explicit triggers
 
-> **Implementation Pattern**: Uses existing headless Claude CLI pattern via API endpoints (see `/api/skills/synthesize-thesis/route.ts`). Claude analyzes content, returns recommendations as JSON, user confirms in UI before changes persist.
+> **Implementation Pattern**: Uses existing headless Claude CLI pattern via API endpoints (see `/api/skills/build-core-argument/route.ts`). Claude analyzes content, returns recommendations as JSON, user confirms in UI before changes persist.
 
 ### DP-5.1: Review Recommended Signals
 
@@ -489,7 +489,7 @@
 |-------|-------------|
 | **Decision Point** | Review Recommended Signals |
 | **Stage** | Signals |
-| **Trigger** | Automatic: `/synthesize-thesis` completes, creates signals with status `recommended` |
+| **Trigger** | Automatic: `/build-core-argument` completes, creates signals with status `recommended` |
 | **Context Needed** | Thesis title/description, full list of recommended signals (statements, AI-suggested category), thesis conviction/direction |
 | **Available Actions** | For each signal: (1) Reject, (2) Accept as judgment-based, (3) Accept as explicit → triggers inline data config (DP-5.2), (4) Edit statement before accepting |
 | **Downstream Effects** | Rejected: marked rejected/hidden. Accepted: status → `confirmed`, category set (judgment/explicit). If explicit: requires DP-5.2 completion before confirmation. Thesis lifecycle advances. |
@@ -1382,7 +1382,7 @@ interface JournalEntry {
 
   // Context and linkage
   triageRecordId?: string; // If action originated from triage
-  skillInvoked?: string;   // If action invoked a Claude skill (e.g., '/synthesize-thesis')
+  skillInvoked?: string;   // If action invoked a Claude skill (e.g., '/build-core-argument')
 
   // State change tracking
   previousState?: Record<string, unknown>;  // State before action
