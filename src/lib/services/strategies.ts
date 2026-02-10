@@ -18,6 +18,7 @@ import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetric
 import { computeTriageForDate } from '@/lib/derived/triage';
 // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
+import { resolveOrCreateStrategyType } from '@/lib/services/strategyTypes';
 
 export interface CreateStrategyInput {
   strategyKey: string;
@@ -31,6 +32,7 @@ export interface CreateStrategyInput {
   status?: string;
   label?: string;
   strategyType?: string;
+  strategyTypeId?: string;
   entrySpot?: number;
   entryIv30?: number;
   netPremium?: number;
@@ -155,6 +157,12 @@ export async function createStrategy(input: CreateStrategyInput): Promise<string
       : new Date(input.closedAt)
     : null;
 
+  // Resolve strategy type FK if name provided without ID
+  let strategyTypeId = input.strategyTypeId ?? null;
+  if (!strategyTypeId && input.strategyType) {
+    strategyTypeId = await resolveOrCreateStrategyType(input.strategyType);
+  }
+
   // Create strategy
   const [newStrategy] = await db
     .insert(strategies)
@@ -174,6 +182,7 @@ export async function createStrategy(input: CreateStrategyInput): Promise<string
       autoSource: input.autoSource ?? null,
       autoDerivedLabel: input.label ?? null,
       strategyType: input.strategyType ?? null,
+      strategyTypeId,
       confirmedAt: input.isAuto ? null : new Date(),
     })
     .returning();
@@ -248,6 +257,13 @@ export async function updateStrategy(
 
   if (updates.strategyType !== undefined) {
     updateData.strategyType = updates.strategyType ?? null;
+    // Also resolve to FK if no explicit strategyTypeId
+    if (updates.strategyType && !(updates as any).strategyTypeId) {
+      updateData.strategyTypeId = await resolveOrCreateStrategyType(updates.strategyType);
+    }
+  }
+  if ((updates as any).strategyTypeId !== undefined) {
+    updateData.strategyTypeId = (updates as any).strategyTypeId ?? null;
   }
   // Handle assetThesisId update (for linking strategy to thesis)
   if ((updates as any).assetThesisId !== undefined) {
@@ -1045,7 +1061,8 @@ export async function getStrategies(filters: {
 }
 
 /**
- * Get all distinct strategy types from confirmed strategies
+ * @deprecated Use getAllStrategyTypes() from @/lib/services/strategyTypes instead.
+ * Get all distinct strategy types from confirmed strategies (legacy text-based lookup).
  */
 export async function getDistinctStrategyTypes(): Promise<string[]> {
   const rows = await db

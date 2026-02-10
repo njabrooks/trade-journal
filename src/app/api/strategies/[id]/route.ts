@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { strategies, strategyTemplates, underlyings, positions } from '@/db/schema';
+import { strategies, strategyTemplates, strategyTypes, underlyings, positions } from '@/db/schema';
 import { eq, aliasedTable, and, isNull, ne, sql } from 'drizzle-orm';
+import { resolveOrCreateStrategyType } from '@/lib/services/strategyTypes';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 import { recomputeStrategyStatus } from '@/lib/services/strategies';
 import { deriveStrategyKeyFromPosition } from '@/lib/derived/strategyAuto';
@@ -79,15 +80,28 @@ export async function PATCH(
 
     // Extract fields that can be updated on the strategies table
     // Note: label/description/rationale don't exist on strategies - use /api/strategies PATCH for full updates
-    const { assetThesisId, status, strategyType, direction } = body;
+    const { assetThesisId, status, strategyType, strategyTypeId, direction } = body;
 
     // Build update object with only provided fields
     const updates: Record<string, unknown> = {};
 
     if (assetThesisId !== undefined) updates.assetThesisId = assetThesisId;
     if (status !== undefined) updates.status = status;
-    if (strategyType !== undefined) updates.strategyType = strategyType;
     if (direction !== undefined) updates.direction = direction;
+
+    // Handle strategy type: prefer strategyTypeId, fall back to resolving from name
+    if (strategyTypeId !== undefined) {
+      updates.strategyTypeId = strategyTypeId;
+      // Keep legacy text column in sync
+      if (strategyType !== undefined) {
+        updates.strategyType = strategyType;
+      }
+    } else if (strategyType !== undefined) {
+      updates.strategyType = strategyType;
+      // Resolve to FK
+      const resolvedId = await resolveOrCreateStrategyType(strategyType);
+      updates.strategyTypeId = resolvedId;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
@@ -206,6 +220,8 @@ export async function GET(
         autoDerivedLabel: strategies.autoDerivedLabel,
         confirmedAt: strategies.confirmedAt,
         strategyType: strategies.strategyType,
+        strategyTypeId: strategies.strategyTypeId,
+        strategyTypeName: strategyTypes.name,
         direction: strategies.direction,
         timeHorizon: strategies.timeHorizon,
         entrySpot: strategies.entrySpot,
@@ -227,6 +243,7 @@ export async function GET(
       })
       .from(strategies)
       .leftJoin(strategyTemplates, eq(strategies.strategyTemplateId, strategyTemplates.id))
+      .leftJoin(strategyTypes, eq(strategies.strategyTypeId, strategyTypes.id))
       .leftJoin(underlyings, eq(strategyTemplates.underlyingId, underlyings.id))
       .leftJoin(parentUnderlyings, eq(underlyings.parentUnderlyingId, parentUnderlyings.id))
       .where(eq(strategies.id, id))

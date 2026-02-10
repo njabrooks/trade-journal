@@ -8,6 +8,7 @@ import {
 } from '@/db/schema';
 import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc } from 'drizzle-orm';
 import { populateStrategyEntryContext } from '@/lib/services/strategies';
+import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
 type DateRangeOptions =
   | { snapshotDate: string; startDate?: never; endDate?: never }
@@ -254,6 +255,7 @@ async function findOrCreateStrategyFromPosition(
       status: strategies.status,
       isAuto: strategies.isAuto,
       strategyKey: strategies.strategyKey,
+      autoDerivedLabel: strategies.autoDerivedLabel,
     })
     .from(strategies)
     .where(
@@ -298,7 +300,21 @@ async function findOrCreateStrategyFromPosition(
     }
 
     if (strategy.status === 'complete') {
-      // Completed strategy exists - reuse it (it will become active again with new positions)
+      // Completed strategy has new positions - reactivate it
+      await db
+        .update(strategies)
+        .set({ status: 'active', updatedAt: new Date() })
+        .where(eq(strategies.id, strategy.id));
+      await logToJournal({
+        objectType: 'strategy',
+        objectId: strategy.id,
+        objectTitle: strategy.autoDerivedLabel ?? strategy.strategyKey,
+        actionType: 'status_change',
+        actionDescription: 'Strategy reactivated: new positions detected after completion',
+        previousState: { status: 'complete' },
+        newState: { status: 'active' },
+        source: 'automation',
+      });
       return { id: strategy.id, created: false };
     }
 
@@ -494,6 +510,8 @@ async function findOrCreateStrategyFromTrade(
       id: strategies.id,
       status: strategies.status,
       isAuto: strategies.isAuto,
+      strategyKey: strategies.strategyKey,
+      autoDerivedLabel: strategies.autoDerivedLabel,
     })
     .from(strategies)
     .where(
@@ -531,7 +549,21 @@ async function findOrCreateStrategyFromTrade(
     }
 
     if (strategy.status === 'complete') {
-      // Completed strategy exists - reuse it (it will become active again with new trades)
+      // Completed strategy has new trades - reactivate it
+      await db
+        .update(strategies)
+        .set({ status: 'active', updatedAt: new Date() })
+        .where(eq(strategies.id, strategy.id));
+      await logToJournal({
+        objectType: 'strategy',
+        objectId: strategy.id,
+        objectTitle: strategy.autoDerivedLabel ?? strategy.strategyKey,
+        actionType: 'status_change',
+        actionDescription: 'Strategy reactivated: new trades detected after completion',
+        previousState: { status: 'complete' },
+        newState: { status: 'active' },
+        source: 'automation',
+      });
       return { id: strategy.id, created: false };
     }
 

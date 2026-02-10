@@ -72,11 +72,11 @@ export function StrategyConfirmationDialog({
 }: StrategyConfirmationDialogProps) {
   // Form state - core fields
   const [strategyLabel, setStrategyLabel] = useState<string>('');
-  const [strategyType, setStrategyType] = useState<string>('');
+  const [strategyTypeId, setStrategyTypeId] = useState<string>('');
   const [customStrategyType, setCustomStrategyType] = useState<string>('');
   const [isCustomType, setIsCustomType] = useState(false);
   const [strategyDirection, setStrategyDirection] = useState<string>('');
-  const [strategyTypes, setStrategyTypes] = useState<string[]>([]);
+  const [strategyTypes, setStrategyTypes] = useState<Array<{ id: string; name: string; defaultDirection: string | null }>>([]);
   const [loadingTypes, setLoadingTypes] = useState(true);
 
   // Asset thesis selection state - now optional
@@ -122,7 +122,8 @@ export function StrategyConfirmationDialog({
   useEffect(() => {
     if (isOpen && strategy) {
       setStrategyLabel(strategy.label || '');
-      setStrategyType(strategy.strategyType || '');
+      // Will be resolved after types load
+      setStrategyTypeId('');
       setCustomStrategyType('');
       setIsCustomType(false);
       setStrategyDirection(strategy.direction || '');
@@ -234,10 +235,21 @@ export function StrategyConfirmationDialog({
   const loadStrategyTypes = async () => {
     setLoadingTypes(true);
     try {
-      const response = await fetch('/api/strategies?strategyTypes=true');
+      const response = await fetch('/api/strategy-types');
       if (response.ok) {
         const types = await response.json();
-        setStrategyTypes(types);
+        setStrategyTypes(types.map((t: { id: string; name: string; defaultDirection: string | null }) => ({
+          id: t.id,
+          name: t.name,
+          defaultDirection: t.defaultDirection,
+        })));
+        // Resolve current strategy's type name to an ID
+        if (strategy?.strategyType) {
+          const match = types.find((t: { name: string }) => t.name === strategy.strategyType);
+          if (match) {
+            setStrategyTypeId(match.id);
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to load strategy types:', err);
@@ -359,11 +371,38 @@ export function StrategyConfirmationDialog({
   const handleConfirm = async () => {
     if (!strategy) return;
 
-    // Determine effective strategy type (custom or selected)
-    const effectiveStrategyType = isCustomType ? customStrategyType.trim() : strategyType;
+    // Determine effective strategy type
+    let effectiveStrategyTypeId = strategyTypeId;
+    let effectiveStrategyTypeName = strategyTypes.find((t) => t.id === strategyTypeId)?.name || '';
+
+    if (isCustomType) {
+      const customName = customStrategyType.trim();
+      if (!customName) {
+        setError('Strategy type name is required');
+        return;
+      }
+      // Create the new type via API
+      try {
+        const createResp = await fetch('/api/strategy-types', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: customName }),
+        });
+        if (!createResp.ok) {
+          const errData = await createResp.json();
+          throw new Error(errData.error || 'Failed to create strategy type');
+        }
+        const { id: newTypeId } = await createResp.json();
+        effectiveStrategyTypeId = newTypeId;
+        effectiveStrategyTypeName = customName;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create strategy type');
+        return;
+      }
+    }
 
     // Validation - core fields are required
-    if (!effectiveStrategyType) {
+    if (!effectiveStrategyTypeId) {
       setError('Strategy type is required');
       return;
     }
@@ -426,7 +465,8 @@ export function StrategyConfirmationDialog({
     try {
       const updatePayload: Record<string, unknown> = {
         id: strategy.id,
-        strategyType: effectiveStrategyType,
+        strategyType: effectiveStrategyTypeName,
+        strategyTypeId: effectiveStrategyTypeId,
         direction: strategyDirection,
         confirm: true,
       };
@@ -749,13 +789,20 @@ export function StrategyConfirmationDialog({
                 </div>
               ) : (
                 <select
-                  value={strategyType}
+                  value={strategyTypeId}
                   onChange={(e) => {
                     if (e.target.value === '__new__') {
                       setIsCustomType(true);
-                      setStrategyType('');
+                      setStrategyTypeId('');
                     } else {
-                      setStrategyType(e.target.value);
+                      setStrategyTypeId(e.target.value);
+                      // Auto-populate direction from type default if direction is not yet set
+                      if (e.target.value && !strategyDirection) {
+                        const selected = strategyTypes.find((t) => t.id === e.target.value);
+                        if (selected?.defaultDirection) {
+                          setStrategyDirection(selected.defaultDirection);
+                        }
+                      }
                     }
                   }}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
@@ -763,8 +810,8 @@ export function StrategyConfirmationDialog({
                 >
                   <option value="">Select a strategy type...</option>
                   {strategyTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
+                    <option key={type.id} value={type.id}>
+                      {type.name}
                     </option>
                   ))}
                   <option value="__new__" className="text-blue-600">
@@ -1325,7 +1372,7 @@ export function StrategyConfirmationDialog({
             <Button
               type="button"
               onClick={handleConfirm}
-              disabled={submitting || !(isCustomType ? customStrategyType.trim() : strategyType) || !strategyDirection}
+              disabled={submitting || !(isCustomType ? customStrategyType.trim() : strategyTypeId) || !strategyDirection}
             >
               {submitting ? (
                 <>

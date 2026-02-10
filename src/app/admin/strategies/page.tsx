@@ -1,170 +1,111 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Strategy, Account } from '@/db/schema';
+import { useState, useEffect } from 'react';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { AccountSelector } from '@/components/layout/AccountSelector';
 import { Spinner } from '@/components/ui/spinner';
 
-interface StrategyFormData {
-  strategyKey: string;
-  brokerAccountId: string;
-  underlyingTicker: string;
-  openedAt: string;
-  status: string;
-  label?: string;
-  thesis?: string;
-  profitRules?: string;
-  defenseRules?: string;
-  timeRules?: string;
-  exitCriteria?: string;
-  macroThesisId?: string;
-  assetThesisId?: string;
+interface StrategyTypeRow {
+  id: string;
+  name: string;
+  description: string | null;
+  defaultDirection: string | null;
+  category: string | null;
+  legCount: number | null;
+  minDte: number | null;
+  maxDte: number | null;
+  riskProfile: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  strategyCount: number;
 }
 
-function StrategiesPageContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const selectedAccountId = searchParams.get('accountId');
-  
-  const [strategies, setStrategies] = useState<Strategy[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [macroTheses, setMacroTheses] = useState<Array<{ id: string; title: string }>>([]);
-  const [assetTheses, setAssetTheses] = useState<Array<{ id: string; title: string }>>([]);
+interface StrategyTypeFormData {
+  name: string;
+  description: string;
+  defaultDirection: string;
+  category: string;
+  legCount: string;
+  minDte: string;
+  maxDte: string;
+  riskProfile: string;
+  sortOrder: string;
+}
+
+const EMPTY_FORM: StrategyTypeFormData = {
+  name: '',
+  description: '',
+  defaultDirection: '',
+  category: '',
+  legCount: '',
+  minDte: '',
+  maxDte: '',
+  riskProfile: '',
+  sortOrder: '0',
+};
+
+const DIRECTIONS = ['bullish', 'bearish', 'neutral'] as const;
+const CATEGORIES = ['directional', 'income', 'hedging', 'volatility', 'spread'] as const;
+
+function directionBadge(direction: string | null) {
+  if (!direction) return null;
+  const colors: Record<string, string> = {
+    bullish: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    bearish: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    neutral: 'bg-slate-100 text-slate-800 dark:bg-slate-800/50 dark:text-slate-300',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[direction] || 'bg-muted text-muted-foreground'}`}>
+      {direction}
+    </span>
+  );
+}
+
+function categoryBadge(category: string | null) {
+  if (!category) return null;
+  const colors: Record<string, string> = {
+    directional: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    income: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    hedging: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    volatility: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    spread: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300',
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colors[category] || 'bg-muted text-muted-foreground'}`}>
+      {category}
+    </span>
+  );
+}
+
+export default function StrategyTypesPage() {
+  const [types, setTypes] = useState<StrategyTypeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<StrategyFormData>({
-    strategyKey: '',
-    brokerAccountId: '',
-    underlyingTicker: '',
-    openedAt: new Date().toISOString().split('T')[0]!,
-    status: 'active',
-    label: '',
-    thesis: '',
-    profitRules: '',
-    defenseRules: '',
-    timeRules: '',
-    exitCriteria: '',
-    macroThesisId: '',
-    assetThesisId: '',
-  });
+  const [editingType, setEditingType] = useState<StrategyTypeRow | null>(null);
+  const [deletingType, setDeletingType] = useState<StrategyTypeRow | null>(null);
+  const [formData, setFormData] = useState<StrategyTypeFormData>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [mergeSelection, setMergeSelection] = useState<Set<string>>(new Set());
-  const [mergeTargetId, setMergeTargetId] = useState<string>('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ strategyKey: string; label: string } | null>(null);
-  const [editingMetadataId, setEditingMetadataId] = useState<string | null>(null);
-  const [metadataValues, setMetadataValues] = useState<{
-    strategyType: string;
-    direction: string;
-  } | null>(null);
-  const [editingStrategyTypeId, setEditingStrategyTypeId] = useState<string | null>(null);
-  const [editingStrategyType, setEditingStrategyType] = useState<string>('');
-  const [strategyTypes, setStrategyTypes] = useState<string[]>([]);
-  const [selectedStrategyType, setSelectedStrategyType] = useState<string>('');
-  const [showStrategyTypeModal, setShowStrategyTypeModal] = useState(false);
-  const [pendingConfirmIds, setPendingConfirmIds] = useState<string[]>([]);
-  const [confirming, setConfirming] = useState(false);
-  const [merging, setMerging] = useState(false);
-  const [recomputingStatuses, setRecomputingStatuses] = useState(false);
-  const [bulkAssignThesisId, setBulkAssignThesisId] = useState<string>('');
-  const [bulkAssignViewId, setBulkAssignViewId] = useState<string>('');
-  const [assigningBulk, setAssigningBulk] = useState(false);
-  const [editingHierarchyId, setEditingHierarchyId] = useState<string | null>(null);
-  const [hierarchyEditValues, setHierarchyEditValues] = useState<{
-    assetThesisId: string;
-  } | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
-    loadData();
-    loadStrategyTypes();
-    loadThesesAndViews();
-  }, [selectedAccountId]);
+    loadTypes();
+  }, [showArchived]);
 
-  const loadStrategyTypes = async () => {
-    try {
-      const response = await fetch('/api/strategies?strategyTypes=true');
-      if (response.ok) {
-        const types = await response.json();
-        setStrategyTypes(types);
-      }
-    } catch (err) {
-      console.error('Failed to load strategy types:', err);
-    }
-  };
-
-  const loadThesesAndViews = async () => {
-    try {
-      const [thesesRes, viewsRes] = await Promise.all([
-        fetch('/api/theses'),
-        fetch('/api/asset-views'),
-      ]);
-
-      if (thesesRes.ok) {
-        const thesesData = await thesesRes.json();
-        setMacroTheses(thesesData.map((t: any) => ({ id: t.id, title: t.title })));
-      }
-
-      if (viewsRes.ok) {
-        const viewsData = await viewsRes.json();
-        setAssetTheses(viewsData.map((v: any) => ({ id: v.id, title: v.title })));
-      }
-    } catch (err) {
-      console.error('Failed to load theses and views:', err);
-    }
-  };
-
-  const loadData = async () => {
+  const loadTypes = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      try {
-        // Build strategies URL with accountId filter if selected
-        const strategiesUrl = selectedAccountId
-          ? `/api/strategies?accountId=${selectedAccountId}`
-          : '/api/strategies';
-        
-        const [strategiesRes, accountsRes] = await Promise.all([
-          fetch(strategiesUrl, { signal: controller.signal }),
-          fetch('/api/accounts', { signal: controller.signal }),
-        ]);
-
-        clearTimeout(timeoutId);
-
-        if (!strategiesRes.ok || !accountsRes.ok) {
-          const errorText = !strategiesRes.ok 
-            ? await strategiesRes.text().catch(() => 'Unknown error')
-            : await accountsRes.text().catch(() => 'Unknown error');
-          throw new Error(`Failed to load data: ${errorText}`);
-        }
-
-        const [strategiesData, accountsData] = await Promise.all([
-          strategiesRes.json(),
-          accountsRes.json(),
-        ]);
-
-        setStrategies(strategiesData);
-        setAccounts(accountsData);
-        setEditingId(null);
-        setEditValues(null);
-      } catch (fetchErr) {
-        clearTimeout(timeoutId);
-        if (fetchErr instanceof Error && fetchErr.name === 'AbortError') {
-          throw new Error('Request timed out. Please try again.');
-        }
-        throw fetchErr;
-      }
+      const params = new URLSearchParams({ withUsage: 'true' });
+      if (showArchived) params.set('includeArchived', 'true');
+      const response = await fetch(`/api/strategy-types?${params}`);
+      if (!response.ok) throw new Error('Failed to load strategy types');
+      const data = await response.json();
+      setTypes(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
-      console.error('Error loading data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load strategy types');
     } finally {
       setLoading(false);
     }
@@ -177,408 +118,125 @@ function StrategiesPageContent() {
     setSuccess(null);
 
     try {
-      const response = await fetch('/api/strategies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      const payload: Record<string, unknown> = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        defaultDirection: formData.defaultDirection || null,
+        category: formData.category || null,
+        legCount: formData.legCount ? parseInt(formData.legCount) : null,
+        minDte: formData.minDte ? parseInt(formData.minDte) : null,
+        maxDte: formData.maxDte ? parseInt(formData.maxDte) : null,
+        riskProfile: formData.riskProfile.trim() || null,
+        sortOrder: parseInt(formData.sortOrder) || 0,
+      };
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to create strategy');
+      if (editingType) {
+        const response = await fetch(`/api/strategy-types/${editingType.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to update strategy type');
+        }
+        setSuccess(`Strategy type "${formData.name}" updated successfully`);
+      } else {
+        const response = await fetch('/api/strategy-types', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to create strategy type');
+        }
+        setSuccess(`Strategy type "${formData.name}" created successfully`);
       }
 
-      setSuccess('Strategy created successfully');
-      setFormData({
-        strategyKey: '',
-        brokerAccountId: '',
-        underlyingTicker: '',
-        openedAt: new Date().toISOString().split('T')[0]!,
-        status: 'active',
-        label: '',
-        thesis: '',
-        profitRules: '',
-        defenseRules: '',
-        timeRules: '',
-        exitCriteria: '',
-        macroThesisId: '',
-        assetThesisId: '',
-      });
-      setShowForm(false);
-      await loadData();
+      resetForm();
+      await loadTypes();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create strategy');
+      setError(err instanceof Error ? err.message : 'Failed to save strategy type');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Note: Status is now derived from positions (open if has positions on latest snapshot, closed otherwise)
-  // Status is read-only and displayed as a badge - no manual editing allowed
+  const handleEdit = (type: StrategyTypeRow) => {
+    setEditingType(type);
+    setFormData({
+      name: type.name,
+      description: type.description || '',
+      defaultDirection: type.defaultDirection || '',
+      category: type.category || '',
+      legCount: type.legCount?.toString() || '',
+      minDte: type.minDte?.toString() || '',
+      maxDte: type.maxDte?.toString() || '',
+      riskProfile: type.riskProfile || '',
+      sortOrder: type.sortOrder.toString(),
+    });
+    setShowForm(true);
+    setError(null);
+    setSuccess(null);
+  };
 
-  const handleStrategyTypeChange = async (strategyId: string, newStrategyType: string) => {
+  const handleToggleActive = async (type: StrategyTypeRow) => {
+    setError(null);
+    setSuccess(null);
     try {
-      const strategyBefore = strategies.find((s) => s.id === strategyId);
-      const strategyTypeChanged = strategyBefore?.strategyType !== newStrategyType;
-
-      const response = await fetch('/api/strategies', {
+      const response = await fetch(`/api/strategy-types/${type.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: strategyId,
-          strategyType: newStrategyType || null,
-        }),
+        body: JSON.stringify({ isActive: !type.isActive }),
       });
-
-      if (!response.ok) throw new Error('Failed to update strategy type');
-
-      // If strategyType changed, trigger state code recomputation
-      if (strategyTypeChanged && newStrategyType) {
-        setSuccess('Strategy type updated. State code will be recomputed automatically.');
-      } else {
-        setSuccess('Strategy type updated successfully');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update strategy type');
       }
-
-      await loadData();
-      setEditingStrategyTypeId(null);
-      setEditingStrategyType('');
+      setSuccess(`Strategy type "${type.name}" ${type.isActive ? 'archived' : 'restored'}`);
+      await loadTypes();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update strategy type');
-      setEditingStrategyTypeId(null);
-      setEditingStrategyType('');
     }
   };
 
-  const startEditingStrategyType = (strategy: Strategy) => {
-    setEditingStrategyTypeId(strategy.id);
-    setEditingStrategyType(strategy.strategyType || '');
-  };
-
-  const cancelEditingStrategyType = () => {
-    setEditingStrategyTypeId(null);
-    setEditingStrategyType('');
-  };
-
-  const handleConfirm = async (strategyId: string) => {
-    // Show strategy type selection modal
-    setPendingConfirmIds([strategyId]);
-    setShowStrategyTypeModal(true);
-  };
-
-  const handleConfirmWithStrategyType = async () => {
-    if (!selectedStrategyType) {
-      setError('Please select a strategy type');
-      return;
-    }
-
-    setConfirming(true);
+  const handleDelete = async () => {
+    if (!deletingType) return;
+    setDeleting(true);
     setError(null);
     setSuccess(null);
 
     try {
-      for (const strategyId of pendingConfirmIds) {
-        const response = await fetch('/api/strategies', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: strategyId, confirm: true, strategyType: selectedStrategyType }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || `Failed to confirm strategy: ${response.statusText}`);
-        }
-      }
-
-      await loadData();
-      // Clear merge selection for confirmed strategies
-      setMergeSelection((prev) => {
-        const next = new Set(prev);
-        pendingConfirmIds.forEach((id) => next.delete(id));
-        return next;
+      const response = await fetch(`/api/strategy-types/${deletingType.id}`, {
+        method: 'DELETE',
       });
-      setShowStrategyTypeModal(false);
-      setSelectedStrategyType('');
-      setPendingConfirmIds([]);
-      setSuccess(`Confirmed ${pendingConfirmIds.length} strategy(ies)`);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to confirm strategy';
-      setError(errorMessage);
-      console.error('Error confirming strategy:', err);
-      // Still reload data even on error to show current state
-      try {
-        await loadData();
-      } catch (loadErr) {
-        console.error('Error reloading data after confirmation error:', loadErr);
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete strategy type');
       }
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  const handleBulkConfirm = async () => {
-    // Use mergeSelection for draft strategies only
-    const draftStrategies = Array.from(mergeSelection).filter(
-      (id) => allStrategies.find((s) => s.id === id)?.status === 'draft'
-    );
-    if (draftStrategies.length === 0) return;
-    // Show strategy type selection modal
-    setPendingConfirmIds(draftStrategies);
-    setShowStrategyTypeModal(true);
-  };
-
-  const toggleMergeSelection = (id: string) => {
-    setMergeSelection((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        if (mergeTargetId === id) {
-          setMergeTargetId('');
-        }
-      } else {
-        next.add(id);
-        if (!mergeTargetId) {
-          setMergeTargetId(id);
-        }
-      }
-      return next;
-    });
-  };
-
-  const handleMerge = async () => {
-    if (mergeSelection.size < 2 || !mergeTargetId) return;
-    setMerging(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const sourceIds = Array.from(mergeSelection).filter((id) => id !== mergeTargetId);
-      const response = await fetch('/api/strategies/merge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetId: mergeTargetId, sourceIds }),
-      });
-
-      if (!response.ok) throw new Error('Failed to merge strategies');
-      
-      // Request notification permission if not already granted
-      if ('Notification' in window && Notification.permission === 'default') {
-        await Notification.requestPermission();
-      }
-      
-      await loadData();
-      setMergeSelection(new Set());
-      setMergeTargetId('');
-      setSuccess(
-        `Successfully merged ${sourceIds.length} strategy(ies). Recompute is running in the background - you'll be notified when complete.`
-      );
+      setSuccess(`Strategy type "${deletingType.name}" deleted`);
+      setDeletingType(null);
+      await loadTypes();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to merge strategies');
+      setError(err instanceof Error ? err.message : 'Failed to delete strategy type');
     } finally {
-      setMerging(false);
+      setDeleting(false);
     }
   };
 
-  const handleRecomputeStatuses = async () => {
-    setRecomputingStatuses(true);
-    setError(null);
-    setSuccess(null);
-    
-    try {
-      const response = await fetch('/api/strategies/recompute-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-
-      if (!response.ok) throw new Error('Failed to recompute statuses');
-      
-      const data = await response.json();
-      await loadData();
-      setSuccess(`Fixed ${data.updated} strategy status(es)`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to recompute statuses');
-    } finally {
-      setRecomputingStatuses(false);
-    }
+  const resetForm = () => {
+    setFormData(EMPTY_FORM);
+    setEditingType(null);
+    setShowForm(false);
   };
 
-  const startEditing = (strategy: Strategy) => {
-    setEditingId(strategy.id);
-    setEditValues({
-      strategyKey: strategy.strategyKey,
-      label: strategy.autoDerivedLabel || strategy.strategyKey,
-    });
-  };
-
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditValues(null);
-  };
-
-  const saveEditing = async () => {
-    if (!editingId || !editValues) return;
-    try {
-      const response = await fetch('/api/strategies', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingId,
-          strategyKey: editValues.strategyKey,
-          label: editValues.label,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update strategy');
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update strategy');
-    } finally {
-      setEditingId(null);
-      setEditValues(null);
-    }
-  };
-
-  const startEditingMetadata = (strategy: Strategy) => {
-    setEditingMetadataId(strategy.id);
-    setMetadataValues({
-      strategyType: strategy.strategyType || '',
-      direction: (strategy as any).direction || '',
-    });
-  };
-
-  const cancelEditingMetadata = () => {
-    setEditingMetadataId(null);
-    setMetadataValues(null);
-  };
-
-  const saveMetadata = async () => {
-    if (!editingMetadataId || !metadataValues) return;
-    try {
-      const strategyBefore = strategies.find((s) => s.id === editingMetadataId);
-      const strategyTypeChanged = strategyBefore?.strategyType !== metadataValues.strategyType;
-
-      const response = await fetch('/api/strategies', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingMetadataId,
-          strategyType: metadataValues.strategyType || null,
-          direction: metadataValues.direction || null,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update strategy metadata');
-
-      // If strategyType changed, trigger state code recomputation
-      if (strategyTypeChanged && metadataValues.strategyType) {
-        // The backend will handle state code recomputation automatically
-        setSuccess('Strategy metadata updated. State code will be recomputed automatically.');
-      } else {
-        setSuccess('Strategy metadata updated successfully');
-      }
-
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update strategy metadata');
-    } finally {
-      setEditingMetadataId(null);
-      setMetadataValues(null);
-    }
-  };
-
-  const handleBulkAssignHierarchy = async () => {
-    if (mergeSelection.size === 0 || (!bulkAssignThesisId && !bulkAssignViewId)) return;
-
-    setAssigningBulk(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const strategyIds = Array.from(mergeSelection);
-      for (const strategyId of strategyIds) {
-        const response = await fetch('/api/strategies', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: strategyId,
-            macroThesisId: bulkAssignThesisId || null,
-            assetThesisId: bulkAssignViewId || null,
-          }),
-        });
-
-        if (!response.ok) throw new Error('Failed to assign hierarchy');
-      }
-
-      await loadData();
-      setMergeSelection(new Set());
-      setBulkAssignThesisId('');
-      setBulkAssignViewId('');
-      setSuccess(`Assigned hierarchy to ${strategyIds.length} strategy(ies)`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign hierarchy');
-    } finally {
-      setAssigningBulk(false);
-    }
-  };
-
-  const startEditingHierarchy = (strategy: Strategy) => {
-    setEditingHierarchyId(strategy.id);
-    setHierarchyEditValues({
-      assetThesisId: strategy.assetThesisId || '',
-    });
-  };
-
-  const cancelEditingHierarchy = () => {
-    setEditingHierarchyId(null);
-    setHierarchyEditValues(null);
-  };
-
-  const saveHierarchyEdit = async () => {
-    if (!editingHierarchyId || !hierarchyEditValues) return;
-
-    try {
-      const response = await fetch(`/api/strategies/${editingHierarchyId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assetThesisId: hierarchyEditValues.assetThesisId || null,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update hierarchy');
-
-      setSuccess('Asset thesis updated successfully (macro thesis inherited from asset thesis)');
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update hierarchy');
-    } finally {
-      setEditingHierarchyId(null);
-      setHierarchyEditValues(null);
-    }
-  };
-
-  // Combine all strategies into one list, sorted by status
-  // Status indicates: 'draft' = auto-derived/suggested, 'active'/'complete' = confirmed
-  const allStrategies = strategies
-    .sort((a, b) => {
-      // Primary sort: status in descending order (active > complete > draft > rejected)
-      const statusOrder: Record<string, number> = { active: 4, complete: 3, draft: 2, rejected: 1 };
-      const statusDiff = (statusOrder[b.status] || 0) - (statusOrder[a.status] || 0);
-      if (statusDiff !== 0) return statusDiff;
-
-      // Secondary sort: openedAt in descending order (most recent first)
-      const dateA = a.openedAt ? new Date(a.openedAt).getTime() : 0;
-      const dateB = b.openedAt ? new Date(b.openedAt).getTime() : 0;
-      return dateB - dateA;
-    });
-  
-  const suggestedStrategies = allStrategies.filter((s) => s.status === 'draft');
-  const confirmedStrategies = allStrategies.filter((s) => s.status !== 'draft');
-
-  if (loading) {
+  if (loading && types.length === 0) {
     return (
-      <DashboardShell activeNav="admin-strategies" title="Strategy Management" subtitle="Loading...">
-        <p>Loading strategies...</p>
+      <DashboardShell activeNav="admin-strategies" title="Strategy Types" subtitle="Loading...">
+        <div className="flex items-center justify-center py-12">
+          <Spinner className="size-6" />
+        </div>
       </DashboardShell>
     );
   }
@@ -586,28 +244,38 @@ function StrategiesPageContent() {
   return (
     <DashboardShell
       activeNav="admin-strategies"
-      title="Strategy Management"
-      subtitle="Manage strategies, confirm auto-derived suggestions, and edit metadata"
+      title="Strategy Types"
+      subtitle="Manage strategy type definitions and metadata"
       actions={
-        <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+              className="rounded"
+            />
+            Show archived
+          </label>
           <button
-            onClick={handleRecomputeStatuses}
-            disabled={recomputingStatuses}
-            className="bg-gray-600 dark:bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-700 dark:hover:bg-gray-400 disabled:bg-muted disabled:text-muted-foreground flex items-center gap-2"
+            onClick={() => {
+              if (showForm && !editingType) {
+                resetForm();
+              } else {
+                setEditingType(null);
+                setFormData(EMPTY_FORM);
+                setShowForm(true);
+                setError(null);
+                setSuccess(null);
+              }
+            }}
+            className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
           >
-            {recomputingStatuses && <Spinner className="size-4" />}
-            {recomputingStatuses ? 'Recomputing...' : 'Fix Statuses'}
+            {showForm && !editingType ? 'Cancel' : '+ New Strategy Type'}
           </button>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-        >
-          {showForm ? 'Cancel' : '+ Create Strategy'}
-        </button>
         </div>
       }
     >
-
       {error && (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded p-4 mb-4 text-red-800 dark:text-red-200">
           {error}
@@ -620,234 +288,139 @@ function StrategiesPageContent() {
         </div>
       )}
 
-      {accounts.length > 1 && (
-        <div className="mb-4 flex items-center gap-3">
-          <AccountSelector
-            accounts={accounts}
-            selectedAccountId={selectedAccountId}
-            basePath="/admin/strategies"
-            showAllOption={true}
-          />
-        </div>
-      )}
-
+      {/* Create / Edit Form */}
       {showForm && (
         <div className="bg-card rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Create New Strategy</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            {editingType ? `Edit: ${editingType.name}` : 'Create New Strategy Type'}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* Row 1: Name + Category + Direction */}
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label htmlFor="strategyKey" className="block text-sm font-medium mb-1">
-                  Strategy Key *
-                </label>
+                <label className="block text-sm font-medium mb-1">Name *</label>
                 <input
                   type="text"
-                  id="strategyKey"
                   required
-                  value={formData.strategyKey}
-                  onChange={(e) =>
-                    setFormData({ ...formData, strategyKey: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="e.g., GLXY_CC_2025Q1"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full border rounded px-3 py-2 bg-background text-foreground"
+                  placeholder="e.g., Long Call"
                 />
               </div>
-
               <div>
-                <label htmlFor="brokerAccountId" className="block text-sm font-medium mb-1">
-                  Broker Account ID *
-                </label>
+                <label className="block text-sm font-medium mb-1">Category</label>
                 <select
-                  id="brokerAccountId"
-                  required
-                  value={formData.brokerAccountId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, brokerAccountId: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full border rounded px-3 py-2 bg-background text-foreground"
                 >
-                  <option value="">Select account...</option>
-                  {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.brokerAccountId}>
-                      {acc.brokerAccountId} {acc.label ? `(${acc.label})` : ''}
-                    </option>
+                  <option value="">None</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
-
               <div>
-                <label htmlFor="underlyingTicker" className="block text-sm font-medium mb-1">
-                  Underlying Ticker *
-                </label>
-                <input
-                  type="text"
-                  id="underlyingTicker"
-                  required
-                  value={formData.underlyingTicker}
-                  onChange={(e) =>
-                    setFormData({ ...formData, underlyingTicker: e.target.value.toUpperCase() })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="e.g., GLXY"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="openedAt" className="block text-sm font-medium mb-1">
-                  Opened At *
-                </label>
-                <input
-                  type="date"
-                  id="openedAt"
-                  required
-                  value={formData.openedAt}
-                  onChange={(e) =>
-                    setFormData({ ...formData, openedAt: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="status" className="block text-sm font-medium mb-1">
-                  Status *
-                </label>
+                <label className="block text-sm font-medium mb-1">Default Direction</label>
                 <select
-                  id="status"
-                  required
-                  value={formData.status}
-                  onChange={(e) =>
-                    setFormData({ ...formData, status: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                >
-                  <option value="open">Open</option>
-                  <option value="closed">Closed</option>
-                  <option value="draft">Draft</option>
-                  <option value="planned">Planned</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="label" className="block text-sm font-medium mb-1">
-                  Label (Optional)
-                </label>
-                <input
-                  type="text"
-                  id="label"
-                  value={formData.label}
-                  onChange={(e) =>
-                    setFormData({ ...formData, label: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="e.g., GLXY Covered Call Q1 2025"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="macroThesisId" className="block text-sm font-medium mb-1">
-                  Macro Thesis (Optional)
-                </label>
-                <select
-                  id="macroThesisId"
-                  value={formData.macroThesisId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, macroThesisId: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
+                  value={formData.defaultDirection}
+                  onChange={(e) => setFormData({ ...formData, defaultDirection: e.target.value })}
+                  className="w-full border rounded px-3 py-2 bg-background text-foreground"
                 >
                   <option value="">None</option>
-                  {macroTheses.map((thesis) => (
-                    <option key={thesis.id} value={thesis.id}>
-                      {thesis.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="assetThesisId" className="block text-sm font-medium mb-1">
-                  Asset Thesis (Optional)
-                </label>
-                <select
-                  id="assetThesisId"
-                  value={formData.assetThesisId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, assetThesisId: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                >
-                  <option value="">None</option>
-                  {assetTheses.map((view) => (
-                    <option key={view.id} value={view.id}>
-                      {view.title}
-                    </option>
+                  {DIRECTIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
               </div>
             </div>
 
+            {/* Row 2: Description */}
             <div>
-              <label htmlFor="thesis" className="block text-sm font-medium mb-1">
-                Thesis
-              </label>
+              <label className="block text-sm font-medium mb-1">Description</label>
               <textarea
-                id="thesis"
-                value={formData.thesis}
-                onChange={(e) =>
-                  setFormData({ ...formData, thesis: e.target.value })
-                }
-                className="w-full border rounded px-3 py-2"
-                rows={3}
-                placeholder="Entry thesis and reasoning..."
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full border rounded px-3 py-2 bg-background text-foreground"
+                rows={2}
+                placeholder="Brief description of this strategy type..."
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Row 3: Legs + DTE Range + Sort Order */}
+            <div className="grid grid-cols-4 gap-4">
               <div>
-                <label htmlFor="profitRules" className="block text-sm font-medium mb-1">
-                  Profit Rules
-                </label>
-                <textarea
-                  id="profitRules"
-                  value={formData.profitRules}
-                  onChange={(e) =>
-                    setFormData({ ...formData, profitRules: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  rows={2}
+                <label className="block text-sm font-medium mb-1">Leg Count</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={formData.legCount}
+                  onChange={(e) => setFormData({ ...formData, legCount: e.target.value })}
+                  className="w-full border rounded px-3 py-2 bg-background text-foreground"
+                  placeholder="e.g., 2"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Min DTE</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.minDte}
+                  onChange={(e) => setFormData({ ...formData, minDte: e.target.value })}
+                  className="w-full border rounded px-3 py-2 bg-background text-foreground"
+                  placeholder="e.g., 7"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Max DTE</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.maxDte}
+                  onChange={(e) => setFormData({ ...formData, maxDte: e.target.value })}
+                  className="w-full border rounded px-3 py-2 bg-background text-foreground"
+                  placeholder="e.g., 90"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Sort Order</label>
+                <input
+                  type="number"
+                  value={formData.sortOrder}
+                  onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })}
+                  className="w-full border rounded px-3 py-2 bg-background text-foreground"
+                  placeholder="0"
+                />
+              </div>
+            </div>
 
-              <div>
-                <label htmlFor="defenseRules" className="block text-sm font-medium mb-1">
-                  Defense Rules
-                </label>
-                <textarea
-                  id="defenseRules"
-                  value={formData.defenseRules}
-                  onChange={(e) =>
-                    setFormData({ ...formData, defenseRules: e.target.value })
-                  }
-                  className="w-full border rounded px-3 py-2"
-                  rows={2}
-                />
-              </div>
+            {/* Row 4: Risk Profile */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Risk Profile</label>
+              <textarea
+                value={formData.riskProfile}
+                onChange={(e) => setFormData({ ...formData, riskProfile: e.target.value })}
+                className="w-full border rounded px-3 py-2 bg-background text-foreground"
+                rows={2}
+                placeholder="Notes on risk characteristics..."
+              />
             </div>
 
             <div className="flex gap-2">
               <button
                 type="submit"
                 disabled={submitting}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground"
+                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground inline-flex items-center gap-2"
               >
-                {submitting ? 'Creating...' : 'Create Strategy'}
+                {submitting && <Spinner className="size-4" />}
+                {submitting
+                  ? editingType ? 'Updating...' : 'Creating...'
+                  : editingType ? 'Update Strategy Type' : 'Create Strategy Type'}
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={resetForm}
                 className="bg-muted text-foreground py-2 px-4 rounded-md hover:bg-muted/80"
               >
                 Cancel
@@ -857,591 +430,158 @@ function StrategiesPageContent() {
         </div>
       )}
 
-      <div className="space-y-10">
-        <div>
-          <h2 className="text-2xl font-semibold mb-4">All Strategies</h2>
-          <div className="flex justify-between items-center mb-3">
-            <p className="text-sm text-muted-foreground">
-              Status: <span className="font-medium">draft</span> = auto-derived (suggested), <span className="font-medium">open/closed</span> = confirmed
-            </p>
-            <div className="flex gap-2">
-              {suggestedStrategies.length > 0 && (
-                <button
-                  onClick={handleBulkConfirm}
-                  disabled={
-                    mergeSelection.size === 0 ||
-                    !Array.from(mergeSelection).some(
-                      (id) => allStrategies.find((s) => s.id === id)?.status === 'draft'
-                    )
-                  }
-                  className="bg-green-600 text-white py-1 px-3 rounded-md text-sm hover:bg-green-700 disabled:bg-muted disabled:text-muted-foreground"
-                >
-                  Confirm Selected (
-                  {
-                    Array.from(mergeSelection).filter(
-                      (id) => allStrategies.find((s) => s.id === id)?.status === 'draft'
-                    ).length
-                  }
-                  )
-                </button>
-              )}
-            </div>
-          </div>
-          {mergeSelection.size >= 2 && (
-            <div className="flex items-center gap-3 mb-3 text-sm bg-purple-50 dark:bg-purple-950/30 p-3 rounded-lg border border-purple-200 dark:border-purple-800">
-              <div>
-                <label className="mr-2 font-medium text-foreground">Merge target:</label>
-                <select
-                  value={mergeTargetId}
-                  onChange={(e) => setMergeTargetId(e.target.value)}
-                  className="border rounded px-2 py-1"
-                >
-                  <option value="">Select target</option>
-                  {Array.from(mergeSelection).map((id) => {
-                    const strategy = allStrategies.find((s) => s.id === id);
-                    if (!strategy) return null;
-                    return (
-                      <option key={strategy.id} value={strategy.id}>
-                        {strategy.strategyKey} ({strategy.status})
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-              <button
-                onClick={handleMerge}
-                disabled={!mergeTargetId || merging}
-                className="bg-purple-600 text-white px-4 py-1 rounded-md hover:bg-purple-700 disabled:bg-muted disabled:text-muted-foreground flex items-center gap-2"
-              >
-                {merging && <Spinner className="size-4" />}
-                {merging ? 'Merging...' : `Merge ${mergeSelection.size} strategies`}
-              </button>
-            </div>
-          )}
-          {mergeSelection.size >= 1 && (
-            <div className="flex items-center gap-3 mb-3 text-sm bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-              <span className="font-medium text-foreground">Assign to:</span>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">Thesis:</label>
-                <select
-                  value={bulkAssignThesisId}
-                  onChange={(e) => setBulkAssignThesisId(e.target.value)}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value="">None</option>
-                  {macroTheses.map((thesis) => (
-                    <option key={thesis.id} value={thesis.id}>
-                      {thesis.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">View:</label>
-                <select
-                  value={bulkAssignViewId}
-                  onChange={(e) => setBulkAssignViewId(e.target.value)}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value="">None</option>
-                  {assetTheses.map((view) => (
-                    <option key={view.id} value={view.id}>
-                      {view.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                onClick={handleBulkAssignHierarchy}
-                disabled={(!bulkAssignThesisId && !bulkAssignViewId) || assigningBulk}
-                className="bg-blue-600 text-white px-4 py-1 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground flex items-center gap-2"
-              >
-                {assigningBulk && <Spinner className="size-4" />}
-                {assigningBulk
-                  ? 'Assigning...'
-                  : `Assign to ${mergeSelection.size} ${mergeSelection.size === 1 ? 'strategy' : 'strategies'}`}
-              </button>
-            </div>
-          )}
-          <div className="bg-card rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-border">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={
-                        allStrategies.length > 0 &&
-                        mergeSelection.size === allStrategies.length
-                      }
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setMergeSelection(new Set(allStrategies.map((s) => s.id)));
-                          if (!mergeTargetId && allStrategies.length > 0) {
-                            setMergeTargetId(allStrategies[0].id);
-                          }
-                        } else {
-                          setMergeSelection(new Set());
-                          setMergeTargetId('');
-                        }
-                      }}
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Strategy Key
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Label
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Thesis
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    View
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Opened
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-card divide-y divide-border">
-                {allStrategies.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="px-6 py-4 text-center text-muted-foreground">
-                      No strategies yet. Run a recompute to auto-generate strategies or create one manually.
-                    </td>
-                  </tr>
-                ) : (
-                  allStrategies.map((strategy) => {
-                    const isDraft = strategy.status === 'draft';
-                    const isEditing = editingId === strategy.id;
-                    const isEditingMetadata = editingMetadataId === strategy.id;
-                    const isEditingStrategyType = editingStrategyTypeId === strategy.id;
-                    
-                    return (
-                      <tr 
-                        key={strategy.id}
-                        className={isDraft ? 'bg-amber-50/30 dark:bg-amber-950/20' : ''}
-                      >
-                        <td className="px-4 py-4 text-center">
-                          <input
-                            type="checkbox"
-                            checked={mergeSelection.has(strategy.id)}
-                            onChange={() => toggleMergeSelection(strategy.id)}
-                            disabled={isEditing || isEditingMetadata}
-                          />
-                        </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  value={editValues?.strategyKey ?? ''}
-                                  onChange={(e) =>
-                                    setEditValues((prev) =>
-                                      prev ? { ...prev, strategyKey: e.target.value } : prev
-                                    )
-                                  }
-                                  className="border rounded px-2 py-1 text-sm w-full"
-                                />
-                              ) : (
-                                strategy.strategyKey
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                              {isEditing ? (
-                                <input
-                                  type="text"
-                                  value={editValues?.label ?? ''}
-                                  onChange={(e) =>
-                                    setEditValues((prev) =>
-                                      prev ? { ...prev, label: e.target.value } : prev
-                                    )
-                                  }
-                                  className="border rounded px-2 py-1 text-sm w-full"
-                                />
-                              ) : (
-                                strategy.autoDerivedLabel || strategy.strategyKey
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground">
-                              {isEditingMetadata ? (
-                                <select
-                                  value={metadataValues?.strategyType ?? ''}
-                                  onChange={(e) =>
-                                    setMetadataValues((prev) =>
-                                      prev ? { ...prev, strategyType: e.target.value } : prev
-                                    )
-                                  }
-                                  className="border rounded px-2 py-1 text-xs w-full"
-                                >
-                                  <option value="">Select type...</option>
-                                  {strategyTypes.map((type) => (
-                                    <option key={type} value={type}>
-                                      {type}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : editingStrategyTypeId === strategy.id ? (
-                                <div className="flex items-center gap-2">
-                                  <select
-                                    value={editingStrategyType}
-                                    onChange={(e) => setEditingStrategyType(e.target.value)}
-                                    onBlur={() => {
-                                      if (editingStrategyType !== (strategy.strategyType || '')) {
-                                        handleStrategyTypeChange(strategy.id, editingStrategyType);
-                                      } else {
-                                        cancelEditingStrategyType();
-                                      }
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        if (editingStrategyType !== (strategy.strategyType || '')) {
-                                          handleStrategyTypeChange(strategy.id, editingStrategyType);
-                                        } else {
-                                          cancelEditingStrategyType();
-                                        }
-                                      } else if (e.key === 'Escape') {
-                                        cancelEditingStrategyType();
-                                      }
-                                    }}
-                                    autoFocus
-                                    className="border rounded px-2 py-1 text-xs w-full"
-                                  >
-                                    <option value="">Select type...</option>
-                                    {strategyTypes.map((type) => (
-                                      <option key={type} value={type}>
-                                        {type}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  <button
-                                    onClick={() => {
-                                      if (editingStrategyType !== (strategy.strategyType || '')) {
-                                        handleStrategyTypeChange(strategy.id, editingStrategyType);
-                                      } else {
-                                        cancelEditingStrategyType();
-                                      }
-                                    }}
-                                    className="text-green-600 hover:text-green-800 text-xs"
-                                  >
-                                    ✓
-                                  </button>
-                                  <button
-                                    onClick={cancelEditingStrategyType}
-                                    className="text-muted-foreground hover:text-foreground text-xs"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              ) : (
-                                <span
-                                  className={`${strategy.strategyType ? 'text-foreground cursor-pointer hover:text-blue-600' : 'text-muted-foreground cursor-pointer hover:text-blue-600'}`}
-                                  onClick={() => startEditingStrategyType(strategy)}
-                                  title="Click to edit strategy type"
-                                >
-                                  {strategy.strategyType || '—'}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground italic" title="Inherited from asset thesis">
-                              {(() => {
-                                const assetThesis = assetTheses.find((v) => v.id === strategy.assetThesisId);
-                                // For now, we can't show the inherited macro thesis without fetching it
-                                // This would require the API to return it, or we'd need to fetch asset thesis details
-                                return assetThesis ? `(via ${assetThesis.title})` : '—';
-                              })()}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-muted-foreground">
-                              {editingHierarchyId === strategy.id ? (
-                                <select
-                                  value={hierarchyEditValues?.assetThesisId ?? ''}
-                                  onChange={(e) =>
-                                    setHierarchyEditValues((prev) =>
-                                      prev ? { ...prev, assetThesisId: e.target.value } : prev
-                                    )
-                                  }
-                                  className="border rounded px-2 py-1 text-xs w-full"
-                                >
-                                  <option value="">None</option>
-                                  {assetTheses.map((view) => (
-                                    <option key={view.id} value={view.id}>
-                                      {view.title}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <span
-                                  className="cursor-pointer hover:text-blue-600"
-                                  onClick={() => startEditingHierarchy(strategy)}
-                                  title="Click to edit thesis/view"
-                                >
-                                  {assetTheses.find((v) => v.id === strategy.assetThesisId)?.title || '—'}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                              <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-                                strategy.status === 'draft'
-                                  ? 'bg-purple-100 text-purple-700'
-                                  : strategy.status === 'active'
-                                  ? 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
-                                  : strategy.status === 'complete'
-                                  ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
-                                  : strategy.status === 'rejected'
-                                  ? 'bg-muted text-muted-foreground'
-                                  : 'bg-muted text-foreground'
-                              }`}>
-                                {strategy.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                              {strategy.openedAt
-                                ? new Date(strategy.openedAt).toLocaleDateString('en-GB')
-                                : '-'}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm flex items-center gap-3">
-                              {editingHierarchyId === strategy.id ? (
-                                <>
-                                  <button
-                                    onClick={saveHierarchyEdit}
-                                    className="text-green-600 hover:text-green-800 text-xs"
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={cancelEditingHierarchy}
-                                    className="text-muted-foreground hover:text-foreground text-xs"
-                                  >
-                                    Cancel
-                                  </button>
-                                </>
-                              ) : isEditing ? (
-                                <>
-                                  <button
-                                    onClick={saveEditing}
-                                    className="text-green-600 hover:text-green-800 text-xs"
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={cancelEditing}
-                                    className="text-muted-foreground hover:text-foreground text-xs"
-                                  >
-                                    Cancel
-                                  </button>
-                                </>
-                              ) : isEditingMetadata ? (
-                                <>
-                                  <button
-                                    onClick={saveMetadata}
-                                    className="text-green-600 hover:text-green-800 text-xs"
-                                  >
-                                    Save
-                                  </button>
-                                  <button
-                                    onClick={cancelEditingMetadata}
-                                    className="text-muted-foreground hover:text-foreground text-xs"
-                                  >
-                                    Cancel
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => startEditing(strategy)}
-                                    className="text-muted-foreground hover:text-foreground text-xs"
-                                  >
-                                    Edit
-                                  </button>
-                                  {strategy.status === 'draft' ? (
-                                    <button
-                                      onClick={() => handleConfirm(strategy.id)}
-                                      className="text-green-600 hover:text-green-800 text-xs"
-                                    >
-                                      Confirm
-                                    </button>
-                                  ) : (
-                                    <button
-                                      onClick={() => startEditingMetadata(strategy)}
-                                      className="text-blue-600 hover:text-blue-800 text-xs"
-                                    >
-                                      Metadata
-                                    </button>
-                                  )}
-                                  <a
-                                    href={`/admin/strategies/${strategy.id}/link`}
-                                    className="text-blue-600 hover:text-blue-800 text-xs"
-                                  >
-                                    Links
-                                  </a>
-                                </>
-                              )}
-                            </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Strategy Type Selection Modal */}
-      {showStrategyTypeModal && (
+      {/* Delete Confirmation Modal */}
+      {deletingType && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold mb-4">Select Strategy Type</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Please select the strategy type for the {pendingConfirmIds.length} strategy(ies) you're confirming.
-              This categorizes the strategy for filtering and signal evaluation.
+          <div className="bg-card rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Delete Strategy Type</h3>
+            <p className="text-foreground mb-4">
+              Are you sure you want to delete{' '}
+              <span className="font-medium">{deletingType.name}</span>?
             </p>
-            <div className="mb-4">
-              <label htmlFor="strategyType" className="block text-sm font-medium mb-2">
-                Strategy Type *
-              </label>
-              <select
-                id="strategyType"
-                required
-                value={selectedStrategyType}
-                onChange={(e) => setSelectedStrategyType(e.target.value)}
-                className="w-full border rounded px-3 py-2"
-              >
-                <option value="">Select a strategy type...</option>
-                {strategyTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {deletingType.strategyCount > 0 && (
+              <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                This type is used by {deletingType.strategyCount} strategy(ies). You must archive it instead, or reassign those strategies first.
+              </p>
+            )}
             <div className="flex gap-2 justify-end">
               <button
-                onClick={() => {
-                  setShowStrategyTypeModal(false);
-                  setSelectedStrategyType('');
-                  setPendingConfirmIds([]);
-                }}
+                onClick={() => setDeletingType(null)}
+                disabled={deleting}
                 className="bg-muted text-foreground py-2 px-4 rounded-md hover:bg-muted/80"
               >
                 Cancel
               </button>
               <button
-                onClick={handleConfirmWithStrategyType}
-                disabled={!selectedStrategyType || confirming}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground flex items-center gap-2"
+                onClick={handleDelete}
+                disabled={deleting || deletingType.strategyCount > 0}
+                className="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 disabled:bg-muted disabled:text-muted-foreground inline-flex items-center gap-2"
               >
-                {confirming && <Spinner className="size-4" />}
-                {confirming ? 'Confirming...' : 'Confirm'}
+                {deleting && <Spinner className="size-4" />}
+                {deleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Strategy Metadata Edit Modal */}
-      {editingMetadataId && metadataValues && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
-            <h2 className="text-xl font-semibold mb-4">Edit Strategy Metadata</h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Changing the strategy type will trigger state code recomputation.
-            </p>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="metadataStrategyType" className="block text-sm font-medium mb-2">
-                    Strategy Type
-                  </label>
-                  <select
-                    id="metadataStrategyType"
-                    value={metadataValues.strategyType}
-                    onChange={(e) =>
-                      setMetadataValues((prev) =>
-                        prev ? { ...prev, strategyType: e.target.value } : prev
-                      )
-                    }
-                    className="w-full border rounded px-3 py-2"
-                  >
-                    <option value="">Select a strategy type...</option>
-                    {strategyTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="metadataDirection" className="block text-sm font-medium mb-2">
-                    Direction
-                  </label>
-                  <select
-                    id="metadataDirection"
-                    value={metadataValues.direction}
-                    onChange={(e) =>
-                      setMetadataValues((prev) =>
-                        prev ? { ...prev, direction: e.target.value } : prev
-                      )
-                    }
-                    className="w-full border rounded px-3 py-2"
-                  >
-                    <option value="">Select direction...</option>
-                    <option value="bullish">Bullish</option>
-                    <option value="bearish">Bearish</option>
-                    <option value="neutral">Neutral</option>
-                  </select>
-                </div>
-              </div>
-
-              <p className="text-xs text-blue-800 dark:text-blue-200 bg-blue-50 dark:bg-blue-950/30 p-3 rounded">
-                Note: Strategy thesis and rules now come from the linked asset thesis.
-                Use the triage workflow to link strategies to asset theses.
-              </p>
-            </div>
-
-            <div className="flex gap-2 justify-end mt-6 pt-4 border-t">
-              <button
-                onClick={cancelEditingMetadata}
-                className="bg-muted text-foreground py-2 px-4 rounded-md hover:bg-muted/80"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveMetadata}
-                className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-muted disabled:text-muted-foreground"
-              >
-                Save
-              </button>
-            </div>
-          </div>
+      {/* Strategy Types Table */}
+      <div className="bg-card rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Category
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Direction
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Legs
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  DTE Range
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Risk Profile
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Strategies
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-card divide-y divide-border">
+              {types.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                    No strategy types found. Create your first one above.
+                  </td>
+                </tr>
+              ) : (
+                types.map((type) => (
+                  <tr key={type.id} className={!type.isActive ? 'opacity-50' : undefined}>
+                    <td className="px-4 py-3">
+                      <div>
+                        <div className="text-sm font-medium text-foreground">{type.name}</div>
+                        {type.description && (
+                          <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            {type.description}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {categoryBadge(type.category) || <span className="text-xs text-muted-foreground">-</span>}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {directionBadge(type.defaultDirection) || <span className="text-xs text-muted-foreground">-</span>}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {type.legCount ?? '-'}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
+                      {type.minDte != null || type.maxDte != null
+                        ? `${type.minDte ?? '?'}–${type.maxDte ?? '?'}`
+                        : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px]">
+                      <div className="line-clamp-1">{type.riskProfile || '-'}</div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <span className={`text-sm font-medium ${type.strategyCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {type.strategyCount}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                        type.isActive
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                          : 'bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-400'
+                      }`}>
+                        {type.isActive ? 'Active' : 'Archived'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => handleEdit(type)}
+                          className="text-blue-600 hover:text-blue-400 font-medium"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(type)}
+                          className="text-amber-600 hover:text-amber-400 font-medium"
+                        >
+                          {type.isActive ? 'Archive' : 'Restore'}
+                        </button>
+                        <button
+                          onClick={() => setDeletingType(type)}
+                          className="text-red-600 hover:text-red-400 font-medium"
+                          disabled={type.strategyCount > 0}
+                          title={type.strategyCount > 0 ? `Cannot delete: used by ${type.strategyCount} strategies` : 'Delete'}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </DashboardShell>
-  );
-}
-
-export default function StrategiesPage() {
-  return (
-    <Suspense fallback={
-      <DashboardShell activeNav="admin-strategies" title="Strategy Management" subtitle="Loading...">
-        <div className="flex items-center justify-center py-12">
-          <Spinner className="size-8" />
-          <span className="ml-3 text-muted-foreground">Loading strategies...</span>
-        </div>
-      </DashboardShell>
-    }>
-      <StrategiesPageContent />
-    </Suspense>
   );
 }

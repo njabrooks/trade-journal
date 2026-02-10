@@ -4,8 +4,8 @@ import {
   updateStrategy,
   getStrategyById,
   getStrategies,
-  getDistinctStrategyTypes,
 } from '@/lib/services/strategies';
+import { getAllStrategyTypes } from '@/lib/services/strategyTypes';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
     const strategyId = searchParams.get('id') || undefined;
     const strategyTypes = searchParams.get('strategyTypes') === 'true';
 
-    // Return distinct strategy types from existing strategies
+    // Return strategy types (now from strategy_types table)
     if (strategyTypes) {
-      const types = await getDistinctStrategyTypes();
+      const types = await getAllStrategyTypes();
       return NextResponse.json(types);
     }
 
@@ -75,11 +75,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Strategy id is required' }, { status: 400 });
     }
 
-    // If confirming, require strategyType and direction; assetThesisId is optional
+    // If confirming, require strategyType/strategyTypeId and direction; assetThesisId is optional
     if (confirm) {
-      if (!updates.strategyType) {
+      if (!updates.strategyType && !updates.strategyTypeId) {
         return NextResponse.json(
-          { error: 'strategyType is required when confirming a strategy' },
+          { error: 'strategyType or strategyTypeId is required when confirming a strategy' },
           { status: 400 }
         );
       }

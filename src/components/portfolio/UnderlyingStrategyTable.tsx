@@ -472,6 +472,7 @@ function PositionRowNested({
   const dte = calculateDTE(position.expiry, position.snapshotDate ?? "");
   const mv = Math.abs(position.absNotional ?? 0);
   const pctTotal = totalMarketValue > 0 ? (mv / totalMarketValue) * 100 : null;
+  const isShort = position.quantity < 0;
 
   const displaySymbol =
     position.assetClass === "OPT" && position.underlyingTicker
@@ -496,7 +497,7 @@ function PositionRowNested({
       <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
         {position.quantity.toLocaleString()}
       </td>
-      <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">{formatCurrency(mv)}</td>
+      <td className={cn("py-1.5 pr-3 text-right tabular-nums", isShort ? "text-rose-600" : "text-foreground")}>{formatCurrency(mv)}</td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
         {pctTotal != null ? formatPercent(pctTotal) : "\u2014"}
       </td>

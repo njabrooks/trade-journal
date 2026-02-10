@@ -128,11 +128,12 @@ export function TriageActionButtons({
   
   // Strategy confirmation form state
   const [strategyData, setStrategyData] = useState<any>(null);
-  const [strategyTypes, setStrategyTypes] = useState<string[]>([]);
+  const [strategyTypes, setStrategyTypes] = useState<Array<{ id: string; name: string; defaultDirection: string | null }>>([]);
   const [strategyFormData, setStrategyFormData] = useState({
     strategyKey: "",
     label: "",
     strategyType: "",
+    strategyTypeId: "",
     thesis: "",
     profitRules: "",
     defenseRules: "",
@@ -400,6 +401,7 @@ export function TriageActionButtons({
           strategyKey: data.strategyKey || "",
           label: data.autoDerivedLabel || data.strategyKey || "",
           strategyType: data.strategyType || "",
+          strategyTypeId: data.strategyTypeId || "",
           thesis: data.thesis || "",
           profitRules: data.profitRules || "",
           defenseRules: data.defenseRules || "",
@@ -415,10 +417,14 @@ export function TriageActionButtons({
 
   const loadStrategyTypes = async () => {
     try {
-      const response = await fetch("/api/strategies?strategyTypes=true");
+      const response = await fetch("/api/strategy-types");
       if (response.ok) {
         const types = await response.json();
-        setStrategyTypes(types);
+        setStrategyTypes(types.map((t: { id: string; name: string; defaultDirection: string | null }) => ({
+          id: t.id,
+          name: t.name,
+          defaultDirection: t.defaultDirection,
+        })));
       }
     } catch (err) {
       console.error("Failed to load strategy types:", err);
@@ -641,6 +647,7 @@ export function TriageActionButtons({
             strategyKey: strategyFormData.strategyKey,
             label: strategyFormData.label,
             strategyType: strategyFormData.strategyType,
+            strategyTypeId: strategyFormData.strategyTypeId || undefined,
             thesis: strategyFormData.thesis || null,
             profitRules: strategyFormData.profitRules || null,
             defenseRules: strategyFormData.defenseRules || null,
@@ -755,6 +762,7 @@ export function TriageActionButtons({
           body: JSON.stringify({
             id: strategyId,
             strategyType: strategyFormData.strategyType,
+            strategyTypeId: strategyFormData.strategyTypeId || undefined,
             thesis: strategyFormData.thesis || null,
             profitRules: strategyFormData.profitRules || null,
             defenseRules: strategyFormData.defenseRules || null,
@@ -899,6 +907,7 @@ export function TriageActionButtons({
         strategyKey: "",
         label: "",
         strategyType: "",
+        strategyTypeId: "",
         thesis: "",
         profitRules: "",
         defenseRules: "",
@@ -938,6 +947,7 @@ export function TriageActionButtons({
       strategyKey: "",
       label: "",
       strategyType: "",
+      strategyTypeId: "",
       thesis: "",
       profitRules: "",
       defenseRules: "",
@@ -1102,17 +1112,22 @@ export function TriageActionButtons({
                 Strategy Type *
               </label>
               <select
-                value={strategyFormData.strategyType}
-                onChange={(e) =>
-                  setStrategyFormData({ ...strategyFormData, strategyType: e.target.value })
-                }
+                value={strategyFormData.strategyTypeId}
+                onChange={(e) => {
+                  const selected = strategyTypes.find((t) => t.id === e.target.value);
+                  setStrategyFormData({
+                    ...strategyFormData,
+                    strategyTypeId: e.target.value,
+                    strategyType: selected?.name || "",
+                  });
+                }}
                 className="mt-1 block w-full rounded-md border bg-background text-foreground px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">Select strategy type...</option>
                 {strategyTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                  <option key={type.id} value={type.id}>
+                    {type.name}
                   </option>
                 ))}
               </select>
@@ -1381,17 +1396,22 @@ export function TriageActionButtons({
                 Strategy Type *
               </label>
               <select
-                value={strategyFormData.strategyType}
-                onChange={(e) =>
-                  setStrategyFormData({ ...strategyFormData, strategyType: e.target.value })
-                }
+                value={strategyFormData.strategyTypeId}
+                onChange={(e) => {
+                  const selected = strategyTypes.find((t) => t.id === e.target.value);
+                  setStrategyFormData({
+                    ...strategyFormData,
+                    strategyTypeId: e.target.value,
+                    strategyType: selected?.name || "",
+                  });
+                }}
                 className="mt-1 block w-full rounded-md border bg-background text-foreground px-2.5 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">Select strategy type...</option>
                 {strategyTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                  <option key={type.id} value={type.id}>
+                    {type.name}
                   </option>
                 ))}
               </select>

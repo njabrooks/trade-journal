@@ -458,6 +458,34 @@ export const strategyTemplates = pgTable('strategy_templates', {
 });
 
 // ============================================================================
+// Strategy Types
+// ============================================================================
+
+export const strategyTypes = pgTable(
+  'strategy_types',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull().unique(),
+    description: text('description'),
+    defaultDirection: text('default_direction'), // 'bullish' | 'bearish' | 'neutral'
+    category: text('category'), // 'directional' | 'income' | 'hedging' | 'volatility' | 'spread'
+    legCount: integer('leg_count'),
+    minDte: integer('min_dte'),
+    maxDte: integer('max_dte'),
+    riskProfile: text('risk_profile'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    activeIdx: index('idx_strategy_types_active').on(table.isActive),
+    categoryIdx: index('idx_strategy_types_category').on(table.category),
+    sortIdx: index('idx_strategy_types_sort').on(table.sortOrder),
+  })
+);
+
+// ============================================================================
 // Strategies
 // ============================================================================
 
@@ -492,7 +520,10 @@ export const strategies = pgTable(
     autoDerivedLabel: text('auto_derived_label'),
     confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
     // Strategy categorization
-    strategyType: text('strategy_type'), // e.g., "Long Call", "Risk Reversal", etc.
+    strategyType: text('strategy_type'), // e.g., "Long Call", "Risk Reversal", etc. (legacy, use strategyTypeId)
+    strategyTypeId: uuid('strategy_type_id').references(() => strategyTypes.id, {
+      onDelete: 'set null',
+    }),
     direction: text('direction'), // 'bullish' | 'bearish' | 'neutral' - strategy directional bias
     // Hierarchy linkage (Phase 1)
     // Note: Strategies inherit macro thesis connections through assetThesisId
@@ -506,6 +537,7 @@ export const strategies = pgTable(
     accountStrategyIdx: index('idx_strategies_account').on(table.accountId),
     strategyKeyIdx: index('idx_strategies_key').on(table.strategyKey),
     assetThesisIdx: index('idx_strategies_asset_thesis').on(table.assetThesisId),
+    strategyTypeIdx: index('idx_strategies_type_id').on(table.strategyTypeId),
   })
 );
 
@@ -877,6 +909,9 @@ export type NewOptionsChainSnapshot = typeof optionsChainSnapshots.$inferInsert;
 
 export type StrategyTemplate = typeof strategyTemplates.$inferSelect;
 export type NewStrategyTemplate = typeof strategyTemplates.$inferInsert;
+
+export type StrategyType = typeof strategyTypes.$inferSelect;
+export type NewStrategyType = typeof strategyTypes.$inferInsert;
 
 export type Strategy = typeof strategies.$inferSelect;
 export type NewStrategy = typeof strategies.$inferInsert;
