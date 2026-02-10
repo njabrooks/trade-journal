@@ -56,6 +56,12 @@ export interface OwnerBreakdownRow {
   accountCount: number;
 }
 
+export interface OwnerNavTimeSeriesPoint {
+  date: string;
+  owner: string;
+  nav: number;
+}
+
 export interface PortfolioDashboardData {
   navTrend: NavTrendPoint[];
   accountSnapshots: PortfolioTrendPoint[];
@@ -63,6 +69,7 @@ export interface PortfolioDashboardData {
   underlyingBreakdown: UnderlyingBreakdownRow[];
   cashBreakdown: CashBreakdownRow[];
   ownerBreakdown: OwnerBreakdownRow[];
+  ownerNavTimeSeries: OwnerNavTimeSeriesPoint[];
 }
 
 export async function getPortfolioDashboardData(
@@ -193,6 +200,11 @@ export async function getPortfolioDashboardData(
     ? [{ owner, nav: latestAccountSnapshot.navAtSnapshot, accountCount: 1 }]
     : [];
 
+  // Owner NAV time series — for single account, derive from existing snapshots
+  const ownerNavTimeSeries: OwnerNavTimeSeriesPoint[] = accountSnapshots
+    .filter((s) => s.navAtSnapshot !== null)
+    .map((s) => ({ date: s.date, owner, nav: s.navAtSnapshot! }));
+
   return {
     navTrend,
     accountSnapshots,
@@ -200,6 +212,7 @@ export async function getPortfolioDashboardData(
     underlyingBreakdown,
     cashBreakdown,
     ownerBreakdown,
+    ownerNavTimeSeries,
   };
 }
 
@@ -219,6 +232,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       underlyingBreakdown: [],
       cashBreakdown: [],
       ownerBreakdown: [],
+      ownerNavTimeSeries: [],
     };
   }
 
@@ -452,6 +466,74 @@ export async function getPortfolioDashboardDataMultiAccount(
     accountCount: parseInt(row.accountCount) || 0,
   }));
 
+  // --- Owner NAV time series (for stacked area chart) ---
+  // Fetch per-account snapshots so we can carry forward the last known NAV
+  // for accounts that haven't refreshed yet on a given date.
+  const perAccountNavRows = await db
+    .select({
+      accountId: portfolioSnapshots.accountId,
+      owner: accounts.owner,
+      snapshotDate: portfolioSnapshots.snapshotDate,
+      nav: portfolioSnapshots.navAtSnapshot,
+    })
+    .from(portfolioSnapshots)
+    .innerJoin(accounts, eq(portfolioSnapshots.accountId, accounts.id))
+    .where(
+      and(
+        inArray(portfolioSnapshots.accountId, accountIds),
+        eq(portfolioSnapshots.level, "account")
+      )
+    )
+    .orderBy(asc(portfolioSnapshots.snapshotDate))
+    .limit(90 * accountIds.length);
+
+  // Build per-account lookup and collect all dates
+  const accountDateNav = new Map<string, Map<string, number>>();
+  const accountOwnerMap = new Map<string, string>();
+  const dateSet = new Set<string>();
+
+  for (const row of perAccountNavRows) {
+    const nav = toNumber(row.nav);
+    if (nav === null) continue;
+    dateSet.add(row.snapshotDate);
+    accountOwnerMap.set(row.accountId, row.owner ?? "Unknown");
+    let dateMap = accountDateNav.get(row.accountId);
+    if (!dateMap) {
+      dateMap = new Map();
+      accountDateNav.set(row.accountId, dateMap);
+    }
+    dateMap.set(row.snapshotDate, nav);
+  }
+
+  // Fill forward: for each date, carry each account's last known NAV,
+  // then aggregate by owner
+  const allDates = [...dateSet].sort();
+  const lastKnownNav = new Map<string, number>();
+  const ownerNavTimeSeries: OwnerNavTimeSeriesPoint[] = [];
+
+  for (const date of allDates) {
+    const ownerTotals = new Map<string, number>();
+
+    for (const acctId of accountIds) {
+      const owner = accountOwnerMap.get(acctId);
+      if (!owner) continue; // account has no data at all
+
+      const navOnDate = accountDateNav.get(acctId)?.get(date);
+      if (navOnDate !== undefined) {
+        lastKnownNav.set(acctId, navOnDate);
+      }
+
+      const nav = navOnDate ?? lastKnownNav.get(acctId);
+      if (nav !== undefined) {
+        ownerTotals.set(owner, (ownerTotals.get(owner) ?? 0) + nav);
+      }
+    }
+
+    for (const [owner, totalNav] of ownerTotals) {
+      ownerNavTimeSeries.push({ date, owner, nav: totalNav });
+    }
+  }
+
   return {
     navTrend,
     accountSnapshots,
@@ -459,6 +541,7 @@ export async function getPortfolioDashboardDataMultiAccount(
     underlyingBreakdown,
     cashBreakdown,
     ownerBreakdown,
+    ownerNavTimeSeries,
   };
 }
 
