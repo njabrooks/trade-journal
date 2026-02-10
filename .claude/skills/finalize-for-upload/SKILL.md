@@ -236,20 +236,72 @@ RETURNING id;
 -- Use 'draft' for newly promoted claims pending review
 npx tsx scripts/auto-promote-claims.ts $insight_id
 
--- Step 5: Generate thesis linkage suggestions (Claude Code does the analysis)
--- After promoting claims, analyze them against existing active theses and suggest linkages.
--- Non-blocking: if this fails, claims are still promoted and available for manual linking.
---
--- Process:
--- 1. Query promoted claims: SELECT id, title, claim, category, qualifier, relevant_tickers FROM main_claims WHERE source_insight_id = '$insight_id'
--- 2. Query active theses: SELECT id, title, description, direction, sectors FROM macro_theses WHERE status = 'active'
--- 3. Query active asset theses: SELECT at.id, at.title, at.description, u.ticker, at.direction FROM asset_theses at JOIN underlyings u ON at.underlying_id = u.id WHERE at.status = 'active'
--- 4. Analyze each claim against theses — consider category alignment, ticker overlap, directional alignment, thematic relevance
--- 5. For each match (max 3 per claim, confidence >= 0.4), insert into research_hierarchy_recommendations:
---    INSERT INTO research_hierarchy_recommendations (research_insight_id, main_claim_id, recommendation_type, existing_thesis_id, existing_asset_thesis_id, mapping_type, confidence_score, reasoning, status, ai_model)
---    VALUES ($insight_id, $claim_id, 'link_existing', $macro_thesis_id_or_null, $asset_thesis_id_or_null, 'supports'|'refutes'|'foundation', $confidence, $reasoning, 'pending', 'Claude Code (inline analysis)')
--- 6. Report count of suggestions generated
 ```
+
+#### Step 5: Generate Thesis Linkage Suggestions
+
+After promoting claims, analyze them against the existing thesis hierarchy and generate linkage suggestions. This is the AI-powered step — you are performing semantic analysis, not just keyword matching.
+
+**This step is non-blocking**: if it fails, claims are still promoted and available for manual linking. Wrap in a try/catch mindset and report any issues without failing the overall upload.
+
+**5a. Query the data** (three parallel queries via `psql-query.ts`):
+
+```bash
+cd /Users/njb/Desktop/projects/trade-journal
+
+# Promoted claims from this upload
+npx tsx scripts/psql-query.ts "SELECT id, title, claim, category, qualifier, relevant_tickers FROM main_claims WHERE source_insight_id = '$INSIGHT_ID'" --format json
+
+# Active macro theses
+npx tsx scripts/psql-query.ts "SELECT id, title, description, direction, sectors FROM macro_theses WHERE status = 'active'" --format json
+
+# Active asset theses
+npx tsx scripts/psql-query.ts "SELECT at.id, at.title, at.description, u.ticker, at.direction FROM asset_theses at JOIN underlyings u ON at.underlying_id = u.id WHERE at.status = 'active'" --format json
+```
+
+**5b. Analyze each claim against each thesis.** For every (claim, thesis) pair, assess:
+
+| Signal | Weight | Example |
+|--------|--------|---------|
+| **Ticker overlap** | High | Claim mentions NVDA, thesis covers NVDA |
+| **Category alignment** | High | `macro` claim → macro thesis, `asset_specific` → asset thesis |
+| **Thematic relevance** | High | Claim about "GPU demand" aligns with thesis about "AI infrastructure buildout" |
+| **Directional alignment** | Medium | Both bullish on same theme → `supports`; opposing → `refutes` |
+| **Time horizon match** | Low | Same time horizon increases confidence slightly |
+
+For each match, determine:
+- **mappingType**: `supports` (claim reinforces thesis), `refutes` (claim contradicts thesis), or `foundation` (claim provides foundational evidence)
+- **confidence**: 0.40–1.00 (only suggest matches >= 0.40)
+- **reasoning**: 1-2 sentence explanation of why this claim relates to this thesis
+
+**Rules**:
+- Max **3 suggestions per claim** (pick the highest-confidence matches)
+- Skip claims that have no plausible thesis match
+- A single claim can suggest links to both macro and asset theses
+
+**5c. Insert suggestions** by piping JSON to the insert script:
+
+```bash
+cd /Users/njb/Desktop/projects/trade-journal
+echo '[
+  {
+    "claimId": "<promoted-claim-uuid>",
+    "thesisId": "<macro-thesis-uuid>",
+    "mappingType": "supports",
+    "confidence": 0.85,
+    "reasoning": "Claim about GPU supply constraints directly supports the AI infrastructure buildout thesis"
+  },
+  {
+    "claimId": "<promoted-claim-uuid>",
+    "assetThesisId": "<asset-thesis-uuid>",
+    "mappingType": "supports",
+    "confidence": 0.70,
+    "reasoning": "NVDA-specific capex data reinforces the NVDA long thesis"
+  }
+]' | npx tsx scripts/ops/insert-claim-suggestions.ts --insight-id $INSIGHT_ID
+```
+
+The script validates inputs and bulk-inserts into `research_hierarchy_recommendations` with `status='pending'`. These suggestions appear in the Claims Browser UI for user review.
 
 **Claims Structure Format**:
 
@@ -343,12 +395,16 @@ Evidence claims are NOT abbreviated - they receive complete argumentation struct
 ✅ Successfully auto-promoted 14 claims to main_claims table
    Status: draft (ready for manual review and activation)
 
+🔗 Analyzing claims against active theses...
+✅ Generated 8 thesis linkage suggestions across 6 claims
+   (pending review in Claims Browser)
+
 → View in app: /research/xyz-789-ghi
 → Browse all claims: /claims
-→ Review claims and change status from draft → active in Claims Browser
+→ Review claims, linkage suggestions, and promote draft → active in Claims Browser
 ```
 
-**Then suggest**: "Open the Claims Browser at /claims to review and promote high-priority claims"
+**Then suggest**: "Open the Claims Browser at /claims to review linkage suggestions and promote high-priority claims"
 
 #### For Insights
 
