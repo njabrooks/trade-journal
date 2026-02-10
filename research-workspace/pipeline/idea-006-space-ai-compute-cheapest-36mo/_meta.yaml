@@ -1,0 +1,98 @@
+# Pipeline Idea Metadata
+idea_id: "idea-006"
+title: "SpaceX-xAI Orbital Compute Monopoly"
+slug: "space-ai-compute-cheapest-36mo"
+
+# Progression State
+current_stage: 5
+status: watching
+
+# Source Reference
+source_claim_id: "claim-1"
+source_audit: "db:research_insights/6f3821c5-7cc2-4ce1-9323-f83d82a21cc1"
+source_db_claim_id: "86873f19-b03f-4bdb-a4ec-0456c8a967f9"
+source_artifact: "Elon Musk – 'In 36 months, the cheapest place to put AI will be space'"
+source_url: "https://www.youtube.com/watch?v=BYXbuik3dgA"
+
+# Existing Thesis Linkages
+linked_theses:
+  - title: "Bullish Space Exploration"
+    type: macro
+    mapping: supports
+    id: "e752c0bb-999c-42d2-86f2-f1057113a24b"
+  - title: "Bullish TSLA Long Term"
+    type: asset
+    mapping: supports
+    id: "5151ea2e-8f08-4077-af20-28b95d44880b"
+  - title: "Bullish SPACEX Medium Term"
+    type: asset
+    mapping: supports
+    id: "2d2db18d-f658-4cf4-8760-cd1840c5df92"
+
+# Confidence Tracking
+confidence: 0.55
+confidence_history:
+  - stage: 1
+    value: 0.90
+    date: "2026-02-10"
+    note: "Novelty score 0.90. Qualifier: high. Strong Toulmin structure."
+  - stage: 2
+    value: 0.90
+    date: "2026-02-10"
+    note: "Thesis formalized with 5 failure modes."
+  - stage: 3
+    value: 0.90
+    date: "2026-02-10"
+    note: "3 high-impact unknowns identified. Sequential kill chain designed."
+  - stage: 4
+    value: 0.35
+    date: "2026-02-10"
+    note: "Original thesis ('cheapest in 36mo') failed. Timeline wrong, radiation throughput penalty concerning."
+  - stage: 4-modified
+    value: 0.55
+    date: "2026-02-10"
+    note: "Reframed to SpaceX-xAI monopoly on extended timeline. Physics confirmed, moat structural, execution uncertain."
+  - stage: 5
+    value: 0.55
+    date: "2026-02-10"
+    note: "WATCH decision. No pure public expression exists. TSLA is noisy proxy. Existing portfolio already exposed via Bullish TSLA Long Term and Bullish Space Exploration. Research strengthens existing positions."
+
+# Stage History
+stage_history:
+  - stage: 1
+    started_at: "2026-02-10T00:00:00Z"
+    completed_at: "2026-02-10T00:00:00Z"
+    decision: advance
+    note: "Claim selected from Elon Musk / Cheeky Pints transcript audit."
+  - stage: 2
+    started_at: "2026-02-10T00:00:00Z"
+    completed_at: "2026-02-10T00:00:00Z"
+    decision: advance
+    note: "Core thesis crisp and falsifiable. 5 failure modes identified."
+  - stage: 3
+    started_at: "2026-02-10T00:00:00Z"
+    completed_at: "2026-02-10T00:00:00Z"
+    decision: advance
+    note: "3 HIGH-impact resolvable unknowns with clear kill conditions."
+  - stage: 4
+    started_at: "2026-02-10T00:00:00Z"
+    completed_at: "2026-02-10T00:00:00Z"
+    decision: modify
+    note: "Original thesis failed (timeline wrong). Reframed to monopoly thesis on 5-8yr horizon."
+  - stage: 5
+    started_at: "2026-02-10T00:00:00Z"
+    completed_at: "2026-02-10T00:00:00Z"
+    decision: watch
+    note: "WATCH — conviction 0.55 below 0.65 threshold. No pure public expression. Existing TSLA/SPACEX positions already capture the thesis. Monitor Starship ship catch, Suncatcher prototype, radiation data. Review 2026-08-10."
+
+# Review Schedule
+next_review: "2026-08-10"
+review_triggers:
+  - "Starship first ship catch/recovery"
+  - "Google Suncatcher prototype launch and operational data"
+  - "Radiation throughput data from Starcloud-1 or any orbital GPU"
+  - "SpaceX-xAI IPO filing"
+
+# Timestamps
+created_at: "2026-02-10T00:00:00Z"
+updated_at: "2026-02-10T00:00:00Z"
