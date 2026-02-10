@@ -34,7 +34,7 @@ Output: Confirmation with IDs for app UI linking
 ## Instructions
 
 When the user asks to finalize and upload:
-- "Finalize and upload /Users/njb/Desktop/nick/investing/macro-theses/ai-agents-thesis.md"
+- "Finalize and upload macro-theses/ai-agents-thesis.md"
 - "Upload this research to the database"
 - "Commit this thesis to Supabase"
 
@@ -46,7 +46,7 @@ If the user provides a relative path, read the Obsidian directory configuration 
 
 ```bash
 # Read environment variables
-cat /Users/njb/Desktop/trade-journal/.env.local | grep OBSIDIAN
+cat .env.local | grep OBSIDIAN
 ```
 
 Construct paths based on likely entity type from path or user context:
@@ -247,7 +247,7 @@ After promoting claims, analyze them against the existing thesis hierarchy and g
 **5a. Query the data** (three parallel queries via `psql-query.ts`):
 
 ```bash
-cd /Users/njb/Desktop/projects/trade-journal
+# Run from trade-journal directory
 
 # Promoted claims from this upload
 npx tsx scripts/psql-query.ts "SELECT id, title, claim, category, qualifier, relevant_tickers FROM main_claims WHERE source_insight_id = '$INSIGHT_ID'" --format json
@@ -282,7 +282,7 @@ For each match, determine:
 **5c. Insert suggestions** by piping JSON to the insert script:
 
 ```bash
-cd /Users/njb/Desktop/projects/trade-journal
+# Run from trade-journal directory
 echo '[
   {
     "claimId": "<promoted-claim-uuid>",
