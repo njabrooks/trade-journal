@@ -36,8 +36,8 @@ const format = args.includes('--format')
   ? args[args.indexOf('--format') + 1]
   : 'json';
 
-// Build psql command
-const psqlPath = '/opt/homebrew/opt/postgresql@16/bin/psql';
+// Build psql command - use PATH-based psql for version flexibility
+const psqlPath = '/opt/homebrew/bin/psql';
 let psqlCommand: string;
 
 if (format === 'json') {
