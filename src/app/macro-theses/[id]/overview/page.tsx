@@ -5,12 +5,14 @@ import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getAssetThesesForRelatedMacroThesis } from '@/db/queries/relatedMacroTheses';
 import { getLatestArticulation, getActiveValidationPoints } from '@/db/queries/thesisSynthesis';
-import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDetailLayout';
+import { EntityDetailLayout, CollapsibleEntitySection } from '@/components/layout/EntityDetailLayout';
 import { EntityTabs } from '@/components/layout/EntityTabs';
 import { createEntityTabs } from '@/lib/types/entity-tabs';
 import { MacroThesisSidebar } from '@/components/theses/MacroThesisSidebar';
 import { LinkedAssetThesesSection } from '@/components/theses/LinkedAssetThesesSection';
 import { UnifiedStrategiesBrowser } from '@/components/strategies/UnifiedStrategiesBrowser';
+import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
+import { SignalsSection } from '@/components/signals/SignalsSection';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { EntityStatusBadge } from '@/components/ui/badge';
@@ -75,8 +77,9 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
       }
     >
       {/* Core Argument Section */}
-      <EntitySection
+      <CollapsibleEntitySection
         title="Core Argument"
+        defaultOpen={true}
         actions={
           <SynthesizeButton
             thesisId={id}
@@ -123,32 +126,61 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
             </p>
           </div>
         )}
-      </EntitySection>
+      </CollapsibleEntitySection>
 
-      {/* Notes Section (if present) */}
-      {thesis.notes !== null && thesis.notes !== undefined && (
-        <EntitySection title="Notes">
-          <pre className="text-sm text-foreground whitespace-pre-wrap">
-            {JSON.stringify(thesis.notes, null, 2)}
-          </pre>
-        </EntitySection>
-      )}
+      {/* Claims Section */}
+      <CollapsibleEntitySection
+        title="Claims"
+        count={claimsWithSources.length}
+        defaultOpen={claimsWithSources.length > 0 && claimsWithSources.length <= 5}
+      >
+        {claimsWithSources.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No main claims linked to this thesis yet.</p>
+        ) : (
+          <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
+        )}
+      </CollapsibleEntitySection>
 
-      {/* Linked Asset Theses */}
-      <LinkedAssetThesesSection
-        macroThesisId={thesis.id}
-        macroThesisTitle={thesis.title}
-        linkedAssetTheses={linkedAssetTheses}
-      />
+      {/* Signals Section */}
+      <CollapsibleEntitySection
+        title="Signals"
+        count={validationPoints.length}
+        defaultOpen={validationPoints.length > 0}
+      >
+        <SignalsSection
+          signals={validationPoints}
+          thesisId={id}
+          thesisType="macro"
+          thesisTitle={thesis.title}
+        />
+      </CollapsibleEntitySection>
 
-      {/* Linked Strategies */}
-      <EntitySection title={`Linked Strategies (${linkedStrategies.length})`}>
+      {/* Asset Theses Section */}
+      <CollapsibleEntitySection
+        title="Asset Theses"
+        count={linkedAssetTheses.length}
+        defaultOpen={linkedAssetTheses.length > 0}
+      >
+        <LinkedAssetThesesSection
+          macroThesisId={thesis.id}
+          macroThesisTitle={thesis.title}
+          linkedAssetTheses={linkedAssetTheses}
+          embedded={true}
+        />
+      </CollapsibleEntitySection>
+
+      {/* Linked Strategies Section */}
+      <CollapsibleEntitySection
+        title="Linked Strategies"
+        count={linkedStrategies.length}
+        defaultOpen={linkedStrategies.length > 0}
+      >
         {linkedStrategies.length === 0 ? (
           <p className="text-sm text-muted-foreground">No strategies linked to this macro thesis yet.</p>
         ) : (
           <UnifiedStrategiesBrowser strategies={linkedStrategies} />
         )}
-      </EntitySection>
+      </CollapsibleEntitySection>
     </EntityDetailLayout>
   );
 }

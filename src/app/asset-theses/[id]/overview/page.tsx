@@ -4,12 +4,14 @@ import { getAssetThesisById, getMainClaimsWithSourcesForAssetThesis } from '@/db
 import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getLatestArticulation, getActiveValidationPoints } from '@/db/queries/thesisSynthesis';
-import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDetailLayout';
+import { EntityDetailLayout, CollapsibleEntitySection } from '@/components/layout/EntityDetailLayout';
 import { EntityTabs } from '@/components/layout/EntityTabs';
 import { createEntityTabs } from '@/lib/types/entity-tabs';
 import { AssetThesisSidebar } from '@/components/asset-theses/AssetThesisSidebar';
 import { LinkedMacroThesesSection } from '@/components/asset-theses/LinkedMacroThesesSection';
 import { LinkedStrategiesSection } from '@/components/asset-theses/LinkedStrategiesSection';
+import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
+import { SignalsSection } from '@/components/signals/SignalsSection';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { EntityStatusBadge } from '@/components/ui/badge';
@@ -101,8 +103,9 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
       }
     >
       {/* Core Argument Section */}
-      <EntitySection
+      <CollapsibleEntitySection
         title="Core Argument"
+        defaultOpen={true}
         actions={
           <SynthesizeButton
             thesisId={id}
@@ -188,36 +191,62 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
             </p>
           </div>
         )}
-      </EntitySection>
+      </CollapsibleEntitySection>
 
-      {/* Notes Section (if present) */}
-      {thesis.notes !== null && thesis.notes !== undefined && (
-        <EntitySection title="Notes">
-          <pre className="text-sm text-foreground whitespace-pre-wrap">
-            {JSON.stringify(thesis.notes, null, 2)}
-          </pre>
-        </EntitySection>
-      )}
+      {/* Claims Section */}
+      <CollapsibleEntitySection
+        title="Claims"
+        count={claimsWithSources.length}
+        defaultOpen={claimsWithSources.length > 0 && claimsWithSources.length <= 5}
+      >
+        {claimsWithSources.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No main claims linked to this thesis yet.</p>
+        ) : (
+          <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
+        )}
+      </CollapsibleEntitySection>
 
-      {/* Linked Macro Theses */}
-      <EntitySection title={`Linked Macro Theses (${linkedMacroTheses.length})`}>
+      {/* Signals Section */}
+      <CollapsibleEntitySection
+        title="Signals"
+        count={validationPoints.length}
+        defaultOpen={validationPoints.length > 0}
+      >
+        <SignalsSection
+          signals={validationPoints}
+          thesisId={id}
+          thesisType="asset"
+          thesisTitle={thesis.title}
+        />
+      </CollapsibleEntitySection>
+
+      {/* Linked Macro Theses Section */}
+      <CollapsibleEntitySection
+        title="Macro Theses"
+        count={linkedMacroTheses.length}
+        defaultOpen={linkedMacroTheses.length > 0}
+      >
         <LinkedMacroThesesSection
           assetThesisId={thesis.id}
           assetThesisTitle={thesis.title}
           linkedMacroTheses={linkedMacroTheses}
           embedded={true}
         />
-      </EntitySection>
+      </CollapsibleEntitySection>
 
-      {/* Linked Strategies */}
-      <EntitySection title={`Linked Strategies (${linkedStrategies.length})`}>
+      {/* Linked Strategies Section */}
+      <CollapsibleEntitySection
+        title="Linked Strategies"
+        count={linkedStrategies.length}
+        defaultOpen={linkedStrategies.length > 0}
+      >
         <LinkedStrategiesSection
           assetThesisId={thesis.id}
           assetThesisTitle={thesis.title}
           linkedStrategies={linkedStrategies}
           embedded={true}
         />
-      </EntitySection>
+      </CollapsibleEntitySection>
     </EntityDetailLayout>
   );
 }
