@@ -55,7 +55,6 @@ export function UnifiedClaimsBrowser({
   filterArtifactId,
   initialLinkedToFilter,
   showSourceColumn = false,
-  compact = false,
 }: UnifiedClaimsBrowserProps) {
   const router = useRouter();
   const [expandedClaim, setExpandedClaim] = useState<string | null>(null);
@@ -67,7 +66,7 @@ export function UnifiedClaimsBrowser({
   const [confidenceFilter, setConfidenceFilter] = useState<ConfidenceFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [linkedToFilter, setLinkedToFilter] = useState<string>(initialLinkedToFilter || 'all'); // 'all', 'unlinked', or thesis/view ID
-  const [showFilters, setShowFilters] = useState(!compact); // Hide filters by default in compact mode
+  const [showFilters, setShowFilters] = useState(false);
 
   // Get unique theses and views for filter dropdown
   const uniqueLinkedEntities = useMemo(() => {
