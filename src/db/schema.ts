@@ -616,11 +616,14 @@ export const positions = pgTable('positions', {
   closeDate: timestamp('close_date', { withTimezone: true }),
   positionType: text('position_type'),
   isOpen: boolean('is_open').notNull().default(true),
+  // Currency and FX
+  currency: text('currency'), // Trading currency from IBKR CurrencyPrimary (e.g., 'USD', 'GBP', 'CAD')
   // Mark-to-market fields
   spot: numeric('spot'),
   intrinsic: numeric('intrinsic'),
   extrinsic: numeric('extrinsic'),
   absNotional: numeric('abs_notional'),
+  absNotionalUsd: numeric('abs_notional_usd'), // abs_notional converted to USD via FX rate
   unrealizedPnl: numeric('unrealized_pnl'),
   snapshotDate: date('snapshot_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -724,6 +727,35 @@ export const cashBalances = pgTable(
     ),
   })
 );
+
+// ============================================================================
+// FX Rates (Daily Exchange Rates)
+// ============================================================================
+
+export const fxRates = pgTable(
+  'fx_rates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    snapshotDate: date('snapshot_date').notNull(),
+    fromCurrency: text('from_currency').notNull(),
+    toCurrency: text('to_currency').notNull(), // Always 'USD'
+    rate: numeric('rate').notNull(),
+    source: text('source').notNull(), // 'ibkr_flex'
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    uniqueDateCurrencyPair: unique().on(
+      table.snapshotDate,
+      table.fromCurrency,
+      table.toCurrency
+    ),
+    snapshotDateIdx: index('idx_fx_rates_snapshot_date').on(table.snapshotDate),
+    fromCurrencyIdx: index('idx_fx_rates_from_currency').on(table.fromCurrency),
+  })
+);
+
+export type FxRate = typeof fxRates.$inferSelect;
+export type NewFxRate = typeof fxRates.$inferInsert;
 
 // ============================================================================
 // Triage Records
@@ -830,8 +862,10 @@ export const portfolioSnapshots = pgTable(
       onDelete: 'set null',
     }),
     totalAbsNotional: numeric('total_abs_notional'),
+    totalAbsNotionalUsd: numeric('total_abs_notional_usd'), // USD-normalized total notional
     totalUnrealizedPnl: numeric('total_unrealized_pnl'),
-    navAtSnapshot: numeric('nav_at_snapshot'),
+    navAtSnapshot: numeric('nav_at_snapshot'), // In account's base currency
+    navAtSnapshotUsd: numeric('nav_at_snapshot_usd'), // NAV converted to USD
     pctNavAbsNotional: numeric('pct_nav_abs_notional'),
     absStockNotional: numeric('abs_stock_notional'),
     absOptionNotional: numeric('abs_option_notional'),

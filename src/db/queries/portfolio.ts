@@ -78,14 +78,14 @@ export async function getPortfolioDashboardData(
   const accountRows = await db
     .select({
       snapshotDate: portfolioSnapshots.snapshotDate,
-      totalAbsNotional: portfolioSnapshots.totalAbsNotional,
+      totalAbsNotional: sql<string>`COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional})`,
       totalUnrealizedPnl: portfolioSnapshots.totalUnrealizedPnl,
       pctNavAbsNotional: portfolioSnapshots.pctNavAbsNotional,
       absStockNotional: portfolioSnapshots.absStockNotional,
       absOptionNotional: portfolioSnapshots.absOptionNotional,
       absCryptoSpotNotional: portfolioSnapshots.absCryptoSpotNotional,
       absPerpNotional: portfolioSnapshots.absPerpNotional,
-      navAtSnapshot: portfolioSnapshots.navAtSnapshot,
+      navAtSnapshot: sql<string>`COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot})`,
       totalCashUsd: portfolioSnapshots.totalCashUsd,
       leverageRatio: portfolioSnapshots.leverageRatio,
     })
@@ -127,7 +127,7 @@ export async function getPortfolioDashboardData(
           underlyingId: portfolioSnapshots.underlyingId,
           ticker: underlyings.ticker,
           name: underlyings.name,
-          totalAbsNotional: portfolioSnapshots.totalAbsNotional,
+          totalAbsNotional: sql<string>`COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional})`,
           totalUnrealizedPnl: portfolioSnapshots.totalUnrealizedPnl,
           pctNavAbsNotional: portfolioSnapshots.pctNavAbsNotional,
         })
@@ -140,7 +140,7 @@ export async function getPortfolioDashboardData(
             eq(portfolioSnapshots.snapshotDate, latestDate)
           )
         )
-        .orderBy(desc(portfolioSnapshots.totalAbsNotional))
+        .orderBy(desc(sql`COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional})`))
         .limit(15)
     : [];
 
@@ -242,16 +242,17 @@ export async function getPortfolioDashboardDataMultiAccount(
   }
 
   // --- Aggregate account-level snapshots by date ---
+  // Use USD-normalized columns (with fallback to raw for backwards compat)
   const accountRows = await db
     .select({
       snapshotDate: portfolioSnapshots.snapshotDate,
-      totalAbsNotional: sql<string>`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC))`,
+      totalAbsNotional: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional}) AS NUMERIC))`,
       totalUnrealizedPnl: sql<string>`SUM(CAST(${portfolioSnapshots.totalUnrealizedPnl} AS NUMERIC))`,
       absStockNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absStockNotional} AS NUMERIC))`,
       absOptionNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absOptionNotional} AS NUMERIC))`,
       absCryptoSpotNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absCryptoSpotNotional} AS NUMERIC))`,
       absPerpNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absPerpNotional} AS NUMERIC))`,
-      navAtSnapshot: sql<string>`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`,
+      navAtSnapshot: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
       totalCashUsd: sql<string>`SUM(CAST(${portfolioSnapshots.totalCashUsd} AS NUMERIC))`,
     })
     .from(portfolioSnapshots)
@@ -299,13 +300,13 @@ export async function getPortfolioDashboardDataMultiAccount(
   // This ensures all accounts contribute regardless of ingestion schedule differences.
   const latestSnapshotRows = await db
     .select({
-      totalAbsNotional: sql<string>`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC))`,
+      totalAbsNotional: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional}) AS NUMERIC))`,
       totalUnrealizedPnl: sql<string>`SUM(CAST(${portfolioSnapshots.totalUnrealizedPnl} AS NUMERIC))`,
       absStockNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absStockNotional} AS NUMERIC))`,
       absOptionNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absOptionNotional} AS NUMERIC))`,
       absCryptoSpotNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absCryptoSpotNotional} AS NUMERIC))`,
       absPerpNotional: sql<string>`SUM(CAST(${portfolioSnapshots.absPerpNotional} AS NUMERIC))`,
-      navAtSnapshot: sql<string>`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`,
+      navAtSnapshot: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
       totalCashUsd: sql<string>`SUM(CAST(${portfolioSnapshots.totalCashUsd} AS NUMERIC))`,
       maxDate: sql<string>`MAX(${portfolioSnapshots.snapshotDate})`,
     })
@@ -358,7 +359,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       underlyingId: portfolioSnapshots.underlyingId,
       ticker: underlyings.ticker,
       name: underlyings.name,
-      totalAbsNotional: sql<string>`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC))`,
+      totalAbsNotional: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional}) AS NUMERIC))`,
       totalUnrealizedPnl: sql<string>`SUM(CAST(${portfolioSnapshots.totalUnrealizedPnl} AS NUMERIC))`,
     })
     .from(portfolioSnapshots)
@@ -376,7 +377,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       )
     )
     .groupBy(portfolioSnapshots.underlyingId, underlyings.ticker, underlyings.name)
-    .orderBy(sql`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC)) DESC`)
+    .orderBy(sql`SUM(CAST(COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional}) AS NUMERIC)) DESC`)
     .limit(15);
 
   // Calculate pctNavAbsNotional for each underlying using latest per-account NAV
@@ -440,7 +441,7 @@ export async function getPortfolioDashboardDataMultiAccount(
   const ownerRows = await db
     .select({
       owner: accounts.owner,
-      nav: sql<string>`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`,
+      nav: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
       accountCount: sql<string>`COUNT(DISTINCT ${accounts.id})`,
     })
     .from(portfolioSnapshots)
@@ -458,7 +459,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       )
     )
     .groupBy(accounts.owner)
-    .orderBy(desc(sql`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`));
+    .orderBy(desc(sql`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`));
 
   const ownerBreakdown: OwnerBreakdownRow[] = ownerRows.map((row) => ({
     owner: row.owner ?? "Unknown",
@@ -474,7 +475,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       accountId: portfolioSnapshots.accountId,
       owner: accounts.owner,
       snapshotDate: portfolioSnapshots.snapshotDate,
-      nav: portfolioSnapshots.navAtSnapshot,
+      nav: sql<string>`COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot})`,
     })
     .from(portfolioSnapshots)
     .innerJoin(accounts, eq(portfolioSnapshots.accountId, accounts.id))
@@ -565,6 +566,7 @@ export interface PortfolioPositionRow {
   costBasisMoney: number | null;
   spot: number | null;
   absNotional: number | null;
+  absNotionalUsd: number | null;
   unrealizedPnl: number | null;
   multiplier: number | null;
   snapshotDate: string | null;
@@ -627,6 +629,7 @@ export async function getPortfolioPositionsData(
       costBasisMoney: positions.costBasisMoney,
       spot: positions.spot,
       absNotional: positions.absNotional,
+      absNotionalUsd: positions.absNotionalUsd,
       unrealizedPnl: positions.unrealizedPnl,
       multiplier: positions.multiplier,
       snapshotDate: positions.snapshotDate,
@@ -663,9 +666,9 @@ export async function getPortfolioPositionsData(
   // Uses per-account latest dates so all exchanges contribute.
   const portfolioResult = await db
     .select({
-      nav: sql<string>`SUM(CAST(${portfolioSnapshots.navAtSnapshot} AS NUMERIC))`,
+      nav: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
       totalCashUsd: sql<string>`SUM(CAST(${portfolioSnapshots.totalCashUsd} AS NUMERIC))`,
-      totalAbsNotional: sql<string>`SUM(CAST(${portfolioSnapshots.totalAbsNotional} AS NUMERIC))`,
+      totalAbsNotional: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.totalAbsNotionalUsd}, ${portfolioSnapshots.totalAbsNotional}) AS NUMERIC))`,
     })
     .from(portfolioSnapshots)
     .where(
@@ -704,6 +707,7 @@ export async function getPortfolioPositionsData(
     costBasisMoney: toNumber(row.costBasisMoney),
     spot: toNumber(row.spot),
     absNotional: toNumber(row.absNotional),
+    absNotionalUsd: toNumber(row.absNotionalUsd),
     unrealizedPnl: toNumber(row.unrealizedPnl),
     multiplier: toNumber(row.multiplier),
     snapshotDate: row.snapshotDate,
@@ -721,6 +725,7 @@ export async function getPortfolioPositionsData(
 
   // Fetch strategy metadata
   const strategyMap = new Map<string, PortfolioStrategyRow>();
+  const mergedStrategyIds = new Set<string>();
   if (strategyIds.length > 0) {
     const strategyRows = await db
       .select({
@@ -743,8 +748,13 @@ export async function getPortfolioPositionsData(
       // are considered active unless explicitly draft/rejected/merged/closed.
       // "merged" strategies have been absorbed into another strategy, so their
       // positions should appear as unlinked (and be re-linked to the target strategy).
+      const isMerged = row.status === 'merged';
       const isActive = row.status !== 'draft' && row.status !== 'rejected'
-        && row.status !== 'complete' && row.status !== 'merged' && !row.closedAt;
+        && row.status !== 'complete' && !isMerged && !row.closedAt;
+      if (isMerged) {
+        mergedStrategyIds.add(row.id);
+        continue;
+      }
       if (!isActive) continue;
 
       strategyMap.set(row.id, {
@@ -762,14 +772,15 @@ export async function getPortfolioPositionsData(
   }
 
   // Group positions by strategy.
-  // Positions linked to non-active strategies (filtered out above) are hidden entirely.
+  // Positions linked to hidden strategies (draft/rejected/complete/closed) are hidden.
+  // Positions linked to merged strategies appear as unlinked.
   const excludedStrategyIds = new Set(
-    strategyIds.filter((id) => !strategyMap.has(id))
+    strategyIds.filter((id) => !strategyMap.has(id) && !mergedStrategyIds.has(id))
   );
   const unlinkedPositions: PortfolioPositionRow[] = [];
   for (const pos of allPositions) {
     if (pos.strategyId && excludedStrategyIds.has(pos.strategyId)) {
-      continue; // belongs to a non-active strategy — hide from portfolio
+      continue; // belongs to a hidden strategy — hide from portfolio
     } else if (pos.strategyId && strategyMap.has(pos.strategyId)) {
       strategyMap.get(pos.strategyId)!.positions.push(pos);
     } else {
@@ -779,8 +790,8 @@ export async function getPortfolioPositionsData(
 
   // Sort strategies by total abs notional descending
   const strategyList = [...strategyMap.values()].sort((a, b) => {
-    const aNotional = a.positions.reduce((sum, p) => sum + Math.abs(p.absNotional ?? 0), 0);
-    const bNotional = b.positions.reduce((sum, p) => sum + Math.abs(p.absNotional ?? 0), 0);
+    const aNotional = a.positions.reduce((sum, p) => sum + Math.abs(p.absNotionalUsd ?? p.absNotional ?? 0), 0);
+    const bNotional = b.positions.reduce((sum, p) => sum + Math.abs(p.absNotionalUsd ?? p.absNotional ?? 0), 0);
     return bNotional - aNotional;
   });
 

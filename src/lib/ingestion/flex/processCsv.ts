@@ -7,7 +7,7 @@
 
 import Papa from 'papaparse';
 import { db } from '@/db';
-import { positions, navSnapshots, mtmSnapshots, cashBalances, trades, ingestionRuns } from '@/db/schema';
+import { positions, navSnapshots, mtmSnapshots, cashBalances, trades, ingestionRuns, fxRates as fxRatesTable } from '@/db/schema';
 import type { NewPosition, NewNavSnapshot, NewMtmSnapshot, NewCashBalance } from '@/db/schema';
 import {
   FlexPositionRow,
@@ -162,57 +162,116 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
   // For USD-based accounts: rates are FromCurrency → USD (e.g., GBP → USD = 1.3688)
   // For GBP-based accounts: rates are FromCurrency → GBP (e.g., EUR → GBP = 0.8657)
   // We normalize all rates to → USD regardless of account base currency.
-  const fxRates = new Map<string, number>(); // currency → rate to USD
+  // Multi-date files have separate rates per date; we store per-date maps.
+  const fxRatesByDate = new Map<string, Map<string, number>>(); // date → (currency → rateToUSD)
   const rateHeader = rows.find(
     (row) => row[0] === 'HEADER' && row[1] === SECTION_CODES.RATE
   );
   if (rateHeader) {
     const rateFieldNames = rateHeader.slice(2);
+    const dateTimeIdx = rateFieldNames.indexOf('Date/Time');
     const fromCurrencyIdx = rateFieldNames.indexOf('FromCurrency');
     const toCurrencyIdx = rateFieldNames.indexOf('ToCurrency');
     const rateIdx = rateFieldNames.indexOf('Rate');
 
-    // First pass: collect raw rates and determine the base (ToCurrency)
-    const rawRates = new Map<string, number>(); // fromCurrency → rate
+    // First pass: collect raw rates grouped by date, determine base currency
+    const rawRatesByDate = new Map<string, Map<string, number>>();
     let baseCurrency = 'USD';
     for (const row of rows) {
       if (row[0] !== 'DATA' || row[1] !== SECTION_CODES.RATE) continue;
+      const dateRaw = row[dateTimeIdx + 2]?.trim();
       const fromCurrency = row[fromCurrencyIdx + 2]?.trim();
       const toCurrency = row[toCurrencyIdx + 2]?.trim();
       const rateStr = row[rateIdx + 2]?.trim();
-      if (fromCurrency && rateStr) {
-        const rate = parseFloat(rateStr);
-        if (!isNaN(rate) && rate > 0) {
-          rawRates.set(fromCurrency, rate);
-        }
+      if (!fromCurrency || !rateStr) continue;
+      const rate = parseFloat(rateStr);
+      if (isNaN(rate) || rate <= 0) continue;
+
+      // Format date: YYYYMMDD → YYYY-MM-DD
+      const dateKey = dateRaw && dateRaw.length === 8
+        ? `${dateRaw.slice(0, 4)}-${dateRaw.slice(4, 6)}-${dateRaw.slice(6, 8)}`
+        : dateRaw || 'unknown';
+
+      if (!rawRatesByDate.has(dateKey)) {
+        rawRatesByDate.set(dateKey, new Map());
       }
+      rawRatesByDate.get(dateKey)!.set(fromCurrency, rate);
       if (toCurrency) baseCurrency = toCurrency;
     }
 
-    if (baseCurrency === 'USD') {
-      // Direct: all rates are already → USD
-      for (const [currency, rate] of rawRates) {
-        fxRates.set(currency, rate);
-      }
-    } else {
-      // Non-USD base (e.g., GBP): rates are → baseCurrency
-      // Find USD → baseCurrency rate to compute baseCurrency → USD
-      const usdToBase = rawRates.get('USD');
-      if (usdToBase && usdToBase > 0) {
-        const baseToUsd = 1 / usdToBase;
-        fxRates.set(baseCurrency, baseToUsd);
-        // Convert all other currencies: currency → USD = (currency → base) * (base → USD)
-        for (const [currency, rateToBase] of rawRates) {
-          if (currency === 'USD') continue;
-          fxRates.set(currency, rateToBase * baseToUsd);
+    // Normalize each date's rates to → USD
+    for (const [date, rawRates] of rawRatesByDate) {
+      const normalized = new Map<string, number>();
+      if (baseCurrency === 'USD') {
+        for (const [currency, rate] of rawRates) {
+          normalized.set(currency, rate);
+        }
+      } else {
+        // Non-USD base (e.g., GBP): rates are → baseCurrency
+        const usdToBase = rawRates.get('USD');
+        if (usdToBase && usdToBase > 0) {
+          const baseToUsd = 1 / usdToBase;
+          normalized.set(baseCurrency, baseToUsd);
+          for (const [currency, rateToBase] of rawRates) {
+            if (currency === 'USD') continue;
+            normalized.set(currency, rateToBase * baseToUsd);
+          }
         }
       }
+      normalized.set('USD', 1);
+      fxRatesByDate.set(date, normalized);
     }
-    fxRates.set('USD', 1); // USD → USD is always 1
 
-    if (fxRates.size > 1) {
-      console.log(`[FX Rates] Parsed ${fxRates.size - 1} exchange rates (base: ${baseCurrency}, e.g., GBP→USD: ${fxRates.get('GBP')?.toFixed(4) ?? 'N/A'}, EUR→USD: ${fxRates.get('EUR')?.toFixed(4) ?? 'N/A'})`);
+    if (fxRatesByDate.size > 0) {
+      const sampleDate = [...fxRatesByDate.keys()][0];
+      const sampleRates = fxRatesByDate.get(sampleDate)!;
+      console.log(`[FX Rates] Parsed rates for ${fxRatesByDate.size} date(s) (base: ${baseCurrency}, e.g., GBP→USD: ${sampleRates.get('GBP')?.toFixed(4) ?? 'N/A'}, EUR→USD: ${sampleRates.get('EUR')?.toFixed(4) ?? 'N/A'})`);
     }
+  }
+
+  // Helper: get FX rate for a specific date and currency
+  function getFxRate(date: string, currency: string): number | undefined {
+    return fxRatesByDate.get(date)?.get(currency);
+  }
+
+  // Helper: persist FX rates to database for all dates
+  async function persistAllFxRates() {
+    let totalPersisted = 0;
+    for (const [date, rates] of fxRatesByDate) {
+      const ratesToInsert = [];
+      for (const [currency, rate] of rates) {
+        if (currency === 'USD') continue;
+        ratesToInsert.push({
+          snapshotDate: date,
+          fromCurrency: currency,
+          toCurrency: 'USD' as const,
+          rate: rate.toString(),
+          source: 'ibkr_flex' as const,
+        });
+      }
+      for (const rateRow of ratesToInsert) {
+        await db.insert(fxRatesTable).values(rateRow).onConflictDoUpdate({
+          target: [fxRatesTable.snapshotDate, fxRatesTable.fromCurrency, fxRatesTable.toCurrency],
+          set: { rate: rateRow.rate, source: rateRow.source },
+        });
+      }
+      totalPersisted += ratesToInsert.length;
+    }
+    if (totalPersisted > 0) {
+      console.log(`[FX Rates] Persisted ${totalPersisted} rate(s) across ${fxRatesByDate.size} date(s)`);
+    }
+  }
+
+  // Helper: compute absNotionalUsd from absNotional + currency using per-date FX rates
+  function computeAbsNotionalUsd(absNotional: string | null, currency: string | null, snapshotDate: string): string | null {
+    if (!absNotional) return null;
+    const notional = parseFloat(absNotional);
+    if (isNaN(notional)) return null;
+    const cur = currency || 'USD';
+    if (cur === 'USD') return absNotional;
+    const rate = getFxRate(snapshotDate, cur);
+    if (rate) return (notional * rate).toString();
+    return null; // Unknown currency or date, can't convert
   }
 
   // Process POST section
@@ -481,6 +540,20 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
             .where(and(eq(positions.accountId, acc), eq(positions.snapshotDate, snapshotDate)));
         }
 
+        // Compute absNotionalUsd for each position using per-date FX rates
+        for (const { data } of normalizedRows) {
+          if (data.snapshotDate) {
+            data.absNotionalUsd = computeAbsNotionalUsd(data.absNotional ?? null, data.currency ?? null, data.snapshotDate);
+          }
+        }
+
+        // Persist FX rates for all dates in the file
+        try {
+          await persistAllFxRates();
+        } catch (error) {
+          console.error('[FX Rates] Failed to persist:', error);
+        }
+
         // Insert positions (change detection already done above)
         for (const { data, rowNumber } of normalizedRows) {
           try {
@@ -600,7 +673,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
             balanceUsd: (() => {
               const cur = data.currency || 'USD';
               if (cur === 'USD') return data.cash;
-              const rate = fxRates.get(cur);
+              const rate = getFxRate(data.reportDate, cur);
               if (rate) return (parseFloat(data.cash) * rate).toString();
               return null;
             })(),
@@ -625,8 +698,20 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
               );
           }
         }
-        await db.insert(cashBalances).values(equtCashValues);
-        results.cash.inserted += equtCashValues.length;
+        // Deduplicate before inserting (multi-date files can have duplicate EQUT rows per date)
+        const dedupedCash: typeof equtCashValues = [];
+        const cashSeen = new Set<string>();
+        for (const v of equtCashValues) {
+          const key = `${v.accountId}::${v.snapshotDate}::${v.currency}::${v.source}`;
+          if (!cashSeen.has(key)) {
+            cashSeen.add(key);
+            dedupedCash.push(v);
+          }
+        }
+        if (dedupedCash.length > 0) {
+          await db.insert(cashBalances).values(dedupedCash);
+        }
+        results.cash.inserted += dedupedCash.length;
         console.log(`[EQUT Cash] Inserted ${equtCashValues.length} aggregate cash balance(s) from EQUT section`);
       }
     }
@@ -707,7 +792,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
           if (cur === 'USD') {
             balanceUsd = amount.toString();
           } else {
-            const rate = fxRates.get(cur);
+            const rate = getFxRate(snapshotDate, cur);
             if (rate) balanceUsd = (amount * rate).toString();
           }
 
@@ -840,7 +925,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
         });
 
         // Compute portfolio snapshots
-        await computePortfolioSnapshotsForDateRange(recomputeAccountId, minDate, maxDate);
+        await computePortfolioSnapshotsForDateRange(recomputeAccountId, minDate, maxDate, true);
 
         // Get all strategies for this account (including newly created ones)
         // Exclude merged/rejected strategies - they're no longer active

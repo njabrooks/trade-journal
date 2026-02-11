@@ -769,7 +769,6 @@ export async function autoLinkPositionsToStrategies(
     // PRIMARY METHOD: Match by conid (unique contract identifier)
     // This is the most reliable way - same conid = same strategy across all snapshot dates
     // This preserves strategy linkage when re-ingesting data
-    // IMPORTANT: Keep the link even if strategy is rejected/merged - the link is permanent
     if (pos.conid) {
       const existingPosition = await db
         .select({
@@ -788,9 +787,6 @@ export async function autoLinkPositionsToStrategies(
         .limit(1);
 
       if (existingPosition.length > 0 && existingPosition[0].strategyId) {
-        // Verify the strategy still exists (regardless of status)
-        // CRITICAL: Keep link to rejected/merged strategies - the link is permanent
-        // and should be used to filter positions in views, not to re-link
         const strategy = await db
           .select({ id: strategies.id, status: strategies.status })
           .from(strategies)
@@ -798,25 +794,31 @@ export async function autoLinkPositionsToStrategies(
           .limit(1);
 
         if (strategy.length > 0) {
-          // Link to existing strategy regardless of status (rejected, merged, etc.)
-          // The strategy status determines visibility in views, not linkage
-          strategyId = strategy[0].id;
+          const st = strategy[0];
+          if (st.status === 'merged') {
+            // Strategy was merged — don't link here. Fall through to the
+            // derived-key fallback which will find the active merge target
+            // or to findOrCreateStrategyFromPosition which skips merged.
+          } else {
+            // Active, draft, complete, rejected — link directly
+            strategyId = st.id;
+          }
         }
       }
     }
 
-    // FALLBACK: Only for brand new positions (no conid match in history)
+    // FALLBACK: No conid match found (or conid matched a merged strategy)
     // Before creating a new strategy, try to find existing strategies by:
     // 1. Matching by derived strategy key (e.g., "IBIT 260918")
     // 2. Cross-account merge target detection (for merged strategies)
     // 3. Matching by underlying ticker + expiry (for complete strategies being reopened)
-    // IMPORTANT: Include rejected/merged - we want to link to them, not create new
+    // NOTE: Merged strategies are skipped — positions should link to the active merge target
     if (!strategyId) {
       // First, try to find by derived key (this should match existing strategies)
       const derivedKey = deriveStrategyKeyFromPosition(pos);
       if (derivedKey) {
-        // Look for ALL strategies with this key, ordered by preference
-        // CRITICAL: Include rejected/merged - link is permanent, status filters views
+        // Look for strategies with this key, ordered by preference
+        // Exclude merged — those should be resolved to their merge target
         const existingByKey = await db
           .select({
             id: strategies.id,
@@ -831,7 +833,7 @@ export async function autoLinkPositionsToStrategies(
             )
           )
           .orderBy(
-            // Prefer: active > draft > complete > merged > rejected
+            // Prefer: active > draft > complete > rejected (merged handled separately)
             sql`CASE
               WHEN ${strategies.status} = 'active' THEN 0
               WHEN ${strategies.status} = 'draft' THEN 1
@@ -840,39 +842,39 @@ export async function autoLinkPositionsToStrategies(
               ELSE 4
             END`
           )
-          .limit(1);
+          .limit(5); // Fetch a few so we can skip merged and find active
 
-        if (existingByKey.length > 0) {
-          const matched = existingByKey[0];
-
-          // If the best match is merged, try to find the merge target
-          if (matched.status === 'merged') {
-            const mergeTarget = await db
-              .selectDistinct({
-                strategyId: positions.strategyId,
-              })
-              .from(positions)
-              .innerJoin(strategies, eq(positions.strategyId, strategies.id))
-              .where(
-                and(
-                  eq(positions.accountId, pos.accountId),
-                  eq(strategies.strategyKey, derivedKey),
-                  ne(strategies.id, matched.id),
-                  sql`${strategies.status} IN ('active', 'draft')`,
-                  sql`${positions.quantity} != 0`
-                )
+        // Find the best non-merged match
+        const matched = existingByKey.find(s => s.status !== 'merged');
+        if (matched) {
+          // Active, draft, complete, or rejected — link directly
+          strategyId = matched.id;
+        } else if (existingByKey.length > 0 && existingByKey[0].status === 'merged') {
+          // All matches are merged — try to find the active merge target
+          // by looking for active/draft strategies with the same key on the same account
+          // (the merge target may have a different key, so also check positions)
+          const mergeTarget = await db
+            .selectDistinct({
+              strategyId: positions.strategyId,
+            })
+            .from(positions)
+            .innerJoin(strategies, eq(positions.strategyId, strategies.id))
+            .where(
+              and(
+                eq(positions.accountId, pos.accountId),
+                eq(strategies.strategyKey, derivedKey),
+                sql`${strategies.status} IN ('active', 'draft')`,
+                sql`${positions.quantity} != 0`
               )
-              .limit(1);
+            )
+            .limit(1);
 
-            // Use merge target if found, otherwise keep link to merged strategy
-            strategyId = mergeTarget.length > 0 && mergeTarget[0].strategyId
-              ? mergeTarget[0].strategyId
-              : matched.id;
-          } else {
-            // For active, draft, complete, or rejected - link directly
-            // Rejected link ensures position is hidden from active views
-            strategyId = matched.id;
+          if (mergeTarget.length > 0 && mergeTarget[0].strategyId) {
+            strategyId = mergeTarget[0].strategyId;
           }
+          // If no merge target found, DON'T link to the merged strategy.
+          // Fall through to findOrCreateStrategyFromPosition which will
+          // skip merged strategies and either find an active one or create new.
         } else if (pos.underlyingId && pos.expiry && pos.assetClass === 'OPT') {
           // If no exact key match, try to find strategies that have positions with same underlying + expiry
           // This catches existing strategies where the key might have been edited

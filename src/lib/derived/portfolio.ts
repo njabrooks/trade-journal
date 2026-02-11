@@ -4,12 +4,14 @@ import {
   navSnapshots,
   cashBalances,
   portfolioSnapshots,
+  fxRates,
   NewPortfolioSnapshot,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, gte, lte } from 'drizzle-orm';
 
 interface NotionalSums {
   totalAbsNotional: string | null;
+  totalAbsNotionalUsd: string | null;
   totalUnrealizedPnl: string | null;
   absStockNotional: string | null;
   absOptionNotional: string | null;
@@ -30,9 +32,10 @@ interface NotionalSums {
  * included in the cash balance.
  */
 function computeNotionalSums(
-  positionRows: { absNotional: string | null; spot: string | null; multiplier: string | null; quantity: string | null; unrealizedPnl: string | null; assetClass: string | null }[]
+  positionRows: { absNotional: string | null; absNotionalUsd: string | null; spot: string | null; multiplier: string | null; quantity: string | null; unrealizedPnl: string | null; assetClass: string | null }[]
 ): NotionalSums {
   let totalNotionalSum = 0;
+  let totalNotionalUsdSum = 0;
   let totalPnlSum = 0;
   let stockNotionalSum = 0;
   let optionNotionalSum = 0;
@@ -58,9 +61,19 @@ function computeNotionalSums(
         notional = Math.abs(qty * spot * mult);
       }
     }
+
+    // USD notional: prefer pre-computed absNotionalUsd, fall back to absNotional (assumes USD)
+    let notionalUsd = 0;
+    if (pos.absNotionalUsd) {
+      const val = parseFloat(pos.absNotionalUsd);
+      if (!isNaN(val)) notionalUsd = Math.abs(val);
+    }
+    if (notionalUsd === 0) notionalUsd = notional; // Fallback: assume USD if no conversion available
+
     const pnl = pos.unrealizedPnl ? parseFloat(pos.unrealizedPnl) : 0;
 
     totalNotionalSum += notional;
+    totalNotionalUsdSum += notionalUsd;
     totalPnlSum += pnl;
 
     if (pos.assetClass === 'STK') {
@@ -82,6 +95,7 @@ function computeNotionalSums(
 
   return {
     totalAbsNotional: totalNotionalSum > 0 ? totalNotionalSum.toString() : null,
+    totalAbsNotionalUsd: totalNotionalUsdSum > 0 ? totalNotionalUsdSum.toString() : null,
     totalUnrealizedPnl: totalPnlSum !== 0 ? totalPnlSum.toString() : null,
     absStockNotional: stockNotionalSum > 0 ? stockNotionalSum.toString() : null,
     absOptionNotional: optionNotionalSum > 0 ? optionNotionalSum.toString() : null,
@@ -127,6 +141,7 @@ async function computeAccountLevelSnapshot(
 
   const navRow = navResult[0] ?? null;
   const authoritativeNav = navRow?.total ?? null;
+  const navCurrency = navRow?.currency ?? null;
 
   // Compute aggregates
   const sums = computeNotionalSums(accountPositions);
@@ -146,34 +161,58 @@ async function computeAccountLevelSnapshot(
   const totalCashUsd = parseFloat(cashResult[0]?.totalCashUsd ?? '0');
 
   // Determine effective NAV:
-  // - If nav_snapshots has a row (IBKR) → use authoritative NAV
+  // - If nav_snapshots has a row (IBKR) → use authoritative NAV (in account base currency)
   // - Otherwise → NAV = navPositionValue + cash
   //   where navPositionValue = non-perp notional + perp unrealized PnL
   //   (perp notional is exposure, not equity; perp margin is in cash)
   let effectiveNav: number | null = null;
+  let effectiveNavUsd: number | null = null;
+
   if (authoritativeNav) {
     effectiveNav = parseFloat(authoritativeNav);
+    // Convert authoritative NAV to USD using FX rate
+    if (navCurrency && navCurrency !== 'USD' && effectiveNav) {
+      const fxResult = await db
+        .select({ rate: fxRates.rate })
+        .from(fxRates)
+        .where(
+          and(
+            eq(fxRates.snapshotDate, snapshotDate),
+            eq(fxRates.fromCurrency, navCurrency),
+            eq(fxRates.toCurrency, 'USD')
+          )
+        )
+        .limit(1);
+      const rate = fxResult[0]?.rate ? parseFloat(fxResult[0].rate) : null;
+      if (rate) {
+        effectiveNavUsd = effectiveNav * rate;
+      }
+    } else {
+      effectiveNavUsd = effectiveNav; // Already USD
+    }
   } else {
-    // Use navPositionValue which correctly handles perps
+    // Derived NAV: navPositionValue + cash (both effectively in USD for crypto)
     const positionValue = sums.navPositionValue ? parseFloat(sums.navPositionValue) : 0;
     if (positionValue !== 0 || totalCashUsd !== 0) {
       effectiveNav = positionValue + totalCashUsd;
+      effectiveNavUsd = effectiveNav; // Derived NAV is already USD
     }
   }
 
   const navAtSnapshot = effectiveNav?.toString() ?? null;
+  const navAtSnapshotUsd = effectiveNavUsd?.toString() ?? null;
 
-  // Compute pct_nav_abs_notional
+  // Compute pct_nav_abs_notional and leverage from USD-normalized values
   let pctNavAbsNotional: string | null = null;
-  if (effectiveNav && effectiveNav > 0 && sums.totalAbsNotional) {
-    const pct = (parseFloat(sums.totalAbsNotional) / effectiveNav) * 100;
+  if (effectiveNavUsd && effectiveNavUsd > 0 && sums.totalAbsNotionalUsd) {
+    const pct = (parseFloat(sums.totalAbsNotionalUsd) / effectiveNavUsd) * 100;
     pctNavAbsNotional = pct.toString();
   }
 
-  // Compute leverage ratio (gross exposure / NAV)
+  // Compute leverage ratio from USD values (gross exposure / NAV)
   let leverageRatio: string | null = null;
-  if (effectiveNav && effectiveNav > 0 && sums.totalAbsNotional) {
-    leverageRatio = (parseFloat(sums.totalAbsNotional) / effectiveNav).toString();
+  if (effectiveNavUsd && effectiveNavUsd > 0 && sums.totalAbsNotionalUsd) {
+    leverageRatio = (parseFloat(sums.totalAbsNotionalUsd) / effectiveNavUsd).toString();
   }
 
   return {
@@ -183,6 +222,7 @@ async function computeAccountLevelSnapshot(
     underlyingId: null,
     ...sums,
     navAtSnapshot,
+    navAtSnapshotUsd,
     pctNavAbsNotional,
     totalCashUsd: totalCashUsd !== 0 ? totalCashUsd.toString() : null,
     leverageRatio,
@@ -210,22 +250,33 @@ async function computeUnderlyingLevelSnapshot(
       )
     );
 
-  // Get NAV (same as account-level)
-  const navResult = await db
-    .select()
-    .from(navSnapshots)
-    .where(and(eq(navSnapshots.accountId, accountId), eq(navSnapshots.reportDate, snapshotDate)))
+  // Get account-level snapshot for NAV USD (already computed)
+  const accountSnapshot = await db
+    .select({
+      navAtSnapshot: portfolioSnapshots.navAtSnapshot,
+      navAtSnapshotUsd: portfolioSnapshots.navAtSnapshotUsd,
+    })
+    .from(portfolioSnapshots)
+    .where(
+      and(
+        eq(portfolioSnapshots.accountId, accountId),
+        eq(portfolioSnapshots.snapshotDate, snapshotDate),
+        eq(portfolioSnapshots.level, 'account')
+      )
+    )
     .limit(1);
 
-  const navAtSnapshot = navResult[0]?.total ?? null;
+  const navAtSnapshot = accountSnapshot[0]?.navAtSnapshot ?? null;
+  const navAtSnapshotUsd = accountSnapshot[0]?.navAtSnapshotUsd ?? null;
 
   // Compute aggregates
   const sums = computeNotionalSums(underlyingPositions);
 
-  // Compute pct_nav_abs_notional
+  // Compute pct_nav_abs_notional using USD values
   let pctNavAbsNotional: string | null = null;
-  if (navAtSnapshot && parseFloat(navAtSnapshot) > 0 && sums.totalAbsNotional) {
-    const pct = (parseFloat(sums.totalAbsNotional) / parseFloat(navAtSnapshot)) * 100;
+  const navUsd = navAtSnapshotUsd ? parseFloat(navAtSnapshotUsd) : null;
+  if (navUsd && navUsd > 0 && sums.totalAbsNotionalUsd) {
+    const pct = (parseFloat(sums.totalAbsNotionalUsd) / navUsd) * 100;
     pctNavAbsNotional = pct.toString();
   }
 
@@ -236,6 +287,7 @@ async function computeUnderlyingLevelSnapshot(
     underlyingId,
     ...sums,
     navAtSnapshot,
+    navAtSnapshotUsd,
     pctNavAbsNotional,
   };
 }

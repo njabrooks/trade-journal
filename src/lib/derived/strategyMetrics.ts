@@ -1,7 +1,7 @@
 import { db } from '@/db';
 import {
   positions,
-  navSnapshots,
+  portfolioSnapshots,
   strategyMetricsSnapshots,
   NewStrategyMetricsSnapshot,
 } from '@/db/schema';
@@ -35,38 +35,54 @@ export async function computeStrategyMetrics(
       )
     );
 
-  // 2. Get NAV for this account/date
-  const navResult = await db
-    .select()
-    .from(navSnapshots)
-    .where(and(eq(navSnapshots.accountId, accountId), eq(navSnapshots.reportDate, snapshotDate)))
+  // 2. Get NAV (USD) from account-level portfolio snapshot (already computed with FX conversion)
+  const accountSnapshot = await db
+    .select({
+      navAtSnapshotUsd: portfolioSnapshots.navAtSnapshotUsd,
+      navAtSnapshot: portfolioSnapshots.navAtSnapshot,
+    })
+    .from(portfolioSnapshots)
+    .where(
+      and(
+        eq(portfolioSnapshots.accountId, accountId),
+        eq(portfolioSnapshots.snapshotDate, snapshotDate),
+        eq(portfolioSnapshots.level, 'account')
+      )
+    )
     .limit(1);
 
-  const navAtSnapshot = navResult[0]?.total ?? null;
+  const navAtSnapshot = accountSnapshot[0]?.navAtSnapshotUsd ?? accountSnapshot[0]?.navAtSnapshot ?? null;
 
-  // 3. Compute total_abs_notional
+  // 3. Compute total_abs_notional (prefer USD-converted values for cross-currency consistency)
   // Policy: Absolute notional is always positive - sum of absolute values of each position's notional
   let totalAbsNotional: string | null = null;
   if (strategyPositions.length > 0) {
-  const absNotionalSum = strategyPositions.reduce((sum, pos) => {
-      // First try: use stored absNotional (take absolute value in case it's negative)
-    if (pos.absNotional) {
+    const absNotionalSum = strategyPositions.reduce((sum, pos) => {
+      // First try: use USD-converted notional
+      if (pos.absNotionalUsd) {
+        const val = parseFloat(pos.absNotionalUsd);
+        if (!isNaN(val)) {
+          return sum + Math.abs(val);
+        }
+      }
+      // Fallback: use raw absNotional (take absolute value in case it's negative)
+      if (pos.absNotional) {
         const val = parseFloat(pos.absNotional);
         if (!isNaN(val)) {
           return sum + Math.abs(val);
         }
-    }
-      // Fallback: compute from quantity * spot * multiplier (always positive)
-    if (pos.spot && pos.multiplier && pos.quantity) {
-      const qty = parseFloat(pos.quantity);
-      const spot = parseFloat(pos.spot);
-      const mult = parseFloat(pos.multiplier);
+      }
+      // Last resort: compute from quantity * spot * multiplier (always positive)
+      if (pos.spot && pos.multiplier && pos.quantity) {
+        const qty = parseFloat(pos.quantity);
+        const spot = parseFloat(pos.spot);
+        const mult = parseFloat(pos.multiplier);
         if (!isNaN(qty) && !isNaN(spot) && !isNaN(mult)) {
-      return sum + Math.abs(qty * spot * mult);
+          return sum + Math.abs(qty * spot * mult);
         }
-    }
-    return sum;
-  }, 0);
+      }
+      return sum;
+    }, 0);
     // Always set a value if we have positions (even if sum is 0, that's valid)
     totalAbsNotional = absNotionalSum.toString();
   }

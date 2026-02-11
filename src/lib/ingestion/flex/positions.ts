@@ -233,10 +233,12 @@ export async function normalizeFlexPositionRow(
     closeDate: null,
     positionType: derivePositionType(assetClass, side),
     isOpen: quantityNum !== 0,
+    currency: currencyPrimary,
     spot: markPrice,
     intrinsic: null,
     extrinsic: null,
     absNotional: positionValue,
+    absNotionalUsd: null, // Computed in processCsv.ts using FX rates
     unrealizedPnl: unrealized,
     snapshotDate,
   };

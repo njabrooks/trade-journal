@@ -282,7 +282,7 @@ function PortfolioDashboardContent() {
     const underlyingIds = new Set<string>();
 
     for (const pos of allPositions) {
-      marketValue += Math.abs(pos.absNotional ?? 0);
+      marketValue += Math.abs(pos.absNotionalUsd ?? pos.absNotional ?? 0);
       if (pos.underlyingId) underlyingIds.add(pos.underlyingId);
     }
 
@@ -309,7 +309,7 @@ function PortfolioDashboardContent() {
     let perpetuals = 0;
 
     for (const pos of allPositions) {
-      const notional = Math.abs(pos.absNotional ?? 0);
+      const notional = Math.abs(pos.absNotionalUsd ?? pos.absNotional ?? 0);
       if (pos.assetClass === "STK") equities += notional;
       else if (pos.assetClass === "OPT") options += notional;
       else if (pos.assetClass === "CRYPTO") cryptoSpot += notional;

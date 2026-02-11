@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
             accountId,
             snapshotDate,
             snapshotDate,
-            false, // includeUnderlyings
+            true, // includeUnderlyings
             false // onlyLatestForUnderlyings
           );
           

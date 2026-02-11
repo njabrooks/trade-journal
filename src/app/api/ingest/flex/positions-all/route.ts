@@ -462,7 +462,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Compute portfolio snapshots
-        await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate);
+        await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate, true);
 
           // Get all strategies for this account (including newly created ones)
           // Exclude merged/rejected strategies - they're no longer active
@@ -564,7 +564,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Compute portfolio snapshots
-        await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate);
+        await computePortfolioSnapshotsForDateRange(accountId, minDate, maxDate, true);
 
         // Get all strategies for this account (including newly created ones)
         // Exclude merged/rejected strategies - they're no longer active
