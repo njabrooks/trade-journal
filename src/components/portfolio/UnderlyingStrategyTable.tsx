@@ -10,6 +10,13 @@ import type { Account } from "@/db/schema";
 type SortColumn = "underlying" | "strategies" | "positions" | "marketValue" | "pctTotal" | "dte";
 type SortDirection = "asc" | "desc";
 
+interface CashCurrencyGroup {
+  currency: string;
+  totalBalance: number;
+  totalBalanceUsd: number;
+  rows: CashBreakdownRow[];
+}
+
 interface UnderlyingGroup {
   underlyingTicker: string;
   underlyingId: string | null;
@@ -18,7 +25,7 @@ interface UnderlyingGroup {
   pctTotal: number | null;
   minDte: number | null;
   positionCount: number;
-  cashRows?: CashBreakdownRow[];
+  cashCurrencyGroups?: CashCurrencyGroup[];
 }
 
 interface UnderlyingStrategyTableProps {
@@ -137,6 +144,28 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
     // Append synthetic cash group if cash data is present
     if (cashRows && cashRows.length > 0) {
       const cashTotalUsd = cashRows.reduce((sum, r) => sum + (r.balanceUsd ?? 0), 0);
+
+      // Group cash rows by currency
+      const currencyMap = new Map<string, CashCurrencyGroup>();
+      for (const row of cashRows) {
+        const existing = currencyMap.get(row.currency);
+        if (existing) {
+          existing.totalBalance += row.balance;
+          existing.totalBalanceUsd += row.balanceUsd ?? 0;
+          existing.rows.push(row);
+        } else {
+          currencyMap.set(row.currency, {
+            currency: row.currency,
+            totalBalance: row.balance,
+            totalBalanceUsd: row.balanceUsd ?? 0,
+            rows: [row],
+          });
+        }
+      }
+      // Sort currency groups by USD value descending
+      const cashCurrencyGroups = Array.from(currencyMap.values())
+        .sort((a, b) => b.totalBalanceUsd - a.totalBalanceUsd);
+
       result.push({
         underlyingTicker: "Cash & Equivalents",
         underlyingId: null,
@@ -145,7 +174,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
         pctTotal: totalMarketValue > 0 ? (cashTotalUsd / totalMarketValue) * 100 : null,
         minDte: null,
         positionCount: 0,
-        cashRows,
+        cashCurrencyGroups,
       });
     }
 
@@ -335,10 +364,10 @@ function UnderlyingGroup({
           </span>
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
-          {group.cashRows ? group.cashRows.length : group.strategies.length}
+          {group.cashCurrencyGroups ? group.cashCurrencyGroups.length : group.strategies.length}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
-          {group.cashRows ? "\u2014" : group.positionCount}
+          {group.cashCurrencyGroups ? "\u2014" : group.positionCount}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
           {formatCurrency(group.totalMV)}
@@ -351,18 +380,25 @@ function UnderlyingGroup({
         </td>
       </tr>
 
-      {/* Expanded cash rows */}
-      {isExpanded && group.cashRows &&
-        group.cashRows.map((row, i) => (
-          <CashChildRow
-            key={`${row.currency}-${row.source}-${i}`}
-            row={row}
-            totalMarketValue={totalMarketValue}
-          />
-        ))}
+      {/* Expanded cash currency groups */}
+      {isExpanded && group.cashCurrencyGroups &&
+        group.cashCurrencyGroups.map((currencyGroup) => {
+          const currencyKey = `cash-${currencyGroup.currency}`;
+          const isCurrencyExpanded = expandedStrategies.has(currencyKey);
+          return (
+            <CashCurrencyRow
+              key={currencyKey}
+              currencyGroup={currencyGroup}
+              totalMarketValue={totalMarketValue}
+              isExpanded={isCurrencyExpanded}
+              onToggle={() => onToggleStrategy(currencyKey)}
+              accountMap={accountMap}
+            />
+          );
+        })}
 
       {/* Expanded strategies */}
-      {isExpanded && !group.cashRows &&
+      {isExpanded && !group.cashCurrencyGroups &&
         group.strategies.map((strategy) => {
           const isStrategyExpanded = expandedStrategies.has(strategy.id);
           const agg = getStrategyAggregates(strategy, totalMarketValue);
@@ -383,42 +419,134 @@ function UnderlyingGroup({
   );
 }
 
-function CashChildRow({
+function CashCurrencyRow({
+  currencyGroup,
+  totalMarketValue,
+  isExpanded,
+  onToggle,
+  accountMap,
+}: {
+  currencyGroup: CashCurrencyGroup;
+  totalMarketValue: number;
+  isExpanded: boolean;
+  onToggle: () => void;
+  accountMap: Map<string, Account>;
+}) {
+  const pctTotal =
+    totalMarketValue > 0 ? (currencyGroup.totalBalanceUsd / totalMarketValue) * 100 : null;
+
+  return (
+    <>
+      {/* Currency summary row (like a strategy row) */}
+      <tr
+        className="cursor-pointer hover:bg-muted/30 transition-colors"
+        onClick={onToggle}
+      >
+        <td className="py-2 pl-6 pr-1">
+          {isExpanded ? (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+        </td>
+        <td className="py-2 pr-3">
+          <span className="pl-3 font-medium text-sm text-foreground">
+            {currencyGroup.currency}
+          </span>
+        </td>
+        <td className="py-2 pr-3 text-right text-xs text-muted-foreground">
+          {"\u2014"}
+        </td>
+        <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+          {currencyGroup.rows.length}
+        </td>
+        <td className="py-2 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
+          {formatCurrency(currencyGroup.totalBalanceUsd)}
+        </td>
+        <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+          {pctTotal != null ? formatPercent(pctTotal) : "\u2014"}
+        </td>
+        <td className="py-2 text-center text-sm tabular-nums text-muted-foreground">
+          {"\u2014"}
+        </td>
+      </tr>
+
+      {/* Expanded account rows */}
+      {isExpanded && currencyGroup.rows.length > 0 && (
+        <>
+          <tr className="bg-muted/30">
+            <td></td>
+            <td className="py-1.5 pl-10 pr-3 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Account
+            </td>
+            <td className="py-1.5 pr-3 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Source
+            </td>
+            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+              Balance
+            </td>
+            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+              USD Value
+            </td>
+            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+              % Total
+            </td>
+            <td className="py-1.5 text-center text-[10px] uppercase tracking-wide text-muted-foreground">
+              {"\u2014"}
+            </td>
+          </tr>
+          {currencyGroup.rows.map((row, i) => (
+            <CashAccountRow
+              key={`${row.accountId}-${row.source}-${i}`}
+              row={row}
+              totalMarketValue={totalMarketValue}
+              accountMap={accountMap}
+            />
+          ))}
+        </>
+      )}
+    </>
+  );
+}
+
+function CashAccountRow({
   row,
   totalMarketValue,
+  accountMap,
 }: {
   row: CashBreakdownRow;
   totalMarketValue: number;
+  accountMap: Map<string, Account>;
 }) {
   const pctTotal =
     totalMarketValue > 0 && row.balanceUsd != null
       ? (row.balanceUsd / totalMarketValue) * 100
       : null;
+  const account = accountMap.get(row.accountId);
+  const accountLabel = account?.label ?? account?.brokerAccountId ?? row.accountId.slice(0, 8);
 
   return (
-    <tr className="hover:bg-muted/30 transition-colors">
-      <td className="py-2 pl-6 pr-1"></td>
-      <td className="py-2 pr-3">
-        <span className="pl-3 font-medium text-sm text-foreground">
-          {row.currency}
-        </span>
+    <tr className="hover:bg-muted/20 transition-colors">
+      <td></td>
+      <td className="py-1.5 pl-10 pr-3 text-xs text-muted-foreground">
+        {accountLabel}
       </td>
-      <td className="py-2 pr-3 text-right text-xs text-muted-foreground">
+      <td className="py-1.5 pr-3 text-xs text-muted-foreground">
         {row.source}
       </td>
-      <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+      <td className="py-1.5 pr-3 text-right text-xs tabular-nums text-muted-foreground">
         {row.balance.toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })}
       </td>
-      <td className="py-2 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
+      <td className="py-1.5 pr-3 text-right text-xs tabular-nums font-medium text-foreground">
         {row.balanceUsd != null ? formatCurrency(row.balanceUsd) : "\u2014"}
       </td>
-      <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+      <td className="py-1.5 pr-3 text-right text-xs tabular-nums text-muted-foreground">
         {pctTotal != null ? formatPercent(pctTotal) : "\u2014"}
       </td>
-      <td className="py-2 text-center text-sm tabular-nums text-muted-foreground">
+      <td className="py-1.5 text-center text-xs tabular-nums text-muted-foreground">
         {"\u2014"}
       </td>
     </tr>

@@ -48,6 +48,7 @@ export interface CashBreakdownRow {
   balance: number;
   balanceUsd: number | null;
   source: string;
+  accountId: string;
 }
 
 export interface OwnerBreakdownRow {
@@ -161,7 +162,7 @@ export async function getPortfolioDashboardData(
     .filter((s) => s.navAtSnapshot !== null)
     .map((s) => ({ date: s.date, nav: s.navAtSnapshot }));
 
-  // Cash breakdown for latest date
+  // Cash breakdown for latest date (per account + currency + source)
   const cashRows = latestDate
     ? await db
         .select({
@@ -169,6 +170,7 @@ export async function getPortfolioDashboardData(
           balance: sql<string>`SUM(CAST(${cashBalances.balance} AS NUMERIC))`,
           balanceUsd: sql<string>`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`,
           source: cashBalances.source,
+          accountId: cashBalances.accountId,
         })
         .from(cashBalances)
         .where(
@@ -177,7 +179,7 @@ export async function getPortfolioDashboardData(
             eq(cashBalances.snapshotDate, latestDate)
           )
         )
-        .groupBy(cashBalances.currency, cashBalances.source)
+        .groupBy(cashBalances.currency, cashBalances.source, cashBalances.accountId)
         .orderBy(desc(sql`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`))
     : [];
 
@@ -186,6 +188,7 @@ export async function getPortfolioDashboardData(
     balance: parseFloat(row.balance) || 0,
     balanceUsd: row.balanceUsd ? parseFloat(row.balanceUsd) : null,
     source: row.source,
+    accountId: row.accountId,
   }));
 
   // For single account, fetch owner from account record
@@ -404,7 +407,7 @@ export async function getPortfolioDashboardDataMultiAccount(
     .filter((s) => s.navAtSnapshot !== null)
     .map((s) => ({ date: s.date, nav: s.navAtSnapshot }));
 
-  // Cash breakdown for latest date across all selected accounts
+  // Cash breakdown for latest date across all selected accounts (per account + currency + source)
   const latestDate = latestAccountSnapshot?.date ?? null;
   const cashRows = latestDate
     ? await db
@@ -413,6 +416,7 @@ export async function getPortfolioDashboardDataMultiAccount(
           balance: sql<string>`SUM(CAST(${cashBalances.balance} AS NUMERIC))`,
           balanceUsd: sql<string>`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`,
           source: cashBalances.source,
+          accountId: cashBalances.accountId,
         })
         .from(cashBalances)
         .where(
@@ -425,7 +429,7 @@ export async function getPortfolioDashboardDataMultiAccount(
             )`
           )
         )
-        .groupBy(cashBalances.currency, cashBalances.source)
+        .groupBy(cashBalances.currency, cashBalances.source, cashBalances.accountId)
         .orderBy(desc(sql`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`))
     : [];
 
@@ -434,6 +438,7 @@ export async function getPortfolioDashboardDataMultiAccount(
     balance: parseFloat(row.balance) || 0,
     balanceUsd: row.balanceUsd ? parseFloat(row.balanceUsd) : null,
     source: row.source,
+    accountId: row.accountId,
   }));
 
   // --- Owner NAV breakdown (for pie chart) ---
