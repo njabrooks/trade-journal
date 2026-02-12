@@ -587,6 +587,7 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
     .update(strategies)
     .set({
       status: 'merged', // Merged strategies are absorbed into target
+      mergedIntoId: targetId, // Record merge target for cross-account resolution
       isAuto: false,
       updatedAt: now,
     })

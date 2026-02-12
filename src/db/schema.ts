@@ -530,6 +530,8 @@ export const strategies = pgTable(
     assetThesisId: uuid('asset_thesis_id').references(() => assetTheses.id, {
       onDelete: 'set null',
     }),
+    // Merge tracking: when a strategy is merged into another, this points to the target
+    mergedIntoId: uuid('merged_into_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },
@@ -538,6 +540,7 @@ export const strategies = pgTable(
     strategyKeyIdx: index('idx_strategies_key').on(table.strategyKey),
     assetThesisIdx: index('idx_strategies_asset_thesis').on(table.assetThesisId),
     strategyTypeIdx: index('idx_strategies_type_id').on(table.strategyTypeId),
+    mergedIntoIdx: index('idx_strategies_merged_into').on(table.mergedIntoId),
   })
 );
 

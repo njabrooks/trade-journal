@@ -156,6 +156,48 @@ export function deriveStrategyLabelFromTrade(trade: TradeMinimal): string | null
   return trade.symbol;
 }
 
+const MAX_MERGE_CHAIN_DEPTH = 5;
+
+/**
+ * Follows the merged_into_id chain to find the ultimate non-merged strategy.
+ * Works cross-account — the target may be on a different account than the source.
+ * Returns the final target's { id, status }, or null if the chain is broken.
+ */
+async function resolveStrategyMergeTarget(
+  mergedStrategyId: string
+): Promise<{ id: string; status: string } | null> {
+  let currentId = mergedStrategyId;
+
+  for (let depth = 0; depth < MAX_MERGE_CHAIN_DEPTH; depth++) {
+    const result = await db
+      .select({
+        id: strategies.id,
+        status: strategies.status,
+        mergedIntoId: strategies.mergedIntoId,
+      })
+      .from(strategies)
+      .where(eq(strategies.id, currentId))
+      .limit(1);
+
+    if (result.length === 0) return null;
+
+    const strategy = result[0];
+
+    // If this strategy is not merged (or has no pointer), it's the target
+    if (strategy.status !== 'merged' || !strategy.mergedIntoId) {
+      return { id: strategy.id, status: strategy.status };
+    }
+
+    // Follow the chain
+    currentId = strategy.mergedIntoId;
+  }
+
+  console.warn(
+    `Merge chain exceeded max depth (${MAX_MERGE_CHAIN_DEPTH}) starting from ${mergedStrategyId}`
+  );
+  return null;
+}
+
 async function ensureStrategyTemplate(
   strategyKey: string,
   label: string,
@@ -319,8 +361,12 @@ async function findOrCreateStrategyFromPosition(
     }
 
     if (strategy.status === 'merged') {
-      // Strategy was merged - this means there should be an active strategy to link to
-      // Continue searching for the active one (already ordered by status priority)
+      // Strategy was merged — follow merged_into_id to find target (cross-account)
+      const mergeTarget = await resolveStrategyMergeTarget(strategy.id);
+      if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+        return { id: mergeTarget.id, created: false };
+      }
+      // If chain broken or target is complete/rejected, continue searching
       continue;
     }
 
@@ -356,7 +402,6 @@ async function findOrCreateStrategyFromPosition(
         END`
       );
 
-    let foundMergedParent = false;
     for (const parentStrategy of parentStrategies) {
       if (parentStrategy.status === 'active' || parentStrategy.status === 'draft' || parentStrategy.status === 'complete') {
         // Found a usable parent strategy - link to it
@@ -367,14 +412,13 @@ async function findOrCreateStrategyFromPosition(
         return null;
       }
       if (parentStrategy.status === 'merged') {
-        foundMergedParent = true;
+        // Parent was merged — follow merged_into_id to find target (cross-account)
+        const mergeTarget = await resolveStrategyMergeTarget(parentStrategy.id);
+        if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+          return { id: mergeTarget.id, created: false };
+        }
+        // If chain broken, continue searching
       }
-    }
-
-    // If parent was merged but no active parent exists, don't create child either
-    // (the user intentionally consolidated the parent elsewhere)
-    if (foundMergedParent) {
-      return null;
     }
   }
 
@@ -568,8 +612,12 @@ async function findOrCreateStrategyFromTrade(
     }
 
     if (strategy.status === 'merged') {
-      // Strategy was merged - this means there should be an active strategy to link to
-      // Continue searching for the active one (already ordered by status priority)
+      // Strategy was merged — follow merged_into_id to find target (cross-account)
+      const mergeTarget = await resolveStrategyMergeTarget(strategy.id);
+      if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+        return { id: mergeTarget.id, created: false };
+      }
+      // If chain broken or target is complete/rejected, continue searching
       continue;
     }
 
@@ -605,7 +653,6 @@ async function findOrCreateStrategyFromTrade(
         END`
       );
 
-    let foundMergedParent = false;
     for (const parentStrategy of parentStrategies) {
       if (parentStrategy.status === 'active' || parentStrategy.status === 'draft' || parentStrategy.status === 'complete') {
         // Found a usable parent strategy - link to it
@@ -616,14 +663,13 @@ async function findOrCreateStrategyFromTrade(
         return null;
       }
       if (parentStrategy.status === 'merged') {
-        foundMergedParent = true;
+        // Parent was merged — follow merged_into_id to find target (cross-account)
+        const mergeTarget = await resolveStrategyMergeTarget(parentStrategy.id);
+        if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+          return { id: mergeTarget.id, created: false };
+        }
+        // If chain broken, continue searching
       }
-    }
-
-    // If parent was merged but no active parent exists, don't create child either
-    // (the user intentionally consolidated the parent elsewhere)
-    if (foundMergedParent) {
-      return null;
     }
   }
 
@@ -796,9 +842,12 @@ export async function autoLinkPositionsToStrategies(
         if (strategy.length > 0) {
           const st = strategy[0];
           if (st.status === 'merged') {
-            // Strategy was merged — don't link here. Fall through to the
-            // derived-key fallback which will find the active merge target
-            // or to findOrCreateStrategyFromPosition which skips merged.
+            // Strategy was merged — follow merged_into_id to find target (cross-account)
+            const mergeTarget = await resolveStrategyMergeTarget(st.id);
+            if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+              strategyId = mergeTarget.id;
+            }
+            // If no valid target found, fall through to derived-key fallback
           } else {
             // Active, draft, complete, rejected — link directly
             strategyId = st.id;
@@ -850,31 +899,12 @@ export async function autoLinkPositionsToStrategies(
           // Active, draft, complete, or rejected — link directly
           strategyId = matched.id;
         } else if (existingByKey.length > 0 && existingByKey[0].status === 'merged') {
-          // All matches are merged — try to find the active merge target
-          // by looking for active/draft strategies with the same key on the same account
-          // (the merge target may have a different key, so also check positions)
-          const mergeTarget = await db
-            .selectDistinct({
-              strategyId: positions.strategyId,
-            })
-            .from(positions)
-            .innerJoin(strategies, eq(positions.strategyId, strategies.id))
-            .where(
-              and(
-                eq(positions.accountId, pos.accountId),
-                eq(strategies.strategyKey, derivedKey),
-                sql`${strategies.status} IN ('active', 'draft')`,
-                sql`${positions.quantity} != 0`
-              )
-            )
-            .limit(1);
-
-          if (mergeTarget.length > 0 && mergeTarget[0].strategyId) {
-            strategyId = mergeTarget[0].strategyId;
+          // All matches are merged — follow merged_into_id to find target (cross-account)
+          const mergeTarget = await resolveStrategyMergeTarget(existingByKey[0].id);
+          if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+            strategyId = mergeTarget.id;
           }
-          // If no merge target found, DON'T link to the merged strategy.
-          // Fall through to findOrCreateStrategyFromPosition which will
-          // skip merged strategies and either find an active one or create new.
+          // If no merge target found, fall through to findOrCreateStrategyFromPosition
         } else if (pos.underlyingId && pos.expiry && pos.assetClass === 'OPT') {
           // If no exact key match, try to find strategies that have positions with same underlying + expiry
           // This catches existing strategies where the key might have been edited
@@ -944,8 +974,16 @@ export async function autoLinkPositionsToStrategies(
             .limit(1);
 
           if (strategiesWithSameSymbol.length > 0 && strategiesWithSameSymbol[0].strategyId) {
-            // Link to strategy regardless of status (rejected, merged, etc.)
-            strategyId = strategiesWithSameSymbol[0].strategyId;
+            const foundStatus = strategiesWithSameSymbol[0].status;
+            if (foundStatus === 'merged') {
+              // Follow merged_into_id to find target (cross-account)
+              const mergeTarget = await resolveStrategyMergeTarget(strategiesWithSameSymbol[0].strategyId!);
+              if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+                strategyId = mergeTarget.id;
+              }
+            } else {
+              strategyId = strategiesWithSameSymbol[0].strategyId;
+            }
           }
         }
       }
