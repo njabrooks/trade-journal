@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { formatCurrency, formatPercent, calculateDTE } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
-import type { PortfolioStrategyRow, PortfolioPositionRow } from "@/db/queries/portfolio";
+import type { PortfolioStrategyRow, PortfolioPositionRow, CashBreakdownRow } from "@/db/queries/portfolio";
 import type { Account } from "@/db/schema";
 
 type SortColumn = "underlying" | "strategies" | "positions" | "marketValue" | "pctTotal" | "dte";
@@ -18,12 +18,14 @@ interface UnderlyingGroup {
   pctTotal: number | null;
   minDte: number | null;
   positionCount: number;
+  cashRows?: CashBreakdownRow[];
 }
 
 interface UnderlyingStrategyTableProps {
   strategies: PortfolioStrategyRow[];
   accounts: Account[];
   totalMarketValue: number;
+  cashRows?: CashBreakdownRow[];
 }
 
 function getStrategyAggregates(strategy: PortfolioStrategyRow, totalMarketValue: number) {
@@ -50,7 +52,7 @@ function DirectionIcon({ direction }: { direction: string | null }) {
   return <Minus className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
-export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue }: UnderlyingStrategyTableProps) {
+export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue, cashRows }: UnderlyingStrategyTableProps) {
   const [expandedUnderlyings, setExpandedUnderlyings] = useState<Set<string>>(new Set());
   const [expandedStrategies, setExpandedStrategies] = useState<Set<string>>(new Set());
   const [sortColumn, setSortColumn] = useState<SortColumn>("marketValue");
@@ -130,8 +132,25 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
       group.pctTotal = totalMarketValue > 0 ? (group.totalMV / totalMarketValue) * 100 : null;
     }
 
-    return Array.from(groups.values());
-  }, [strategies, totalMarketValue]);
+    const result = Array.from(groups.values());
+
+    // Append synthetic cash group if cash data is present
+    if (cashRows && cashRows.length > 0) {
+      const cashTotalUsd = cashRows.reduce((sum, r) => sum + (r.balanceUsd ?? 0), 0);
+      result.push({
+        underlyingTicker: "Cash & Equivalents",
+        underlyingId: null,
+        strategies: [],
+        totalMV: cashTotalUsd,
+        pctTotal: totalMarketValue > 0 ? (cashTotalUsd / totalMarketValue) * 100 : null,
+        minDte: null,
+        positionCount: 0,
+        cashRows,
+      });
+    }
+
+    return result;
+  }, [strategies, totalMarketValue, cashRows]);
 
   // Sort groups
   const sortedGroups = useMemo(() => {
@@ -207,7 +226,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
     setExpandedStrategies(new Set());
   };
 
-  if (strategies.length === 0) return null;
+  if (strategies.length === 0 && (!cashRows || cashRows.length === 0)) return null;
 
   function renderSortHeader(column: SortColumn, label: string, className?: string) {
     return (
@@ -316,10 +335,10 @@ function UnderlyingGroup({
           </span>
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
-          {group.strategies.length}
+          {group.cashRows ? group.cashRows.length : group.strategies.length}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
-          {group.positionCount}
+          {group.cashRows ? "\u2014" : group.positionCount}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
           {formatCurrency(group.totalMV)}
@@ -332,8 +351,18 @@ function UnderlyingGroup({
         </td>
       </tr>
 
+      {/* Expanded cash rows */}
+      {isExpanded && group.cashRows &&
+        group.cashRows.map((row, i) => (
+          <CashChildRow
+            key={`${row.currency}-${row.source}-${i}`}
+            row={row}
+            totalMarketValue={totalMarketValue}
+          />
+        ))}
+
       {/* Expanded strategies */}
-      {isExpanded &&
+      {isExpanded && !group.cashRows &&
         group.strategies.map((strategy) => {
           const isStrategyExpanded = expandedStrategies.has(strategy.id);
           const agg = getStrategyAggregates(strategy, totalMarketValue);
@@ -351,6 +380,48 @@ function UnderlyingGroup({
           );
         })}
     </>
+  );
+}
+
+function CashChildRow({
+  row,
+  totalMarketValue,
+}: {
+  row: CashBreakdownRow;
+  totalMarketValue: number;
+}) {
+  const pctTotal =
+    totalMarketValue > 0 && row.balanceUsd != null
+      ? (row.balanceUsd / totalMarketValue) * 100
+      : null;
+
+  return (
+    <tr className="hover:bg-muted/30 transition-colors">
+      <td className="py-2 pl-6 pr-1"></td>
+      <td className="py-2 pr-3">
+        <span className="pl-3 font-medium text-sm text-foreground">
+          {row.currency}
+        </span>
+      </td>
+      <td className="py-2 pr-3 text-right text-xs text-muted-foreground">
+        {row.source}
+      </td>
+      <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+        {row.balance.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
+      </td>
+      <td className="py-2 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
+        {row.balanceUsd != null ? formatCurrency(row.balanceUsd) : "\u2014"}
+      </td>
+      <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+        {pctTotal != null ? formatPercent(pctTotal) : "\u2014"}
+      </td>
+      <td className="py-2 text-center text-sm tabular-nums text-muted-foreground">
+        {"\u2014"}
+      </td>
+    </tr>
   );
 }
 

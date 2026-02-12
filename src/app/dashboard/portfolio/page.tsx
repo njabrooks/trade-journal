@@ -23,7 +23,6 @@ import type {
   PortfolioPositionsData,
   PortfolioPositionRow,
   PortfolioStrategyRow,
-  CashBreakdownRow,
 } from "@/db/queries/portfolio";
 
 export default function PortfolioDashboardPage() {
@@ -268,7 +267,7 @@ function PortfolioDashboardContent() {
     };
   }, [positionsData, assetClassFilter, searchQuery]);
 
-  // Compute totals from all positions
+  // Compute totals from all positions + cash
   const totals = useMemo(() => {
     if (!positionsData)
       return { marketValue: 0, positionCount: 0, underlyingCount: 0 };
@@ -286,12 +285,18 @@ function PortfolioDashboardContent() {
       if (pos.underlyingId) underlyingIds.add(pos.underlyingId);
     }
 
+    // Include cash in total so percentages across the table sum to ~100%
+    const totalCashUsd = dashboardData?.cashBreakdown?.reduce(
+      (sum, r) => sum + (r.balanceUsd ?? 0), 0
+    ) ?? 0;
+    marketValue += totalCashUsd;
+
     return {
       marketValue,
       positionCount: allPositions.length,
       underlyingCount: underlyingIds.size,
     };
-  }, [positionsData]);
+  }, [positionsData, dashboardData?.cashBreakdown]);
 
   // Compute exposure breakdown by asset class from positions
   const exposureBreakdown = useMemo(() => {
@@ -320,6 +325,16 @@ function PortfolioDashboardContent() {
 
     return { equities, options, cryptoSpot, perpetuals, cash };
   }, [positionsData]);
+
+  // Determine which cash rows to show based on filters
+  const filteredCashRows = useMemo(() => {
+    if (!dashboardData?.cashBreakdown?.length) return [];
+    // Cash appears in "all" view and "CASH" filter only
+    if (assetClassFilter !== "all" && assetClassFilter !== "CASH") return [];
+    // Cash doesn't match position search queries
+    if (searchQuery) return [];
+    return dashboardData.cashBreakdown;
+  }, [dashboardData?.cashBreakdown, assetClassFilter, searchQuery]);
 
   // Filtered counts
   const filteredCounts = useMemo(() => {
@@ -450,11 +465,12 @@ function PortfolioDashboardContent() {
       )}
 
       {/* Strategies table (grouped by underlying) */}
-      {filteredData.strategies.length > 0 && (
+      {(filteredData.strategies.length > 0 || filteredCashRows.length > 0) && (
         <UnderlyingStrategyTable
           strategies={filteredData.strategies}
           accounts={accounts}
           totalMarketValue={totals.marketValue}
+          cashRows={filteredCashRows}
         />
       )}
 
@@ -466,18 +482,11 @@ function PortfolioDashboardContent() {
         />
       )}
 
-      {/* Cash breakdown table — shown when Cash filter is active */}
-      {assetClassFilter === "CASH" &&
-        dashboardData &&
-        dashboardData.cashBreakdown.length > 0 && (
-          <CashBreakdownTable rows={dashboardData.cashBreakdown} />
-        )}
-
       {/* Empty state */}
       {positionsData &&
         filteredData.strategies.length === 0 &&
         filteredData.unlinkedPositions.length === 0 &&
-        assetClassFilter !== "CASH" && (
+        filteredCashRows.length === 0 && (
           <div className="rounded-2xl border border-dashed bg-card p-10 text-center text-muted-foreground">
             {searchQuery || assetClassFilter !== "all"
               ? "No positions match the current filters."
@@ -488,61 +497,3 @@ function PortfolioDashboardContent() {
   );
 }
 
-/** Inline cash breakdown table for the Cash filter tab */
-function CashBreakdownTable({ rows }: { rows: CashBreakdownRow[] }) {
-  const total = rows.reduce((sum, r) => sum + (r.balanceUsd ?? 0), 0);
-
-  return (
-    <div className="rounded-2xl border bg-card shadow-sm">
-      <div className="border-b px-5 py-3">
-        <h3 className="text-sm font-medium text-foreground">
-          Cash & Equivalents
-        </h3>
-      </div>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b text-left text-muted-foreground">
-            <th className="px-5 py-2 font-medium">Currency</th>
-            <th className="px-5 py-2 font-medium">Source</th>
-            <th className="px-5 py-2 text-right font-medium">Balance</th>
-            <th className="px-5 py-2 text-right font-medium">USD Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr
-              key={`${row.currency}-${row.source}-${i}`}
-              className="border-b last:border-b-0"
-            >
-              <td className="px-5 py-2.5 font-medium text-foreground">
-                {row.currency}
-              </td>
-              <td className="px-5 py-2.5 text-muted-foreground">{row.source}</td>
-              <td className="px-5 py-2.5 text-right tabular-nums text-foreground">
-                {row.balance.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </td>
-              <td className="px-5 py-2.5 text-right tabular-nums text-foreground">
-                {row.balanceUsd !== null ? formatCurrency(row.balanceUsd) : "\u2014"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        {rows.length > 1 && (
-          <tfoot>
-            <tr className="border-t bg-muted/30">
-              <td colSpan={3} className="px-5 py-2.5 font-medium text-foreground">
-                Total
-              </td>
-              <td className="px-5 py-2.5 text-right font-medium tabular-nums text-foreground">
-                {formatCurrency(total)}
-              </td>
-            </tr>
-          </tfoot>
-        )}
-      </table>
-    </div>
-  );
-}
