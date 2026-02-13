@@ -490,8 +490,11 @@ export async function getPortfolioDashboardDataMultiAccount(
         eq(portfolioSnapshots.level, "account")
       )
     )
-    .orderBy(asc(portfolioSnapshots.snapshotDate))
+    .orderBy(desc(portfolioSnapshots.snapshotDate))
     .limit(90 * accountIds.length);
+
+  // Reverse so rows are chronological (query fetches most-recent first)
+  perAccountNavRows.reverse();
 
   // Build per-account lookup and collect all dates
   const accountDateNav = new Map<string, Map<string, number>>();
