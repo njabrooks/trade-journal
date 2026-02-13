@@ -848,8 +848,11 @@ export async function autoLinkPositionsToStrategies(
               strategyId = mergeTarget.id;
             }
             // If no valid target found, fall through to derived-key fallback
+          } else if (st.status === 'rejected') {
+            // Rejected strategy — don't link. Fall through to derived-key/findOrCreate
+            // which will check for a merged counterpart and follow the merge chain.
           } else {
-            // Active, draft, complete, rejected — link directly
+            // Active, draft, complete — link directly
             strategyId = st.id;
           }
         }
@@ -893,19 +896,27 @@ export async function autoLinkPositionsToStrategies(
           )
           .limit(5); // Fetch a few so we can skip merged and find active
 
-        // Find the best non-merged match
-        const matched = existingByKey.find(s => s.status !== 'merged');
-        if (matched) {
-          // Active, draft, complete, or rejected — link directly
-          strategyId = matched.id;
-        } else if (existingByKey.length > 0 && existingByKey[0].status === 'merged') {
-          // All matches are merged — follow merged_into_id to find target (cross-account)
-          const mergeTarget = await resolveStrategyMergeTarget(existingByKey[0].id);
-          if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
-            strategyId = mergeTarget.id;
+        // Find the best usable match: active/draft/complete first, then merged chain.
+        // Rejected strategies are skipped — fall through to findOrCreate which
+        // will check for a merged counterpart and follow the merge chain.
+        const usableMatch = existingByKey.find(s =>
+          s.status === 'active' || s.status === 'draft' || s.status === 'complete'
+        );
+        if (usableMatch) {
+          strategyId = usableMatch.id;
+        } else {
+          // Try merged chain
+          const mergedMatch = existingByKey.find(s => s.status === 'merged');
+          if (mergedMatch) {
+            const mergeTarget = await resolveStrategyMergeTarget(mergedMatch.id);
+            if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+              strategyId = mergeTarget.id;
+            }
           }
-          // If no merge target found, fall through to findOrCreateStrategyFromPosition
-        } else if (pos.underlyingId && pos.expiry && pos.assetClass === 'OPT') {
+          // If only rejected strategies exist, fall through to findOrCreate
+        }
+
+        if (!strategyId && pos.underlyingId && pos.expiry && pos.assetClass === 'OPT') {
           // If no exact key match, try to find strategies that have positions with same underlying + expiry
           // This catches existing strategies where the key might have been edited
           const strategiesWithSameUnderlying = await db
@@ -926,7 +937,6 @@ export async function autoLinkPositionsToStrategies(
             .limit(1);
 
           if (strategiesWithSameUnderlying.length > 0 && strategiesWithSameUnderlying[0].strategyId) {
-            // Verify the strategy still exists (regardless of status - link is permanent)
             const strategy = await db
               .select({ id: strategies.id, status: strategies.status })
               .from(strategies)
@@ -934,18 +944,21 @@ export async function autoLinkPositionsToStrategies(
               .limit(1);
 
             if (strategy.length > 0) {
-              // Link to strategy regardless of status (rejected, merged, etc.)
-              strategyId = strategy[0].id;
+              const st = strategy[0];
+              if (st.status === 'merged') {
+                const mergeTarget = await resolveStrategyMergeTarget(st.id);
+                if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
+                  strategyId = mergeTarget.id;
+                }
+              } else if (st.status !== 'rejected') {
+                strategyId = st.id;
+              }
             }
           }
-        } else if (pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP') {
+        } else if (!strategyId && (pos.assetClass === 'CRYPTO' || pos.assetClass === 'PERP')) {
           // For CRYPTO/PERP: If no exact key match, try to find strategies that have positions
           // with the same symbol + asset class. This catches existing strategies where the
           // strategyKey might have been manually edited (e.g., "Bitcoin Spot Long" vs "BTC-CRYPTO")
-          // IMPORTANT: Include rejected/merged - link is permanent, status filters views
-          // Note: Using .select() not .selectDistinct() because PostgreSQL requires ORDER BY
-          // expressions to appear in SELECT DISTINCT list, and we use a CASE expression.
-          // Since we limit(1), DISTINCT is unnecessary anyway.
           const strategiesWithSameSymbol = await db
             .select({
               strategyId: positions.strategyId,
@@ -976,12 +989,11 @@ export async function autoLinkPositionsToStrategies(
           if (strategiesWithSameSymbol.length > 0 && strategiesWithSameSymbol[0].strategyId) {
             const foundStatus = strategiesWithSameSymbol[0].status;
             if (foundStatus === 'merged') {
-              // Follow merged_into_id to find target (cross-account)
               const mergeTarget = await resolveStrategyMergeTarget(strategiesWithSameSymbol[0].strategyId!);
               if (mergeTarget && (mergeTarget.status === 'active' || mergeTarget.status === 'draft')) {
                 strategyId = mergeTarget.id;
               }
-            } else {
+            } else if (foundStatus !== 'rejected') {
               strategyId = strategiesWithSameSymbol[0].strategyId;
             }
           }
