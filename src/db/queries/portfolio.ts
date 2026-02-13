@@ -733,7 +733,6 @@ export async function getPortfolioPositionsData(
 
   // Fetch strategy metadata
   const strategyMap = new Map<string, PortfolioStrategyRow>();
-  const mergedStrategyIds = new Set<string>();
   if (strategyIds.length > 0) {
     const strategyRows = await db
       .select({
@@ -752,17 +751,10 @@ export async function getPortfolioPositionsData(
       .where(inArray(strategies.id, strategyIds));
 
     for (const row of strategyRows) {
-      // Portfolio only shows active strategies. Strategies with open positions
-      // are considered active unless explicitly draft/rejected/merged/closed.
-      // "merged" strategies have been absorbed into another strategy, so their
-      // positions should appear as unlinked (and be re-linked to the target strategy).
-      const isMerged = row.status === 'merged';
-      const isActive = row.status !== 'draft' && row.status !== 'rejected'
-        && row.status !== 'complete' && !isMerged && !row.closedAt;
-      if (isMerged) {
-        mergedStrategyIds.add(row.id);
-        continue;
-      }
+      // Only show active strategies in the portfolio grouping.
+      // Positions linked to inactive strategies fall through to unlinked.
+      const isActive = row.status === 'active'
+        && !row.closedAt;
       if (!isActive) continue;
 
       strategyMap.set(row.id, {
@@ -780,16 +772,11 @@ export async function getPortfolioPositionsData(
   }
 
   // Group positions by strategy.
-  // Positions linked to hidden strategies (draft/rejected/complete/closed) are hidden.
-  // Positions linked to merged strategies appear as unlinked.
-  const excludedStrategyIds = new Set(
-    strategyIds.filter((id) => !strategyMap.has(id) && !mergedStrategyIds.has(id))
-  );
+  // Positions linked to inactive/merged strategies appear as unlinked —
+  // if the position is open, it's real and must be visible in the portfolio.
   const unlinkedPositions: PortfolioPositionRow[] = [];
   for (const pos of allPositions) {
-    if (pos.strategyId && excludedStrategyIds.has(pos.strategyId)) {
-      continue; // belongs to a hidden strategy — hide from portfolio
-    } else if (pos.strategyId && strategyMap.has(pos.strategyId)) {
+    if (pos.strategyId && strategyMap.has(pos.strategyId)) {
       strategyMap.get(pos.strategyId)!.positions.push(pos);
     } else {
       unlinkedPositions.push(pos);
