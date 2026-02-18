@@ -167,9 +167,6 @@ export function ThesisTriageTable({ thesisId, thesisType }: ThesisTriageTablePro
                 <SortableHeader column="createdAt" className="text-center">
                   Date
                 </SortableHeader>
-                <SortableHeader column="urgency" className="text-center">
-                  Urgency
-                </SortableHeader>
               </tr>
             </thead>
             <tbody>

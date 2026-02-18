@@ -431,34 +431,16 @@ function ThesisDetail({
 
   return (
     <div className="space-y-4">
-      {/* Urgency Banner - hidden for synthesis triggers */}
-      {!isSynthesisTrigger && thesisRecord?.urgency && thesisRecord.urgency !== 'when_convenient' && (
-        <div className={`rounded-lg p-3 flex items-center gap-3 ${
-          thesisRecord.urgency === 'immediate' ? 'bg-rose-50 border border-rose-200' :
-          thesisRecord.urgency === 'today' ? 'bg-amber-50 border border-amber-200' :
-          'bg-blue-50 border border-blue-200'
-        }`}>
-          <Clock className={`h-5 w-5 ${
-            thesisRecord.urgency === 'immediate' ? 'text-rose-600' :
-            thesisRecord.urgency === 'today' ? 'text-amber-600' :
-            'text-blue-600'
-          }`} />
+      {/* Severity Banner - hidden for synthesis triggers */}
+      {!isSynthesisTrigger && record.status === 'urgent' && (
+        <div className="rounded-lg p-3 flex items-center gap-3 bg-rose-50 border border-rose-200">
+          <Clock className="h-5 w-5 text-rose-600" />
           <div>
-            <p className={`text-sm font-semibold ${
-              thesisRecord.urgency === 'immediate' ? 'text-rose-800' :
-              thesisRecord.urgency === 'today' ? 'text-amber-800' :
-              'text-blue-800'
-            }`}>
-              {thesisRecord.urgency === 'immediate' ? 'Immediate Attention Required' :
-               thesisRecord.urgency === 'today' ? 'Action Needed Today' :
-               'Review This Week'}
+            <p className="text-sm font-semibold text-rose-800">
+              Urgent Attention Required
             </p>
-            {thesisRecord.actionRequired && (
-              <p className={`text-xs mt-1 ${
-                thesisRecord.urgency === 'immediate' ? 'text-rose-600' :
-                thesisRecord.urgency === 'today' ? 'text-amber-600' :
-                'text-blue-600'
-              }`}>
+            {thesisRecord?.actionRequired && (
+              <p className="text-xs mt-1 text-rose-600">
                 {thesisRecord.actionRequired}
               </p>
             )}

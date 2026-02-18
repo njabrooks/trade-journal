@@ -456,7 +456,6 @@ async function main() {
           triggerType: 'signal_recommendation',
           triggerSource: 'insert-thesis-articulation',
           severity: 'attention',
-          urgency: 'this_week',
           status: 'inbox',
           lifecycleStage: 'monitoring',
           suggestedSkill: null,
@@ -482,7 +481,6 @@ async function main() {
         newState: {
           triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
           status: 'inbox',
-          urgency: 'this_week',
         },
         source: 'skill',
       });

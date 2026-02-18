@@ -25,7 +25,6 @@ export interface ThesisNewsItemWithTriage extends ThesisNewsItem {
     id: string;
     triggerType: string;
     severity: string;
-    urgency: string | null;  // Deprecated, nullable
     status: string;
     createdAt: Date;
   } | null;
@@ -50,7 +49,6 @@ export async function getNewsItemsForThesis(
           id: thesisTriageRecords.id,
           triggerType: thesisTriageRecords.triggerType,
           severity: thesisTriageRecords.severity,
-          urgency: thesisTriageRecords.urgency,
           status: thesisTriageRecords.status,
           createdAt: thesisTriageRecords.createdAt,
         },
@@ -99,7 +97,6 @@ export async function getNewsItemById(id: string): Promise<ThesisNewsItemWithTri
         id: thesisTriageRecords.id,
         triggerType: thesisTriageRecords.triggerType,
         severity: thesisTriageRecords.severity,
-        urgency: thesisTriageRecords.urgency,
         status: thesisTriageRecords.status,
         createdAt: thesisTriageRecords.createdAt,
       },

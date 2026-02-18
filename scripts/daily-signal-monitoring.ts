@@ -502,7 +502,6 @@ async function triggerSignal(
           },
         ],
         severity: signal.importance === 'critical' ? 'urgent' : 'attention',
-        urgency: signal.importance === 'critical' ? 'immediate' : 'today',
         status: signal.importance === 'critical' ? 'urgent' : 'attention',
         lifecycleStage: 'monitoring',
         suggestedSkill: '/deep-dive',

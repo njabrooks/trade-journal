@@ -818,7 +818,6 @@ export interface ThesisTriageQueueRecord {
   triggerSource: string;
   triageRule: string | null;  // NEEDS_RESEARCH | PRODUCE_CORE_ARGUMENT | UPDATE_CORE_ARGUMENT | REVIEW_CONTENT | REVIEW_DATA
   severity: string;
-  urgency: string | null;  // Deprecated, nullable (see #ENH-047)
   status: string;
   lifecycleStage: string | null;
   suggestedSkill: string | null;
@@ -877,7 +876,6 @@ export async function getThesisTriageQueue(
       triggerSource: thesisTriageRecords.triggerSource,
       triageRule: thesisTriageRecords.triageRule,
       severity: thesisTriageRecords.severity,
-      urgency: thesisTriageRecords.urgency,
       status: thesisTriageRecords.status,
       lifecycleStage: thesisTriageRecords.lifecycleStage,
       suggestedSkill: thesisTriageRecords.suggestedSkill,
@@ -959,7 +957,6 @@ export async function getThesisTriageQueueFull(
       triggerSource: thesisTriageRecords.triggerSource,
       triageRule: thesisTriageRecords.triageRule,
       severity: thesisTriageRecords.severity,
-      urgency: thesisTriageRecords.urgency,
       status: thesisTriageRecords.status,
       lifecycleStage: thesisTriageRecords.lifecycleStage,
       suggestedSkill: thesisTriageRecords.suggestedSkill,
@@ -1041,7 +1038,6 @@ export async function getThesisTriageQueueFull(
       triggerSource: row.triggerSource,
       triageRule: row.triageRule,
       severity: row.severity,
-      urgency: row.urgency,
       status: row.status,
       lifecycleStage: row.lifecycleStage,
       suggestedSkill: row.suggestedSkill,

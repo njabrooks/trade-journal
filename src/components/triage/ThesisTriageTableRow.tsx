@@ -54,7 +54,6 @@ export interface ThesisTriageRecord {
   triggerSource: string;
   triageRule: string;
   severity: string;
-  urgency: string;
   status: string;
   lifecycleStage: string | null;
   suggestedSkill: string | null;
@@ -210,16 +209,11 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
         <td className="px-4 py-3 text-center text-xs text-muted-foreground">
           {formatDateShort(record.createdAt)}
         </td>
-        <td className="px-4 py-3 text-center">
-          <span className="text-xs text-muted-foreground capitalize">
-            {record.urgency.replace('_', ' ')}
-          </span>
-        </td>
       </tr>
 
       {isExpanded && (
         <tr>
-          <td colSpan={6} className="px-4 py-4 bg-muted">
+          <td colSpan={5} className="px-4 py-4 bg-muted">
             <div className="space-y-4">
               {/* AI Analysis Summary */}
               {record.aiAnalysis?.summary && (

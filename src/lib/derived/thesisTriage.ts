@@ -103,7 +103,6 @@ export async function computeThesisTriageForThesis(
           triggerType: 'lifecycle_transition',
           triggerSource: 'computeThesisTriageForThesis',
           status: 'info',
-          urgency: 'when_convenient',
           lifecycleStage: 'research',
           suggestedSkill: '/process-transcript',
           actionRequired:
@@ -133,7 +132,6 @@ export async function computeThesisTriageForThesis(
           triggerType: 'lifecycle_transition',
           triggerSource: 'computeThesisTriageForThesis',
           status: 'attention',
-          urgency: 'this_week',
           lifecycleStage: 'synthesis',
           suggestedSkill: '/build-core-argument',
           actionRequired:
@@ -177,7 +175,6 @@ export async function computeThesisTriageForThesis(
           triggerType: 'lifecycle_transition',
           triggerSource: 'computeThesisTriageForThesis',
           status: 'info',
-          urgency: 'when_convenient',
           lifecycleStage: 'synthesis',
           suggestedSkill: '/build-core-argument',
           actionRequired: `${claimsSinceArticulation} new claims since last articulation. Consider updating the core argument.`,
@@ -223,7 +220,6 @@ export async function computeThesisTriageForThesis(
         triggerType: 'signal_recommendation',
         triggerSource: 'computeThesisTriageForThesis',
         status: 'attention',
-        urgency: 'this_week',
         lifecycleStage: 'monitoring',
         suggestedSkill: null,
         actionRequired: `${evolutionState.draftSignalCount} AI-proposed signal(s) need review. Accept, modify, or reject each signal.`,
@@ -285,7 +281,6 @@ export async function computeThesisTriageForThesis(
         triggerType: 'signal_trigger',
         triggerSource: 'computeThesisTriageForThesis',
         status: severity === 'critical' ? 'urgent' : 'attention',
-        urgency: severity === 'critical' ? 'immediate' : 'this_week',
         lifecycleStage: 'monitoring',
         suggestedSkill: null,
         actionRequired: `${evolutionState.completeSignalCount} of ${evolutionState.totalSignalCount} signal(s) triggered. Review thesis conviction and assess impact.`,
@@ -606,7 +601,6 @@ interface CreateTriageParams {
   triggerSource: string;
   // Status matches position/strategy triage severity values
   status: 'urgent' | 'attention' | 'monitor' | 'info' | 'pending' | 'complete';
-  urgency: 'immediate' | 'today' | 'this_week' | 'when_convenient';
   lifecycleStage: string;
   suggestedSkill: string | null;
   actionRequired: string;
@@ -625,7 +619,6 @@ async function createTriageRecord(params: CreateTriageParams): Promise<string> {
     // severity: importance level (urgent/attention/monitor/info)
     // status: workflow state (inbox/in_progress/done) - new records start in 'inbox'
     severity: params.status as 'urgent' | 'attention' | 'monitor' | 'info',
-    urgency: params.urgency,
     status: 'inbox',
     lifecycleStage: params.lifecycleStage,
     suggestedSkill: params.suggestedSkill,
@@ -653,7 +646,6 @@ async function createTriageRecord(params: CreateTriageParams): Promise<string> {
       triageRule: params.triageRule,
       severity: params.status, // params.status is actually the severity level
       status: 'inbox',
-      urgency: params.urgency,
       lifecycleStage: params.lifecycleStage,
       suggestedSkill: params.suggestedSkill,
     },

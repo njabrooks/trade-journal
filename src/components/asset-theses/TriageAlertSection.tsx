@@ -51,7 +51,6 @@ interface TriageRecord {
   triggerSource: string;
   triageRule: string;
   severity: string;
-  urgency: string;
   status: string;
   lifecycleStage: string | null;
   suggestedSkill: string | null;
@@ -248,7 +247,7 @@ export function TriageAlertSection({ thesisId, thesisType }: TriageAlertSectionP
                   </span>
                 </div>
                 <p className="text-xs opacity-75 mt-0.5">
-                  {formatDate(record.createdAt)} • {record.urgency.replace('_', ' ')}
+                  {formatDate(record.createdAt)}
                 </p>
               </div>
             </div>

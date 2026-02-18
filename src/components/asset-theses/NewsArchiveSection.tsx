@@ -19,7 +19,6 @@ interface NewsItem {
     id: string;
     triggerType: string;
     severity: string;
-    urgency: string;
     status: string;
     createdAt: string;
   } | null;

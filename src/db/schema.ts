@@ -625,8 +625,9 @@ export const positions = pgTable('positions', {
   spot: numeric('spot'),
   intrinsic: numeric('intrinsic'),
   extrinsic: numeric('extrinsic'),
-  absNotional: numeric('abs_notional'),
-  absNotionalUsd: numeric('abs_notional_usd'), // abs_notional converted to USD via FX rate
+  absNotional: numeric('abs_notional'), // Legacy: market value in position currency. Prefer marketValueUsd.
+  absNotionalUsd: numeric('abs_notional_usd'), // Legacy: abs_notional in USD (IBKR only). Prefer marketValueUsd.
+  marketValueUsd: numeric('market_value_usd'), // Market value in USD — always populated when price data available
   unrealizedPnl: numeric('unrealized_pnl'),
   snapshotDate: date('snapshot_date'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
@@ -1555,74 +1556,6 @@ export type DecisionAuditLog = typeof decisionAuditLog.$inferSelect;
 export type NewDecisionAuditLog = typeof decisionAuditLog.$inferInsert;
 
 // ============================================================================
-// @DEPRECATED: Thesis Monitoring Configs
-// ============================================================================
-// This table is DEPRECATED as of 2026-01-13 (Signals UX Redesign Phase 5).
-//
-// The new architecture reads threshold configuration directly from:
-//   signals.explicit_details (category='data_driven')
-//
-// See: scripts/daily-signal-monitoring.ts (replaces daily-thesis-monitoring.ts)
-//
-// This table will be dropped in a future migration once all existing configs
-// have been migrated to signal-level explicit_details.
-//
-// Migration: For each thesisMonitoringConfigs.explicitThresholds entry that has
-// a linkedValidationPointId, copy the threshold config to that signal's
-// explicit_details field using the ExplicitDetails interface format.
-// ============================================================================
-export const thesisMonitoringConfigs = pgTable(
-  'thesis_monitoring_configs',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    thesisId: uuid('thesis_id').notNull(),
-    thesisType: text('thesis_type').notNull(), // 'macro' | 'asset'
-
-    // Identity (for asset theses)
-    ticker: text('ticker'),                    // Auto-populated from underlying
-    companyName: text('company_name'),         // For news search accuracy
-
-    // Search configuration
-    searchConfig: jsonb('search_config').notNull().default({
-      derivedKeywords: [],
-      additionalKeywords: [],
-      exclusions: [],
-    }),
-
-    // Data sources to monitor
-    sources: jsonb('sources').notNull().default({
-      fred: { enabled: false, series: [] },
-      priceIv: { enabled: false },
-      news: { enabled: false, providers: [] },
-      secFilings: { enabled: false, filingTypes: [] },
-    }),
-
-    // Frequency
-    frequency: text('frequency').notNull().default('weekly'), // 'daily' | 'weekly'
-    lastChecked: timestamp('last_checked', { withTimezone: true }),
-    nextCheck: timestamp('next_check', { withTimezone: true }),
-
-    // Auto-derived threshold checks from explicit validation points
-    explicitThresholds: jsonb('explicit_thresholds').notNull().default([]),
-
-    // Enable/disable toggle
-    enabled: boolean('enabled').notNull().default(true),
-
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    thesisIdx: index('idx_thesis_monitoring_configs_thesis').on(table.thesisId, table.thesisType),
-    tickerIdx: index('idx_thesis_monitoring_configs_ticker').on(table.ticker),
-    nextCheckIdx: index('idx_thesis_monitoring_configs_next_check').on(table.nextCheck),
-    enabledIdx: index('idx_thesis_monitoring_configs_enabled').on(table.enabled),
-  })
-);
-
-export type ThesisMonitoringConfig = typeof thesisMonitoringConfigs.$inferSelect;
-export type NewThesisMonitoringConfig = typeof thesisMonitoringConfigs.$inferInsert;
-
-// ============================================================================
 // Thesis Triage Records
 // Monitoring inbox for thesis-level alerts (Layer 3: Monitoring & Accountability)
 // ============================================================================
@@ -1659,8 +1592,6 @@ export const thesisTriageRecords = pgTable(
     // Status: workflow state (where is this in the triage workflow?)
     // Values: 'inbox' | 'in_progress' | 'done'
     status: text('status').notNull().default('inbox'),
-    // Legacy field - kept for migration, will be removed after data migration
-    urgency: text('urgency'),  // DEPRECATED: was 'immediate' | 'today' | 'this_week' | 'when_convenient'
     userNotes: text('user_notes'),
     actionsTaken: jsonb('actions_taken').default([]),
 
@@ -1683,7 +1614,7 @@ export const thesisTriageRecords = pgTable(
   (table) => ({
     thesisIdx: index('idx_thesis_triage_thesis').on(table.thesisId, table.thesisType),
     statusIdx: index('idx_thesis_triage_status').on(table.status),
-    severityIdx: index('idx_thesis_triage_severity').on(table.severity, table.urgency),
+    severityIdx: index('idx_thesis_triage_severity').on(table.severity),
     createdIdx: index('idx_thesis_triage_created').on(table.createdAt),
     lifecycleIdx: index('idx_thesis_triage_lifecycle').on(table.lifecycleStage),
   })

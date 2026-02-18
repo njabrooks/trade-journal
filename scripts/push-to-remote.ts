@@ -84,7 +84,6 @@ const ALL_TABLES = [
   'validation_status_history',
   'monitoring_specs',
   'monitoring_events',
-  'thesis_monitoring_configs',
   'thesis_triage_records',
   'decision_audit_log',
 

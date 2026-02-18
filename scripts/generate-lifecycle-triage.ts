@@ -23,35 +23,30 @@ const LIFECYCLE_CONFIG: Record<string, {
   actionRequired: string;
   suggestedSkill: string | null;
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-  urgency: 'immediate' | 'today' | 'this_week' | 'when_convenient';
   triggerType: string;
 }> = {
   created: {
     actionRequired: 'Thesis needs claims linked from research artifacts',
     suggestedSkill: null, // Manual action - link claims via UI
     severity: 'medium',
-    urgency: 'this_week',
     triggerType: 'lifecycle_transition',
   },
   claims_linked: {
     actionRequired: 'Thesis has sufficient claims and is ready for synthesis',
     suggestedSkill: '/build-core-argument',
     severity: 'medium',
-    urgency: 'this_week',
     triggerType: 'lifecycle_transition',
   },
   synthesized: {
     actionRequired: 'Thesis needs validation and invalidation points extracted',
     suggestedSkill: '/build-core-argument',
     severity: 'medium',
-    urgency: 'this_week',
     triggerType: 'lifecycle_transition',
   },
   validated: {
     actionRequired: 'Thesis is ready for monitoring configuration',
     suggestedSkill: null, // Manual action - configure monitoring
     severity: 'low',
-    urgency: 'when_convenient',
     triggerType: 'lifecycle_transition',
   },
   // 'monitoring' - handled by daily-thesis-monitoring.ts
@@ -125,7 +120,6 @@ async function createTriageRecord(thesis: ThesisInfo, config: typeof LIFECYCLE_C
       triggerType: config.triggerType,
       triggerSource: 'lifecycle_check',
       severity: config.severity,
-      urgency: config.urgency,
       status,  // Aligned with lifecycle triggers: status = severity level
       lifecycleStage: thesis.lifecycleStatus,
       suggestedSkill: config.suggestedSkill,
