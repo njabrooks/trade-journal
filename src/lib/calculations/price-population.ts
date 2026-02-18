@@ -1,0 +1,139 @@
+/**
+ * Price Population — Engine Phase
+ *
+ * Extracts prices from IBKR open positions into price_history.
+ * Also inserts hardcoded stablecoin/fiat prices.
+ * This is a fast, DB-only operation (no external API calls).
+ *
+ * Runs as the `price_population` engine phase, after `daily_balances`.
+ */
+
+import { db } from "@/db";
+import { priceHistory } from "@/db/schema";
+import { sql } from "drizzle-orm";
+import type { CalcContext, CalcResult, CalcError } from "./types";
+
+// Stablecoins priced at $1.00
+const STABLECOIN_TICKERS = [
+  "USDT", "USDC", "DAI", "BUSD", "PYUSD", "TUSD", "USDP", "FRAX", "GUSD",
+  "LUSD", "SUSD", "CUSD", "UST", "USDD", "EUROC",
+];
+
+// Fiat currencies priced at $1.00 (USD-denominated system)
+const FIAT_TICKERS = ["USD"];
+
+/**
+ * Main engine phase: populate price_history from IBKR open positions + stablecoins
+ */
+export async function populatePricesFromIbkr(
+  ctx: CalcContext
+): Promise<CalcResult> {
+  const startTime = Date.now();
+  const errors: CalcError[] = [];
+  let recordsProcessed = 0;
+
+  try {
+    // Step 1: Extract IBKR prices
+    const ibkrCount = await extractIbkrPrices(ctx.userId);
+    recordsProcessed += ibkrCount;
+    console.log(`[PricePopulation] Extracted ${ibkrCount} IBKR prices`);
+
+    // Step 2: Insert stablecoin/fiat hardcoded prices
+    const stableCount = await insertStablecoinPrices(ctx.userId);
+    recordsProcessed += stableCount;
+    console.log(`[PricePopulation] Inserted ${stableCount} stablecoin/fiat prices`);
+  } catch (error) {
+    errors.push({
+      message: `Price population failed: ${error instanceof Error ? error.message : String(error)}`,
+      severity: "error",
+    });
+  }
+
+  return {
+    success: errors.filter((e) => e.severity === "error").length === 0,
+    recordsProcessed,
+    duration: Date.now() - startTime,
+    errors,
+  };
+}
+
+/**
+ * Extract prices from ibkr_open_positions into price_history.
+ *
+ * Uses a single INSERT...SELECT to map IBKR tickers to asset UUIDs
+ * via the assets table and asset_aliases table.
+ *
+ * Skips: FUT (futures), CASH (handled by stablecoin/fiat logic),
+ * and rows with null/zero usdprice.
+ */
+async function extractIbkrPrices(userId: string): Promise<number> {
+  // Use INSERT ... SELECT with asset resolution via JOIN
+  // Priority: assets.ticker match first, then asset_aliases match
+  const result = await db.execute(sql`
+    WITH ibkr_with_asset AS (
+      SELECT DISTINCT ON (COALESCE(a1.id, a2.id), iop.reportdate)
+        COALESCE(a1.id, a2.id) as asset_id,
+        iop.reportdate as price_date,
+        iop.usdprice as price_close,
+        'ibkr'::price_source as source
+      FROM ibkr_open_positions iop
+      LEFT JOIN assets a1 ON UPPER(iop.asset) = UPPER(a1.ticker)
+      LEFT JOIN asset_aliases aa ON UPPER(iop.asset) = UPPER(aa.alias)
+      LEFT JOIN assets a2 ON aa.asset_id = a2.id
+      WHERE iop.user_id = ${userId}
+        AND iop.usdprice IS NOT NULL
+        AND iop.usdprice::numeric > 0
+        AND iop.assetclass NOT IN ('FUT', 'CASH')
+        AND COALESCE(a1.id, a2.id) IS NOT NULL
+      ORDER BY COALESCE(a1.id, a2.id), iop.reportdate, iop.usdprice DESC
+    )
+    INSERT INTO price_history (asset_id, price_date, price_close, source)
+    SELECT asset_id, price_date, price_close, source
+    FROM ibkr_with_asset
+    ON CONFLICT (asset_id, price_date, source) DO UPDATE
+      SET price_close = EXCLUDED.price_close,
+          updated_at = NOW()
+  `);
+
+  // Count how many rows were affected
+  const countResult = await db.execute(sql`
+    SELECT COUNT(*) as cnt
+    FROM price_history
+    WHERE source = 'ibkr'
+  `);
+  return parseInt((countResult as any)[0]?.cnt ?? "0");
+}
+
+/**
+ * Insert hardcoded $1.00 prices for stablecoins and USD
+ * for every date where positions exist in portfolio_daily_balances.
+ */
+async function insertStablecoinPrices(userId: string): Promise<number> {
+  // Find all (asset_id, date) pairs for stablecoins/fiat that have portfolio_daily_balances
+  // but no price_history entry
+  const allTickers = [...STABLECOIN_TICKERS, ...FIAT_TICKERS];
+  // Build a SQL IN list for the tickers
+  const tickerList = allTickers.map((t) => `'${t}'`).join(", ");
+
+  await db.execute(sql.raw(`
+    WITH stable_positions AS (
+      SELECT DISTINCT db.asset::uuid as asset_id, db.date::date as price_date
+      FROM portfolio_daily_balances db
+      JOIN assets a ON db.asset = a.id::text
+      WHERE db.user_id = '${userId}'
+        AND db.quantity::numeric > 0
+        AND UPPER(a.ticker) IN (${tickerList})
+    )
+    INSERT INTO price_history (asset_id, price_date, price_close, source)
+    SELECT asset_id, price_date, '1.0', 'manual'::price_source
+    FROM stable_positions
+    ON CONFLICT (asset_id, price_date, source) DO NOTHING
+  `));
+
+  const countResult = await db.execute(sql`
+    SELECT COUNT(*) as cnt
+    FROM price_history
+    WHERE source = 'manual'
+  `);
+  return parseInt((countResult as any)[0]?.cnt ?? "0");
+}
