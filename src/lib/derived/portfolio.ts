@@ -32,7 +32,7 @@ interface NotionalSums {
  * included in the cash balance.
  */
 function computeNotionalSums(
-  positionRows: { absNotional: string | null; absNotionalUsd: string | null; spot: string | null; multiplier: string | null; quantity: string | null; unrealizedPnl: string | null; assetClass: string | null }[]
+  positionRows: { marketValueUsd: string | null; absNotional: string | null; absNotionalUsd: string | null; spot: string | null; multiplier: string | null; quantity: string | null; unrealizedPnl: string | null; assetClass: string | null }[]
 ): NotionalSums {
   let totalNotionalSum = 0;
   let totalNotionalUsdSum = 0;
@@ -44,31 +44,32 @@ function computeNotionalSums(
   let perpPnlSum = 0;
 
   for (const pos of positionRows) {
-    // Policy: Absolute notional is always positive
-    let notional = 0;
-    if (pos.absNotional) {
-      const val = parseFloat(pos.absNotional);
-      if (!isNaN(val)) {
-        notional = Math.abs(val);
-      }
-    }
-    // Fallback: compute from quantity * spot * multiplier if absNotional is missing
-    if (notional === 0 && pos.spot && pos.multiplier && pos.quantity) {
-      const qty = parseFloat(pos.quantity);
-      const spot = parseFloat(pos.spot);
-      const mult = parseFloat(pos.multiplier);
-      if (!isNaN(qty) && !isNaN(spot) && !isNaN(mult)) {
-        notional = Math.abs(qty * spot * mult);
-      }
-    }
-
-    // USD notional: prefer pre-computed absNotionalUsd, fall back to absNotional (assumes USD)
+    // Primary: use marketValueUsd (always populated for live data)
     let notionalUsd = 0;
-    if (pos.absNotionalUsd) {
+    if (pos.marketValueUsd) {
+      const val = parseFloat(pos.marketValueUsd);
+      if (!isNaN(val)) notionalUsd = Math.abs(val);
+    }
+    // Fallback chain for historical data pre-backfill
+    if (notionalUsd === 0 && pos.absNotionalUsd) {
       const val = parseFloat(pos.absNotionalUsd);
       if (!isNaN(val)) notionalUsd = Math.abs(val);
     }
-    if (notionalUsd === 0) notionalUsd = notional; // Fallback: assume USD if no conversion available
+    if (notionalUsd === 0 && pos.absNotional) {
+      const val = parseFloat(pos.absNotional);
+      if (!isNaN(val)) notionalUsd = Math.abs(val);
+    }
+    if (notionalUsd === 0 && pos.spot && pos.quantity) {
+      const qty = parseFloat(pos.quantity);
+      const spot = parseFloat(pos.spot);
+      const mult = pos.multiplier ? parseFloat(pos.multiplier) : 1;
+      if (!isNaN(qty) && !isNaN(spot) && !isNaN(mult)) {
+        notionalUsd = Math.abs(qty * spot * mult);
+      }
+    }
+
+    // Use unified USD value for both local and USD sums
+    const notional = notionalUsd;
 
     const pnl = pos.unrealizedPnl ? parseFloat(pos.unrealizedPnl) : 0;
 

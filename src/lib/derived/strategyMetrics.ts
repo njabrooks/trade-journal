@@ -53,30 +53,31 @@ export async function computeStrategyMetrics(
 
   const navAtSnapshot = accountSnapshot[0]?.navAtSnapshotUsd ?? accountSnapshot[0]?.navAtSnapshot ?? null;
 
-  // 3. Compute total_abs_notional (prefer USD-converted values for cross-currency consistency)
-  // Policy: Absolute notional is always positive - sum of absolute values of each position's notional
+  // 3. Compute total_abs_notional (prefer marketValueUsd for cross-currency consistency)
+  // Policy: Absolute notional is always positive - sum of absolute values of each position's market value
   let totalAbsNotional: string | null = null;
   if (strategyPositions.length > 0) {
     const absNotionalSum = strategyPositions.reduce((sum, pos) => {
-      // First try: use USD-converted notional
+      // Primary: use marketValueUsd (always populated for live data)
+      if (pos.marketValueUsd) {
+        const val = parseFloat(pos.marketValueUsd);
+        if (!isNaN(val)) return sum + Math.abs(val);
+      }
+      // Fallback: absNotionalUsd (legacy IBKR)
       if (pos.absNotionalUsd) {
         const val = parseFloat(pos.absNotionalUsd);
-        if (!isNaN(val)) {
-          return sum + Math.abs(val);
-        }
+        if (!isNaN(val)) return sum + Math.abs(val);
       }
-      // Fallback: use raw absNotional (take absolute value in case it's negative)
+      // Fallback: raw absNotional
       if (pos.absNotional) {
         const val = parseFloat(pos.absNotional);
-        if (!isNaN(val)) {
-          return sum + Math.abs(val);
-        }
+        if (!isNaN(val)) return sum + Math.abs(val);
       }
-      // Last resort: compute from quantity * spot * multiplier (always positive)
-      if (pos.spot && pos.multiplier && pos.quantity) {
+      // Last resort: compute from quantity * spot * multiplier
+      if (pos.spot && pos.quantity) {
         const qty = parseFloat(pos.quantity);
         const spot = parseFloat(pos.spot);
-        const mult = parseFloat(pos.multiplier);
+        const mult = pos.multiplier ? parseFloat(pos.multiplier) : 1;
         if (!isNaN(qty) && !isNaN(spot) && !isNaN(mult)) {
           return sum + Math.abs(qty * spot * mult);
         }

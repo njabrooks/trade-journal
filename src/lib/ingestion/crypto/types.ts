@@ -41,6 +41,7 @@ export interface CryptoPositionInput {
   isOpen: boolean;
   spot: string | null;
   absNotional: string | null;
+  marketValueUsd: string | null;
   unrealizedPnl: string | null;
   snapshotDate: string;
   // Options-specific fields (populated by Deribit options, null for other exchanges)
@@ -103,6 +104,7 @@ export function toNewPosition(input: CryptoPositionInput): Omit<NewPosition, 'id
     intrinsic: null,
     extrinsic: null,
     absNotional: input.absNotional,
+    marketValueUsd: input.marketValueUsd,
     unrealizedPnl: input.unrealizedPnl,
     snapshotDate: input.snapshotDate,
   };

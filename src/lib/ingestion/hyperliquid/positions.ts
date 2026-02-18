@@ -43,6 +43,7 @@ export function normalizeHLPerpPositions(
       isOpen: true,
       spot: spot?.toString() ?? null,
       absNotional: pos.positionValue,
+      marketValueUsd: pos.positionValue,
       unrealizedPnl: pos.unrealizedPnl,
       snapshotDate,
     });
@@ -92,6 +93,7 @@ export function normalizeHLSpotPositions(
       isOpen: true,
       spot: spot?.toString() ?? null,
       absNotional: currentValue?.toFixed(6) ?? null,
+      marketValueUsd: currentValue?.toFixed(6) ?? null,
       unrealizedPnl: unrealizedPnl?.toFixed(6) ?? null,
       snapshotDate,
     });
@@ -177,6 +179,7 @@ export function normalizeHLStakedPosition(
     isOpen: true,
     spot: spot?.toString() ?? null,
     absNotional: currentValue?.toFixed(6) ?? null,
+    marketValueUsd: currentValue?.toFixed(6) ?? null,
     unrealizedPnl: null, // Cannot compute without cost basis
     snapshotDate,
   };

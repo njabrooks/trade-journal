@@ -120,6 +120,7 @@ export function normalizeKrakenBalances(
       isOpen: true,
       spot: spotPrice?.toFixed(6) ?? null,
       absNotional: absNotional?.toFixed(6) ?? null,
+      marketValueUsd: absNotional?.toFixed(6) ?? null,
       unrealizedPnl: null,
       snapshotDate,
     });
@@ -171,6 +172,7 @@ export function normalizeKrakenOpenPositions(
       isOpen: true,
       spot: spotPrice?.toFixed(6) ?? null,
       absNotional: value?.toFixed(6) ?? null,
+      marketValueUsd: value?.toFixed(6) ?? null,
       unrealizedPnl: net?.toFixed(6) ?? null,
       snapshotDate,
     });

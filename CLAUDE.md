@@ -334,7 +334,7 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`asset_theses`** - Asset-specific theses linked to underlyings and macro theses
 - **`strategies`** - User-defined trading strategies with entry context
 - **`trades`** - Individual trade executions
-- **`positions`** - Current/closed positions with MTM data
+- **`positions`** - Current/closed positions with MTM data. `market_value_usd` is the canonical USD market value field (always populated). Legacy fields `abs_notional` (position currency) and `abs_notional_usd` (IBKR only) are deprecated — prefer `market_value_usd`.
 
 ### Derived/Computed Tables
 - **`triage_records`** - Triage alerts with severity/urgency/reasons (includes override columns)

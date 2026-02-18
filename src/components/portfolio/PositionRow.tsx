@@ -18,8 +18,9 @@ interface PositionRowProps {
 export function PositionRow({ position, isNested = false }: PositionRowProps) {
   const costBasis = calculateCostBasis(position);
   const dte = calculateDTE(position.expiry, position.snapshotDate ?? "");
-  const pctNav = position.absNotional && position.nav && position.nav > 0
-    ? (Math.abs(position.absNotional) / position.nav) * 100
+  const mv = position.marketValueUsd ?? position.absNotional;
+  const pctNav = mv && position.nav && position.nav > 0
+    ? (Math.abs(mv) / position.nav) * 100
     : null;
 
   return (
@@ -45,7 +46,7 @@ export function PositionRow({ position, isNested = false }: PositionRowProps) {
         {position.spot != null ? formatCurrency(position.spot, 'USD', 2) : "—"}
       </td>
       <td className="py-2 pr-3 text-right tabular-nums font-medium text-foreground">
-        {formatCurrency(Math.abs(position.absNotional ?? 0))}
+        {formatCurrency(Math.abs(position.marketValueUsd ?? position.absNotional ?? 0))}
       </td>
       <td className={cn(
         "py-2 pr-3 text-right tabular-nums font-medium",

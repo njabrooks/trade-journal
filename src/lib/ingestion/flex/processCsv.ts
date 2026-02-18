@@ -540,10 +540,11 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
             .where(and(eq(positions.accountId, acc), eq(positions.snapshotDate, snapshotDate)));
         }
 
-        // Compute absNotionalUsd for each position using per-date FX rates
+        // Compute absNotionalUsd and marketValueUsd for each position using per-date FX rates
         for (const { data } of normalizedRows) {
           if (data.snapshotDate) {
             data.absNotionalUsd = computeAbsNotionalUsd(data.absNotional ?? null, data.currency ?? null, data.snapshotDate);
+            data.marketValueUsd = data.absNotionalUsd; // IBKR PositionValue IS market value, just needs FX conversion
           }
         }
 

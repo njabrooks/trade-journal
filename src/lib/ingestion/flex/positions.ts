@@ -239,6 +239,7 @@ export async function normalizeFlexPositionRow(
     extrinsic: null,
     absNotional: positionValue,
     absNotionalUsd: null, // Computed in processCsv.ts using FX rates
+    marketValueUsd: null, // Computed in processCsv.ts using FX rates (same as absNotionalUsd)
     unrealizedPnl: unrealized,
     snapshotDate,
   };

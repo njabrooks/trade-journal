@@ -31,7 +31,7 @@ export function UnlinkedPositionsTable({ positions, totalMarketValue }: Unlinked
           <tbody className="divide-y divide-border">
             {positions.map((pos) => {
               const dte = calculateDTE(pos.expiry, pos.snapshotDate ?? "");
-              const mv = Math.abs(pos.absNotional ?? 0);
+              const mv = Math.abs(pos.marketValueUsd ?? pos.absNotional ?? 0);
               const pctTotal = totalMarketValue > 0
                 ? (mv / totalMarketValue) * 100
                 : null;

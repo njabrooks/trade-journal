@@ -236,6 +236,7 @@ async function main() {
           isOpen: true,
           spot: spot?.toString() ?? null,
           absNotional: absNotional?.toFixed(6) ?? null,
+          marketValueUsd: absNotional?.toFixed(6) ?? null,
           unrealizedPnl: null,
           snapshotDate,
         });

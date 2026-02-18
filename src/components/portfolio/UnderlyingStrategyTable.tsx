@@ -40,7 +40,7 @@ function getStrategyAggregates(strategy: PortfolioStrategyRow, totalMarketValue:
   let minDte: number | null = null;
 
   for (const pos of strategy.positions) {
-    totalMV += Math.abs(pos.absNotional ?? 0);
+    totalMV += Math.abs(pos.marketValueUsd ?? pos.absNotional ?? 0);
 
     const dte = calculateDTE(pos.expiry, pos.snapshotDate ?? "");
     if (dte != null && (minDte === null || dte < minDte)) {
@@ -88,12 +88,12 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
         const ticker = pos.parentUnderlyingTicker ?? pos.underlyingTicker ?? "Unknown";
         const existing = tickerNotionals.get(ticker);
         if (existing) {
-          existing.notional += Math.abs(pos.absNotional ?? 0);
+          existing.notional += Math.abs(pos.marketValueUsd ?? pos.absNotional ?? 0);
         } else {
           tickerNotionals.set(ticker, {
             ticker,
             id: pos.underlyingId,
-            notional: Math.abs(pos.absNotional ?? 0),
+            notional: Math.abs(pos.marketValueUsd ?? pos.absNotional ?? 0),
           });
         }
       }
@@ -669,7 +669,7 @@ function PositionRowNested({
   accountMap: Map<string, Account>;
 }) {
   const dte = calculateDTE(position.expiry, position.snapshotDate ?? "");
-  const mv = Math.abs(position.absNotional ?? 0);
+  const mv = Math.abs(position.marketValueUsd ?? position.absNotional ?? 0);
   const pctTotal = totalMarketValue > 0 ? (mv / totalMarketValue) * 100 : null;
   const isShort = position.quantity < 0;
 

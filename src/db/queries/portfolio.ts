@@ -575,6 +575,7 @@ export interface PortfolioPositionRow {
   spot: number | null;
   absNotional: number | null;
   absNotionalUsd: number | null;
+  marketValueUsd: number | null;
   unrealizedPnl: number | null;
   multiplier: number | null;
   snapshotDate: string | null;
@@ -638,6 +639,7 @@ export async function getPortfolioPositionsData(
       spot: positions.spot,
       absNotional: positions.absNotional,
       absNotionalUsd: positions.absNotionalUsd,
+      marketValueUsd: positions.marketValueUsd,
       unrealizedPnl: positions.unrealizedPnl,
       multiplier: positions.multiplier,
       snapshotDate: positions.snapshotDate,
@@ -716,6 +718,7 @@ export async function getPortfolioPositionsData(
     spot: toNumber(row.spot),
     absNotional: toNumber(row.absNotional),
     absNotionalUsd: toNumber(row.absNotionalUsd),
+    marketValueUsd: toNumber(row.marketValueUsd),
     unrealizedPnl: toNumber(row.unrealizedPnl),
     multiplier: toNumber(row.multiplier),
     snapshotDate: row.snapshotDate,
@@ -785,8 +788,8 @@ export async function getPortfolioPositionsData(
 
   // Sort strategies by total abs notional descending
   const strategyList = [...strategyMap.values()].sort((a, b) => {
-    const aNotional = a.positions.reduce((sum, p) => sum + Math.abs(p.absNotionalUsd ?? p.absNotional ?? 0), 0);
-    const bNotional = b.positions.reduce((sum, p) => sum + Math.abs(p.absNotionalUsd ?? p.absNotional ?? 0), 0);
+    const aNotional = a.positions.reduce((sum, p) => sum + Math.abs(p.marketValueUsd ?? p.absNotionalUsd ?? p.absNotional ?? 0), 0);
+    const bNotional = b.positions.reduce((sum, p) => sum + Math.abs(p.marketValueUsd ?? p.absNotionalUsd ?? p.absNotional ?? 0), 0);
     return bNotional - aNotional;
   });
 

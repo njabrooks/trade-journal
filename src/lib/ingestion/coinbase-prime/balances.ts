@@ -48,6 +48,7 @@ export function normalizeCBPBalances(
       isOpen: true,
       spot: spot?.toFixed(6) ?? null,
       absNotional: fiatAmount > 0 ? fiatAmount.toFixed(6) : null,
+      marketValueUsd: fiatAmount > 0 ? fiatAmount.toFixed(6) : null,
       unrealizedPnl: null,    // Cannot compute without cost basis
       snapshotDate,
     });

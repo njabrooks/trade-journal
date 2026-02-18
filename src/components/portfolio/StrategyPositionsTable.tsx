@@ -19,7 +19,7 @@ function getStrategyAggregates(strategy: PortfolioStrategyRow, totalMarketValue:
   let minDte: number | null = null;
 
   for (const pos of strategy.positions) {
-    totalMV += Math.abs(pos.absNotional ?? 0);
+    totalMV += Math.abs(pos.marketValueUsd ?? pos.absNotional ?? 0);
 
     const dte = calculateDTE(pos.expiry, pos.snapshotDate ?? "");
     if (dte != null && (minDte === null || dte < minDte)) {
@@ -253,7 +253,7 @@ function StrategyGroup({ strategy, agg, totalMarketValue, isExpanded, onToggle }
 
 function PositionRowNested({ position, totalMarketValue }: { position: PortfolioPositionRow; totalMarketValue: number }) {
   const dte = calculateDTE(position.expiry, position.snapshotDate ?? "");
-  const mv = Math.abs(position.absNotional ?? 0);
+  const mv = Math.abs(position.marketValueUsd ?? position.absNotional ?? 0);
   const pctTotal = totalMarketValue > 0 ? (mv / totalMarketValue) * 100 : null;
 
   const displaySymbol = position.assetClass === 'OPT' && position.underlyingTicker
