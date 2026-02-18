@@ -41,6 +41,7 @@ function formatTime(date: Date): string {
 
 interface JournalBrowserProps {
   entries: JournalEntryWithUnderlying[];
+  totalEntries: number;
   objectTypes: string[];
   actionTypes: string[];
   sources: string[];
@@ -54,7 +55,7 @@ type UnderlyingFilter = string | 'all';
 type SortColumn = 'timestamp' | 'objectTitle' | 'actionType' | 'objectType' | 'source' | 'underlying';
 type SortDirection = 'asc' | 'desc';
 
-export function JournalBrowser({ entries, objectTypes, actionTypes, sources, underlyings }: JournalBrowserProps) {
+export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes, sources, underlyings }: JournalBrowserProps) {
   const router = useRouter();
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
@@ -71,6 +72,64 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
   // Sort states
   const [sortColumn, setSortColumn] = useState<SortColumn>('timestamp');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Server-side filtering state
+  const [apiEntries, setApiEntries] = useState<JournalEntryWithUnderlying[] | null>(null);
+  const [totalCount, setTotalCount] = useState(totalEntries);
+  const [isLoading, setIsLoading] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search input for API calls
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch from API when filters change (server-side filtering)
+  useEffect(() => {
+    const hasFilters =
+      objectTypeFilter !== 'all' ||
+      actionTypeFilter !== 'all' ||
+      sourceFilter !== 'all' ||
+      underlyingFilter !== 'all' ||
+      debouncedSearch !== '';
+
+    if (!hasFilters) {
+      setApiEntries(null);
+      setTotalCount(totalEntries);
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const params = new URLSearchParams();
+    if (objectTypeFilter !== 'all') params.set('objectType', objectTypeFilter);
+    if (actionTypeFilter !== 'all') params.set('actionType', actionTypeFilter);
+    if (sourceFilter !== 'all') params.set('source', sourceFilter);
+    if (underlyingFilter !== 'all') params.set('underlying', underlyingFilter);
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    params.set('limit', '500');
+
+    setIsLoading(true);
+    fetch(`/api/journal?${params}`, { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        setApiEntries(data.entries);
+        setTotalCount(data.total);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error('Failed to fetch journal entries:', err);
+          setIsLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [objectTypeFilter, actionTypeFilter, sourceFilter, underlyingFilter, debouncedSearch, totalEntries]);
+
+  // Use API entries when filters are active, otherwise use server-rendered prop data
+  const activeEntries = apiEntries ?? entries;
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -101,8 +160,10 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
   }, [searchQuery, showFilters, expandedEntry]);
 
   // Filter and sort entries
+  // When API data is loaded, server already filtered — client-side filters are redundant but harmless.
+  // Client-side search provides instant feedback while debounce is pending.
   const filteredAndSortedEntries = useMemo(() => {
-    let filtered = [...entries];
+    let filtered = [...activeEntries];
 
     // Filter by object type
     if (objectTypeFilter !== 'all') {
@@ -184,7 +245,7 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
     });
 
     return filtered;
-  }, [entries, objectTypeFilter, actionTypeFilter, sourceFilter, underlyingFilter, searchQuery, sortColumn, sortDirection]);
+  }, [activeEntries, objectTypeFilter, actionTypeFilter, sourceFilter, underlyingFilter, searchQuery, sortColumn, sortDirection]);
 
   // Group entries by batch_id to create display rows
   const displayRows = useMemo((): DisplayRow[] => {
@@ -880,7 +941,11 @@ export function JournalBrowser({ entries, objectTypes, actionTypes, sources, und
         })()}
 
         <div className="ml-auto text-sm text-muted-foreground">
-          Showing {filteredAndSortedEntries.length} of {entries.length} entries
+          {isLoading ? (
+            <span className="animate-pulse">Loading...</span>
+          ) : (
+            <>Showing {filteredAndSortedEntries.length} of {totalCount} entries</>
+          )}
         </div>
       </div>
 

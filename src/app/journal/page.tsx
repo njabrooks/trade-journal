@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { db } from '@/db';
 import { journalEntries } from '@/db/schema';
-import { desc, sql } from 'drizzle-orm';
+import { sql, count } from 'drizzle-orm';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { JournalBrowser } from '@/components/journal/JournalBrowser';
 import type { JournalEntry } from '@/db/schema';
@@ -80,8 +80,15 @@ async function getJournalData() {
     (r) => r.underlying_ticker
   );
 
+  // Get total count of all journal entries (for accurate "X of Y" display)
+  const totalCountResult = await db
+    .select({ count: count() })
+    .from(journalEntries);
+  const totalEntries = totalCountResult[0]?.count ?? 0;
+
   return {
     entries,
+    totalEntries,
     objectTypes: objectTypesResult.map((r) => r.value),
     actionTypes: actionTypesResult.map((r) => r.value),
     sources: sourcesResult.map((r) => r.value),
@@ -90,10 +97,7 @@ async function getJournalData() {
 }
 
 export default async function JournalPage() {
-  const { entries, objectTypes, actionTypes, sources, underlyings } = await getJournalData();
-
-  // Calculate statistics
-  const totalEntries = entries.length;
+  const { entries, totalEntries, objectTypes, actionTypes, sources, underlyings } = await getJournalData();
   const todayCount = entries.filter((e) => {
     const entryDate = new Date(e.timestamp);
     const today = new Date();
@@ -153,6 +157,7 @@ export default async function JournalPage() {
         {entries.length > 0 ? (
           <JournalBrowser
             entries={entries}
+            totalEntries={totalEntries}
             objectTypes={objectTypes}
             actionTypes={actionTypes}
             sources={sources}

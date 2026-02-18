@@ -133,6 +133,7 @@ export default async function MacroThesisJournalPage({ params }: JournalPageProp
         {journalData.entries.length > 0 ? (
           <JournalBrowser
             entries={journalData.entries}
+            totalEntries={journalData.entries.length}
             objectTypes={journalData.objectTypes}
             actionTypes={journalData.actionTypes}
             sources={journalData.sources}
