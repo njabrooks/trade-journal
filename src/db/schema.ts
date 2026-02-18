@@ -14,7 +14,9 @@ import {
   jsonb,
   integer,
   unique,
+  uniqueIndex,
   index,
+  check,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
@@ -30,6 +32,13 @@ export const accounts = pgTable('accounts', {
   baseCurrency: text('base_currency'),
   label: text('label'),
   owner: text('owner'), // Owner name: 'TTC', 'Nick', 'Maisy', 'Alex', 'Lily', 'Leo'
+  // Portfolio accounting fields (from TTC migration — M1)
+  ownerId: uuid('owner_id'), // FK → owners (set via migration, nullable for existing rows)
+  accountType: text('account_type'), // brokerage | exchange | wallet | bank | retirement
+  institution: text('institution'), // IBKR, Coinbase, etc.
+  accountNumber: text('account_number'), // External account number
+  costBasisMethod: text('cost_basis_method'), // fifo | average_cost
+  isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -1917,6 +1926,437 @@ export const journalEntries = pgTable(
 
 export type JournalEntry = typeof journalEntries.$inferSelect;
 export type NewJournalEntry = typeof journalEntries.$inferInsert;
+
+// ============================================================================
+// Portfolio Accounting — Event Sourcing (TTC Migration M1)
+// ============================================================================
+
+// --- Enumerations (as const arrays, matching TJ pattern — no pgEnum) ---
+
+export const ENTITY_TYPES = [
+  'individual', 'joint', 'trust', 'ira_traditional', 'ira_roth',
+  'ira_sep', '401k', 'llc', 'corporation', 'partnership',
+] as const;
+export type EntityType = (typeof ENTITY_TYPES)[number];
+
+export const ACCOUNT_TYPES = [
+  'brokerage', 'exchange', 'wallet', 'bank', 'retirement',
+] as const;
+export type AccountType = (typeof ACCOUNT_TYPES)[number];
+
+export const COST_BASIS_METHODS = ['fifo', 'average_cost'] as const;
+export type CostBasisMethod = (typeof COST_BASIS_METHODS)[number];
+
+export const EVENT_TYPES = [
+  'BUY', 'SELL', 'RECEIVE', 'SEND', 'FEE', 'DIVIDEND', 'INTEREST',
+  'STAKING_REWARD', 'MINING_REWARD', 'GIFT_IN', 'GIFT_OUT', 'LOST',
+  'FORK', 'EXPENSE', 'INCOME',
+] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
+
+export const EVENT_SOURCES = [
+  'ibkr_trade', 'ibkr_sof', 'ibkr_mtmpnl', 'ibkr_positions',
+  'koinly', 'buxfer', 'coinbase', 'manual', 'migration',
+] as const;
+export type EventSource = (typeof EVENT_SOURCES)[number];
+
+export const BATCH_STATUSES = [
+  'pending', 'parsing', 'validating', 'persisting', 'calculating',
+  'completed', 'failed',
+] as const;
+export type BatchStatus = (typeof BATCH_STATUSES)[number];
+
+export const CALC_PHASES = [
+  'sort_indexes', 'running_quantity', 'cost_basis', 'average_cost_basis',
+  'daily_balances', 'price_population', 'market_value_enrichment',
+  'daily_nav', 'completed',
+] as const;
+export type CalcPhase = (typeof CALC_PHASES)[number];
+
+export const ASSET_CLASSES = [
+  'CRYPTO', 'EQUITY', 'FIAT', 'STABLECOIN', 'DERIVATIVE',
+  'BOND', 'ETF', 'MUTUAL_FUND', 'COMMODITY', 'OTHER',
+] as const;
+export type AssetClass = (typeof ASSET_CLASSES)[number];
+
+export const PRICE_SOURCES = [
+  'coinmarketcap', 'coingecko', 'massive', 'tradingview', 'ibkr', 'manual',
+] as const;
+export type PriceSource = (typeof PRICE_SOURCES)[number];
+
+export const LOT_STATUSES = ['open', 'closed', 'partial'] as const;
+export type LotStatus = (typeof LOT_STATUSES)[number];
+
+export const LOT_TYPES = ['long', 'short'] as const;
+export type LotType = (typeof LOT_TYPES)[number];
+
+// --- Owners ---
+
+export const owners = pgTable('owners', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  name: text('name').notNull(),
+  entityType: text('entity_type').notNull().default('individual'), // EntityType
+  legalName: text('legal_name'),
+  taxJurisdiction: text('tax_jurisdiction').default('US'),
+  ssnOrEin: text('ssn_or_ein'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserName: unique('unique_owner_user_name').on(table.userId, table.name),
+  idxOwnersUser: index('idx_owners_user').on(table.userId),
+}));
+
+export type Owner = typeof owners.$inferSelect;
+export type NewOwner = typeof owners.$inferInsert;
+
+// --- Assets (canonical instrument registry — separate from underlyings) ---
+
+export const assets = pgTable('assets', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  ticker: text('ticker').notNull().unique(),
+  name: text('name'),
+  assetClass: text('asset_class').notNull(), // AssetClass
+  subClass: text('sub_class'),
+  ibkrConid: text('ibkr_conid').unique(),
+  coinmarketcapId: text('coinmarketcap_id'),
+  coingeckoId: text('coingecko_id'),
+  cusip: text('cusip'),
+  isin: text('isin'),
+  decimals: integer('decimals').default(8),
+  baseCurrency: text('base_currency'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  idxAssetsConid: index('idx_assets_conid').on(table.ibkrConid),
+  idxAssetsClass: index('idx_assets_class').on(table.assetClass),
+  idxAssetsTicker: index('idx_assets_ticker').on(table.ticker),
+}));
+
+export type Asset = typeof assets.$inferSelect;
+export type NewAsset = typeof assets.$inferInsert;
+
+// --- Asset Aliases ---
+
+export const assetAliases = pgTable('asset_aliases', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  assetId: uuid('asset_id').notNull().references(() => assets.id, { onDelete: 'cascade' }),
+  alias: text('alias').notNull(),
+  source: text('source'), // ibkr | koinly | buxfer | null=universal
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  idxAliasesUnique: uniqueIndex('idx_aliases_unique').on(table.alias, table.source),
+  idxAliasesAsset: index('idx_aliases_asset').on(table.assetId),
+}));
+
+export type AssetAlias = typeof assetAliases.$inferSelect;
+export type NewAssetAlias = typeof assetAliases.$inferInsert;
+
+// --- Import Batches (state machine for import operations) ---
+
+export const importBatches = pgTable('import_batches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  status: text('status').notNull().default('pending'), // BatchStatus
+  source: text('source').notNull(), // EventSource
+  filename: text('filename'),
+  fileHash: text('file_hash'), // SHA256 for idempotency
+  totalRecords: integer('total_records'),
+  processedRecords: integer('processed_records').default(0),
+  skippedRecords: integer('skipped_records').default(0),
+  errorCount: integer('error_count').default(0),
+  calcPhase: text('calc_phase'), // CalcPhase (sub-state during 'calculating')
+  calcProgress: jsonb('calc_progress'),
+  errorMessage: text('error_message'),
+  errorDetails: jsonb('error_details'),
+  validationErrors: jsonb('validation_errors'),
+  validationWarnings: jsonb('validation_warnings'),
+  startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  idxImportBatchesUserStatus: index('idx_import_batches_user_status').on(table.userId, table.status),
+  idxImportBatchesIdempotency: uniqueIndex('idx_import_batches_idempotency').on(table.userId, table.fileHash),
+  idxImportBatchesStarted: index('idx_import_batches_started').on(table.startedAt),
+}));
+
+export type ImportBatch = typeof importBatches.$inferSelect;
+export type NewImportBatch = typeof importBatches.$inferInsert;
+
+// --- Events (immutable append-only transaction log) ---
+
+export const events = pgTable('events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  eventType: text('event_type').notNull(), // EventType
+  timestamp: timestamp('timestamp', { withTimezone: true }).notNull(),
+  settlementDate: date('settlement_date'),
+  assetId: uuid('asset_id').notNull().references(() => assets.id),
+  assetTicker: text('asset_ticker').notNull(), // Denormalized
+  quantity: numeric('quantity').notNull(), // Always positive; event_type determines direction
+  price: numeric('price'),
+  totalValue: numeric('total_value').notNull(),
+  currency: text('currency').notNull().default('USD'),
+  costBasis: numeric('cost_basis'),
+  owner: text('owner').notNull(),
+  account: text('account').notNull(),
+  source: text('source').notNull(), // EventSource
+  sourceId: text('source_id').notNull(),
+  importBatchId: uuid('import_batch_id').notNull(),
+  linkedEventId: uuid('linked_event_id'), // Self-ref FK (managed via migration SQL)
+  idempotencyKey: text('idempotency_key').notNull().unique(),
+  rawData: jsonb('raw_data').notNull(),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  idxEventsUserDate: index('idx_events_user_date').on(table.userId, table.timestamp),
+  idxEventsAsset: index('idx_events_asset').on(table.assetId, table.timestamp),
+  idxEventsBatch: index('idx_events_batch').on(table.importBatchId),
+  idxEventsUserAsset: index('idx_events_user_asset').on(table.userId, table.assetTicker),
+  idxEventsOwnerAccount: index('idx_events_owner_account').on(table.owner, table.account),
+  idxEventsSource: index('idx_events_source').on(table.source, table.sourceId),
+  positiveQuantity: check('positive_quantity', sql`quantity > 0`),
+}));
+
+export type Event = typeof events.$inferSelect;
+export type NewEvent = typeof events.$inferInsert;
+
+// --- Event Calculations (mutable derived state per event) ---
+
+export const eventCalculations = pgTable('event_calculations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(), // Denormalized for bulk operations
+  runningQuantity: numeric('running_quantity'),
+  costBasis: numeric('cost_basis'),
+  costBasisMethod: text('cost_basis_method'), // 'average_cost' | 'fifo'
+  realizedGain: numeric('realized_gain'),
+  holdingDays: integer('holding_days'),
+  isLongTerm: boolean('is_long_term'),
+  newAverageCost: numeric('new_average_cost'),
+  averageCostUsed: numeric('average_cost_used'),
+  fifoMatched: boolean('fifo_matched'),
+  lotConsumptionsCount: integer('lot_consumptions_count'),
+  lotType: text('lot_type'), // 'long' | 'short'
+  calculatedAt: timestamp('calculated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueEventId: uniqueIndex('idx_event_calculations_event_id').on(table.eventId),
+  idxCalcUser: index('idx_event_calculations_user').on(table.userId),
+}));
+
+export type EventCalculation = typeof eventCalculations.$inferSelect;
+export type NewEventCalculation = typeof eventCalculations.$inferInsert;
+
+// --- Tax Lots (FIFO cost basis tracking) ---
+
+export const taxLots = pgTable('tax_lots', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  assetId: uuid('asset_id').notNull().references(() => assets.id),
+  owner: text('owner').notNull(),
+  account: text('account').notNull(),
+  acquisitionEventId: uuid('acquisition_event_id').notNull().references(() => events.id).unique(),
+  acquisitionDate: timestamp('acquisition_date', { withTimezone: true }).notNull(),
+  originalQuantity: numeric('original_quantity').notNull(),
+  consumedQuantity: numeric('consumed_quantity').notNull().default('0'),
+  remainingQuantity: numeric('remaining_quantity').notNull(),
+  costBasisPerUnit: numeric('cost_basis_per_unit').notNull(),
+  totalCostBasis: numeric('total_cost_basis').notNull(),
+  remainingCostBasis: numeric('remaining_cost_basis').notNull(),
+  status: text('status').notNull().default('open'), // LotStatus: open | closed | partial
+  lotType: text('lot_type').notNull().default('long'), // LotType: long | short
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  idxLotsFifo: index('idx_lots_fifo').on(
+    table.userId, table.assetId, table.owner, table.account,
+    table.status, table.acquisitionDate,
+  ),
+  idxLotsUser: index('idx_lots_user').on(table.userId),
+  idxLotsAsset: index('idx_lots_asset').on(table.assetId),
+  quantityBalance: check('quantity_balance',
+    sql`remaining_quantity = original_quantity - consumed_quantity`),
+  positiveRemaining: check('positive_remaining',
+    sql`remaining_quantity >= 0`),
+}));
+
+export type TaxLot = typeof taxLots.$inferSelect;
+export type NewTaxLot = typeof taxLots.$inferInsert;
+
+// --- Lot Consumptions (FIFO matching audit trail) ---
+
+export const lotConsumptions = pgTable('lot_consumptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  lotId: uuid('lot_id').notNull().references(() => taxLots.id),
+  disposalEventId: uuid('disposal_event_id').notNull().references(() => events.id),
+  quantity: numeric('quantity').notNull(),
+  costBasis: numeric('cost_basis').notNull(),
+  proceeds: numeric('proceeds').notNull(),
+  realizedGain: numeric('realized_gain').notNull(),
+  holdingDays: integer('holding_days').notNull(),
+  isLongTerm: boolean('is_long_term').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  idxConsumptionsLot: index('idx_consumptions_lot').on(table.lotId),
+  idxConsumptionsDisposal: index('idx_consumptions_disposal').on(table.disposalEventId),
+  positiveConsumption: check('positive_consumption', sql`quantity > 0`),
+}));
+
+export type LotConsumption = typeof lotConsumptions.$inferSelect;
+export type NewLotConsumption = typeof lotConsumptions.$inferInsert;
+
+// --- Average Cost Positions (alternative to FIFO for accounts using avg cost) ---
+
+export const averageCostPositions = pgTable('average_cost_positions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  assetId: uuid('asset_id').notNull().references(() => assets.id),
+  owner: text('owner').notNull(),
+  account: text('account').notNull(),
+  totalQuantity: numeric('total_quantity').notNull().default('0'),
+  totalCostBasis: numeric('total_cost_basis').notNull().default('0'),
+  averageCostPerUnit: numeric('average_cost_per_unit').notNull().default('0'),
+  firstAcquisitionDate: timestamp('first_acquisition_date', { withTimezone: true }),
+  lastUpdatedEventId: uuid('last_updated_event_id').references(() => events.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniquePosition: unique('unique_avg_cost_position').on(
+    table.userId, table.assetId, table.owner, table.account,
+  ),
+  idxAvgCostPosition: index('idx_avg_cost_position').on(
+    table.userId, table.assetId, table.owner, table.account,
+  ),
+  avgPositiveQty: check('avg_positive_qty', sql`total_quantity >= 0`),
+  avgPositiveCost: check('avg_positive_cost', sql`average_cost_per_unit >= 0`),
+}));
+
+export type AverageCostPosition = typeof averageCostPositions.$inferSelect;
+export type NewAverageCostPosition = typeof averageCostPositions.$inferInsert;
+
+// --- Portfolio Daily Balances (end-of-day balances per scope) ---
+// Named portfolio_daily_balances to avoid confusion with TJ's cash_balances
+
+export const portfolioDailyBalances = pgTable('portfolio_daily_balances', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  date: date('date').notNull(),
+  asset: text('asset').notNull(), // Asset UUID stored as text (denormalized)
+  accountType: text('account_type').notNull(), // Account name
+  owner: text('owner').notNull(),
+  assetClass: text('asset_class'),
+  quantity: numeric('quantity').notNull(),
+  price: numeric('price'),
+  marketValue: numeric('market_value'),
+  bookValue: numeric('book_value'),
+  marketValueSource: text('market_value_source'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueBalance: uniqueIndex('unique_portfolio_daily_balance').on(
+    table.userId, table.date, table.asset, table.accountType, table.owner,
+  ),
+}));
+
+export type PortfolioDailyBalance = typeof portfolioDailyBalances.$inferSelect;
+export type NewPortfolioDailyBalance = typeof portfolioDailyBalances.$inferInsert;
+
+// --- Daily Snapshots (point-in-time portfolio state from tax lots) ---
+
+export const dailySnapshots = pgTable('daily_snapshots', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  snapshotDate: date('snapshot_date').notNull(),
+  assetId: uuid('asset_id').notNull().references(() => assets.id),
+  owner: text('owner').notNull(),
+  account: text('account').notNull(),
+  quantity: numeric('quantity').notNull(),
+  costBasis: numeric('cost_basis').notNull(),
+  pricePerUnit: numeric('price_per_unit'),
+  marketValue: numeric('market_value'),
+  unrealizedGain: numeric('unrealized_gain'),
+  unrealizedGainPercent: numeric('unrealized_gain_percent'),
+  dailyPnl: numeric('daily_pnl'),
+  dailyPnlPercent: numeric('daily_pnl_percent'),
+  isCalculated: boolean('is_calculated').default(true),
+  calculatedAt: timestamp('calculated_at', { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  uniqueSnapshot: unique('unique_daily_snapshot').on(
+    table.snapshotDate, table.userId, table.assetId, table.owner, table.account,
+  ),
+  idxSnapshotsDateRange: index('idx_snapshots_date_range').on(table.userId, table.snapshotDate),
+  idxSnapshotsAsset: index('idx_snapshots_asset').on(table.userId, table.assetId, table.snapshotDate),
+  idxSnapshotsOwner: index('idx_snapshots_owner').on(
+    table.userId, table.owner, table.account, table.snapshotDate,
+  ),
+  snapshotPositiveQty: check('snapshot_positive_qty', sql`quantity >= 0`),
+}));
+
+export type DailySnapshot = typeof dailySnapshots.$inferSelect;
+export type NewDailySnapshot = typeof dailySnapshots.$inferInsert;
+
+// --- Price History (OHLCV with multi-source priority) ---
+
+export const priceHistory = pgTable('price_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  assetId: uuid('asset_id').notNull().references(() => assets.id),
+  priceDate: date('price_date').notNull(),
+  priceClose: numeric('price_close').notNull(),
+  priceOpen: numeric('price_open'),
+  priceHigh: numeric('price_high'),
+  priceLow: numeric('price_low'),
+  volume: numeric('volume'),
+  source: text('source').notNull(), // PriceSource
+  sourceRawPrice: numeric('source_raw_price'),
+  sourceCurrency: text('source_currency'),
+  fxRateToUsd: numeric('fx_rate_to_usd'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueAssetDateSource: unique('unique_price_asset_date_source').on(
+    table.assetId, table.priceDate, table.source,
+  ),
+  idxPriceLookup: index('idx_price_lookup').on(table.assetId, table.priceDate),
+  idxPriceSource: index('idx_price_source').on(table.source, table.priceDate),
+  positivePrice: check('positive_price', sql`price_close > 0`),
+}));
+
+export type PriceHistoryRow = typeof priceHistory.$inferSelect;
+export type NewPriceHistoryRow = typeof priceHistory.$inferInsert;
+
+// --- Daily Portfolio Values (aggregated NAV at three levels) ---
+
+export const dailyPortfolioValues = pgTable('daily_portfolio_values', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  date: date('date').notNull(),
+  owner: text('owner'), // NULL = grand total
+  account: text('account'), // NULL = owner-level or grand total
+  totalMarketValue: numeric('total_market_value'),
+  totalBookValue: numeric('total_book_value'),
+  unrealizedGain: numeric('unrealized_gain'),
+  unrealizedGainPercent: numeric('unrealized_gain_percent'),
+  positionCount: integer('position_count'),
+  priceCompleteness: numeric('price_completeness'), // % positions with real prices
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  // NOTE: The actual NULL-safe unique index is created in migration SQL using COALESCE.
+  // This Drizzle index is approximate — for type inference and documentation only.
+  uniqueNav: uniqueIndex('unique_daily_portfolio_value').on(
+    table.userId, table.date, table.owner, table.account,
+  ),
+  idxNavDate: index('idx_daily_portfolio_values_date').on(table.userId, table.date),
+}));
+
+export type DailyPortfolioValue = typeof dailyPortfolioValues.$inferSelect;
+export type NewDailyPortfolioValue = typeof dailyPortfolioValues.$inferInsert;
+
+// ============================================================================
+// End Portfolio Accounting Tables
+// ============================================================================
 
 // Type definitions for Triage JSONB fields
 export interface TriageContentSummary {
