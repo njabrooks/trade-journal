@@ -2026,6 +2026,8 @@ export const assets = pgTable('assets', {
   isin: text('isin'),
   decimals: integer('decimals').default(8),
   baseCurrency: text('base_currency'),
+  pricingTier: text('pricing_tier'), // 'market' | 'proxy' | 'book_value' | 'zero'
+  proxyAssetId: uuid('proxy_asset_id'), // FK to assets.id (self-ref, constraint in DB)
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -2033,6 +2035,7 @@ export const assets = pgTable('assets', {
   idxAssetsConid: index('idx_assets_conid').on(table.ibkrConid),
   idxAssetsClass: index('idx_assets_class').on(table.assetClass),
   idxAssetsTicker: index('idx_assets_ticker').on(table.ticker),
+  idxAssetsPricingTier: index('idx_assets_pricing_tier').on(table.pricingTier),
 }));
 
 export type Asset = typeof assets.$inferSelect;

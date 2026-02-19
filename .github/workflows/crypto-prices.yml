@@ -1,0 +1,36 @@
+name: Crypto Prices
+
+# Fetches daily crypto prices from Massive API (Polygon.io grouped crypto endpoint)
+# and upserts into price_history with source 'massive'.
+# Runs twice daily for resilience — fully idempotent.
+
+on:
+  schedule:
+    - cron: '30 0 * * *'   # 00:30 UTC — first attempt (30 min after crypto day close)
+    - cron: '0 6 * * *'    # 06:00 UTC — safety net retry
+  workflow_dispatch: # Manual trigger for testing
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch crypto prices
+        env:
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
+          MASSIVE_API_KEY: ${{ secrets.MASSIVE_API_KEY }}
+        run: npx tsx scripts/fetch-crypto-prices.ts

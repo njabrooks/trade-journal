@@ -9,6 +9,7 @@ import {
 } from "@/components/accounting/AccountingNavChart";
 import { AccountingBreakdowns } from "@/components/accounting/AccountingBreakdowns";
 import { AccountingPositionsTable } from "@/components/accounting/AccountingPositionsTable";
+import { PriceFreshness } from "@/components/accounting/PriceFreshness";
 import { formatDateShort } from "@/lib/formatters";
 import type {
   AccountingDashboardData,
@@ -105,6 +106,8 @@ export default function AccountingDashboardPage() {
           />
         </>
       )}
+
+      <PriceFreshness />
 
       {positions && <AccountingPositionsTable positions={positions} />}
     </DashboardShell>

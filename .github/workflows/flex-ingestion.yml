@@ -52,3 +52,13 @@ jobs:
         run: |
           npx tsx scripts/run-flex-ingestion.ts
 
+      - name: Extract IBKR prices to price_history
+        if: success()
+        continue-on-error: true  # Don't fail the whole workflow if price extraction fails
+        env:
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
+        run: |
+          npx tsx scripts/extract-ibkr-prices.ts
+
