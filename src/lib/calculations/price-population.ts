@@ -58,38 +58,45 @@ export async function populatePricesFromIbkr(
 }
 
 /**
- * Extract prices from ibkr_open_positions into price_history.
+ * Extract prices from TJ positions table into price_history.
  *
- * Uses a single INSERT...SELECT to map IBKR tickers to asset UUIDs
+ * Uses a single INSERT...SELECT to map position symbols to asset UUIDs
  * via the assets table and asset_aliases table.
  *
+ * TJ's `positions` table (from Flex ingestion) is the equivalent of TTC's
+ * `ibkr_open_positions`. Column mapping:
+ *   - positions.symbol → ibkr_open_positions.asset
+ *   - positions.snapshot_date → ibkr_open_positions.reportdate
+ *   - positions.spot → ibkr_open_positions.usdprice (mark price)
+ *   - positions.asset_class → ibkr_open_positions.assetclass
+ *
  * Skips: FUT (futures), CASH (handled by stablecoin/fiat logic),
- * and rows with null/zero usdprice.
+ * and rows with null/zero spot price.
  */
-async function extractIbkrPrices(userId: string): Promise<number> {
+async function extractIbkrPrices(_userId: string): Promise<number> {
   // Use INSERT ... SELECT with asset resolution via JOIN
   // Priority: assets.ticker match first, then asset_aliases match
-  const result = await db.execute(sql`
-    WITH ibkr_with_asset AS (
-      SELECT DISTINCT ON (COALESCE(a1.id, a2.id), iop.reportdate)
+  await db.execute(sql`
+    WITH pos_with_asset AS (
+      SELECT DISTINCT ON (COALESCE(a1.id, a2.id), p.snapshot_date)
         COALESCE(a1.id, a2.id) as asset_id,
-        iop.reportdate as price_date,
-        iop.usdprice as price_close,
-        'ibkr'::price_source as source
-      FROM ibkr_open_positions iop
-      LEFT JOIN assets a1 ON UPPER(iop.asset) = UPPER(a1.ticker)
-      LEFT JOIN asset_aliases aa ON UPPER(iop.asset) = UPPER(aa.alias)
+        p.snapshot_date as price_date,
+        p.spot as price_close,
+        'ibkr' as source
+      FROM positions p
+      LEFT JOIN assets a1 ON UPPER(p.symbol) = UPPER(a1.ticker)
+      LEFT JOIN asset_aliases aa ON UPPER(p.symbol) = UPPER(aa.alias)
       LEFT JOIN assets a2 ON aa.asset_id = a2.id
-      WHERE iop.user_id = ${userId}
-        AND iop.usdprice IS NOT NULL
-        AND iop.usdprice::numeric > 0
-        AND iop.assetclass NOT IN ('FUT', 'CASH')
+      WHERE p.spot IS NOT NULL
+        AND p.spot::numeric > 0
+        AND p.snapshot_date IS NOT NULL
+        AND COALESCE(p.asset_class, '') NOT IN ('FUT', 'CASH')
         AND COALESCE(a1.id, a2.id) IS NOT NULL
-      ORDER BY COALESCE(a1.id, a2.id), iop.reportdate, iop.usdprice DESC
+      ORDER BY COALESCE(a1.id, a2.id), p.snapshot_date, p.spot::numeric DESC
     )
     INSERT INTO price_history (asset_id, price_date, price_close, source)
     SELECT asset_id, price_date, price_close, source
-    FROM ibkr_with_asset
+    FROM pos_with_asset
     ON CONFLICT (asset_id, price_date, source) DO UPDATE
       SET price_close = EXCLUDED.price_close,
           updated_at = NOW()
@@ -125,7 +132,7 @@ async function insertStablecoinPrices(userId: string): Promise<number> {
         AND UPPER(a.ticker) IN (${tickerList})
     )
     INSERT INTO price_history (asset_id, price_date, price_close, source)
-    SELECT asset_id, price_date, '1.0', 'manual'::price_source
+    SELECT asset_id, price_date, '1.0', 'manual'
     FROM stable_positions
     ON CONFLICT (asset_id, price_date, source) DO NOTHING
   `));

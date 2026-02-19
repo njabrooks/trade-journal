@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Lightbulb,
   ScrollText,
+  Calculator,
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const MAIN_NAV = [
   { href: "/claims", label: "Claims", icon: Lightbulb, id: "claims" },
   { href: "/research", label: "Research", icon: Library, id: "research" },
   { href: "/dashboard/portfolio", label: "Portfolio", icon: LayoutDashboard, id: "portfolio" },
+  { href: "/dashboard/accounting", label: "Accounting", icon: Calculator, id: "accounting" },
 ] as const;
 
 const ADMIN_NAV = [

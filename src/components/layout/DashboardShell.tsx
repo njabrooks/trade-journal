@@ -5,6 +5,7 @@ import { PersistentHeader } from "./PersistentHeader";
 
 export type NavKey =
   | "portfolio"
+  | "accounting"
   | "macro-theses"
   | "asset-theses"
   | "strategies"
@@ -44,16 +45,16 @@ export function DashboardShell({
     <SidebarProvider>
       <PersistentHeader />
       <AppSidebar />
-      <SidebarInset className="pt-7">
+      <SidebarInset className="pt-7 min-w-0">
         <div className="flex shrink-0 items-center gap-4 border-b bg-card px-6 py-3 h-[4rem]">
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold leading-tight">{title}</h2>
-            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold leading-tight truncate">{title}</h2>
+            {subtitle && <p className="mt-1 text-sm text-muted-foreground truncate">{subtitle}</p>}
           </div>
           {tabs && <div className="flex items-center h-9">{tabs}</div>}
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </div>
-        <main className="flex flex-1 flex-col gap-4 p-4">
+        <main className="flex flex-1 flex-col gap-4 p-4 min-w-0">
           {children}
         </main>
         {footer && <footer className="border-t p-4">{footer}</footer>}
