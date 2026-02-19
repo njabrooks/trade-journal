@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { AccountingMetricsRow } from "@/components/accounting/AccountingMetricsRow";
 import {
@@ -110,6 +111,15 @@ export default function AccountingDashboardPage() {
       <PriceFreshness />
 
       {positions && <AccountingPositionsTable positions={positions} />}
+
+      <div className="flex justify-end">
+        <Link
+          href="/dashboard/accounting/reconciliation"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+        >
+          Reconciliation (Snapshot vs Event-Sourced)
+        </Link>
+      </div>
     </DashboardShell>
   );
 }

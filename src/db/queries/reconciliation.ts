@@ -1,0 +1,777 @@
+import { db } from "@/db";
+import { sql } from "drizzle-orm";
+import { toNumber } from "@/lib/numbers";
+
+// Single-user system (from TTC migration)
+const USER_ID = "user_2mYzScugP7zfcqv8Ox21i7q9nyW";
+
+// --- Types ---
+
+export interface NavComparisonPoint {
+  date: string;
+  snapshotNav: number | null;
+  eventSourcedNav: number | null;
+  delta: number | null;
+  deltaPct: number | null;
+}
+
+export interface AccountNavComparison {
+  snapshotAccount: string | null;
+  snapshotAccountId: string | null;
+  snapshotNav: number | null;
+  eventSourcedAccount: string | null;
+  eventSourcedNav: number | null;
+  matchStatus: "matched" | "snapshot_only" | "event_sourced_only";
+}
+
+export interface OwnerNavComparison {
+  owner: string;
+  snapshotNavTotal: number | null;
+  eventSourcedNavTotal: number | null;
+  delta: number | null;
+  deltaPct: number | null;
+  accounts: AccountNavComparison[];
+}
+
+export interface PositionReconciliation {
+  ticker: string;
+  assetClass: string | null;
+  owner: string;
+  account: string;
+  matchMethod: "conid" | "ticker" | "alias" | null;
+  snapshotQty: number | null;
+  eventSourcedQty: number | null;
+  qtyDelta: number | null;
+  snapshotMv: number | null;
+  eventSourcedMv: number | null;
+  mvDelta: number | null;
+  status:
+    | "match"
+    | "qty_mismatch"
+    | "mv_mismatch"
+    | "snapshot_only"
+    | "event_sourced_only";
+}
+
+export interface EventSourceFreshness {
+  source: string;
+  lastEventDate: string;
+  eventCount: number;
+}
+
+export interface ReconciliationSummaryData {
+  comparisonDate: string;
+  snapshotDate: string;
+  eventSourcedDate: string;
+  eventSourceFreshness: EventSourceFreshness[];
+  snapshotNav: number;
+  eventSourcedNav: number;
+  navDelta: number;
+  navDeltaPct: number;
+  totalPositions: number;
+  matchedPositions: number;
+  mismatchedPositions: number;
+  snapshotOnlyPositions: number;
+  eventSourcedOnlyPositions: number;
+}
+
+export interface ReconciliationData {
+  summary: ReconciliationSummaryData;
+  ownerBreakdown: OwnerNavComparison[];
+  positions: PositionReconciliation[];
+}
+
+// --- Query Functions ---
+
+/**
+ * Determines the last date on which ALL event sources have complete data.
+ *
+ * After this date, the calculation engine carries forward quantities with updated
+ * prices, but the positions don't reflect actual transactions. Reconciliation should
+ * compare at this date for meaningful results.
+ *
+ * Returns MIN(MAX(timestamp) per source) from the events table, plus per-source details.
+ */
+export async function getLastCompleteEventDate(): Promise<{
+  comparisonDate: string;
+  sources: EventSourceFreshness[];
+}> {
+  const rows = (await db.execute(sql`
+    SELECT source, MAX(timestamp::date)::text AS last_date, COUNT(*)::int AS event_count
+    FROM events
+    WHERE user_id = ${USER_ID}
+    GROUP BY source
+    ORDER BY last_date
+  `)) as any[];
+
+  const sources: EventSourceFreshness[] = rows.map((r: any) => ({
+    source: r.source,
+    lastEventDate: r.last_date,
+    eventCount: r.event_count,
+  }));
+
+  // Use the LATEST "last date" across all sources (MAX). Each source covers
+  // different accounts (ibkr_trade → IBKR accounts, koinly → crypto accounts).
+  // Using MIN would exclude crypto snapshots (NAV data starts Feb 11) when IBKR
+  // events end Feb 10. The small staleness for IBKR accounts (2 days) is negligible
+  // compared to losing all crypto coverage.
+  const comparisonDate =
+    sources.length > 0
+      ? sources.reduce((max, s) =>
+          s.lastEventDate > max ? s.lastEventDate : max,
+        sources[0].lastEventDate)
+      : new Date().toISOString().slice(0, 10);
+
+  return { comparisonDate, sources };
+}
+
+/**
+ * NAV time series comparison: snapshot vs event-sourced over time.
+ *
+ * Snapshot accounts have different update frequencies (IBKR: weekdays, crypto: daily).
+ * We forward-fill per account so each date shows the total across ALL accounts using
+ * each account's most recent known NAV.
+ */
+export async function getNavComparison(
+  daysBack: number
+): Promise<NavComparisonPoint[]> {
+  const cutoffDate =
+    daysBack >= 99999
+      ? "1900-01-01"
+      : new Date(Date.now() - daysBack * 86400000).toISOString().slice(0, 10);
+
+  // 1. Get all account-level snapshots within range
+  const accountSnapshots = (await db.execute(sql`
+    SELECT ps.snapshot_date AS date, ps.account_id, ps.nav_at_snapshot_usd::numeric AS nav
+    FROM portfolio_snapshots ps
+    WHERE ps.level = 'account'
+      AND ps.snapshot_date >= ${cutoffDate}
+    ORDER BY ps.snapshot_date
+  `)) as any[];
+
+  // 2. Get event-sourced grand total NAV
+  const eventRows = (await db.execute(sql`
+    SELECT dpv.date, dpv.total_market_value::numeric AS nav
+    FROM daily_portfolio_values dpv
+    WHERE dpv.user_id = ${USER_ID}
+      AND dpv.owner IS NULL
+      AND dpv.account IS NULL
+      AND dpv.date >= ${cutoffDate}
+    ORDER BY dpv.date
+  `)) as any[];
+
+  // 3. Collect all dates and build per-account snapshots by date
+  const allDates = new Set<string>();
+  const accountNavByDate = new Map<string, Map<string, number>>(); // date -> (accountId -> nav)
+
+  for (const row of accountSnapshots) {
+    allDates.add(row.date);
+    if (!accountNavByDate.has(row.date)) accountNavByDate.set(row.date, new Map());
+    accountNavByDate.get(row.date)!.set(row.account_id, toNumber(row.nav) ?? 0);
+  }
+
+  const eventNavByDate = new Map<string, number>();
+  for (const row of eventRows) {
+    allDates.add(row.date);
+    eventNavByDate.set(row.date, toNumber(row.nav) ?? 0);
+  }
+
+  // 4. Forward-fill per account: for each date, carry forward each account's last known NAV
+  const sortedDates = [...allDates].sort();
+  const lastKnownNav = new Map<string, number>(); // accountId -> latest known nav
+
+  return sortedDates.map((date) => {
+    // Update last known values for accounts that have data on this date
+    const dayData = accountNavByDate.get(date);
+    if (dayData) {
+      for (const [accountId, nav] of dayData) {
+        lastKnownNav.set(accountId, nav);
+      }
+    }
+
+    // Sum all accounts with their latest known value
+    let snapshotTotal = 0;
+    for (const nav of lastKnownNav.values()) snapshotTotal += nav;
+
+    const sNav = lastKnownNav.size > 0 ? snapshotTotal : null;
+    const eNav = eventNavByDate.get(date) ?? null;
+    const delta = sNav != null && eNav != null ? sNav - eNav : null;
+    const deltaPct =
+      delta != null && eNav != null && eNav !== 0
+        ? (delta / Math.abs(eNav)) * 100
+        : null;
+
+    return { date, snapshotNav: sNav, eventSourcedNav: eNav, delta, deltaPct };
+  });
+}
+
+/**
+ * Per-owner and per-account NAV comparison at a specific comparison date.
+ * Both sides are anchored to the same date for meaningful comparison.
+ */
+export async function getOwnerAccountNavComparison(
+  comparisonDate: string
+): Promise<OwnerNavComparison[]> {
+  // 1. Snapshot side: per-account NAV at latest snapshot on or before comparison date
+  const snapshotRows = (await db.execute(sql`
+    WITH latest_per_account AS (
+      SELECT account_id, MAX(snapshot_date) AS latest_date
+      FROM portfolio_snapshots
+      WHERE level = 'account'
+        AND snapshot_date <= ${comparisonDate}
+      GROUP BY account_id
+    )
+    SELECT
+      a.owner,
+      a.broker_name AS account_name,
+      a.broker_account_id AS account_id,
+      ps.nav_at_snapshot_usd::numeric AS nav,
+      ps.snapshot_date
+    FROM portfolio_snapshots ps
+    JOIN accounts a ON a.id = ps.account_id
+    JOIN latest_per_account lpa ON lpa.account_id = ps.account_id AND lpa.latest_date = ps.snapshot_date
+    WHERE ps.level = 'account'
+    ORDER BY a.owner, a.broker_name
+  `)) as any[];
+
+  // 2. Event-sourced side: per-account NAV at comparison date
+  const eventSourcedRows = (await db.execute(sql`
+    SELECT
+      dpv.owner,
+      dpv.account AS account_name,
+      dpv.total_market_value::numeric AS nav,
+      dpv.date
+    FROM daily_portfolio_values dpv
+    WHERE dpv.user_id = ${USER_ID}
+      AND dpv.owner IS NOT NULL
+      AND dpv.account IS NOT NULL
+      AND dpv.date = ${comparisonDate}
+    ORDER BY dpv.owner, dpv.account
+  `)) as any[];
+
+  // 3. Build per-owner structures
+  // Group snapshot accounts by owner
+  const snapshotByOwner = new Map<
+    string,
+    { accountName: string; accountId: string; nav: number }[]
+  >();
+  for (const row of snapshotRows) {
+    const owner = row.owner ?? "Unknown";
+    if (!snapshotByOwner.has(owner)) snapshotByOwner.set(owner, []);
+    snapshotByOwner.get(owner)!.push({
+      accountName: row.account_name,
+      accountId: row.account_id,
+      nav: toNumber(row.nav) ?? 0,
+    });
+  }
+
+  // Group event-sourced accounts by owner
+  const eventByOwner = new Map<
+    string,
+    { accountName: string; nav: number }[]
+  >();
+  for (const row of eventSourcedRows) {
+    const owner = row.owner;
+    if (!eventByOwner.has(owner)) eventByOwner.set(owner, []);
+    eventByOwner.get(owner)!.push({
+      accountName: row.account_name,
+      nav: toNumber(row.nav) ?? 0,
+    });
+  }
+
+  // 4. Merge owners from both sides
+  const allOwners = new Set([
+    ...snapshotByOwner.keys(),
+    ...eventByOwner.keys(),
+  ]);
+  const result: OwnerNavComparison[] = [];
+
+  for (const owner of [...allOwners].sort()) {
+    const snapshotAccounts = snapshotByOwner.get(owner) ?? [];
+    const eventAccounts = eventByOwner.get(owner) ?? [];
+
+    const snapshotTotal =
+      snapshotAccounts.length > 0
+        ? snapshotAccounts.reduce((sum, a) => sum + a.nav, 0)
+        : null;
+    const eventTotal =
+      eventAccounts.length > 0
+        ? eventAccounts.reduce((sum, a) => sum + a.nav, 0)
+        : null;
+
+    const delta =
+      snapshotTotal != null && eventTotal != null
+        ? snapshotTotal - eventTotal
+        : null;
+    const deltaPct =
+      delta != null && eventTotal != null && eventTotal !== 0
+        ? (delta / Math.abs(eventTotal)) * 100
+        : null;
+
+    // Build account-level detail
+    const accounts: AccountNavComparison[] = [];
+
+    // Categorize snapshot accounts: IBKR vs crypto exchanges
+    const snapshotIbkr = snapshotAccounts.filter(
+      (a) => a.accountName === "IBKR"
+    );
+    const snapshotCrypto = snapshotAccounts.filter(
+      (a) => a.accountName !== "IBKR"
+    );
+
+    // Event-sourced accounts
+    const eventIbkr = eventAccounts.filter((a) => a.accountName === "IBKR");
+    const eventKoinly = eventAccounts.filter(
+      (a) => a.accountName === "Koinly"
+    );
+
+    // Match IBKR accounts
+    if (snapshotIbkr.length > 0 || eventIbkr.length > 0) {
+      const sNav =
+        snapshotIbkr.length > 0
+          ? snapshotIbkr.reduce((sum, a) => sum + a.nav, 0)
+          : null;
+      const eNav =
+        eventIbkr.length > 0
+          ? eventIbkr.reduce((sum, a) => sum + a.nav, 0)
+          : null;
+
+      // Show individual IBKR snapshot accounts if multiple
+      if (snapshotIbkr.length > 1) {
+        for (const sa of snapshotIbkr) {
+          accounts.push({
+            snapshotAccount: `IBKR (${sa.accountId})`,
+            snapshotAccountId: sa.accountId,
+            snapshotNav: sa.nav,
+            eventSourcedAccount: null,
+            eventSourcedNav: null,
+            matchStatus:
+              eventIbkr.length > 0 ? "matched" : "snapshot_only",
+          });
+        }
+        // Show event-sourced IBKR total as aggregate match
+        if (eventIbkr.length > 0) {
+          accounts.push({
+            snapshotAccount: null,
+            snapshotAccountId: null,
+            snapshotNav: sNav,
+            eventSourcedAccount: "IBKR",
+            eventSourcedNav: eNav,
+            matchStatus: "matched",
+          });
+        }
+      } else {
+        accounts.push({
+          snapshotAccount:
+            snapshotIbkr.length > 0
+              ? `IBKR (${snapshotIbkr[0].accountId})`
+              : null,
+          snapshotAccountId:
+            snapshotIbkr.length > 0 ? snapshotIbkr[0].accountId : null,
+          snapshotNav: sNav,
+          eventSourcedAccount: eventIbkr.length > 0 ? "IBKR" : null,
+          eventSourcedNav: eNav,
+          matchStatus:
+            snapshotIbkr.length > 0 && eventIbkr.length > 0
+              ? "matched"
+              : snapshotIbkr.length > 0
+                ? "snapshot_only"
+                : "event_sourced_only",
+        });
+      }
+    }
+
+    // Match crypto accounts (snapshot exchanges vs event-sourced Koinly)
+    const cryptoSnapshotTotal =
+      snapshotCrypto.length > 0
+        ? snapshotCrypto.reduce((sum, a) => sum + a.nav, 0)
+        : null;
+    const koinlyTotal =
+      eventKoinly.length > 0
+        ? eventKoinly.reduce((sum, a) => sum + a.nav, 0)
+        : null;
+
+    if (snapshotCrypto.length > 0 || eventKoinly.length > 0) {
+      // Show each crypto exchange individually
+      for (const sa of snapshotCrypto) {
+        accounts.push({
+          snapshotAccount: sa.accountName,
+          snapshotAccountId: sa.accountId,
+          snapshotNav: sa.nav,
+          eventSourcedAccount: null,
+          eventSourcedNav: null,
+          matchStatus: eventKoinly.length > 0 ? "matched" : "snapshot_only",
+        });
+      }
+
+      // Show Koinly aggregate
+      if (eventKoinly.length > 0) {
+        accounts.push({
+          snapshotAccount: null,
+          snapshotAccountId: null,
+          snapshotNav: cryptoSnapshotTotal,
+          eventSourcedAccount: "Koinly",
+          eventSourcedNav: koinlyTotal,
+          matchStatus:
+            snapshotCrypto.length > 0 ? "matched" : "event_sourced_only",
+        });
+      }
+    }
+
+    result.push({
+      owner,
+      snapshotNavTotal: snapshotTotal,
+      eventSourcedNavTotal: eventTotal,
+      delta,
+      deltaPct,
+      accounts,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Position-level reconciliation: match snapshot positions to event-sourced balances.
+ * Both sides are anchored to the comparison date for meaningful comparison.
+ */
+export async function getPositionReconciliation(
+  comparisonDate: string
+): Promise<PositionReconciliation[]> {
+  // 1. Snapshot positions at latest snapshot on or before comparison date per account
+  const snapshotPositions = (await db.execute(sql`
+    WITH latest_per_account AS (
+      SELECT account_id, MAX(snapshot_date) AS latest_date
+      FROM positions
+      WHERE is_open = true
+        AND snapshot_date <= ${comparisonDate}
+      GROUP BY account_id
+    )
+    SELECT
+      p.symbol,
+      p.conid,
+      p.quantity::numeric AS qty,
+      p.market_value_usd::numeric AS mv,
+      p.asset_class,
+      p.snapshot_date,
+      a.owner,
+      a.broker_name
+    FROM positions p
+    JOIN accounts a ON a.id = p.account_id
+    JOIN latest_per_account lpa ON lpa.account_id = p.account_id AND lpa.latest_date = p.snapshot_date
+    WHERE p.is_open = true
+      AND ABS(p.quantity::numeric) > 0.0001
+  `)) as any[];
+
+  // 2. Event-sourced positions at comparison date, excluding cash/fiat and zero-tier assets
+  const eventPositions = (await db.execute(sql`
+    SELECT
+      pdb.asset AS asset_id,
+      pdb.quantity::numeric AS qty,
+      pdb.market_value::numeric AS mv,
+      pdb.owner,
+      pdb.account_type,
+      pdb.asset_class,
+      ast.ticker,
+      ast.ibkr_conid,
+      ast.name AS asset_name,
+      ast.pricing_tier
+    FROM portfolio_daily_balances pdb
+    JOIN assets ast ON pdb.asset = ast.id::text
+    WHERE pdb.user_id = ${USER_ID}
+      AND pdb.date = ${comparisonDate}
+      AND ABS(pdb.quantity::numeric) > 0.0001
+      AND ast.asset_class NOT IN ('FIAT')
+      AND COALESCE(ast.pricing_tier, '') != 'zero'
+  `)) as any[];
+
+  // 3. Aggregate both sides by (owner, ticker) before matching.
+  // Snapshot positions may have the same ticker across multiple accounts (e.g., HYPE on
+  // HyperLiquid + CoinbasePrime + Solana). Event-sourced aggregates all exchange data per
+  // owner anyway, so we aggregate snapshot to match.
+  interface AggPos {
+    ticker: string;
+    conids: number[];
+    qty: number;
+    mv: number | null;
+    owner: string;
+    accounts: string[];
+    assetClass: string | null;
+    matched: boolean;
+  }
+
+  // Aggregate snapshot by (owner, symbol)
+  const snapshotAgg = new Map<string, AggPos>();
+  for (const sp of snapshotPositions) {
+    const owner = sp.owner ?? "Unknown";
+    const symbol: string = sp.symbol;
+    const key = `${owner}::${symbol}`;
+    const existing = snapshotAgg.get(key);
+    const qty = toNumber(sp.qty) ?? 0;
+    const mv = toNumber(sp.mv);
+    const conid = sp.conid ? Number(sp.conid) : null;
+
+    if (existing) {
+      existing.qty += qty;
+      existing.mv = (existing.mv ?? 0) + (mv ?? 0);
+      if (conid && !existing.conids.includes(conid)) existing.conids.push(conid);
+      const broker: string = sp.broker_name;
+      if (!existing.accounts.includes(broker)) existing.accounts.push(broker);
+    } else {
+      snapshotAgg.set(key, {
+        ticker: symbol,
+        conids: conid ? [conid] : [],
+        qty,
+        mv,
+        owner,
+        accounts: [sp.broker_name],
+        assetClass: sp.asset_class,
+        matched: false,
+      });
+    }
+  }
+
+  // Aggregate event-sourced by (owner, ticker)
+  const eventAgg = new Map<string, AggPos>();
+  for (const row of eventPositions) {
+    const key = `${row.owner}::${row.ticker}`;
+    const existing = eventAgg.get(key);
+    const qty = toNumber(row.qty) ?? 0;
+    const mv = toNumber(row.mv);
+    const conid = row.ibkr_conid ? Number(row.ibkr_conid) : null;
+
+    if (existing) {
+      existing.qty += qty;
+      existing.mv = (existing.mv ?? 0) + (mv ?? 0);
+      if (conid && !existing.conids.includes(conid)) existing.conids.push(conid);
+      if (!existing.accounts.includes(row.account_type))
+        existing.accounts.push(row.account_type);
+    } else {
+      eventAgg.set(key, {
+        ticker: row.ticker,
+        conids: conid ? [conid] : [],
+        qty,
+        mv,
+        owner: row.owner,
+        accounts: [row.account_type],
+        assetClass: row.asset_class,
+        matched: false,
+      });
+    }
+  }
+
+  // Build conid lookup for event-sourced positions
+  const eventByConid = new Map<string, string>(); // "owner::conid" → "owner::ticker"
+  for (const [key, ep] of eventAgg) {
+    for (const conid of ep.conids) {
+      eventByConid.set(`${ep.owner}::${conid}`, key);
+    }
+  }
+
+  // 4. Match aggregated positions
+  const results: PositionReconciliation[] = [];
+
+  for (const [snapKey, sp] of snapshotAgg) {
+    const { owner, ticker: symbol } = sp;
+
+    // Try 3-tier asset matching
+    let matchedKey: string | null = null;
+    let matchMethod: "conid" | "ticker" | "alias" | null = null;
+
+    // Tier 1: conid match
+    for (const conid of sp.conids) {
+      const conidLookup = `${owner}::${conid}`;
+      const eventKey = eventByConid.get(conidLookup);
+      if (eventKey) {
+        matchedKey = eventKey;
+        matchMethod = "conid";
+        break;
+      }
+    }
+
+    // Tier 2: ticker match
+    if (!matchedKey) {
+      const tickerKey = `${owner}::${symbol}`;
+      if (eventAgg.has(tickerKey)) {
+        matchedKey = tickerKey;
+        matchMethod = "ticker";
+      }
+    }
+
+    if (matchedKey) {
+      const ep = eventAgg.get(matchedKey)!;
+      ep.matched = true;
+      sp.matched = true;
+
+      const qtyDelta = sp.qty - ep.qty;
+      const mvDelta =
+        sp.mv != null && ep.mv != null ? sp.mv - ep.mv : null;
+
+      // Classify
+      let status: PositionReconciliation["status"];
+      const qtyMatch = Math.abs(qtyDelta) < 0.0001;
+      const mvMatch =
+        mvDelta != null
+          ? Math.abs(mvDelta) /
+              Math.max(Math.abs(sp.mv ?? 0), Math.abs(ep.mv ?? 0), 1) <
+            0.01
+          : true;
+
+      if (qtyMatch && mvMatch) {
+        status = "match";
+      } else if (!qtyMatch) {
+        status = "qty_mismatch";
+      } else {
+        status = "mv_mismatch";
+      }
+
+      results.push({
+        ticker: symbol,
+        assetClass: sp.assetClass ?? ep.assetClass,
+        owner,
+        account: sp.accounts.join(", "),
+        matchMethod,
+        snapshotQty: sp.qty,
+        eventSourcedQty: ep.qty,
+        qtyDelta,
+        snapshotMv: sp.mv,
+        eventSourcedMv: ep.mv,
+        mvDelta,
+        status,
+      });
+    } else {
+      results.push({
+        ticker: symbol,
+        assetClass: sp.assetClass,
+        owner,
+        account: sp.accounts.join(", "),
+        matchMethod: null,
+        snapshotQty: sp.qty,
+        eventSourcedQty: null,
+        qtyDelta: null,
+        snapshotMv: sp.mv,
+        eventSourcedMv: null,
+        mvDelta: null,
+        status: "snapshot_only",
+      });
+    }
+  }
+
+  // 5. Event-sourced-only positions (not matched by any snapshot position)
+  for (const [, ep] of eventAgg) {
+    if (!ep.matched) {
+      results.push({
+        ticker: ep.ticker,
+        assetClass: ep.assetClass,
+        owner: ep.owner,
+        account: ep.accounts.join(", "),
+        matchMethod: null,
+        snapshotQty: null,
+        eventSourcedQty: ep.qty,
+        qtyDelta: null,
+        snapshotMv: null,
+        eventSourcedMv: ep.mv,
+        mvDelta: null,
+        status: "event_sourced_only",
+      });
+    }
+  }
+
+  // Sort: discrepancies first, then by absolute MV delta descending
+  results.sort((a, b) => {
+    const statusOrder = {
+      qty_mismatch: 0,
+      mv_mismatch: 1,
+      snapshot_only: 2,
+      event_sourced_only: 3,
+      match: 4,
+    };
+    const sa = statusOrder[a.status];
+    const sb = statusOrder[b.status];
+    if (sa !== sb) return sa - sb;
+    const aMv = Math.abs(a.mvDelta ?? a.snapshotMv ?? a.eventSourcedMv ?? 0);
+    const bMv = Math.abs(b.mvDelta ?? b.snapshotMv ?? b.eventSourcedMv ?? 0);
+    return bMv - aMv;
+  });
+
+  return results;
+}
+
+/**
+ * Full reconciliation: summary + owner breakdown + position details.
+ *
+ * All comparisons are anchored to the "last complete event date" — the latest date
+ * where ALL event sources (IBKR, Koinly) have actual transaction data. After that date,
+ * the calculation engine just carries forward quantities with updated prices, so comparing
+ * against fresh snapshot data would produce meaningless deltas.
+ */
+export async function getReconciliation(): Promise<ReconciliationData> {
+  // 1. Determine comparison anchor date
+  const { comparisonDate, sources: eventSourceFreshness } =
+    await getLastCompleteEventDate();
+
+  // 2. Run comparisons anchored to that date
+  const [ownerBreakdown, positions] = await Promise.all([
+    getOwnerAccountNavComparison(comparisonDate),
+    getPositionReconciliation(comparisonDate),
+  ]);
+
+  // Compute summary from owner breakdown
+  const snapshotNav = ownerBreakdown.reduce(
+    (sum, o) => sum + (o.snapshotNavTotal ?? 0),
+    0
+  );
+  const eventSourcedNav = ownerBreakdown.reduce(
+    (sum, o) => sum + (o.eventSourcedNavTotal ?? 0),
+    0
+  );
+  const navDelta = snapshotNav - eventSourcedNav;
+  const navDeltaPct =
+    eventSourcedNav !== 0 ? (navDelta / Math.abs(eventSourcedNav)) * 100 : 0;
+
+  // Get actual snapshot date used (latest per account on or before comparison date)
+  const snapshotDateRow = (await db.execute(sql`
+    WITH latest_per_account AS (
+      SELECT account_id, MAX(snapshot_date) AS latest_date
+      FROM portfolio_snapshots
+      WHERE level = 'account'
+        AND snapshot_date <= ${comparisonDate}
+      GROUP BY account_id
+    )
+    SELECT MIN(latest_date) AS d_min, MAX(latest_date) AS d_max
+    FROM latest_per_account
+  `)) as any[];
+
+  const matchedPositions = positions.filter((p) => p.status === "match").length;
+  const mismatchedPositions = positions.filter(
+    (p) => p.status === "qty_mismatch" || p.status === "mv_mismatch"
+  ).length;
+  const snapshotOnlyPositions = positions.filter(
+    (p) => p.status === "snapshot_only"
+  ).length;
+  const eventSourcedOnlyPositions = positions.filter(
+    (p) => p.status === "event_sourced_only"
+  ).length;
+
+  return {
+    summary: {
+      comparisonDate,
+      snapshotDate: snapshotDateRow[0]?.d_min === snapshotDateRow[0]?.d_max
+        ? (snapshotDateRow[0]?.d_max ?? "")
+        : `${snapshotDateRow[0]?.d_min ?? ""} – ${snapshotDateRow[0]?.d_max ?? ""}`,
+      eventSourcedDate: comparisonDate,
+      eventSourceFreshness,
+      snapshotNav,
+      eventSourcedNav,
+      navDelta,
+      navDeltaPct,
+      totalPositions: positions.length,
+      matchedPositions,
+      mismatchedPositions,
+      snapshotOnlyPositions,
+      eventSourcedOnlyPositions,
+    },
+    ownerBreakdown,
+    positions,
+  };
+}
