@@ -336,6 +336,10 @@ function computeDayBalances(
     }
   }
 
+  // Track whether the position has been open (non-zero) so we can record
+  // the closing zero when quantity drops to 0, then stop emitting zeros
+  let positionWasOpen = lastKnownQuantity > 0.00000001;
+
   while (currentDate <= endDate) {
     const dateStr = formatDate(currentDate);
 
@@ -344,13 +348,17 @@ function computeDayBalances(
       lastKnownQuantity = dayQuantities.get(dateStr)!;
     }
 
-    // Only record non-zero balances
-    if (lastKnownQuantity > 0.00000001) {
-      balances.push({
-        date: dateStr,
-        quantity: lastKnownQuantity,
-      });
+    if (Math.abs(lastKnownQuantity) > 0.00000001) {
+      // Non-zero balance — record it
+      balances.push({ date: dateStr, quantity: lastKnownQuantity });
+      positionWasOpen = true;
+    } else if (positionWasOpen) {
+      // Quantity just dropped to zero — record the closing balance
+      // so downstream queries see qty=0 instead of stale non-zero
+      balances.push({ date: dateStr, quantity: 0 });
+      positionWasOpen = false;
     }
+    // If positionWasOpen is false and qty is still 0, skip (no bloat)
 
     // Move to next day (use UTC to avoid DST/timezone drift with toISOString formatting)
     currentDate.setUTCDate(currentDate.getUTCDate() + 1);

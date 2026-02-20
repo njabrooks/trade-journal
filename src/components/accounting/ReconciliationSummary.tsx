@@ -31,6 +31,22 @@ function MetricCard({
   );
 }
 
+function buildDiscrepancySubtitle(summary: ReconciliationSummaryData): string {
+  const parts: string[] = [];
+  const unresolved = summary.unresolvedCount ?? 0;
+  const flagged = summary.flaggedCount ?? 0;
+  const accepted = summary.acceptedCount ?? 0;
+  const resolved = summary.resolvedCount ?? 0;
+
+  if (unresolved > 0) parts.push(`${unresolved} unresolved`);
+  if (flagged > 0) parts.push(`${flagged} flagged`);
+  if (accepted > 0) parts.push(`${accepted} accepted`);
+  if (resolved > 0) parts.push(`${resolved} resolved`);
+
+  if (parts.length === 0) return "All discrepancies resolved";
+  return parts.join(", ");
+}
+
 interface ReconciliationSummaryProps {
   summary: ReconciliationSummaryData;
 }
@@ -95,12 +111,15 @@ export function ReconciliationSummary({ summary }: ReconciliationSummaryProps) {
         />
         <MetricCard
           label="Discrepancies"
-          value={(
-            summary.mismatchedPositions +
-            summary.snapshotOnlyPositions +
-            summary.eventSourcedOnlyPositions
-          ).toLocaleString()}
-          subtitle={`${summary.mismatchedPositions} mismatch, ${summary.snapshotOnlyPositions} snap-only, ${summary.eventSourcedOnlyPositions} ES-only`}
+          value={((summary.unresolvedCount ?? 0) + (summary.flaggedCount ?? 0)).toLocaleString()}
+          subtitle={buildDiscrepancySubtitle(summary)}
+          subtitleColor={
+            (summary.unresolvedCount ?? 0) + (summary.flaggedCount ?? 0) === 0
+              ? "text-emerald-600"
+              : (summary.unresolvedCount ?? 0) + (summary.flaggedCount ?? 0) > 10
+                ? "text-red-500"
+                : "text-amber-600"
+          }
         />
       </div>
     </section>
