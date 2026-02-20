@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { formatCurrency, formatNumber } from "@/lib/formatters";
 import { ArrowUpDown, Filter } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ReconciliationActionMenu } from "@/components/accounting/ReconciliationActionMenu";
+import { ReconciliationBulkActions } from "@/components/accounting/ReconciliationBulkActions";
 import type { PositionReconciliation } from "@/db/queries/reconciliation";
 
 type StatusFilter =
@@ -71,6 +72,17 @@ export function ReconciliationPositionTable({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("unresolved");
   const [sortKey, setSortKey] = useState<SortKey>("mvDelta");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  // Clear selection when filter changes
+  function handleFilterChange(filter: StatusFilter) {
+    setStatusFilter(filter);
+    setSelectedKeys(new Set());
+  }
+
+  function posKey(p: PositionReconciliation) {
+    return `${p.owner}::${p.ticker}`;
+  }
 
   // Compute filter counts
   const counts = useMemo(() => {
@@ -141,6 +153,44 @@ export function ReconciliationPositionTable({
     });
   }, [filtered, sortKey, sortDir]);
 
+  // Selection helpers
+  const selectableRows = useMemo(
+    () => sorted.filter((p) => p.status !== "match"),
+    [sorted]
+  );
+  const selectAllRef = useRef<HTMLInputElement>(null);
+  const allSelected = selectableRows.length > 0 && selectableRows.every((p) => selectedKeys.has(posKey(p)));
+  const someSelected = selectableRows.some((p) => selectedKeys.has(posKey(p)));
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someSelected && !allSelected;
+    }
+  }, [someSelected, allSelected]);
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedKeys(new Set());
+    } else {
+      setSelectedKeys(new Set(selectableRows.map(posKey)));
+    }
+  }
+
+  function toggleSelect(p: PositionReconciliation) {
+    const key = posKey(p);
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  const selectedPositions = useMemo(
+    () => selectableRows.filter((p) => selectedKeys.has(posKey(p))),
+    [selectableRows, selectedKeys]
+  );
+
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -185,7 +235,7 @@ export function ReconciliationPositionTable({
           {filterOptions.map((opt) => (
             <button
               key={opt.value}
-              onClick={() => setStatusFilter(opt.value)}
+              onClick={() => handleFilterChange(opt.value)}
               className={`rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
                 statusFilter === opt.value
                   ? "bg-foreground text-background"
@@ -196,15 +246,24 @@ export function ReconciliationPositionTable({
             </button>
           ))}
         </div>
+        <ReconciliationBulkActions
+          selectedPositions={selectedPositions}
+          onClearSelection={() => setSelectedKeys(new Set())}
+          onAction={() => {
+            setSelectedKeys(new Set());
+            onResolutionAction?.();
+          }}
+        />
         <table className="w-full table-fixed">
           <colgroup>
-            <col className="w-[13%]" />
+            <col className="w-[3%]" />
+            <col className="w-[12%]" />
             <col className="w-[7%]" />
             <col className="w-[9%]" />
-            <col className="w-[6%]" />
+            <col className="w-[5%]" />
             <col className="w-[9%]" />
             <col className="w-[9%]" />
-            <col className="w-[9%]" />
+            <col className="w-[8%]" />
             <col className="w-[9%]" />
             <col className="w-[9%]" />
             <col className="w-[14%]" />
@@ -212,6 +271,17 @@ export function ReconciliationPositionTable({
           </colgroup>
           <thead className="border-b">
             <tr>
+              <th className="px-2 py-2 text-center">
+                {selectableRows.length > 0 && (
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="h-3.5 w-3.5 rounded border-gray-300 cursor-pointer"
+                  />
+                )}
+              </th>
               {renderSortHeader("Ticker", "ticker")}
               {renderSortHeader("Owner", "owner")}
               <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Account</th>
@@ -228,6 +298,16 @@ export function ReconciliationPositionTable({
           <tbody className="divide-y">
             {sorted.map((row, idx) => (
               <tr key={`${row.ticker}-${row.owner}-${idx}`} className="hover:bg-muted/50 transition-colors">
+                <td className="px-2 py-2 text-center">
+                  {row.status !== "match" && (
+                    <input
+                      type="checkbox"
+                      checked={selectedKeys.has(posKey(row))}
+                      onChange={() => toggleSelect(row)}
+                      className="h-3.5 w-3.5 rounded border-gray-300 cursor-pointer"
+                    />
+                  )}
+                </td>
                 <td className="px-3 py-2 text-sm font-medium truncate">{row.ticker}</td>
                 <td className="px-3 py-2 text-sm text-muted-foreground">{row.owner}</td>
                 <td className="px-3 py-2 text-sm text-muted-foreground truncate">{row.account}</td>

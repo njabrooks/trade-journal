@@ -323,12 +323,12 @@ export async function getOwnerAccountNavComparison(
         : null;
 
     const delta =
-      snapshotTotal != null && eventTotal != null
-        ? snapshotTotal - eventTotal
+      snapshotTotal != null || eventTotal != null
+        ? (snapshotTotal ?? 0) - (eventTotal ?? 0)
         : null;
     const deltaPct =
-      delta != null && eventTotal != null && eventTotal !== 0
-        ? (delta / Math.abs(eventTotal)) * 100
+      delta != null && (snapshotTotal ?? 0) !== 0
+        ? (delta / Math.abs(snapshotTotal ?? eventTotal ?? 1)) * 100
         : null;
 
     // Build account-level detail
@@ -484,6 +484,7 @@ export async function getPositionReconciliation(
     JOIN latest_per_account lpa ON lpa.account_id = p.account_id AND lpa.latest_date = p.snapshot_date
     WHERE p.is_open = true
       AND ABS(p.quantity::numeric) > 0.0001
+      AND COALESCE(p.asset_class, '') != 'PERP'
   `)) as any[];
 
   // 2. Event-sourced positions at comparison date, excluding cash/fiat and zero-tier assets
@@ -504,7 +505,6 @@ export async function getPositionReconciliation(
     WHERE pdb.user_id = ${USER_ID}
       AND pdb.date = ${comparisonDate}
       AND ABS(pdb.quantity::numeric) > 0.0001
-      AND ast.asset_class NOT IN ('FIAT')
       AND COALESCE(ast.pricing_tier, '') != 'zero'
   `)) as any[];
 

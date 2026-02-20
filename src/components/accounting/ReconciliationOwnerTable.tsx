@@ -184,8 +184,8 @@ function OwnerRow({
                 : "—"}
             </td>
             <td className="px-3 py-1.5 text-xs text-right tabular-nums text-muted-foreground">
-              {acct.snapshotNav != null && acct.eventSourcedNav != null
-                ? formatCurrency(acct.snapshotNav - acct.eventSourcedNav)
+              {acct.snapshotNav != null || acct.eventSourcedNav != null
+                ? formatCurrency((acct.snapshotNav ?? 0) - (acct.eventSourcedNav ?? 0))
                 : "—"}
             </td>
             <td className="px-3 py-1.5 text-xs text-right tabular-nums text-muted-foreground" />

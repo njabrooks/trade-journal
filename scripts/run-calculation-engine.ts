@@ -197,6 +197,20 @@ async function clearExistingCalculations(userId: string): Promise<void> {
     .where(eq(schema.taxLots.userId, userId));
   console.log(`  Deleted tax lots`);
 
+  // Clear daily balances — the UPSERT in daily_balances phase only updates
+  // existing rows, it doesn't delete stale rows for closed positions.
+  // Without this, positions that go to zero keep old negative/stale balances.
+  await db.execute(sql`
+    DELETE FROM portfolio_daily_balances WHERE user_id = ${userId}
+  `);
+  console.log(`  Deleted daily balances`);
+
+  // Clear portfolio values (aggregated NAV) since they depend on daily balances
+  await db.execute(sql`
+    DELETE FROM daily_portfolio_values WHERE user_id = ${userId}
+  `);
+  console.log(`  Deleted portfolio values`);
+
   console.log(`  (Running quantities will be recalculated)`);
 }
 

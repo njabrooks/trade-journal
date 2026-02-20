@@ -1,9 +1,10 @@
 /**
- * IBKR Price Extraction — Standalone Script
+ * Position Price Extraction — Standalone Script
  *
- * Extracts MTM prices from Trade Journal's positions table (populated by
- * Flex ingestion) into price_history with source 'ibkr'.
- * Also inserts hardcoded $1.00 prices for stablecoins/fiat.
+ * Extracts MTM prices from Trade Journal's positions table into price_history:
+ * - IBKR positions → source 'ibkr'
+ * - Non-IBKR positions (Solana, Kraken, etc.) → source 'snapshot'
+ * Also inserts hardcoded $1.00 prices for stablecoins/fiat and FX rates.
  *
  * Same SQL logic as src/lib/calculations/price-population.ts but standalone
  * (no CalcContext dependency). Designed to run as a post-step after each
@@ -36,6 +37,7 @@ async function extractIbkrPrices(): Promise<number> {
         p.spot as price_close,
         'ibkr' as source
       FROM positions p
+      JOIN accounts acct ON p.account_id = acct.id AND acct.broker_name = 'IBKR'
       LEFT JOIN assets a1 ON UPPER(p.symbol) = UPPER(a1.ticker)
       LEFT JOIN asset_aliases aa ON UPPER(p.symbol) = UPPER(aa.alias)
       LEFT JOIN assets a2 ON aa.asset_id = a2.id
@@ -86,6 +88,42 @@ async function insertStablecoinPrices(): Promise<number> {
   return parseInt((countResult as any)[0]?.cnt ?? '0');
 }
 
+async function extractSnapshotPrices(): Promise<number> {
+  // Extract prices from non-IBKR positions (Solana, Kraken, Deribit, etc.)
+  // These are lower priority than API sources but provide coverage for
+  // assets/dates not yet fetched from Massive/CoinGecko.
+  await db.execute(sql`
+    WITH pos_with_asset AS (
+      SELECT DISTINCT ON (COALESCE(a1.id, a2.id), p.snapshot_date)
+        COALESCE(a1.id, a2.id) as asset_id,
+        p.snapshot_date as price_date,
+        p.spot as price_close,
+        'snapshot' as source
+      FROM positions p
+      JOIN accounts acct ON p.account_id = acct.id AND acct.broker_name != 'IBKR'
+      LEFT JOIN assets a1 ON UPPER(p.symbol) = UPPER(a1.ticker)
+      LEFT JOIN asset_aliases aa ON UPPER(p.symbol) = UPPER(aa.alias)
+      LEFT JOIN assets a2 ON aa.asset_id = a2.id
+      WHERE p.spot IS NOT NULL
+        AND p.spot::numeric > 0
+        AND p.snapshot_date IS NOT NULL
+        AND COALESCE(a1.id, a2.id) IS NOT NULL
+      ORDER BY COALESCE(a1.id, a2.id), p.snapshot_date, p.spot::numeric DESC
+    )
+    INSERT INTO price_history (asset_id, price_date, price_close, source)
+    SELECT asset_id, price_date, price_close, source
+    FROM pos_with_asset
+    ON CONFLICT (asset_id, price_date, source) DO UPDATE
+      SET price_close = EXCLUDED.price_close,
+          updated_at = NOW()
+  `);
+
+  const countResult = await db.execute(sql`
+    SELECT COUNT(*) as cnt FROM price_history WHERE source = 'snapshot'
+  `);
+  return parseInt((countResult as any)[0]?.cnt ?? '0');
+}
+
 async function extractFxRatePrices(): Promise<number> {
   // Copy FX rates from fx_rates table into price_history for fiat currency assets.
   // This keeps fiat prices current for portfolio valuation and M5/M6 FX conversion.
@@ -120,6 +158,9 @@ async function main() {
   const ibkrCount = await extractIbkrPrices();
   console.log(`IBKR prices in price_history: ${ibkrCount}`);
 
+  const snapshotCount = await extractSnapshotPrices();
+  console.log(`Snapshot prices in price_history (non-IBKR): ${snapshotCount}`);
+
   const stableCount = await insertStablecoinPrices();
   console.log(`Manual/stablecoin prices in price_history: ${stableCount}`);
 
@@ -130,7 +171,7 @@ async function main() {
   const latest = await db.execute(sql`
     SELECT source, COUNT(*) as cnt, MAX(price_date) as latest_date
     FROM price_history
-    WHERE source IN ('ibkr', 'manual', 'fx_rate')
+    WHERE source IN ('ibkr', 'snapshot', 'manual', 'fx_rate')
     GROUP BY source
     ORDER BY source
   `);

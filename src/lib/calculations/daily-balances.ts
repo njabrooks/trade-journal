@@ -200,7 +200,13 @@ async function processScope(
   }
 
   // Get all events for this scope in chronological order, joining event_calculations
-  // for runningQuantity and newAverageCost
+  // for runningQuantity and newAverageCost.
+  //
+  // CRITICAL: Must use the same tie-breaking sort order as running-quantity.ts
+  // (disposals before acquisitions when timestamps are equal) so the "last event
+  // of the day" picks up the correct final running quantity. Without this,
+  // same-timestamp SELL+RECEIVE pairs (e.g. CBBTC wrap/unwrap) can produce
+  // incorrect end-of-day balances.
   const scopeEvents = await db
     .select({
       timestamp: events.timestamp,
@@ -220,7 +226,15 @@ async function processScope(
         eq(events.account, scope.account)
       )
     )
-    .orderBy(asc(events.timestamp), asc(events.id));
+    .orderBy(
+      asc(events.timestamp),
+      sql`CASE
+        WHEN ${events.eventType} IN ('SELL', 'SEND', 'FEE', 'GIFT_OUT', 'LOST', 'EXPENSE') THEN 1
+        WHEN ${events.eventType} IN ('BUY', 'RECEIVE', 'DIVIDEND', 'STAKING_REWARD', 'AIRDROP', 'GIFT_IN') THEN 2
+        ELSE 3
+      END`,
+      asc(events.id)
+    );
 
   if (scopeEvents.length === 0) {
     return 0;

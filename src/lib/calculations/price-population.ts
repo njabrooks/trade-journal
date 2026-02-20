@@ -1,7 +1,9 @@
 /**
  * Price Population — Engine Phase
  *
- * Extracts prices from IBKR open positions into price_history.
+ * Extracts prices from position snapshots into price_history:
+ * - IBKR positions → source 'ibkr'
+ * - Non-IBKR positions (Solana, Kraken, etc.) → source 'snapshot'
  * Also inserts hardcoded stablecoin/fiat prices.
  * This is a fast, DB-only operation (no external API calls).
  *
@@ -38,7 +40,12 @@ export async function populatePricesFromIbkr(
     recordsProcessed += ibkrCount;
     console.log(`[PricePopulation] Extracted ${ibkrCount} IBKR prices`);
 
-    // Step 2: Insert stablecoin/fiat hardcoded prices
+    // Step 2: Extract non-IBKR position snapshot prices
+    const snapshotCount = await extractSnapshotPrices();
+    recordsProcessed += snapshotCount;
+    console.log(`[PricePopulation] Extracted ${snapshotCount} snapshot prices (non-IBKR)`);
+
+    // Step 3: Insert stablecoin/fiat hardcoded prices
     const stableCount = await insertStablecoinPrices(ctx.userId);
     recordsProcessed += stableCount;
     console.log(`[PricePopulation] Inserted ${stableCount} stablecoin/fiat prices`);
@@ -76,6 +83,8 @@ export async function populatePricesFromIbkr(
 async function extractIbkrPrices(_userId: string): Promise<number> {
   // Use INSERT ... SELECT with asset resolution via JOIN
   // Priority: assets.ticker match first, then asset_aliases match
+  // Only pull from actual IBKR accounts — other brokers (Solana, Kraken,
+  // CoinbasePrime, etc.) have their own price sources.
   await db.execute(sql`
     WITH pos_with_asset AS (
       SELECT DISTINCT ON (COALESCE(a1.id, a2.id), p.snapshot_date)
@@ -84,6 +93,7 @@ async function extractIbkrPrices(_userId: string): Promise<number> {
         p.spot as price_close,
         'ibkr' as source
       FROM positions p
+      JOIN accounts acct ON p.account_id = acct.id AND acct.broker_name = 'IBKR'
       LEFT JOIN assets a1 ON UPPER(p.symbol) = UPPER(a1.ticker)
       LEFT JOIN asset_aliases aa ON UPPER(p.symbol) = UPPER(aa.alias)
       LEFT JOIN assets a2 ON aa.asset_id = a2.id
@@ -107,6 +117,48 @@ async function extractIbkrPrices(_userId: string): Promise<number> {
     SELECT COUNT(*) as cnt
     FROM price_history
     WHERE source = 'ibkr'
+  `);
+  return parseInt((countResult as any)[0]?.cnt ?? "0");
+}
+
+/**
+ * Extract prices from non-IBKR positions (Solana, Kraken, Deribit, etc.)
+ * into price_history with source 'snapshot'.
+ *
+ * These are lower priority than dedicated API sources (Massive, CoinGecko)
+ * but provide coverage for assets/dates not yet fetched from APIs.
+ */
+async function extractSnapshotPrices(): Promise<number> {
+  await db.execute(sql`
+    WITH pos_with_asset AS (
+      SELECT DISTINCT ON (COALESCE(a1.id, a2.id), p.snapshot_date)
+        COALESCE(a1.id, a2.id) as asset_id,
+        p.snapshot_date as price_date,
+        p.spot as price_close,
+        'snapshot' as source
+      FROM positions p
+      JOIN accounts acct ON p.account_id = acct.id AND acct.broker_name != 'IBKR'
+      LEFT JOIN assets a1 ON UPPER(p.symbol) = UPPER(a1.ticker)
+      LEFT JOIN asset_aliases aa ON UPPER(p.symbol) = UPPER(aa.alias)
+      LEFT JOIN assets a2 ON aa.asset_id = a2.id
+      WHERE p.spot IS NOT NULL
+        AND p.spot::numeric > 0
+        AND p.snapshot_date IS NOT NULL
+        AND COALESCE(a1.id, a2.id) IS NOT NULL
+      ORDER BY COALESCE(a1.id, a2.id), p.snapshot_date, p.spot::numeric DESC
+    )
+    INSERT INTO price_history (asset_id, price_date, price_close, source)
+    SELECT asset_id, price_date, price_close, source
+    FROM pos_with_asset
+    ON CONFLICT (asset_id, price_date, source) DO UPDATE
+      SET price_close = EXCLUDED.price_close,
+          updated_at = NOW()
+  `);
+
+  const countResult = await db.execute(sql`
+    SELECT COUNT(*) as cnt
+    FROM price_history
+    WHERE source = 'snapshot'
   `);
   return parseInt((countResult as any)[0]?.cnt ?? "0");
 }
