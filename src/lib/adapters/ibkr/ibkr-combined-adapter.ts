@@ -24,6 +24,7 @@ import {
 } from "./ibkr-combined-parser";
 import { getIbkrTradeAdapter } from "./ibkr-trade-adapter";
 import { getIbkrSofAdapter } from "./ibkr-sof-adapter";
+import { buildFxRateLookup } from "./fx-rate-lookup";
 
 // ============================================================================
 // Types
@@ -119,6 +120,9 @@ export function processIbkrCombinedFile(
   const sofEvents: CanonicalEvent[] = [];
   const errors: string[] = [];
 
+  // Build FX rate lookup from RATE section to detect non-USD base currency
+  const fxLookup = buildFxRateLookup(parsedFile.allSections.RATE);
+
   // Build transform context
   // Note: owner/account are derived from the raw data by the adapters
   const transformContext = {
@@ -126,6 +130,10 @@ export function processIbkrCombinedFile(
     owner: "", // Will be overridden by adapter from raw data
     account: "", // Will be overridden by adapter from raw data
     batchId: importBatchId || "",
+    ...(fxLookup.isNonUsdBase && {
+      getBaseCurrencyDivisor: fxLookup.getUsdToBaseDivisor,
+      reportBaseCurrency: fxLookup.baseCurrency,
+    }),
   };
 
   // Process TRNT (trades) if enabled and data exists

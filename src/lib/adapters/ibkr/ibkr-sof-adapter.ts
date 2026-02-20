@@ -392,9 +392,12 @@ export class IbkrSofAdapter extends BaseAdapter<IbkrSofRaw> {
       ? normalizeIbkrSymbol(raw.Symbol) ?? raw.Symbol
       : undefined;
 
-    // Calculate value in base currency
+    // Calculate value in base currency, then correct to USD
     const fxRate = this.parseNumeric(raw.FXRateToBase) ?? 1;
-    const valueInBase = Math.abs(amount * fxRate);
+    const dateStr = (raw.Date ?? raw.ReportDate ?? "").substring(0, 8);
+    const baseDivisor = context.getBaseCurrencyDivisor?.(dateStr) ?? 1;
+    const effectiveFxRate = fxRate / baseDivisor;
+    const valueInUsd = Math.abs(amount * effectiveFxRate);
 
     // Generate idempotency key
     const idempotencyKey = this.getIdempotencyKey(raw);
@@ -411,11 +414,11 @@ export class IbkrSofAdapter extends BaseAdapter<IbkrSofRaw> {
       assetId: "", // Resolved by pipeline
       assetTicker,
       quantity: Math.abs(amount),
-      price: fxRate, // V1: uses fxRateToBase
-      totalValue: valueInBase,
+      price: effectiveFxRate, // Effective rate: fxRateToBase / baseDivisor → USD
+      totalValue: valueInUsd,
       currency: "USD", // Base currency for value calculations
       costBasis: ["RECEIVE", "DIVIDEND", "INTEREST", "STAKING_REWARD"].includes(eventType)
-        ? valueInBase
+        ? valueInUsd
         : undefined,
       owner,
       account,
@@ -437,6 +440,10 @@ export class IbkrSofAdapter extends BaseAdapter<IbkrSofRaw> {
         underlyingSymbol: raw.UnderlyingSymbol,
         fxRateToBase: fxRate,
         originalCurrency: raw.CurrencyPrimary,
+        ...(baseDivisor !== 1 && {
+          reportBaseCurrency: context.reportBaseCurrency,
+          baseCurrencyDivisor: baseDivisor,
+        }),
         balance: this.parseNumeric(raw.Balance),
         // For dividend/interest events, track which security paid it
         dividendSource,
@@ -452,16 +459,14 @@ export class IbkrSofAdapter extends BaseAdapter<IbkrSofRaw> {
   // ============================================================================
 
   getIdempotencyKey(raw: IbkrSofRaw): string {
+    // 5-part key matching the original twotreescap-app Stage 6B formula.
+    // Do NOT add ActivityDescription — it breaks dedup with migrated events.
     return this.buildIdempotencyKey(
       "ibkr_sof",
       raw.TransactionID ?? raw.Conid ?? raw.CurrencyPrimary,
       raw.Date ?? raw.ReportDate,
       raw.ActivityCode,
-      raw.Amount,
-      // Include ActivityDescription to distinguish entries that share the same
-      // TransactionID+Date+ActivityCode+Amount but represent different operations
-      // (e.g. "Position MTM" vs "Missing Trade VM" correction entries for futures).
-      raw.ActivityDescription
+      raw.Amount
     );
   }
 

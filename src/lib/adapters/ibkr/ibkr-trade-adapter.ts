@@ -264,6 +264,17 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
       return events;
     }
 
+    // Base currency correction for non-USD reports (e.g., GBP-base).
+    // FXRateToBase converts to the report's base currency. When base != USD,
+    // we need to divide by the USD→base rate to get USD values.
+    const dateStr = (raw.DateTime ?? raw.TradeDate ?? "").substring(0, 8);
+    const baseDivisor = context.getBaseCurrencyDivisor?.(dateStr) ?? 1;
+
+    // Correct the normalized values from base-currency to USD
+    const correctedPrice = (normalized.price ?? 0) / baseDivisor;
+    const correctedTotalValue = (normalized.totalValue ?? 0) / baseDivisor;
+    const correctedCommission = (normalized.commission ?? 0) / baseDivisor;
+
     // Determine owner and account
     const owner =
       context.owner || mapOwnerFromAccountId(raw.ClientAccountID);
@@ -297,11 +308,11 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
       assetId: "", // Resolved by pipeline
       assetTicker: ticker,
       quantity: normalized.quantity ?? 0,
-      price: normalized.price ?? undefined,
-      totalValue: normalized.totalValue ?? 0,
+      price: correctedPrice || undefined,
+      totalValue: correctedTotalValue,
       currency: "USD",
       costBasis: normalized.isBuy
-        ? (normalized.totalValue ?? 0) + (normalized.commission ?? 0)
+        ? correctedTotalValue + correctedCommission
         : undefined,
       sourceId: raw.IBOrderID ?? raw.Conid ?? "",
       idempotencyKey: `${baseKey}:trade`,
@@ -312,7 +323,11 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
         fxRateToBase: this.parseNumeric(raw.FXRateToBase),
         originalCurrency: normalized.currency,
         // Fix #18: Set commission for avg-cost engine (reads meta.commission ?? 0)
-        commission: normalized.commission ?? undefined,
+        commission: correctedCommission || undefined,
+        ...(baseDivisor !== 1 && {
+          reportBaseCurrency: context.reportBaseCurrency,
+          baseCurrencyDivisor: baseDivisor,
+        }),
       },
     };
     events.push(tradeEvent);
@@ -347,6 +362,10 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
     let rawCashAmount: number;      // Raw value in original currency
     let convertedCashAmount: number; // USD value
 
+    // Effective FX rate: converts from transaction currency to USD
+    // (fxRate converts to base currency; dividing by baseDivisor converts to USD)
+    const effectiveFxRate = fxRate / baseDivisor;
+
     if (isFutures) {
       // Fix #20: Futures cash settlement -- compute in ORIGINAL currency, not USD.
       // IBKR's NetCash is in CurrencyPrimary (e.g., CNH, EUR, or USD).
@@ -363,7 +382,7 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
           : Math.abs(rawFeeAmount) / fxRate; // Convert USD fee to cashCurrency
       rawCashAmount =
         this.parseNumericOrZero(raw.NetCash) + commissionInCashCurrency;
-      convertedCashAmount = rawCashAmount * fxRate;
+      convertedCashAmount = rawCashAmount * effectiveFxRate;
     } else {
       // Regular trades: use RAW proceeds (in original currency)
       rawCashAmount = this.parseNumericOrZero(raw.Proceeds);
@@ -376,7 +395,7 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
         feeHandledAsCashAdjustment = true;
       }
 
-      convertedCashAmount = rawCashAmount * fxRate;
+      convertedCashAmount = rawCashAmount * effectiveFxRate;
     }
 
     if (Math.abs(rawCashAmount) > 0.01) {
@@ -395,7 +414,7 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
         assetTicker: cashCurrency, // V1: uses currencyPrimary
         // V1: quantity is RAW value in original currency (not converted)
         quantity: Math.abs(rawCashAmount),
-        price: fxRate, // V1: uses fxRateToBase
+        price: effectiveFxRate, // Effective rate: fxRateToBase / baseDivisor → USD
         // totalValue is USD-converted for base currency calculations
         totalValue: Math.abs(convertedCashAmount),
         currency: "USD", // Base currency for value calculations
@@ -410,6 +429,10 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
           fxRateToBase: fxRate,
           rawAmount: rawCashAmount,
           convertedAmount: convertedCashAmount,
+          ...(baseDivisor !== 1 && {
+            reportBaseCurrency: context.reportBaseCurrency,
+            baseCurrencyDivisor: baseDivisor,
+          }),
         },
       };
       events.push(cashEvent);
@@ -423,7 +446,7 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
     const convertedFeeAmount =
       feeCurrency === "USD"
         ? rawFeeAmount
-        : rawFeeAmount * fxRate;
+        : rawFeeAmount * effectiveFxRate;
 
     if (!feeHandledAsCashAdjustment && Math.abs(rawFeeAmount) > 0.01) {
       const feeEvent: CanonicalEvent = {
@@ -436,8 +459,8 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
         assetTicker: feeCurrency,
         // Use RAW amount for quantity (matches V1's balanceChange)
         quantity: Math.abs(rawFeeAmount),
-        // Price is the FX rate (1 for USD, fxRate for others)
-        price: feeCurrency === "USD" ? 1 : fxRate,
+        // Price is the effective FX rate (1 for USD, fxRate/baseDivisor for others)
+        price: feeCurrency === "USD" ? 1 : effectiveFxRate,
         // Use CONVERTED amount for totalValue (matches V1's grossValue)
         totalValue: Math.abs(convertedFeeAmount),
         currency: "USD",
@@ -452,6 +475,10 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
           isFuturesFee: isFutures,
           originalCurrency: feeCurrency,
           fxRateToBase: feeCurrency === "USD" ? 1 : fxRate,
+          ...(baseDivisor !== 1 && {
+            reportBaseCurrency: context.reportBaseCurrency,
+            baseCurrencyDivisor: baseDivisor,
+          }),
         },
       };
       events.push(feeEvent);

@@ -27,7 +27,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // Script db (loads .env.local, creates connection)
 import { db, closeDb, schema } from "./lib/db.js";
@@ -356,13 +356,17 @@ async function persistEvents(
     const chunk = events.slice(i, i + chunkSize);
 
     try {
-      const rows = chunk.map((event) => ({
+      const rows = chunk.map((event) => {
+        const tsStr = event.timestamp instanceof Date ? event.timestamp.toISOString() : String(event.timestamp);
+        const sdStr = event.settlementDate instanceof Date ? event.settlementDate.toISOString() : null;
+        return {
         id: event.id.startsWith("temp_") ? randomUUID() : event.id,
         userId,
         eventType: event.eventType,
-        timestamp: event.timestamp,
-        settlementDate: event.settlementDate ?? null,
+        timestamp: sql`${tsStr}::timestamptz`,
+        settlementDate: sdStr ? sql`${sdStr}::timestamptz` : null,
         assetId: event.assetId,
+        assetTicker: event.assetTicker,
         quantity: String(event.quantity),
         price: event.price != null ? String(event.price) : null,
         totalValue: String(event.totalValue),
@@ -371,17 +375,17 @@ async function persistEvents(
         owner: event.owner ?? null,
         account: event.account ?? null,
         source: event.source,
-        sourceId: event.sourceId ?? null,
+        sourceId: event.sourceId ?? "",
         idempotencyKey: event.idempotencyKey,
         importBatchId,
         linkedEventId: event.linkedEventId ?? null,
-        rawData: event.rawData ?? null,
+        rawData: event.rawData ?? {},
         metadata: event.metadata ?? null,
-      }));
+      }; });
 
       const result = await db
         .insert(schema.events)
-        .values(rows)
+        .values(rows as any)
         .onConflictDoNothing({ target: schema.events.idempotencyKey })
         .returning({ id: schema.events.id });
 
@@ -391,7 +395,9 @@ async function persistEvents(
       errors += chunk.length;
       errorDetails.push({
         key: `chunk_${Math.floor(i / chunkSize)}`,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error
+          ? (error.cause instanceof Error ? error.cause.message : error.message)
+          : String(error),
       });
     }
   }

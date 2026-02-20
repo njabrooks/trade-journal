@@ -1,7 +1,7 @@
 # Trade Journal Migration Plan
 
 **Created**: February 15, 2026
-**Status**: M1 + M2 + M3 + M4 + M7 complete. Next: M5 (base currency), M6 (UK tax), or M8 (sunset).
+**Status**: M1–M4 + M7 complete. Event-sourced data current through 2026-02-19. Next: M4.5 (price tier hygiene), M7.1 (reconciliation resolution), M9 (automated event ingestion), then M5/M6/M8.
 **Goal**: Consolidate the Two Trees Capital portfolio infrastructure (events, calculations, price pipeline, daily NAV) into the Trade Journal app, then sunset the twotreescap-app.
 
 > **Note**: This file was moved from `twotreescap-app/docs/TRADE_JOURNAL_MIGRATION_PLAN.md` on 2026-02-19. The original location still has a copy that should be considered stale.
@@ -409,6 +409,48 @@ Seed script: `scripts/seed-pricing-tiers.ts` (with `--dry-run` flag). Classifica
 | `src/components/accounting/PriceFreshness.tsx` | Created |
 | `src/app/dashboard/accounting/page.tsx` | Modified (added PriceFreshness) |
 
+### Phase M4.5: Price Tier Hygiene + Price Freshness Resolution
+
+**Goal**: Make the Price Gap Check action pass by reclassifying dead/historical assets, and add UI workflows for resolving price freshness issues.
+
+**Status**: Pending.
+
+**Context (discovered 2026-02-20):** The Price Gap Check GitHub Action (`price-gap-check.yml`) fails daily because 131 of 267 `market`-tier assets have critical price gaps (>5 days). Most are dead/delisted assets (old DeFi tokens, defunct equities) that will never receive new prices. They need reclassification, not price data. Additionally, the Price Freshness dashboard component is read-only — it surfaces issues but provides no way to resolve them.
+
+**What needs to be built:**
+
+#### M4.5a: Pricing Tier Reclassification
+
+1. **Audit critical-gap assets** — Review the 131 critical + 44 never-priced assets. For each, determine:
+   - Still actively held? → Keep as `market`, investigate why price fetch is failing
+   - Zero balance across all owners? → Reclassify to `zero`
+   - Illiquid/LP/yield token? → Reclassify to `book_value`
+   - Proxy available? → Reclassify to `proxy` with `proxy_asset_id`
+2. **Update `seed-pricing-tiers.ts`** with corrected classifications
+3. **Run reclassification** and verify gap check passes (exit 0)
+
+**Expected outcome**: Reduce market-tier to only actively-priced assets. Gap check should show 90%+ freshness and exit 0.
+
+#### M4.5b: Price Freshness Resolution UI
+
+Extend the `PriceFreshness.tsx` component and its API to support resolution actions:
+
+1. **Reclassify from dashboard** — Click a stale/critical asset → change its pricing tier (market → book_value/zero) with a reason
+2. **Manual price entry** — For assets with known prices not covered by automation, allow entering a manual price point
+3. **Mark as expected** — Some assets (e.g. GLD, SLV with weekend gaps) will intermittently appear stale. Allow marking specific assets as "acceptable gap" with a configurable threshold
+4. **Refresh trigger** — Button to re-run `fetch-crypto-prices.ts` or `extract-ibkr-prices.ts` on demand for individual assets
+
+**Files to create/modify:**
+
+| File | Action |
+|------|--------|
+| `src/components/accounting/PriceFreshness.tsx` | Extend with resolution actions |
+| `src/app/api/dashboard/accounting/price-gaps/route.ts` | Add PATCH/POST for reclassification + manual price |
+| `scripts/seed-pricing-tiers.ts` | Update classifications |
+| `scripts/check-price-gaps.ts` | Optionally exclude assets marked "acceptable gap" |
+
+---
+
 ### Phase M5: Base Currency Support (was TTC Phase 4)
 
 **Goal**: Configurable reporting currency per owner with FX conversion.
@@ -421,6 +463,12 @@ Ported from [COMPLETION_PLAN.md § Phase 4](../../twotreescap-app/docs/COMPLETIO
 4. **Reporting**: Multi-currency gain/loss reports, FX gain/loss tracking
 
 **Advantage of doing this in Trade Journal**: Trade Journal already has `fxRates` table populated from IBKR Flex queries. The infrastructure is partially there.
+
+**Known issues to address (discovered 2026-02-20):**
+
+- **GBP base currency reports**: Nick (U9896103), Tiff ISA (U21595594), and 4 other accounts now generate GBP-base IBKR reports. A temporary fix auto-detects the base currency from the RATE section and applies a USD correction divisor (`fx-rate-lookup.ts`). M5 should replace this with proper `getFxRate(from, to, date)` infrastructure rather than relying on the per-report RATE section hack.
+- **GLXY conid/currency shift**: Between 2025-04 and 2025-05, Galaxy Digital (GLXY) changed IBKR conid from 328205007 to 785082287 (corporate restructuring/relisting). Both conids have `CurrencyPrimary: "CAD"` in IBKR data, but FXRateToBase semantics shifted from CAD→USD (~0.70) to CAD→GBP (~0.53) when Nick's account base currency changed. The 4 newer events were corrected by the `baseCurrencyCorrection` applied in the GBP fix. M5 needs to: (1) update `assets.ibkr_conid` for GLXY, (2) ensure `getFxRate` handles the CAD→GBP→USD chain correctly for all cross-currency assets, (3) investigate why FIFO lot consumptions are not matching for GLXY sells (36 open lots with 0 consumed despite 173,500 shares sold).
+- **Positions/MTM adapter bugs** (latent — tables empty): `CostBasisMoney` and `FifoPnlUnrealized` not FX-converted in positions adapter; MTM adapter hardcodes USD. These only matter when position/MTM snapshots are enabled.
 
 ### Phase M6: UK Tax Method (was TTC Phase 5)
 
@@ -523,18 +571,73 @@ Some dates have 7 accounts (IBKR only) vs 14 accounts (IBKR + crypto). The recon
 
 The owner breakdown table shows event-sourced accounts at the aggregate level (IBKR, Koinly). Add per-account drill-down on the event-sourced side, breaking "Koinly" into sub-exchange balances and "IBKR" into individual account numbers, mirroring the snapshot side's per-broker-account detail.
 
-#### M7 Prerequisite: Bring Event-Sourced Data to Current Date
+#### M7 Prerequisite: Bring Event-Sourced Data to Current Date — DONE (2026-02-20)
 
-**Priority**: High — required for meaningful reconciliation.
+**Status**: Complete. Event-sourced data now current through 2026-02-19 across all sources.
 
-The comparison date is currently anchored to Feb 12, 2026 (last Koinly event date). Snapshot data extends to Feb 19+. This means reconciliation can only compare at a 9+ day-old date, and any trades executed since Feb 12 appear as false discrepancies. To get a same-day comparison:
+**What was done:**
+1. Fixed GBP base currency bug in IBKR adapters (auto-detect non-USD base from RATE section, apply USD correction divisor via `fx-rate-lookup.ts`)
+2. Corrected 309 existing events affected by GBP base currency issue (migration script `fix-gbp-base-events.ts`)
+3. Fixed 4 bugs in import scripts: missing `assetTicker` field, Date serialization with postgres-js `prepare: false`, `rawData`/`sourceId` NOT NULL constraints
+4. Fixed SOF idempotency key regression (reverted from 6-part to 5-part formula to match migrated data, deleted 5,549 duplicate events)
+5. Imported 20260219 IBKR files (24 files, 5 new events) and Koinly files (18 files, 71 new events)
+6. Full calculation engine recalculation: 30,089 events → 13,318 tax lots, 25,434 lot consumptions, 245,323 daily balances, 21,672 NAV rows
 
-1. Import latest IBKR Combined Report (covers trades + STFU since Feb 10)
-2. Import latest Koinly exports per owner (covers crypto events since Feb 12)
-3. Run the calculation engine to regenerate daily balances and NAV through today
-4. The comparison date will automatically advance to the new last event date
+**Current event date ranges:**
 
-This is a one-time catch-up, but the underlying issue (no automated event ingestion) is addressed by the ingestion solution below.
+| Source | Earliest | Latest | Count |
+|--------|----------|--------|-------|
+| ibkr_sof | 2018-11-05 | 2026-02-19 | 5,550 |
+| ibkr_trade | 2018-11-08 | 2026-02-19 | 8,637 |
+| koinly | 2020-07-08 | 2026-02-19 | 15,902 |
+
+The underlying issue (no automated event ingestion) is addressed by M9 below.
+
+### Phase M7.1: Reconciliation Resolution Workflows
+
+**Goal**: Extend the reconciliation dashboard from read-only discrepancy surfacing to actionable resolution workflows.
+
+**Status**: Pending.
+
+**Context (discovered 2026-02-20):** The reconciliation page surfaces discrepancies between snapshot-based and event-sourced portfolio views, but provides no mechanism to address them. Users need to be able to investigate, classify, and resolve individual discrepancies.
+
+**What needs to be built:**
+
+#### M7.1a: Discrepancy Classification + Resolution
+
+Add per-discrepancy actions to `ReconciliationPositionTable`:
+
+1. **Acknowledge** — Mark a discrepancy as "known/expected" with a reason (e.g. "timing difference — trade executed after last event import", "asset migration in progress", "exchange reporting lag"). Acknowledged items remain visible but don't count toward the discrepancy total.
+2. **Investigate** — Flag a discrepancy for deeper investigation. Links to relevant event history, tax lots, and raw IBKR data for the asset. Could create a triage record for tracking.
+3. **Resolve** — Mark as resolved after the underlying cause has been fixed (e.g. missing events imported, price corrected, asset alias added). Records the resolution method and date.
+
+#### M7.1b: Resolution Persistence
+
+Currently reconciliation is computed on-demand with no persistence. Add:
+
+1. **`reconciliation_items` table** — Stores per-discrepancy state (status: open/acknowledged/investigating/resolved), classification reason, resolution notes, timestamps
+2. **Keyed by** (comparison_date, owner, ticker, discrepancy_type) — allows tracking resolution across reconciliation runs
+3. **History** — Preserve resolution history so past reconciliation decisions are auditable
+
+#### M7.1c: NAV Delta Investigation
+
+Extend `ReconciliationSummary` and `ReconciliationNavChart`:
+
+1. **Delta drill-down** — Click on a point in the NAV comparison chart to see which owner/account/asset is driving the delta at that date
+2. **Delta trend** — Show whether the NAV delta is growing or shrinking over time (indicates whether discrepancies are accumulating or being resolved)
+3. **Auto-flag** — If NAV delta exceeds a configurable threshold (e.g. 5%), automatically create a triage record
+
+**Files to create/modify:**
+
+| File | Action |
+|------|--------|
+| `src/db/schema.ts` | Add `reconciliation_items` table |
+| `src/db/queries/reconciliation.ts` | Extend with resolution state joins |
+| `src/components/accounting/ReconciliationPositionTable.tsx` | Add action buttons + resolution dialogs |
+| `src/components/accounting/ReconciliationSummary.tsx` | Add delta trend indicator |
+| `src/app/api/dashboard/accounting/reconciliation/route.ts` | Add PATCH for resolution actions |
+
+---
 
 #### M7 Future Enhancement: Event-Sourced Data Ingestion Solution
 
@@ -594,6 +697,57 @@ The M2b import pipeline is fully ported but only as CLI tools — there's no aut
 3. **Archive**: Move twotreescap-app to an archive branch or repo
 4. **Clean up**: Remove TTC-specific env vars, Vercel deployment, etc.
 5. **Database cleanup**: Drop legacy V1 tables (`transactions_v1_archive`, `prices`, `coinmktcap_prices`, `tradingview_prices`, `daily_snapshots`)
+
+### Phase M9: Automated Event Ingestion
+
+**Goal**: Eliminate manual CSV downloads by automating the event-sourced import pipeline, starting with IBKR.
+
+**Status**: Pending. Depends on M4.5 (price tier hygiene) and M7.1 (reconciliation resolution) for validation.
+
+**Context (established 2026-02-20):** The CLI ingestion process is now fully battle-tested — `import-ibkr-combined.ts` and `import-koinly.ts` both work correctly against the live database, with idempotent deduplication, GBP base currency correction, and proper Date serialization. The manual process works but requires:
+1. Downloading Combined Report CSVs from IBKR Client Portal
+2. Downloading Koinly CSV exports from Koinly web UI
+3. Running CLI import scripts against the files
+4. Running the calculation engine
+
+**What needs to be built:**
+
+#### M9a: IBKR STFU Flex Query (High Priority)
+
+Add a Statement of Funds Flex Query to the existing daily IBKR Flex API pipeline:
+
+1. **Configure Flex Query** — Create a new IBKR Flex Query that returns Cash Transactions / Statement of Funds data (dividends, interest, fees, deposits, withdrawals, corporate actions)
+2. **Adapter bridge** — Map Flex Query STFU format to the existing `ibkr-sof-adapter.ts` input format. The Flex API returns XML/CSV with slightly different field names than Combined Reports but the same underlying data.
+3. **Wire into `flex-ingestion.yml`** — Add STFU fetch as a step in the existing hourly workflow. After fetching, run the SOF adapter to generate events, then trigger an incremental calculation engine run.
+4. **Incremental calc engine** — The calculation engine already supports incremental mode. After new events are inserted, only affected scopes need recalculation (not a full 30K-event recompute).
+
+**Expected outcome**: Event-sourced IBKR data stays current automatically, same-day as snapshot data. Reconciliation comparison date advances daily.
+
+#### M9b: IBKR Trade Flex Query Extension (Medium Priority)
+
+The existing Flex Trade ingestion feeds `trades`/`positions` (snapshot side). Extend it to also feed the `events` table:
+
+1. **Dual-write from Flex trades** — After the existing Flex trade adapter writes to `trades`, also generate `events` table entries via the `ibkr-trade-adapter`
+2. **Deduplication** — Idempotency keys ensure no duplicates if the same trade was already imported from a Combined Report CSV
+
+#### M9c: Koinly Automation (Low Priority)
+
+Koinly exports are infrequent (quarterly/per tax year) and require manual login. Options:
+
+1. **File-watch workflow** — GitHub Actions triggered when a Koinly CSV is committed to a specific repo path
+2. **Admin upload UI** — Simple file upload form at `/admin/import` that triggers the Koinly adapter server-side
+3. **Keep manual** — Given the low frequency, manual CLI import may remain acceptable indefinitely
+
+**Recommended path**: M9a first (high-value, eliminates the most common manual step), then M9b (completes IBKR automation), M9c deferred.
+
+**Files to create/modify:**
+
+| File | Action |
+|------|--------|
+| `.github/workflows/flex-ingestion.yml` | Add STFU fetch + event import steps |
+| `src/lib/adapters/ibkr/flex-stfu-adapter.ts` | **New** — maps Flex STFU format to SOF adapter input |
+| `scripts/import-flex-stfu.ts` | **New** — CLI for Flex STFU import (used by workflow) |
+| `scripts/run-calculation-engine.ts` | Verify incremental mode works for post-import trigger |
 
 ---
 
@@ -678,18 +832,21 @@ TTC uses Clerk (multi-user auth with `userId` on every table). Trade Journal use
 
 ## Timeline Estimate
 
-| Phase | Effort | Dependencies |
-|-------|--------|-------------|
-| M1: Schema Migration | 1-2 days | None |
-| M2: Engine Port | 2-3 days | M1 |
-| M3: UI Integration | 2-3 days | M2 |
-| M4: Pricing Infrastructure | 2-3 days | M2 |
-| M5: Base Currency | 3-5 days | M4 |
-| M6: UK Tax Method | 5-8 days | M5 |
-| M7: Portfolio Reconciliation | ~~2-3 days~~ DONE | M2 + M3 |
-| M8: Sunset | 1 day | M1-M4, M7 verified |
+| Phase | Effort | Dependencies | Status |
+|-------|--------|-------------|--------|
+| M1: Schema Migration | 1-2 days | None | DONE (2026-02-18) |
+| M2: Engine Port | 2-3 days | M1 | DONE (2026-02-18) |
+| M3: UI Integration | 2-3 days | M2 | DONE (2026-02-19) |
+| M4: Pricing Infrastructure | 2-3 days | M2 | DONE (2026-02-19) |
+| M4.5: Price Tier Hygiene + Freshness UI | 1-2 days | M4 | Pending |
+| M5: Base Currency | 3-5 days | M4 | Pending |
+| M6: UK Tax Method | 5-8 days | M5 | Pending |
+| M7: Portfolio Reconciliation | ~~2-3 days~~ | M2 + M3 | DONE (2026-02-19) |
+| M7.1: Reconciliation Resolution | 2-3 days | M7 | Pending |
+| M8: Sunset | 1 day | M4.5, M7.1, M5 verified | Pending |
+| M9: Automated Event Ingestion | 3-5 days | M4.5, M7.1 | Pending |
 
-M5 depends on M4. M6 depends on M5. M7 (reconciliation) is complete and validates parity between snapshot and event-sourced views. M8 (sunset) only happens once M7 reconciliation confirms both views converge and remaining discrepancies are explained.
+**Dependency chain**: M4.5 and M7.1 are independent and can be done in parallel. M9 depends on both (needs price freshness and reconciliation resolution to validate automated imports). M5 and M6 are independent of M4.5/M7.1/M9 and can proceed in parallel. M8 (sunset) requires M4.5 + M7.1 verified at minimum.
 
 ---
 

@@ -42,6 +42,10 @@ export interface AdapterTransformContext {
   batchId: string;
   /** Source-specific metadata */
   metadata?: Record<string, unknown>;
+  /** For non-USD base reports: returns USD-to-base divisor for a YYYYMMDD date */
+  getBaseCurrencyDivisor?: (date: string) => number;
+  /** The report's base currency (e.g. "GBP"). Undefined = USD. */
+  reportBaseCurrency?: string;
 }
 
 // ============================================================================
