@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { ReconciliationSummary } from "@/components/accounting/ReconciliationSummary";
 import {
@@ -19,23 +19,24 @@ export default function ReconciliationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch main reconciliation data once
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch("/api/dashboard/accounting/reconciliation");
-        if (!res.ok) throw new Error("Failed to fetch reconciliation data");
-        const json = await res.json();
-        setData(json);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load data");
-      } finally {
-        setIsLoading(false);
-      }
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dashboard/accounting/reconciliation");
+      if (!res.ok) throw new Error("Failed to fetch reconciliation data");
+      const json = await res.json();
+      setData(json);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load data");
+    } finally {
+      setIsLoading(false);
     }
-    fetchData();
   }, []);
+
+  // Fetch main reconciliation data once on mount
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Fetch NAV comparison when time range changes
   useEffect(() => {
@@ -86,7 +87,10 @@ export default function ReconciliationPage() {
 
           <ReconciliationOwnerTable owners={data.ownerBreakdown} />
 
-          <ReconciliationPositionTable positions={data.positions} />
+          <ReconciliationPositionTable
+            positions={data.positions}
+            onResolutionAction={fetchData}
+          />
         </>
       )}
     </DashboardShell>

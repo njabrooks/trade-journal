@@ -1,6 +1,13 @@
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
+import { eq, ne } from "drizzle-orm";
 import { toNumber } from "@/lib/numbers";
+import {
+  reconciliationResolutions,
+  type ReconciliationResolution,
+  type ResolutionStatus,
+  type DiscrepancyNature,
+} from "@/db/schema";
 
 // Single-user system (from TTC migration)
 const USER_ID = "user_2mYzScugP7zfcqv8Ox21i7q9nyW";
@@ -33,6 +40,16 @@ export interface OwnerNavComparison {
   accounts: AccountNavComparison[];
 }
 
+export interface PositionResolutionInfo {
+  id: string;
+  status: ResolutionStatus;
+  nature: DiscrepancyNature | null;
+  notes: string | null;
+  qtyDeltaAtAction: number | null;
+  mvDeltaAtAction: number | null;
+  updatedAt: string;
+}
+
 export interface PositionReconciliation {
   ticker: string;
   assetClass: string | null;
@@ -51,6 +68,7 @@ export interface PositionReconciliation {
     | "mv_mismatch"
     | "snapshot_only"
     | "event_sourced_only";
+  resolution: PositionResolutionInfo | null;
 }
 
 export interface EventSourceFreshness {
@@ -73,6 +91,11 @@ export interface ReconciliationSummaryData {
   mismatchedPositions: number;
   snapshotOnlyPositions: number;
   eventSourcedOnlyPositions: number;
+  // Resolution disposition counts (for discrepancies only)
+  unresolvedCount: number;
+  acceptedCount: number;
+  flaggedCount: number;
+  resolvedCount: number;
 }
 
 export interface ReconciliationData {
@@ -638,6 +661,7 @@ export async function getPositionReconciliation(
         eventSourcedMv: ep.mv,
         mvDelta,
         status,
+        resolution: null,
       });
     } else {
       results.push({
@@ -653,6 +677,7 @@ export async function getPositionReconciliation(
         eventSourcedMv: null,
         mvDelta: null,
         status: "snapshot_only",
+        resolution: null,
       });
     }
   }
@@ -673,6 +698,7 @@ export async function getPositionReconciliation(
         eventSourcedMv: ep.mv,
         mvDelta: null,
         status: "event_sourced_only",
+        resolution: null,
       });
     }
   }
@@ -697,6 +723,92 @@ export async function getPositionReconciliation(
   return results;
 }
 
+// --- Resolution Functions ---
+
+/**
+ * Fetch all non-default resolutions keyed by "owner::ticker" for O(1) enrichment.
+ * Only fetches records where user has taken an action (not 'unresolved' default).
+ */
+export async function getResolutionsMap(): Promise<Map<string, ReconciliationResolution>> {
+  const rows = await db
+    .select()
+    .from(reconciliationResolutions)
+    .where(ne(reconciliationResolutions.status, "unresolved"));
+
+  const map = new Map<string, ReconciliationResolution>();
+  for (const row of rows) {
+    map.set(`${row.owner}::${row.ticker}`, row);
+  }
+  return map;
+}
+
+/**
+ * Upsert a resolution record. Creates on first action, updates on subsequent.
+ */
+export async function upsertResolution(params: {
+  owner: string;
+  ticker: string;
+  status: ResolutionStatus;
+  nature?: DiscrepancyNature | null;
+  notes?: string | null;
+  discrepancyType?: string | null;
+  qtyDeltaAtAction?: number | null;
+  mvDeltaAtAction?: number | null;
+}): Promise<ReconciliationResolution> {
+  const now = new Date();
+  const resolvedAt = params.status === "resolved" ? now : null;
+
+  const result = await db
+    .insert(reconciliationResolutions)
+    .values({
+      owner: params.owner,
+      ticker: params.ticker,
+      status: params.status,
+      nature: params.nature ?? null,
+      notes: params.notes ?? null,
+      discrepancyType: params.discrepancyType ?? null,
+      qtyDeltaAtAction: params.qtyDeltaAtAction?.toString() ?? null,
+      mvDeltaAtAction: params.mvDeltaAtAction?.toString() ?? null,
+      resolvedAt,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [reconciliationResolutions.owner, reconciliationResolutions.ticker],
+      set: {
+        status: params.status,
+        nature: params.nature ?? null,
+        notes: params.notes ?? null,
+        discrepancyType: params.discrepancyType ?? null,
+        qtyDeltaAtAction: params.qtyDeltaAtAction?.toString() ?? null,
+        mvDeltaAtAction: params.mvDeltaAtAction?.toString() ?? null,
+        resolvedAt,
+        updatedAt: now,
+      },
+    })
+    .returning();
+
+  return result[0];
+}
+
+/**
+ * Get a single resolution by owner + ticker.
+ */
+export async function getResolution(
+  owner: string,
+  ticker: string
+): Promise<ReconciliationResolution | null> {
+  const rows = await db
+    .select()
+    .from(reconciliationResolutions)
+    .where(
+      sql`${reconciliationResolutions.owner} = ${owner}
+        AND ${reconciliationResolutions.ticker} = ${ticker}`
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
+}
+
 /**
  * Full reconciliation: summary + owner breakdown + position details.
  *
@@ -711,10 +823,28 @@ export async function getReconciliation(): Promise<ReconciliationData> {
     await getLastCompleteEventDate();
 
   // 2. Run comparisons anchored to that date
-  const [ownerBreakdown, positions] = await Promise.all([
+  const [ownerBreakdown, positions, resolutionsMap] = await Promise.all([
     getOwnerAccountNavComparison(comparisonDate),
     getPositionReconciliation(comparisonDate),
+    getResolutionsMap(),
   ]);
+
+  // 3. Enrich positions with resolution data
+  for (const pos of positions) {
+    const key = `${pos.owner}::${pos.ticker}`;
+    const res = resolutionsMap.get(key);
+    if (res) {
+      pos.resolution = {
+        id: res.id,
+        status: res.status as ResolutionStatus,
+        nature: (res.nature as DiscrepancyNature) ?? null,
+        notes: res.notes,
+        qtyDeltaAtAction: res.qtyDeltaAtAction ? Number(res.qtyDeltaAtAction) : null,
+        mvDeltaAtAction: res.mvDeltaAtAction ? Number(res.mvDeltaAtAction) : null,
+        updatedAt: res.updatedAt.toISOString(),
+      };
+    }
+  }
 
   // Compute summary from owner breakdown
   const snapshotNav = ownerBreakdown.reduce(
@@ -753,6 +883,19 @@ export async function getReconciliation(): Promise<ReconciliationData> {
     (p) => p.status === "event_sourced_only"
   ).length;
 
+  // Resolution disposition counts (only for discrepancies, not matches)
+  const discrepancies = positions.filter((p) => p.status !== "match");
+  const acceptedCount = discrepancies.filter(
+    (p) => p.resolution?.status === "accepted"
+  ).length;
+  const flaggedCount = discrepancies.filter(
+    (p) => p.resolution?.status === "flagged"
+  ).length;
+  const resolvedCount = discrepancies.filter(
+    (p) => p.resolution?.status === "resolved"
+  ).length;
+  const unresolvedCount = discrepancies.length - acceptedCount - flaggedCount - resolvedCount;
+
   return {
     summary: {
       comparisonDate,
@@ -770,6 +913,10 @@ export async function getReconciliation(): Promise<ReconciliationData> {
       mismatchedPositions,
       snapshotOnlyPositions,
       eventSourcedOnlyPositions,
+      unresolvedCount,
+      acceptedCount,
+      flaggedCount,
+      resolvedCount,
     },
     ownerBreakdown,
     positions,

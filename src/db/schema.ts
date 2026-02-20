@@ -2426,3 +2426,41 @@ export interface ExplicitThreshold {
   value: number;
   description: string;                // Human-readable: "ICSA > 250,000"
 }
+
+// ============================================================================
+// Reconciliation Resolutions (M7.1)
+// ============================================================================
+
+export const RESOLUTION_STATUSES = ['unresolved', 'accepted', 'flagged', 'resolved'] as const;
+export type ResolutionStatus = (typeof RESOLUTION_STATUSES)[number];
+
+export const DISCREPANCY_NATURES = [
+  'mapping_error', 'missing_coverage', 'expected_gap',
+  'dust', 'price_drift', 'qty_drift', 'other',
+] as const;
+export type DiscrepancyNature = (typeof DISCREPANCY_NATURES)[number];
+
+export const reconciliationResolutions = pgTable(
+  'reconciliation_resolutions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    owner: text('owner').notNull(),
+    ticker: text('ticker').notNull(),
+    status: text('status').notNull().default('unresolved'), // ResolutionStatus
+    nature: text('nature'), // DiscrepancyNature — root cause classification
+    notes: text('notes'),
+    discrepancyType: text('discrepancy_type'), // qty_mismatch | mv_mismatch | snapshot_only | event_sourced_only
+    qtyDeltaAtAction: numeric('qty_delta_at_action'),
+    mvDeltaAtAction: numeric('mv_delta_at_action'),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    ownerTickerUnique: uniqueIndex('idx_recon_res_owner_ticker').on(table.owner, table.ticker),
+    statusIdx: index('idx_recon_res_status').on(table.status),
+  })
+);
+
+export type ReconciliationResolution = typeof reconciliationResolutions.$inferSelect;
+export type NewReconciliationResolution = typeof reconciliationResolutions.$inferInsert;
