@@ -2,6 +2,10 @@
  * Price Gap Detection
  *
  * Checks for market-tier assets missing recent prices in price_history.
+ * Only monitors assets that are CURRENTLY HELD (appear in recent position
+ * snapshots or have recent FX rates for fiat). This prevents false alerts
+ * for assets that were sold but remain classified as market tier.
+ *
  * Outputs a report and exits with code 1 if any critical gaps (>5 days).
  *
  * Designed to run as a daily GitHub Actions cron job after crypto prices
@@ -17,8 +21,24 @@ import { sql } from 'drizzle-orm';
 async function main() {
   console.log('Checking price gaps for market-tier assets...\n');
 
-  // Find market-tier assets with stale or missing prices
+  // Find market-tier assets with stale or missing prices.
+  // Only include assets that are currently held:
+  //   - Equities/crypto: appear in positions snapshots within last 14 days
+  //   - Fiat: always included (FX rates should flow daily)
   const gaps = await db.execute(sql`
+    WITH currently_held AS (
+      -- Assets with recent position snapshots (last 14 days)
+      SELECT DISTINCT a.id
+      FROM assets a
+      JOIN positions p ON UPPER(p.symbol) = UPPER(a.ticker)
+      WHERE p.snapshot_date >= CURRENT_DATE - INTERVAL '14 days'
+        AND p.quantity <> 0
+
+      UNION
+
+      -- Fiat currencies are always monitored (FX rates flow daily)
+      SELECT id FROM assets WHERE asset_class = 'FIAT' AND pricing_tier = 'market'
+    )
     SELECT
       a.ticker,
       a.asset_class,
@@ -28,6 +48,7 @@ async function main() {
         ELSE CURRENT_DATE - MAX(ph.price_date)
       END as gap_days
     FROM assets a
+    INNER JOIN currently_held ch ON ch.id = a.id
     LEFT JOIN price_history ph ON ph.asset_id = a.id
     WHERE a.pricing_tier = 'market'
     GROUP BY a.id, a.ticker, a.asset_class
@@ -54,8 +75,15 @@ async function main() {
     }
   }
 
+  // Also count total market-tier assets for context
+  const totalMarket = await db.execute(sql`
+    SELECT COUNT(*) as cnt FROM assets WHERE pricing_tier = 'market'
+  `) as any[];
+  const totalMarketCount = parseInt(totalMarket[0]?.cnt ?? '0');
+
   const total = gaps.length;
-  console.log(`Total market-tier assets: ${total}`);
+  console.log(`Total market-tier assets: ${totalMarketCount}`);
+  console.log(`Currently held (monitored): ${total}`);
   console.log(`  Current (0-1 days):    ${current.length}`);
   console.log(`  Stale (2-5 days):      ${stale.length}`);
   console.log(`  Critical (>5 days):    ${critical.length}`);

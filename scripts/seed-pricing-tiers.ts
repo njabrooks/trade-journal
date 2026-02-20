@@ -38,7 +38,8 @@ const PROXY_MAPPINGS: Record<string, string> = {
 };
 
 // Stablecoin proxy tokens (priced at $1 via manual source — classify as market)
-const STABLECOIN_PROXIES = ['BDAI', 'BMIM', 'BUSDT', 'BUSDC', 'USDC.E', 'USDT.E'];
+// Note: BDAI, BMIM, BUSDT, BUSDC, USDC.E, USDT.E moved to FORCE_ZERO (all disposed)
+const STABLECOIN_PROXIES: string[] = [];
 
 // LP token substrings
 const LP_SUBSTRINGS = ['-SOL', '-USDC', '-USDT', '-RAY', '-ETH', 'LP-', 'MIM-3LP', 'GAUGE', 'PLP', 'JLP', 'XJOE'];
@@ -47,7 +48,51 @@ const LP_SUBSTRINGS = ['-SOL', '-USDC', '-USDT', '-RAY', '-ETH', 'LP-', 'MIM-3LP
 const YIELD_PREFIXES = ['YV', 'CVXFXS', 'CVXCRV', 'RBASIS', 'SSPELL'];
 
 // Tokens that look like wrapped/yield but are actually tradeable
-const OVERRIDE_PRICEABLE = new Set(['CVX', 'BTC', 'BABY', 'BLZZ', 'BASIS', 'YFI']);
+const OVERRIDE_PRICEABLE = new Set(['CVX', 'BTC', 'BABY', 'YFI']);
+
+// Dead/disposed assets that should never be reclassified back to market.
+// These were identified in M4.5a audit (2026-02-20) and confirmed as:
+// - Fully disposed (sell events confirmed in events/trades tables)
+// - Worthless (protocol collapsed, token dead, dust amounts)
+// - Matured (bonds)
+const FORCE_ZERO = new Set([
+  // Matured bonds
+  '912796YN3', '912796ZF9', '912796ZG7', '912796YH6',
+  '912796ZD4', '912796YT0', '912796XQ7', 'COIN 3 3/8 10/01/28 8AA8',
+  // Disposed TTC crypto
+  'AI16Z', 'LOOKS', 'SLERF', 'OGV', 'MET', 'JOOD', 'COST', 'DOOD', 'AIXBT',
+  // Disposed Nick crypto
+  'YAK', 'TULIP', 'MEDIA', 'RLY', 'IBEUR', 'PENGU', 'SLND', 'COPE',
+  // Dead/worthless crypto
+  'UST', 'AUST', 'AVAPAY', 'ICE', 'BASIS', 'BLUNA', 'BLZZ',
+  // Crypto dust
+  'GEL', 'MAPS', 'MARS', 'JOE', 'MEMO', 'NICE',
+  'FTT', 'BLINK', 'ST-YCRV', 'STKCVXCRV', 'BCRV', 'BAAVE',
+  'CNC', 'FLX', 'SDT', 'SONAR', 'TRIBE', 'LUNC', 'ANGLE',
+  'APOLLO', 'ASTROC', 'SDFXS', 'DYP', 'ETHW', 'OXY',
+  'MATIC', 'BNB', 'CRVUSD', 'BTUSD', 'BDAI', 'BOME',
+  // Disposed stablecoins/bridged
+  'TUSD', 'USDD', 'FRAX', 'BMIM', 'BUSDC', 'BUSDT', 'USDT.E', 'USDC.E',
+  // Dead DeFi
+  'CLEV', 'PRISMA', 'JPEG', 'CRV3CRYPTO', 'GRO', 'VKR',
+  'ANC', 'MINE', 'NANA', 'INU', 'OOGI', 'GRAPE', 'MER',
+  // Disposed IBKR equities (no longer in positions)
+  'QQQ', 'GDXJ', 'SMT', 'RIGD', 'TLT', 'SPY', 'AAPL',
+  'ROBO', 'BBH', 'SMH', 'IVOL', 'KRBN', 'METV', 'FXY',
+  'CCJ', 'ITB', 'EWP', 'EURN', 'GREK', 'EEM', 'NLY',
+  'VNQ', 'EWW', 'EWG', 'EWI', 'XLU', 'UUP', 'XLP',
+  'VWO', 'DFRG', '2840', 'COW', 'TFI', 'SHY',
+  'SRUUF', 'TECK', 'NEM', 'MRNA', 'VLO', 'CTRA', 'ARKK',
+  'GBTC', 'ETHE', 'ETH (ETF)', 'MSTR', 'PLTR', 'HOOD', 'URPTF',
+  // Zero-balance equities
+  'CMCSA', 'GOOG', 'HYG', 'IWM', 'JNK', 'LOW', 'LQDH',
+  'USO', 'XLF', 'XLI', 'XLK', 'XRT', 'AMZN', 'DE',
+  'DIS', 'HFC', 'IBB', 'CVS',
+  // Zero-balance crypto
+  '$CWIF', 'JOESHI', 'MANEKI', 'MUMU', 'EURS',
+  'ETHRSIAPY', 'YCRV', 'XMARS', 'WAVAX', 'WFTM',
+  'LATINA', 'LICKO',
+]);
 
 // Stablecoins (already priced at $1 by manual source in price-population.ts)
 const STABLECOINS = new Set([
@@ -57,6 +102,9 @@ const STABLECOINS = new Set([
 
 function classifyTicker(ticker: string, assetClass: string): 'market' | 'proxy' | 'book_value' | 'zero' {
   const upper = ticker.toUpperCase();
+
+  // Force-zero: dead/disposed/dust assets identified in M4.5a audit
+  if (FORCE_ZERO.has(ticker) || FORCE_ZERO.has(upper)) return 'zero';
 
   // Override priceable — always market
   if (OVERRIDE_PRICEABLE.has(upper)) return 'market';
@@ -104,7 +152,10 @@ function classifyTicker(ticker: string, assetClass: string): 'market' | 'proxy' 
   // Remaining crypto — default to market, gap detection will catch any misses
   if (assetClass === 'CRYPTO') return 'market';
 
-  // DERIVATIVE, OTHER — book_value as safe default
+  // Derivatives — IBKR provides daily spot prices via Flex positions
+  if (assetClass === 'DERIVATIVE') return 'market';
+
+  // OTHER — book_value as safe default
   return 'book_value';
 }
 
