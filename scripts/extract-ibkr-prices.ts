@@ -86,6 +86,34 @@ async function insertStablecoinPrices(): Promise<number> {
   return parseInt((countResult as any)[0]?.cnt ?? '0');
 }
 
+async function extractFxRatePrices(): Promise<number> {
+  // Copy FX rates from fx_rates table into price_history for fiat currency assets.
+  // This keeps fiat prices current for portfolio valuation and M5/M6 FX conversion.
+  // The fx_rates table is populated daily by IBKR Flex RATE section.
+  // We store the rate as price_close (e.g., GBP→USD rate = 1.27 means 1 GBP = $1.27).
+  const result = await db.execute(sql`
+    INSERT INTO price_history (asset_id, price_date, price_close, source)
+    SELECT
+      a.id as asset_id,
+      fr.snapshot_date as price_date,
+      fr.rate as price_close,
+      'fx_rate' as source
+    FROM fx_rates fr
+    JOIN assets a ON UPPER(a.ticker) = UPPER(fr.from_currency)
+      AND a.asset_class = 'FIAT'
+      AND a.pricing_tier = 'market'
+    WHERE fr.to_currency = 'USD'
+    ON CONFLICT (asset_id, price_date, source) DO UPDATE
+      SET price_close = EXCLUDED.price_close,
+          updated_at = NOW()
+  `);
+
+  const countResult = await db.execute(sql`
+    SELECT COUNT(*) as cnt FROM price_history WHERE source = 'fx_rate'
+  `);
+  return parseInt((countResult as any)[0]?.cnt ?? '0');
+}
+
 async function main() {
   console.log('Extracting IBKR prices to price_history...\n');
 
@@ -95,11 +123,14 @@ async function main() {
   const stableCount = await insertStablecoinPrices();
   console.log(`Manual/stablecoin prices in price_history: ${stableCount}`);
 
+  const fxCount = await extractFxRatePrices();
+  console.log(`FX rate prices in price_history: ${fxCount}`);
+
   // Summary of latest prices
   const latest = await db.execute(sql`
     SELECT source, COUNT(*) as cnt, MAX(price_date) as latest_date
     FROM price_history
-    WHERE source IN ('ibkr', 'manual')
+    WHERE source IN ('ibkr', 'manual', 'fx_rate')
     GROUP BY source
     ORDER BY source
   `);
