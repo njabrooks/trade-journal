@@ -356,8 +356,9 @@ export async function computePortfolioSnapshotsForDateRange(
   includeUnderlyings: boolean = false,
   onlyLatestForUnderlyings: boolean = true
 ): Promise<{ account: number; underlying: number }> {
-  // Get all unique snapshot dates in range from positions
-  const dateResults = await db
+  // Get all unique snapshot dates in range from positions AND nav_snapshots
+  // (nav_snapshots covers cash-only accounts like Tiff that have no positions)
+  const positionDates = await db
     .selectDistinct({ snapshotDate: positions.snapshotDate })
     .from(positions)
     .where(
@@ -369,6 +370,27 @@ export async function computePortfolioSnapshotsForDateRange(
         sql`${positions.quantity} != 0`
       )
     );
+
+  const navDates = await db
+    .selectDistinct({ snapshotDate: navSnapshots.reportDate })
+    .from(navSnapshots)
+    .where(
+      and(
+        eq(navSnapshots.accountId, accountId),
+        gte(navSnapshots.reportDate, startDate),
+        lte(navSnapshots.reportDate, endDate)
+      )
+    );
+
+  // Merge and deduplicate dates from both sources
+  const allDates = new Set<string>();
+  for (const { snapshotDate } of positionDates) {
+    if (snapshotDate) allDates.add(snapshotDate);
+  }
+  for (const { snapshotDate } of navDates) {
+    if (snapshotDate) allDates.add(snapshotDate);
+  }
+  const dateResults = Array.from(allDates).sort().map(d => ({ snapshotDate: d }));
 
   let accountCount = 0;
   let underlyingCount = 0;

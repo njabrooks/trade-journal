@@ -832,6 +832,14 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
           }
           await db.insert(cashBalances).values(cashValues);
           results.cash.inserted = cashValues.length;
+
+          // Track cash dates for recompute (ensures cash-only accounts trigger portfolio snapshot computation)
+          for (const v of cashValues) {
+            if (v.snapshotDate) {
+              allSnapshotDates.add(v.snapshotDate);
+              datesWithChanges.add(v.snapshotDate);
+            }
+          }
         }
       }
 
