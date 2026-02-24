@@ -44,6 +44,7 @@ const SECTION_CODES = {
   POST: 'POST',
   EQUT: 'EQUT',
   MTMP: 'MTMP',
+  FXPO: 'FXPO',
   TRADES: 'TRNT',
   EXERCISES: 'OPTT',
   CASH: 'CTRN',
@@ -121,6 +122,7 @@ export interface ProcessPositionsResult {
   equt: { inserted: number; errors: ErrorDetail[] };
   mtmp: { inserted: number; errors: ErrorDetail[] };
   cash: { inserted: number };
+  fxpo: { inserted: number; errors: ErrorDetail[] };
   totalInserted: number;
   totalErrors: number;
   snapshotDates: string[];
@@ -136,6 +138,7 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     equt: { inserted: 0, errors: [] as ErrorDetail[] },
     mtmp: { inserted: 0, errors: [] as ErrorDetail[] },
     cash: { inserted: 0 },
+    fxpo: { inserted: 0, errors: [] as ErrorDetail[] },
   };
 
   const allSnapshotDates = new Set<string>();
@@ -782,10 +785,12 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
 
           const symbol = record['Symbol'] || record['symbol'] || '';
           const currency = symbol.trim() || record['CurrencyPrimary'] || record['Currency'] || 'USD';
-          const marketValue = record['MarketValue'] || record['Market Value'] || record['marketValue'];
-          if (!marketValue) continue;
+          // MTMP CASH rows use CloseQuantity (actual amount in currency), not MarketValue
+          const balanceStr = record['CloseQuantity'] || record['Close Quantity'] ||
+            record['MarketValue'] || record['Market Value'] || record['marketValue'];
+          if (!balanceStr) continue;
 
-          const amount = parseFloat(marketValue);
+          const amount = parseFloat(balanceStr);
           if (isNaN(amount) || amount === 0) continue;
 
           const cur = currency.trim();
@@ -901,6 +906,91 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     }
   }
 
+  // Process FXPO section (FX Balance Positions) → cash_balances with per-currency quantities
+  const fxpoHeader = rows.find(
+    (row) => row[0] === 'HEADER' && row[1] === SECTION_CODES.FXPO
+  );
+
+  if (fxpoHeader) {
+    const fieldNames = fxpoHeader.slice(2);
+    const fxpoDataRows = rows
+      .filter((row) => row[0] === 'DATA' && row[1] === SECTION_CODES.FXPO)
+      .map((row) => buildRecord<Record<string, string | undefined>>(fieldNames, row));
+
+    if (fxpoDataRows.length > 0) {
+      const cashValues: NewCashBalance[] = [];
+
+      for (const record of fxpoDataRows) {
+        const clientAccountId =
+          record['ClientAccountID'] ||
+          record['Client Account ID'] ||
+          record['clientAccountId'];
+        if (!clientAccountId) continue;
+
+        let rowAccountId: string;
+        try {
+          rowAccountId = await resolveAccountId(clientAccountId, 'IBKR', accountCache);
+          accountIds.add(rowAccountId);
+          if (!accountId) accountId = rowAccountId;
+        } catch {
+          continue;
+        }
+
+        const reportDateRaw = (record['ReportDate'] || record['reportDate'] || '').trim();
+        if (!reportDateRaw || !/^\d{8}$/.test(reportDateRaw)) continue;
+        const snapshotDate = `${reportDateRaw.slice(0, 4)}-${reportDateRaw.slice(4, 6)}-${reportDateRaw.slice(6, 8)}`;
+
+        const currency = (record['FXCurrency'] || record['fxCurrency'] || '').trim();
+        const quantityStr = (record['Quantity'] || record['quantity'] || '').trim();
+        if (!currency || !quantityStr) continue;
+
+        const amount = parseFloat(quantityStr);
+        if (isNaN(amount)) continue;
+
+        // Convert to USD using existing FX rate lookup from RATE section
+        let balanceUsd: string | null = null;
+        if (currency === 'USD') {
+          balanceUsd = amount.toString();
+        } else {
+          const rate = getFxRate(snapshotDate, currency);
+          if (rate) balanceUsd = (amount * rate).toString();
+        }
+
+        cashValues.push({
+          accountId: rowAccountId,
+          snapshotDate,
+          currency,
+          balance: amount.toString(),
+          balanceUsd,
+          source: 'ibkr_fxpo',
+        });
+      }
+
+      if (cashValues.length > 0) {
+        // Delete existing FXPO cash for these accounts + dates, then insert (idempotent)
+        const seen = new Set<string>();
+        for (const v of cashValues) {
+          const key = `${v.accountId}::${v.snapshotDate}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            await db
+              .delete(cashBalances)
+              .where(
+                and(
+                  eq(cashBalances.accountId, v.accountId),
+                  eq(cashBalances.snapshotDate, v.snapshotDate),
+                  eq(cashBalances.source, 'ibkr_fxpo')
+                )
+              );
+          }
+        }
+        await db.insert(cashBalances).values(cashValues);
+        results.fxpo.inserted = cashValues.length;
+        console.log(`[FXPO] Inserted ${cashValues.length} FX balance row(s) into cash_balances`);
+      }
+    }
+  }
+
   // Trigger recompute only for dates with actual changes (egress optimization)
   // This prevents unnecessary recomputation when IBKR returns stale/identical data
   if (accountIds.size > 0 && datesWithChanges.size > 0) {
@@ -986,9 +1076,9 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
     console.log(`[Egress Optimization] No changes detected for ${allSnapshotDates.size} date(s) across ${accountIds.size} account(s), skipping recompute`);
   }
 
-  const totalInserted = results.post.inserted + results.equt.inserted + results.mtmp.inserted + results.cash.inserted;
+  const totalInserted = results.post.inserted + results.equt.inserted + results.mtmp.inserted + results.cash.inserted + results.fxpo.inserted;
   const totalErrors =
-    results.post.errors.length + results.equt.errors.length + results.mtmp.errors.length;
+    results.post.errors.length + results.equt.errors.length + results.mtmp.errors.length + results.fxpo.errors.length;
 
   return {
     ...results,

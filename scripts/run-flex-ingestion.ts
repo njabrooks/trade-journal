@@ -58,6 +58,13 @@ async function processFlexQuery(
             inserted: result.mtmp.inserted,
             errors: result.mtmp.errors.length,
           },
+          fxpo: {
+            inserted: result.fxpo.inserted,
+            errors: result.fxpo.errors.length,
+          },
+          cash: {
+            inserted: result.cash.inserted,
+          },
           totalInserted: result.totalInserted,
           totalErrors: result.totalErrors,
         },
@@ -65,6 +72,7 @@ async function processFlexQuery(
           post: result.post.errors,
           equt: result.equt.errors,
           mtmp: result.mtmp.errors,
+          fxpo: result.fxpo.errors,
         },
       };
     } else {

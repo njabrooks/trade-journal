@@ -487,7 +487,32 @@ export async function getPositionReconciliation(
       AND COALESCE(p.asset_class, '') != 'PERP'
   `)) as any[];
 
-  // 2. Event-sourced positions at comparison date, excluding cash/fiat and zero-tier assets
+  // 1b. Snapshot cash balances (per-currency from MTMP CASH rows via Flex ingestion)
+  const snapshotCash = (await db.execute(sql`
+    WITH latest_cash_per_account AS (
+      SELECT account_id, MAX(snapshot_date) AS latest_date
+      FROM cash_balances
+      WHERE source = 'ibkr_flex'
+        AND snapshot_date <= ${comparisonDate}
+      GROUP BY account_id
+    )
+    SELECT
+      cb.currency AS symbol,
+      cb.balance::numeric AS qty,
+      cb.balance_usd::numeric AS mv,
+      'CASH' AS asset_class,
+      cb.snapshot_date,
+      a.owner,
+      a.broker_name
+    FROM cash_balances cb
+    JOIN accounts a ON a.id = cb.account_id
+    JOIN latest_cash_per_account lca ON lca.account_id = cb.account_id AND lca.latest_date = cb.snapshot_date
+    WHERE cb.source = 'ibkr_flex'
+      AND ABS(cb.balance::numeric) > 0.0001
+  `)) as any[];
+
+  // 2. Event-sourced positions at comparison date
+  // Exclude pricing_tier='zero' (crypto dust) but keep fiat currencies (pricing_tier='market')
   const eventPositions = (await db.execute(sql`
     SELECT
       pdb.asset AS asset_id,
@@ -505,7 +530,7 @@ export async function getPositionReconciliation(
     WHERE pdb.user_id = ${USER_ID}
       AND pdb.date = ${comparisonDate}
       AND ABS(pdb.quantity::numeric) > 0.0001
-      AND COALESCE(ast.pricing_tier, '') != 'zero'
+      AND COALESCE(ast.pricing_tier, 'market') != 'zero'
   `)) as any[];
 
   // 3. Aggregate both sides by (owner, ticker) before matching.
@@ -549,6 +574,34 @@ export async function getPositionReconciliation(
         owner,
         accounts: [sp.broker_name],
         assetClass: sp.asset_class,
+        matched: false,
+      });
+    }
+  }
+
+  // Merge per-currency cash balances into snapshot aggregation
+  for (const sc of snapshotCash) {
+    const owner = sc.owner ?? "Unknown";
+    const symbol: string = sc.symbol;
+    const key = `${owner}::${symbol}`;
+    const existing = snapshotAgg.get(key);
+    const qty = toNumber(sc.qty) ?? 0;
+    const mv = toNumber(sc.mv);
+
+    if (existing) {
+      existing.qty += qty;
+      existing.mv = (existing.mv ?? 0) + (mv ?? 0);
+      const broker: string = sc.broker_name;
+      if (!existing.accounts.includes(broker)) existing.accounts.push(broker);
+    } else {
+      snapshotAgg.set(key, {
+        ticker: symbol,
+        conids: [],
+        qty,
+        mv,
+        owner,
+        accounts: [sc.broker_name],
+        assetClass: sc.asset_class,
         matched: false,
       });
     }
