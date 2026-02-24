@@ -488,14 +488,12 @@ export async function getPositionReconciliation(
   `)) as any[];
 
   // 1b. Snapshot cash balances (per-currency from MTMP CASH rows via Flex ingestion)
-  // Use the latest available cash snapshot per account (not bounded by comparisonDate)
-  // because historical cash_balances may only have single aggregate entries from before
-  // the per-currency MTMP fix. The most recent snapshot always has the best data.
   const snapshotCash = (await db.execute(sql`
     WITH latest_cash_per_account AS (
       SELECT account_id, MAX(snapshot_date) AS latest_date
       FROM cash_balances
       WHERE source = 'ibkr_flex'
+        AND snapshot_date <= ${comparisonDate}
       GROUP BY account_id
     )
     SELECT
