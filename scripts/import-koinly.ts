@@ -340,13 +340,53 @@ async function persistEvents(
       inserted += result.length;
       skipped += chunk.length - result.length;
     } catch (error) {
-      errors += chunk.length;
-      errorDetails.push({
-        key: `chunk_${Math.floor(i / chunkSize)}`,
-        error: error instanceof Error
-          ? (error.cause instanceof Error ? error.cause.message : error.message)
-          : String(error),
-      });
+      // Chunk failed — fall back to per-event inserts to salvage good events
+      for (const event of chunk) {
+        try {
+          const tsStr = event.timestamp instanceof Date ? event.timestamp.toISOString() : String(event.timestamp);
+          const sdStr = event.settlementDate instanceof Date ? event.settlementDate.toISOString() : null;
+          const row = {
+            id: event.id.startsWith("temp_") ? randomUUID() : event.id,
+            userId,
+            eventType: event.eventType,
+            timestamp: sql`${tsStr}::timestamptz`,
+            settlementDate: sdStr ? sql`${sdStr}::timestamptz` : null,
+            assetId: event.assetId,
+            assetTicker: event.assetTicker,
+            quantity: String(event.quantity),
+            price: event.price != null ? String(event.price) : null,
+            totalValue: String(event.totalValue),
+            currency: event.currency,
+            costBasis: event.costBasis != null ? String(event.costBasis) : null,
+            owner: event.owner ?? null,
+            account: event.account ?? null,
+            source: event.source,
+            sourceId: event.sourceId ?? "",
+            idempotencyKey: event.idempotencyKey,
+            importBatchId,
+            linkedEventId: event.linkedEventId ?? null,
+            rawData: event.rawData ?? {},
+            metadata: event.metadata ?? null,
+          };
+
+          const result = await db
+            .insert(schema.events)
+            .values(row as any)
+            .onConflictDoNothing({ target: schema.events.idempotencyKey })
+            .returning({ id: schema.events.id });
+
+          if (result.length > 0) inserted++;
+          else skipped++;
+        } catch (individualError) {
+          errors++;
+          errorDetails.push({
+            key: `event_${event.idempotencyKey?.slice(0, 16)}`,
+            error: individualError instanceof Error
+              ? (individualError.cause instanceof Error ? individualError.cause.message : individualError.message)
+              : String(individualError),
+          });
+        }
+      }
     }
   }
 

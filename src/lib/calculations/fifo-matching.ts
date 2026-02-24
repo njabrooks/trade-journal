@@ -381,16 +381,19 @@ async function matchToLots(
       // Update lot quantities
       const newConsumed = parseFloat(lot.consumedQuantity) + consumeQty;
       const newRemaining = parseFloat(lot.originalQuantity) - newConsumed;
-      const newRemainingCostBasis = Math.max(0, newRemaining * lotCostPerUnit);
-      const newStatus = newRemaining <= EPSILON ? "closed" : "partial";
+      const isClosed = newRemaining <= EPSILON;
+      // When closing, snap to exact values to satisfy quantity_balance constraint
+      const finalConsumed = isClosed ? parseFloat(lot.originalQuantity) : newConsumed;
+      const finalRemaining = isClosed ? 0 : Math.max(0, newRemaining);
+      const newRemainingCostBasis = Math.max(0, finalRemaining * lotCostPerUnit);
 
       await tx
         .update(taxLots)
         .set({
-          consumedQuantity: newConsumed.toFixed(8),
-          remainingQuantity: Math.max(0, newRemaining).toFixed(8),
+          consumedQuantity: finalConsumed.toFixed(8),
+          remainingQuantity: finalRemaining.toFixed(8),
           remainingCostBasis: newRemainingCostBasis.toFixed(2),
-          status: newStatus,
+          status: isClosed ? "closed" : "partial",
           updatedAt: new Date(),
         })
         .where(eq(taxLots.id, lot.id));
@@ -884,13 +887,18 @@ export async function runFifoMatchingOptimized(ctx: CalcContext): Promise<FifoMa
 
       // Track lot update (latest state wins)
       const newRemaining = Math.max(0, lot.remainingQuantity);
-      const newRemainingCostBasis = Math.max(0, newRemaining * lot.costBasisPerUnit);
+      const isClosed = newRemaining <= EPSILON;
+      // When closing, snap to exact values to satisfy quantity_balance constraint
+      // (avoids float precision drift on large quantities like 329M KIN)
+      const finalConsumed = isClosed ? lot.originalQuantity : lot.consumedQuantity;
+      const finalRemaining = isClosed ? 0 : newRemaining;
+      const newRemainingCostBasis = Math.max(0, finalRemaining * lot.costBasisPerUnit);
       pendingLotUpdates.set(lot.id, {
         lotId: lot.id,
-        consumedQuantity: lot.consumedQuantity.toFixed(8),
-        remainingQuantity: newRemaining.toFixed(8),
+        consumedQuantity: finalConsumed.toFixed(8),
+        remainingQuantity: finalRemaining.toFixed(8),
         remainingCostBasis: newRemainingCostBasis.toFixed(2),
-        status: newRemaining <= EPSILON ? "closed" : "partial",
+        status: isClosed ? "closed" : "partial",
       });
 
       remainingToMatch -= consumeQty;

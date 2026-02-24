@@ -128,7 +128,7 @@ export type EventType = typeof EVENT_TYPES[number];
 
 export const EVENT_SOURCES = [
   'ibkr_trade', 'ibkr_sof', 'ibkr_mtmpnl', 'ibkr_positions', 'ibkr_combined',
-  'koinly', 'coinbase', 'buxfer',
+  'koinly', 'koinly_raw', 'coinbase', 'buxfer',
 ] as const;
 export type EventSource = typeof EVENT_SOURCES[number];
 

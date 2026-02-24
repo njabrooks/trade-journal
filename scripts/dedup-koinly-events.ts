@@ -7,10 +7,15 @@
  * idempotency keys but share the same source_id + event_type + asset_ticker.
  *
  * Strategy: Group by (source_id, asset_ticker, event_type, owner, account,
- * timestamp, ROUND(quantity, 2)). The quantity rounding catches precision
- * differences (69128.65367 vs 69128.65367324) while preserving legitimately
- * different events from the same blockchain transaction (e.g. multi-hop swaps
- * that produce multiple RECEIVE events with different quantities).
+ * timestamp, ROUND(quantity, 4), ROUND(total_value, 4), description).
+ * The rounding to 4dp catches precision differences from re-exports
+ * (69128.65367 vs 69128.65367324, or 0.00033427 vs 0.00034238) while
+ * preserving legitimately different events that share the same blockchain
+ * tx hash (e.g. multi-asset dust sells where USD BUY amounts like $0.078
+ * vs $0.080 would collide at 2dp but not at 4dp). The description field
+ * (from metadata) further distinguishes events like USD RECEIVE where
+ * total_value = quantity but the underlying instrument differs
+ * (e.g. "ADA-20210625" vs "DOT-20210625").
  *
  * Keep the earliest inserted (MIN(created_at)), delete the rest.
  *
@@ -28,10 +33,7 @@ async function main() {
   console.log(`[Dedup] Mode: ${DRY_RUN ? "DRY RUN" : "LIVE"}`);
 
   // Find duplicates: same (source_id, asset_ticker, event_type, owner, account,
-  // timestamp, ROUND(quantity, 2)). The quantity rounding catches precision
-  // differences from re-imports (69128.65367 vs 69128.65367324) while preserving
-  // legitimately different events from the same blockchain tx (multi-hop swaps
-  // producing multiple events with very different quantities).
+  // timestamp, ROUND(quantity, 4), ROUND(total_value, 4), description).
   const duplicates = await db.execute<{
     source_id: string;
     asset_ticker: string;
@@ -51,10 +53,12 @@ async function main() {
         owner,
         account,
         quantity,
+        total_value,
+        metadata->>'description' as description,
         timestamp,
         created_at,
         ROW_NUMBER() OVER (
-          PARTITION BY source_id, asset_ticker, event_type, owner, account, timestamp, ROUND(quantity::numeric, 2)
+          PARTITION BY source_id, asset_ticker, event_type, owner, account, timestamp, ROUND(quantity::numeric, 4), ROUND(total_value::numeric, 4), metadata->>'description'
           ORDER BY created_at ASC, id ASC
         ) as rn
       FROM events
@@ -71,7 +75,7 @@ async function main() {
       MIN(CASE WHEN rn = 1 THEN id::text END) as keep_id,
       ARRAY_AGG(CASE WHEN rn > 1 THEN id::text END) FILTER (WHERE rn > 1) as delete_ids
     FROM ranked
-    GROUP BY source_id, asset_ticker, event_type, owner, account, timestamp, ROUND(quantity::numeric, 2)
+    GROUP BY source_id, asset_ticker, event_type, owner, account, timestamp, ROUND(quantity::numeric, 4), ROUND(total_value::numeric, 4), description
     HAVING COUNT(*) > 1
     ORDER BY asset_ticker, event_type
   `);
@@ -142,10 +146,10 @@ async function main() {
   // Verify: check for any remaining duplicates (same grouping as above)
   const remaining = await db.execute<{ cnt: number }>(sql`
     SELECT COUNT(*) as cnt FROM (
-      SELECT source_id, asset_ticker, event_type, owner, account, timestamp, ROUND(quantity::numeric, 2)
+      SELECT source_id, asset_ticker, event_type, owner, account, timestamp, ROUND(quantity::numeric, 4)
       FROM events
       WHERE source = 'koinly' AND source_id IS NOT NULL
-      GROUP BY source_id, asset_ticker, event_type, owner, account, timestamp, ROUND(quantity::numeric, 2)
+      GROUP BY source_id, asset_ticker, event_type, owner, account, timestamp, ROUND(quantity::numeric, 4), ROUND(total_value::numeric, 4), metadata->>'description'
       HAVING COUNT(*) > 1
     ) t
   `);

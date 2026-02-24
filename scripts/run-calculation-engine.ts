@@ -197,6 +197,13 @@ async function clearExistingCalculations(userId: string): Promise<void> {
     .where(eq(schema.taxLots.userId, userId));
   console.log(`  Deleted tax lots`);
 
+  // Clear event_calculations so FIFO matching and cost basis are recomputed.
+  // Without this, event_calculations.fifo_matched = true causes the FIFO
+  // matcher to skip already-processed events on subsequent --full runs.
+  const { clearEventCalculations } = await import('../src/lib/calculations/event-calculations-helper.js');
+  await clearEventCalculations(userId, "full");
+  console.log(`  Deleted event calculations`);
+
   // Clear daily balances — the UPSERT in daily_balances phase only updates
   // existing rows, it doesn't delete stale rows for closed positions.
   // Without this, positions that go to zero keep old negative/stale balances.
@@ -210,8 +217,6 @@ async function clearExistingCalculations(userId: string): Promise<void> {
     DELETE FROM daily_portfolio_values WHERE user_id = ${userId}
   `);
   console.log(`  Deleted portfolio values`);
-
-  console.log(`  (Running quantities will be recalculated)`);
 }
 
 // ============================================================================
@@ -280,8 +285,8 @@ async function main(): Promise<void> {
     console.log("DRY RUN - No calculations will be executed");
     console.log();
     console.log("Would execute:");
-    if (!args.incremental && (calcStats.taxLots > 0 || calcStats.lotConsumptions > 0)) {
-      console.log("  1. Clear existing tax lots and lot consumptions");
+    if (!args.incremental) {
+      console.log("  1. Clear existing calculations (lots, consumptions, event_calculations, balances)");
     }
     console.log(`  2. Create import batch for calculation tracking`);
     if (args.phase) {
@@ -294,7 +299,7 @@ async function main(): Promise<void> {
   }
 
   // For full recalculation, clear existing data
-  if (!args.incremental && (calcStats.taxLots > 0 || calcStats.lotConsumptions > 0)) {
+  if (!args.incremental) {
     console.log("Full recalculation requested - clearing existing calculations...");
     await clearExistingCalculations(args.userId);
     console.log();

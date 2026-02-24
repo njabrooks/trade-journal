@@ -71,12 +71,19 @@ export {
   parseIbkrCombinedFile,
 } from "./ibkr";
 
-// Koinly adapter
+// Koinly adapter (consolidated tax-year format)
 export {
   KoinlyAdapter,
   getKoinlyAdapter,
   resetKoinlyAdapter,
 } from "./koinly-adapter";
+
+// Koinly raw adapter (full history raw transaction format)
+export {
+  KoinlyRawAdapter,
+  getKoinlyRawAdapter,
+  resetKoinlyRawAdapter,
+} from "./koinly-raw-adapter";
 
 // Coinbase adapter
 export {
