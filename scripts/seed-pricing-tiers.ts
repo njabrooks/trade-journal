@@ -21,6 +21,7 @@ const DRY_RUN = process.argv.includes('--dry-run');
 // Proxy mappings: ticker → proxy target ticker
 const PROXY_MAPPINGS: Record<string, string> = {
   WBTC: 'BTC',
+  CBBTC: 'BTC', // Coinbase Wrapped BTC
   STETH: 'ETH',
   WETH: 'ETH',
   MSOL: 'SOL',

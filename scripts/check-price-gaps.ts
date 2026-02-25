@@ -6,7 +6,10 @@
  * snapshots or have recent FX rates for fiat). This prevents false alerts
  * for assets that were sold but remain classified as market tier.
  *
- * Outputs a report and exits with code 1 if any critical gaps (>5 days).
+ * Uses GitHub Actions annotations for visibility:
+ *   - Individual critical gaps → ::warning:: annotations (visible in summary)
+ *   - Only hard-fails (exit 1) when freshness drops below 80%
+ *     (i.e. widespread pricing failure, not a single stale asset)
  *
  * Designed to run as a daily GitHub Actions cron job after crypto prices
  * have been fetched. Output is visible in GitHub Actions logs.
@@ -17,6 +20,9 @@
 
 import { db, closeDb } from './lib/db.js';
 import { sql } from 'drizzle-orm';
+
+// Freshness threshold — fail only when this % of held assets lack current prices
+const FRESHNESS_FAIL_THRESHOLD = 80;
 
 async function main() {
   console.log('Checking price gaps for market-tier assets...\n');
@@ -82,12 +88,15 @@ async function main() {
   const totalMarketCount = parseInt(totalMarket[0]?.cnt ?? '0');
 
   const total = gaps.length;
+  const freshness = total > 0 ? Math.round((current.length / total) * 100) : 100;
+
   console.log(`Total market-tier assets: ${totalMarketCount}`);
   console.log(`Currently held (monitored): ${total}`);
   console.log(`  Current (0-1 days):    ${current.length}`);
   console.log(`  Stale (2-5 days):      ${stale.length}`);
   console.log(`  Critical (>5 days):    ${critical.length}`);
   console.log(`  Never priced:          ${neverPriced.length}`);
+  console.log(`  Freshness:             ${freshness}%`);
 
   if (stale.length > 0) {
     console.log('\n--- Stale prices (2-5 days) ---');
@@ -100,6 +109,8 @@ async function main() {
     console.log('\n--- CRITICAL gaps (>5 days) ---');
     for (const row of critical) {
       console.log(`  ${row.ticker.padEnd(12)} ${row.asset_class.padEnd(12)} last: ${row.last_price_date}  (${row.gap_days}d)`);
+      // GitHub Actions warning annotation — shows in workflow summary
+      console.log(`::warning::Price gap: ${row.ticker} (${row.asset_class}) last priced ${row.last_price_date} (${row.gap_days}d ago)`);
     }
   }
 
@@ -120,20 +131,25 @@ async function main() {
     stale: stale.length,
     critical: critical.length,
     neverPriced: neverPriced.length,
-    freshness: total > 0 ? Math.round((current.length / total) * 100) : 0,
+    freshness,
   };
   console.log('\n--- Summary JSON ---');
   console.log(JSON.stringify(summary));
 
   await closeDb();
 
-  // Exit with error code if critical gaps exist
-  if (critical.length > 0) {
-    console.log(`\n⚠️  ${critical.length} assets have critical price gaps (>5 days).`);
+  // Only hard-fail when freshness drops below threshold (widespread pricing failure)
+  // Individual critical gaps get ::warning:: annotations above but don't block the workflow
+  if (freshness < FRESHNESS_FAIL_THRESHOLD) {
+    console.log(`\n❌ Freshness ${freshness}% is below ${FRESHNESS_FAIL_THRESHOLD}% threshold — pricing pipeline may be broken.`);
     process.exit(1);
   }
 
-  console.log('\n✅ No critical price gaps.');
+  if (critical.length > 0 || stale.length > 0) {
+    console.log(`\n⚠️  ${critical.length} critical, ${stale.length} stale — see warnings above.`);
+  } else {
+    console.log('\n✅ All prices current.');
+  }
   process.exit(0);
 }
 

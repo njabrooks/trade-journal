@@ -2,7 +2,7 @@ name: Price Gap Check
 
 # Checks for market-tier assets missing recent prices.
 # Runs after the morning crypto price retry to check final state.
-# Exits with code 1 if any critical gaps (>5 days) — visible in GitHub Actions.
+# Individual gaps → ::warning:: annotations. Only fails when freshness <80%.
 
 on:
   schedule:
