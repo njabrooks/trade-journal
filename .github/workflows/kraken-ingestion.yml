@@ -26,6 +26,8 @@ jobs:
           DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
           DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
           USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
-          KRAKEN_API_KEY: ${{ secrets.KRAKEN_API_KEY }}
-          KRAKEN_API_SECRET: ${{ secrets.KRAKEN_API_SECRET }}
+          KRAKEN_API_KEY_NICK: ${{ secrets.KRAKEN_API_KEY_NICK }}
+          KRAKEN_API_SECRET_NICK: ${{ secrets.KRAKEN_API_SECRET_NICK }}
+          KRAKEN_API_KEY_MAISY: ${{ secrets.KRAKEN_API_KEY_MAISY }}
+          KRAKEN_API_SECRET_MAISY: ${{ secrets.KRAKEN_API_SECRET_MAISY }}
         run: npx tsx scripts/ingest-kraken.ts

@@ -1,0 +1,29 @@
+name: Manual Snapshots Ingestion
+
+on:
+  schedule:
+    # Once daily at 06:00 UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Run manual snapshots ingestion
+        env:
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
+        run: npx tsx scripts/ingest-manual-snapshots.ts

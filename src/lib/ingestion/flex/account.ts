@@ -50,6 +50,7 @@ export async function upsertAccount(data: {
   brokerName?: string;
   baseCurrency?: string;
   label?: string;
+  owner?: string;
 }): Promise<string> {
   const existing = await db
     .select()
@@ -65,6 +66,7 @@ export async function upsertAccount(data: {
         brokerName: data.brokerName ?? existing[0].brokerName,
         baseCurrency: data.baseCurrency ?? existing[0].baseCurrency,
         label: data.label ?? existing[0].label,
+        owner: data.owner ?? existing[0].owner,
         updatedAt: new Date(),
       })
       .where(eq(accounts.id, existing[0].id))
@@ -80,6 +82,7 @@ export async function upsertAccount(data: {
       brokerAccountId: data.brokerAccountId,
       baseCurrency: data.baseCurrency ?? 'USD',
       label: data.label,
+      owner: data.owner,
     })
     .returning();
 

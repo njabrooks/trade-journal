@@ -25,13 +25,19 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function getConfig() {
-  const apiKey = process.env.KRAKEN_API_KEY;
-  const apiSecret = process.env.KRAKEN_API_SECRET;
+export interface KrakenConfig {
+  apiKey: string;
+  apiSecret: string;
+}
+
+export function getKrakenConfig(suffix?: string): KrakenConfig {
+  const keySuffix = suffix ? `_${suffix}` : '';
+  const apiKey = process.env[`KRAKEN_API_KEY${keySuffix}`];
+  const apiSecret = process.env[`KRAKEN_API_SECRET${keySuffix}`];
 
   if (!apiKey || !apiSecret) {
     throw new Error(
-      'Missing Kraken env vars. Required: KRAKEN_API_KEY, KRAKEN_API_SECRET'
+      `Missing Kraken env vars. Required: KRAKEN_API_KEY${keySuffix}, KRAKEN_API_SECRET${keySuffix}`
     );
   }
 
@@ -71,9 +77,10 @@ function signRequest(
  */
 async function krakenPost<T>(
   path: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  config?: KrakenConfig
 ): Promise<T> {
-  const { apiKey, apiSecret } = getConfig();
+  const { apiKey, apiSecret } = config ?? getKrakenConfig();
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -185,13 +192,14 @@ interface KrakenTickerInfo {
  */
 export async function fetchTradesHistory(
   ofs?: number,
-  start?: number
+  start?: number,
+  config?: KrakenConfig
 ): Promise<{ trades: Record<string, KrakenTrade>; count: number }> {
   const params: Record<string, string> = {};
   if (ofs !== undefined) params.ofs = ofs.toString();
   if (start !== undefined) params.start = start.toString();
 
-  return krakenPost<KrakenTradesResult>('/0/private/TradesHistory', params);
+  return krakenPost<KrakenTradesResult>('/0/private/TradesHistory', params, config);
 }
 
 /**
@@ -199,14 +207,15 @@ export async function fetchTradesHistory(
  * Returns all trades plus the latest timestamp for cursor storage.
  */
 export async function fetchAllTrades(
-  startTimestamp?: number
+  startTimestamp?: number,
+  config?: KrakenConfig
 ): Promise<{ trades: Array<{ id: string; trade: KrakenTrade }>; latestTimestamp: number | null }> {
   const allTrades: Array<{ id: string; trade: KrakenTrade }> = [];
   let offset = 0;
   let latestTimestamp: number | null = null;
 
   while (true) {
-    const response = await fetchTradesHistory(offset, startTimestamp);
+    const response = await fetchTradesHistory(offset, startTimestamp, config);
     const tradeEntries = Object.entries(response.trades);
 
     if (tradeEntries.length === 0) break;
@@ -240,18 +249,19 @@ export async function fetchAllTrades(
  * Fetch account balances (single call, no pagination).
  * Returns asset → balance amount mapping.
  */
-export async function fetchBalance(): Promise<Record<string, string>> {
-  return krakenPost<Record<string, string>>('/0/private/Balance');
+export async function fetchBalance(config?: KrakenConfig): Promise<Record<string, string>> {
+  return krakenPost<Record<string, string>>('/0/private/Balance', {}, config);
 }
 
 /**
  * Fetch open margin positions (single call).
  * Uses docalcs=true to include value and net PnL.
  */
-export async function fetchOpenPositions(): Promise<Record<string, KrakenOpenPosition>> {
+export async function fetchOpenPositions(config?: KrakenConfig): Promise<Record<string, KrakenOpenPosition>> {
   return krakenPost<Record<string, KrakenOpenPosition>>(
     '/0/private/OpenPositions',
-    { docalcs: 'true' }
+    { docalcs: 'true' },
+    config
   );
 }
 

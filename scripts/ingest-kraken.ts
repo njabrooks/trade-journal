@@ -3,24 +3,26 @@
  * Kraken ingestion script.
  * Fetches trades, balances (spot positions), and open margin positions from Kraken API.
  * Runs incrementally using cursors stored in ingestion_cursors table.
+ * Supports multiple accounts via suffixed env vars (KRAKEN_API_KEY_NICK, etc.).
  *
  * Usage:
- *   npx tsx scripts/ingest-kraken.ts
- *   npx tsx scripts/ingest-kraken.ts --full   # Force full backfill
+ *   npx tsx scripts/ingest-kraken.ts                # All configured accounts
+ *   npx tsx scripts/ingest-kraken.ts --account NICK # Single account only
+ *   npx tsx scripts/ingest-kraken.ts --full         # Force full backfill
  */
 
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, ne, sql } from 'drizzle-orm';
 
 // Kraken API functions
-import { fetchAllTrades, fetchBalance, fetchOpenPositions, fetchTickerPrices } from '../src/lib/ingestion/kraken/api.js';
+import { fetchAllTrades, fetchBalance, fetchOpenPositions, fetchTickerPrices, getKrakenConfig, type KrakenConfig } from '../src/lib/ingestion/kraken/api.js';
 import { normalizeKrakenTrade } from '../src/lib/ingestion/kraken/fills.js';
 import { normalizeKrakenBalances, normalizeKrakenOpenPositions, getTickerPair, extractKrakenCashBalances } from '../src/lib/ingestion/kraken/positions.js';
 import { toNewTrade, toNewPosition } from '../src/lib/ingestion/crypto/types.js';
 import { upsertCashBalances } from '../src/lib/ingestion/crypto/cashBalances.js';
 
 // Reuse existing infra
-import { resolveAccountId } from '../src/lib/ingestion/flex/account.js';
+import { upsertAccount } from '../src/lib/ingestion/flex/account.js';
 import { ensureUnderlyingId } from '../src/lib/ingestion/flex/underlyings.js';
 import { createTradeIngestionRecords } from '../src/lib/ingestion/flex/processCsv.js';
 import { trackProcess } from '../src/lib/services/processTracking.js';
@@ -31,6 +33,20 @@ import { computeStrategyMetricsForDateRange } from '../src/lib/derived/strategyM
 import { evaluateStrategySignalsForDate } from '../src/lib/derived/signalEvaluation.js';
 
 const { trades, positions, underlyings, ingestionCursors, strategies } = schema;
+
+// ── Account Configuration ───────────────────────────────────────────
+
+interface KrakenAccountConfig {
+  brokerAccountId: string;
+  owner: string;
+  label: string;
+  envSuffix: string; // e.g., 'NICK' → reads KRAKEN_API_KEY_NICK
+}
+
+const ACCOUNTS: KrakenAccountConfig[] = [
+  { brokerAccountId: 'Nick_KRAKEN', owner: 'Nick', label: 'Nick_Kraken', envSuffix: 'NICK' },
+  { brokerAccountId: 'Maisy_KRAKEN', owner: 'Maisy', label: 'Maisy_Kraken', envSuffix: 'MAISY' },
+];
 
 // ── Cursor helpers (inline to avoid @/ import in scripts) ──────────
 
@@ -68,35 +84,33 @@ async function setCursor(
     });
 }
 
-// ── Main ───────────────────────────────────────────────────────────
+// ── Per-account ingestion ─────────────────────────────────────────
 
-async function main() {
-  const apiKey = process.env.KRAKEN_API_KEY;
-  if (!apiKey) {
-    console.error('KRAKEN_API_KEY environment variable is required');
-    process.exit(1);
-  }
+async function ingestAccount(
+  acct: KrakenAccountConfig,
+  config: KrakenConfig,
+  snapshotDate: string,
+  forceFullBackfill: boolean
+) {
+  const tag = `[Kraken:${acct.owner}]`;
 
-  const forceFullBackfill = process.argv.includes('--full');
-  const snapshotDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-  console.log(`[Kraken] Starting Kraken ingestion...`);
-  console.log(`[Kraken] Snapshot date: ${snapshotDate}`);
-  if (forceFullBackfill) {
-    console.log(`[Kraken] Mode: Full backfill (--full flag)`);
-  }
-
-  // Resolve account ID (creates if not exists)
-  const accountId = await resolveAccountId('Nick_KRAKEN', 'Kraken');
-  console.log(`[Kraken] Account ID: ${accountId}`);
+  // Resolve account ID (creates if not exists, sets owner)
+  const accountId = await upsertAccount({
+    brokerAccountId: acct.brokerAccountId,
+    brokerName: 'Kraken',
+    baseCurrency: 'USD',
+    label: acct.label,
+    owner: acct.owner,
+  });
+  console.log(`${tag} Account ID: ${accountId}`);
 
   await trackProcess(
     'kraken_ingestion',
     'scheduled',
-    { snapshotDate },
+    { snapshotDate, account: acct.owner },
     async () => {
       // ── Step 1: Fetch trades incrementally ──────────────────────
-      console.log('\n[Kraken] Fetching trades...');
+      console.log(`\n${tag} Fetching trades...`);
 
       let startTimestamp: number | undefined;
       if (!forceFullBackfill) {
@@ -105,16 +119,16 @@ async function main() {
           // Resume from cursor (Unix timestamp) + 1 second
           startTimestamp = parseFloat(cursor) + 1;
           const resumeDate = new Date(startTimestamp * 1000).toISOString();
-          console.log(`[Kraken] Resuming from cursor: ${resumeDate}`);
+          console.log(`${tag} Resuming from cursor: ${resumeDate}`);
         } else {
-          console.log(`[Kraken] No cursor found, performing initial backfill`);
+          console.log(`${tag} No cursor found, performing initial backfill`);
         }
       } else {
-        console.log(`[Kraken] Full backfill (no start timestamp)`);
+        console.log(`${tag} Full backfill (no start timestamp)`);
       }
 
-      const { trades: krakenTrades, latestTimestamp } = await fetchAllTrades(startTimestamp);
-      console.log(`[Kraken] Fetched ${krakenTrades.length} trades`);
+      const { trades: krakenTrades, latestTimestamp } = await fetchAllTrades(startTimestamp, config);
+      console.log(`${tag} Fetched ${krakenTrades.length} trades`);
 
       // Normalize all trades
       const normalizedTrades = krakenTrades.map(({ id, trade }) => {
@@ -145,7 +159,7 @@ async function main() {
 
           tradesInserted += result.rowCount ?? 0;
         } catch (error) {
-          console.warn(`[Kraken] Batch insert failed at offset ${i}, falling back to individual inserts`);
+          console.warn(`${tag} Batch insert failed at offset ${i}, falling back to individual inserts`);
           for (const trade of batch) {
             try {
               const result = await db
@@ -154,17 +168,17 @@ async function main() {
                 .onConflictDoNothing({ target: trades.brokerTransactionId });
               tradesInserted += result.rowCount ?? 0;
             } catch (innerError) {
-              console.warn(`[Kraken] Failed to insert trade ${trade.brokerTransactionId}:`, innerError);
+              console.warn(`${tag} Failed to insert trade ${trade.brokerTransactionId}:`, innerError);
             }
           }
         }
         if (i + BATCH_SIZE < normalizedTrades.length) {
-          console.log(`[Kraken] Trades: inserted batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(normalizedTrades.length / BATCH_SIZE)}`);
+          console.log(`${tag} Trades: inserted batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(normalizedTrades.length / BATCH_SIZE)}`);
         }
       }
 
       const tradesSkipped = krakenTrades.length - tradesInserted;
-      console.log(`[Kraken] Trades: ${tradesInserted} inserted, ${tradesSkipped} skipped (duplicates)`);
+      console.log(`${tag} Trades: ${tradesInserted} inserted, ${tradesSkipped} skipped (duplicates)`);
 
       // Update cursor
       if (latestTimestamp !== null) {
@@ -172,15 +186,14 @@ async function main() {
       }
 
       // ── Step 2: Fetch balances (spot positions) ─────────────────
-      console.log('\n[Kraken] Fetching balances...');
-      const balances = await fetchBalance();
+      console.log(`\n${tag} Fetching balances...`);
+      const balances = await fetchBalance(config);
       const balanceEntries = Object.entries(balances).filter(
         ([_, v]) => parseFloat(v) > 0
       );
-      console.log(`[Kraken] Raw balances: ${balanceEntries.length} non-zero`);
+      console.log(`${tag} Raw balances: ${balanceEntries.length} non-zero`);
 
       // Fetch spot prices for non-fiat balances
-      // Skip set matching positions.ts — fiat currencies and stablecoins
       const SKIP_BALANCE_KEYS = new Set([
         'ZUSD', 'ZEUR', 'ZGBP', 'ZCAD', 'ZJPY',
         'USD', 'EUR', 'GBP', 'CAD', 'JPY',
@@ -189,7 +202,6 @@ async function main() {
       const pairsForTicker: string[] = [];
       for (const [key] of balanceEntries) {
         if (SKIP_BALANCE_KEYS.has(key)) continue;
-        // Normalize using same logic as positions.ts
         let symbol = key;
         const BALANCE_MAP: Record<string, string> = {
           XXBT: 'BTC', XBT: 'BTC', XETH: 'ETH', XXRP: 'XRP',
@@ -214,37 +226,37 @@ async function main() {
       if (pairsForTicker.length > 0) {
         try {
           tickerPrices = await fetchTickerPrices(pairsForTicker);
-          console.log(`[Kraken] Fetched ticker prices for ${Object.keys(tickerPrices).length} pairs`);
+          console.log(`${tag} Fetched ticker prices for ${Object.keys(tickerPrices).length} pairs`);
         } catch (error) {
-          console.warn(`[Kraken] Failed to fetch ticker prices, positions will have null notional:`, error);
+          console.warn(`${tag} Failed to fetch ticker prices, positions will have null notional:`, error);
         }
       }
 
       const spotPositions = normalizeKrakenBalances(balances, tickerPrices, accountId, snapshotDate);
-      console.log(`[Kraken] Spot positions: ${spotPositions.length} active (non-fiat/stablecoin)`);
+      console.log(`${tag} Spot positions: ${spotPositions.length} active (non-fiat/stablecoin)`);
 
       // ── Step 2b: Extract cash balances ──────────────────────
       const cashInputs = extractKrakenCashBalances(balances, accountId, snapshotDate);
       const cashInserted = await upsertCashBalances(cashInputs);
-      console.log(`[Kraken] Cash balances: ${cashInserted} inserted (${cashInputs.map(c => `${c.currency}: ${c.balanceUsd ? '$' + parseFloat(c.balanceUsd).toFixed(0) : c.balance + ' ' + c.currency}`).join(', ') || 'none'})`);
+      console.log(`${tag} Cash balances: ${cashInserted} inserted (${cashInputs.map(c => `${c.currency}: ${c.balanceUsd ? '$' + parseFloat(c.balanceUsd).toFixed(0) : c.balance + ' ' + c.currency}`).join(', ') || 'none'})`);
 
       // ── Step 3: Fetch open margin positions ─────────────────────
-      console.log('\n[Kraken] Fetching open margin positions...');
+      console.log(`\n${tag} Fetching open margin positions...`);
       let marginPositions: ReturnType<typeof normalizeKrakenOpenPositions> = [];
       try {
-        const openPositions = await fetchOpenPositions();
+        const openPositions = await fetchOpenPositions(config);
         marginPositions = normalizeKrakenOpenPositions(openPositions, accountId, snapshotDate);
-        console.log(`[Kraken] Margin positions: ${marginPositions.length} open`);
+        console.log(`${tag} Margin positions: ${marginPositions.length} open`);
       } catch (error) {
         // OpenPositions may fail if margin trading not enabled
-        console.warn(`[Kraken] Could not fetch open positions (margin may not be enabled):`, error);
+        console.warn(`${tag} Could not fetch open positions (margin may not be enabled):`, error);
       }
 
       // Combine all positions
       const allPositions = [...spotPositions, ...marginPositions];
 
       // ── Step 4: Resolve underlyings and upsert positions ────────
-      console.log('\n[Kraken] Resolving underlyings and upserting positions...');
+      console.log(`\n${tag} Resolving underlyings and upserting positions...`);
 
       for (const pos of allPositions) {
         const underlyingId = await ensureUnderlyingId(
@@ -281,29 +293,27 @@ async function main() {
         await db.insert(positions).values(newPositions);
       }
 
-      console.log(`[Kraken] Inserted ${allPositions.length} positions for ${snapshotDate}`);
+      console.log(`${tag} Inserted ${allPositions.length} positions for ${snapshotDate}`);
 
       // ── Step 5: Recompute derived data ─────────────────────────
-      console.log('\n[Kraken] Running recompute chain...');
+      console.log(`\n${tag} Running recompute chain...`);
 
       // Auto-link positions and trades to strategies
       const linkResult = await autoLinkPositionsToStrategies(accountId, {
         snapshotDate,
       });
-      console.log(`[Kraken] Strategy auto-link: ${linkResult.strategiesCreated} created, ${linkResult.positionsLinked} linked`);
+      console.log(`${tag} Strategy auto-link: ${linkResult.strategiesCreated} created, ${linkResult.positionsLinked} linked`);
 
       // Auto-link trades for each unique trade date (not just today)
-      // This ensures backfilled/historical trades get linked properly
       let totalTradesLinked = 0;
       for (const tradeDate of Array.from(tradeDates)) {
         const result = await autoLinkTradesToStrategies(accountId, {
           snapshotDate: tradeDate,
         });
         totalTradesLinked += result.tradesLinked;
-        // Create TRADE_INGESTION triage records for linked trades
         await createTradeIngestionRecords(accountId, tradeDate);
       }
-      console.log(`[Kraken] Trade auto-link: ${totalTradesLinked} linked across ${tradeDates.size} dates`);
+      console.log(`${tag} Trade auto-link: ${totalTradesLinked} linked across ${tradeDates.size} dates`);
 
       // Compute portfolio snapshots
       await computePortfolioSnapshotsForDateRange(accountId, snapshotDate, snapshotDate);
@@ -322,17 +332,17 @@ async function main() {
       for (const strategy of accountStrategies) {
         await computeStrategyMetricsForDateRange(accountId, strategy.id, snapshotDate, snapshotDate);
       }
-      console.log(`[Kraken] Strategy metrics: computed for ${accountStrategies.length} strategies`);
+      console.log(`${tag} Strategy metrics: computed for ${accountStrategies.length} strategies`);
 
       // Compute triage
       const triageResult = await computeTriageForDate(snapshotDate, accountId, undefined, true);
-      console.log(`[Kraken] Triage: ${triageResult.position} position, ${triageResult.strategy} strategy records`);
+      console.log(`${tag} Triage: ${triageResult.position} position, ${triageResult.strategy} strategy records`);
 
       // Evaluate signals
       const signalResults = await evaluateStrategySignalsForDate(accountId, snapshotDate);
       const triggered = signalResults.filter((r) => r.triggered);
       if (triggered.length > 0) {
-        console.log(`[Kraken] Signals: ${triggered.length} triggered`);
+        console.log(`${tag} Signals: ${triggered.length} triggered`);
       }
 
       return {
@@ -346,8 +356,46 @@ async function main() {
       };
     }
   );
+}
 
-  console.log('\n[Kraken] Kraken ingestion complete!');
+// ── Main ───────────────────────────────────────────────────────────
+
+async function main() {
+  const forceFullBackfill = process.argv.includes('--full');
+  const snapshotDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // Filter to single account if --account flag provided
+  const accountFlagIdx = process.argv.indexOf('--account');
+  const accountFilter = accountFlagIdx >= 0 ? process.argv[accountFlagIdx + 1]?.toUpperCase() : null;
+
+  const accountsToIngest = accountFilter
+    ? ACCOUNTS.filter(a => a.envSuffix === accountFilter)
+    : ACCOUNTS;
+
+  if (accountsToIngest.length === 0) {
+    console.error(`No account found for suffix "${accountFilter}". Available: ${ACCOUNTS.map(a => a.envSuffix).join(', ')}`);
+    process.exit(1);
+  }
+
+  console.log(`[Kraken] Starting Kraken ingestion...`);
+  console.log(`[Kraken] Snapshot date: ${snapshotDate}`);
+  console.log(`[Kraken] Accounts: ${accountsToIngest.map(a => a.owner).join(', ')}`);
+  if (forceFullBackfill) {
+    console.log(`[Kraken] Mode: Full backfill (--full flag)`);
+  }
+
+  for (const acct of accountsToIngest) {
+    try {
+      const config = getKrakenConfig(acct.envSuffix);
+      await ingestAccount(acct, config, snapshotDate, forceFullBackfill);
+      console.log(`\n[Kraken:${acct.owner}] Complete!`);
+    } catch (error) {
+      console.error(`[Kraken:${acct.owner}] Fatal error:`, error);
+      // Continue to next account instead of aborting entirely
+    }
+  }
+
+  console.log('\n[Kraken] All accounts complete!');
 }
 
 main()

@@ -246,7 +246,7 @@ export async function getOwnerAccountNavComparison(
     )
     SELECT
       a.owner,
-      a.broker_name AS account_name,
+      CASE WHEN a.broker_name = 'IBKR' THEN 'IBKR' ELSE 'Koinly' END AS account_name,
       a.broker_account_id AS account_id,
       ps.nav_at_snapshot_usd::numeric AS nav,
       ps.snapshot_date
@@ -254,7 +254,7 @@ export async function getOwnerAccountNavComparison(
     JOIN accounts a ON a.id = ps.account_id
     JOIN latest_per_account lpa ON lpa.account_id = ps.account_id AND lpa.latest_date = ps.snapshot_date
     WHERE ps.level = 'account'
-    ORDER BY a.owner, a.broker_name
+    ORDER BY a.owner, account_name
   `)) as any[];
 
   // 2. Event-sourced side: per-account NAV at comparison date
@@ -404,41 +404,30 @@ export async function getOwnerAccountNavComparison(
       }
     }
 
-    // Match crypto accounts (snapshot exchanges vs event-sourced Koinly)
-    const cryptoSnapshotTotal =
+    // Match Koinly/crypto accounts (snapshot crypto exchanges vs event-sourced Koinly)
+    const snapshotKoinlyTotal =
       snapshotCrypto.length > 0
         ? snapshotCrypto.reduce((sum, a) => sum + a.nav, 0)
         : null;
-    const koinlyTotal =
+    const eventKoinlyTotal =
       eventKoinly.length > 0
         ? eventKoinly.reduce((sum, a) => sum + a.nav, 0)
         : null;
 
     if (snapshotCrypto.length > 0 || eventKoinly.length > 0) {
-      // Show each crypto exchange individually
-      for (const sa of snapshotCrypto) {
-        accounts.push({
-          snapshotAccount: sa.accountName,
-          snapshotAccountId: sa.accountId,
-          snapshotNav: sa.nav,
-          eventSourcedAccount: null,
-          eventSourcedNav: null,
-          matchStatus: eventKoinly.length > 0 ? "matched" : "snapshot_only",
-        });
-      }
-
-      // Show Koinly aggregate
-      if (eventKoinly.length > 0) {
-        accounts.push({
-          snapshotAccount: null,
-          snapshotAccountId: null,
-          snapshotNav: cryptoSnapshotTotal,
-          eventSourcedAccount: "Koinly",
-          eventSourcedNav: koinlyTotal,
-          matchStatus:
-            snapshotCrypto.length > 0 ? "matched" : "event_sourced_only",
-        });
-      }
+      accounts.push({
+        snapshotAccount: snapshotCrypto.length > 0 ? "Koinly" : null,
+        snapshotAccountId: null,
+        snapshotNav: snapshotKoinlyTotal,
+        eventSourcedAccount: eventKoinly.length > 0 ? "Koinly" : null,
+        eventSourcedNav: eventKoinlyTotal,
+        matchStatus:
+          snapshotCrypto.length > 0 && eventKoinly.length > 0
+            ? "matched"
+            : snapshotCrypto.length > 0
+              ? "snapshot_only"
+              : "event_sourced_only",
+      });
     }
 
     result.push({
@@ -478,7 +467,7 @@ export async function getPositionReconciliation(
       p.asset_class,
       p.snapshot_date,
       a.owner,
-      a.broker_name
+      CASE WHEN a.broker_name = 'IBKR' THEN 'IBKR' ELSE 'Koinly' END AS broker_name
     FROM positions p
     JOIN accounts a ON a.id = p.account_id
     JOIN latest_per_account lpa ON lpa.account_id = p.account_id AND lpa.latest_date = p.snapshot_date
@@ -487,13 +476,12 @@ export async function getPositionReconciliation(
       AND COALESCE(p.asset_class, '') != 'PERP'
   `)) as any[];
 
-  // 1b. Snapshot cash balances (per-currency from MTMP CASH rows via Flex ingestion)
+  // 1b. Snapshot cash balances (per-currency from all exchange sources)
   const snapshotCash = (await db.execute(sql`
     WITH latest_cash_per_account AS (
       SELECT account_id, MAX(snapshot_date) AS latest_date
       FROM cash_balances
-      WHERE source = 'ibkr_flex'
-        AND snapshot_date <= ${comparisonDate}
+      WHERE snapshot_date <= ${comparisonDate}
       GROUP BY account_id
     )
     SELECT
@@ -503,12 +491,11 @@ export async function getPositionReconciliation(
       'CASH' AS asset_class,
       cb.snapshot_date,
       a.owner,
-      a.broker_name
+      CASE WHEN a.broker_name = 'IBKR' THEN 'IBKR' ELSE 'Koinly' END AS broker_name
     FROM cash_balances cb
     JOIN accounts a ON a.id = cb.account_id
     JOIN latest_cash_per_account lca ON lca.account_id = cb.account_id AND lca.latest_date = cb.snapshot_date
-    WHERE cb.source = 'ibkr_flex'
-      AND ABS(cb.balance::numeric) > 0.0001
+    WHERE ABS(cb.balance::numeric) > 0.0001
   `)) as any[];
 
   // 2. Event-sourced positions at comparison date
