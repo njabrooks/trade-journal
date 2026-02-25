@@ -12,6 +12,56 @@ import type {
 } from "@/types/event-sourcing";
 
 // ============================================================================
+// Pricing Tier Classification (for new assets at creation time)
+// ============================================================================
+
+// LP token substrings
+const LP_SUBSTRINGS = ['-SOL', '-USDC', '-USDT', '-RAY', '-ETH', 'LP-', 'MIM-3LP', 'GAUGE', 'PLP', 'JLP', 'XJOE'];
+
+// Proxy mappings: ticker → proxy target ticker (must match seed-pricing-tiers.ts)
+const PROXY_TICKERS = new Set([
+  'WBTC', 'CBBTC', 'STETH', 'WETH', 'MSOL', 'HSOL', 'WMEMO',
+  'BWETH', 'BWBTC', 'BAVAX', 'TUSOL', 'SSPELL', 'CVXCRV', 'CVXFXS', 'RBASIS',
+]);
+
+/**
+ * Classify pricing tier for a new asset at creation time.
+ * Lightweight version of seed-pricing-tiers.ts classifyTicker().
+ * Does NOT include FORCE_ZERO list (irrelevant for new assets).
+ */
+function classifyPricingTier(ticker: string, assetClass: string): 'market' | 'proxy' | 'book_value' | 'zero' {
+  const upper = ticker.toUpperCase();
+
+  // NFTs: contains #digit
+  if (/#\d/.test(upper)) return 'zero';
+
+  // Solana addresses: 30+ alphanumeric chars
+  if (/^[A-Z0-9]{30,}$/.test(upper)) return 'zero';
+
+  // Proxy-mapped tokens
+  if (PROXY_TICKERS.has(upper)) return 'proxy';
+
+  // LP tokens
+  for (const sub of LP_SUBSTRINGS) {
+    if (upper.includes(sub)) return 'book_value';
+  }
+
+  // Wrapped/bridged suffixes
+  if (upper.endsWith('.E')) return 'book_value';
+
+  // Non-crypto → market (equities, ETFs, bonds, fiat, stablecoins, derivatives)
+  if (['EQUITY', 'ETF', 'BOND', 'COMMODITY', 'MUTUAL_FUND', 'FIAT', 'STABLECOIN', 'DERIVATIVE'].includes(assetClass.toUpperCase())) {
+    return 'market';
+  }
+
+  // Remaining crypto → market (gap detection will catch misses)
+  if (assetClass.toUpperCase() === 'CRYPTO') return 'market';
+
+  // Unknown → book_value as safe default
+  return 'book_value';
+}
+
+// ============================================================================
 // Asset Resolver Service
 // ============================================================================
 
@@ -124,16 +174,19 @@ export class AssetResolver implements AssetResolverInterface {
   private async createNewAsset(params: AssetResolverParams): Promise<SelectAsset> {
     // Determine asset class based on source and identifier patterns
     const assetClass = this.inferAssetClass(params);
+    const ticker = params.identifier.toUpperCase();
+    const pricingTier = classifyPricingTier(ticker, assetClass);
 
     const asset = await createAsset({
-      ticker: params.identifier.toUpperCase(),
+      ticker,
       name: params.name || params.identifier,
       assetClass,
+      pricingTier,
       ibkrConid: params.conid || null,
       isActive: true,
     });
 
-    console.log(`Created new asset: ${asset.ticker} (${asset.id}) - ${assetClass}`);
+    console.log(`Created new asset: ${asset.ticker} (${asset.id}) - ${assetClass} [${pricingTier}]`);
 
     return asset;
   }
