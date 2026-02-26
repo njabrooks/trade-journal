@@ -1,12 +1,13 @@
 name: Price Gap Check
 
 # Checks for market-tier assets missing recent prices.
-# Runs after the morning crypto price retry to check final state.
+# Runs after the morning flex ingestion completes (~07:00-07:45 UTC),
+# so equity prices from extract-ibkr-prices.ts are available.
 # Individual gaps → ::warning:: annotations. Only fails when freshness <80%.
 
 on:
   schedule:
-    - cron: '30 6 * * *'   # 06:30 UTC — after crypto retry at 06:00
+    - cron: '0 8 * * *'    # 08:00 UTC — after flex ingestion + price extraction
   workflow_dispatch: # Manual trigger for testing
 
 jobs:
