@@ -8,7 +8,7 @@
  */
 
 import { db } from "@/db";
-import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, isNull, desc, asc } from "drizzle-orm";
 import { events } from "@/db/schema";
 import type { Event, NewEvent } from "@/db/schema";
 
@@ -97,7 +97,7 @@ export async function getEventsByUserId(
   return db
     .select()
     .from(events)
-    .where(eq(events.userId, userId))
+    .where(and(eq(events.userId, userId), isNull(events.deletedAt)))
     .orderBy(orderBy === 'asc' ? asc(events.timestamp) : desc(events.timestamp))
     .limit(limit)
     .offset(offset);
@@ -117,6 +117,7 @@ export async function getEventsByAsset(
   const conditions = [
     eq(events.userId, userId),
     eq(events.assetId, assetId),
+    isNull(events.deletedAt),
   ];
 
   if (startDate) {
@@ -137,7 +138,7 @@ export async function getEventsByBatchId(batchId: string): Promise<Event[]> {
   return db
     .select()
     .from(events)
-    .where(eq(events.importBatchId, batchId))
+    .where(and(eq(events.importBatchId, batchId), isNull(events.deletedAt)))
     .orderBy(asc(events.timestamp));
 }
 
@@ -153,7 +154,7 @@ export async function getDistinctAssetIds(userId: string): Promise<string[]> {
   const results = await db
     .selectDistinct({ assetId: events.assetId })
     .from(events)
-    .where(eq(events.userId, userId));
+    .where(and(eq(events.userId, userId), isNull(events.deletedAt)));
   return results.map(r => r.assetId);
 }
 
@@ -166,7 +167,8 @@ export async function getEventsSince(
     .from(events)
     .where(and(
       eq(events.userId, userId),
-      gte(events.timestamp, sinceDate)
+      gte(events.timestamp, sinceDate),
+      isNull(events.deletedAt)
     ))
     .orderBy(asc(events.timestamp));
 }

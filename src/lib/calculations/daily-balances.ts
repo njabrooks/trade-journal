@@ -19,7 +19,7 @@
 
 import { db } from "@/db";
 import { events, eventCalculations, portfolioDailyBalances, assets } from "@/db/schema";
-import { eq, and, gt, sql, asc, lte } from "drizzle-orm";
+import { eq, and, gt, isNull, sql, asc, lte } from "drizzle-orm";
 import type { CalcContext, CalcResult, CalcError } from "./types";
 
 // ============================================================================
@@ -138,7 +138,7 @@ export async function computeDailyBalances(ctx: CalcContext): Promise<CalcResult
  */
 async function getUniqueScopes(ctx: CalcContext): Promise<ScopeInfo[]> {
   // Build base conditions
-  const conditions = [eq(events.userId, ctx.userId)];
+  const conditions = [eq(events.userId, ctx.userId), isNull(events.deletedAt)];
 
   if (ctx.incremental && ctx.startDate) {
     conditions.push(gt(events.timestamp, ctx.startDate));
@@ -223,7 +223,8 @@ async function processScope(
         eq(events.userId, ctx.userId),
         eq(events.assetId, scope.assetId),
         eq(events.owner, scope.owner),
-        eq(events.account, scope.account)
+        eq(events.account, scope.account),
+        isNull(events.deletedAt)
       )
     )
     .orderBy(

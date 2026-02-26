@@ -122,7 +122,7 @@ export async function getLastCompleteEventDate(): Promise<{
   const rows = (await db.execute(sql`
     SELECT source, MAX(timestamp::date)::text AS last_date, COUNT(*)::int AS event_count
     FROM events
-    WHERE user_id = ${USER_ID}
+    WHERE user_id = ${USER_ID} AND deleted_at IS NULL
     GROUP BY source
     ORDER BY last_date
   `)) as any[];

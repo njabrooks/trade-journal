@@ -464,6 +464,7 @@ async function findUnmatchedEvents(ctx: CalcContext): Promise<MatchableEvent[]> 
 
   const conditions = [
     eq(events.userId, ctx.userId),
+    isNull(events.deletedAt),
     inArray(events.eventType, allEventTypes),
   ];
 
@@ -573,7 +574,7 @@ export async function getTotalRealizedGainLoss(
   longTermLoss: number;
   total: number;
 }> {
-  const conditions = [eq(events.userId, userId)];
+  const conditions = [eq(events.userId, userId), isNull(events.deletedAt)];
 
   if (startDate) {
     conditions.push(sql`${events.timestamp} >= ${startDate}`);
@@ -763,6 +764,7 @@ export async function runFifoMatchingOptimized(ctx: CalcContext): Promise<FifoMa
   const allEventTypes = [...DISPOSAL_EVENT_TYPES, ...ACQUISITION_EVENT_TYPES];
   const conditions = [
     eq(events.userId, ctx.userId),
+    isNull(events.deletedAt),
     inArray(events.eventType, allEventTypes),
   ];
   if (ctx.incremental && ctx.startDate) {

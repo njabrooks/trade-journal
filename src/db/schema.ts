@@ -1975,7 +1975,7 @@ export type CalcPhase = (typeof CALC_PHASES)[number];
 
 export const ASSET_CLASSES = [
   'CRYPTO', 'EQUITY', 'FIAT', 'STABLECOIN', 'DERIVATIVE',
-  'BOND', 'ETF', 'MUTUAL_FUND', 'COMMODITY', 'OTHER',
+  'BOND', 'ETF', 'MUTUAL_FUND', 'COMMODITY', 'REAL_ESTATE', 'OTHER',
 ] as const;
 export type AssetClass = (typeof ASSET_CLASSES)[number];
 
@@ -2113,6 +2113,7 @@ export const events = pgTable('events', {
   rawData: jsonb('raw_data').notNull(),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 }, (table) => ({
   idxEventsUserDate: index('idx_events_user_date').on(table.userId, table.timestamp),
   idxEventsAsset: index('idx_events_asset').on(table.assetId, table.timestamp),

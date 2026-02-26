@@ -20,7 +20,7 @@
 
 import { db } from "@/db";
 import { events, accounts, averageCostPositions } from "@/db/schema";
-import { eq, and, gt, asc, sql, inArray } from "drizzle-orm";
+import { eq, and, gt, isNull, asc, sql, inArray } from "drizzle-orm";
 import type { CalcContext, CalcResult, CalcError, AverageCostState } from "./types";
 import { isAcquisition, isDisposal, ACQUISITION_EVENT_TYPES, DISPOSAL_EVENT_TYPES } from "./types";
 import { upsertEventCalculation, type UpsertEventCalculationData } from "./event-calculations-helper";
@@ -297,6 +297,7 @@ async function fetchEventsForAverageCost(
 ): Promise<EventForAverageCost[]> {
   const conditions = [
     eq(events.userId, ctx.userId),
+    isNull(events.deletedAt),
     inArray(events.account, accountNames),
     // Only process acquisition and disposal events
     sql`${events.eventType} IN (${sql.join(
@@ -912,6 +913,7 @@ export async function recalculateAverageCost(
         eq(events.assetId, assetId),
         eq(events.owner, owner),
         eq(events.account, account),
+        isNull(events.deletedAt),
         sql`${events.eventType} IN (${sql.join(
           [...ACQUISITION_EVENT_TYPES, ...DISPOSAL_EVENT_TYPES].map((t) => sql`${t}`),
           sql`, `

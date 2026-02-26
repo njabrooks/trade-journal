@@ -191,6 +191,7 @@ async function findEventsWithoutLots(
 
   const conditions = [
     eq(events.userId, ctx.userId),
+    isNull(events.deletedAt),
     inArray(events.eventType, allEventTypes),
   ];
 

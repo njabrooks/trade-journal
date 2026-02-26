@@ -17,7 +17,7 @@
 import { db } from "@/db";
 import { events } from "@/db/schema";
 import { eventCalculations } from "@/db/schema";
-import { eq, and, gt, lt, asc, sql } from "drizzle-orm";
+import { eq, and, gt, lt, isNull, asc, sql } from "drizzle-orm";
 import type { CalcContext, CalcResult, CalcError } from "./types";
 import { isAcquisition, isDisposal } from "./types";
 import { batchUpsertRunningQuantities } from "./event-calculations-helper";
@@ -167,7 +167,7 @@ export async function computeRunningQuantity(ctx: CalcContext): Promise<CalcResu
  */
 async function fetchEventsForQuantity(ctx: CalcContext): Promise<EventForQuantity[]> {
   // Build query conditions
-  const conditions = [eq(events.userId, ctx.userId)];
+  const conditions = [eq(events.userId, ctx.userId), isNull(events.deletedAt)];
 
   if (ctx.incremental && ctx.startDate) {
     conditions.push(gt(events.timestamp, ctx.startDate));
@@ -269,6 +269,7 @@ async function getLastQuantityBeforeDate(
         eq(events.assetId, assetId),
         eq(events.owner, owner),
         eq(events.account, account),
+        isNull(events.deletedAt),
         sql`${events.timestamp} <= ${beforeDate}`
       )
     )
@@ -331,7 +332,8 @@ export async function getCurrentQuantity(
         eq(events.userId, userId),
         eq(events.assetId, assetId),
         eq(events.owner, owner),
-        eq(events.account, account)
+        eq(events.account, account),
+        isNull(events.deletedAt)
       )
     )
     .orderBy(sql`${events.timestamp} DESC`, sql`${events.id} DESC`)
@@ -370,7 +372,7 @@ export async function validateRunningQuantities(
       eventCalculations,
       eq(events.id, eventCalculations.eventId)
     )
-    .where(eq(events.userId, userId))
+    .where(and(eq(events.userId, userId), isNull(events.deletedAt)))
     .orderBy(
       asc(events.assetId),
       asc(events.owner),

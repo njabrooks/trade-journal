@@ -17,7 +17,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { randomUUID } from "crypto";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 // Script db (loads .env.local, creates connection)
 import { db, closeDb, schema } from "./lib/db.js";
@@ -38,6 +38,11 @@ interface CliArgs {
   verbose?: boolean;
 }
 
+interface ReconciliationResult {
+  softDeleted: number;
+  unDeleted: number;
+}
+
 interface ImportResult {
   filePath: string;
   fileName: string;
@@ -50,6 +55,7 @@ interface ImportResult {
     skipped: number;
     errors: number;
   };
+  reconciliation?: ReconciliationResult;
   errors: string[];
   warnings: string[];
   durationMs: number;
@@ -326,6 +332,106 @@ async function persistEvents(
 }
 
 // ============================================================================
+// Reconciliation (soft-delete stale events, un-delete resurrected events)
+// ============================================================================
+
+async function reconcileDeletedEvents(
+  owner: string,
+  incomingKoinlyIds: Set<string>,
+  options: { dryRun?: boolean; verbose?: boolean }
+): Promise<ReconciliationResult & { errors: string[] }> {
+  const errors: string[] = [];
+
+  // Query all koinly_raw events for this owner
+  const dbRows = await db
+    .select({
+      id: schema.events.id,
+      sourceId: schema.events.sourceId,
+      deletedAt: schema.events.deletedAt,
+    })
+    .from(schema.events)
+    .where(
+      and(
+        eq(schema.events.source, "koinly_raw"),
+        eq(schema.events.owner, owner)
+      )
+    );
+
+  // Group event IDs by sourceId and deletion status
+  const toSoftDelete: string[] = [];
+  const toUnDelete: string[] = [];
+  const staleSourceIds = new Set<string>();
+  const resurrectedSourceIds = new Set<string>();
+
+  for (const row of dbRows) {
+    const inCsv = incomingKoinlyIds.has(row.sourceId);
+    const isDeleted = !!row.deletedAt;
+
+    if (!inCsv && !isDeleted) {
+      // In DB and active, but not in CSV → soft-delete
+      toSoftDelete.push(row.id);
+      staleSourceIds.add(row.sourceId);
+    } else if (inCsv && isDeleted) {
+      // In CSV and in DB but soft-deleted → un-delete
+      toUnDelete.push(row.id);
+      resurrectedSourceIds.add(row.sourceId);
+    }
+  }
+
+  if (options.verbose) {
+    if (staleSourceIds.size > 0) {
+      const preview = [...staleSourceIds].slice(0, 5).join(", ");
+      const suffix = staleSourceIds.size > 5 ? ` ...and ${staleSourceIds.size - 5} more` : "";
+      console.log(`  Soft-deleting Koinly IDs: ${preview}${suffix}`);
+    }
+    if (resurrectedSourceIds.size > 0) {
+      const preview = [...resurrectedSourceIds].slice(0, 5).join(", ");
+      const suffix = resurrectedSourceIds.size > 5 ? ` ...and ${resurrectedSourceIds.size - 5} more` : "";
+      console.log(`  Un-deleting Koinly IDs: ${preview}${suffix}`);
+    }
+  }
+
+  console.log(
+    `  Reconciliation: ${toSoftDelete.length} events to soft-delete (${staleSourceIds.size} Koinly IDs), ` +
+    `${toUnDelete.length} events to un-delete (${resurrectedSourceIds.size} Koinly IDs)`
+  );
+
+  if (options.dryRun) {
+    return { softDeleted: toSoftDelete.length, unDeleted: toUnDelete.length, errors };
+  }
+
+  // Execute soft-deletes in batches
+  const BATCH = 500;
+  const now = new Date();
+  try {
+    for (let i = 0; i < toSoftDelete.length; i += BATCH) {
+      const batch = toSoftDelete.slice(i, i + BATCH);
+      await db
+        .update(schema.events)
+        .set({ deletedAt: now })
+        .where(inArray(schema.events.id, batch));
+    }
+  } catch (error) {
+    errors.push(`Soft-delete error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  // Execute un-deletes in batches
+  try {
+    for (let i = 0; i < toUnDelete.length; i += BATCH) {
+      const batch = toUnDelete.slice(i, i + BATCH);
+      await db
+        .update(schema.events)
+        .set({ deletedAt: null })
+        .where(inArray(schema.events.id, batch));
+    }
+  } catch (error) {
+    errors.push(`Un-delete error: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  return { softDeleted: toSoftDelete.length, unDeleted: toUnDelete.length, errors };
+}
+
+// ============================================================================
 // Import Function
 // ============================================================================
 
@@ -485,6 +591,39 @@ async function importFile(
     }
   }
 
+  // Reconcile — soft-delete events absent from CSV, un-delete resurrected
+  let reconciliation: ReconciliationResult | undefined;
+  const incomingKoinlyIds = new Set<string>();
+  for (const event of allEvents) {
+    if (event.sourceId) {
+      incomingKoinlyIds.add(event.sourceId);
+    }
+  }
+
+  if (incomingKoinlyIds.size > 0) {
+    console.log(`  Running reconciliation (${incomingKoinlyIds.size} unique Koinly IDs in CSV)...`);
+    try {
+      const reconResult = await reconcileDeletedEvents(owner, incomingKoinlyIds, {
+        dryRun: options.dryRun,
+        verbose: options.verbose,
+      });
+      reconciliation = {
+        softDeleted: reconResult.softDeleted,
+        unDeleted: reconResult.unDeleted,
+      };
+      if (reconResult.errors.length > 0) {
+        errors.push(...reconResult.errors);
+      }
+      if (!options.dryRun && (reconResult.softDeleted > 0 || reconResult.unDeleted > 0)) {
+        console.log(`\n  ** RECALCULATION REQUIRED: Run the calculation engine for owner "${owner}" to recompute balances/cost basis **`);
+      }
+    } catch (error) {
+      errors.push(
+        `Reconciliation error: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
   return {
     filePath,
     fileName,
@@ -493,6 +632,7 @@ async function importFile(
     records: parseResult.records.length,
     events: resolvedEvents.length,
     persisted: persistResult,
+    reconciliation,
     errors,
     warnings,
     durationMs: Date.now() - startTime,
@@ -554,7 +694,12 @@ async function main(): Promise<void> {
     console.log(`Events Skipped (duplicates): ${result.persisted.skipped}`);
     console.log(`Events Failed: ${result.persisted.errors}`);
   } else {
-    console.log("(Dry run - no events were persisted)");
+    console.log("(Dry run - no data changes were persisted)");
+  }
+
+  if (result.reconciliation) {
+    console.log(`Events Soft-Deleted: ${result.reconciliation.softDeleted}`);
+    console.log(`Events Un-Deleted: ${result.reconciliation.unDeleted}`);
   }
 
   console.log(`Duration: ${result.durationMs}ms`);
