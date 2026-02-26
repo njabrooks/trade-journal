@@ -76,6 +76,22 @@ const FIAT_CURRENCIES = new Set([
 // Raw CSV header detection string
 const HEADER_MARKER = "ID (read-only)";
 
+/**
+ * Parse Koinly date strings in either format:
+ *   - "YYYY-MM-DD HH:MM:SS" (standard export)
+ *   - "DD/MM/YYYY HH:MM"    (some regional exports)
+ */
+function parseKoinlyDate(dateStr: string): Date {
+  // Try DD/MM/YYYY HH:MM format first (has "/" separator)
+  const ddmmMatch = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (ddmmMatch) {
+    const [, dd, mm, yyyy, hh, min, ss] = ddmmMatch;
+    return new Date(Date.UTC(+yyyy, +mm - 1, +dd, +hh, +min, +(ss || 0)));
+  }
+  // Fall back to ISO-like format
+  return new Date(dateStr + " UTC");
+}
+
 // ============================================================================
 // Type + Tag → EventType Mapping
 // ============================================================================
@@ -319,7 +335,7 @@ export class KoinlyRawAdapter extends BaseAdapter<KoinlyRawRecord> {
   // ==========================================================================
 
   normalize(raw: KoinlyRawRecord): NormalizedRecord {
-    const timestamp = new Date(raw["Date (UTC)"] + " UTC");
+    const timestamp = parseKoinlyDate(raw["Date (UTC)"]);
 
     const fromAmount = this.parseNumeric(raw["From Amount"]);
     const toAmount = this.parseNumeric(raw["To Amount"]);

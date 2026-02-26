@@ -6,6 +6,7 @@
  * Usage:
  *   tsx scripts/run-flex-ingestion.ts
  *   tsx scripts/run-flex-ingestion.ts --config-id <uuid>
+ *   tsx scripts/run-flex-ingestion.ts --save-csv /tmp/flex-csv
  */
 
 // Load environment FIRST before any other imports
@@ -13,6 +14,7 @@ import 'dotenv/config';
 import { config } from 'dotenv';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { mkdirSync, writeFileSync } from 'fs';
 
 // Also load .env.local explicitly (dotenv/config only loads .env by default)
 const __filename = fileURLToPath(import.meta.url);
@@ -99,7 +101,7 @@ async function processFlexQuery(
   }
 }
 
-async function runIngestionForConfig(configId: string): Promise<IngestionResult> {
+async function runIngestionForConfig(configId: string, saveCsvDir?: string): Promise<IngestionResult> {
   const config = await db
     .select()
     .from(flexQueryConfigs)
@@ -131,8 +133,16 @@ async function runIngestionForConfig(configId: string): Promise<IngestionResult>
       queryType: flexConfig.queryType as 'positions' | 'trades',
     });
 
+    // Save raw CSV for trades queries (used by bridge-flex-to-events.ts)
+    if (saveCsvDir && flexConfig.queryType === 'trades') {
+      mkdirSync(saveCsvDir, { recursive: true });
+      const csvPath = resolve(saveCsvDir, `${configId}.csv`);
+      writeFileSync(csvPath, result.csv, 'utf-8');
+      console.log(`[${flexConfig.queryName}] Saved CSV to ${csvPath}`);
+    }
+
     console.log(`[${flexConfig.queryName}] Processing CSV...`);
-    
+
     const ingestionResult = await processFlexQuery(
       result.csv,
       flexConfig.queryType as 'positions' | 'trades',
@@ -196,6 +206,8 @@ async function main() {
   const args = process.argv.slice(2);
   const configIdIndex = args.indexOf('--config-id');
   const configId = configIdIndex >= 0 ? args[configIdIndex + 1] : null;
+  const saveCsvIndex = args.indexOf('--save-csv');
+  const saveCsvDir = saveCsvIndex >= 0 ? args[saveCsvIndex + 1] : undefined;
 
   console.log('🚀 Starting Flex ingestion...\n');
 
@@ -231,7 +243,7 @@ async function main() {
 
     if (configId) {
       console.log(`Running for config: ${configId}\n`);
-      const result = await runIngestionForConfig(configId);
+      const result = await runIngestionForConfig(configId, saveCsvDir);
       results.push(result);
     } else {
       console.log('Running for all active configs...\n');
@@ -248,7 +260,7 @@ async function main() {
       console.log(`Found ${activeConfigs.length} active config(s)\n`);
 
       for (const config of activeConfigs) {
-        const result = await runIngestionForConfig(config.id);
+        const result = await runIngestionForConfig(config.id, saveCsvDir);
         results.push(result);
         console.log(''); // Empty line between runs
       }

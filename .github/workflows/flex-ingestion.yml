@@ -50,7 +50,17 @@ jobs:
           IBKR_FLEX_BASE_URL: ${{ secrets.IBKR_FLEX_BASE_URL }}
           IBKR_FLEX_WAIT_MS: ${{ secrets.IBKR_FLEX_WAIT_MS }}
         run: |
-          npx tsx scripts/run-flex-ingestion.ts
+          npx tsx scripts/run-flex-ingestion.ts --save-csv /tmp/flex-csv
+
+      - name: Bridge Flex trades/SOF to events
+        if: success()
+        continue-on-error: true  # Don't fail the whole workflow if bridge fails
+        env:
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
+        run: |
+          npx tsx scripts/bridge-flex-to-events.ts --csv-dir /tmp/flex-csv --user ${{ secrets.EVENT_SOURCING_USER_ID }}
 
       - name: Extract IBKR prices to price_history
         if: success()

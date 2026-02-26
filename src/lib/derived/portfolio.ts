@@ -77,15 +77,18 @@ function computeNotionalSums(
     totalNotionalUsdSum += notionalUsd;
     totalPnlSum += pnl;
 
-    if (pos.assetClass === 'STK') {
+    if (pos.assetClass === 'PERP') {
+      perpNotionalSum += notional;
+      perpPnlSum += pnl;
+    } else if (pos.assetClass === 'STK') {
       stockNotionalSum += notional;
     } else if (pos.assetClass === 'OPT') {
       optionNotionalSum += notional;
     } else if (pos.assetClass === 'CRYPTO') {
       cryptoSpotNotionalSum += notional;
-    } else if (pos.assetClass === 'PERP') {
-      perpNotionalSum += notional;
-      perpPnlSum += pnl;
+    } else {
+      // REAL_ESTATE, FIAT, BOND, ETF, etc. — count as non-perp for NAV
+      stockNotionalSum += notional;
     }
   }
 
@@ -356,8 +359,9 @@ export async function computePortfolioSnapshotsForDateRange(
   includeUnderlyings: boolean = false,
   onlyLatestForUnderlyings: boolean = true
 ): Promise<{ account: number; underlying: number }> {
-  // Get all unique snapshot dates in range from positions AND nav_snapshots
-  // (nav_snapshots covers cash-only accounts like Tiff that have no positions)
+  // Get all unique snapshot dates in range from positions, nav_snapshots, and cash_balances
+  // (nav_snapshots covers IBKR cash-only accounts; cash_balances covers crypto exchange
+  //  cash-only accounts like Maisy_Kraken or TTC_FTX that have no positions or nav_snapshots)
   const positionDates = await db
     .selectDistinct({ snapshotDate: positions.snapshotDate })
     .from(positions)
@@ -382,12 +386,26 @@ export async function computePortfolioSnapshotsForDateRange(
       )
     );
 
-  // Merge and deduplicate dates from both sources
+  const cashDates = await db
+    .selectDistinct({ snapshotDate: cashBalances.snapshotDate })
+    .from(cashBalances)
+    .where(
+      and(
+        eq(cashBalances.accountId, accountId),
+        gte(cashBalances.snapshotDate, startDate),
+        lte(cashBalances.snapshotDate, endDate)
+      )
+    );
+
+  // Merge and deduplicate dates from all three sources
   const allDates = new Set<string>();
   for (const { snapshotDate } of positionDates) {
     if (snapshotDate) allDates.add(snapshotDate);
   }
   for (const { snapshotDate } of navDates) {
+    if (snapshotDate) allDates.add(snapshotDate);
+  }
+  for (const { snapshotDate } of cashDates) {
     if (snapshotDate) allDates.add(snapshotDate);
   }
   const dateResults = Array.from(allDates).sort().map(d => ({ snapshotDate: d }));
