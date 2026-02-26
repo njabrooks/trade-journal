@@ -3,14 +3,14 @@
  * Manual daily snapshot ingestion.
  * Inserts static/recurring balances and positions that have no live API:
  *   - FTX bankruptcy claim (TTC): $97,374.81 USD cash
- *   - UK property (Nick): £2,000,000 position
+ *   - UK property (Nick): £1,860,000 position
  *
  * Usage:
  *   npx tsx scripts/ingest-manual-snapshots.ts
  */
 
 import { db, closeDb, schema } from './lib/db.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 
 import { upsertAccount } from '../src/lib/ingestion/flex/account.js';
 import { upsertCashBalances, type CashBalanceInput } from '../src/lib/ingestion/crypto/cashBalances.js';
@@ -18,8 +18,13 @@ import { ensureUnderlyingId } from '../src/lib/ingestion/flex/underlyings.js';
 import { toNewPosition } from '../src/lib/ingestion/crypto/types.js';
 import { computePortfolioSnapshotsForDateRange } from '../src/lib/derived/portfolio.js';
 import { trackProcess } from '../src/lib/services/processTracking.js';
+import {
+  HOUSE_UK_GBP_VALUE,
+  HOUSE_UK_TICKER,
+  getGbpUsdRate,
+} from './lib/manual-assets.js';
 
-const { positions } = schema;
+const { positions, priceHistory, assets } = schema;
 
 // ── Configuration ───────────────────────────────────────────────────
 
@@ -52,16 +57,6 @@ interface ManualPositionEntry {
 
 type ManualEntry = ManualCashEntry | ManualPositionEntry;
 
-async function fetchGbpUsdRate(): Promise<number> {
-  // Use Kraken's public API for GBP/USD via GBP→USD ticker
-  const url = 'https://api.kraken.com/0/public/Ticker?pair=GBPUSD';
-  const response = await fetch(url);
-  const json = await response.json() as { error: string[]; result: Record<string, { c: [string, string] }> };
-  if (json.error?.length > 0) throw new Error(json.error.join(', '));
-  const pair = Object.values(json.result)[0];
-  return parseFloat(pair.c[0]);
-}
-
 const MANUAL_ENTRIES: ManualEntry[] = [
   // FTX bankruptcy claim — TTC owns $97,374.81 USD from FTX recovery
   {
@@ -75,7 +70,7 @@ const MANUAL_ENTRIES: ManualEntry[] = [
     balanceUsd: '97374.81',
     source: 'ftx',
   },
-  // UK property — Nick owns property valued at £2,000,000
+  // UK property — Nick owns property valued at £1,860,000 (book value)
   {
     type: 'position',
     brokerAccountId: 'Nick_PROPERTY',
@@ -86,11 +81,49 @@ const MANUAL_ENTRIES: ManualEntry[] = [
     assetClass: 'REAL_ESTATE',
     quantity: '1',
     currency: 'GBP',
-    valueForeign: 2_000_000,
-    fetchUsdRate: fetchGbpUsdRate,
+    valueForeign: HOUSE_UK_GBP_VALUE,
+    fetchUsdRate: getGbpUsdRate,
     fallbackUsdRate: 1.26, // GBP/USD fallback
   },
 ];
+
+// ── Event-sourced price insertion ────────────────────────────────────
+
+async function insertHouseUkDailyPrice(snapshotDate: string) {
+  // Look up HOUSE_UK in the assets table (event-sourced pipeline)
+  const [houseAsset] = await db
+    .select({ id: assets.id })
+    .from(assets)
+    .where(sql`ticker = ${HOUSE_UK_TICKER}`)
+    .limit(1);
+
+  if (!houseAsset) {
+    console.log('[Manual] HOUSE_UK not found in assets table — run seed-manual-event-assets.ts first');
+    return;
+  }
+
+  // Fetch live GBP/USD rate
+  const gbpUsdRate = await getGbpUsdRate();
+  const priceUsd = (HOUSE_UK_GBP_VALUE * gbpUsdRate).toFixed(2);
+
+  await db
+    .insert(priceHistory)
+    .values({
+      assetId: houseAsset.id,
+      priceDate: snapshotDate,
+      priceClose: priceUsd,
+      source: 'manual',
+    })
+    .onConflictDoUpdate({
+      target: [priceHistory.assetId, priceHistory.priceDate, priceHistory.source],
+      set: {
+        priceClose: sql`excluded.price_close`,
+        updatedAt: sql`NOW()`,
+      },
+    });
+
+  console.log(`[Manual] HOUSE_UK price_history: $${priceUsd} for ${snapshotDate} (£${HOUSE_UK_GBP_VALUE.toLocaleString()} × ${gbpUsdRate.toFixed(4)})`);
+}
 
 // ── Main ────────────────────────────────────────────────────────────
 
@@ -199,6 +232,9 @@ async function main() {
         await computePortfolioSnapshotsForDateRange(accountId, snapshotDate, snapshotDate);
       }
       console.log(`[Manual] Portfolio snapshots: computed for ${accountIds.length} accounts`);
+
+      // Insert today's HOUSE_UK price into price_history for event-sourced pipeline
+      await insertHouseUkDailyPrice(snapshotDate);
 
       return { entries: MANUAL_ENTRIES.length, accounts: accountIds.length };
     }
