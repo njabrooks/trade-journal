@@ -351,10 +351,13 @@ ORDER BY
   CASE source
     WHEN 'manual' THEN 1
     WHEN 'ibkr' THEN 2
-    WHEN 'coingecko' THEN 3
-    WHEN 'massive' THEN 4
-    WHEN 'tradingview' THEN 5
-    WHEN 'coinmarketcap' THEN 6
+    WHEN 'snapshot' THEN 3
+    WHEN 'coingecko' THEN 4
+    WHEN 'massive' THEN 5
+    WHEN 'tradingview' THEN 6
+    WHEN 'coinmarketcap' THEN 7
+    WHEN 'fx_rate' THEN 8
+    WHEN 'proxy' THEN 9
   END;
 
 -- ============================================================================

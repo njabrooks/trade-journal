@@ -72,6 +72,7 @@ export interface IbkrTradeRaw {
   MtmPnl?: string;
   "Buy/Sell"?: string;
   IBOrderID?: string;
+  TransactionID?: string;
 }
 
 /**
@@ -111,6 +112,7 @@ const HEADER_MAPPING: Record<string, keyof IbkrTradeRaw> = {
   MtmPnl: "MtmPnl",
   "Buy/Sell": "Buy/Sell",
   IBOrderID: "IBOrderID",
+  TransactionID: "TransactionID",
 };
 
 // ============================================================================
@@ -495,16 +497,20 @@ export class IbkrTradeAdapter extends BaseAdapter<IbkrTradeRaw> {
     // DateTime is always a string in IbkrTradeRaw
     const dateTime = raw.DateTime ?? "";
 
-    // CRITICAL: IBOrderID must be included to distinguish fills at the same
-    // price/time/quantity. Without it, multiple fills from a single large order
-    // (e.g., buying 600 SPY filled as 6x100 shares) would be deduplicated.
+    // CRITICAL: TransactionID (unique per execution fill) must be included to
+    // distinguish fills at the same price/time/quantity/order. Without it,
+    // multiple partial fills from the same order with identical size and price
+    // (e.g., 2x fills of 3 contracts @ 0.92 on the same order) collide.
+    // TransactionID is available on both combined reports and Flex data.
+    // IBOrderID is kept for backward compatibility with events that lack TransactionID.
     return this.buildIdempotencyKey(
       "ibkr_trade",
       raw.Conid,
       dateTime,
       raw.Quantity,
       raw.TradePrice,
-      raw.IBOrderID
+      raw.IBOrderID,
+      raw.TransactionID
     );
   }
 

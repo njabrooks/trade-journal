@@ -187,7 +187,14 @@ export function normalizeFlexTradeRow(
   const price = resolvePrice(row);
   const tradeDate = resolveTradeDate(row);
 
-  const brokerTransactionId = getValue(row, VARIANTS.transactionId) ?? null;
+  // Order-level Flex queries (TradeConfirm) may not have TransactionID.
+  // Generate a synthetic dedup key from trade fields to prevent duplicates.
+  let brokerTransactionId = getValue(row, VARIANTS.transactionId) ?? null;
+  if (!brokerTransactionId) {
+    const conid = getValue(row, VARIANTS.conid) ?? symbol;
+    const dateKey = tradeDate.toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+    brokerTransactionId = `order_${conid}_${dateKey}_${quantity}_${price}`;
+  }
   const fxRate = parseNumeric(getValue(row, VARIANTS.fxRate));
   const proceeds = parseNumeric(getValue(row, VARIANTS.proceeds));
   const netCash = parseNumeric(getValue(row, VARIANTS.netCash));

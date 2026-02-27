@@ -5,16 +5,14 @@
  * Reads Flex CSV files (containing TRNT and STFU sections) and transforms
  * them into canonical events via the existing IbkrTradeAdapter and IbkrSofAdapter.
  *
- * Two modes:
- *   --csv-dir <dir>    Read saved CSVs from Flex ingestion (primary mode)
- *   --backfill         Read from trades.rawRow for historical TRNT backfill
+ * IMPORTANT: Only processes events AFTER the latest combined-report event timestamp.
+ * Combined reports aggregate partial fills into single events; Flex data returns
+ * individual fills. Processing Flex data for dates already covered by combined
+ * reports would double-count trades.
  *
  * Usage:
  *   # From saved Flex CSVs (automated, after run-flex-ingestion.ts --save-csv):
  *   npx tsx scripts/bridge-flex-to-events.ts --csv-dir /tmp/flex-csv --user <userId>
- *
- *   # Backfill TRNT events from existing trades table:
- *   npx dotenv-cli -e .env.local -- npx tsx scripts/bridge-flex-to-events.ts --backfill --user <userId>
  *
  *   # Dry run (parse + transform but don't persist):
  *   npx tsx scripts/bridge-flex-to-events.ts --csv-dir /tmp/flex-csv --user <userId> --dry-run
@@ -60,11 +58,16 @@ Usage:
 
 Options:
   --csv-dir <dir>   Directory with saved Flex CSVs
-  --backfill        Backfill TRNT events from trades.rawRow
+  --backfill        Read from trades.rawRow instead of CSVs
   --user <userId>   User ID for events (required)
   --dry-run         Parse and transform without persisting
   --verbose, -v     Show detailed output
   --help, -h        Show this help
+
+Notes:
+  Only processes events AFTER the latest combined-report event.
+  Flex CSVs contain per-fill data; combined reports aggregate fills.
+  Bridging overlapping dates would double-count trades.
 `);
     process.exit(0);
   }
@@ -77,9 +80,16 @@ Options:
     process.exit(1);
   }
 
+  const backfill = args.includes("--backfill");
+
+  if (csvDirIdx < 0 && !backfill) {
+    console.error("Error: --csv-dir <dir> or --backfill is required");
+    process.exit(1);
+  }
+
   return {
     csvDir: csvDirIdx >= 0 ? args[csvDirIdx + 1] : undefined,
-    backfill: args.includes("--backfill"),
+    backfill,
     userId: args[userIdx + 1],
     dryRun: args.includes("--dry-run"),
     verbose: args.includes("--verbose") || args.includes("-v"),
@@ -352,6 +362,62 @@ async function persistEvents(
 }
 
 // ============================================================================
+// Cutoff Date: Only bridge events AFTER the latest combined-report event
+// ============================================================================
+
+/**
+ * Get the latest timestamp from combined-report ibkr_trade and ibkr_sof events.
+ * Flex data should only be bridged for dates AFTER this cutoff to avoid
+ * double-counting (combined reports aggregate partial fills; Flex returns them individually).
+ */
+async function getCombinedReportCutoff(userId: string): Promise<Date | null> {
+  const result = await db.execute(sql`
+    SELECT MAX(timestamp) as max_ts
+    FROM events
+    WHERE user_id = ${userId}
+      AND source IN ('ibkr_trade', 'ibkr_sof')
+      AND deleted_at IS NULL
+  `) as unknown as Array<{ max_ts: string | null }>;
+
+  const maxTs = result[0]?.max_ts;
+  if (!maxTs) return null;
+  return new Date(maxTs);
+}
+
+/**
+ * Parse an IBKR DateTime string (YYYYMMDD;HHMMSS) into a Date.
+ */
+function parseIbkrDateTimeString(dt: string | undefined): Date | null {
+  if (!dt) return null;
+  // Handle "YYYYMMDD;HHMMSS" format
+  const match = dt.match(/^(\d{4})(\d{2})(\d{2});(\d{2})(\d{2})(\d{2})$/);
+  if (match) {
+    return new Date(`${match[1]}-${match[2]}-${match[3]}T${match[4]}:${match[5]}:${match[6]}Z`);
+  }
+  // Handle "YYYY-MM-DD;HH:MM:SS" format
+  const match2 = dt.match(/^(\d{4}-\d{2}-\d{2});(\d{2}:\d{2}:\d{2})$/);
+  if (match2) {
+    return new Date(`${match2[1]}T${match2[2]}Z`);
+  }
+  return null;
+}
+
+/**
+ * Parse an IBKR Date string (YYYYMMDD or YYYY-MM-DD) into a Date.
+ */
+function parseIbkrDateString(d: string | undefined): Date | null {
+  if (!d) return null;
+  const match = d.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (match) {
+    return new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`);
+  }
+  if (d.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return new Date(`${d}T00:00:00Z`);
+  }
+  return null;
+}
+
+// ============================================================================
 // Transform Functions
 // ============================================================================
 
@@ -411,12 +477,27 @@ async function runCsvMode(csvDir: string, args: CliArgs): Promise<void> {
     return;
   }
 
+  // Determine cutoff: only bridge events AFTER the latest combined-report event.
+  // Combined reports aggregate partial fills; Flex returns individual fills.
+  // Processing overlapping dates would double-count trades.
+  const cutoffDate = await getCombinedReportCutoff(args.userId);
+  if (cutoffDate) {
+    console.log(`Combined-report cutoff: ${cutoffDate.toISOString()}`);
+    console.log(`Only bridging events AFTER this timestamp.\n`);
+  } else {
+    console.log(`No existing combined-report events found — bridging all.\n`);
+  }
+
   console.log(`Found ${csvFiles.length} CSV file(s) in ${csvDir}\n`);
 
   const tradeAdapter = new IbkrTradeAdapter();
   const sofAdapter = new IbkrSofAdapter();
   const batchId = randomUUID();
 
+  let totalTrntRows = 0;
+  let totalStfuRows = 0;
+  let totalTrntFiltered = 0;
+  let totalStfuFiltered = 0;
   let totalTrntEvents = 0;
   let totalStfuEvents = 0;
   let totalInserted = 0;
@@ -429,7 +510,31 @@ async function runCsvMode(csvDir: string, args: CliArgs): Promise<void> {
     const csvText = readFileSync(filePath, "utf-8");
     const { trnt, stfu } = parseFlexCsvSections(csvText);
 
-    console.log(`  TRNT rows: ${trnt.length}, STFU rows: ${stfu.length}`);
+    totalTrntRows += trnt.length;
+    totalStfuRows += stfu.length;
+
+    // Filter TRNT rows to only include trades AFTER the cutoff
+    let filteredTrnt = trnt;
+    if (cutoffDate) {
+      filteredTrnt = trnt.filter((raw) => {
+        const dt = parseIbkrDateTimeString(raw.DateTime);
+        return dt && dt > cutoffDate;
+      });
+    }
+    totalTrntFiltered += trnt.length - filteredTrnt.length;
+
+    // Filter STFU rows to only include records AFTER the cutoff
+    let filteredStfu = stfu;
+    if (cutoffDate) {
+      filteredStfu = stfu.filter((raw) => {
+        const d = parseIbkrDateString(raw.Date ?? raw.ReportDate);
+        return d && d > cutoffDate;
+      });
+    }
+    totalStfuFiltered += stfu.length - filteredStfu.length;
+
+    console.log(`  TRNT: ${trnt.length} total, ${filteredTrnt.length} after cutoff`);
+    console.log(`  STFU: ${stfu.length} total, ${filteredStfu.length} after cutoff`);
 
     // Build context (owner/account derived per-row by adapters via mapOwnerFromAccountId)
     const context: AdapterTransformContext = {
@@ -440,17 +545,17 @@ async function runCsvMode(csvDir: string, args: CliArgs): Promise<void> {
     };
 
     // Transform TRNT → events
-    const trntEvents = transformTradeRecords(trnt, tradeAdapter, context);
+    const trntEvents = transformTradeRecords(filteredTrnt, tradeAdapter, context);
     totalTrntEvents += trntEvents.length;
 
     // Transform STFU → events
-    const stfuEvents = transformSofRecords(stfu, sofAdapter, context);
+    const stfuEvents = transformSofRecords(filteredStfu, sofAdapter, context);
     totalStfuEvents += stfuEvents.length;
 
     const allEvents = [...trntEvents, ...stfuEvents];
 
     if (allEvents.length === 0) {
-      console.log("  No events produced.\n");
+      console.log("  No events after cutoff filter.\n");
       continue;
     }
 
@@ -487,6 +592,8 @@ async function runCsvMode(csvDir: string, args: CliArgs): Promise<void> {
   }
 
   console.log("Summary:");
+  console.log(`  Total TRNT rows: ${totalTrntRows} (${totalTrntFiltered} filtered by cutoff)`);
+  console.log(`  Total STFU rows: ${totalStfuRows} (${totalStfuFiltered} filtered by cutoff)`);
   console.log(`  TRNT events produced: ${totalTrntEvents}`);
   console.log(`  STFU events produced: ${totalStfuEvents}`);
   if (!args.dryRun) {
@@ -500,80 +607,90 @@ async function runCsvMode(csvDir: string, args: CliArgs): Promise<void> {
 // ============================================================================
 
 async function runBackfillMode(args: CliArgs): Promise<void> {
-  console.log("Backfill mode: reading TRNT records from trades.rawRow...\n");
-
-  const tradeAdapter = new IbkrTradeAdapter();
-  const batchId = randomUUID();
-
-  const context: AdapterTransformContext = {
-    userId: args.userId,
-    owner: "", // Derived per-row
-    account: "", // Derived per-row
-    batchId,
-  };
-
-  // Fetch all trades with rawRow
-  const allTrades = await db
-    .select({
-      id: schema.trades.id,
-      rawRow: schema.trades.rawRow,
-      tradeDate: schema.trades.tradeDate,
-    })
-    .from(schema.trades)
-    .orderBy(schema.trades.tradeDate);
-
-  console.log(`Found ${allTrades.length} trades in database\n`);
-
-  let trntEvents: CanonicalEvent[] = [];
-  let skippedNoRaw = 0;
-
-  for (const trade of allTrades) {
-    if (!trade.rawRow || typeof trade.rawRow !== "object") {
-      skippedNoRaw++;
-      continue;
-    }
-
-    const raw = trade.rawRow as unknown as IbkrTradeRaw;
-
-    // rawRow must have Conid to be valid
-    if (!raw.Conid) {
-      skippedNoRaw++;
-      continue;
-    }
-
-    try {
-      const normalized = tradeAdapter.normalize(raw);
-      const expanded = tradeAdapter.expand(normalized, context);
-      trntEvents.push(...expanded);
-    } catch (err) {
-      console.error(`  Error transforming trade ${trade.id}:`, err instanceof Error ? err.message : err);
-    }
+  // Determine cutoff
+  const cutoffDate = await getCombinedReportCutoff(args.userId);
+  if (cutoffDate) {
+    console.log(`Combined-report cutoff: ${cutoffDate.toISOString()}`);
+    console.log(`Only bridging trades AFTER this timestamp.\n`);
+  } else {
+    console.log(`No existing combined-report events found — bridging all.\n`);
   }
 
-  console.log(`Produced ${trntEvents.length} events from ${allTrades.length - skippedNoRaw} trades`);
-  if (skippedNoRaw > 0) {
-    console.log(`Skipped ${skippedNoRaw} trades (no rawRow or missing Conid)`);
-  }
+  // Fetch IBKR trades from the trades table that are after the cutoff
+  const cutoffClause = cutoffDate
+    ? sql`AND t.trade_date > ${cutoffDate.toISOString()}::timestamptz`
+    : sql``;
 
-  if (trntEvents.length === 0) {
-    console.log("No events to persist.");
+  const rows = await db.execute(sql`
+    SELECT t.raw_row, t.trade_date, t.symbol, t.broker_transaction_id, a.broker_name
+    FROM trades t
+    JOIN accounts a ON t.account_id = a.id
+    WHERE a.broker_name = 'IBKR'
+      AND t.raw_row IS NOT NULL
+      AND jsonb_typeof(t.raw_row) = 'object'
+      AND (t.raw_row->>'Conid') IS NOT NULL
+      ${cutoffClause}
+    ORDER BY t.trade_date
+  `) as unknown as Array<{
+    raw_row: Record<string, string>;
+    trade_date: string;
+    symbol: string;
+    broker_transaction_id: string;
+    broker_name: string;
+  }>;
+
+  console.log(`Found ${rows.length} IBKR trades with rawRow after cutoff\n`);
+
+  if (rows.length === 0) {
+    console.log("Nothing to backfill.");
     return;
   }
 
-  if (args.dryRun) {
-    console.log(`\n[DRY RUN] Would persist ${trntEvents.length} events`);
-    if (args.verbose) {
-      for (const ev of trntEvents.slice(0, 10)) {
-        console.log(`  ${ev.eventType} ${ev.assetTicker} qty=${ev.quantity} @ ${ev.timestamp.toISOString()}`);
+  const tradeAdapter = new IbkrTradeAdapter();
+  const batchId = randomUUID();
+  const context: AdapterTransformContext = {
+    userId: args.userId,
+    owner: "",
+    account: "",
+    batchId,
+  };
+
+  // Transform each rawRow through the adapter
+  const allEvents: CanonicalEvent[] = [];
+  let transformErrors = 0;
+
+  for (const row of rows) {
+    try {
+      const rawRecord = row.raw_row as unknown as IbkrTradeRaw;
+      const normalized = tradeAdapter.normalize(rawRecord);
+      const expanded = tradeAdapter.expand(normalized, context);
+      allEvents.push(...expanded);
+    } catch (err) {
+      transformErrors++;
+      if (args.verbose) {
+        console.error(`  Error transforming ${row.symbol} @ ${row.trade_date}: ${err instanceof Error ? err.message : err}`);
       }
-      if (trntEvents.length > 10) console.log(`  ... and ${trntEvents.length - 10} more`);
     }
+  }
+
+  console.log(`Transformed: ${allEvents.length} events from ${rows.length} trades (${transformErrors} errors)`);
+
+  if (args.verbose) {
+    for (const ev of allEvents.slice(0, 10)) {
+      const ts = ev.timestamp instanceof Date ? ev.timestamp.toISOString() : String(ev.timestamp);
+      console.log(`  ${ev.eventType} ${ev.assetTicker} qty=${ev.quantity} @ ${ts}`);
+    }
+    if (allEvents.length > 10) console.log(`  ... and ${allEvents.length - 10} more`);
+  }
+
+  if (args.dryRun) {
+    console.log(`\n[DRY RUN] Would persist ${allEvents.length} events`);
     return;
   }
 
   // Resolve asset IDs
   console.log("\nResolving assets...");
-  const resolved = await resolveAssetIds(trntEvents);
+  const resolved = await resolveAssetIds(allEvents);
 
   // Persist
   console.log("Persisting events...");
@@ -597,13 +714,8 @@ async function runBackfillMode(args: CliArgs): Promise<void> {
 async function main() {
   const args = parseArgs();
 
-  if (!args.csvDir && !args.backfill) {
-    console.error("Error: must specify --csv-dir <dir> or --backfill");
-    process.exit(1);
-  }
-
   console.log("Bridge: Flex Ingestion → Event-Sourced System");
-  console.log(`Mode: ${args.backfill ? "backfill (trades.rawRow)" : `csv-dir (${args.csvDir})`}`);
+  console.log(`Mode: ${args.backfill ? "backfill (trades table)" : `CSV (${args.csvDir})`}`);
   console.log(`User: ${args.userId}`);
   if (args.dryRun) console.log("DRY RUN — no data will be persisted");
   console.log();
@@ -611,10 +723,9 @@ async function main() {
   try {
     if (args.backfill) {
       await runBackfillMode(args);
-    } else if (args.csvDir) {
-      await runCsvMode(args.csvDir, args);
+    } else {
+      await runCsvMode(args.csvDir!, args);
     }
-
     console.log("\nDone.");
   } catch (error) {
     console.error("\nFatal error:", error);

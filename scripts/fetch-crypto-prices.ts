@@ -196,7 +196,7 @@ async function main() {
     // Copy best price from proxy target for the target date
     const proxyResult = await db.execute(sql.raw(`
       INSERT INTO price_history (asset_id, price_date, price_close, source)
-      SELECT a.id, '${dateStr}', ph.price_close, 'manual'
+      SELECT a.id, '${dateStr}', ph.price_close, 'proxy'
       FROM assets a
       JOIN assets p ON a.proxy_asset_id = p.id
       JOIN price_history ph ON ph.asset_id = p.id AND ph.price_date = '${dateStr}'
@@ -205,7 +205,7 @@ async function main() {
         AND ph.price_close IS NOT NULL
       ON CONFLICT (asset_id, price_date, source) DO NOTHING
     `));
-    console.log('Proxy prices copied (source: manual)');
+    console.log('Proxy prices copied (source: proxy)');
   } else if (DRY_RUN) {
     console.log('Dry run — would copy proxy prices');
   }
