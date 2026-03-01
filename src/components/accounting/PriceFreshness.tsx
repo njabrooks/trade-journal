@@ -3,19 +3,50 @@
 import { useEffect, useState } from "react";
 import { Activity } from "lucide-react";
 
-interface PriceGapData {
-  total: number;
-  current: number;
-  stale: number;
-  critical: number;
-  neverPriced: number;
+interface ProblemAsset {
+  ticker: string;
+  assetClass: string;
+  lastPriceDate: string | null;
+  gapDays: number | null;
+}
+
+interface SourceHealth {
+  sourceId: string;
+  label: string;
+  status: "healthy" | "delayed" | "down";
+  assetCount: number;
+  latestDeliveryDate: string | null;
+  expectedDate: string;
+  problemAssets: ProblemAsset[];
+}
+
+interface PriceDeliveryData {
+  checkedAt: string;
+  totalMonitored: number;
+  overallStatus: "healthy" | "delayed" | "down";
+  sources: SourceHealth[];
   freshness: number;
-  staleAssets: { ticker: string; assetClass: string; lastPriceDate: string; gapDays: number }[];
-  criticalAssets: { ticker: string; assetClass: string; lastPriceDate: string; gapDays: number }[];
+}
+
+const STATUS_CONFIG = {
+  healthy: { dot: "oklch(0.7 0.18 150)", label: "Healthy" },
+  delayed: { dot: "oklch(0.75 0.2 80)", label: "Delayed" },
+  down: { dot: "oklch(0.65 0.22 25)", label: "Down" },
+} as const;
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "never";
+  // Show just the day portion: "Feb 26"
+  const d = new Date(dateStr + "T00:00:00Z");
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 export function PriceFreshness() {
-  const [data, setData] = useState<PriceGapData | null>(null);
+  const [data, setData] = useState<PriceDeliveryData | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard/accounting/price-gaps")
@@ -26,61 +57,72 @@ export function PriceFreshness() {
 
   if (!data) return null;
 
-  const barSegments = [
-    { label: "Current", count: data.current, color: "oklch(0.7 0.18 150)" },
-    { label: "Stale", count: data.stale, color: "oklch(0.75 0.2 80)" },
-    { label: "Critical", count: data.critical, color: "oklch(0.65 0.22 25)" },
-    { label: "Never", count: data.neverPriced, color: "oklch(0.6 0.1 240)" },
-  ];
+  const allProblems = data.sources.flatMap((s) =>
+    s.problemAssets.map((a) => ({ ...a, sourceLabel: s.label })),
+  );
 
   return (
     <div className="rounded-2xl border bg-card p-5">
       <div className="mb-3 flex items-center gap-2">
         <Activity className="h-4 w-4 text-muted-foreground" />
         <h3 className="text-sm font-medium text-muted-foreground">
-          Price Freshness
+          Price Delivery Monitor
         </h3>
         <span className="ml-auto text-xs text-muted-foreground">
-          {data.total} market-tier assets
+          {data.totalMonitored} assets tracked
         </span>
       </div>
 
-      {/* Stacked bar */}
-      <div className="mb-3 flex h-3 w-full overflow-hidden rounded-full">
-        {barSegments.map((seg) =>
-          seg.count > 0 ? (
+      {/* Per-source status rows */}
+      <div className="space-y-1.5">
+        {data.sources.map((source) => {
+          const cfg = STATUS_CONFIG[source.status];
+          return (
             <div
-              key={seg.label}
-              className="transition-all"
-              style={{
-                width: `${(seg.count / data.total) * 100}%`,
-                backgroundColor: seg.color,
-              }}
-              title={`${seg.label}: ${seg.count}`}
-            />
-          ) : null
-        )}
+              key={source.sourceId}
+              className="flex items-center gap-2 text-sm"
+            >
+              <div
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: cfg.dot }}
+                title={cfg.label}
+              />
+              <span className="min-w-0 truncate text-muted-foreground">
+                {source.label}
+              </span>
+              <span className="ml-auto shrink-0 tabular-nums font-medium">
+                {source.assetCount}
+              </span>
+              <span className="w-16 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+                {formatDate(source.latestDeliveryDate)}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-        {barSegments.map((seg) => (
-          <div key={seg.label} className="flex items-center gap-1.5">
-            <div
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: seg.color }}
-            />
-            <span className="text-muted-foreground">{seg.label}</span>
-            <span className="font-medium">{seg.count}</span>
-          </div>
-        ))}
-      </div>
+      {/* Problem assets */}
+      {allProblems.length > 0 && (
+        <div className="mt-3 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+          {allProblems.length} asset{allProblems.length !== 1 ? "s" : ""}{" "}
+          behind schedule:{" "}
+          <span className="font-medium text-foreground">
+            {allProblems
+              .slice(0, 5)
+              .map((a) => a.ticker)
+              .join(", ")}
+            {allProblems.length > 5
+              ? ` +${allProblems.length - 5} more`
+              : ""}
+          </span>
+        </div>
+      )}
 
-      {/* Freshness percentage */}
+      {/* Overall freshness */}
       <div className="mt-3 text-2xl font-semibold tabular-nums">
         {data.freshness}%{" "}
         <span className="text-sm font-normal text-muted-foreground">
-          current
+          on schedule
         </span>
       </div>
     </div>

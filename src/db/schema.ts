@@ -1981,6 +1981,7 @@ export type AssetClass = (typeof ASSET_CLASSES)[number];
 
 export const PRICE_SOURCES = [
   'coinmarketcap', 'coingecko', 'massive', 'tradingview', 'ibkr', 'manual',
+  'snapshot', 'fx_rate', 'proxy',
 ] as const;
 export type PriceSource = (typeof PRICE_SOURCES)[number];
 

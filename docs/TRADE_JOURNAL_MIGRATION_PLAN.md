@@ -1,7 +1,7 @@
 # Trade Journal Migration Plan
 
 **Created**: February 15, 2026
-**Status**: M1–M4 + M7 complete. Event-sourced data current through 2026-02-19. Next: M4.5 (price tier hygiene), M7.1 (reconciliation resolution), M9 (automated event ingestion), then M5/M6/M8.
+**Status**: M1–M4 + M4.5a/M4.5b + M7 + M9a/M9b complete. Per-source price delivery monitoring live. Next: M7.1 (reconciliation resolution), then M5/M6/M8.
 **Goal**: Consolidate the Two Trees Capital portfolio infrastructure (events, calculations, price pipeline, daily NAV) into the Trade Journal app, then sunset the twotreescap-app.
 
 > **Note**: This file was moved from `twotreescap-app/docs/TRADE_JOURNAL_MIGRATION_PLAN.md` on 2026-02-19. The original location still has a copy that should be considered stale.
@@ -32,7 +32,7 @@ The twotreescap-app has reached feature-completeness for its core mission (Phase
 
 1. **Portfolio accounting is a separate feature** within Trade Journal, not merged into existing ingestion pipelines. The `events` table and calculation engine operate independently from Trade Journal's `trades`/`positions`/`strategies` data.
 
-2. **Two separate IBKR pathways**: Trade Journal's existing Flex Query ingestion feeds the trading/strategy side. The TTC Combined Report adapter feeds the tax accounting side. These are complementary, not redundant (see [IBKR Overlap Analysis](#ibkr-overlap-analysis) below).
+2. **~~Two separate~~ Unified IBKR pathway**: Trade Journal's Flex Query ingestion feeds both the trading/strategy side (`trades`, `positions`) and — via `bridge-flex-to-events.ts` — the tax accounting side (`events`). Combined Report manual imports are retained for historical backfill only. See [IBKR Overlap Analysis](#ibkr-overlap-analysis) below.
 
 3. **Koinly remains manual**: Koinly CSV imports happen intermittently (quarterly, per tax year). No API integration needed — just a file upload UI.
 
@@ -411,43 +411,63 @@ Seed script: `scripts/seed-pricing-tiers.ts` (with `--dry-run` flag). Classifica
 
 ### Phase M4.5: Price Tier Hygiene + Price Freshness Resolution
 
-**Goal**: Make the Price Gap Check action pass by reclassifying dead/historical assets, and add UI workflows for resolving price freshness issues.
+**Goal**: Make the Price Gap Check action pass by reclassifying dead/historical assets and fixing the freshness metric to account for real-world price source cadences.
 
-**Status**: Pending.
+**Status**: M4.5a + M4.5b done.
 
-**Context (discovered 2026-02-20):** The Price Gap Check GitHub Action (`price-gap-check.yml`) fails daily because 131 of 267 `market`-tier assets have critical price gaps (>5 days). Most are dead/delisted assets (old DeFi tokens, defunct equities) that will never receive new prices. They need reclassification, not price data. Additionally, the Price Freshness dashboard component is read-only — it surfaces issues but provides no way to resolve them.
+#### M4.5a: Pricing Tier Reclassification — DONE (2026-02-20)
 
-**What needs to be built:**
+Reclassified 175 dead/historical assets from `market` to `zero`/`book_value`. Migration: `migrations/20260220_m4_5a_reclassify_price_tiers.sql`. Eliminated all critical (>5d) and never-priced assets from the monitored set.
 
-#### M4.5a: Pricing Tier Reclassification
+**Current tier distribution** (post-reclassification):
 
-1. **Audit critical-gap assets** — Review the 131 critical + 44 never-priced assets. For each, determine:
-   - Still actively held? → Keep as `market`, investigate why price fetch is failing
-   - Zero balance across all owners? → Reclassify to `zero`
-   - Illiquid/LP/yield token? → Reclassify to `book_value`
-   - Proxy available? → Reclassify to `proxy` with `proxy_asset_id`
-2. **Update `seed-pricing-tiers.ts`** with corrected classifications
-3. **Run reclassification** and verify gap check passes (exit 0)
+| Tier | Count | Description |
+|------|-------|-------------|
+| `market` | 816 | API-fetchable (but only 62 ever had positions — see analysis below) |
+| `zero` | 219 | Dead/disposed/dust |
+| `book_value` | 26 | LP tokens, yield tokens |
+| `proxy` | 15 | Wrapped/bridged (WBTC→BTC, STETH→ETH, etc.) |
+| `null` | 2 | Unclassified (new derivatives — see below) |
+| `manual` | 1 | HOUSE_UK |
 
-**Expected outcome**: Reduce market-tier to only actively-priced assets. Gap check should show 90%+ freshness and exit 0.
+#### M4.5b: Per-Source Price Delivery Monitoring — DONE (2026-03-01)
 
-#### M4.5b: Price Freshness Resolution UI
+Replaced the blunt single-freshness-% approach with per-source delivery health checks. Each price source is now monitored independently against its known cadence and lag.
 
-Extend the `PriceFreshness.tsx` component and its API to support resolution actions:
+**Key changes:**
 
-1. **Reclassify from dashboard** — Click a stale/critical asset → change its pricing tier (market → book_value/zero) with a reason
-2. **Manual price entry** — For assets with known prices not covered by automation, allow entering a manual price point
-3. **Mark as expected** — Some assets (e.g. GLD, SLV with weekend gaps) will intermittently appear stale. Allow marking specific assets as "acceptable gap" with a configurable threshold
-4. **Refresh trigger** — Button to re-run `fetch-crypto-prices.ts` or `extract-ibkr-prices.ts` on demand for individual assets
+1. **Shared config** (`src/lib/price-source-config.ts`) — Defines 4 monitored sources with delivery cadence (business-day vs daily), expected lag (T+0 or T+1), and down thresholds. Includes `expectedLatestPriceDate()` and `assessSourceHealth()` helpers, plus the SQL CASE expression for asset→source mapping.
 
-**Files to create/modify:**
+2. **"Currently held" detection** — Replaced 14-day lookback with latest-snapshot-per-account logic. If an asset disappears from the latest position snapshot, it's considered closed immediately (no 14-day trailing window).
+
+3. **Per-source health statuses**: `healthy` (on schedule), `delayed` (behind but within tolerance), `down` (multiple missed cycles). GitHub Action exits 1 only when a source is `down`.
+
+4. **Crypto fallback** — If Massive (primary for crypto) is delayed but exchange snapshots have current prices for an asset, the asset isn't flagged.
+
+5. **Exclusions**: USD excluded from FX monitoring (base currency, no rate to itself). Stablecoins excluded entirely (hardcoded $1.00, no delivery pipeline to monitor).
+
+**Monitored sources:**
+
+| Source | Assets | Cadence | Lag | Down Threshold |
+|--------|--------|---------|-----|----------------|
+| `ibkr` | Equities, derivatives | Business days | T+1 | 2 missed cycles |
+| `fx_rate` | Fiat (GBP, CAD, etc.) | Business days | T+1 | 2 missed cycles |
+| `massive` | Crypto (Polygon.io) | Daily | T+1 | 2 missed cycles |
+| `proxy` | Wrapped tokens | Daily | T+1 | 3 missed cycles |
+
+**Files created/modified:**
 
 | File | Action |
 |------|--------|
-| `src/components/accounting/PriceFreshness.tsx` | Extend with resolution actions |
-| `src/app/api/dashboard/accounting/price-gaps/route.ts` | Add PATCH/POST for reclassification + manual price |
-| `scripts/seed-pricing-tiers.ts` | Update classifications |
-| `scripts/check-price-gaps.ts` | Optionally exclude assets marked "acceptable gap" |
+| `src/lib/price-source-config.ts` | Created — shared config, helpers, types |
+| `scripts/check-price-gaps.ts` | Rewritten — per-source health checks |
+| `src/app/api/dashboard/accounting/price-gaps/route.ts` | Rewritten — fixed "currently held" bug, per-source response |
+| `src/components/accounting/PriceFreshness.tsx` | Rewritten — per-source status rows |
+| `src/db/schema.ts` | Added `snapshot`, `fx_rate`, `proxy` to `PRICE_SOURCES` |
+
+**Deferred (M4.5c — low priority):**
+
+Interactive UI features (reclassify from dashboard, manual price entry, mark-as-expected, refresh trigger). Can revisit after M5/M6.
 
 ---
 
@@ -639,52 +659,11 @@ Extend `ReconciliationSummary` and `ReconciliationNavChart`:
 
 ---
 
-#### M7 Future Enhancement: Event-Sourced Data Ingestion Solution
+#### ~~M7 Future Enhancement: Event-Sourced Data Ingestion Solution~~ — RESOLVED by M9a/M9b
 
-**Priority**: High — without this, the "last complete event date" never advances and reconciliation stays stale.
+**Status**: Resolved. IBKR event ingestion is now automated via `bridge-flex-to-events.ts` (commit `54de5ef`, 2026-02-26). See [Phase M9](#phase-m9-automated-event-ingestion) for details.
 
-**Current state of the import pipeline:**
-
-The M2b import pipeline is fully ported but only as CLI tools — there's no automated trigger or UI for it:
-
-| Component | Status | Details |
-|-----------|--------|---------|
-| IBKR adapter (8 files) | Ported ✓ | `src/lib/adapters/ibkr/` — parses Combined Report CSV (trades + STFU) |
-| Koinly adapter | Ported ✓ | `src/lib/adapters/koinly-adapter.ts` |
-| Coinbase, Buxfer adapters | Ported ✓ | Lower priority |
-| CLI import scripts | Ported ✓ | `scripts/import-ibkr-combined.ts`, `scripts/import-koinly.ts` |
-| Event store + asset resolver | Ported ✓ | Idempotent persistence, 5-step ticker resolution |
-| Calculation engine | Ported ✓ | `scripts/run-calculation-engine.ts` (8 phases) |
-
-**What IS automated (snapshot side only):**
-
-| Pipeline | Trigger | What it feeds |
-|----------|---------|---------------|
-| IBKR Flex ingestion | `.github/workflows/flex-ingestion.yml` — hourly | `positions`, `trades`, `portfolioSnapshots`, `navSnapshots` |
-| IBKR price extraction | Post-step after Flex ingestion | `price_history` (source: `ibkr`) |
-| Crypto prices | `.github/workflows/crypto-prices.yml` — twice daily | `price_history` (source: `massive`) |
-
-**What is NOT wired up (event-sourced side):**
-
-- **Event-sourced imports** — CLI scripts exist but no automated trigger. Manual process:
-  ```bash
-  npx tsx scripts/import-ibkr-combined.ts --file path/to/combined-report.csv
-  npx tsx scripts/import-koinly.ts --file path/to/koinly-export.csv
-  npx tsx scripts/run-calculation-engine.ts
-  ```
-- **No UI upload flow** — TTC had Phase 6 cutover infrastructure (upload actions, dispatcher, feature flags) but that was explicitly left behind in the migration plan.
-- **No automated calc engine trigger** — after importing new events, the calculation engine needs to run manually to update daily balances, enrichment, and NAV.
-
-**Options for closing the gap:**
-
-| Option | Approach | Effort | When |
-|--------|----------|--------|------|
-| **A. Keep manual (short-term)** | Run CLI scripts when new IBKR/Koinly exports are available. Reconciliation framework flags when event-sourced data falls behind. | None | Now |
-| **B. GitHub Actions workflow** | Trigger on file upload (to a specific repo path or S3 bucket) or on schedule. Run import + calc engine as CI job. | Medium | After catch-up |
-| **C. API route + admin UI** | Build `/admin/import` page (the migration plan deferred `/admin/calculations`). Upload file → trigger adapter + calc engine server-side. | High | Future |
-| **D. Automate IBKR via Flex API** | Add a STFU (Statement of Funds) Flex Query to the existing daily IBKR API pipeline. Captures dividends, fees, deposits, withdrawals, corporate actions as events — eliminating manual Combined Report downloads entirely. | High | Future |
-
-**Recommended path**: Option A now (manual catch-up to bring data current), then Option B or D for ongoing automation. IBKR imports happen ~weekly and Koinly maybe monthly, so manual is viable short-term. Option D is the long-term ideal since it eliminates the manual file download step entirely.
+The "last complete event date" now advances automatically as Flex ingestion runs hourly. The remaining gap is that the **calculation engine** (`run-calculation-engine.ts`) is not triggered automatically after new events are inserted — this must still be run manually or added as a scheduled workflow step.
 
 ---
 
@@ -702,52 +681,40 @@ The M2b import pipeline is fully ported but only as CLI tools — there's no aut
 
 **Goal**: Eliminate manual CSV downloads by automating the event-sourced import pipeline, starting with IBKR.
 
-**Status**: Pending. Depends on M4.5 (price tier hygiene) and M7.1 (reconciliation resolution) for validation.
+**Status**: M9a + M9b complete. M9c deferred (Koinly remains manual).
 
-**Context (established 2026-02-20):** The CLI ingestion process is now fully battle-tested — `import-ibkr-combined.ts` and `import-koinly.ts` both work correctly against the live database, with idempotent deduplication, GBP base currency correction, and proper Date serialization. The manual process works but requires:
-1. Downloading Combined Report CSVs from IBKR Client Portal
-2. Downloading Koinly CSV exports from Koinly web UI
-3. Running CLI import scripts against the files
-4. Running the calculation engine
+#### M9a + M9b: IBKR Flex → Events Bridge — DONE (2026-02-26)
 
-**What needs to be built:**
+Commit: `54de5ef`. The existing hourly Flex ingestion workflow now bridges TRNT (trades) and STFU (statement of funds) data directly into the `events` table, eliminating the need for manual Combined Report CSV downloads.
 
-#### M9a: IBKR STFU Flex Query (High Priority)
+**How it works:**
 
-Add a Statement of Funds Flex Query to the existing daily IBKR Flex API pipeline:
+```
+flex-ingestion.yml (hourly, 4AM–2PM UTC)
+  Step 1: run-flex-ingestion.ts --save-csv /tmp/flex-csv   ← fetches Flex API, saves raw CSV
+  Step 2: bridge-flex-to-events.ts --csv-dir /tmp/flex-csv  ← NEW: parses TRNT+STFU → events table
+  Step 3: extract-ibkr-prices.ts                             ← extracts prices from positions
+```
 
-1. **Configure Flex Query** — Create a new IBKR Flex Query that returns Cash Transactions / Statement of Funds data (dividends, interest, fees, deposits, withdrawals, corporate actions)
-2. **Adapter bridge** — Map Flex Query STFU format to the existing `ibkr-sof-adapter.ts` input format. The Flex API returns XML/CSV with slightly different field names than Combined Reports but the same underlying data.
-3. **Wire into `flex-ingestion.yml`** — Add STFU fetch as a step in the existing hourly workflow. After fetching, run the SOF adapter to generate events, then trigger an incremental calculation engine run.
-4. **Incremental calc engine** — The calculation engine already supports incremental mode. After new events are inserted, only affected scopes need recalculation (not a full 30K-event recompute).
+**Key implementation details:**
+- **`scripts/bridge-flex-to-events.ts`** (627 lines) — Parses saved Flex CSVs, extracts TRNT and STFU sections, transforms via `IbkrTradeAdapter` and `IbkrSofAdapter`, inserts into `events` table with idempotency key deduplication.
+- **TRNT → up to 3 events per trade**: main trade (BUY/SELL) + cash movement (RECEIVE/SEND) + fee (FEE)
+- **STFU → 1 event per row**: maps activity codes DIV→DIVIDEND, INT→INTEREST, DEP→RECEIVE, WITH→SEND, FEE→FEE, ADJ→RECEIVE/SEND
+- **Idempotency**: `ON CONFLICT DO NOTHING` on `idempotencyKey` — safe to run repeatedly
+- **Two modes**: CSV mode (primary, used by GitHub Actions) and backfill mode (reads from `trades.rawRow` for historical data)
+- Steps 2 and 3 use `continue-on-error: true` — bridge/price failures don't block the main Flex ingestion
 
-**Expected outcome**: Event-sourced IBKR data stays current automatically, same-day as snapshot data. Reconciliation comparison date advances daily.
+**What's NOT automated — calculation engine**: Events populate automatically, but `run-calculation-engine.ts` (FIFO lots, cost basis, daily balances, NAV) must still be triggered manually. This is intentional — the engine is expensive and decoupled from event import. Adding it as a scheduled post-step (daily or weekly) is a future improvement.
 
-#### M9b: IBKR Trade Flex Query Extension (Medium Priority)
+#### M9c: Koinly Automation — Deferred
 
-The existing Flex Trade ingestion feeds `trades`/`positions` (snapshot side). Extend it to also feed the `events` table:
-
-1. **Dual-write from Flex trades** — After the existing Flex trade adapter writes to `trades`, also generate `events` table entries via the `ibkr-trade-adapter`
-2. **Deduplication** — Idempotency keys ensure no duplicates if the same trade was already imported from a Combined Report CSV
-
-#### M9c: Koinly Automation (Low Priority)
-
-Koinly exports are infrequent (quarterly/per tax year) and require manual login. Options:
+Koinly exports are infrequent (quarterly/per tax year) and require manual login to Koinly's web UI. Options remain:
 
 1. **File-watch workflow** — GitHub Actions triggered when a Koinly CSV is committed to a specific repo path
 2. **Admin upload UI** — Simple file upload form at `/admin/import` that triggers the Koinly adapter server-side
 3. **Keep manual** — Given the low frequency, manual CLI import may remain acceptable indefinitely
 
-**Recommended path**: M9a first (high-value, eliminates the most common manual step), then M9b (completes IBKR automation), M9c deferred.
-
-**Files to create/modify:**
-
-| File | Action |
-|------|--------|
-| `.github/workflows/flex-ingestion.yml` | Add STFU fetch + event import steps |
-| `src/lib/adapters/ibkr/flex-stfu-adapter.ts` | **New** — maps Flex STFU format to SOF adapter input |
-| `scripts/import-flex-stfu.ts` | **New** — CLI for Flex STFU import (used by workflow) |
-| `scripts/run-calculation-engine.ts` | Verify incremental mode works for post-import trigger |
+**Recommended path**: Keep manual for now. Koinly imports happen a few times per year. The CLI scripts (`import-koinly.ts`) work correctly.
 
 ---
 
@@ -784,19 +751,18 @@ Trade Journal ingests IBKR via **Flex Queries** (CSV from Flex Web Service). TTC
 | EOD positions + MTM prices | Yes (POST/EQUT/MTMP) | Yes (POST) |
 | FX rates | Yes (RATE) | Yes (RATE) |
 | NAV / cash balances | Yes (aggregate) | Yes (aggregate) |
-| **Dividends, interest, fees** | **No** | **Yes** (STFU section) |
-| **Deposits/withdrawals** | **No** | **Yes** (STFU) |
-| **Corporate actions** | **No** | **Yes** (STFU) |
-| **Options exercises/assignments** | **No** | **Yes** (STFU) |
+| **Dividends, interest, fees** | **Yes** (STFU in Flex CSV) | **Yes** (STFU section) |
+| **Deposits/withdrawals** | **Yes** (STFU in Flex CSV) | **Yes** (STFU) |
+| **Corporate actions** | **Yes** (STFU in Flex CSV) | **Yes** (STFU) |
+| **Options exercises/assignments** | **Yes** (STFU in Flex CSV) | **Yes** (STFU) |
 
-**The Flex Query ingestion is NOT sufficient for tax accounting.** The Statement of Funds (STFU) section in Combined Reports provides individual cash flow events (dividends, interest, fees, deposits, withdrawals, corporate actions) that the tax lot engine needs. These only appear as aggregate cash movements in Flex Query data.
+> **UPDATE (2026-02-26)**: The Flex Query CSVs already include TRNT and STFU sections. The `bridge-flex-to-events.ts` script (M9a/M9b) now parses these sections and feeds the `events` table automatically. Combined Report manual imports are no longer needed for ongoing data. They remain useful only for historical backfill of data not covered by Flex Query date ranges.
 
-**Decision: Keep both IBKR adapters as separate, parallel pipelines.**
+**Decision: ~~Keep both IBKR adapters as separate, parallel pipelines.~~ → UPDATED: Single Flex pipeline now feeds both sides.**
 - Flex Query adapter → `trades`, `positions`, `portfolioSnapshots`, `navSnapshots`, `fxRates` (strategy/portfolio side)
-- Combined Report adapter → `events` (tax accounting side)
+- **Flex bridge** (`bridge-flex-to-events.ts`) → `events` (tax accounting side) — parses TRNT + STFU from the same Flex CSV
+- Combined Report adapter → `events` (retained for historical backfill only)
 - **Shared benefit**: Flex Query positions provide daily MTM prices that flow into `price_history` for the tax accounting side's market value enrichment
-
-**Near-term improvement**: The daily IBKR Flex API is already running. Adding a new Flex Query for "Cash Transactions" or "Activity Statement" to capture STFU-equivalent data (dividends, fees, deposits, corporate actions) is straightforward — just another query configuration. This would automate the event-sourcing side too, eliminating manual Combined Report downloads. Should be done as part of M2 or M4.
 
 ### 5. Koinly Import Model
 
@@ -838,15 +804,17 @@ TTC uses Clerk (multi-user auth with `userId` on every table). Trade Journal use
 | M2: Engine Port | 2-3 days | M1 | DONE (2026-02-18) |
 | M3: UI Integration | 2-3 days | M2 | DONE (2026-02-19) |
 | M4: Pricing Infrastructure | 2-3 days | M2 | DONE (2026-02-19) |
-| M4.5: Price Tier Hygiene + Freshness UI | 1-2 days | M4 | Pending |
+| M4.5a: Price Tier Reclassification | 0.5 day | M4 | DONE (2026-02-20) |
+| M4.5b: Per-Source Delivery Monitoring | 1 day | M4.5a | DONE (2026-03-01) |
 | M5: Base Currency | 3-5 days | M4 | Pending |
 | M6: UK Tax Method | 5-8 days | M5 | Pending |
 | M7: Portfolio Reconciliation | ~~2-3 days~~ | M2 + M3 | DONE (2026-02-19) |
 | M7.1: Reconciliation Resolution | 2-3 days | M7 | Pending |
-| M8: Sunset | 1 day | M4.5, M7.1, M5 verified | Pending |
-| M9: Automated Event Ingestion | 3-5 days | M4.5, M7.1 | Pending |
+| M8: Sunset | 1 day | M7.1, M5 verified | Pending |
+| M9a/b: IBKR Event Automation | ~~3-5 days~~ | M2 | DONE (2026-02-26) |
+| M9c: Koinly Automation | Low priority | M9a | Deferred |
 
-**Dependency chain**: M4.5 and M7.1 are independent and can be done in parallel. M9 depends on both (needs price freshness and reconciliation resolution to validate automated imports). M5 and M6 are independent of M4.5/M7.1/M9 and can proceed in parallel. M8 (sunset) requires M4.5 + M7.1 verified at minimum.
+**Dependency chain**: M4.5b is complete. M7.1, M5, and M6 can proceed in any order. M8 (sunset) requires M7.1 + M5 verified at minimum. M9a/M9b are complete — IBKR event ingestion is automated. The remaining automation gap is scheduled calculation engine runs (not yet wired up).
 
 ---
 
