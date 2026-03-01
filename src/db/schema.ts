@@ -2466,3 +2466,35 @@ export const reconciliationResolutions = pgTable(
 
 export type ReconciliationResolution = typeof reconciliationResolutions.$inferSelect;
 export type NewReconciliationResolution = typeof reconciliationResolutions.$inferInsert;
+
+// --- Reconciliation Checkpoints ---
+
+export const reconciliationCheckpoints = pgTable(
+  'reconciliation_checkpoints',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    comparisonDate: date('comparison_date').notNull(),
+    snapshotNav: numeric('snapshot_nav').notNull(),
+    eventSourcedNav: numeric('event_sourced_nav').notNull(),
+    navDelta: numeric('nav_delta').notNull(),
+    navDeltaPct: numeric('nav_delta_pct').notNull(),
+    totalPositions: integer('total_positions').notNull(),
+    matchedPositions: integer('matched_positions').notNull(),
+    discrepancyCount: integer('discrepancy_count').notNull(),
+    acceptedCount: integer('accepted_count').notNull(),
+    flaggedCount: integer('flagged_count').notNull(),
+    resolvedCount: integer('resolved_count').notNull(),
+    unresolvedCount: integer('unresolved_count').notNull(),
+    eventSourceFreshness: jsonb('event_source_freshness').notNull(),
+    positionSnapshot: jsonb('position_snapshot').notNull(),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    comparisonDateIdx: index('idx_recon_checkpoint_date').on(table.comparisonDate),
+    createdAtIdx: index('idx_recon_checkpoint_created').on(table.createdAt),
+  })
+);
+
+export type ReconciliationCheckpoint = typeof reconciliationCheckpoints.$inferSelect;
+export type NewReconciliationCheckpoint = typeof reconciliationCheckpoints.$inferInsert;

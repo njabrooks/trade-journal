@@ -1,7 +1,22 @@
 "use client";
 
 import { formatCurrency, formatPercent } from "@/lib/formatters";
-import type { ReconciliationSummaryData } from "@/db/queries/reconciliation";
+import type {
+  ReconciliationSummaryData,
+  BottleneckInfo,
+} from "@/db/queries/reconciliation";
+import { AlertTriangle } from "lucide-react";
+
+const SOURCE_LABELS: Record<string, string> = {
+  ibkr_trade: "IBKR Trades",
+  koinly_raw: "Koinly",
+  ibkr_sof: "IBKR Cash",
+  manual: "Manual",
+};
+
+function sourceLabel(source: string): string {
+  return SOURCE_LABELS[source] ?? source;
+}
 
 function MetricCard({
   label,
@@ -49,9 +64,13 @@ function buildDiscrepancySubtitle(summary: ReconciliationSummaryData): string {
 
 interface ReconciliationSummaryProps {
   summary: ReconciliationSummaryData;
+  bottleneck?: BottleneckInfo | null;
 }
 
-export function ReconciliationSummary({ summary }: ReconciliationSummaryProps) {
+export function ReconciliationSummary({
+  summary,
+  bottleneck,
+}: ReconciliationSummaryProps) {
   const deltaColor =
     Math.abs(summary.navDeltaPct) < 1
       ? "text-emerald-600"
@@ -65,13 +84,15 @@ export function ReconciliationSummary({ summary }: ReconciliationSummaryProps) {
       : 0;
 
   const freshnessLabel = summary.eventSourceFreshness
-    ?.map((s) => `${s.source}: ${s.lastEventDate}`)
+    ?.map((s) => `${sourceLabel(s.source)}: ${s.lastEventDate}`)
     .join(", ");
 
   return (
     <section className="space-y-3">
       <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300">
-        <span className="font-medium">Comparing at {summary.comparisonDate}</span>
+        <span className="font-medium">
+          Comparing at {summary.comparisonDate}
+        </span>
         {" — "}last date with complete event data across all sources.
         {freshnessLabel && (
           <span className="ml-1 text-blue-600 dark:text-blue-400">
@@ -79,6 +100,22 @@ export function ReconciliationSummary({ summary }: ReconciliationSummaryProps) {
           </span>
         )}
       </div>
+
+      {bottleneck && bottleneck.daysBehind > 0 && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+          <span>
+            <span className="font-medium">
+              Bottleneck: {sourceLabel(bottleneck.source)}
+            </span>
+            {" "}(last event: {bottleneck.lastEventDate}).{" "}
+            {sourceLabel(bottleneck.leadingSource)} has events through{" "}
+            {bottleneck.leadingDate} ({bottleneck.daysBehind}d ahead). Import
+            new {sourceLabel(bottleneck.source)} data to advance the comparison
+            date.
+          </span>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-5">
         <MetricCard
@@ -111,12 +148,15 @@ export function ReconciliationSummary({ summary }: ReconciliationSummaryProps) {
         />
         <MetricCard
           label="Discrepancies"
-          value={((summary.unresolvedCount ?? 0) + (summary.flaggedCount ?? 0)).toLocaleString()}
+          value={(
+            (summary.unresolvedCount ?? 0) + (summary.flaggedCount ?? 0)
+          ).toLocaleString()}
           subtitle={buildDiscrepancySubtitle(summary)}
           subtitleColor={
             (summary.unresolvedCount ?? 0) + (summary.flaggedCount ?? 0) === 0
               ? "text-emerald-600"
-              : (summary.unresolvedCount ?? 0) + (summary.flaggedCount ?? 0) > 10
+              : (summary.unresolvedCount ?? 0) + (summary.flaggedCount ?? 0) >
+                  10
                 ? "text-red-500"
                 : "text-amber-600"
           }

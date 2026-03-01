@@ -2,9 +2,12 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 import { eq, ne } from "drizzle-orm";
 import { toNumber } from "@/lib/numbers";
+import { desc } from "drizzle-orm";
 import {
   reconciliationResolutions,
+  reconciliationCheckpoints,
   type ReconciliationResolution,
+  type ReconciliationCheckpoint,
   type ResolutionStatus,
   type DiscrepancyNature,
 } from "@/db/schema";
@@ -98,22 +101,53 @@ export interface ReconciliationSummaryData {
   resolvedCount: number;
 }
 
+export interface BottleneckInfo {
+  source: string;
+  lastEventDate: string;
+  daysBehind: number;
+  leadingSource: string;
+  leadingDate: string;
+}
+
+export interface CheckpointSummary {
+  id: string;
+  comparisonDate: string;
+  snapshotNav: number;
+  eventSourcedNav: number;
+  navDelta: number;
+  navDeltaPct: number;
+  totalPositions: number;
+  matchedPositions: number;
+  discrepancyCount: number;
+  acceptedCount: number;
+  flaggedCount: number;
+  resolvedCount: number;
+  unresolvedCount: number;
+  notes: string | null;
+  createdAt: string;
+}
+
 export interface ReconciliationData {
   summary: ReconciliationSummaryData;
   ownerBreakdown: OwnerNavComparison[];
   positions: PositionReconciliation[];
+  lastCheckpoint: CheckpointSummary | null;
+  bottleneck: BottleneckInfo | null;
 }
 
 // --- Query Functions ---
 
 /**
- * Determines the last date on which ALL event sources have complete data.
+ * Determines the last date on which ALL position-affecting event sources have
+ * complete data.
  *
  * After this date, the calculation engine carries forward quantities with updated
  * prices, but the positions don't reflect actual transactions. Reconciliation should
  * compare at this date for meaningful results.
  *
- * Returns MIN(MAX(timestamp) per source) from the events table, plus per-source details.
+ * Takes MIN(MAX(timestamp) per position-affecting source). Sources like ibkr_sof
+ * (dividends, fees, interest) and manual are excluded — they affect cash balances
+ * but not security position quantities.
  */
 export async function getLastCompleteEventDate(): Promise<{
   comparisonDate: string;
@@ -133,16 +167,23 @@ export async function getLastCompleteEventDate(): Promise<{
     eventCount: r.event_count,
   }));
 
-  // Use the LATEST "last date" across all sources (MAX). Each source covers
-  // different accounts (ibkr_trade → IBKR accounts, koinly → crypto accounts).
-  // Using MIN would exclude crypto snapshots (NAV data starts Feb 11) when IBKR
-  // events end Feb 10. The small staleness for IBKR accounts (2 days) is negligible
-  // compared to losing all crypto coverage.
+  // Position-affecting sources: ibkr_trade (buy/sell securities) and koinly_raw
+  // (crypto transactions). Excluded: ibkr_sof (cash events like dividends/fees),
+  // manual (one-off historical entries).
+  const NON_POSITION_SOURCES = ["ibkr_sof", "manual"];
+  const positionSources = sources.filter(
+    (s) => !NON_POSITION_SOURCES.includes(s.source)
+  );
+
+  // Use MIN across position-affecting sources — reconciliation needs ALL accounts
+  // to have actual transaction data. After the slowest source's last date, positions
+  // for those accounts are carried forward (stale), making comparison meaningless.
   const comparisonDate =
-    sources.length > 0
-      ? sources.reduce((max, s) =>
-          s.lastEventDate > max ? s.lastEventDate : max,
-        sources[0].lastEventDate)
+    positionSources.length > 0
+      ? positionSources.reduce(
+          (min, s) => (s.lastEventDate < min ? s.lastEventDate : min),
+          positionSources[0].lastEventDate
+        )
       : new Date().toISOString().slice(0, 10);
 
   return { comparisonDate, sources };
@@ -849,6 +890,126 @@ export async function getResolution(
   return rows[0] ?? null;
 }
 
+// --- Checkpoint Functions ---
+
+const SOURCE_LABELS: Record<string, string> = {
+  ibkr_trade: "IBKR Trades",
+  koinly_raw: "Koinly",
+  ibkr_sof: "IBKR Cash",
+  manual: "Manual",
+};
+
+function sourceLabel(source: string): string {
+  return SOURCE_LABELS[source] ?? source;
+}
+
+function toCheckpointSummary(r: ReconciliationCheckpoint): CheckpointSummary {
+  return {
+    id: r.id,
+    comparisonDate: r.comparisonDate,
+    snapshotNav: Number(r.snapshotNav),
+    eventSourcedNav: Number(r.eventSourcedNav),
+    navDelta: Number(r.navDelta),
+    navDeltaPct: Number(r.navDeltaPct),
+    totalPositions: r.totalPositions,
+    matchedPositions: r.matchedPositions,
+    discrepancyCount: r.discrepancyCount,
+    acceptedCount: r.acceptedCount,
+    flaggedCount: r.flaggedCount,
+    resolvedCount: r.resolvedCount,
+    unresolvedCount: r.unresolvedCount,
+    notes: r.notes,
+    createdAt: r.createdAt.toISOString(),
+  };
+}
+
+export async function createCheckpoint(params: {
+  reconciliationData: ReconciliationData;
+  notes?: string;
+}): Promise<ReconciliationCheckpoint> {
+  const { summary, positions } = params.reconciliationData;
+
+  const result = await db
+    .insert(reconciliationCheckpoints)
+    .values({
+      comparisonDate: summary.comparisonDate,
+      snapshotNav: summary.snapshotNav.toString(),
+      eventSourcedNav: summary.eventSourcedNav.toString(),
+      navDelta: summary.navDelta.toString(),
+      navDeltaPct: summary.navDeltaPct.toString(),
+      totalPositions: summary.totalPositions,
+      matchedPositions: summary.matchedPositions,
+      discrepancyCount:
+        summary.mismatchedPositions +
+        summary.snapshotOnlyPositions +
+        summary.eventSourcedOnlyPositions,
+      acceptedCount: summary.acceptedCount,
+      flaggedCount: summary.flaggedCount,
+      resolvedCount: summary.resolvedCount,
+      unresolvedCount: summary.unresolvedCount,
+      eventSourceFreshness: summary.eventSourceFreshness,
+      positionSnapshot: positions,
+      notes: params.notes ?? null,
+    })
+    .returning();
+
+  return result[0];
+}
+
+export async function getLatestCheckpoint(): Promise<CheckpointSummary | null> {
+  const rows = await db
+    .select()
+    .from(reconciliationCheckpoints)
+    .orderBy(desc(reconciliationCheckpoints.createdAt))
+    .limit(1);
+
+  return rows[0] ? toCheckpointSummary(rows[0]) : null;
+}
+
+export async function getCheckpoints(): Promise<CheckpointSummary[]> {
+  const rows = await db
+    .select()
+    .from(reconciliationCheckpoints)
+    .orderBy(desc(reconciliationCheckpoints.createdAt));
+
+  return rows.map(toCheckpointSummary);
+}
+
+function computeBottleneck(
+  sources: EventSourceFreshness[]
+): BottleneckInfo | null {
+  const NON_POSITION_SOURCES = ["ibkr_sof", "manual"];
+  const positionSources = sources.filter(
+    (s) => !NON_POSITION_SOURCES.includes(s.source)
+  );
+  if (positionSources.length < 2) return null;
+
+  let minSource = positionSources[0];
+  let maxSource = positionSources[0];
+  for (const s of positionSources) {
+    if (s.lastEventDate < minSource.lastEventDate) minSource = s;
+    if (s.lastEventDate > maxSource.lastEventDate) maxSource = s;
+  }
+
+  if (minSource.lastEventDate === maxSource.lastEventDate) return null;
+
+  const minDate = new Date(minSource.lastEventDate);
+  const maxDate = new Date(maxSource.lastEventDate);
+  const daysBehind = Math.round(
+    (maxDate.getTime() - minDate.getTime()) / 86400000
+  );
+
+  return {
+    source: minSource.source,
+    lastEventDate: minSource.lastEventDate,
+    daysBehind,
+    leadingSource: maxSource.source,
+    leadingDate: maxSource.lastEventDate,
+  };
+}
+
+export { sourceLabel };
+
 /**
  * Full reconciliation: summary + owner breakdown + position details.
  *
@@ -863,11 +1024,16 @@ export async function getReconciliation(): Promise<ReconciliationData> {
     await getLastCompleteEventDate();
 
   // 2. Run comparisons anchored to that date
-  const [ownerBreakdown, positions, resolutionsMap] = await Promise.all([
-    getOwnerAccountNavComparison(comparisonDate),
-    getPositionReconciliation(comparisonDate),
-    getResolutionsMap(),
-  ]);
+  const [ownerBreakdown, positions, resolutionsMap, lastCheckpoint] =
+    await Promise.all([
+      getOwnerAccountNavComparison(comparisonDate),
+      getPositionReconciliation(comparisonDate),
+      getResolutionsMap(),
+      getLatestCheckpoint(),
+    ]);
+
+  // 3. Compute bottleneck from source freshness
+  const bottleneck = computeBottleneck(eventSourceFreshness);
 
   // 3. Enrich positions with resolution data
   for (const pos of positions) {
@@ -960,5 +1126,7 @@ export async function getReconciliation(): Promise<ReconciliationData> {
     },
     ownerBreakdown,
     positions,
+    lastCheckpoint,
+    bottleneck,
   };
 }
