@@ -1,7 +1,7 @@
 # Trade Journal Migration Plan
 
 **Created**: February 15, 2026
-**Status**: M1–M4 + M4.5a/M4.5b + M7 + M7.1 + M9a/M9b complete. Next: M5 (base currency), M6 (UK tax), then M8 (sunset).
+**Status**: M1–M5 + M4.5a/M4.5b + M7 + M7.1 + M9a/M9b complete. Next: M6 (UK tax), then M8 (sunset).
 **Goal**: Consolidate the Two Trees Capital portfolio infrastructure (events, calculations, price pipeline, daily NAV) into the Trade Journal app, then sunset the twotreescap-app.
 
 > **Note**: This file was moved from `twotreescap-app/docs/TRADE_JOURNAL_MIGRATION_PLAN.md` on 2026-02-19. The original location still has a copy that should be considered stale.
@@ -471,28 +471,63 @@ Interactive UI features (reclassify from dashboard, manual price entry, mark-as-
 
 ---
 
-### Phase M5: Base Currency Support (was TTC Phase 4)
+### Phase M5: Base Currency Support — DONE (2026-03-02)
 
-**Goal**: Configurable reporting currency per owner with FX conversion.
+**Goal**: Per-event GBP conversion using historical FX rates, with dashboard currency toggle.
 
-Ported from [COMPLETION_PLAN.md § Phase 4](../../twotreescap-app/docs/COMPLETION_PLAN.md#phase-4-base-currency-support--deferred):
+**Status**: Complete. Commit: `e41f21c`. 22 files, 1,125 insertions.
 
-1. **FX Rate Infrastructure**: `getFxRate(from, to, date)` using IBKR FX rates (already in `fxRates` table in Trade Journal!) and `price_history` for daily pairs
-2. **Configuration**: Per-owner currency setting (GB owners → GBP, US owners → USD)
-3. **Engine Integration**: Convert event values to base currency at event-date FX rate
-4. **Reporting**: Multi-currency gain/loss reports, FX gain/loss tracking
+**What was built:**
 
-**Advantage of doing this in Trade Journal**: Trade Journal already has `fxRates` table populated from IBKR Flex queries. The infrastructure is partially there.
+#### M5a: FX Rate Utility — DONE
 
-**Known issues to address (discovered 2026-02-20):**
+- `src/lib/fx/get-fx-rate.ts` — `getFxRate(from, to, date)` and `getFxRateSeries(from, to, start, end)` with direct lookup, gap-fill, inverse, and cross-rate support using the `fxRates` table
+- `src/lib/fx/format-currency.ts` — `formatCurrency(value, currency)` and `formatCompactCurrency(value, currency)` with £/$  symbols
+- Refactored `src/lib/derived/portfolio.ts` to use `getFxRate()` instead of inline FX lookup
 
-- **GBP base currency reports**: Nick (U9896103), Tiff ISA (U21595594), and 4 other accounts now generate GBP-base IBKR reports. A temporary fix auto-detects the base currency from the RATE section and applies a USD correction divisor (`fx-rate-lookup.ts`). M5 should replace this with proper `getFxRate(from, to, date)` infrastructure rather than relying on the per-report RATE section hack.
-- **GLXY conid/currency shift**: Between 2025-04 and 2025-05, Galaxy Digital (GLXY) changed IBKR conid from 328205007 to 785082287 (corporate restructuring/relisting). Both conids have `CurrencyPrimary: "CAD"` in IBKR data, but FXRateToBase semantics shifted from CAD→USD (~0.70) to CAD→GBP (~0.53) when Nick's account base currency changed. The 4 newer events were corrected by the `baseCurrencyCorrection` applied in the GBP fix. M5 needs to: (1) update `assets.ibkr_conid` for GLXY, (2) ensure `getFxRate` handles the CAD→GBP→USD chain correctly for all cross-currency assets, (3) investigate why FIFO lot consumptions are not matching for GLXY sells (36 open lots with 0 consumed despite 173,500 shares sold).
-- **Positions/MTM adapter bugs** (latent — tables empty): `CostBasisMoney` and `FifoPnlUnrealized` not FX-converted in positions adapter; MTM adapter hardcodes USD. These only matter when position/MTM snapshots are enabled.
+#### M5b: Schema Migration — DONE
+
+Migration: `migrations/20260301_m5_base_currency.sql`. Added GBP columns:
+
+| Table | New Columns |
+|-------|-------------|
+| `event_calculations` | `fx_rate_to_gbp`, `total_value_gbp`, `cost_basis_gbp`, `realized_gain_gbp`, `new_average_cost_gbp` |
+| `portfolio_daily_balances` | `book_value_gbp`, `market_value_gbp`, `fx_rate_usd_gbp` |
+| `daily_portfolio_values` | `total_market_value_gbp`, `total_book_value_gbp`, `unrealized_gain_gbp` |
+| `owners` | `base_currency` (default 'USD', set to 'GBP' for Nick) |
+
+#### M5c: GBP Conversion Engine Phase — DONE
+
+- `src/lib/calculations/gbp-conversion.ts` — New engine phase inserted after `average_cost_basis`, before `daily_balances`
+- Maintains parallel GBP ACB per (asset, owner, account) scope, mirroring USD ACB algorithm
+- **Exact GBP recovery for GBP-origin events**: When `metadata.originalCurrency === 'GBP'` and `fxRateToBase` is available, recovers the exact original GBP amount (`totalValueUsd / fxRateToBase`) instead of using the fx_rates table. This eliminates round-trip FX drift (measured up to 1.1% / £2,823 on a £250K transaction before the fix). 172 events recovered from metadata, 29,968 via fx_rates table. All recovered events verified at zero drift.
+- Added `gbp_conversion` to `ExtendedCalcPhase` and engine phase array
+
+#### M5d: GBP Propagation Through Downstream Phases — DONE
+
+- `daily-balances.ts` — Populates `bookValueGbp` from GBP ACB timeline
+- `market-value-enrichment.ts` — Populates `marketValueGbp` and `fxRateUsdGbp` using spot FX rates (correct for market value)
+- `daily-portfolio-values.ts` — Aggregates `totalMarketValueGbp`, `totalBookValueGbp`, `unrealizedGainGbp` at all 3 levels
+
+#### M5e: Accounting Dashboard Currency Toggle — DONE
+
+- Currency selector (USD/GBP) on accounting dashboard, persisted in URL search params
+- Query layer returns pre-computed `_gbp` columns when `currency=GBP`
+- All components currency-aware: NAV chart, metrics row, breakdowns, positions table
+
+**Full engine recalc verified**: 30,140 events → 284,962 daily balance rows → 23,202 NAV rows, all with GBP values populated.
+
+**Known issues from planning (status):**
+
+- **GBP base currency reports**: Addressed — the `fx-rate-lookup.ts` temporary fix remains for IBKR ingestion, while M5's `getFxRate()` handles all engine-side FX conversion. The two are complementary.
+- **GLXY conid/currency shift**: Not addressed in M5 — remains a FIFO matching issue unrelated to FX conversion.
+- **Positions/MTM adapter bugs**: Not addressed — latent (tables empty), only matters if position/MTM snapshots are enabled.
 
 ### Phase M6: UK Tax Method (was TTC Phase 5)
 
 **Goal**: HMRC-compliant Section 104 pooling with same-day and 30-day bed & breakfast rules.
+
+**Status**: Pending. Depends on M5 (complete).
 
 Ported from [COMPLETION_PLAN.md § Phase 5](../../twotreescap-app/docs/COMPLETION_PLAN.md#phase-5-uk-tax-method--deferred):
 
@@ -500,6 +535,16 @@ Ported from [COMPLETION_PLAN.md § Phase 5](../../twotreescap-app/docs/COMPLETIO
 2. **Schema**: `section_104_pools` table, `matchType` on consumptions
 3. **Validation**: Against HMRC published worked examples
 4. **Wiring**: `owners.taxJurisdiction` → available cost basis methods
+
+M5's `totalValueGbp` per-event values provide the GBP-denominated acquisition/disposal amounts that Section 104 operates on directly, without re-doing FX conversion.
+
+#### M6 Verification: Koinly GBP Reconciliation
+
+After M6 is implemented, reconcile against Koinly's official GBP tax report as a dual-purpose accuracy check:
+1. **GBP currency conversion accuracy** — Verify our `totalValueGbp` values match Koinly's GBP transaction values
+2. **Section 104 cost basis / gain-loss accuracy** — Verify our Section 104 pooled cost basis and realized gains match Koinly's (which also uses Section 104)
+
+This provides an independent cross-check against a production tax reporting tool.
 
 ### Phase M7: Portfolio Reconciliation Framework — DONE (2026-02-19)
 
@@ -816,7 +861,7 @@ TTC uses Clerk (multi-user auth with `userId` on every table). Trade Journal use
 | M4: Pricing Infrastructure | 2-3 days | M2 | DONE (2026-02-19) |
 | M4.5a: Price Tier Reclassification | 0.5 day | M4 | DONE (2026-02-20) |
 | M4.5b: Per-Source Delivery Monitoring | 1 day | M4.5a | DONE (2026-03-01) |
-| M5: Base Currency | 3-5 days | M4 | Pending |
+| M5: Base Currency | 3-5 days | M4 | DONE (2026-03-02) |
 | M6: UK Tax Method | 5-8 days | M5 | Pending |
 | M7: Portfolio Reconciliation | ~~2-3 days~~ | M2 + M3 | DONE (2026-02-19) |
 | M7.1: Reconciliation Resolution | ~~2-3 days~~ | M7 | DONE (2026-03-01) |
@@ -824,7 +869,7 @@ TTC uses Clerk (multi-user auth with `userId` on every table). Trade Journal use
 | M9a/b: IBKR Event Automation | ~~3-5 days~~ | M2 | DONE (2026-02-26) |
 | M9c: Koinly Automation | Low priority | M9a | Deferred |
 
-**Dependency chain**: M7.1 is complete. M5 and M6 can proceed in any order (M6 depends on M5 for FX infrastructure). M8 (sunset) requires M5 verified at minimum. M9a/M9b are complete — IBKR event ingestion is automated. The remaining automation gap is scheduled calculation engine runs (not yet wired up).
+**Dependency chain**: M5 is complete. M6 (Section 104) is next — it builds on M5's per-event GBP values. After M6, reconcile against Koinly's GBP tax report to validate both FX accuracy and Section 104 calculations. M8 (sunset) requires M6 verified. M9a/M9b are complete — IBKR event ingestion is automated. The remaining automation gap is scheduled calculation engine runs (not yet wired up).
 
 ---
 
