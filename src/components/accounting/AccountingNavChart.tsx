@@ -14,11 +14,13 @@ type TimeRange = "1M" | "3M" | "6M" | "1Y" | "YTD" | "ALL";
 
 const TIME_RANGES: TimeRange[] = ["1M", "3M", "6M", "1Y", "YTD", "ALL"];
 
-function formatCompactCurrency(value: number): string {
+function formatCompactCurrency(value: number, currency = "USD"): string {
+  const symbol = currency === "GBP" ? "\u00a3" : "$";
   const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
-  return `$${value.toFixed(0)}`;
+  const sign = value < 0 ? "-" : "";
+  if (abs >= 1_000_000) return `${sign}${symbol}${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${sign}${symbol}${(abs / 1_000).toFixed(0)}K`;
+  return `${sign}${symbol}${abs.toFixed(0)}`;
 }
 
 const chartConfig: ChartConfig = {
@@ -32,12 +34,14 @@ interface AccountingNavChartProps {
   data: NavTimeSeriesPoint[];
   timeRange: TimeRange;
   onTimeRangeChange: (range: TimeRange) => void;
+  currency?: string;
 }
 
 export function AccountingNavChart({
   data,
   timeRange,
   onTimeRangeChange,
+  currency = "USD",
 }: AccountingNavChartProps) {
   const chartData = useMemo(() => {
     return data.map((d) => ({
@@ -104,7 +108,7 @@ export function AccountingNavChart({
                 axisLine={false}
                 tickMargin={4}
                 width={52}
-                tickFormatter={formatCompactCurrency}
+                tickFormatter={(v) => formatCompactCurrency(v, currency)}
               />
               <ChartTooltip
                 content={({ active, payload, label }) => {
@@ -118,7 +122,7 @@ export function AccountingNavChart({
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">NAV</span>
                         <span className="font-mono font-medium tabular-nums text-foreground">
-                          {formatCurrency(mv)}
+                          {formatCurrency(mv, currency)}
                         </span>
                       </div>
                     </div>

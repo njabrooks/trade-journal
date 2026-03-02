@@ -47,10 +47,12 @@ function getSortValue(row: AccountingPositionRow, key: SortKey): number | string
 
 interface AccountingPositionsTableProps {
   positions: AccountingPositionRow[];
+  currency?: string;
 }
 
 export function AccountingPositionsTable({
   positions,
+  currency = "USD",
 }: AccountingPositionsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("marketValue");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -160,19 +162,19 @@ export function AccountingPositionsTable({
                 </td>
                 <td className="px-3 py-2 text-sm text-right tabular-nums font-medium">
                   {row.marketValue != null
-                    ? formatCurrency(row.marketValue)
+                    ? formatCurrency(row.marketValue, currency)
                     : "—"}
                 </td>
                 <td className="px-3 py-2 text-sm text-right tabular-nums text-muted-foreground">
                   {row.bookValue != null
-                    ? formatCurrency(row.bookValue)
+                    ? formatCurrency(row.bookValue, currency)
                     : "—"}
                 </td>
                 <td
                   className={`px-3 py-2 text-sm text-right tabular-nums font-medium ${pnlColor}`}
                 >
                   {row.unrealizedPnl != null
-                    ? formatCurrency(row.unrealizedPnl)
+                    ? formatCurrency(row.unrealizedPnl, currency)
                     : "—"}
                 </td>
                 <td

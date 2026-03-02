@@ -147,6 +147,32 @@ export async function enrichDailyMarketValues(
     }
 
     console.log(`[MarketValueEnrichment] Total enriched: ${recordsProcessed + remaining} rows`);
+
+    // GBP conversion pass: convert market_value to market_value_gbp using FX rates
+    // Uses spot FX rate (correct for market value — it's a point-in-time measure)
+    const gbpResult = await db.execute(sql`
+      UPDATE portfolio_daily_balances db
+      SET market_value_gbp = db.market_value::numeric * fx.rate::numeric,
+          fx_rate_usd_gbp = fx.rate::numeric,
+          updated_at = NOW()
+      FROM (
+        SELECT snapshot_date, (1.0 / rate::numeric) as rate
+        FROM fx_rates
+        WHERE from_currency = 'GBP'
+          AND to_currency = 'USD'
+      ) fx
+      WHERE db.user_id = ${ctx.userId}
+        AND db.market_value IS NOT NULL
+        AND fx.snapshot_date = (
+          SELECT MAX(f2.snapshot_date)
+          FROM fx_rates f2
+          WHERE f2.from_currency = 'GBP'
+            AND f2.to_currency = 'USD'
+            AND f2.snapshot_date <= db.date::date
+        )
+    `);
+    const gbpCount = await countGbpEnriched(ctx.userId);
+    console.log(`[MarketValueEnrichment] GBP conversion: ${gbpCount} rows enriched`);
   } catch (error) {
     errors.push({
       message: `Market value enrichment failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -184,6 +210,19 @@ async function countUpdated(userId: string, source: string): Promise<number> {
     FROM portfolio_daily_balances
     WHERE user_id = ${userId}
       AND market_value_source = ${source}
+  `);
+  return parseInt((result as any)[0]?.cnt ?? "0");
+}
+
+/**
+ * Count rows with non-null market_value_gbp
+ */
+async function countGbpEnriched(userId: string): Promise<number> {
+  const result = await db.execute(sql`
+    SELECT COUNT(*) as cnt
+    FROM portfolio_daily_balances
+    WHERE user_id = ${userId}
+      AND market_value_gbp IS NOT NULL
   `);
   return parseInt((result as any)[0]?.cnt ?? "0");
 }

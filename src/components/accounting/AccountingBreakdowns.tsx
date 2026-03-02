@@ -67,6 +67,7 @@ interface AccountingBreakdownsProps {
   assetClassBreakdown: AssetClassBreakdownItem[];
   summary: AccountingSummary;
   realizedPnl: number;
+  currency?: string;
 }
 
 export function AccountingBreakdowns({
@@ -74,6 +75,7 @@ export function AccountingBreakdowns({
   assetClassBreakdown,
   summary,
   realizedPnl,
+  currency = "USD",
 }: AccountingBreakdownsProps) {
   const groupedOwners = groupKidsOwners(ownerBreakdown);
   const totalOwnerMv = groupedOwners.reduce((s, o) => s + o.marketValue, 0);
@@ -130,7 +132,7 @@ export function AccountingBreakdowns({
                     {formatPercent(pct)}
                   </span>
                   <span className="font-medium text-foreground">
-                    {formatCurrency(owner.marketValue)}
+                    {formatCurrency(owner.marketValue, currency)}
                   </span>
                 </div>
               </div>
@@ -177,7 +179,7 @@ export function AccountingBreakdowns({
                       {formatPercent(pct)}
                     </span>
                     <span className="font-medium text-foreground">
-                      {formatCurrency(cls.marketValue)}
+                      {formatCurrency(cls.marketValue, currency)}
                     </span>
                   </div>
                 </div>
@@ -206,7 +208,7 @@ export function AccountingBreakdowns({
                 unrealizedPositive ? "text-emerald-600" : "text-red-500"
               }`}
             >
-              {formatCurrency(summary.unrealizedGain)}
+              {formatCurrency(summary.unrealizedGain, currency)}
             </p>
             <p
               className={`text-xs ${
@@ -222,7 +224,7 @@ export function AccountingBreakdowns({
               Realized P&L
             </span>
             <p className="mt-1 text-xl font-semibold text-foreground">
-              {formatCurrency(realizedPnl)}
+              {formatCurrency(realizedPnl, currency)}
             </p>
           </div>
 

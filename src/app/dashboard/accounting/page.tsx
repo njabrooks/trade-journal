@@ -17,8 +17,11 @@ import type {
   AccountingPositionRow,
 } from "@/db/queries/accounting";
 
+type Currency = "USD" | "GBP";
+
 export default function AccountingDashboardPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>("1Y");
+  const [currency, setCurrency] = useState<Currency>("USD");
   const [dashboardData, setDashboardData] =
     useState<AccountingDashboardData | null>(null);
   const [positions, setPositions] = useState<AccountingPositionRow[] | null>(
@@ -27,12 +30,12 @@ export default function AccountingDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch dashboard data when time range changes
+  // Fetch dashboard data when time range or currency changes
   useEffect(() => {
     async function fetchDashboard() {
       try {
         const res = await fetch(
-          `/api/dashboard/accounting?range=${timeRange}`
+          `/api/dashboard/accounting?range=${timeRange}&currency=${currency}`
         );
         if (!res.ok) throw new Error("Failed to fetch accounting data");
         const data = await res.json();
@@ -43,13 +46,13 @@ export default function AccountingDashboardPage() {
       }
     }
     fetchDashboard();
-  }, [timeRange]);
+  }, [timeRange, currency]);
 
-  // Fetch positions once on mount
+  // Fetch positions when currency changes
   useEffect(() => {
     async function fetchPositions() {
       try {
-        const res = await fetch("/api/dashboard/accounting/positions");
+        const res = await fetch(`/api/dashboard/accounting/positions?currency=${currency}`);
         if (!res.ok) throw new Error("Failed to fetch positions");
         const data = await res.json();
         setPositions(data);
@@ -60,7 +63,7 @@ export default function AccountingDashboardPage() {
       }
     }
     fetchPositions();
-  }, []);
+  }, [currency]);
 
   if (error && !dashboardData) {
     return (
@@ -80,6 +83,23 @@ export default function AccountingDashboardPage() {
 
   return (
     <DashboardShell activeNav="accounting" title="Accounting" subtitle={subtitle}>
+      {/* Currency toggle */}
+      <div className="flex items-center gap-1">
+        {(["USD", "GBP"] as Currency[]).map((c) => (
+          <button
+            key={c}
+            onClick={() => setCurrency(c)}
+            className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+              currency === c
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground border"
+            }`}
+          >
+            {c === "USD" ? "$ USD" : "\u00a3 GBP"}
+          </button>
+        ))}
+      </div>
+
       {isLoading && !dashboardData && (
         <div className="flex h-64 items-center justify-center">
           <div className="text-muted-foreground">Loading...</div>
@@ -91,12 +111,14 @@ export default function AccountingDashboardPage() {
           <AccountingMetricsRow
             summary={dashboardData.summary}
             realizedPnl={dashboardData.realizedPnl}
+            currency={currency}
           />
 
           <AccountingNavChart
             data={dashboardData.navTimeSeries}
             timeRange={timeRange}
             onTimeRangeChange={setTimeRange}
+            currency={currency}
           />
 
           <AccountingBreakdowns
@@ -104,13 +126,14 @@ export default function AccountingDashboardPage() {
             assetClassBreakdown={dashboardData.assetClassBreakdown}
             summary={dashboardData.summary}
             realizedPnl={dashboardData.realizedPnl}
+            currency={currency}
           />
         </>
       )}
 
       <PriceFreshness />
 
-      {positions && <AccountingPositionsTable positions={positions} />}
+      {positions && <AccountingPositionsTable positions={positions} currency={currency} />}
 
       <div className="flex justify-end">
         <Link

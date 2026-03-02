@@ -64,39 +64,18 @@ export async function computeDailyPortfolioValues(
   };
 }
 
-// Shared SQL fragment for aggregation columns
-const AGG_COLUMNS = `
-  SUM(market_value::numeric) as total_market_value,
-  SUM(COALESCE(book_value::numeric, 0)) as total_book_value,
-  SUM(market_value::numeric) - SUM(COALESCE(book_value::numeric, 0)) as unrealized_gain,
-  CASE
-    WHEN SUM(COALESCE(book_value::numeric, 0)) != 0
-    THEN ((SUM(market_value::numeric) - SUM(COALESCE(book_value::numeric, 0)))
-          / NULLIF(SUM(COALESCE(book_value::numeric, 0)), 0) * 100)
-    ELSE 0
-  END as unrealized_gain_percent,
-  COUNT(*) FILTER (WHERE quantity::numeric != 0) as position_count,
-  CASE
-    WHEN COUNT(*) > 0
-    THEN (COUNT(*) FILTER (
-      WHERE market_value_source IS NOT NULL
-        AND market_value_source NOT IN ('book_value_fallback', 'no_data', 'zero_quantity')
-    )::numeric / GREATEST(COUNT(*)::numeric, 1) * 100)
-    ELSE 100
-  END as price_completeness
+// GBP aggregation SQL columns (added alongside USD)
+const GBP_AGG_COLUMNS = `
+  SUM(market_value_gbp::numeric) as total_market_value_gbp,
+  SUM(COALESCE(book_value_gbp::numeric, 0)) as total_book_value_gbp,
+  SUM(market_value_gbp::numeric) - SUM(COALESCE(book_value_gbp::numeric, 0)) as unrealized_gain_gbp
 `;
 
-// Shared SQL fragment for ON CONFLICT using the expression index
-const ON_CONFLICT_UPSERT = `
-  ON CONFLICT (user_id, date, COALESCE(owner, '__ALL__'), COALESCE(account, '__ALL__'))
-  DO UPDATE SET
-    total_market_value = EXCLUDED.total_market_value,
-    total_book_value = EXCLUDED.total_book_value,
-    unrealized_gain = EXCLUDED.unrealized_gain,
-    unrealized_gain_percent = EXCLUDED.unrealized_gain_percent,
-    position_count = EXCLUDED.position_count,
-    price_completeness = EXCLUDED.price_completeness,
-    updated_at = NOW()
+// GBP ON CONFLICT additions
+const GBP_ON_CONFLICT_ADDITIONS = `
+    total_market_value_gbp = EXCLUDED.total_market_value_gbp,
+    total_book_value_gbp = EXCLUDED.total_book_value_gbp,
+    unrealized_gain_gbp = EXCLUDED.unrealized_gain_gbp,
 `;
 
 /**
@@ -108,7 +87,9 @@ async function aggregatePerAccount(userId: string): Promise<number> {
       user_id, date, owner, account,
       total_market_value, total_book_value,
       unrealized_gain, unrealized_gain_percent,
-      position_count, price_completeness, updated_at
+      position_count, price_completeness,
+      total_market_value_gbp, total_book_value_gbp, unrealized_gain_gbp,
+      updated_at
     )
     SELECT
       ${userId} as user_id,
@@ -133,6 +114,9 @@ async function aggregatePerAccount(userId: string): Promise<number> {
         )::numeric / GREATEST(COUNT(*)::numeric, 1) * 100)
         ELSE 100
       END as price_completeness,
+      SUM(market_value_gbp::numeric) as total_market_value_gbp,
+      SUM(COALESCE(book_value_gbp::numeric, 0)) as total_book_value_gbp,
+      SUM(market_value_gbp::numeric) - SUM(COALESCE(book_value_gbp::numeric, 0)) as unrealized_gain_gbp,
       NOW() as updated_at
     FROM portfolio_daily_balances
     WHERE user_id = ${userId}
@@ -146,6 +130,9 @@ async function aggregatePerAccount(userId: string): Promise<number> {
       unrealized_gain_percent = EXCLUDED.unrealized_gain_percent,
       position_count = EXCLUDED.position_count,
       price_completeness = EXCLUDED.price_completeness,
+      total_market_value_gbp = EXCLUDED.total_market_value_gbp,
+      total_book_value_gbp = EXCLUDED.total_book_value_gbp,
+      unrealized_gain_gbp = EXCLUDED.unrealized_gain_gbp,
       updated_at = NOW()
   `);
 
@@ -165,7 +152,9 @@ async function aggregatePerOwner(userId: string): Promise<number> {
       user_id, date, owner, account,
       total_market_value, total_book_value,
       unrealized_gain, unrealized_gain_percent,
-      position_count, price_completeness, updated_at
+      position_count, price_completeness,
+      total_market_value_gbp, total_book_value_gbp, unrealized_gain_gbp,
+      updated_at
     )
     SELECT
       ${userId} as user_id,
@@ -190,6 +179,9 @@ async function aggregatePerOwner(userId: string): Promise<number> {
         )::numeric / GREATEST(COUNT(*)::numeric, 1) * 100)
         ELSE 100
       END as price_completeness,
+      SUM(market_value_gbp::numeric) as total_market_value_gbp,
+      SUM(COALESCE(book_value_gbp::numeric, 0)) as total_book_value_gbp,
+      SUM(market_value_gbp::numeric) - SUM(COALESCE(book_value_gbp::numeric, 0)) as unrealized_gain_gbp,
       NOW() as updated_at
     FROM portfolio_daily_balances
     WHERE user_id = ${userId}
@@ -203,6 +195,9 @@ async function aggregatePerOwner(userId: string): Promise<number> {
       unrealized_gain_percent = EXCLUDED.unrealized_gain_percent,
       position_count = EXCLUDED.position_count,
       price_completeness = EXCLUDED.price_completeness,
+      total_market_value_gbp = EXCLUDED.total_market_value_gbp,
+      total_book_value_gbp = EXCLUDED.total_book_value_gbp,
+      unrealized_gain_gbp = EXCLUDED.unrealized_gain_gbp,
       updated_at = NOW()
   `);
 
@@ -222,7 +217,9 @@ async function aggregateGrandTotal(userId: string): Promise<number> {
       user_id, date, owner, account,
       total_market_value, total_book_value,
       unrealized_gain, unrealized_gain_percent,
-      position_count, price_completeness, updated_at
+      position_count, price_completeness,
+      total_market_value_gbp, total_book_value_gbp, unrealized_gain_gbp,
+      updated_at
     )
     SELECT
       ${userId} as user_id,
@@ -247,6 +244,9 @@ async function aggregateGrandTotal(userId: string): Promise<number> {
         )::numeric / GREATEST(COUNT(*)::numeric, 1) * 100)
         ELSE 100
       END as price_completeness,
+      SUM(market_value_gbp::numeric) as total_market_value_gbp,
+      SUM(COALESCE(book_value_gbp::numeric, 0)) as total_book_value_gbp,
+      SUM(market_value_gbp::numeric) - SUM(COALESCE(book_value_gbp::numeric, 0)) as unrealized_gain_gbp,
       NOW() as updated_at
     FROM portfolio_daily_balances
     WHERE user_id = ${userId}
@@ -260,6 +260,9 @@ async function aggregateGrandTotal(userId: string): Promise<number> {
       unrealized_gain_percent = EXCLUDED.unrealized_gain_percent,
       position_count = EXCLUDED.position_count,
       price_completeness = EXCLUDED.price_completeness,
+      total_market_value_gbp = EXCLUDED.total_market_value_gbp,
+      total_book_value_gbp = EXCLUDED.total_book_value_gbp,
+      unrealized_gain_gbp = EXCLUDED.unrealized_gain_gbp,
       updated_at = NOW()
   `);
 

@@ -68,26 +68,35 @@ export interface AccountingPositionRow {
   unrealizedPct: number | null;
 }
 
+export type AccountingCurrency = "USD" | "GBP";
+
 // --- Query functions ---
 
 /**
  * Fetch the accounting dashboard data for a given time range.
  */
 export async function getAccountingDashboard(
-  daysBack: number
+  daysBack: number,
+  currency: AccountingCurrency = "USD"
 ): Promise<AccountingDashboardData> {
   const cutoffDate =
     daysBack >= 99999
       ? "1900-01-01"
       : new Date(Date.now() - daysBack * 86400000).toISOString().slice(0, 10);
 
+  // Column selectors based on currency
+  const isGbp = currency === "GBP";
+  const mvCol = isGbp ? dailyPortfolioValues.totalMarketValueGbp : dailyPortfolioValues.totalMarketValue;
+  const bvCol = isGbp ? dailyPortfolioValues.totalBookValueGbp : dailyPortfolioValues.totalBookValue;
+  const ugCol = isGbp ? dailyPortfolioValues.unrealizedGainGbp : dailyPortfolioValues.unrealizedGain;
+
   // 1. NAV time series — grand total level (owner IS NULL, account IS NULL)
   const navRows = await db
     .select({
       date: dailyPortfolioValues.date,
-      totalMarketValue: dailyPortfolioValues.totalMarketValue,
-      totalBookValue: dailyPortfolioValues.totalBookValue,
-      unrealizedGain: dailyPortfolioValues.unrealizedGain,
+      totalMarketValue: mvCol,
+      totalBookValue: bvCol,
+      unrealizedGain: ugCol,
     })
     .from(dailyPortfolioValues)
     .where(
@@ -122,11 +131,15 @@ export async function getAccountingDashboard(
     .limit(1);
 
   const latest = latestRow[0];
+  const navVal = isGbp ? toNumber(latest?.totalMarketValueGbp) : toNumber(latest?.totalMarketValue);
+  const bvVal = isGbp ? toNumber(latest?.totalBookValueGbp) : toNumber(latest?.totalBookValue);
+  const ugVal = isGbp ? toNumber(latest?.unrealizedGainGbp) : toNumber(latest?.unrealizedGain);
+  const ugPct = bvVal && bvVal !== 0 ? ((ugVal ?? 0) / Math.abs(bvVal)) * 100 : 0;
   const summary: AccountingSummary = {
-    nav: toNumber(latest?.totalMarketValue) ?? 0,
-    bookValue: toNumber(latest?.totalBookValue) ?? 0,
-    unrealizedGain: toNumber(latest?.unrealizedGain) ?? 0,
-    unrealizedGainPercent: toNumber(latest?.unrealizedGainPercent) ?? 0,
+    nav: navVal ?? 0,
+    bookValue: bvVal ?? 0,
+    unrealizedGain: ugVal ?? 0,
+    unrealizedGainPercent: ugPct,
     positionCount: latest?.positionCount ?? 0,
     priceCompleteness: toNumber(latest?.priceCompleteness) ?? 0,
     latestDate: latest?.date ?? "",
@@ -139,7 +152,7 @@ export async function getAccountingDashboard(
     const ownerRows = await db
       .select({
         owner: dailyPortfolioValues.owner,
-        totalMarketValue: dailyPortfolioValues.totalMarketValue,
+        totalMarketValue: mvCol,
       })
       .from(dailyPortfolioValues)
       .where(
@@ -160,10 +173,11 @@ export async function getAccountingDashboard(
   // 4. Asset class breakdown — latest date from portfolio_daily_balances
   let assetClassBreakdown: AssetClassBreakdownItem[] = [];
   if (latestDate) {
+    const mvField = isGbp ? portfolioDailyBalances.marketValueGbp : portfolioDailyBalances.marketValue;
     const classRows = await db
       .select({
         assetClass: portfolioDailyBalances.assetClass,
-        totalMv: sql<string>`SUM(${portfolioDailyBalances.marketValue}::numeric)`,
+        totalMv: sql<string>`SUM(${mvField}::numeric)`,
       })
       .from(portfolioDailyBalances)
       .where(
@@ -183,9 +197,10 @@ export async function getAccountingDashboard(
   }
 
   // 5. Realized P&L — sum of all realized gains from event_calculations
+  const realizedGainCol = isGbp ? eventCalculations.realizedGainGbp : eventCalculations.realizedGain;
   const realizedResult = await db
     .select({
-      total: sql<string>`COALESCE(SUM(${eventCalculations.realizedGain}::numeric), 0)`,
+      total: sql<string>`COALESCE(SUM(${realizedGainCol}::numeric), 0)`,
     })
     .from(eventCalculations)
     .where(eq(eventCalculations.userId, USER_ID));
@@ -206,9 +221,9 @@ export async function getAccountingDashboard(
  * Returns per-asset rows from the latest date in portfolio_daily_balances,
  * joined with assets for ticker/name.
  */
-export async function getAccountingPositions(): Promise<
-  AccountingPositionRow[]
-> {
+export async function getAccountingPositions(
+  currency: AccountingCurrency = "USD"
+): Promise<AccountingPositionRow[]> {
   // Find the latest date
   const latestDateRow = await db
     .select({ maxDate: sql<string>`MAX(${portfolioDailyBalances.date})` })
@@ -218,6 +233,7 @@ export async function getAccountingPositions(): Promise<
   const latestDate = latestDateRow[0]?.maxDate;
   if (!latestDate) return [];
 
+  const isGbp = currency === "GBP";
   const rows = await db
     .select({
       assetId: portfolioDailyBalances.asset,
@@ -228,8 +244,8 @@ export async function getAccountingPositions(): Promise<
       assetClass: portfolioDailyBalances.assetClass,
       quantity: portfolioDailyBalances.quantity,
       price: portfolioDailyBalances.price,
-      marketValue: portfolioDailyBalances.marketValue,
-      bookValue: portfolioDailyBalances.bookValue,
+      marketValue: isGbp ? portfolioDailyBalances.marketValueGbp : portfolioDailyBalances.marketValue,
+      bookValue: isGbp ? portfolioDailyBalances.bookValueGbp : portfolioDailyBalances.bookValue,
     })
     .from(portfolioDailyBalances)
     .innerJoin(

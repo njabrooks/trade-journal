@@ -18,12 +18,17 @@
  *                 ▼
  *          cost_basis (orchestrator for lot_creation + fifo_matching)
  *                 │
- *        ┌────────┴────────┐
- *        ▼                 ▼
- * average_cost_basis  daily_balances
- *                          │
- *                          ▼
- *                  price_population
+ *                 ▼
+ *        average_cost_basis
+ *                 │
+ *                 ▼
+ *          gbp_conversion
+ *                 │
+ *                 ▼
+ *          daily_balances
+ *                 │
+ *                 ▼
+ *          price_population
  *                          │
  *                          ▼
  *               market_value_enrichment
@@ -50,6 +55,7 @@ import { computeRunningQuantity } from "./running-quantity";
 import { createTaxLots } from "./lot-creation";
 import { runFifoMatchingOptimized } from "./fifo-matching";
 import { computeAverageCostBasisOptimized } from "./average-cost";
+import { computeGbpConversion } from "./gbp-conversion";
 import { computeDailyBalances } from "./daily-balances";
 import { populatePricesFromIbkr } from "./price-population";
 import { enrichDailyMarketValues } from "./market-value-enrichment";
@@ -146,8 +152,13 @@ const CALCULATIONS: Calculation[] = [
     compute: computeAverageCostBasisOptimized,
   },
   {
+    name: "gbp_conversion",
+    depends: ["average_cost_basis"],
+    compute: computeGbpConversion,
+  },
+  {
     name: "daily_balances",
-    depends: ["cost_basis" as ExtendedCalcPhase],
+    depends: ["gbp_conversion"],
     compute: computeDailyBalances,
   },
   {

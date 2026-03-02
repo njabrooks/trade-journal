@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
-import { getAccountingPositions } from "@/db/queries/accounting";
+import { NextRequest, NextResponse } from "next/server";
+import { getAccountingPositions, type AccountingCurrency } from "@/db/queries/accounting";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const positions = await getAccountingPositions();
+    const currency = (request.nextUrl.searchParams.get("currency") ?? "USD") as AccountingCurrency;
+    const positions = await getAccountingPositions(currency);
     return NextResponse.json(positions);
   } catch (error) {
     console.error("Error fetching accounting positions:", error);

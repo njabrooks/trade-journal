@@ -4,10 +4,10 @@ import {
   navSnapshots,
   cashBalances,
   portfolioSnapshots,
-  fxRates,
   NewPortfolioSnapshot,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, gte, lte } from 'drizzle-orm';
+import { getFxRate } from '@/lib/fx/get-fx-rate';
 
 interface NotionalSums {
   totalAbsNotional: string | null;
@@ -176,18 +176,7 @@ async function computeAccountLevelSnapshot(
     effectiveNav = parseFloat(authoritativeNav);
     // Convert authoritative NAV to USD using FX rate
     if (navCurrency && navCurrency !== 'USD' && effectiveNav) {
-      const fxResult = await db
-        .select({ rate: fxRates.rate })
-        .from(fxRates)
-        .where(
-          and(
-            eq(fxRates.snapshotDate, snapshotDate),
-            eq(fxRates.fromCurrency, navCurrency),
-            eq(fxRates.toCurrency, 'USD')
-          )
-        )
-        .limit(1);
-      const rate = fxResult[0]?.rate ? parseFloat(fxResult[0].rate) : null;
+      const rate = await getFxRate(navCurrency, 'USD', snapshotDate);
       if (rate) {
         effectiveNavUsd = effectiveNav * rate;
       }

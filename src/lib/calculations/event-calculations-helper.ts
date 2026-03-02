@@ -29,6 +29,12 @@ export interface UpsertEventCalculationData {
   fifoMatched?: boolean | null;
   lotConsumptionsCount?: number | null;
   lotType?: string | null;
+  // M5: GBP conversion fields
+  fxRateToGbp?: string | null;
+  totalValueGbp?: string | null;
+  costBasisGbp?: string | null;
+  realizedGainGbp?: string | null;
+  newAverageCostGbp?: string | null;
 }
 
 export interface RunningQuantityUpdate {
@@ -66,6 +72,11 @@ export async function upsertEventCalculation(
   if (data.fifoMatched !== undefined) updateSet.fifoMatched = data.fifoMatched;
   if (data.lotConsumptionsCount !== undefined) updateSet.lotConsumptionsCount = data.lotConsumptionsCount;
   if (data.lotType !== undefined) updateSet.lotType = data.lotType;
+  if (data.fxRateToGbp !== undefined) updateSet.fxRateToGbp = data.fxRateToGbp;
+  if (data.totalValueGbp !== undefined) updateSet.totalValueGbp = data.totalValueGbp;
+  if (data.costBasisGbp !== undefined) updateSet.costBasisGbp = data.costBasisGbp;
+  if (data.realizedGainGbp !== undefined) updateSet.realizedGainGbp = data.realizedGainGbp;
+  if (data.newAverageCostGbp !== undefined) updateSet.newAverageCostGbp = data.newAverageCostGbp;
 
   await dbClient
     .insert(eventCalculations)
@@ -83,6 +94,11 @@ export async function upsertEventCalculation(
       fifoMatched: data.fifoMatched ?? null,
       lotConsumptionsCount: data.lotConsumptionsCount ?? null,
       lotType: data.lotType ?? null,
+      fxRateToGbp: data.fxRateToGbp ?? null,
+      totalValueGbp: data.totalValueGbp ?? null,
+      costBasisGbp: data.costBasisGbp ?? null,
+      realizedGainGbp: data.realizedGainGbp ?? null,
+      newAverageCostGbp: data.newAverageCostGbp ?? null,
     })
     .onConflictDoUpdate({
       target: eventCalculations.eventId,
@@ -149,6 +165,11 @@ export async function clearEventCalculations(
         fifoMatched: null,
         lotConsumptionsCount: null,
         lotType: null,
+        fxRateToGbp: null,
+        totalValueGbp: null,
+        costBasisGbp: null,
+        realizedGainGbp: null,
+        newAverageCostGbp: null,
         calculatedAt: new Date(),
       })
       .where(eq(eventCalculations.userId, userId));

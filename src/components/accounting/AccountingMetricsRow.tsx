@@ -32,31 +32,33 @@ function MetricCard({
 interface AccountingMetricsRowProps {
   summary: AccountingSummary;
   realizedPnl: number;
+  currency?: string;
 }
 
 export function AccountingMetricsRow({
   summary,
   realizedPnl,
+  currency = "USD",
 }: AccountingMetricsRowProps) {
   const unrealizedColor =
     summary.unrealizedGain >= 0 ? "text-emerald-600" : "text-red-500";
 
   return (
     <section className="grid gap-4 sm:grid-cols-5">
-      <MetricCard label="NAV" value={formatCurrency(summary.nav)} />
+      <MetricCard label="NAV" value={formatCurrency(summary.nav, currency)} />
       <MetricCard
         label="Book Value"
-        value={formatCurrency(summary.bookValue)}
+        value={formatCurrency(summary.bookValue, currency)}
       />
       <MetricCard
         label="Unrealized P&L"
-        value={formatCurrency(summary.unrealizedGain)}
+        value={formatCurrency(summary.unrealizedGain, currency)}
         subtitle={formatPercent(summary.unrealizedGainPercent)}
         subtitleColor={unrealizedColor}
       />
       <MetricCard
         label="Realized P&L"
-        value={formatCurrency(realizedPnl)}
+        value={formatCurrency(realizedPnl, currency)}
         subtitleColor={realizedPnl >= 0 ? "text-emerald-600" : "text-red-500"}
       />
       <MetricCard

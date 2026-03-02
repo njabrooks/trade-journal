@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountingDashboard } from "@/db/queries/accounting";
+import { getAccountingDashboard, type AccountingCurrency } from "@/db/queries/accounting";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const range = searchParams.get("range") ?? "1Y";
+    const currency = (searchParams.get("currency") ?? "USD") as AccountingCurrency;
 
     const daysBack = rangeToDays(range);
-    const data = await getAccountingDashboard(daysBack);
+    const data = await getAccountingDashboard(daysBack, currency);
 
     return NextResponse.json(data);
   } catch (error) {

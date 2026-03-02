@@ -54,6 +54,7 @@ interface BalanceInsert {
   assetClass: string | null;
   quantity: string;
   bookValue: string | null;
+  bookValueGbp: string | null;
 }
 
 // ============================================================================
@@ -212,6 +213,7 @@ async function processScope(
       timestamp: events.timestamp,
       runningQuantity: eventCalculations.runningQuantity,
       newAverageCost: eventCalculations.newAverageCost,
+      newAverageCostGbp: eventCalculations.newAverageCostGbp,
     })
     .from(events)
     .leftJoin(
@@ -249,9 +251,12 @@ async function processScope(
     return 0;
   }
 
-  // Build ACB timeline from event_calculations.new_average_cost
+  // Build ACB timelines from event_calculations (USD and GBP)
   // For each date with ACB events, take the last event's ACB (end-of-day ACB)
   const acbTimeline = buildAcbTimeline(scopeEvents);
+  const gbpAcbTimeline = buildAcbTimeline(
+    scopeEvents.map(e => ({ timestamp: e.timestamp, newAverageCost: e.newAverageCostGbp }))
+  );
 
   // Prepare inserts — use historical ACB as-of each date for book_value
   const inserts: BalanceInsert[] = dayBalances.map((day) => {
@@ -259,6 +264,10 @@ async function processScope(
     const acbAsOfDate = findAcbAsOfDate(acbTimeline, day.date);
     const bookValue = acbAsOfDate !== null
       ? (day.quantity * acbAsOfDate).toFixed(2)
+      : null;
+    const gbpAcbAsOfDate = findAcbAsOfDate(gbpAcbTimeline, day.date);
+    const bookValueGbp = gbpAcbAsOfDate !== null
+      ? (day.quantity * gbpAcbAsOfDate).toFixed(2)
       : null;
     return {
       userId: ctx.userId,
@@ -269,6 +278,7 @@ async function processScope(
       assetClass: scope.assetClass ?? null,
       quantity: qty,
       bookValue,
+      bookValueGbp,
     };
   });
 
@@ -294,6 +304,7 @@ async function processScope(
           quantity: sql`EXCLUDED.quantity`,
           assetClass: sql`EXCLUDED.asset_class`,
           bookValue: sql`EXCLUDED.book_value`,
+          bookValueGbp: sql`EXCLUDED.book_value_gbp`,
           updatedAt: sql`NOW()`,
         },
       });

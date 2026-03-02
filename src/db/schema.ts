@@ -2000,6 +2000,7 @@ export const owners = pgTable('owners', {
   entityType: text('entity_type').notNull().default('individual'), // EntityType
   legalName: text('legal_name'),
   taxJurisdiction: text('tax_jurisdiction').default('US'),
+  baseCurrency: text('base_currency').notNull().default('USD'),
   ssnOrEin: text('ssn_or_ein'),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -2145,6 +2146,12 @@ export const eventCalculations = pgTable('event_calculations', {
   fifoMatched: boolean('fifo_matched'),
   lotConsumptionsCount: integer('lot_consumptions_count'),
   lotType: text('lot_type'), // 'long' | 'short'
+  // M5: GBP conversion fields
+  fxRateToGbp: numeric('fx_rate_to_gbp'),
+  totalValueGbp: numeric('total_value_gbp'),
+  costBasisGbp: numeric('cost_basis_gbp'),
+  realizedGainGbp: numeric('realized_gain_gbp'),
+  newAverageCostGbp: numeric('new_average_cost_gbp'),
   calculatedAt: timestamp('calculated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueEventId: uniqueIndex('idx_event_calculations_event_id').on(table.eventId),
@@ -2257,6 +2264,10 @@ export const portfolioDailyBalances = pgTable('portfolio_daily_balances', {
   marketValue: numeric('market_value'),
   bookValue: numeric('book_value'),
   marketValueSource: text('market_value_source'),
+  // M5: GBP daily values
+  bookValueGbp: numeric('book_value_gbp'),
+  marketValueGbp: numeric('market_value_gbp'),
+  fxRateUsdGbp: numeric('fx_rate_usd_gbp'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
@@ -2345,6 +2356,10 @@ export const dailyPortfolioValues = pgTable('daily_portfolio_values', {
   unrealizedGainPercent: numeric('unrealized_gain_percent'),
   positionCount: integer('position_count'),
   priceCompleteness: numeric('price_completeness'), // % positions with real prices
+  // M5: GBP aggregates
+  totalMarketValueGbp: numeric('total_market_value_gbp'),
+  totalBookValueGbp: numeric('total_book_value_gbp'),
+  unrealizedGainGbp: numeric('unrealized_gain_gbp'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

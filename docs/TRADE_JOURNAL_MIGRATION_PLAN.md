@@ -1,7 +1,7 @@
 # Trade Journal Migration Plan
 
 **Created**: February 15, 2026
-**Status**: M1–M4 + M4.5a/M4.5b + M7 + M9a/M9b complete. Per-source price delivery monitoring live. Next: M7.1 (reconciliation resolution), then M5/M6/M8.
+**Status**: M1–M4 + M4.5a/M4.5b + M7 + M7.1 + M9a/M9b complete. Next: M5 (base currency), M6 (UK tax), then M8 (sunset).
 **Goal**: Consolidate the Two Trees Capital portfolio infrastructure (events, calculations, price pipeline, daily NAV) into the Trade Journal app, then sunset the twotreescap-app.
 
 > **Note**: This file was moved from `twotreescap-app/docs/TRADE_JOURNAL_MIGRATION_PLAN.md` on 2026-02-19. The original location still has a copy that should be considered stale.
@@ -613,49 +613,59 @@ The owner breakdown table shows event-sourced accounts at the aggregate level (I
 
 The underlying issue (no automated event ingestion) is addressed by M9 below.
 
-### Phase M7.1: Reconciliation Resolution Workflows
+### Phase M7.1: Reconciliation Resolution Workflows — DONE (2026-03-01)
 
 **Goal**: Extend the reconciliation dashboard from read-only discrepancy surfacing to actionable resolution workflows.
 
-**Status**: Pending.
+**Status**: Complete. Two commits: `7fcf402` (2026-02-20) and `f1b24b0` (2026-03-01).
 
-**Context (discovered 2026-02-20):** The reconciliation page surfaces discrepancies between snapshot-based and event-sourced portfolio views, but provides no mechanism to address them. Users need to be able to investigate, classify, and resolve individual discrepancies.
+#### M7.1a: Discrepancy Classification + Resolution — DONE
 
-**What needs to be built:**
+Commit: `7fcf402`. Per-discrepancy actions on `ReconciliationPositionTable`:
 
-#### M7.1a: Discrepancy Classification + Resolution
+1. **Accept** — Mark a discrepancy as known/expected with a nature classification and notes
+2. **Flag** — Flag for deeper investigation with nature + notes
+3. **Resolve** — Mark as resolved after the underlying cause has been fixed
+4. **Reopen** — Revert any status back to unresolved
 
-Add per-discrepancy actions to `ReconciliationPositionTable`:
+Action state machine: unresolved ↔ accepted, unresolved ↔ flagged, flagged/accepted → resolved, any → reopen. Implemented via dropdown menu (`ReconciliationActionMenu.tsx`) with nature selector (mapping_error, missing_coverage, expected_gap, dust, price_drift, qty_drift, other) and notes textarea. Bulk actions also supported (`ReconciliationBulkActions.tsx`).
 
-1. **Acknowledge** — Mark a discrepancy as "known/expected" with a reason (e.g. "timing difference — trade executed after last event import", "asset migration in progress", "exchange reporting lag"). Acknowledged items remain visible but don't count toward the discrepancy total.
-2. **Investigate** — Flag a discrepancy for deeper investigation. Links to relevant event history, tax lots, and raw IBKR data for the asset. Could create a triage record for tracking.
-3. **Resolve** — Mark as resolved after the underlying cause has been fixed (e.g. missing events imported, price corrected, asset alias added). Records the resolution method and date.
+Filter tabs on position table show disposition counts: Unresolved, Flagged, Accepted, Resolved, All Discrepancies, Matches, All.
 
-#### M7.1b: Resolution Persistence
+#### M7.1b: Resolution Persistence — DONE
 
-Currently reconciliation is computed on-demand with no persistence. Add:
+Commit: `7fcf402`. `reconciliation_resolutions` table (not `reconciliation_items` as originally planned):
 
-1. **`reconciliation_items` table** — Stores per-discrepancy state (status: open/acknowledged/investigating/resolved), classification reason, resolution notes, timestamps
-2. **Keyed by** (comparison_date, owner, ticker, discrepancy_type) — allows tracking resolution across reconciliation runs
-3. **History** — Preserve resolution history so past reconciliation decisions are auditable
+- Keyed by (owner, ticker) unique constraint for O(1) lookups
+- Fields: status, nature, notes, discrepancy_type, qty_delta_at_action, mv_delta_at_action, resolved_at, created_at, updated_at
+- Resolution badges on position rows with delta drift tooltips (shows if market value changed since action was taken)
+- Summary card shows disposition breakdown (unresolved/flagged/accepted/resolved counts)
+- All actions logged to journal_entries for audit trail
+- Migration: `migrations/20260220_m7_1_reconciliation_resolutions.sql`
 
-#### M7.1c: NAV Delta Investigation
+#### M7.1c: Reconciliation Checkpoints + Bottleneck Awareness — DONE
 
-Extend `ReconciliationSummary` and `ReconciliationNavChart`:
+Commit: `f1b24b0`. Extended beyond the original plan scope:
 
-1. **Delta drill-down** — Click on a point in the NAV comparison chart to see which owner/account/asset is driving the delta at that date
-2. **Delta trend** — Show whether the NAV delta is growing or shrinking over time (indicates whether discrepancies are accumulating or being resolved)
-3. **Auto-flag** — If NAV delta exceeds a configurable threshold (e.g. 5%), automatically create a triage record
+1. **Checkpoint system** — `reconciliation_checkpoints` table for recording reconciliation milestones with snapshot NAV, event-sourced NAV, delta, position match rate, and notes. Migration: `migrations/20260301_m7_1_reconciliation_checkpoints.sql`
+2. **Bottleneck awareness** — Shows which event source is preventing the comparison date from advancing
+3. **Checkpoint UI** — `ReconciliationCheckpointBanner.tsx` (record new checkpoints) + `ReconciliationCheckpointHistory.tsx` (view checkpoint history)
+4. **Comparison date fix** — Switched from MAX to MIN of per-source dates, anchoring to the last date where all accounts have real transaction data
+5. **Checkpoint API** — POST endpoint at `/api/dashboard/accounting/reconciliation/checkpoint`
 
-**Files to create/modify:**
+**Files created:**
 
-| File | Action |
-|------|--------|
-| `src/db/schema.ts` | Add `reconciliation_items` table |
-| `src/db/queries/reconciliation.ts` | Extend with resolution state joins |
-| `src/components/accounting/ReconciliationPositionTable.tsx` | Add action buttons + resolution dialogs |
-| `src/components/accounting/ReconciliationSummary.tsx` | Add delta trend indicator |
-| `src/app/api/dashboard/accounting/reconciliation/route.ts` | Add PATCH for resolution actions |
+| File | Purpose |
+|------|---------|
+| `src/db/queries/reconciliation.ts` | Extended with resolution + checkpoint query functions |
+| `src/app/api/dashboard/accounting/reconciliation/resolution/route.ts` | POST for accept/flag/resolve/reopen actions |
+| `src/app/api/dashboard/accounting/reconciliation/checkpoint/route.ts` | POST for recording checkpoints |
+| `src/components/accounting/ReconciliationActionMenu.tsx` | Per-row action dropdown + dialogs |
+| `src/components/accounting/ReconciliationBulkActions.tsx` | Multi-select bulk actions |
+| `src/components/accounting/ReconciliationCheckpointBanner.tsx` | Checkpoint recording banner |
+| `src/components/accounting/ReconciliationCheckpointHistory.tsx` | Checkpoint history table |
+| `migrations/20260220_m7_1_reconciliation_resolutions.sql` | Resolution table |
+| `migrations/20260301_m7_1_reconciliation_checkpoints.sql` | Checkpoint table |
 
 ---
 
@@ -809,12 +819,12 @@ TTC uses Clerk (multi-user auth with `userId` on every table). Trade Journal use
 | M5: Base Currency | 3-5 days | M4 | Pending |
 | M6: UK Tax Method | 5-8 days | M5 | Pending |
 | M7: Portfolio Reconciliation | ~~2-3 days~~ | M2 + M3 | DONE (2026-02-19) |
-| M7.1: Reconciliation Resolution | 2-3 days | M7 | Pending |
+| M7.1: Reconciliation Resolution | ~~2-3 days~~ | M7 | DONE (2026-03-01) |
 | M8: Sunset | 1 day | M7.1, M5 verified | Pending |
 | M9a/b: IBKR Event Automation | ~~3-5 days~~ | M2 | DONE (2026-02-26) |
 | M9c: Koinly Automation | Low priority | M9a | Deferred |
 
-**Dependency chain**: M4.5b is complete. M7.1, M5, and M6 can proceed in any order. M8 (sunset) requires M7.1 + M5 verified at minimum. M9a/M9b are complete — IBKR event ingestion is automated. The remaining automation gap is scheduled calculation engine runs (not yet wired up).
+**Dependency chain**: M7.1 is complete. M5 and M6 can proceed in any order (M6 depends on M5 for FX infrastructure). M8 (sunset) requires M5 verified at minimum. M9a/M9b are complete — IBKR event ingestion is automated. The remaining automation gap is scheduled calculation engine runs (not yet wired up).
 
 ---
 
