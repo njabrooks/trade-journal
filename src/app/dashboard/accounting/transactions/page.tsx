@@ -5,11 +5,8 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { TaxTransactionsTable } from "@/components/accounting/TaxTransactionsTable";
 import { TaxTransactionsSummary } from "@/components/accounting/TaxTransactionsSummary";
 import { TaxTransactionsFilters } from "@/components/accounting/TaxTransactionsFilters";
-import { getTaxYears } from "@/db/queries/tax-transactions";
-import type {
-  TaxTransactionsResult,
-  TaxYearConfig,
-} from "@/db/queries/tax-transactions";
+import { getTaxYears, type TaxYearConfig } from "@/lib/tax-years";
+import type { TaxTransactionsResult } from "@/lib/tax-transactions-types";
 
 type Currency = "USD" | "GBP";
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Download, Filter, X } from "lucide-react";
-import type { TaxYearConfig } from "@/db/queries/tax-transactions";
+import type { TaxYearConfig } from "@/lib/tax-years";
 
 interface TaxTransactionsFiltersProps {
   owner: string;

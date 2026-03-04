@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   getTaxTransactions,
-  getTaxTransactionTickers,
-  getTaxYears,
   type TaxTransactionsFilters,
 } from "@/db/queries/tax-transactions";
 

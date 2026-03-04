@@ -299,9 +299,16 @@ async function main(): Promise<void> {
   }
 
   // For full recalculation, clear existing data
-  if (!args.incremental) {
+  // SAFETY: Only clear when running ALL phases. Single-phase runs use --incremental
+  // to avoid destroying other phases' output. Without this guard, running
+  // `--phase gbp_conversion` would delete ACB, FIFO, and all other results.
+  if (!args.incremental && !args.phase) {
     console.log("Full recalculation requested - clearing existing calculations...");
     await clearExistingCalculations(args.userId);
+    console.log();
+  } else if (!args.incremental && args.phase) {
+    console.log(`Single-phase run (${args.phase}) — skipping full clear to preserve other phases' data.`);
+    console.log("  Use --incremental to skip clearing, or omit --phase for a full recalc.");
     console.log();
   }
 

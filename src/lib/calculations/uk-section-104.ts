@@ -57,6 +57,8 @@ interface EventForS104 {
   totalValueGbp: string | null;
   fxRateToGbp: string | null;
   newAverageCostGbp: string | null;
+  costBasisGbp: string | null;
+  realizedGainGbp: string | null;
 }
 
 interface EventMetadata {
@@ -87,6 +89,9 @@ interface S104Event {
   isSpecial: boolean; // futures, transfers, realized gain, ADJ — bypass S104 matching
   meta: EventMetadata;
   costPerUnitGbp: number; // totalValueGbp / quantity (for acquisitions)
+  // GBP ACB values from gbp_conversion (for special event passthrough)
+  gbpCostBasis: number | null;
+  gbpRealizedGain: number | null;
 }
 
 /** Tracks disposal matching state during Pass 1 */
@@ -588,20 +593,33 @@ function processScope(scopeEvents: S104Event[]): ScopeResult {
 /**
  * Build calc update for special events that bypass S104 matching.
  * These preserve the GBP values from gbp_conversion unchanged —
- * the S104 phase just passes them through and records the pool avg cost.
+ * the S104 phase carries them through to the S104 fields so that
+ * gains from futures settlements, realized gains, fees, etc. are
+ * visible regardless of which cost basis method is being viewed.
  */
 function buildSpecialEventCalcUpdate(
   event: S104Event,
   pool: S104PoolState,
 ): UpsertEventCalculationData {
-  // For special events, don't overwrite costBasisGbp or realizedGainGbp
-  // (gbp_conversion already computed correct values for these)
-  // Only update the pool average cost so daily_balances has a consistent value
-  return {
+  const update: UpsertEventCalculationData = {
     eventId: event.id,
     userId: "", // Will be fixed in the caller
     newAverageCostGbp: pool.poolAverageCostGbp.toFixed(8),
   };
+
+  // Carry forward GBP ACB values to S104 fields for special events.
+  // gbp_conversion already computed the correct gain for these events
+  // (e.g. realized_gain tag → full amount as gain, futures settlement → MTM).
+  // Without this passthrough, S104 fields would be NULL and gains would
+  // be invisible when viewing in GBP/S104 mode.
+  if (event.gbpCostBasis !== null) {
+    update.s104CostBasisGbp = event.gbpCostBasis.toFixed(2);
+  }
+  if (event.gbpRealizedGain !== null) {
+    update.s104RealizedGainGbp = event.gbpRealizedGain.toFixed(2);
+  }
+
+  return update;
 }
 
 // ============================================================================
@@ -665,6 +683,8 @@ async function fetchEventsWithGbp(
       totalValueGbp: eventCalculations.totalValueGbp,
       fxRateToGbp: eventCalculations.fxRateToGbp,
       newAverageCostGbp: eventCalculations.newAverageCostGbp,
+      costBasisGbp: eventCalculations.costBasisGbp,
+      realizedGainGbp: eventCalculations.realizedGainGbp,
     })
     .from(events)
     .innerJoin(assets, eq(events.assetId, assets.id))
@@ -717,6 +737,8 @@ function parseEvents(rawEvents: EventForS104[], errors: CalcError[]): S104Event[
       isDisp,
       isSpecial: special,
       meta,
+      gbpCostBasis: raw.costBasisGbp ? parseFloat(raw.costBasisGbp) : null,
+      gbpRealizedGain: raw.realizedGainGbp ? parseFloat(raw.realizedGainGbp) : null,
       costPerUnitGbp: costPerUnit,
     });
   }

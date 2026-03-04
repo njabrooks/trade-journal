@@ -3,18 +3,17 @@
 import { useState, useMemo } from "react";
 import { ArrowUpDown } from "lucide-react";
 import { formatCurrency, formatNumber, formatDateShort } from "@/lib/formatters";
-import type { TaxTransactionRow } from "@/db/queries/tax-transactions";
+import type { TaxTransactionRow } from "@/lib/tax-transactions-types";
 
 type SortKey =
   | "timestamp"
   | "ticker"
   | "eventType"
   | "quantity"
-  | "totalValue"
-  | "acbCostBasis"
-  | "acbGain"
-  | "s104CostBasis"
-  | "s104Gain";
+  | "price"
+  | "proceeds"
+  | "costBasis"
+  | "gain";
 
 type SortDir = "asc" | "desc";
 
@@ -55,6 +54,16 @@ export function TaxTransactionsTable({
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const isGbp = currency === "GBP";
 
+  function getProceeds(r: TaxTransactionRow) {
+    return isGbp ? r.totalValueGbp : r.totalValueUsd;
+  }
+  function getCostBasis(r: TaxTransactionRow) {
+    return isGbp ? r.s104CostBasisGbp : r.acbCostBasisUsd;
+  }
+  function getGain(r: TaxTransactionRow) {
+    return isGbp ? r.s104GainGbp : r.acbGainUsd;
+  }
+
   const sorted = useMemo(() => {
     return [...rows].sort((a, b) => {
       let av: number | string;
@@ -64,20 +73,10 @@ export function TaxTransactionsTable({
         case "ticker": av = a.ticker.toLowerCase(); bv = b.ticker.toLowerCase(); break;
         case "eventType": av = a.eventType; bv = b.eventType; break;
         case "quantity": av = a.quantity; bv = b.quantity; break;
-        case "totalValue":
-          av = (isGbp ? a.totalValueGbp : a.totalValueUsd) ?? 0;
-          bv = (isGbp ? b.totalValueGbp : b.totalValueUsd) ?? 0;
-          break;
-        case "acbCostBasis":
-          av = (isGbp ? a.acbCostBasisGbp : a.acbCostBasisUsd) ?? 0;
-          bv = (isGbp ? b.acbCostBasisGbp : b.acbCostBasisUsd) ?? 0;
-          break;
-        case "acbGain":
-          av = (isGbp ? a.acbGainGbp : a.acbGainUsd) ?? 0;
-          bv = (isGbp ? b.acbGainGbp : b.acbGainUsd) ?? 0;
-          break;
-        case "s104CostBasis": av = a.s104CostBasisGbp ?? 0; bv = b.s104CostBasisGbp ?? 0; break;
-        case "s104Gain": av = a.s104GainGbp ?? 0; bv = b.s104GainGbp ?? 0; break;
+        case "price": av = a.price ?? 0; bv = b.price ?? 0; break;
+        case "proceeds": av = getProceeds(a) ?? 0; bv = getProceeds(b) ?? 0; break;
+        case "costBasis": av = getCostBasis(a) ?? 0; bv = getCostBasis(b) ?? 0; break;
+        case "gain": av = getGain(a) ?? 0; bv = getGain(b) ?? 0; break;
       }
       const cmp = av < bv ? -1 : av > bv ? 1 : 0;
       return sortDir === "asc" ? cmp : -cmp;
@@ -112,59 +111,58 @@ export function TaxTransactionsTable({
     );
   }
 
+  function th(label: string, align?: "right") {
+    return (
+      <th className={`px-3 py-2 text-xs font-medium text-muted-foreground whitespace-nowrap ${
+        align === "right" ? "text-right" : "text-left"
+      }`}>
+        {label}
+      </th>
+    );
+  }
+
   const totalPages = Math.ceil(totalCount / pageSize);
+  const costLabel = isGbp ? "S104 Cost" : "ACB Cost";
+  const gainLabel = isGbp ? "S104 Gain" : "ACB Gain";
 
   return (
     <div className="rounded-2xl border bg-card shadow-sm overflow-x-auto min-w-0">
-      <table className="w-full table-fixed">
-        <colgroup>
-          <col className="w-[10%]" />  {/* Date */}
-          <col className="w-[8%]" />   {/* Asset */}
-          <col className="w-[7%]" />   {/* Type */}
-          <col className="w-[9%]" />   {/* Quantity */}
-          <col className="w-[6%]" />   {/* Owner */}
-          <col className="w-[11%]" />  {/* Proceeds */}
-          <col className="w-[11%]" />  {/* ACB Cost */}
-          <col className="w-[11%]" />  {/* ACB Gain */}
-          {isGbp && <col className="w-[11%]" />}  {/* S104 Cost */}
-          {isGbp && <col className="w-[11%]" />}  {/* S104 Gain */}
-          {isGbp && <col className="w-[5%]" />}   {/* Match */}
-        </colgroup>
+      <table className="w-full text-sm">
         <thead className="border-b">
           <tr>
             {renderSortHeader("Date", "timestamp")}
             {renderSortHeader("Asset", "ticker")}
             {renderSortHeader("Type", "eventType")}
-            {renderSortHeader("Quantity", "quantity", "right")}
-            <th className="px-3 py-2 text-xs font-medium text-muted-foreground text-left">Owner</th>
-            {renderSortHeader("Proceeds", "totalValue", "right")}
-            {renderSortHeader("ACB Cost", "acbCostBasis", "right")}
-            {renderSortHeader("ACB Gain", "acbGain", "right")}
-            {isGbp && renderSortHeader("S104 Cost", "s104CostBasis", "right")}
-            {isGbp && renderSortHeader("S104 Gain", "s104Gain", "right")}
-            {isGbp && (
-              <th className="px-3 py-2 text-xs font-medium text-muted-foreground text-left">Match</th>
-            )}
+            {th("Tag")}
+            {renderSortHeader("Qty", "quantity", "right")}
+            {renderSortHeader("Price", "price", "right")}
+            {th("Owner")}
+            {th("Account")}
+            {th("Source")}
+            {renderSortHeader("Proceeds", "proceeds", "right")}
+            {renderSortHeader(costLabel, "costBasis", "right")}
+            {renderSortHeader(gainLabel, "gain", "right")}
+            {isGbp && th("Match")}
+            {isGbp && th("FX", "right")}
           </tr>
         </thead>
         <tbody className="divide-y">
           {sorted.map((row) => {
             const isDisposal = DISPOSAL_TYPES.has(row.eventType);
-            const acbGain = isGbp ? row.acbGainGbp : row.acbGainUsd;
-            const acbGainColor = acbGain == null ? "" : acbGain >= 0 ? "text-emerald-600" : "text-red-500";
-            const s104GainColor = row.s104GainGbp == null ? "" : row.s104GainGbp >= 0 ? "text-emerald-600" : "text-red-500";
-            const totalValue = isGbp ? row.totalValueGbp : row.totalValueUsd;
-            const acbCost = isGbp ? row.acbCostBasisGbp : row.acbCostBasisUsd;
+            const gain = getGain(row);
+            const gainColor = gain == null ? "" : gain >= 0 ? "text-emerald-600" : "text-red-500";
+            const proceeds = getProceeds(row);
+            const costBasis = getCostBasis(row);
 
             return (
               <tr key={row.eventId} className="hover:bg-muted/50 transition-colors">
-                <td className="px-3 py-2 text-sm tabular-nums">
+                <td className="px-3 py-2 tabular-nums whitespace-nowrap">
                   {formatDateShort(row.timestamp)}
                 </td>
-                <td className="px-3 py-2 text-sm font-medium truncate">
+                <td className="px-3 py-2 font-medium truncate max-w-[6rem]">
                   {row.ticker}
                 </td>
-                <td className="px-3 py-2 text-sm">
+                <td className="px-3 py-2">
                   <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${
                     isDisposal
                       ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400"
@@ -173,34 +171,41 @@ export function TaxTransactionsTable({
                     {row.eventType}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-sm text-right tabular-nums">
+                <td className="px-3 py-2 text-xs text-muted-foreground truncate max-w-[5rem]">
+                  {row.tag ?? "—"}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums">
                   {formatNumber(row.quantity, 4)}
+                </td>
+                <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                  {row.price != null ? formatCurrency(row.price, "USD") : "—"}
                 </td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">
                   {row.owner}
                 </td>
-                <td className="px-3 py-2 text-sm text-right tabular-nums">
-                  {totalValue != null ? formatCurrency(totalValue, currency) : "—"}
+                <td className="px-3 py-2 text-xs text-muted-foreground truncate max-w-[5rem]">
+                  {row.account}
                 </td>
-                <td className="px-3 py-2 text-sm text-right tabular-nums text-muted-foreground">
-                  {acbCost != null ? formatCurrency(acbCost, currency) : "—"}
+                <td className="px-3 py-2 text-xs text-muted-foreground">
+                  {row.source}
                 </td>
-                <td className={`px-3 py-2 text-sm text-right tabular-nums font-medium ${acbGainColor}`}>
-                  {acbGain != null ? formatCurrency(acbGain, currency) : "—"}
+                <td className="px-3 py-2 text-right tabular-nums">
+                  {proceeds != null ? formatCurrency(proceeds, currency) : "—"}
                 </td>
-                {isGbp && (
-                  <td className="px-3 py-2 text-sm text-right tabular-nums text-muted-foreground">
-                    {row.s104CostBasisGbp != null ? formatCurrency(row.s104CostBasisGbp, "GBP") : "—"}
-                  </td>
-                )}
-                {isGbp && (
-                  <td className={`px-3 py-2 text-sm text-right tabular-nums font-medium ${s104GainColor}`}>
-                    {row.s104GainGbp != null ? formatCurrency(row.s104GainGbp, "GBP") : "—"}
-                  </td>
-                )}
+                <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                  {costBasis != null ? formatCurrency(costBasis, currency) : "—"}
+                </td>
+                <td className={`px-3 py-2 text-right tabular-nums font-medium ${gainColor}`}>
+                  {gain != null ? formatCurrency(gain, currency) : "—"}
+                </td>
                 {isGbp && (
                   <td className="px-3 py-2 text-xs text-muted-foreground">
                     {formatMatchTypes(row.s104MatchTypes)}
+                  </td>
+                )}
+                {isGbp && (
+                  <td className="px-3 py-2 text-right tabular-nums text-xs text-muted-foreground">
+                    {row.fxRateToGbp != null ? row.fxRateToGbp.toFixed(4) : "—"}
                   </td>
                 )}
               </tr>

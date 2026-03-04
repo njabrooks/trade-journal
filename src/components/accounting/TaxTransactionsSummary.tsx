@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/formatters";
-import type { TaxTransactionsSummary as SummaryType } from "@/db/queries/tax-transactions";
+import type { TaxTransactionsSummary as SummaryType } from "@/lib/tax-transactions-types";
 
 interface TaxTransactionsSummaryProps {
   summary: SummaryType;
@@ -11,25 +11,25 @@ interface TaxTransactionsSummaryProps {
 export function TaxTransactionsSummary({ summary, currency }: TaxTransactionsSummaryProps) {
   const isGbp = currency === "GBP";
 
+  const gainLabel = isGbp ? "S104 Gain/Loss" : "ACB Gain/Loss";
+  const gainValue = isGbp ? summary.totalS104GainGbp : summary.totalAcbGainUsd;
+
   const cards = [
     {
       label: "Total Proceeds",
       value: isGbp ? summary.totalProceedsGbp : summary.totalProceedsUsd,
     },
     {
-      label: "ACB Gain/Loss",
-      value: isGbp ? summary.totalAcbGainGbp : summary.totalAcbGainUsd,
+      label: gainLabel,
+      value: gainValue,
       colored: true,
     },
-    ...(isGbp
-      ? [{ label: "S104 Gain/Loss", value: summary.totalS104GainGbp, colored: true }]
-      : []),
     { label: "Disposals", value: summary.disposalCount, raw: true },
     { label: "Total Events", value: summary.totalCount, raw: true },
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-5">
+    <div className="grid gap-4 sm:grid-cols-4">
       {cards.map((card) => {
         const pnlColor =
           card.colored && card.value !== 0
