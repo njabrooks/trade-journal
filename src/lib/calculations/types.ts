@@ -239,3 +239,29 @@ export function isAcquisition(eventType: string): boolean {
 export function isDisposal(eventType: string): boolean {
   return DISPOSAL_EVENT_TYPES.includes(eventType as DisposalEventType);
 }
+
+// ============================================================================
+// Section 104 Types (UK Tax)
+// ============================================================================
+
+export type S104MatchType = "same_day" | "bed_and_breakfast" | "section_104_pool";
+
+export interface S104MatchRecord {
+  disposalEventId: string;
+  acquisitionEventId: string | null; // null for pool matches
+  matchType: S104MatchType;
+  quantityMatched: number;
+  costBasisGbp: number;
+  proceedsGbp: number;
+  realizedGainGbp: number;
+  acquisitionDate: string | null;
+  poolQtyAfter: number | null;
+  poolCostGbpAfter: number | null;
+}
+
+export interface S104PoolState {
+  poolQuantity: number;
+  poolCostBasisGbp: number;
+  poolAverageCostGbp: number;
+  firstAcquisitionDate?: Date;
+}

@@ -29,12 +29,15 @@ export interface UpsertEventCalculationData {
   fifoMatched?: boolean | null;
   lotConsumptionsCount?: number | null;
   lotType?: string | null;
-  // M5: GBP conversion fields
+  // M5: GBP conversion fields (ACB method in GBP)
   fxRateToGbp?: string | null;
   totalValueGbp?: string | null;
   costBasisGbp?: string | null;
   realizedGainGbp?: string | null;
   newAverageCostGbp?: string | null;
+  // M6: UK Section 104 fields (S104 method in GBP)
+  s104CostBasisGbp?: string | null;
+  s104RealizedGainGbp?: string | null;
 }
 
 export interface RunningQuantityUpdate {
@@ -77,6 +80,8 @@ export async function upsertEventCalculation(
   if (data.costBasisGbp !== undefined) updateSet.costBasisGbp = data.costBasisGbp;
   if (data.realizedGainGbp !== undefined) updateSet.realizedGainGbp = data.realizedGainGbp;
   if (data.newAverageCostGbp !== undefined) updateSet.newAverageCostGbp = data.newAverageCostGbp;
+  if (data.s104CostBasisGbp !== undefined) updateSet.s104CostBasisGbp = data.s104CostBasisGbp;
+  if (data.s104RealizedGainGbp !== undefined) updateSet.s104RealizedGainGbp = data.s104RealizedGainGbp;
 
   await dbClient
     .insert(eventCalculations)
@@ -99,6 +104,8 @@ export async function upsertEventCalculation(
       costBasisGbp: data.costBasisGbp ?? null,
       realizedGainGbp: data.realizedGainGbp ?? null,
       newAverageCostGbp: data.newAverageCostGbp ?? null,
+      s104CostBasisGbp: data.s104CostBasisGbp ?? null,
+      s104RealizedGainGbp: data.s104RealizedGainGbp ?? null,
     })
     .onConflictDoUpdate({
       target: eventCalculations.eventId,
@@ -170,6 +177,8 @@ export async function clearEventCalculations(
         costBasisGbp: null,
         realizedGainGbp: null,
         newAverageCostGbp: null,
+        s104CostBasisGbp: null,
+        s104RealizedGainGbp: null,
         calculatedAt: new Date(),
       })
       .where(eq(eventCalculations.userId, userId));

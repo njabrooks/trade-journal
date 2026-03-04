@@ -1968,6 +1968,7 @@ export type BatchStatus = (typeof BATCH_STATUSES)[number];
 
 export const CALC_PHASES = [
   'sort_indexes', 'running_quantity', 'cost_basis', 'average_cost_basis',
+  'gbp_conversion', 'uk_section_104',
   'daily_balances', 'price_population', 'market_value_enrichment',
   'daily_nav', 'completed',
 ] as const;
@@ -2146,12 +2147,15 @@ export const eventCalculations = pgTable('event_calculations', {
   fifoMatched: boolean('fifo_matched'),
   lotConsumptionsCount: integer('lot_consumptions_count'),
   lotType: text('lot_type'), // 'long' | 'short'
-  // M5: GBP conversion fields
+  // M5: GBP conversion fields (ACB method in GBP)
   fxRateToGbp: numeric('fx_rate_to_gbp'),
   totalValueGbp: numeric('total_value_gbp'),
   costBasisGbp: numeric('cost_basis_gbp'),
   realizedGainGbp: numeric('realized_gain_gbp'),
   newAverageCostGbp: numeric('new_average_cost_gbp'),
+  // M6: UK Section 104 fields (S104 method in GBP)
+  s104CostBasisGbp: numeric('s104_cost_basis_gbp'),
+  s104RealizedGainGbp: numeric('s104_realized_gain_gbp'),
   calculatedAt: timestamp('calculated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   uniqueEventId: uniqueIndex('idx_event_calculations_event_id').on(table.eventId),
@@ -2247,6 +2251,61 @@ export const averageCostPositions = pgTable('average_cost_positions', {
 
 export type AverageCostPosition = typeof averageCostPositions.$inferSelect;
 export type NewAverageCostPosition = typeof averageCostPositions.$inferInsert;
+
+// --- Section 104 Pools (UK tax: running S104 pool state per scope) ---
+
+export const S104_MATCH_TYPES = ['same_day', 'bed_and_breakfast', 'section_104_pool'] as const;
+export type S104MatchType = (typeof S104_MATCH_TYPES)[number];
+
+export const section104Pools = pgTable('section_104_pools', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: text('user_id').notNull(),
+  assetId: uuid('asset_id').notNull().references(() => assets.id),
+  owner: text('owner').notNull(),
+  account: text('account').notNull(),
+  poolQuantity: numeric('pool_quantity').notNull().default('0'),
+  poolCostBasisGbp: numeric('pool_cost_basis_gbp').notNull().default('0'),
+  poolAverageCostGbp: numeric('pool_average_cost_gbp').notNull().default('0'),
+  firstAcquisitionDate: timestamp('first_acquisition_date', { withTimezone: true }),
+  lastUpdatedEventId: uuid('last_updated_event_id').references(() => events.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniquePool: unique('unique_s104_pool').on(
+    table.userId, table.assetId, table.owner, table.account,
+  ),
+  idxS104PoolScope: index('idx_s104_pools_scope').on(
+    table.userId, table.assetId, table.owner, table.account,
+  ),
+}));
+
+export type Section104Pool = typeof section104Pools.$inferSelect;
+export type NewSection104Pool = typeof section104Pools.$inferInsert;
+
+// --- Section 104 Matches (UK tax: per-disposal match audit trail) ---
+
+export const section104Matches = pgTable('section_104_matches', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  disposalEventId: uuid('disposal_event_id').notNull().references(() => events.id),
+  acquisitionEventId: uuid('acquisition_event_id').references(() => events.id), // NULL for pool matches
+  matchType: text('match_type').notNull(), // S104MatchType
+  quantityMatched: numeric('quantity_matched').notNull(),
+  costBasisGbp: numeric('cost_basis_gbp').notNull(),
+  proceedsGbp: numeric('proceeds_gbp').notNull(),
+  realizedGainGbp: numeric('realized_gain_gbp').notNull(),
+  acquisitionDate: date('acquisition_date'),
+  poolQtyAfter: numeric('pool_qty_after'), // Pool state after match (pool matches only)
+  poolCostGbpAfter: numeric('pool_cost_gbp_after'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  idxS104MatchesDisposal: index('idx_s104_matches_disposal').on(table.disposalEventId),
+  idxS104MatchesAcquisition: index('idx_s104_matches_acquisition').on(table.acquisitionEventId),
+  s104MatchTypeCheck: check('s104_match_type_check', sql`match_type IN ('same_day', 'bed_and_breakfast', 'section_104_pool')`),
+  s104PositiveQty: check('s104_positive_qty', sql`quantity_matched > 0`),
+}));
+
+export type Section104Match = typeof section104Matches.$inferSelect;
+export type NewSection104Match = typeof section104Matches.$inferInsert;
 
 // --- Portfolio Daily Balances (end-of-day balances per scope) ---
 // Named portfolio_daily_balances to avoid confusion with TJ's cash_balances

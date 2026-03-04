@@ -197,7 +197,8 @@ export async function getAccountingDashboard(
   }
 
   // 5. Realized P&L — sum of all realized gains from event_calculations
-  const realizedGainCol = isGbp ? eventCalculations.realizedGainGbp : eventCalculations.realizedGain;
+  // GBP mode uses S104 values (UK tax method); USD mode uses ACB values
+  const realizedGainCol = isGbp ? eventCalculations.s104RealizedGainGbp : eventCalculations.realizedGain;
   const realizedResult = await db
     .select({
       total: sql<string>`COALESCE(SUM(${realizedGainCol}::numeric), 0)`,

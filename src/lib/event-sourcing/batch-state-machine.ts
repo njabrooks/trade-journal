@@ -166,6 +166,7 @@ export class BatchStateMachine implements BatchStateMachineInterface {
         cost_basis: 80,
         average_cost_basis: 83,
         gbp_conversion: 85,
+        uk_section_104: 86,
         daily_balances: 87,
         price_population: 90,
         market_value_enrichment: 93,

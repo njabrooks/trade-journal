@@ -33,6 +33,7 @@ export const CALC_PHASES = [
   'cost_basis',
   'average_cost_basis',
   'gbp_conversion',
+  'uk_section_104',
   'daily_balances',
   'price_population',
   'market_value_enrichment',

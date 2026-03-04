@@ -7,6 +7,7 @@ export type NavKey =
   | "portfolio"
   | "accounting"
   | "accounting-reconciliation"
+  | "accounting-transactions"
   | "macro-theses"
   | "asset-theses"
   | "strategies"

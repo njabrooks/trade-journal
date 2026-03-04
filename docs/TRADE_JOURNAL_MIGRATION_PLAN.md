@@ -1,7 +1,7 @@
 # Trade Journal Migration Plan
 
 **Created**: February 15, 2026
-**Status**: M1–M5 + M4.5a/M4.5b + M7 + M7.1 + M9a/M9b complete. Next: M6 (UK tax), then M8 (sunset).
+**Status**: M1–M6 + M4.5a/M4.5b + M7 + M7.1 + M9a/M9b + M6 Koinly reconciliation + M6f Tax Transactions complete. Next: M8 (sunset).
 **Goal**: Consolidate the Two Trees Capital portfolio infrastructure (events, calculations, price pipeline, daily NAV) into the Trade Journal app, then sunset the twotreescap-app.
 
 > **Note**: This file was moved from `twotreescap-app/docs/TRADE_JOURNAL_MIGRATION_PLAN.md` on 2026-02-19. The original location still has a copy that should be considered stale.
@@ -523,28 +523,126 @@ Migration: `migrations/20260301_m5_base_currency.sql`. Added GBP columns:
 - **GLXY conid/currency shift**: Not addressed in M5 — remains a FIFO matching issue unrelated to FX conversion.
 - **Positions/MTM adapter bugs**: Not addressed — latent (tables empty), only matters if position/MTM snapshots are enabled.
 
-### Phase M6: UK Tax Method (was TTC Phase 5)
+### Phase M6: UK Tax Method (was TTC Phase 5) — DONE (2026-03-02)
 
 **Goal**: HMRC-compliant Section 104 pooling with same-day and 30-day bed & breakfast rules.
 
-**Status**: Pending. Depends on M5 (complete).
+**Status**: Complete. Migration: `migrations/20260302_m6_uk_section_104.sql`. Validated against HMRC worked examples (4/4 pass). Full engine recalc produced 10,291 match records across 796 scopes.
 
-Ported from [COMPLETION_PLAN.md § Phase 5](../../twotreescap-app/docs/COMPLETION_PLAN.md#phase-5-uk-tax-method--deferred):
+**What was built:**
 
-1. **New calculation engine**: `uk-section-104.ts` with 3-tier matching (same-day → B&B → pool)
-2. **Schema**: `section_104_pools` table, `matchType` on consumptions
-3. **Validation**: Against HMRC published worked examples
-4. **Wiring**: `owners.taxJurisdiction` → available cost basis methods
+#### M6a: Schema Migration — DONE
 
-M5's `totalValueGbp` per-event values provide the GBP-denominated acquisition/disposal amounts that Section 104 operates on directly, without re-doing FX conversion.
+Migration: `migrations/20260302_m6_uk_section_104.sql`. Two new tables:
 
-#### M6 Verification: Koinly GBP Reconciliation
+| Table | Purpose |
+|-------|---------|
+| `section_104_pools` | Running pool state per (user, asset, owner, account): quantity, cost basis GBP, average cost GBP |
+| `section_104_matches` | Audit trail of every disposal match: match type, quantity, cost basis, proceeds, realized gain |
 
-After M6 is implemented, reconcile against Koinly's official GBP tax report as a dual-purpose accuracy check:
-1. **GBP currency conversion accuracy** — Verify our `totalValueGbp` values match Koinly's GBP transaction values
-2. **Section 104 cost basis / gain-loss accuracy** — Verify our Section 104 pooled cost basis and realized gains match Koinly's (which also uses Section 104)
+Also updated:
+- `owners.tax_jurisdiction` — set to `'GB'` for Nick
+- `accounts.cost_basis_method` — set to `'uk_section_104'` for Nick's 5 accounts (IBKR, Deribit, NanoX_SOL, Property, Kraken)
 
-This provides an independent cross-check against a production tax reporting tool.
+Schema additions in `src/db/schema.ts`: Drizzle table definitions for both tables, `S104_MATCH_TYPES` const, fixed `CALC_PHASES` (was missing `'gbp_conversion'`).
+
+#### M6b: S104 Engine Phase — DONE
+
+- `src/lib/calculations/uk-section-104.ts` (~730 lines) — Two-pass algorithm per (asset, owner, account) scope:
+  - **Pass 1**: Iterate disposals chronologically. For each, match same-day acquisitions (FIFO), then B&B acquisitions in next 30 calendar days (FIFO). Track reserved quantities.
+  - **Pass 2**: Iterate all events chronologically. Add unreserved acquisition portions to pool. Match remaining disposal quantities against pool at pool average cost.
+- All values in GBP — reads `totalValueGbp` from M5's gbp_conversion phase
+- Overwrites `costBasisGbp`, `realizedGainGbp`, `newAverageCostGbp` on event_calculations for S104 accounts
+- Special event handling: futures settlements, Koinly transfers, "Realized gain" tags, ADJ events bypass S104 matching
+- Registered in `engine.ts` between `gbp_conversion` and `daily_balances` in the DAG
+
+#### M6c: Validation — DONE
+
+- `scripts/validate-section-104.ts` — Pure in-memory validation against 4 HMRC worked examples (no DB):
+  1. HMRC Example 1: Same-day + Pool
+  2. HMRC Example 2: B&B Rule
+  3. HMRC Example 3: All Three Rules
+  4. Pool Only (no same-day or B&B)
+- All 4 tests pass
+
+#### M6d: Tax Summary Script — DONE
+
+- `scripts/s104-tax-summary.ts` — Queries `section_104_matches` joined with events/assets, displays realized gains by UK tax year (Apr 6 – Apr 5), broken down by asset and match type. Also shows active S104 pool states. Supports `--year` and `--format json` flags.
+
+#### M6e: Engine Recalc Results
+
+Full recalc (30,140 events) with S104 phase:
+- 19,665 events processed for owner Nick across 796 scopes
+- 10,291 match records: same-day, bed & breakfast, and Section 104 pool
+- 163 active pools with non-zero holdings
+- 0 errors
+
+Net gains by UK tax year:
+
+| Tax Year | Net Gain GBP |
+|----------|-------------|
+| 2018/19 | -£3,053 |
+| 2019/20 | +£334,786 |
+| 2020/21 | -£214,250 |
+| 2021/22 | +£688,557 |
+| 2022/23 | -£332,577 |
+| 2023/24 | +£570,518 |
+| 2024/25 | +£393,389 |
+| 2025/26 | -£162,359 (partial) |
+
+**Key implementation decisions:**
+- **Owner-based filtering** (not account-based): `events.account` values (`IBKR`, `Koinly`, `Manual`) don't match `accounts.brokerAccountId` values (`U9896103`, etc.). S104 phase queries `accounts` for owners with `cost_basis_method = 'uk_section_104'`, then filters events by `owner IN (...)`. This correctly captures all events for UK tax owners.
+- **Overwrite strategy**: S104 overwrites GBP cost basis/gain fields on `event_calculations` rather than adding new columns. The `section_104_matches` table provides the detailed audit trail.
+- **Downstream transparency**: `daily_balances` reads `newAverageCostGbp` unchanged, so S104 pool average cost flows through automatically.
+
+**Files created:**
+
+| File | Purpose |
+|------|---------|
+| `migrations/20260302_m6_uk_section_104.sql` | Schema migration |
+| `src/lib/calculations/uk-section-104.ts` | Core S104 engine phase |
+| `scripts/validate-section-104.ts` | HMRC validation (4/4 pass) |
+| `scripts/s104-tax-summary.ts` | Tax year gain/loss summary |
+
+**Files modified:**
+
+| File | Change |
+|------|--------|
+| `src/db/schema.ts` | Added table definitions, fixed CALC_PHASES |
+| `src/types/event-sourcing.ts` | Added `uk_section_104` to CALC_PHASES |
+| `src/lib/calculations/types.ts` | Added S104 types (S104MatchRecord, S104PoolState, etc.) |
+| `src/lib/calculations/engine.ts` | Registered phase, updated DAG dependencies |
+| `src/lib/event-sourcing/batch-state-machine.ts` | Added phase progress entry |
+
+#### M6 Verification: Koinly GBP Reconciliation — DONE (2026-03-04)
+
+Reconciled our S104 engine against Koinly's GBP CGT reports for TTC across all 3 tax years (2022/23, 2023/24, 2024/25). Full results documented in [`docs/koinly-s104-reconciliation.md`](koinly-s104-reconciliation.md).
+
+**Key findings:**
+
+1. **Our S104 engine is correct.** Forward B&B matching (FIFO, no tax year boundary restriction) per HMRC TCGA 1992 s106A.
+
+2. **Two confirmed Koinly bugs:**
+   - **B&B direction**: Koinly matches disposals with *prior* acquisitions (backward). HMRC requires *subsequent* acquisitions (forward, within 30 days). Proven via WIF reverse-engineering (Jun 21→Jun 20 exact match backward; should be Jun 21→Jun 25 forward). Shifts ~£118K between 2023/24 and 2024/25 for WIF alone.
+   - **B&B tax year boundary**: Koinly restricts B&B to the same Apr 6 – Apr 5 tax year. HMRC has no such restriction.
+
+3. **Futures P&L correctly handled:** The ~£126K "USD" entries in Koinly's CGT report are FTX futures realized P&L, not fiat FX gains. Our engine computes these via the universal layer (average_cost_basis + gbp_conversion phases) with `realized_gain_gbp` stored in `event_calculations`. They are correctly excluded from S104 pooling. Our figure (-£129,145) vs Koinly (-£126,332) = ~2% GBP pricing variance.
+
+4. **Reconciliation script limitation:** `reconcile-koinly.ts` only aggregates `section_104_matches`, missing special event gains in `event_calculations`. When futures P&L is included, 2022/23 residual delta drops from +£134K to +£4,879.
+
+5. **Remaining deltas explained:** 2023/24 (-£144K) and 2024/25 (+£114K) are dominated by B&B direction differences. These conserve across years (WIF total delta: +£795, rounding only). Smaller per-asset deltas are GBP pricing variance (~0.3%) and event count differences.
+
+**Nick reconciliation not required** — engine logic confirmed correct via TTC reconciliation. Nick uses the same S104 phase with the same forward B&B implementation.
+
+**Koinly support ticket raised** (2026-03-04) reporting the B&B direction bug with screenshot evidence. Awaiting dev team response.
+
+#### M6f: GBP ACB Preservation + Tax Transactions Page — DONE (2026-03-04)
+
+Added dedicated S104 fields (`s104_cost_basis_gbp`, `s104_realized_gain_gbp`) to `event_calculations` so the S104 phase no longer overwrites GBP ACB values. Now preserves 4 cost basis outputs: FIFO (USD), ACB (USD), ACB (GBP), S104 (GBP).
+
+Built Tax Transactions page at `/dashboard/accounting/transactions` — server-paginated table showing events with multi-method cost basis, filterable by tax year/owner/asset/event type/S104 match type, with CSV export. Currency toggle switches between USD and GBP views; GBP mode adds S104 cost basis and match type columns.
+
+**Deferred: Koinly cost basis method** — Could be added as a fifth method by parameterizing the S104 matching core with `bnbDirection: 'forward' | 'backward'` and `bnbTaxYearBoundary: boolean`. Would enable side-by-side Koinly vs HMRC comparison in the transactions table.
 
 ### Phase M7: Portfolio Reconciliation Framework — DONE (2026-02-19)
 
@@ -862,14 +960,14 @@ TTC uses Clerk (multi-user auth with `userId` on every table). Trade Journal use
 | M4.5a: Price Tier Reclassification | 0.5 day | M4 | DONE (2026-02-20) |
 | M4.5b: Per-Source Delivery Monitoring | 1 day | M4.5a | DONE (2026-03-01) |
 | M5: Base Currency | 3-5 days | M4 | DONE (2026-03-02) |
-| M6: UK Tax Method | 5-8 days | M5 | Pending |
+| M6: UK Tax Method | 5-8 days | M5 | DONE (2026-03-02) |
 | M7: Portfolio Reconciliation | ~~2-3 days~~ | M2 + M3 | DONE (2026-02-19) |
 | M7.1: Reconciliation Resolution | ~~2-3 days~~ | M7 | DONE (2026-03-01) |
 | M8: Sunset | 1 day | M7.1, M5 verified | Pending |
 | M9a/b: IBKR Event Automation | ~~3-5 days~~ | M2 | DONE (2026-02-26) |
 | M9c: Koinly Automation | Low priority | M9a | Deferred |
 
-**Dependency chain**: M5 is complete. M6 (Section 104) is next — it builds on M5's per-event GBP values. After M6, reconcile against Koinly's GBP tax report to validate both FX accuracy and Section 104 calculations. M8 (sunset) requires M6 verified. M9a/M9b are complete — IBKR event ingestion is automated. The remaining automation gap is scheduled calculation engine runs (not yet wired up).
+**Dependency chain**: M1–M6 + Koinly reconciliation complete. M8 (sunset) can now proceed. M9a/M9b are complete — IBKR event ingestion is automated. The remaining automation gap is scheduled calculation engine runs (not yet wired up).
 
 ---
 

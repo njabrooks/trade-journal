@@ -25,6 +25,9 @@
  *          gbp_conversion
  *                 │
  *                 ▼
+ *        uk_section_104 (S104 pooling for UK accounts)
+ *                 │
+ *                 ▼
  *          daily_balances
  *                 │
  *                 ▼
@@ -56,6 +59,7 @@ import { createTaxLots } from "./lot-creation";
 import { runFifoMatchingOptimized } from "./fifo-matching";
 import { computeAverageCostBasisOptimized } from "./average-cost";
 import { computeGbpConversion } from "./gbp-conversion";
+import { computeUkSection104 } from "./uk-section-104";
 import { computeDailyBalances } from "./daily-balances";
 import { populatePricesFromIbkr } from "./price-population";
 import { enrichDailyMarketValues } from "./market-value-enrichment";
@@ -157,8 +161,13 @@ const CALCULATIONS: Calculation[] = [
     compute: computeGbpConversion,
   },
   {
-    name: "daily_balances",
+    name: "uk_section_104",
     depends: ["gbp_conversion"],
+    compute: computeUkSection104,
+  },
+  {
+    name: "daily_balances",
+    depends: ["uk_section_104"],
     compute: computeDailyBalances,
   },
   {

@@ -43,6 +43,7 @@ const MAIN_NAV = [
   { href: "/dashboard/portfolio", label: "Portfolio", icon: LayoutDashboard, id: "portfolio" },
   { href: "/dashboard/accounting", label: "Accounting", icon: Calculator, id: "accounting" },
   { href: "/dashboard/accounting/reconciliation", label: "Reconciliation", icon: RefreshCw, id: "accounting-reconciliation" },
+  { href: "/dashboard/accounting/transactions", label: "Tax Transactions", icon: FileText, id: "accounting-transactions" },
 ] as const;
 
 const ADMIN_NAV = [
