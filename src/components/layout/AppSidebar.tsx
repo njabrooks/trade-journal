@@ -31,19 +31,24 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const MAIN_NAV = [
+const ACTIVITY_NAV = [
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
-  // REMOVED: Blotter - deprecated, replaced by Journal
   { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
+] as const;
+
+const ENTITIES_NAV = [
   { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
   { href: "/asset-theses", label: "Asset Theses", icon: Target, id: "asset-theses" },
   { href: "/macro-theses", label: "Macro Theses", icon: TrendingUp, id: "macro-theses" },
   { href: "/claims", label: "Claims", icon: Lightbulb, id: "claims" },
   { href: "/research", label: "Research", icon: Library, id: "research" },
+] as const;
+
+const PORTFOLIO_NAV = [
   { href: "/dashboard/portfolio", label: "Portfolio", icon: LayoutDashboard, id: "portfolio" },
   { href: "/dashboard/accounting", label: "Accounting", icon: Calculator, id: "accounting" },
   { href: "/dashboard/accounting/reconciliation", label: "Reconciliation", icon: RefreshCw, id: "accounting-reconciliation" },
-  { href: "/dashboard/accounting/transactions", label: "Tax Transactions", icon: FileText, id: "accounting-transactions" },
+  { href: "/dashboard/accounting/transactions", label: "Transactions", icon: FileText, id: "accounting-transactions" },
 ] as const;
 
 const ADMIN_NAV = [
@@ -60,35 +65,40 @@ const ADMIN_NAV = [
 export function AppSidebar() {
   const pathname = usePathname();
   
-  // Determine active nav
-  const activeMainNav = MAIN_NAV.find(nav => pathname.startsWith(nav.href))?.id;
+  const ALL_NAV = [...ACTIVITY_NAV, ...ENTITIES_NAV, ...PORTFOLIO_NAV];
+  const activeNav = ALL_NAV.find(nav => pathname.startsWith(nav.href))?.id;
   const activeAdminNav = ADMIN_NAV.find(nav => pathname.startsWith(nav.href))?.id;
 
   return (
     <Sidebar>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {MAIN_NAV.map((item) => {
-                const isActive = activeMainNav === item.id;
-                const Icon = item.icon;
-                
-                return (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-                      <Link href={item.href}>
-                        <Icon />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {[
+          { label: "Activity", items: ACTIVITY_NAV },
+          { label: "Entities", items: ENTITIES_NAV },
+          { label: "Portfolio", items: PORTFOLIO_NAV },
+        ].map((section) => (
+          <SidebarGroup key={section.label}>
+            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => {
+                  const isActive = activeNav === item.id;
+                  const Icon = item.icon;
+                  return (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                        <Link href={item.href}>
+                          <Icon />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
 
         <SidebarGroup>
           <SidebarGroupLabel>Admin</SidebarGroupLabel>
