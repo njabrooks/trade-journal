@@ -3,13 +3,13 @@ import { notFound } from 'next/navigation';
 import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDetailLayout';
 import { StrategyTabs } from '@/components/layout/StrategyTabs';
 import { StrategySidebar } from '@/components/strategies/StrategySidebar';
-import { Sparkline } from '@/components/charts/Sparkline';
+import { StrategyOverviewCharts } from '@/components/strategies/StrategyOverviewCharts';
 import { getStrategyDetail } from '@/db/queries/strategies';
 import { getTriageQueueForStrategy } from '@/db/queries/triage';
 import { db } from '@/db';
 import { signals } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { formatCurrency, formatDateLabel, formatPercent } from '@/lib/formatters';
+import { formatCurrency } from '@/lib/formatters';
 import { EntityStatusBadge } from '@/components/ui/badge';
 
 interface OverviewPageProps {
@@ -42,20 +42,8 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
     notFound();
   }
 
-  const { strategy } = detail;
-  const latestMetrics = detail.metricsTimeline.at(-1);
-  // Prefer actual positions count over metrics snapshot (metrics may be per-account, positions query is complete)
-  const openPositionCount = detail.openPositions.length || latestMetrics?.numOpenPositions || 0;
-
-  const pnlSparkline = detail.metricsTimeline.map((point) => ({
-    label: formatDateLabel(point.snapshotDate),
-    value: point.totalUnrealizedPnl,
-  }));
-
-  const notionalSparkline = detail.metricsTimeline.map((point) => ({
-    label: formatDateLabel(point.snapshotDate),
-    value: point.totalAbsNotional,
-  }));
+  const { strategy, liveMetrics } = detail;
+  const openPositionCount = liveMetrics.openPositionsCount;
 
   const statusBadge = <EntityStatusBadge status={strategy.status} />;
 
@@ -97,43 +85,11 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
       }
     >
 
-      {/* Key Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Abs Notional" value={formatCurrency(latestMetrics?.totalAbsNotional ?? null)} />
-        <Metric
-          label="Unrealized PnL"
-          value={formatCurrency(latestMetrics?.totalUnrealizedPnl ?? null)}
-          valueClass={
-            latestMetrics && (latestMetrics.totalUnrealizedPnl ?? 0) >= 0
-              ? 'text-emerald-600'
-              : 'text-rose-600'
-          }
-        />
-        <Metric label="Pct NAV" value={formatPercent(latestMetrics?.pctNavAbsNotional ?? null)} />
-        <Metric label="Open Positions" value={openPositionCount.toString()} />
-      </div>
-
-      {/* PnL Timeline */}
-      <EntitySection title="Performance">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">PnL Timeline</p>
-            <p className="text-2xl font-semibold text-foreground">
-              {formatCurrency(latestMetrics?.totalUnrealizedPnl ?? null)}
-            </p>
-          </div>
-          <span className="text-xs text-muted-foreground">{pnlSparkline.length} pts</span>
-        </div>
-        <div className="h-32">
-          <Sparkline data={pnlSparkline} stroke="#0ea5e9" />
-        </div>
-        <div className="mt-6 border-t pt-4">
-          <p className="text-sm font-medium text-muted-foreground">Abs Notional</p>
-          <div className="mt-2 h-32">
-            <Sparkline data={notionalSparkline} stroke="#2563eb" />
-          </div>
-        </div>
-      </EntitySection>
+      {/* Metric Cards (live from positions) + Performance Chart (historical snapshots) */}
+      <StrategyOverviewCharts
+        metricsTimeline={detail.metricsTimeline}
+        liveMetrics={liveMetrics}
+      />
 
       {/* Open Positions */}
       <EntitySection title={`Open Positions (${detail.openPositions.length})`}>
@@ -142,80 +98,105 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4">Symbol</th>
+                <th className="py-2 pr-4">Account</th>
                 <th className="py-2 pr-4">Qty</th>
-                <th className="py-2 pr-4">Abs Notional</th>
+                <th className="py-2 pr-4">Mkt Value</th>
                 <th className="py-2">PnL</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-muted-foreground">
               {detail.openPositions.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-muted-foreground">
+                  <td colSpan={5} className="py-6 text-center text-muted-foreground">
                     No open positions assigned to this strategy.
                   </td>
                 </tr>
               ) : (
-                detail.openPositions.map((position) => (
-                  <tr key={position.id}>
-                    <td className="py-2 pr-4 font-medium text-foreground">
-                      {position.symbol}
-                      {position.expiry ? ` · ${position.expiry}` : ''}
+                <>
+                  {detail.openPositions.map((position) => (
+                    <tr key={position.id}>
+                      <td className="py-2 pr-4 font-medium text-foreground">
+                        {position.symbol}
+                        {position.expiry ? ` · ${position.expiry}` : ''}
+                      </td>
+                      <td className="py-2 pr-4 text-xs">{position.accountLabel ?? '—'}</td>
+                      <td className="py-2 pr-4">{position.quantity}</td>
+                      <td className="py-2 pr-4">{formatCurrency(position.marketValue ?? null)}</td>
+                      <td className="py-2">
+                        <span
+                          className={
+                            position.unrealizedPnl && position.unrealizedPnl >= 0
+                              ? 'text-emerald-600'
+                              : 'text-rose-600'
+                          }
+                        >
+                          {formatCurrency(position.unrealizedPnl ?? null)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-border font-semibold text-foreground">
+                    <td className="py-2 pr-4" colSpan={2}>Total</td>
+                    <td className="py-2 pr-4">
+                      {detail.openPositions.reduce((sum, p) => sum + (p.quantity ?? 0), 0)}
                     </td>
-                    <td className="py-2 pr-4">{position.quantity}</td>
-                    <td className="py-2 pr-4">{formatCurrency(position.absNotional ?? null)}</td>
+                    <td className="py-2 pr-4">
+                      {formatCurrency(detail.openPositions.reduce((sum, p) => sum + (p.marketValue ?? 0), 0))}
+                    </td>
                     <td className="py-2">
-                      <span
-                        className={
-                          position.unrealizedPnl && position.unrealizedPnl >= 0
-                            ? 'text-emerald-600'
-                            : 'text-rose-600'
-                        }
-                      >
-                        {formatCurrency(position.unrealizedPnl ?? null)}
-                      </span>
+                      {(() => {
+                        const totalPnl = detail.openPositions.reduce((sum, p) => sum + (p.unrealizedPnl ?? 0), 0);
+                        return (
+                          <span className={totalPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
+                            {formatCurrency(totalPnl)}
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
-                ))
+                </>
               )}
             </tbody>
           </table>
         </div>
       </EntitySection>
 
-      {/* Recent Trades */}
-      <EntitySection title={`Recent Trades (${detail.recentTrades.length})`}>
+      {/* Trades */}
+      <EntitySection title={`Trades (${detail.trades.length})`}>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4">Date</th>
+                <th className="py-2 pr-4">Account</th>
                 <th className="py-2 pr-4">Side</th>
-                <th className="py-2 pr-4">Qty</th>
-                <th className="py-2 pr-4">Price</th>
                 <th className="py-2 pr-4">Symbol</th>
+                <th className="py-2 pr-4">Qty</th>
+                <th className="py-2 pr-4">Avg Price</th>
                 <th className="py-2">Gross</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border text-muted-foreground">
-              {detail.recentTrades.length === 0 ? (
+              {detail.trades.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-muted-foreground">
+                  <td colSpan={7} className="py-6 text-center text-muted-foreground">
                     No trades linked to this strategy.
                   </td>
                 </tr>
               ) : (
-                detail.recentTrades.map((trade) => (
-                  <tr key={trade.id}>
+                detail.trades.map((trade, i) => (
+                  <tr key={`${trade.tradeDate}-${trade.accountLabel}-${trade.side}-${trade.symbol}-${i}`}>
                     <td className="py-2 pr-4 text-xs text-muted-foreground">
                       {trade.tradeDate
                         ? new Date(trade.tradeDate).toLocaleDateString('en-GB')
                         : '—'}
                     </td>
+                    <td className="py-2 pr-4 text-xs">{trade.accountLabel ?? '—'}</td>
                     <td className="py-2 pr-4 font-medium">{trade.side}</td>
-                    <td className="py-2 pr-4">{trade.quantity}</td>
-                    <td className="py-2 pr-4">{trade.price.toFixed(2)}</td>
                     <td className="py-2 pr-4">{trade.symbol}</td>
-                    <td className="py-2">{formatCurrency(trade.grossAmount ?? null)}</td>
+                    <td className="py-2 pr-4">{trade.totalQuantity}</td>
+                    <td className="py-2 pr-4">{trade.avgPrice.toFixed(2)}</td>
+                    <td className="py-2">{formatCurrency(trade.totalGross ?? null)}</td>
                   </tr>
                 ))
               )}
@@ -227,19 +208,3 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
   );
 }
 
-function Metric({
-  label,
-  value,
-  valueClass,
-}: {
-  label: string;
-  value: string;
-  valueClass?: string;
-}) {
-  return (
-    <div className="rounded-lg border border bg-card p-4 shadow-sm">
-      <p className="text-sm font-medium text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-xl font-semibold ${valueClass ?? 'text-foreground'}`}>{value}</p>
-    </div>
-  );
-}

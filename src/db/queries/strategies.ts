@@ -12,9 +12,8 @@ import {
   assetTheses,
   assetThesisRelatedMacroTheses,
   macroTheses,
-  navSnapshots,
+  portfolioSnapshots,
   positions,
-  strategyMetricsSnapshots,
   strategies,
   strategyTemplates,
   trades,
@@ -32,7 +31,7 @@ export interface StrategyListItem {
   closedAt: Date | null;
   accountLabel: string | null;
   accountBrokerId: string | null;
-  latestAbsNotional: number | null;
+  latestMarketValue: number | null;
   latestUnrealized: number | null;
   latestPctNav: number | null;
   strategyType: string | null;
@@ -110,9 +109,9 @@ export async function getStrategiesForList(
   const metricsByStrategy = new Map<
     string,
     {
-      totalAbsNotional: number | null;
+      totalMarketValue: number | null;
       totalUnrealizedPnl: number | null;
-      pctNavAbsNotional: number | null;
+      pctNav: number | null;
     }
   >();
 
@@ -123,7 +122,7 @@ export async function getStrategiesForList(
     const positionMetrics = await db
       .select({
         strategyId: positions.strategyId,
-        totalAbsNotional: sql<string>`SUM(ABS(COALESCE(${positions.absNotional}, 0)))`,
+        totalMarketValue: sql<string>`SUM(ABS(COALESCE(${positions.marketValueUsd}, 0)))`,
         totalUnrealizedPnl: sql<string>`SUM(COALESCE(${positions.unrealizedPnl}, 0))`,
       })
       .from(positions)
@@ -140,28 +139,34 @@ export async function getStrategiesForList(
       )
       .groupBy(positions.strategyId);
 
-    // Get latest NAV for pct calculation (sum across all accounts for the latest date)
+    // Get latest NAV for pct calculation from portfolio_snapshots (per-account latest dates, USD-normalized)
     const latestNavResult = await db
       .select({
-        totalNav: sql<string>`SUM(${navSnapshots.total})`,
+        totalNav: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
       })
-      .from(navSnapshots)
+      .from(portfolioSnapshots)
       .where(
-        sql`${navSnapshots.reportDate} = (
-          SELECT MAX(report_date) FROM nav_snapshots
-        )`
+        and(
+          eq(portfolioSnapshots.level, "account"),
+          sql`${portfolioSnapshots.snapshotDate} = (
+            SELECT MAX(ps2.snapshot_date)
+            FROM portfolio_snapshots ps2
+            WHERE ps2.account_id = ${portfolioSnapshots.accountId}
+              AND ps2.level = 'account'
+          )`
+        )
       );
 
     const latestNav = toNumber(latestNavResult[0]?.totalNav) ?? 0;
 
     for (const row of positionMetrics) {
       if (row.strategyId) {
-        const absNotional = toNumber(row.totalAbsNotional) ?? 0;
-        const pctNav = latestNav > 0 ? (absNotional / latestNav) * 100 : null;
+        const marketValue = toNumber(row.totalMarketValue) ?? 0;
+        const pctNav = latestNav > 0 ? (marketValue / latestNav) * 100 : null;
         metricsByStrategy.set(row.strategyId, {
-          totalAbsNotional: toNumber(row.totalAbsNotional),
+          totalMarketValue: toNumber(row.totalMarketValue),
           totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
-          pctNavAbsNotional: pctNav,
+          pctNav: pctNav,
         });
       }
     }
@@ -223,16 +228,16 @@ export async function getStrategiesForList(
     });
   }
 
-  // Get position-derived account labels for each strategy with abs notional for sorting
+  // Get position-derived account labels for each strategy with market value for sorting
   // Strategies can span multiple accounts after merges
-  const positionAccountsByStrategy = new Map<string, Array<{ label: string; absNotional: number }>>();
+  const positionAccountsByStrategy = new Map<string, Array<{ label: string; marketValue: number }>>();
   if (strategyIds.length > 0) {
     const positionAccountRows = await db
       .select({
         strategyId: positions.strategyId,
         accountLabel: accounts.label,
         brokerAccountId: accounts.brokerAccountId,
-        totalAbsNotional: sql<string>`SUM(ABS(COALESCE(${positions.absNotional}, 0)))`,
+        totalMarketValue: sql<string>`SUM(ABS(COALESCE(${positions.marketValueUsd}, 0)))`,
       })
       .from(positions)
       .innerJoin(accounts, eq(positions.accountId, accounts.id))
@@ -257,16 +262,16 @@ export async function getStrategiesForList(
           if (!accountEntries.some(e => e.label === accountDisplay)) {
             accountEntries.push({
               label: accountDisplay,
-              absNotional: toNumber(row.totalAbsNotional) ?? 0,
+              marketValue: toNumber(row.totalMarketValue) ?? 0,
             });
           }
         }
       }
     });
 
-    // Sort accounts by descending abs notional within each strategy
+    // Sort accounts by descending market value within each strategy
     positionAccountsByStrategy.forEach((accounts, strategyId) => {
-      accounts.sort((a, b) => b.absNotional - a.absNotional);
+      accounts.sort((a, b) => b.marketValue - a.marketValue);
     });
   }
 
@@ -286,7 +291,7 @@ export async function getStrategiesForList(
             ? (statusByStrategy.get(row.id) ?? "complete")
             : dbStatus;
       const metrics = metricsByStrategy.get(row.id);
-      // Get position-derived account labels (already sorted by desc abs notional)
+      // Get position-derived account labels (already sorted by desc market value)
       const posAccountEntries = positionAccountsByStrategy.get(row.id) ?? [];
       const posAccountLabels = posAccountEntries.map(e => e.label);
       // If no position accounts found, use strategy-level account as fallback (prefer label)
@@ -301,9 +306,9 @@ export async function getStrategiesForList(
         closedAt: row.closedAt,
         accountLabel: row.accountLabel,
         accountBrokerId: row.accountBrokerId,
-        latestAbsNotional: metrics?.totalAbsNotional ?? null,
+        latestMarketValue: metrics?.totalMarketValue ?? null,
         latestUnrealized: metrics?.totalUnrealizedPnl ?? null,
-        latestPctNav: metrics?.pctNavAbsNotional ?? null,
+        latestPctNav: metrics?.pctNav ?? null,
         strategyType: row.strategyType,
         assetThesisId: row.assetThesisId,
         assetViewTitle: row.assetViewTitle,
@@ -356,9 +361,10 @@ export interface StrategyDetail {
     strike: number | null;
     optionRight: string | null;
     quantity: number;
-    absNotional: number | null;
+    marketValue: number | null;
     unrealizedPnl: number | null;
     snapshotDate: string | null;
+    accountLabel: string | null;
   }[];
   triageFlags: {
     id: string;
@@ -369,16 +375,24 @@ export interface StrategyDetail {
     symbol: string;
     pctNavAbsNotional: number | null;
   }[];
-  recentTrades: {
-    id: string;
-    tradeDate: Date;
+  trades: {
+    tradeDate: string;
+    accountLabel: string | null;
     side: string;
-    quantity: number;
-    price: number;
     symbol: string;
-    grossAmount: number | null;
+    totalQuantity: number;
+    avgPrice: number;
+    totalGross: number | null;
+    tradeCount: number;
   }[];
-  // Note: blotter property removed - action history now in journal_entries
+  // Live metrics computed from current positions + portfolio_snapshots NAV (not pre-computed snapshots)
+  liveMetrics: {
+    totalMarketValue: number;
+    totalUnrealizedPnl: number;
+    pctNav: number | null;
+    minDte: number | null;
+    openPositionsCount: number;
+  };
 }
 
 export async function getStrategyDetail(strategyId: string): Promise<StrategyDetail | null> {
@@ -453,29 +467,40 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       linkedMacroTheses = macroThesisRows;
     }
 
-    const metricsTimelineRows = await db
+    // Build metrics timeline directly from positions table (the authoritative time series).
+    // Positions are always written on every ingestion run, so there are no gaps.
+    // For NAV/% NAV, join portfolio_snapshots using per-account latest date <= each position date.
+    const positionTimelineRows = await db
     .select({
-      snapshotDate: strategyMetricsSnapshots.snapshotDate,
-      totalAbsNotional: strategyMetricsSnapshots.totalAbsNotional,
-      totalUnrealizedPnl: strategyMetricsSnapshots.totalUnrealizedPnl,
-      pctNavAbsNotional: strategyMetricsSnapshots.pctNavAbsNotional,
-      numOpenPositions: strategyMetricsSnapshots.numOpenPositions,
-      minDte: strategyMetricsSnapshots.minDte,
-      maxDte: strategyMetricsSnapshots.maxDte,
+      snapshotDate: positions.snapshotDate,
+      totalMarketValue: sql<string>`SUM(ABS(CAST(COALESCE(${positions.marketValueUsd}, '0') AS NUMERIC)))`,
+      totalUnrealizedPnl: sql<string>`SUM(CAST(COALESCE(${positions.unrealizedPnl}, '0') AS NUMERIC))`,
+      numOpenPositions: sql<number>`COUNT(*)::int`,
     })
-    .from(strategyMetricsSnapshots)
-    .where(eq(strategyMetricsSnapshots.strategyId, strategyId))
-    .orderBy(asc(strategyMetricsSnapshots.snapshotDate));
+    .from(positions)
+    .where(
+      and(
+        eq(positions.strategyId, strategyId),
+        sql`${positions.quantity} != 0`
+      )
+    )
+    .groupBy(positions.snapshotDate)
+    .orderBy(asc(positions.snapshotDate));
 
-    const metricsTimeline = metricsTimelineRows.map((row) => ({
-    snapshotDate: row.snapshotDate,
-    totalAbsNotional: toNumber(row.totalAbsNotional),
-    totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
-    pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
-    numOpenPositions: row.numOpenPositions ?? null,
-    minDte: row.minDte ?? null,
-    maxDte: row.maxDte ?? null,
-  }));
+    const metricsTimeline = positionTimelineRows
+    .filter((row): row is typeof row & { snapshotDate: string } => row.snapshotDate !== null)
+    .map((row) => {
+      const mv = toNumber(row.totalMarketValue);
+      return {
+        snapshotDate: row.snapshotDate,
+        totalAbsNotional: mv,
+        totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
+        pctNavAbsNotional: null as number | null,
+        numOpenPositions: (row.numOpenPositions ?? null) as number | null,
+        minDte: null as number | null,
+        maxDte: null as number | null,
+      };
+    });
 
     // Get latest snapshot date for this strategy
     const latestSnapshotResult = await db
@@ -504,11 +529,13 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
           strike: positions.strike,
           optionRight: positions.optionRight,
           quantity: positions.quantity,
-          absNotional: positions.absNotional,
+          marketValueUsd: positions.marketValueUsd,
           unrealizedPnl: positions.unrealizedPnl,
           snapshotDate: positions.snapshotDate,
+          accountLabel: accounts.label,
         })
         .from(positions)
+        .leftJoin(accounts, eq(positions.accountId, accounts.id))
         .where(
           and(
             eq(positions.strategyId, strategyId),
@@ -527,9 +554,10 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     strike: toNumber(row.strike),
     optionRight: row.optionRight,
     quantity: Number(row.quantity),
-    absNotional: toNumber(row.absNotional),
+    marketValue: toNumber(row.marketValueUsd),
     unrealizedPnl: toNumber(row.unrealizedPnl),
     snapshotDate: row.snapshotDate,
+    accountLabel: row.accountLabel,
   }));
 
     const triageRows = await db
@@ -557,34 +585,83 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
   }));
 
-    // Fetch recent trades for performance page display
+    // Fetch all trades aggregated by day + account + side + symbol
     const tradesRows = await db
     .select({
-      id: trades.id,
       tradeDate: trades.tradeDate,
+      accountLabel: accounts.label,
       side: trades.side,
-      quantity: trades.quantity,
-      price: trades.price,
       symbol: trades.symbol,
-      grossAmount: trades.grossAmount,
+      totalQuantity: sql<string>`SUM(ABS(CAST(${trades.quantity} AS NUMERIC)))`,
+      avgPrice: sql<string>`CASE WHEN SUM(ABS(CAST(${trades.quantity} AS NUMERIC))) > 0 THEN SUM(ABS(CAST(${trades.quantity} AS NUMERIC)) * CAST(${trades.price} AS NUMERIC)) / SUM(ABS(CAST(${trades.quantity} AS NUMERIC))) ELSE 0 END`,
+      totalGross: sql<string>`SUM(CAST(COALESCE(${trades.grossAmount}, '0') AS NUMERIC))`,
+      tradeCount: sql<number>`COUNT(*)::int`,
     })
     .from(trades)
+    .leftJoin(accounts, eq(trades.accountId, accounts.id))
     .where(eq(trades.strategyId, strategyId))
-    .orderBy(desc(trades.tradeDate))
-    .limit(25);
+    .groupBy(trades.tradeDate, accounts.label, trades.side, trades.symbol)
+    .orderBy(desc(trades.tradeDate));
 
-    const recentTrades = tradesRows.map((row) => ({
-    id: row.id,
-    tradeDate: row.tradeDate,
+    const aggregatedTrades = tradesRows.map((row) => ({
+    tradeDate: row.tradeDate ? new Date(row.tradeDate).toISOString().slice(0, 10) : '',
+    accountLabel: row.accountLabel,
     side: row.side,
-    quantity: Number(row.quantity),
-    price: Number(row.price),
     symbol: row.symbol,
-    grossAmount: toNumber(row.grossAmount),
+    totalQuantity: toNumber(row.totalQuantity) ?? 0,
+    avgPrice: toNumber(row.avgPrice) ?? 0,
+    totalGross: toNumber(row.totalGross),
+    tradeCount: row.tradeCount ?? 1,
   }));
 
-    // Note: blotter table has been deprecated and removed
-    // Action history is now available via journal_entries table
+    // Compute live metrics from current positions + portfolio_snapshots NAV
+    // This is independent of strategy_metrics_snapshots (which can go stale if ingestion skips recompute)
+    let totalMarketValue = 0;
+    let totalUnrealizedPnl = 0;
+    let minDte: number | null = null;
+    for (const pos of openPositions) {
+      totalMarketValue += Math.abs(pos.marketValue ?? 0);
+      totalUnrealizedPnl += pos.unrealizedPnl ?? 0;
+      if (pos.expiry && pos.snapshotDate) {
+        const expiryDate = new Date(pos.expiry + "T00:00:00Z");
+        const snapDate = new Date(pos.snapshotDate + "T00:00:00Z");
+        const dte = Math.floor(
+          (expiryDate.getTime() - snapDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (dte >= 0 && (minDte === null || dte < minDte)) {
+          minDte = dte;
+        }
+      }
+    }
+
+    // Get NAV from portfolio_snapshots (per-account latest dates, USD-normalized) for % NAV
+    const navResult = await db
+      .select({
+        totalNav: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
+      })
+      .from(portfolioSnapshots)
+      .where(
+        and(
+          eq(portfolioSnapshots.level, "account"),
+          sql`${portfolioSnapshots.snapshotDate} = (
+            SELECT MAX(ps2.snapshot_date)
+            FROM portfolio_snapshots ps2
+            WHERE ps2.account_id = ${portfolioSnapshots.accountId}
+              AND ps2.level = 'account'
+          )`
+        )
+      );
+    const totalNav = toNumber(navResult[0]?.totalNav) ?? 0;
+    const pctNav =
+      totalNav > 0 ? (totalMarketValue / totalNav) * 100 : null;
+
+    const liveMetrics = {
+      totalMarketValue,
+      totalUnrealizedPnl,
+      pctNav,
+      minDte,
+      openPositionsCount: openPositions.length,
+    };
 
     return {
       strategy: {
@@ -607,7 +684,8 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       metricsTimeline,
       openPositions,
       triageFlags,
-      recentTrades,
+      trades: aggregatedTrades,
+      liveMetrics,
     };
   } catch (error) {
     // Extract detailed error information for better debugging

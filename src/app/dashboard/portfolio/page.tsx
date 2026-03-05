@@ -267,7 +267,7 @@ function PortfolioDashboardContent() {
     };
   }, [positionsData, assetClassFilter, searchQuery]);
 
-  // Compute totals from all positions + cash
+  // Compute totals from tradeable positions only (excludes cash and REAL_ESTATE)
   const totals = useMemo(() => {
     if (!positionsData)
       return { marketValue: 0, positionCount: 0, underlyingCount: 0 };
@@ -281,22 +281,17 @@ function PortfolioDashboardContent() {
     const underlyingIds = new Set<string>();
 
     for (const pos of allPositions) {
+      if (pos.assetClass === "REAL_ESTATE") continue;
       marketValue += Math.abs(pos.marketValueUsd ?? pos.absNotional ?? 0);
       if (pos.underlyingId) underlyingIds.add(pos.underlyingId);
     }
-
-    // Include cash in total so percentages across the table sum to ~100%
-    const totalCashUsd = dashboardData?.cashBreakdown?.reduce(
-      (sum, r) => sum + (r.balanceUsd ?? 0), 0
-    ) ?? 0;
-    marketValue += totalCashUsd;
 
     return {
       marketValue,
       positionCount: allPositions.length,
       underlyingCount: underlyingIds.size,
     };
-  }, [positionsData, dashboardData?.cashBreakdown]);
+  }, [positionsData]);
 
   // Compute exposure breakdown by asset class from positions
   const exposureBreakdown = useMemo(() => {

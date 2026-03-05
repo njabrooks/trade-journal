@@ -140,6 +140,30 @@ Unified daily monitoring script running all data source checks.
 
 ---
 
+### #ENH-053: Deprecate `strategy_metrics_snapshots` Table
+**Priority**: Medium | **Effort**: 2-3 days | **Phase**: 5+
+**PRD**: Section 3 (Strategies), Section 5 (Portfolio Analytics)
+
+The `strategy_metrics_snapshots` table is a pre-computed per-account cache of strategy-level metrics (MV, PnL, NAV%, DTE). As of 2026-03-05, the UI no longer reads from this table — the strategy detail page chart and metric cards now query the `positions` table directly (which is always complete, unlike snapshots that can be skipped by ingestion egress optimization).
+
+**Current state:**
+- **UI**: No longer depends on this table (chart uses `positions` GROUP BY, cards use live position aggregation)
+- **Ingestion**: Still writes to it during recompute (`strategyMetrics.ts` → `upsertStrategyMetrics()`)
+- **Triage**: Still reads from it (`triage.ts`) to detect position state changes between snapshot dates
+- **Signal evaluation**: Still reads from it (`signalEvaluation.ts`) for DTE/PnL%/sigma signal checks
+- **Strategy merge**: Deletes snapshots for merged strategies (`strategies.ts`)
+
+**Migration plan:**
+1. Refactor `triage.ts` to query `positions` directly instead of `strategy_metrics_snapshots`
+2. Refactor `signalEvaluation.ts` to query `positions` directly
+3. Remove `computeStrategyMetrics` and `upsertStrategyMetrics` from ingestion pipeline
+4. Drop the `strategy_metrics_snapshots` table
+5. Remove from backup/sync scripts (`restore-from-remote.ts`, `push-to-remote.ts`)
+
+**Why deprecate:** The table was designed for single-account strategies. After multi-account strategy merges were introduced, the per-account snapshots require complex LOCF aggregation that is fragile and can produce incorrect chart data. Querying `positions` directly is simpler, always correct, and uses the same source of truth as the portfolio page.
+
+---
+
 ### #ENH-005-triage: Triage Rules Database Persistence
 **Priority**: Medium | **Effort**: 3-4 days | **Phase**: 5+
 **PRD**: Section 6 (Workflow & Triage Engine)
@@ -331,7 +355,7 @@ AI-generated descriptions from linked macro theses and claims.
 
 ## Enhancement Registry
 
-**Next Enhancement ID**: #ENH-053
+**Next Enhancement ID**: #ENH-054
 
 ### ID Allocation
 
@@ -346,7 +370,8 @@ AI-generated descriptions from linked macro theses and claims.
 | #ENH-050 | Unified Triage Action Button |
 | #ENH-051 | Crypto Position Cost Basis |
 | #ENH-052 | Cash Balances & NAV Tracking |
-| #ENH-053+ | Available |
+| #ENH-053 | Deprecate strategy_metrics_snapshots |
+| #ENH-054+ | Available |
 
 **Format**: `#ENH-XXX` or `#ENH-XXX-name` for variants
 
