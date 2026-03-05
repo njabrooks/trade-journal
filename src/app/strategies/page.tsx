@@ -15,8 +15,8 @@ export default async function StrategiesPage() {
 
   // Calculate totals for active strategies only
   const openStrategies = allStrategies.filter((s) => s.status === 'active');
-  const totalAbs = openStrategies.reduce(
-    (acc, strategy) => acc + (strategy.latestAbsNotional ?? 0),
+  const totalMV = openStrategies.reduce(
+    (acc, strategy) => acc + (strategy.latestMarketValue ?? 0),
     0
   );
   const totalPnl = openStrategies.reduce(
@@ -40,7 +40,7 @@ export default async function StrategiesPage() {
     >
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SummaryCard label="Open strategies" value={openStrategies.length.toString()} />
-        <SummaryCard label="Abs notional" value={formatCurrency(totalAbs)} />
+        <SummaryCard label="Market value" value={formatCurrency(totalMV)} />
         <SummaryCard
           label="Unrealized PnL"
           value={formatCurrency(totalPnl)}

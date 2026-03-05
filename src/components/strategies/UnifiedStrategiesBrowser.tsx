@@ -16,7 +16,7 @@ interface UnifiedStrategiesBrowserProps {
 
 type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
 type QuickStatusFilter = 'all' | 'draft' | 'active' | 'closed';
-type SortColumn = 'label' | 'account' | 'status' | 'absNotional' | 'unrealized' | 'pctNav' | 'openedAt';
+type SortColumn = 'label' | 'account' | 'status' | 'marketValue' | 'unrealized' | 'pctNav' | 'openedAt';
 type SortDirection = 'asc' | 'desc';
 
 export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowserProps) {
@@ -216,9 +216,9 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 99;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 99;
           break;
-        case 'absNotional':
-          aVal = a.latestAbsNotional ?? 0;
-          bVal = b.latestAbsNotional ?? 0;
+        case 'marketValue':
+          aVal = a.latestMarketValue ?? 0;
+          bVal = b.latestMarketValue ?? 0;
           break;
         case 'unrealized':
           aVal = a.latestUnrealized ?? 0;
@@ -258,7 +258,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   const groupedByAccount = useMemo(() => {
     if (!groupByAccount) return null;
 
-    const groups = new Map<string, { label: string; strategies: typeof filteredAndSortedStrategies; totalAbsNotional: number }>();
+    const groups = new Map<string, { label: string; strategies: typeof filteredAndSortedStrategies; totalMarketValue: number }>();
 
     for (const strategy of filteredAndSortedStrategies) {
       // Use primary account (first position account, or strategy-level fallback)
@@ -269,18 +269,18 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
         ?? 'No Account';
 
       if (!groups.has(accountLabel)) {
-        groups.set(accountLabel, { label: accountLabel, strategies: [], totalAbsNotional: 0 });
+        groups.set(accountLabel, { label: accountLabel, strategies: [], totalMarketValue: 0 });
       }
       const group = groups.get(accountLabel)!;
       group.strategies.push(strategy);
-      group.totalAbsNotional += Math.abs(strategy.latestAbsNotional ?? 0);
+      group.totalMarketValue += Math.abs(strategy.latestMarketValue ?? 0);
     }
 
     // Sort groups by total abs notional descending, "No Account" last
     return Array.from(groups.values()).sort((a, b) => {
       if (a.label === 'No Account') return 1;
       if (b.label === 'No Account') return -1;
-      return b.totalAbsNotional - a.totalAbsNotional;
+      return b.totalMarketValue - a.totalMarketValue;
     });
   }, [filteredAndSortedStrategies, groupByAccount]);
 
@@ -418,9 +418,9 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
             )}
           </td>
 
-          {/* Abs Notional */}
+          {/* Mkt Value */}
           <td className="px-4 py-3 text-right font-medium text-foreground">
-            {formatCurrency(strategy.latestAbsNotional)}
+            {formatCurrency(strategy.latestMarketValue)}
           </td>
 
           {/* Unrealized */}
@@ -749,11 +749,11 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                   </th>
                   <th
                     className="px-4 py-3 text-right cursor-pointer hover:bg-accent transition-colors"
-                    onClick={() => handleSort('absNotional')}
+                    onClick={() => handleSort('marketValue')}
                   >
                     <div className="flex items-center justify-end gap-2">
-                      Abs Notional
-                      {getSortIcon('absNotional')}
+                      Mkt Value
+                      {getSortIcon('marketValue')}
                     </div>
                   </th>
                   <th
@@ -800,7 +800,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                               {group.strategies.length}
                             </Badge>
                             <span className="text-xs text-muted-foreground ml-auto">
-                              {formatCurrency(group.totalAbsNotional)} abs notional
+                              {formatCurrency(group.totalMarketValue)} market value
                             </span>
                           </div>
                         </td>
