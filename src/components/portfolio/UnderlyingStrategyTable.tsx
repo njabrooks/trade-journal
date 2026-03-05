@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import type { PortfolioStrategyRow, PortfolioPositionRow, CashBreakdownRow } from "@/db/queries/portfolio";
 import type { Account } from "@/db/schema";
 
-type SortColumn = "underlying" | "strategies" | "positions" | "marketValue" | "pctTotal" | "dte";
+type SortColumn = "underlying" | "strategies" | "positions" | "spot" | "marketValue" | "pctTotal" | "dte";
 type SortDirection = "asc" | "desc";
 
 interface CashCurrencyGroup {
@@ -22,6 +22,7 @@ interface UnderlyingGroup {
   underlyingId: string | null;
   strategies: PortfolioStrategyRow[];
   totalMV: number;
+  spot: number | null;
   pctTotal: number | null;
   minDte: number | null;
   positionCount: number;
@@ -116,6 +117,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
           underlyingId,
           strategies: [],
           totalMV: 0,
+          spot: null,
           pctTotal: null,
           minDte: null,
           positionCount: 0,
@@ -124,6 +126,27 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
 
       const group = groups.get(underlyingTicker)!;
       group.strategies.push(strategy);
+
+      // Pick up the underlying's spot price.
+      // For STK/CRYPTO/PERP positions, positions.spot IS the underlying price.
+      // For OPT positions, positions.spot is the option mark — use underlyingSpot instead.
+      // Prefer non-option sources first, then fall back to underlyingSpot from any position.
+      if (group.spot == null) {
+        for (const pos of strategy.positions) {
+          if (pos.spot != null && pos.assetClass !== "OPT") {
+            group.spot = pos.spot;
+            break;
+          }
+        }
+      }
+      if (group.spot == null) {
+        for (const pos of strategy.positions) {
+          if (pos.underlyingSpot != null) {
+            group.spot = pos.underlyingSpot;
+            break;
+          }
+        }
+      }
 
       const agg = getStrategyAggregates(strategy, totalMarketValue);
       group.totalMV += agg.totalMV;
@@ -171,6 +194,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
         underlyingId: null,
         strategies: [],
         totalMV: cashTotalUsd,
+        spot: null,
         pctTotal: totalMarketValue > 0 ? (cashTotalUsd / totalMarketValue) * 100 : null,
         minDte: null,
         positionCount: 0,
@@ -196,6 +220,9 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
           break;
         case "positions":
           cmp = a.positionCount - b.positionCount;
+          break;
+        case "spot":
+          cmp = (a.spot ?? 0) - (b.spot ?? 0);
           break;
         case "marketValue":
           cmp = a.totalMV - b.totalMV;
@@ -296,6 +323,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
               {renderSortHeader("underlying", "Underlying")}
               {renderSortHeader("strategies", "# Strat", "text-right")}
               {renderSortHeader("positions", "# Pos", "text-right")}
+              {renderSortHeader("spot", "Spot", "text-right")}
               {renderSortHeader("marketValue", "Mkt Value", "text-right")}
               {renderSortHeader("pctTotal", "% Total", "text-right")}
               {renderSortHeader("dte", "Min DTE", "text-center")}
@@ -368,6 +396,9 @@ function UnderlyingGroup({
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
           {group.cashCurrencyGroups ? "\u2014" : group.positionCount}
+        </td>
+        <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+          {group.spot != null ? formatCurrency(group.spot, "USD", 2) : "\u2014"}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
           {formatCurrency(group.totalMV)}
@@ -460,6 +491,9 @@ function CashCurrencyRow({
         <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
           {currencyGroup.rows.length}
         </td>
+        <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+          {"\u2014"}
+        </td>
         <td className="py-2 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
           {formatCurrency(currencyGroup.totalBalanceUsd)}
         </td>
@@ -484,6 +518,8 @@ function CashCurrencyRow({
             </td>
             <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
               Balance
+            </td>
+            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
             </td>
             <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
               USD Value
@@ -539,6 +575,8 @@ function CashAccountRow({
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })}
+      </td>
+      <td className="py-1.5 pr-3 text-right text-xs tabular-nums text-muted-foreground">
       </td>
       <td className="py-1.5 pr-3 text-right text-xs tabular-nums font-medium text-foreground">
         {row.balanceUsd != null ? formatCurrency(row.balanceUsd) : "\u2014"}
@@ -609,6 +647,8 @@ function StrategyRow({ strategy, agg, totalMarketValue, isExpanded, onToggle, ac
         <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
           {strategy.positions.length}
         </td>
+        <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
+        </td>
         <td className="py-2 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
           {formatCurrency(agg.totalMV)}
         </td>
@@ -634,6 +674,9 @@ function StrategyRow({ strategy, agg, totalMarketValue, isExpanded, onToggle, ac
             </td>
             <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
               Qty
+            </td>
+            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+              Spot
             </td>
             <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
               Mkt Value
@@ -695,6 +738,9 @@ function PositionRowNested({
       <td className="py-1.5 pr-3 text-xs text-muted-foreground">{accountLabel}</td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
         {position.quantity.toLocaleString()}
+      </td>
+      <td className="py-1.5 pr-3 text-right text-xs tabular-nums text-muted-foreground">
+        {position.spot != null ? formatCurrency(position.spot, "USD", 2) : "\u2014"}
       </td>
       <td className={cn("py-1.5 pr-3 text-right tabular-nums", isShort ? "text-rose-600" : "text-foreground")}>{formatCurrency(mv)}</td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">

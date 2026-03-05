@@ -573,6 +573,7 @@ export interface PortfolioPositionRow {
   avgPrice: number | null;
   costBasisMoney: number | null;
   spot: number | null;
+  underlyingSpot: number | null;
   absNotional: number | null;
   absNotionalUsd: number | null;
   marketValueUsd: number | null;
@@ -637,6 +638,7 @@ export async function getPortfolioPositionsData(
       avgPrice: positions.avgPrice,
       costBasisMoney: positions.costBasisMoney,
       spot: positions.spot,
+      underlyingSpot: underlyings.spot,
       absNotional: positions.absNotional,
       absNotionalUsd: positions.absNotionalUsd,
       marketValueUsd: positions.marketValueUsd,
@@ -716,6 +718,7 @@ export async function getPortfolioPositionsData(
     avgPrice: toNumber(row.avgPrice),
     costBasisMoney: toNumber(row.costBasisMoney),
     spot: toNumber(row.spot),
+    underlyingSpot: toNumber(row.underlyingSpot),
     absNotional: toNumber(row.absNotional),
     absNotionalUsd: toNumber(row.absNotionalUsd),
     marketValueUsd: toNumber(row.marketValueUsd),

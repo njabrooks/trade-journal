@@ -8,13 +8,20 @@ interface UnlinkedPositionsTableProps {
   totalMarketValue: number;
 }
 
+const DUST_THRESHOLD_USD = 5;
+
 export function UnlinkedPositionsTable({ positions, totalMarketValue }: UnlinkedPositionsTableProps) {
-  if (positions.length === 0) return null;
+  const filtered = positions.filter((pos) => {
+    const mv = Math.abs(pos.marketValueUsd ?? pos.absNotional ?? 0);
+    return mv >= DUST_THRESHOLD_USD;
+  });
+
+  if (filtered.length === 0) return null;
 
   return (
     <section>
       <h2 className="text-sm font-medium text-foreground mb-3">
-        Unlinked Positions ({positions.length})
+        Unlinked Positions ({filtered.length})
       </h2>
       <div className="rounded-2xl border bg-card shadow-sm overflow-x-auto">
         <table className="min-w-full">
@@ -29,7 +36,7 @@ export function UnlinkedPositionsTable({ positions, totalMarketValue }: Unlinked
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {positions.map((pos) => {
+            {filtered.map((pos) => {
               const dte = calculateDTE(pos.expiry, pos.snapshotDate ?? "");
               const mv = Math.abs(pos.marketValueUsd ?? pos.absNotional ?? 0);
               const pctTotal = totalMarketValue > 0
