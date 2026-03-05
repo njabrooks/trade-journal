@@ -44,7 +44,7 @@ export function TaxTransactionsSummary({ summary, currency }: TaxTransactionsSum
             <div className={`mt-1 text-lg font-semibold tabular-nums ${pnlColor}`}>
               {card.raw
                 ? card.value.toLocaleString()
-                : formatCurrency(card.value, currency)}
+                : formatCurrency(card.value, currency, 2)}
             </div>
           </div>
         );

@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatCurrency, formatNumber, formatDateShort } from "@/lib/formatters";
 import type { TaxTransactionRow } from "@/lib/tax-transactions-types";
 
-type SortKey =
+export type SortKey =
   | "timestamp"
   | "ticker"
   | "eventType"
@@ -15,7 +14,7 @@ type SortKey =
   | "costBasis"
   | "gain";
 
-type SortDir = "asc" | "desc";
+export type SortDir = "asc" | "desc";
 
 const DISPOSAL_TYPES = new Set(["SELL", "SEND", "FEE", "GIFT_OUT"]);
 
@@ -39,7 +38,10 @@ interface TaxTransactionsTableProps {
   totalCount: number;
   page: number;
   pageSize: number;
+  sortKey: SortKey;
+  sortDir: SortDir;
   onPageChange: (page: number) => void;
+  onSortChange: (key: SortKey, dir: SortDir) => void;
 }
 
 export function TaxTransactionsTable({
@@ -48,10 +50,11 @@ export function TaxTransactionsTable({
   totalCount,
   page,
   pageSize,
+  sortKey,
+  sortDir,
   onPageChange,
+  onSortChange,
 }: TaxTransactionsTableProps) {
-  const [sortKey, setSortKey] = useState<SortKey>("timestamp");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const isGbp = currency === "GBP";
 
   function getProceeds(r: TaxTransactionRow) {
@@ -64,36 +67,18 @@ export function TaxTransactionsTable({
     return isGbp ? r.s104GainGbp : r.acbGainUsd;
   }
 
-  const sorted = useMemo(() => {
-    return [...rows].sort((a, b) => {
-      let av: number | string;
-      let bv: number | string;
-      switch (sortKey) {
-        case "timestamp": av = a.timestamp; bv = b.timestamp; break;
-        case "ticker": av = a.ticker.toLowerCase(); bv = b.ticker.toLowerCase(); break;
-        case "eventType": av = a.eventType; bv = b.eventType; break;
-        case "quantity": av = a.quantity; bv = b.quantity; break;
-        case "price": av = a.price ?? 0; bv = b.price ?? 0; break;
-        case "proceeds": av = getProceeds(a) ?? 0; bv = getProceeds(b) ?? 0; break;
-        case "costBasis": av = getCostBasis(a) ?? 0; bv = getCostBasis(b) ?? 0; break;
-        case "gain": av = getGain(a) ?? 0; bv = getGain(b) ?? 0; break;
-      }
-      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-  }, [rows, sortKey, sortDir, isGbp]);
-
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      onSortChange(key, sortDir === "asc" ? "desc" : "asc");
     } else {
-      setSortKey(key);
-      setSortDir(key === "ticker" || key === "eventType" || key === "timestamp" ? "asc" : "desc");
+      const defaultDir = key === "ticker" || key === "eventType" || key === "timestamp" ? "asc" : "desc";
+      onSortChange(key, defaultDir);
     }
   }
 
   function renderSortHeader(label: string, key: SortKey, align?: "right") {
     const isActive = sortKey === key;
+    const Icon = isActive ? (sortDir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
     return (
       <th
         className={`cursor-pointer select-none whitespace-nowrap px-3 py-2 text-xs font-medium text-muted-foreground ${
@@ -103,7 +88,7 @@ export function TaxTransactionsTable({
       >
         <span className="inline-flex items-center gap-1">
           {label}
-          <ArrowUpDown
+          <Icon
             className={`h-3 w-3 ${isActive ? "text-foreground" : "text-muted-foreground/40"}`}
           />
         </span>
@@ -147,7 +132,7 @@ export function TaxTransactionsTable({
           </tr>
         </thead>
         <tbody className="divide-y">
-          {sorted.map((row) => {
+          {rows.map((row) => {
             const isDisposal = DISPOSAL_TYPES.has(row.eventType);
             const gain = getGain(row);
             const gainColor = gain == null ? "" : gain >= 0 ? "text-emerald-600" : "text-red-500";
@@ -178,7 +163,7 @@ export function TaxTransactionsTable({
                   {formatNumber(row.quantity, 4)}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                  {row.price != null ? formatCurrency(row.price, "USD") : "—"}
+                  {row.price != null ? formatCurrency(row.price, "USD", 2) : "—"}
                 </td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">
                   {row.owner}
@@ -190,13 +175,13 @@ export function TaxTransactionsTable({
                   {row.source}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">
-                  {proceeds != null ? formatCurrency(proceeds, currency) : "—"}
+                  {proceeds != null ? formatCurrency(proceeds, currency, 2) : "—"}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
-                  {costBasis != null ? formatCurrency(costBasis, currency) : "—"}
+                  {costBasis != null ? formatCurrency(costBasis, currency, 2) : "—"}
                 </td>
                 <td className={`px-3 py-2 text-right tabular-nums font-medium ${gainColor}`}>
-                  {gain != null ? formatCurrency(gain, currency) : "—"}
+                  {gain != null ? formatCurrency(gain, currency, 2) : "—"}
                 </td>
                 {isGbp && (
                   <td className="px-3 py-2 text-xs text-muted-foreground">

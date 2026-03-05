@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { events, eventCalculations, assets } from "@/db/schema";
-import { and, eq, sql, asc, isNull, gte, lte } from "drizzle-orm";
+import { and, eq, sql, asc, desc, isNull, gte, lte } from "drizzle-orm";
 import { toNumber } from "@/lib/numbers";
 import type {
   TaxTransactionRow,
@@ -14,6 +14,18 @@ export type { TaxTransactionRow, TaxTransactionsSummary, TaxTransactionsResult }
 // Single-user system (from TTC migration)
 const USER_ID = "user_2mYzScugP7zfcqv8Ox21i7q9nyW";
 
+export type TaxTransactionSortKey =
+  | "timestamp"
+  | "ticker"
+  | "eventType"
+  | "quantity"
+  | "price"
+  | "proceeds"
+  | "costBasis"
+  | "gain";
+
+export type SortDir = "asc" | "desc";
+
 export interface TaxTransactionsFilters {
   owner?: string;
   taxYearStart?: string; // ISO date
@@ -21,6 +33,9 @@ export interface TaxTransactionsFilters {
   assetTicker?: string;
   eventType?: "disposal" | "acquisition" | "all";
   matchType?: string;    // same_day | bed_and_breakfast | section_104_pool | all
+  sortKey?: TaxTransactionSortKey;
+  sortDir?: SortDir;
+  currency?: "USD" | "GBP"; // needed to resolve currency-dependent sort columns
 }
 
 // Disposal event types
@@ -69,6 +84,22 @@ export async function getTaxTransactions(
     )`);
   }
 
+  // Resolve sort column
+  const isGbp = filters.currency === "GBP";
+  const sortDir = filters.sortDir === "desc" ? desc : asc;
+  const sortFn = (() => {
+    switch (filters.sortKey) {
+      case "ticker": return sortDir(assets.ticker);
+      case "eventType": return sortDir(events.eventType);
+      case "quantity": return sortDir(events.quantity);
+      case "price": return sortDir(events.price);
+      case "proceeds": return sortDir(isGbp ? eventCalculations.totalValueGbp : events.totalValue);
+      case "costBasis": return sortDir(isGbp ? eventCalculations.s104CostBasisGbp : eventCalculations.costBasis);
+      case "gain": return sortDir(isGbp ? eventCalculations.s104RealizedGainGbp : eventCalculations.realizedGain);
+      default: return sortDir(events.timestamp);
+    }
+  })();
+
   // Main query with S104 match type aggregation
   const rows = await db
     .select({
@@ -100,7 +131,7 @@ export async function getTaxTransactions(
     .innerJoin(eventCalculations, eq(events.id, eventCalculations.eventId))
     .innerJoin(assets, eq(events.assetId, assets.id))
     .where(and(...conditions))
-    .orderBy(asc(events.timestamp), asc(events.id))
+    .orderBy(sortFn, asc(events.id))
     .limit(pageSize)
     .offset(offset);
 

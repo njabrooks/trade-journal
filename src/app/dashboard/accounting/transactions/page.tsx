@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { TaxTransactionsTable } from "@/components/accounting/TaxTransactionsTable";
+import { TaxTransactionsTable, type SortKey, type SortDir } from "@/components/accounting/TaxTransactionsTable";
 import { TaxTransactionsSummary } from "@/components/accounting/TaxTransactionsSummary";
 import { TaxTransactionsFilters } from "@/components/accounting/TaxTransactionsFilters";
 import { getTaxYears, type TaxYearConfig } from "@/lib/tax-years";
@@ -22,6 +22,8 @@ export default function TaxTransactionsPage() {
   const [matchType, setMatchType] = useState("all");
   const [assetTicker, setAssetTicker] = useState("");
   const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>("timestamp");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [data, setData] = useState<TaxTransactionsResult | null>(null);
   const [tickers, setTickers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +59,9 @@ export default function TaxTransactionsPage() {
       taxYearEnd: yearConfig.endDate,
       page: String(page),
       pageSize: "50",
+      sortKey,
+      sortDir,
+      currency,
     });
     if (eventType !== "all") params.set("eventType", eventType);
     if (matchType !== "all") params.set("matchType", matchType);
@@ -71,16 +76,16 @@ export default function TaxTransactionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [owner, taxYear, taxYears, eventType, matchType, assetTicker, page]);
+  }, [owner, taxYear, taxYears, eventType, matchType, assetTicker, page, sortKey, sortDir, currency]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Reset page when filters change
+  // Reset page when filters or sort change
   useEffect(() => {
     setPage(1);
-  }, [owner, taxYear, eventType, matchType, assetTicker]);
+  }, [owner, taxYear, eventType, matchType, assetTicker, sortKey, sortDir]);
 
   function handleExport() {
     if (!taxYear || taxYears.length === 0) return;
@@ -152,7 +157,10 @@ export default function TaxTransactionsPage() {
               totalCount={data.totalCount}
               page={data.page}
               pageSize={data.pageSize}
+              sortKey={sortKey}
+              sortDir={sortDir}
               onPageChange={setPage}
+              onSortChange={(key, dir) => { setSortKey(key); setSortDir(dir); }}
             />
           </>
         ) : null}
