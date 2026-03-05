@@ -58,6 +58,7 @@ export const underlyings = pgTable('underlyings', {
   iv30: numeric('iv30'),
   atr20: numeric('atr20'),
   rv20: numeric('rv20'),
+  cik: text('cik'),  // SEC CIK identifier for filing lookups
   nextEarningsDate: date('next_earnings_date'),
   nextExDivDate: date('next_ex_div_date'),
   // For ETFs/wrappers, references the economic underlying (e.g., IBIT -> BTC, GLD -> gold)
@@ -2572,3 +2573,165 @@ export const reconciliationCheckpoints = pgTable(
 
 export type ReconciliationCheckpoint = typeof reconciliationCheckpoints.$inferSelect;
 export type NewReconciliationCheckpoint = typeof reconciliationCheckpoints.$inferInsert;
+
+// ============================================================================
+// Intelligence Reports (World Monitor)
+// Stores full World Monitor intelligence briefings from Arbor
+// ============================================================================
+
+export const intelligenceReports = pgTable(
+  'intelligence_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reportDate: date('report_date').notNull(),
+    generatedAt: timestamp('generated_at', { withTimezone: true }).notNull(),
+    timeWindow: text('time_window'),
+    version: integer('version').default(1),
+    executiveSummary: text('executive_summary'),
+    keyThemes: text('key_themes'),
+    fullMarkdown: text('full_markdown').notNull(),
+    criticalCount: integer('critical_count').default(0),
+    highCount: integer('high_count').default(0),
+    mediumCount: integer('medium_count').default(0),
+    infoCount: integer('info_count').default(0),
+    sectors: text('sectors').array().default(sql`'{}'`),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    reportDateIdx: index('idx_intelligence_reports_date').on(table.reportDate),
+    createdAtIdx: index('idx_intelligence_reports_created').on(table.createdAt),
+    uniqueReportDateGenerated: unique().on(table.reportDate, table.generatedAt),
+  })
+);
+
+export type IntelligenceReport = typeof intelligenceReports.$inferSelect;
+export type NewIntelligenceReport = typeof intelligenceReports.$inferInsert;
+
+// ============================================================================
+// Intelligence Items (individual stories from World Monitor reports)
+// ============================================================================
+
+export const intelligenceItems = pgTable(
+  'intelligence_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    reportId: uuid('report_id').notNull().references(() => intelligenceReports.id, { onDelete: 'cascade' }),
+    severity: text('severity').notNull(),  // 'critical' | 'high' | 'medium' | 'info'
+    sector: text('sector'),                // 'geopolitics' | 'tech' | 'finance'
+    headline: text('headline').notNull(),
+    body: text('body'),
+    sourceUrls: text('source_urls').array().default(sql`'{}'`),
+    relevantTickers: text('relevant_tickers').array().default(sql`'{}'`),
+    section: text('section'),              // 'executive_summary' | 'deep_dive' | 'opportunities'
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    reportIdx: index('idx_intelligence_items_report').on(table.reportId),
+    severityIdx: index('idx_intelligence_items_severity').on(table.severity),
+    sectorIdx: index('idx_intelligence_items_sector').on(table.sector),
+    uniqueReportHeadline: unique().on(table.reportId, table.headline),
+  })
+);
+
+export type IntelligenceItem = typeof intelligenceItems.$inferSelect;
+export type NewIntelligenceItem = typeof intelligenceItems.$inferInsert;
+
+// ============================================================================
+// Economic Events (FRED + Finnhub calendar)
+// ============================================================================
+
+export const economicEvents = pgTable(
+  'economic_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    eventName: text('event_name').notNull(),
+    eventDate: date('event_date').notNull(),
+    eventTime: text('event_time'),
+    category: text('category'),            // 'interest_rates' | 'inflation' | 'labor' | 'output' | 'housing' | 'other'
+    impact: text('impact'),                // 'high' | 'medium' | 'low'
+    country: text('country').default('US'),
+    actualValue: text('actual_value'),
+    forecastValue: text('forecast_value'),
+    previousValue: text('previous_value'),
+    unit: text('unit'),
+    source: text('source').notNull(),      // 'fred' | 'finnhub'
+    sourceId: text('source_id'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    dateIdx: index('idx_economic_events_date').on(table.eventDate),
+    categoryIdx: index('idx_economic_events_category').on(table.category),
+    impactIdx: index('idx_economic_events_impact').on(table.impact),
+    uniqueEvent: unique().on(table.eventName, table.eventDate, table.source),
+  })
+);
+
+export type EconomicEvent = typeof economicEvents.$inferSelect;
+export type NewEconomicEvent = typeof economicEvents.$inferInsert;
+
+// ============================================================================
+// Earnings Events (portfolio holdings earnings calendar)
+// ============================================================================
+
+export const earningsEvents = pgTable(
+  'earnings_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    underlyingId: uuid('underlying_id').references(() => underlyings.id, { onDelete: 'set null' }),
+    ticker: text('ticker').notNull(),
+    reportDate: date('report_date').notNull(),
+    reportTime: text('report_time'),       // 'bmo' | 'amc' | 'dmh'
+    epsEstimate: numeric('eps_estimate'),
+    epsActual: numeric('eps_actual'),
+    revenueEstimate: numeric('revenue_estimate'),
+    revenueActual: numeric('revenue_actual'),
+    quarter: text('quarter'),
+    year: integer('year'),
+    source: text('source').notNull().default('finnhub'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    dateIdx: index('idx_earnings_events_date').on(table.reportDate),
+    tickerIdx: index('idx_earnings_events_ticker').on(table.ticker),
+    underlyingIdx: index('idx_earnings_events_underlying').on(table.underlyingId),
+    uniqueEarnings: unique().on(table.ticker, table.reportDate, table.source),
+  })
+);
+
+export type EarningsEvent = typeof earningsEvents.$inferSelect;
+export type NewEarningsEvent = typeof earningsEvents.$inferInsert;
+
+// ============================================================================
+// SEC Filings (filing notifications for portfolio holdings)
+// ============================================================================
+
+export const secFilings = pgTable(
+  'sec_filings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    underlyingId: uuid('underlying_id').references(() => underlyings.id, { onDelete: 'set null' }),
+    ticker: text('ticker').notNull(),
+    cik: text('cik').notNull(),
+    accessionNumber: text('accession_number').notNull().unique(),
+    filingType: text('filing_type').notNull(),
+    filingCategory: text('filing_category'),  // 'annual' | 'quarterly' | 'current' | 'proxy' | 'insider' | 'other'
+    filedDate: date('filed_date').notNull(),
+    filingUrl: text('filing_url').notNull(),
+    description: text('description'),
+    isMaterial: boolean('is_material').default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    tickerIdx: index('idx_sec_filings_ticker').on(table.ticker),
+    dateIdx: index('idx_sec_filings_date').on(table.filedDate),
+    typeIdx: index('idx_sec_filings_type').on(table.filingType),
+    underlyingIdx: index('idx_sec_filings_underlying').on(table.underlyingId),
+  })
+);
+
+export type SecFiling = typeof secFilings.$inferSelect;
+export type NewSecFiling = typeof secFilings.$inferInsert;

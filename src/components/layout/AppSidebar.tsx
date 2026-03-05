@@ -19,6 +19,7 @@ import {
   Lightbulb,
   ScrollText,
   Calculator,
+  Newspaper,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +35,7 @@ import {
 const ACTIVITY_NAV = [
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
   { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
+  { href: "/news", label: "News", icon: Newspaper, id: "news" },
 ] as const;
 
 const ENTITIES_NAV = [
