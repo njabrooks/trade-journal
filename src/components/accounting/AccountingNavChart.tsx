@@ -7,12 +7,23 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { formatCurrency, formatDateLabel } from "@/lib/formatters";
+import { formatCurrency } from "@/lib/formatters";
 import type { NavTimeSeriesPoint } from "@/db/queries/accounting";
 
 type TimeRange = "1M" | "3M" | "6M" | "1Y" | "YTD" | "ALL";
 
 const TIME_RANGES: TimeRange[] = ["1M", "3M", "6M", "1Y", "YTD", "ALL"];
+
+const SHORT_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function formatDateDMY(date: string): string {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return date;
+  const dd = String(parsed.getDate()).padStart(2, "0");
+  const mmm = SHORT_MONTHS[parsed.getMonth()];
+  const yy = String(parsed.getFullYear()).slice(-2);
+  return `${dd} ${mmm} ${yy}`;
+}
 
 function formatCompactCurrency(value: number, currency = "USD"): string {
   const symbol = currency === "GBP" ? "\u00a3" : "$";
@@ -100,7 +111,7 @@ export function AccountingNavChart({
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                tickFormatter={(value) => formatDateLabel(value)}
+                tickFormatter={(value) => formatDateDMY(value)}
                 interval="preserveStartEnd"
               />
               <YAxis
@@ -117,7 +128,7 @@ export function AccountingNavChart({
                   return (
                     <div className="border-border/50 bg-background grid min-w-[10rem] gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl">
                       <div className="font-medium">
-                        {formatDateLabel(label)}
+                        {formatDateDMY(label)}
                       </div>
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-muted-foreground">NAV</span>

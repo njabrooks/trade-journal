@@ -67,7 +67,7 @@ export default function AccountingDashboardPage() {
 
   if (error && !dashboardData) {
     return (
-      <DashboardShell activeNav="accounting" title="Accounting">
+      <DashboardShell activeNav="accounting" title="NAV Tracker">
         <div className="rounded-2xl border border-dashed bg-card p-10 text-center text-muted-foreground">
           {error}
         </div>
@@ -82,7 +82,7 @@ export default function AccountingDashboardPage() {
       : undefined;
 
   return (
-    <DashboardShell activeNav="accounting" title="Accounting" subtitle={subtitle}>
+    <DashboardShell activeNav="accounting" title="NAV Tracker" subtitle={subtitle}>
       {/* Currency toggle */}
       <div className="flex items-center gap-1">
         {(["USD", "GBP"] as Currency[]).map((c) => (
