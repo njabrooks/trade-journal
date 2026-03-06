@@ -37,13 +37,13 @@ export function PositionRow({ position, isNested = false }: PositionRowProps) {
         {position.quantity.toLocaleString()}
       </td>
       <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
-        {position.avgPrice != null ? formatCurrency(position.avgPrice, 'USD', 2) : "—"}
+        {position.avgPrice != null ? formatCurrency(position.avgPrice, position.currency ?? 'USD', 2) : "—"}
       </td>
       <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
         {costBasis != null ? formatCurrency(costBasis) : "—"}
       </td>
       <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
-        {position.spot != null ? formatCurrency(position.spot, 'USD', 2) : "—"}
+        {position.spot != null ? formatCurrency(position.spot, position.currency ?? 'USD', 2) : "—"}
       </td>
       <td className="py-2 pr-3 text-right tabular-nums font-medium text-foreground">
         {formatCurrency(Math.abs(position.marketValueUsd ?? position.absNotional ?? 0))}

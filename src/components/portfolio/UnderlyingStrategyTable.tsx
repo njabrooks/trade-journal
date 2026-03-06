@@ -23,6 +23,7 @@ interface UnderlyingGroup {
   strategies: PortfolioStrategyRow[];
   totalMV: number;
   spot: number | null;
+  currency: string | null;
   pctTotal: number | null;
   minDte: number | null;
   positionCount: number;
@@ -118,6 +119,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
           strategies: [],
           totalMV: 0,
           spot: null,
+          currency: null,
           pctTotal: null,
           minDte: null,
           positionCount: 0,
@@ -135,6 +137,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
         for (const pos of strategy.positions) {
           if (pos.spot != null && pos.assetClass !== "OPT") {
             group.spot = pos.spot;
+            group.currency = pos.currency;
             break;
           }
         }
@@ -143,6 +146,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
         for (const pos of strategy.positions) {
           if (pos.underlyingSpot != null) {
             group.spot = pos.underlyingSpot;
+            group.currency = pos.currency;
             break;
           }
         }
@@ -195,6 +199,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
         strategies: [],
         totalMV: cashTotalUsd,
         spot: null,
+        currency: null,
         pctTotal: totalMarketValue > 0 ? (cashTotalUsd / totalMarketValue) * 100 : null,
         minDte: null,
         positionCount: 0,
@@ -398,7 +403,7 @@ function UnderlyingGroup({
           {group.cashCurrencyGroups ? "\u2014" : group.positionCount}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
-          {group.spot != null ? formatCurrency(group.spot, "USD", 2) : "\u2014"}
+          {group.spot != null ? formatCurrency(group.spot, group.currency ?? "USD", 2) : "\u2014"}
         </td>
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums font-medium text-foreground">
           {formatCurrency(group.totalMV)}
@@ -740,7 +745,7 @@ function PositionRowNested({
         {position.quantity.toLocaleString()}
       </td>
       <td className="py-1.5 pr-3 text-right text-xs tabular-nums text-muted-foreground">
-        {position.spot != null ? formatCurrency(position.spot, "USD", 2) : "\u2014"}
+        {position.spot != null ? formatCurrency(position.spot, position.currency ?? "USD", 2) : "\u2014"}
       </td>
       <td className={cn("py-1.5 pr-3 text-right tabular-nums", isShort ? "text-rose-600" : "text-foreground")}>{formatCurrency(mv)}</td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">

@@ -275,7 +275,7 @@ function PositionRowNested({ position, totalMarketValue }: { position: Portfolio
         {position.quantity.toLocaleString()}
       </td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
-        {position.spot != null ? formatCurrency(position.spot, 'USD', 2) : "\u2014"}
+        {position.spot != null ? formatCurrency(position.spot, position.currency ?? 'USD', 2) : "\u2014"}
       </td>
       <td className="py-1.5 pr-3 text-right tabular-nums text-foreground">
         {formatCurrency(mv)}

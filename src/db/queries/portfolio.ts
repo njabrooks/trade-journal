@@ -579,6 +579,7 @@ export interface PortfolioPositionRow {
   marketValueUsd: number | null;
   unrealizedPnl: number | null;
   multiplier: number | null;
+  currency: string | null;
   snapshotDate: string | null;
   accountId: string;
   strategyId: string | null;
@@ -644,6 +645,7 @@ export async function getPortfolioPositionsData(
       marketValueUsd: positions.marketValueUsd,
       unrealizedPnl: positions.unrealizedPnl,
       multiplier: positions.multiplier,
+      currency: sql<string | null>`COALESCE(${positions.currency}, ${underlyings.baseCurrency})`,
       snapshotDate: positions.snapshotDate,
       accountId: positions.accountId,
       strategyId: positions.strategyId,
@@ -724,6 +726,7 @@ export async function getPortfolioPositionsData(
     marketValueUsd: toNumber(row.marketValueUsd),
     unrealizedPnl: toNumber(row.unrealizedPnl),
     multiplier: toNumber(row.multiplier),
+    currency: row.currency,
     snapshotDate: row.snapshotDate,
     accountId: row.accountId,
     strategyId: row.strategyId,

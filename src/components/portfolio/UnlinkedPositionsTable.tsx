@@ -54,7 +54,7 @@ export function UnlinkedPositionsTable({ positions, totalMarketValue }: Unlinked
                     {pos.quantity.toLocaleString()}
                   </td>
                   <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
-                    {pos.spot != null ? formatCurrency(pos.spot, 'USD', 2) : "\u2014"}
+                    {pos.spot != null ? formatCurrency(pos.spot, pos.currency ?? 'USD', 2) : "\u2014"}
                   </td>
                   <td className="py-2 pr-3 text-right tabular-nums font-medium text-foreground">
                     {formatCurrency(mv)}
