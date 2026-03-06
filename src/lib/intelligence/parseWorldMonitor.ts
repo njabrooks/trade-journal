@@ -269,6 +269,18 @@ export function parseWorldMonitor(markdown: string): ParsedReport {
     }
   }
 
+  // Deduplicate headlines (e.g., multiple "Coverage Gaps" across sectors)
+  // by appending sector name when duplicates exist
+  const headlineCounts = new Map<string, number>();
+  for (const item of allItems) {
+    headlineCounts.set(item.headline, (headlineCounts.get(item.headline) || 0) + 1);
+  }
+  for (const item of allItems) {
+    if ((headlineCounts.get(item.headline) || 0) > 1 && item.sector) {
+      item.headline = `${item.headline} (${item.sector})`;
+    }
+  }
+
   // Count severities
   const severityCounts = { critical: 0, high: 0, medium: 0, info: 0 };
   for (const item of allItems) {
