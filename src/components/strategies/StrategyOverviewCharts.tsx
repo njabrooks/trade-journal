@@ -25,6 +25,7 @@ interface LiveMetrics {
   pctNav: number | null;
   minDte: number | null;
   openPositionsCount: number;
+  spot: number | null;
 }
 
 interface StrategyOverviewChartsProps {
@@ -107,6 +108,14 @@ export function StrategyOverviewCharts({
       {/* Metric Cards — sourced from live positions, not pre-computed snapshots */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <MetricCard
+          label="Spot Price"
+          value={
+            liveMetrics.spot !== null
+              ? formatCurrency(liveMetrics.spot, "USD", 2)
+              : "\u2014"
+          }
+        />
+        <MetricCard
           label="Mkt Value"
           value={formatCurrency(liveMetrics.totalMarketValue)}
         />
@@ -118,14 +127,6 @@ export function StrategyOverviewCharts({
         <MetricCard
           label="% NAV"
           value={formatPercent(liveMetrics.pctNav)}
-        />
-        <MetricCard
-          label="Min DTE"
-          value={
-            liveMetrics.minDte !== null
-              ? liveMetrics.minDte.toString()
-              : "\u2014"
-          }
         />
         <MetricCard
           label="Positions"

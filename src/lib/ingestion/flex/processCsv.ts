@@ -528,8 +528,116 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
                 entry.data.unrealizedPnl = prev.unrealizedPnl;
                 console.log(`Backfilled unrealized_pnl for ${entry.data.symbol}: ${prev.unrealizedPnl} from ${prev.snapshotDate}`);
               }
-            } else {
-              console.log(`No previous snapshot found for ${entry.data.symbol} (conid: ${entry.data.conid})`);
+            }
+
+            // If still missing cost basis after snapshot backfill, derive from trades
+            const stillNeedsAvgPrice = !entry.data.avgPrice || entry.data.avgPrice === '0' || parseFloat(entry.data.avgPrice || '0') === 0;
+            if (stillNeedsAvgPrice && entry.data.accountId && entry.data.symbol) {
+              const tradeRows = await db
+                .select({
+                  totalQty: sql<string>`SUM(ABS(CAST(${trades.quantity} AS NUMERIC)))`,
+                  totalCost: sql<string>`SUM(ABS(CAST(${trades.quantity} AS NUMERIC)) * CAST(${trades.price} AS NUMERIC))`,
+                })
+                .from(trades)
+                .where(and(
+                  eq(trades.accountId, entry.data.accountId),
+                  eq(trades.symbol, entry.data.symbol),
+                  eq(trades.side, 'BUY'),
+                ));
+
+              const totalQty = parseFloat(tradeRows[0]?.totalQty || '0');
+              const totalCost = parseFloat(tradeRows[0]?.totalCost || '0');
+              if (totalQty > 0 && totalCost > 0) {
+                const derivedAvgPrice = totalCost / totalQty;
+                const derivedCostBasis = totalCost;
+                entry.data.avgPrice = derivedAvgPrice.toString();
+                entry.data.costBasisMoney = derivedCostBasis.toString();
+                console.log(`Derived cost basis from trades for ${entry.data.symbol}: avgPrice=${derivedAvgPrice.toFixed(4)}, costBasis=${derivedCostBasis.toFixed(2)}`);
+
+                // Recalculate unrealized PnL with derived cost basis
+                if (entry.data.spot && entry.data.quantity) {
+                  const spot = parseFloat(entry.data.spot);
+                  const quantity = parseFloat(entry.data.quantity);
+                  const multiplier = entry.data.multiplier ? parseFloat(entry.data.multiplier) : 1;
+                  if (!isNaN(spot) && !isNaN(quantity) && !isNaN(multiplier)) {
+                    const calculatedPnl = (spot - derivedAvgPrice) * quantity * multiplier;
+                    entry.data.unrealizedPnl = calculatedPnl.toString();
+                    console.log(`Calculated unrealized_pnl for ${entry.data.symbol}: ${calculatedPnl.toFixed(2)} = (${spot} - ${derivedAvgPrice.toFixed(4)}) * ${quantity} * ${multiplier}`);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Preserve non-zero cost basis / PnL from existing same-date records.
+        // IBKR Flex runs hourly — early ingestions may lack cost basis that later
+        // ingestions include. If the incoming data has zeros but the existing record
+        // already has good values (from a previous ingestion the same day, or from
+        // our trades-based derivation), carry them forward so the delete-and-reinsert
+        // doesn't regress the data.
+        for (const entry of normalizedRows) {
+          const d = entry.data;
+          if (!d.accountId || !d.snapshotDate) continue;
+
+          const incomingAvgZero = !d.avgPrice || d.avgPrice === '0' || parseFloat(d.avgPrice || '0') === 0;
+          const incomingCostZero = !d.costBasisMoney || d.costBasisMoney === '0' || parseFloat(d.costBasisMoney || '0') === 0;
+          const incomingPnlZero = !d.unrealizedPnl || d.unrealizedPnl === '0' || parseFloat(d.unrealizedPnl || '0') === 0;
+
+          if (!incomingAvgZero && !incomingCostZero && !incomingPnlZero) continue; // incoming has full data
+
+          // Build where clause matching the same position on the same date
+          const matchConds = [
+            eq(positions.accountId, d.accountId),
+            eq(positions.snapshotDate, d.snapshotDate),
+          ];
+          if (d.conid) {
+            matchConds.push(eq(positions.conid, d.conid));
+          } else {
+            matchConds.push(eq(positions.symbol, d.symbol));
+            if (d.expiry) matchConds.push(eq(positions.expiry, d.expiry));
+            if (d.strike) matchConds.push(eq(positions.strike, d.strike));
+            if (d.optionRight) matchConds.push(eq(positions.optionRight, d.optionRight));
+          }
+
+          const existing = await db
+            .select({
+              avgPrice: positions.avgPrice,
+              costBasisMoney: positions.costBasisMoney,
+              unrealizedPnl: positions.unrealizedPnl,
+            })
+            .from(positions)
+            .where(and(...matchConds))
+            .limit(1);
+
+          if (existing.length > 0) {
+            const ex = existing[0];
+            if (incomingAvgZero && ex.avgPrice && parseFloat(ex.avgPrice) !== 0) {
+              d.avgPrice = ex.avgPrice;
+              console.log(`[Preserve] ${d.symbol} ${d.snapshotDate}: kept existing avgPrice=${ex.avgPrice}`);
+            }
+            if (incomingCostZero && ex.costBasisMoney && parseFloat(ex.costBasisMoney) !== 0) {
+              d.costBasisMoney = ex.costBasisMoney;
+              console.log(`[Preserve] ${d.symbol} ${d.snapshotDate}: kept existing costBasis=${ex.costBasisMoney}`);
+            }
+            if (incomingPnlZero && ex.unrealizedPnl && parseFloat(ex.unrealizedPnl) !== 0) {
+              // Only preserve PnL if we also have cost basis (to avoid keeping stale/inflated PnL)
+              if (d.avgPrice && parseFloat(d.avgPrice || '0') !== 0) {
+                // Recalculate PnL with current spot and preserved/derived avg price
+                if (d.spot && d.quantity) {
+                  const spot = parseFloat(d.spot);
+                  const avgPrice = parseFloat(d.avgPrice);
+                  const quantity = parseFloat(d.quantity);
+                  const multiplier = d.multiplier ? parseFloat(d.multiplier) : 1;
+                  if (!isNaN(spot) && !isNaN(avgPrice) && !isNaN(quantity) && !isNaN(multiplier)) {
+                    d.unrealizedPnl = ((spot - avgPrice) * quantity * multiplier).toString();
+                    console.log(`[Preserve] ${d.symbol} ${d.snapshotDate}: recalculated PnL=${d.unrealizedPnl}`);
+                  }
+                } else {
+                  d.unrealizedPnl = ex.unrealizedPnl;
+                  console.log(`[Preserve] ${d.symbol} ${d.snapshotDate}: kept existing PnL=${ex.unrealizedPnl}`);
+                }
+              }
             }
           }
         }
