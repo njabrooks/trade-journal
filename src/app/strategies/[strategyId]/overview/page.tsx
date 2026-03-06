@@ -5,7 +5,7 @@ import { StrategyTabs } from '@/components/layout/StrategyTabs';
 import { StrategySidebar } from '@/components/strategies/StrategySidebar';
 import { StrategyOverviewCharts } from '@/components/strategies/StrategyOverviewCharts';
 import { StrategySignalsSection } from '@/components/signals/StrategySignalsSection';
-import { getStrategyDetail } from '@/db/queries/strategies';
+import { getCachedStrategyDetail } from '@/db/queries/cached';
 import { getTriageQueueForStrategy } from '@/db/queries/triage';
 import { db } from '@/db';
 import { signals, triageRecords } from '@/db/schema';
@@ -19,7 +19,7 @@ interface OverviewPageProps {
 
 export async function generateMetadata({ params }: OverviewPageProps): Promise<Metadata> {
   const { strategyId } = await params;
-  const detail = await getStrategyDetail(strategyId);
+  const detail = await getCachedStrategyDetail(strategyId);
 
   const label = detail?.strategy?.label || detail?.strategy?.strategyKey || 'Strategy';
   return {
@@ -31,7 +31,7 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
   const { strategyId } = await params;
 
   const [detail, triageData, strategySignals, pendingDefineSignals] = await Promise.all([
-    getStrategyDetail(strategyId),
+    getCachedStrategyDetail(strategyId),
     getTriageQueueForStrategy(strategyId, {}),
     db
       .select()

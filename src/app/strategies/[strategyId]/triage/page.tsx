@@ -4,7 +4,7 @@ import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDet
 import { StrategyTabs } from '@/components/layout/StrategyTabs';
 import { StrategySidebar } from '@/components/strategies/StrategySidebar';
 import { UnifiedTriageBrowser } from '@/components/triage/UnifiedTriageBrowser';
-import { getStrategyDetail } from '@/db/queries/strategies';
+import { getCachedStrategyDetail } from '@/db/queries/cached';
 import { getUnifiedTriageQueue } from '@/db/queries/triage';
 import { db } from '@/db';
 import { signals } from '@/db/schema';
@@ -17,7 +17,7 @@ interface ExecutionPageProps {
 
 export async function generateMetadata({ params }: ExecutionPageProps): Promise<Metadata> {
   const { strategyId } = await params;
-  const detail = await getStrategyDetail(strategyId);
+  const detail = await getCachedStrategyDetail(strategyId);
 
   const label = detail?.strategy?.label || detail?.strategy?.strategyKey || 'Strategy';
   return {
@@ -29,7 +29,7 @@ export default async function StrategyExecutionPage({ params }: ExecutionPagePro
   const { strategyId } = await params;
 
   const [detail, strategySignals, triageResult] = await Promise.all([
-    getStrategyDetail(strategyId),
+    getCachedStrategyDetail(strategyId),
     db
       .select()
       .from(signals)

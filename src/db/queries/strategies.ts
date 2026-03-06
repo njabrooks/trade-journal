@@ -115,10 +115,14 @@ export async function getStrategiesForList(
     }
   >();
 
+  // Status is derived from positionMetrics below: strategies with rows have open positions (active),
+  // strategies without rows have no open positions (complete).
+  const statusByStrategy = new Map<string, "active" | "complete">();
+
   if (strategyIds.length > 0) {
-    // Compute metrics from positions using each account's latest snapshot date.
-    // The subquery ensures we use the most recent data per account, so strategies
-    // from accounts with different ingestion schedules all show correct metrics.
+    // Single query computes both metrics AND status (has open positions) per strategy.
+    // Uses each account's latest snapshot date so different ingestion schedules are handled correctly.
+    // Previously this was two identical queries — one for metrics, one just for strategy IDs.
     const positionMetrics = await db
       .select({
         strategyId: positions.strategyId,
@@ -168,35 +172,7 @@ export async function getStrategiesForList(
           totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
           pctNav: pctNav,
         });
-      }
-    }
-  }
-
-
-  // Determine actual status based on positions for each account's latest snapshot date.
-  // A strategy is "active" if it has open positions in the most recent snapshot for any of its accounts.
-  const statusByStrategy = new Map<string, "active" | "complete">();
-  if (strategyIds.length > 0) {
-    const positionRows = await db
-      .select({
-        strategyId: positions.strategyId,
-      })
-      .from(positions)
-      .where(
-        and(
-          inArray(positions.strategyId, strategyIds),
-          sql`${positions.quantity} != 0`,
-          sql`${positions.snapshotDate} = (
-            SELECT MAX(p2.snapshot_date)
-            FROM positions p2
-            WHERE p2.account_id = ${positions.accountId}
-          )`
-        )
-      )
-      .groupBy(positions.strategyId);
-
-    for (const row of positionRows) {
-      if (row.strategyId) {
+        // Strategy has open positions → it's active (derived from same query, no second round-trip)
         statusByStrategy.set(row.strategyId, "active");
       }
     }
@@ -430,197 +406,207 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       return null;
     }
 
-    // Recompute status at query time (same logic as list page)
-    // active → check if positions exist on account's latest snapshot; if not → complete
-    let computedStatus = strategyRow.status;
-    if (strategyRow.status === 'active' && !strategyRow.closedAt && strategyRow.accountId) {
-      const hasPositions = await db
-        .select({ strategyId: positions.strategyId })
+    // --- Parallel batch 1: independent queries that don't depend on each other ---
+    const tradeDateCol = sql<string>`DATE(${trades.tradeDate})`;
+
+    const [
+      hasPositionsResult,
+      linkedMacroThesesResult,
+      positionTimelineRows,
+      triageRows,
+      tradesRows,
+      navResult,
+    ] = await Promise.all([
+      // 1. Check if strategy has open positions (for status recomputation)
+      (strategyRow.status === 'active' && !strategyRow.closedAt && strategyRow.accountId)
+        ? db
+            .select({ strategyId: positions.strategyId })
+            .from(positions)
+            .where(
+              and(
+                eq(positions.strategyId, strategyId),
+                sql`${positions.quantity} != 0`,
+                sql`${positions.snapshotDate} = (
+                  SELECT MAX(p2.snapshot_date)
+                  FROM positions p2
+                  WHERE p2.account_id = ${positions.accountId}
+                )`
+              )
+            )
+            .limit(1)
+        : Promise.resolve([{ strategyId: strategyId }] as { strategyId: string }[]),
+
+      // 2. Get linked macro theses via junction table
+      strategyRow.assetThesisId
+        ? db
+            .select({ id: macroTheses.id, title: macroTheses.title })
+            .from(assetThesisRelatedMacroTheses)
+            .innerJoin(macroTheses, eq(assetThesisRelatedMacroTheses.macroThesisId, macroTheses.id))
+            .where(eq(assetThesisRelatedMacroTheses.assetThesisId, strategyRow.assetThesisId))
+        : Promise.resolve([] as { id: string; title: string }[]),
+
+      // 3. Metrics timeline from positions (the authoritative time series)
+      db
+        .select({
+          snapshotDate: positions.snapshotDate,
+          totalMarketValue: sql<string>`SUM(ABS(CAST(COALESCE(${positions.marketValueUsd}, '0') AS NUMERIC)))`,
+          totalUnrealizedPnl: sql<string>`SUM(CAST(COALESCE(${positions.unrealizedPnl}, '0') AS NUMERIC))`,
+          numOpenPositions: sql<number>`COUNT(*)::int`,
+        })
         .from(positions)
+        .where(and(eq(positions.strategyId, strategyId), sql`${positions.quantity} != 0`))
+        .groupBy(positions.snapshotDate)
+        .orderBy(asc(positions.snapshotDate)),
+
+      // 4. Triage records
+      db
+        .select({
+          id: triageRecords.id,
+          severity: triageRecords.severity,
+          recommendedAction: triageRecords.recommendedAction,
+          snapshotDate: triageRecords.snapshotDate,
+          dte: triageRecords.dte,
+          symbol: triageRecords.symbol,
+          pctNavAbsNotional: triageRecords.pctNavAbsNotional,
+        })
+        .from(triageRecords)
+        .where(eq(triageRecords.strategyId, strategyId))
+        .orderBy(desc(triageRecords.snapshotDate))
+        .limit(25),
+
+      // 5. Trades aggregated by day + account + side + symbol
+      db
+        .select({
+          tradeDate: tradeDateCol,
+          accountLabel: accounts.label,
+          side: trades.side,
+          symbol: trades.symbol,
+          totalQuantity: sql<string>`SUM(CASE WHEN ${trades.side} = 'SELL' THEN -1 ELSE 1 END * ABS(CAST(${trades.quantity} AS NUMERIC)))`,
+          avgPrice: sql<string>`CASE WHEN SUM(ABS(CAST(${trades.quantity} AS NUMERIC))) > 0 THEN SUM(ABS(CAST(${trades.quantity} AS NUMERIC)) * CAST(${trades.price} AS NUMERIC)) / SUM(ABS(CAST(${trades.quantity} AS NUMERIC))) ELSE 0 END`,
+          totalGross: sql<string>`SUM(CASE WHEN ${trades.side} = 'SELL' THEN -1 ELSE 1 END * ABS(CAST(COALESCE(${trades.grossAmount}, '0') AS NUMERIC)))`,
+          tradeCount: sql<number>`COUNT(*)::int`,
+        })
+        .from(trades)
+        .leftJoin(accounts, eq(trades.accountId, accounts.id))
+        .where(eq(trades.strategyId, strategyId))
+        .groupBy(tradeDateCol, accounts.label, trades.side, trades.symbol)
+        .orderBy(desc(tradeDateCol)),
+
+      // 6. NAV from portfolio_snapshots (for % NAV calculation)
+      db
+        .select({
+          totalNav: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
+        })
+        .from(portfolioSnapshots)
         .where(
           and(
-            eq(positions.strategyId, strategyId),
-            sql`${positions.quantity} != 0`,
-            sql`${positions.snapshotDate} = (
-              SELECT MAX(p2.snapshot_date)
-              FROM positions p2
-              WHERE p2.account_id = ${positions.accountId}
+            eq(portfolioSnapshots.level, "account"),
+            sql`${portfolioSnapshots.snapshotDate} = (
+              SELECT MAX(ps2.snapshot_date)
+              FROM portfolio_snapshots ps2
+              WHERE ps2.account_id = ${portfolioSnapshots.accountId}
+                AND ps2.level = 'account'
             )`
           )
-        )
-        .limit(1);
-      if (hasPositions.length === 0) {
+        ),
+    ]);
+
+    // Compute status
+    let computedStatus = strategyRow.status;
+    if (strategyRow.status === 'active' && !strategyRow.closedAt && strategyRow.accountId) {
+      if (hasPositionsResult.length === 0) {
         computedStatus = 'complete';
       }
     }
 
-    // Get linked macro theses via junction table
-    let linkedMacroTheses: Array<{ id: string; title: string }> = [];
-    if (strategyRow.assetThesisId) {
-      const macroThesisRows = await db
-        .select({
-          id: macroTheses.id,
-          title: macroTheses.title,
-        })
-        .from(assetThesisRelatedMacroTheses)
-        .innerJoin(macroTheses, eq(assetThesisRelatedMacroTheses.macroThesisId, macroTheses.id))
-        .where(eq(assetThesisRelatedMacroTheses.assetThesisId, strategyRow.assetThesisId));
-
-      linkedMacroTheses = macroThesisRows;
-    }
-
-    // Build metrics timeline directly from positions table (the authoritative time series).
-    // Positions are always written on every ingestion run, so there are no gaps.
-    // For NAV/% NAV, join portfolio_snapshots using per-account latest date <= each position date.
-    const positionTimelineRows = await db
-    .select({
-      snapshotDate: positions.snapshotDate,
-      totalMarketValue: sql<string>`SUM(ABS(CAST(COALESCE(${positions.marketValueUsd}, '0') AS NUMERIC)))`,
-      totalUnrealizedPnl: sql<string>`SUM(CAST(COALESCE(${positions.unrealizedPnl}, '0') AS NUMERIC))`,
-      numOpenPositions: sql<number>`COUNT(*)::int`,
-    })
-    .from(positions)
-    .where(
-      and(
-        eq(positions.strategyId, strategyId),
-        sql`${positions.quantity} != 0`
-      )
-    )
-    .groupBy(positions.snapshotDate)
-    .orderBy(asc(positions.snapshotDate));
+    const linkedMacroTheses = linkedMacroThesesResult;
 
     const metricsTimeline = positionTimelineRows
-    .filter((row): row is typeof row & { snapshotDate: string } => row.snapshotDate !== null)
-    .map((row) => {
-      const mv = toNumber(row.totalMarketValue);
-      return {
-        snapshotDate: row.snapshotDate,
-        totalAbsNotional: mv,
-        totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
-        pctNavAbsNotional: null as number | null,
-        numOpenPositions: (row.numOpenPositions ?? null) as number | null,
-        minDte: null as number | null,
-        maxDte: null as number | null,
-      };
-    });
+      .filter((row): row is typeof row & { snapshotDate: string } => row.snapshotDate !== null)
+      .map((row) => {
+        const mv = toNumber(row.totalMarketValue);
+        return {
+          snapshotDate: row.snapshotDate,
+          totalAbsNotional: mv,
+          totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
+          pctNavAbsNotional: null as number | null,
+          numOpenPositions: (row.numOpenPositions ?? null) as number | null,
+          minDte: null as number | null,
+          maxDte: null as number | null,
+        };
+      });
 
-    // Get latest snapshot date for this strategy
-    const latestSnapshotResult = await db
-    .select({
-      snapshotDate: positions.snapshotDate,
-    })
-    .from(positions)
-    .where(
-      and(
-        eq(positions.strategyId, strategyId),
-        sql`${positions.quantity} != 0`
-      )
-    )
-    .orderBy(desc(positions.snapshotDate))
-    .limit(1);
+    // Derive latest snapshot date from timeline (no separate query needed)
+    const latestSnapshotDate = metricsTimeline.length > 0
+      ? metricsTimeline[metricsTimeline.length - 1].snapshotDate
+      : null;
 
-    const latestSnapshotDate = latestSnapshotResult[0]?.snapshotDate ?? null;
-
+    // --- Batch 2: open positions depend on latestSnapshotDate from timeline ---
     const openPositionsRows = latestSnapshotDate
-    ? await db
-        .select({
-          id: positions.id,
-          symbol: positions.symbol,
-          assetClass: positions.assetClass,
-          expiry: positions.expiry,
-          strike: positions.strike,
-          optionRight: positions.optionRight,
-          quantity: positions.quantity,
-          marketValueUsd: positions.marketValueUsd,
-          unrealizedPnl: positions.unrealizedPnl,
-          snapshotDate: positions.snapshotDate,
-          accountLabel: accounts.label,
-          spot: positions.spot,
-        })
-        .from(positions)
-        .leftJoin(accounts, eq(positions.accountId, accounts.id))
-        .where(
-          and(
-            eq(positions.strategyId, strategyId),
-            eq(positions.snapshotDate, latestSnapshotDate),
-            sql`${positions.quantity} != 0`
+      ? await db
+          .select({
+            id: positions.id,
+            symbol: positions.symbol,
+            assetClass: positions.assetClass,
+            expiry: positions.expiry,
+            strike: positions.strike,
+            optionRight: positions.optionRight,
+            quantity: positions.quantity,
+            marketValueUsd: positions.marketValueUsd,
+            unrealizedPnl: positions.unrealizedPnl,
+            snapshotDate: positions.snapshotDate,
+            accountLabel: accounts.label,
+            spot: positions.spot,
+          })
+          .from(positions)
+          .leftJoin(accounts, eq(positions.accountId, accounts.id))
+          .where(
+            and(
+              eq(positions.strategyId, strategyId),
+              eq(positions.snapshotDate, latestSnapshotDate),
+              sql`${positions.quantity} != 0`
+            )
           )
-        )
-        .orderBy(desc(positions.symbol))
-    : [];
+          .orderBy(desc(positions.symbol))
+      : [];
 
     const openPositions = openPositionsRows.map((row) => ({
-    id: row.id,
-    symbol: row.symbol,
-    assetClass: row.assetClass,
-    expiry: row.expiry,
-    strike: toNumber(row.strike),
-    optionRight: row.optionRight,
-    quantity: Number(row.quantity),
-    marketValue: toNumber(row.marketValueUsd),
-    unrealizedPnl: toNumber(row.unrealizedPnl),
-    snapshotDate: row.snapshotDate,
-    accountLabel: row.accountLabel,
-    spot: toNumber(row.spot),
-  }));
-
-    const triageRows = await db
-    .select({
-      id: triageRecords.id,
-      severity: triageRecords.severity,
-      recommendedAction: triageRecords.recommendedAction,
-      snapshotDate: triageRecords.snapshotDate,
-      dte: triageRecords.dte,
-      symbol: triageRecords.symbol,
-      pctNavAbsNotional: triageRecords.pctNavAbsNotional,
-    })
-    .from(triageRecords)
-    .where(eq(triageRecords.strategyId, strategyId))
-    .orderBy(desc(triageRecords.snapshotDate))
-    .limit(25);
+      id: row.id,
+      symbol: row.symbol,
+      assetClass: row.assetClass,
+      expiry: row.expiry,
+      strike: toNumber(row.strike),
+      optionRight: row.optionRight,
+      quantity: Number(row.quantity),
+      marketValue: toNumber(row.marketValueUsd),
+      unrealizedPnl: toNumber(row.unrealizedPnl),
+      snapshotDate: row.snapshotDate,
+      accountLabel: row.accountLabel,
+      spot: toNumber(row.spot),
+    }));
 
     const triageFlags = triageRows.map((row) => ({
-    id: row.id,
-    severity: row.severity,
-    recommendedAction: row.recommendedAction,
-    snapshotDate: row.snapshotDate,
-    dte: row.dte,
-    symbol: row.symbol,
-    pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
-  }));
-
-    // Fetch all trades aggregated by day + account + side + symbol
-    const tradeDateCol = sql<string>`DATE(${trades.tradeDate})`;
-    const tradesRows = await db
-    .select({
-      tradeDate: tradeDateCol,
-      accountLabel: accounts.label,
-      side: trades.side,
-      symbol: trades.symbol,
-      totalQuantity: sql<string>`SUM(CASE WHEN ${trades.side} = 'SELL' THEN -1 ELSE 1 END * ABS(CAST(${trades.quantity} AS NUMERIC)))`,
-      avgPrice: sql<string>`CASE WHEN SUM(ABS(CAST(${trades.quantity} AS NUMERIC))) > 0 THEN SUM(ABS(CAST(${trades.quantity} AS NUMERIC)) * CAST(${trades.price} AS NUMERIC)) / SUM(ABS(CAST(${trades.quantity} AS NUMERIC))) ELSE 0 END`,
-      totalGross: sql<string>`SUM(CASE WHEN ${trades.side} = 'SELL' THEN -1 ELSE 1 END * ABS(CAST(COALESCE(${trades.grossAmount}, '0') AS NUMERIC)))`,
-      tradeCount: sql<number>`COUNT(*)::int`,
-    })
-    .from(trades)
-    .leftJoin(accounts, eq(trades.accountId, accounts.id))
-    .where(eq(trades.strategyId, strategyId))
-    .groupBy(tradeDateCol, accounts.label, trades.side, trades.symbol)
-    .orderBy(desc(tradeDateCol));
+      id: row.id,
+      severity: row.severity,
+      recommendedAction: row.recommendedAction,
+      snapshotDate: row.snapshotDate,
+      dte: row.dte,
+      symbol: row.symbol,
+      pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
+    }));
 
     const aggregatedTrades = tradesRows.map((row) => ({
-    tradeDate: row.tradeDate ? new Date(row.tradeDate).toISOString().slice(0, 10) : '',
-    accountLabel: row.accountLabel,
-    side: row.side,
-    symbol: row.symbol,
-    totalQuantity: toNumber(row.totalQuantity) ?? 0,
-    avgPrice: toNumber(row.avgPrice) ?? 0,
-    totalGross: toNumber(row.totalGross),
-    tradeCount: row.tradeCount ?? 1,
-  }));
+      tradeDate: row.tradeDate ? new Date(row.tradeDate).toISOString().slice(0, 10) : '',
+      accountLabel: row.accountLabel,
+      side: row.side,
+      symbol: row.symbol,
+      totalQuantity: toNumber(row.totalQuantity) ?? 0,
+      avgPrice: toNumber(row.avgPrice) ?? 0,
+      totalGross: toNumber(row.totalGross),
+      tradeCount: row.tradeCount ?? 1,
+    }));
 
     // Compute live metrics from current positions + portfolio_snapshots NAV
-    // This is independent of strategy_metrics_snapshots (which can go stale if ingestion skips recompute)
     let totalMarketValue = 0;
     let totalUnrealizedPnl = 0;
     let minDte: number | null = null;
@@ -639,26 +625,8 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       }
     }
 
-    // Get NAV from portfolio_snapshots (per-account latest dates, USD-normalized) for % NAV
-    const navResult = await db
-      .select({
-        totalNav: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
-      })
-      .from(portfolioSnapshots)
-      .where(
-        and(
-          eq(portfolioSnapshots.level, "account"),
-          sql`${portfolioSnapshots.snapshotDate} = (
-            SELECT MAX(ps2.snapshot_date)
-            FROM portfolio_snapshots ps2
-            WHERE ps2.account_id = ${portfolioSnapshots.accountId}
-              AND ps2.level = 'account'
-          )`
-        )
-      );
     const totalNav = toNumber(navResult[0]?.totalNav) ?? 0;
-    const pctNav =
-      totalNav > 0 ? (totalMarketValue / totalNav) * 100 : null;
+    const pctNav = totalNav > 0 ? (totalMarketValue / totalNav) * 100 : null;
 
     // Derive spot price: prefer non-option position.spot, then fall back to underlyings.spot
     let spotPrice: number | null = null;

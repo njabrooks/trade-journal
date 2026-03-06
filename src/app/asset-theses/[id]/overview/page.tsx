@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getAssetThesisById, getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
+import { getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
+import { getCachedAssetThesisById } from '@/db/queries/cached';
 import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getLatestArticulation, getActiveValidationPoints } from '@/db/queries/thesisSynthesis';
@@ -22,7 +23,7 @@ interface OverviewPageProps {
 
 export async function generateMetadata({ params }: OverviewPageProps): Promise<Metadata> {
   const { id } = await params;
-  const thesis = await getAssetThesisById(id);
+  const thesis = await getCachedAssetThesisById(id);
   return {
     title: thesis?.title ?? 'Asset Thesis',
   };
@@ -32,10 +33,10 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
   const { id } = await params;
 
   const [thesis, claimsWithSources, allMacroTheses, allStrategies, articulation, validationPoints] = await Promise.all([
-    getAssetThesisById(id),
+    getCachedAssetThesisById(id),
     getMainClaimsWithSourcesForAssetThesis(id),
     getMacroThesesList(),
-    getStrategiesForList(1000, { includeClosedStrategies: true }),
+    getStrategiesForList(1000, { assetThesisId: id, includeClosedStrategies: true }),
     getLatestArticulation(id, 'asset'),
     getActiveValidationPoints(id, 'asset'),
   ]);
@@ -47,7 +48,8 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
   // Calculate related entity counts
   const linkedMacroThesesIds = thesis.linkedMacroTheses.map((lmt) => lmt.macroThesisId);
   const linkedMacroTheses = allMacroTheses.filter((mt) => linkedMacroThesesIds.includes(mt.id));
-  const linkedStrategies = allStrategies.filter((s) => s.assetThesisId === id);
+  // allStrategies is already filtered by assetThesisId via the query
+  const linkedStrategies = allStrategies;
 
   const currentClaimCount = claimsWithSources?.length ?? 0;
   const articulationClaimCount = thesis.claimsCountAtLastArticulation ?? 0;

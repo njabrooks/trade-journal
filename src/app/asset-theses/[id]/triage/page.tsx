@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getAssetThesisById, getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
+import { getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
+import { getCachedAssetThesisById } from '@/db/queries/cached';
 import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getActiveValidationPoints } from '@/db/queries/thesisSynthesis';
@@ -19,7 +20,7 @@ interface TriagePageProps {
 
 export async function generateMetadata({ params }: TriagePageProps): Promise<Metadata> {
   const { id } = await params;
-  const thesis = await getAssetThesisById(id);
+  const thesis = await getCachedAssetThesisById(id);
   return {
     title: thesis ? `${thesis.title} - Triage` : 'Triage',
   };
@@ -47,10 +48,10 @@ export default async function AssetThesisTriagePage({ params }: TriagePageProps)
   const { id } = await params;
 
   const [thesis, claimsWithSources, allMacroTheses, allStrategies, validationPoints, thesisTriageResult] = await Promise.all([
-    getAssetThesisById(id),
+    getCachedAssetThesisById(id),
     getMainClaimsWithSourcesForAssetThesis(id),
     getMacroThesesList(),
-    getStrategiesForList(1000, { includeClosedStrategies: true }),
+    getStrategiesForList(1000, { assetThesisId: id, includeClosedStrategies: true }),
     getActiveValidationPoints(id, 'asset'),
     getUnifiedTriageQueue({ thesisId: id, includeAll: true }),
   ]);
@@ -61,7 +62,8 @@ export default async function AssetThesisTriagePage({ params }: TriagePageProps)
 
   const linkedMacroThesesIds = thesis.linkedMacroTheses.map((lmt) => lmt.macroThesisId);
   const linkedMacroTheses = allMacroTheses.filter((mt) => linkedMacroThesesIds.includes(mt.id));
-  const linkedStrategies = allStrategies.filter((s) => s.assetThesisId === id);
+  // allStrategies is already filtered by assetThesisId via the query
+  const linkedStrategies = allStrategies;
 
   // Fetch strategy/position triage for strategies linked to this asset thesis
   const strategyTriageResults = await Promise.all(

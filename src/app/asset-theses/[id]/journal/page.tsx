@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
-import { getAssetThesisById, getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
+import { getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
+import { getCachedAssetThesisById } from '@/db/queries/cached';
 import { getMacroThesesList } from '@/db/queries/macroTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getActiveValidationPoints } from '@/db/queries/thesisSynthesis';
@@ -20,7 +21,7 @@ interface JournalPageProps {
 
 export async function generateMetadata({ params }: JournalPageProps): Promise<Metadata> {
   const { id } = await params;
-  const thesis = await getAssetThesisById(id);
+  const thesis = await getCachedAssetThesisById(id);
   return {
     title: thesis ? `${thesis.title} - Journal` : 'Journal',
   };
@@ -76,10 +77,10 @@ export default async function AssetThesisJournalPage({ params }: JournalPageProp
 
   // First fetch: thesis + related entities to discover all linked IDs
   const [thesis, claimsWithSources, allMacroTheses, allStrategies, validationPoints] = await Promise.all([
-    getAssetThesisById(id),
+    getCachedAssetThesisById(id),
     getMainClaimsWithSourcesForAssetThesis(id),
     getMacroThesesList(),
-    getStrategiesForList(1000, { includeClosedStrategies: true }),
+    getStrategiesForList(1000, { assetThesisId: id, includeClosedStrategies: true }),
     getActiveValidationPoints(id, 'asset'),
   ]);
 
@@ -89,7 +90,8 @@ export default async function AssetThesisJournalPage({ params }: JournalPageProp
 
   const linkedMacroThesesIds = thesis.linkedMacroTheses.map((lmt) => lmt.macroThesisId);
   const linkedMacroTheses = allMacroTheses.filter((mt) => linkedMacroThesesIds.includes(mt.id));
-  const linkedStrategies = allStrategies.filter((s) => s.assetThesisId === id);
+  // allStrategies is already filtered by assetThesisId via the query
+  const linkedStrategies = allStrategies;
 
   // Collect all related entity IDs for comprehensive journal view
   const relatedEntityIds = [

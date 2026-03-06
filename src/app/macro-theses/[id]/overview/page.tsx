@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getMacroThesisById, getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
+import { getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
+import { getCachedMacroThesisById } from '@/db/queries/cached';
 import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getAssetThesesForRelatedMacroThesis } from '@/db/queries/relatedMacroTheses';
@@ -23,7 +24,7 @@ interface OverviewPageProps {
 
 export async function generateMetadata({ params }: OverviewPageProps): Promise<Metadata> {
   const { id } = await params;
-  const thesis = await getMacroThesisById(id);
+  const thesis = await getCachedMacroThesisById(id);
   return {
     title: thesis?.title ?? 'Macro Thesis',
   };
@@ -33,10 +34,10 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
   const { id } = await params;
 
   const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, articulation, validationPoints] = await Promise.all([
-    getMacroThesisById(id),
+    getCachedMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
-    getStrategiesForList(1000, { includeClosedStrategies: true }),
+    getStrategiesForList(1000, { macroThesisId: id, includeClosedStrategies: true }),
     getAssetThesesForRelatedMacroThesis(id),
     getLatestArticulation(id, 'macro'),
     getActiveValidationPoints(id, 'macro'),
@@ -49,9 +50,8 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
   // Calculate related entity counts
   const relatedAssetThesisIds = new Set(relatedAssetThesisLinks.map((link) => link.assetThesisId));
   const linkedAssetTheses = allAssetTheses.filter((at) => relatedAssetThesisIds.has(at.id));
-  const linkedStrategies = allStrategies.filter((s) =>
-    s.linkedMacroTheses.some((lmt) => lmt.id === id)
-  );
+  // allStrategies is already filtered by macroThesisId via the query
+  const linkedStrategies = allStrategies;
 
   const tabs = createEntityTabs('/macro-theses', id);
 

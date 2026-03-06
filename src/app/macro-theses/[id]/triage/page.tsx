@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getMacroThesisById, getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
+import { getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
+import { getCachedMacroThesisById } from '@/db/queries/cached';
 import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getAssetThesesForRelatedMacroThesis } from '@/db/queries/relatedMacroTheses';
@@ -20,7 +21,7 @@ interface TriagePageProps {
 
 export async function generateMetadata({ params }: TriagePageProps): Promise<Metadata> {
   const { id } = await params;
-  const thesis = await getMacroThesisById(id);
+  const thesis = await getCachedMacroThesisById(id);
   return {
     title: thesis ? `${thesis.title} - Triage` : 'Triage',
   };
@@ -48,10 +49,10 @@ export default async function MacroThesisTriagePage({ params }: TriagePageProps)
   const { id } = await params;
 
   const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, validationPoints, thesisTriageResult] = await Promise.all([
-    getMacroThesisById(id),
+    getCachedMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
-    getStrategiesForList(1000, { includeClosedStrategies: true }),
+    getStrategiesForList(1000, { macroThesisId: id, includeClosedStrategies: true }),
     getAssetThesesForRelatedMacroThesis(id),
     getActiveValidationPoints(id, 'macro'),
     getUnifiedTriageQueue({ thesisId: id, includeAll: true }),
@@ -63,9 +64,8 @@ export default async function MacroThesisTriagePage({ params }: TriagePageProps)
 
   const relatedAssetThesisIds = new Set(relatedAssetThesisLinks.map((link) => link.assetThesisId));
   const linkedAssetTheses = allAssetTheses.filter((at) => relatedAssetThesisIds.has(at.id));
-  const linkedStrategies = allStrategies.filter((s) =>
-    s.linkedMacroTheses.some((lmt) => lmt.id === id)
-  );
+  // allStrategies is already filtered by macroThesisId via the query
+  const linkedStrategies = allStrategies;
 
   // Fetch strategy/position triage for all linked strategies
   const strategyTriageResults = await Promise.all(

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
-import { getStrategyDetail } from '@/db/queries/strategies';
+import { getCachedStrategyDetail } from '@/db/queries/cached';
 import { getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
 import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDetailLayout';
 import { StrategyTabs } from '@/components/layout/StrategyTabs';
@@ -17,7 +17,7 @@ interface JournalPageProps {
 
 export async function generateMetadata({ params }: JournalPageProps): Promise<Metadata> {
   const { strategyId } = await params;
-  const detail = await getStrategyDetail(strategyId);
+  const detail = await getCachedStrategyDetail(strategyId);
   const label = detail?.strategy?.label || detail?.strategy?.strategyKey || 'Strategy';
   return {
     title: `${label} - Journal`,
@@ -72,7 +72,7 @@ async function getEntityJournalData(entityIds: string[]) {
 export default async function StrategyJournalPage({ params }: JournalPageProps) {
   const { strategyId } = await params;
 
-  const detail = await getStrategyDetail(strategyId);
+  const detail = await getCachedStrategyDetail(strategyId);
   if (!detail) {
     notFound();
   }

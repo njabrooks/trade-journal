@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
-import { getMacroThesisById, getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
+import { getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
+import { getCachedMacroThesisById } from '@/db/queries/cached';
 import { getAssetThesesList } from '@/db/queries/assetTheses';
 import { getStrategiesForList } from '@/db/queries/strategies';
 import { getAssetThesesForRelatedMacroThesis } from '@/db/queries/relatedMacroTheses';
@@ -21,7 +22,7 @@ interface JournalPageProps {
 
 export async function generateMetadata({ params }: JournalPageProps): Promise<Metadata> {
   const { id } = await params;
-  const thesis = await getMacroThesisById(id);
+  const thesis = await getCachedMacroThesisById(id);
   return {
     title: thesis ? `${thesis.title} - Journal` : 'Journal',
   };
@@ -77,10 +78,10 @@ export default async function MacroThesisJournalPage({ params }: JournalPageProp
 
   // First fetch: thesis + related entities to discover all linked IDs
   const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, validationPoints] = await Promise.all([
-    getMacroThesisById(id),
+    getCachedMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
-    getStrategiesForList(1000, { includeClosedStrategies: true }),
+    getStrategiesForList(1000, { macroThesisId: id, includeClosedStrategies: true }),
     getAssetThesesForRelatedMacroThesis(id),
     getActiveValidationPoints(id, 'macro'),
   ]);
@@ -91,9 +92,8 @@ export default async function MacroThesisJournalPage({ params }: JournalPageProp
 
   const relatedAssetThesisIds = new Set(relatedAssetThesisLinks.map((link) => link.assetThesisId));
   const linkedAssetTheses = allAssetTheses.filter((at) => relatedAssetThesisIds.has(at.id));
-  const linkedStrategies = allStrategies.filter((s) =>
-    s.linkedMacroTheses.some((lmt) => lmt.id === id)
-  );
+  // allStrategies is already filtered by macroThesisId via the query
+  const linkedStrategies = allStrategies;
 
   // Collect all related entity IDs for comprehensive journal view
   const relatedEntityIds = [
