@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get('source');
     const search = searchParams.get('search');
     const underlying = searchParams.get('underlying');
+    const entityIdsParam = searchParams.get('entityIds');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const limit = Math.min(parseInt(searchParams.get('limit') || '500', 10), 1000);
@@ -18,6 +19,12 @@ export async function GET(request: NextRequest) {
 
     // Build WHERE clause dynamically on the journal_entries_with_underlying view
     let where = sql`WHERE TRUE`;
+    if (entityIdsParam) {
+      const entityIds = entityIdsParam.split(',').filter(Boolean);
+      if (entityIds.length > 0) {
+        where = sql`${where} AND object_id IN (${sql.join(entityIds.map(id => sql`${id}::uuid`), sql`, `)})`;
+      }
+    }
     if (objectType) where = sql`${where} AND object_type = ${objectType}`;
     if (actionType) where = sql`${where} AND action_type = ${actionType}`;
     if (source) where = sql`${where} AND source = ${source}`;

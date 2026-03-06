@@ -4,10 +4,11 @@ import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDet
 import { StrategyTabs } from '@/components/layout/StrategyTabs';
 import { StrategySidebar } from '@/components/strategies/StrategySidebar';
 import { StrategyOverviewCharts } from '@/components/strategies/StrategyOverviewCharts';
+import { StrategySignalsSection } from '@/components/signals/StrategySignalsSection';
 import { getStrategyDetail } from '@/db/queries/strategies';
 import { getTriageQueueForStrategy } from '@/db/queries/triage';
 import { db } from '@/db';
-import { signals } from '@/db/schema';
+import { signals, triageRecords } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { formatCurrency } from '@/lib/formatters';
 import { EntityStatusBadge } from '@/components/ui/badge';
@@ -29,13 +30,24 @@ export async function generateMetadata({ params }: OverviewPageProps): Promise<M
 export default async function StrategyOverviewPage({ params }: OverviewPageProps) {
   const { strategyId } = await params;
 
-  const [detail, triageData, strategySignals] = await Promise.all([
+  const [detail, triageData, strategySignals, pendingDefineSignals] = await Promise.all([
     getStrategyDetail(strategyId),
     getTriageQueueForStrategy(strategyId, {}),
     db
       .select()
       .from(signals)
-      .where(and(eq(signals.entityType, 'strategy'), eq(signals.strategyId, strategyId))),
+      .where(and(eq(signals.entityType, 'strategy'), eq(signals.strategyId, strategyId)))
+      .orderBy(signals.createdAt),
+    db
+      .select()
+      .from(triageRecords)
+      .where(
+        and(
+          eq(triageRecords.strategyId, strategyId),
+          eq(triageRecords.recommendedAction, 'DEFINE_SIGNALS')
+        )
+      )
+      .limit(1),
   ]);
 
   if (!detail) {
@@ -44,6 +56,8 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
 
   const { strategy, liveMetrics } = detail;
   const openPositionCount = liveMetrics.openPositionsCount;
+  const showDefinePrompt =
+    pendingDefineSignals.length > 0 && pendingDefineSignals[0].status !== 'done';
 
   const statusBadge = <EntityStatusBadge status={strategy.status} />;
 
@@ -195,14 +209,45 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
                     <td className="py-2 pr-4 font-medium">{trade.side}</td>
                     <td className="py-2 pr-4">{trade.symbol}</td>
                     <td className="py-2 pr-4">{trade.totalQuantity}</td>
-                    <td className="py-2 pr-4">{trade.avgPrice.toFixed(2)}</td>
+                    <td className="py-2 pr-4">{formatCurrency(trade.avgPrice)}</td>
                     <td className="py-2">{formatCurrency(trade.totalGross ?? null)}</td>
                   </tr>
                 ))
               )}
             </tbody>
+            {detail.trades.length > 0 && (
+              <tfoot>
+                <tr className="border-t border-border font-medium text-foreground">
+                  <td className="py-2 pr-4" colSpan={4}>Total</td>
+                  <td className="py-2 pr-4">
+                    {detail.trades.reduce((sum, t) => sum + t.totalQuantity, 0).toFixed(5).replace(/\.?0+$/, '')}
+                  </td>
+                  <td className="py-2 pr-4">
+                    {(() => {
+                      const totalQty = detail.trades.reduce((sum, t) => sum + t.totalQuantity, 0);
+                      const totalGross = detail.trades.reduce((sum, t) => sum + (t.totalGross ?? 0), 0);
+                      return totalQty !== 0 ? formatCurrency(Math.abs(totalGross / totalQty)) : '—';
+                    })()}
+                  </td>
+                  <td className="py-2">
+                    {formatCurrency(detail.trades.reduce((sum, t) => sum + (t.totalGross ?? 0), 0))}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
+      </EntitySection>
+
+      {/* Signals */}
+      <EntitySection title={`Signals (${strategySignals.length})`}>
+        <StrategySignalsSection
+          strategyId={strategyId}
+          strategyKey={strategy.strategyKey}
+          underlyingTicker={strategy.underlyingTicker || undefined}
+          signals={strategySignals}
+          showDefinePrompt={showDefinePrompt}
+        />
       </EntitySection>
     </EntityDetailLayout>
   );

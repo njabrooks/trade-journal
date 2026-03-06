@@ -2,28 +2,25 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { db } from '@/db';
 import { sql } from 'drizzle-orm';
-import { getMacroThesisById, getMainClaimsWithSourcesForThesis } from '@/db/queries/macroTheses';
-import { getAssetThesesList } from '@/db/queries/assetTheses';
-import { getStrategiesForList } from '@/db/queries/strategies';
-import { getAssetThesesForRelatedMacroThesis } from '@/db/queries/relatedMacroTheses';
-import { getActiveValidationPoints } from '@/db/queries/thesisSynthesis';
+import { getStrategyDetail } from '@/db/queries/strategies';
+import { getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
 import { EntityDetailLayout, EntitySection } from '@/components/layout/EntityDetailLayout';
-import { EntityTabs } from '@/components/layout/EntityTabs';
-import { createEntityTabs } from '@/lib/types/entity-tabs';
-import { MacroThesisSidebar } from '@/components/theses/MacroThesisSidebar';
+import { StrategyTabs } from '@/components/layout/StrategyTabs';
+import { StrategySidebar } from '@/components/strategies/StrategySidebar';
 import { JournalBrowser } from '@/components/journal/JournalBrowser';
 import { EntityStatusBadge } from '@/components/ui/badge';
 import type { JournalEntryWithUnderlying } from '@/app/journal/page';
 
 interface JournalPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ strategyId: string }>;
 }
 
 export async function generateMetadata({ params }: JournalPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const thesis = await getMacroThesisById(id);
+  const { strategyId } = await params;
+  const detail = await getStrategyDetail(strategyId);
+  const label = detail?.strategy?.label || detail?.strategy?.strategyKey || 'Strategy';
   return {
-    title: thesis ? `${thesis.title} - Journal` : 'Journal',
+    title: `${label} - Journal`,
   };
 }
 
@@ -72,60 +69,68 @@ async function getEntityJournalData(entityIds: string[]) {
   return { entries, objectTypes, actionTypes, sources, underlyings };
 }
 
-export default async function MacroThesisJournalPage({ params }: JournalPageProps) {
-  const { id } = await params;
+export default async function StrategyJournalPage({ params }: JournalPageProps) {
+  const { strategyId } = await params;
 
-  // First fetch: thesis + related entities to discover all linked IDs
-  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, validationPoints] = await Promise.all([
-    getMacroThesisById(id),
-    getMainClaimsWithSourcesForThesis(id),
-    getAssetThesesList(),
-    getStrategiesForList(1000, { includeClosedStrategies: true }),
-    getAssetThesesForRelatedMacroThesis(id),
-    getActiveValidationPoints(id, 'macro'),
-  ]);
-
-  if (!thesis) {
+  const detail = await getStrategyDetail(strategyId);
+  if (!detail) {
     notFound();
   }
 
-  const relatedAssetThesisIds = new Set(relatedAssetThesisLinks.map((link) => link.assetThesisId));
-  const linkedAssetTheses = allAssetTheses.filter((at) => relatedAssetThesisIds.has(at.id));
-  const linkedStrategies = allStrategies.filter((s) =>
-    s.linkedMacroTheses.some((lmt) => lmt.id === id)
-  );
+  const { strategy } = detail;
+
+  // Collect claims linked to the asset thesis (if any)
+  const claimsWithSources = strategy.assetThesisId
+    ? await getMainClaimsWithSourcesForAssetThesis(strategy.assetThesisId)
+    : [];
 
   // Collect all related entity IDs for comprehensive journal view
   const relatedEntityIds = [
-    id, // the macro thesis itself
-    ...linkedAssetTheses.map((at) => at.id),
-    ...linkedStrategies.map((s) => s.id),
-    ...claimsWithSources.map((c) => c.claim.id),
+    strategyId, // the strategy itself
+    ...(strategy.assetThesisId ? [strategy.assetThesisId] : []), // linked asset thesis
+    ...strategy.linkedMacroTheses.map((mt) => mt.id), // linked macro theses (via asset thesis)
+    ...detail.openPositions.map((p) => p.id), // open positions
+    ...claimsWithSources.map((c) => c.claim.id), // claims linked to asset thesis
   ];
 
-  // Second fetch: journal entries for all related entities
   const journalData = await getEntityJournalData(relatedEntityIds);
 
-  const tabs = createEntityTabs('/macro-theses', id);
-
-  const statusBadge = <EntityStatusBadge status={thesis.status} />;
+  const statusBadge = <EntityStatusBadge status={strategy.status} />;
 
   return (
     <EntityDetailLayout
-      title={thesis.title}
-      subtitle="Macro Thesis"
+      title={strategy.label ?? strategy.strategyKey}
+      subtitle={
+        <span className="inline-flex items-center gap-2">
+          Strategy
+          <span className="font-mono text-muted-foreground">
+            ({strategy.strategyKey})
+          </span>
+        </span>
+      }
       statusBadge={statusBadge}
-      tabs={<EntityTabs tabs={tabs} />}
-      activeNav="macro-theses"
+      tabs={<StrategyTabs strategyId={strategyId} />}
+      activeNav="strategies"
       sidebar={
-        <MacroThesisSidebar
-          thesis={thesis}
-          linkedAssetThesesCount={linkedAssetTheses.length}
-          linkedStrategiesCount={linkedStrategies.length}
-          claimsCount={claimsWithSources.length}
-          signalsCount={validationPoints.length}
-          linkedAssetTheses={linkedAssetTheses.map((at) => ({ id: at.id, title: at.title, ticker: at.ticker }))}
-          linkedStrategies={linkedStrategies.map((s) => ({ id: s.id, label: s.label, strategyKey: s.strategyKey }))}
+        <StrategySidebar
+          strategy={{
+            id: strategy.id,
+            strategyKey: strategy.strategyKey,
+            label: strategy.label,
+            strategyType: strategy.strategyType,
+            templateLabel: strategy.templateLabel,
+            underlyingTicker: strategy.underlyingTicker,
+            openedAt: strategy.openedAt,
+            closedAt: strategy.closedAt,
+            status: strategy.status,
+            direction: strategy.direction,
+            assetThesisId: strategy.assetThesisId,
+          }}
+          openPositionsCount={detail.openPositions.length}
+          triageCount={detail.triageFlags.length}
+          signalsCount={0}
+          linkedMacroTheses={strategy.linkedMacroTheses.map((mt) => ({ id: mt.id, title: mt.title }))}
+          linkedAssetThesis={strategy.assetThesisId ? { id: strategy.assetThesisId, title: strategy.assetViewTitle || 'Asset Thesis', ticker: strategy.underlyingTicker } : null}
         />
       }
     >
@@ -142,7 +147,7 @@ export default async function MacroThesisJournalPage({ params }: JournalPageProp
           />
         ) : (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            No journal entries for this thesis yet. Entries are created when you annotate, change status, link claims, or take triage actions.
+            No journal entries for this strategy yet. Entries are created when you annotate, change status, link claims, or take triage actions.
           </p>
         )}
       </EntitySection>

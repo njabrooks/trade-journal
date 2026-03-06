@@ -149,6 +149,7 @@ export default async function AssetThesisJournalPage({ params }: JournalPageProp
             actionTypes={journalData.actionTypes}
             sources={journalData.sources}
             underlyings={journalData.underlyings}
+            entityIds={relatedEntityIds}
           />
         ) : (
           <p className="text-sm text-muted-foreground py-4 text-center">

@@ -46,6 +46,8 @@ interface JournalBrowserProps {
   actionTypes: string[];
   sources: string[];
   underlyings: string[];
+  /** When set, API filter calls are scoped to only these entity IDs (for entity detail pages) */
+  entityIds?: string[];
 }
 
 type ObjectTypeFilter = string | 'all';
@@ -55,7 +57,7 @@ type UnderlyingFilter = string | 'all';
 type SortColumn = 'timestamp' | 'objectTitle' | 'actionType' | 'objectType' | 'source' | 'underlying';
 type SortDirection = 'asc' | 'desc';
 
-export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes, sources, underlyings }: JournalBrowserProps) {
+export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes, sources, underlyings, entityIds }: JournalBrowserProps) {
   const router = useRouter();
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
@@ -108,6 +110,7 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
     if (sourceFilter !== 'all') params.set('source', sourceFilter);
     if (underlyingFilter !== 'all') params.set('underlying', underlyingFilter);
     if (debouncedSearch) params.set('search', debouncedSearch);
+    if (entityIds && entityIds.length > 0) params.set('entityIds', entityIds.join(','));
     params.set('limit', '500');
 
     setIsLoading(true);

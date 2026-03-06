@@ -392,6 +392,7 @@ export interface StrategyDetail {
     pctNav: number | null;
     minDte: number | null;
     openPositionsCount: number;
+    spot: number | null;
   };
 }
 
@@ -409,6 +410,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         accountBrokerId: accounts.brokerAccountId,
         templateLabel: strategyTemplates.label,
         underlyingTicker: underlyings.ticker,
+        underlyingSpot: underlyings.spot,
         strategyType: strategies.strategyType,
         direction: strategies.direction,
         assetThesisId: strategies.assetThesisId,
@@ -533,6 +535,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
           unrealizedPnl: positions.unrealizedPnl,
           snapshotDate: positions.snapshotDate,
           accountLabel: accounts.label,
+          spot: positions.spot,
         })
         .from(positions)
         .leftJoin(accounts, eq(positions.accountId, accounts.id))
@@ -558,6 +561,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     unrealizedPnl: toNumber(row.unrealizedPnl),
     snapshotDate: row.snapshotDate,
     accountLabel: row.accountLabel,
+    spot: toNumber(row.spot),
   }));
 
     const triageRows = await db
@@ -586,22 +590,23 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
   }));
 
     // Fetch all trades aggregated by day + account + side + symbol
+    const tradeDateCol = sql<string>`DATE(${trades.tradeDate})`;
     const tradesRows = await db
     .select({
-      tradeDate: trades.tradeDate,
+      tradeDate: tradeDateCol,
       accountLabel: accounts.label,
       side: trades.side,
       symbol: trades.symbol,
-      totalQuantity: sql<string>`SUM(ABS(CAST(${trades.quantity} AS NUMERIC)))`,
+      totalQuantity: sql<string>`SUM(CASE WHEN ${trades.side} = 'SELL' THEN -1 ELSE 1 END * ABS(CAST(${trades.quantity} AS NUMERIC)))`,
       avgPrice: sql<string>`CASE WHEN SUM(ABS(CAST(${trades.quantity} AS NUMERIC))) > 0 THEN SUM(ABS(CAST(${trades.quantity} AS NUMERIC)) * CAST(${trades.price} AS NUMERIC)) / SUM(ABS(CAST(${trades.quantity} AS NUMERIC))) ELSE 0 END`,
-      totalGross: sql<string>`SUM(CAST(COALESCE(${trades.grossAmount}, '0') AS NUMERIC))`,
+      totalGross: sql<string>`SUM(CASE WHEN ${trades.side} = 'SELL' THEN -1 ELSE 1 END * ABS(CAST(COALESCE(${trades.grossAmount}, '0') AS NUMERIC)))`,
       tradeCount: sql<number>`COUNT(*)::int`,
     })
     .from(trades)
     .leftJoin(accounts, eq(trades.accountId, accounts.id))
     .where(eq(trades.strategyId, strategyId))
-    .groupBy(trades.tradeDate, accounts.label, trades.side, trades.symbol)
-    .orderBy(desc(trades.tradeDate));
+    .groupBy(tradeDateCol, accounts.label, trades.side, trades.symbol)
+    .orderBy(desc(tradeDateCol));
 
     const aggregatedTrades = tradesRows.map((row) => ({
     tradeDate: row.tradeDate ? new Date(row.tradeDate).toISOString().slice(0, 10) : '',
@@ -655,12 +660,25 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     const pctNav =
       totalNav > 0 ? (totalMarketValue / totalNav) * 100 : null;
 
+    // Derive spot price: prefer non-option position.spot, then fall back to underlyings.spot
+    let spotPrice: number | null = null;
+    for (const pos of openPositions) {
+      if (pos.spot != null && pos.assetClass !== "OPT") {
+        spotPrice = pos.spot;
+        break;
+      }
+    }
+    if (spotPrice == null) {
+      spotPrice = toNumber(strategyRow.underlyingSpot);
+    }
+
     const liveMetrics = {
       totalMarketValue,
       totalUnrealizedPnl,
       pctNav,
       minDte,
       openPositionsCount: openPositions.length,
+      spot: spotPrice,
     };
 
     return {
