@@ -27,6 +27,7 @@ import { db } from '../../src/db/index.js';
 import { researchArtifacts, researchInsights } from '../../src/db/schema.js';
 import { parseClaimsMarkdown } from '../../src/lib/research/parseClaimsMarkdown.js';
 import { autoPromoteAuditClaims } from '../../src/db/queries/research.js';
+import { generateClaimThesisSuggestions } from '../../src/lib/services/claim-thesis-suggestions.js';
 
 export interface UploadAuditOptions {
   /** Path to the audit markdown file */
@@ -55,6 +56,7 @@ export interface UploadAuditResult {
   promotedCount: number;
   mainClaimCount: number;
   evidenceClaimCount: number;
+  suggestionCount: number;
 }
 
 export async function uploadAudit(opts: UploadAuditOptions): Promise<UploadAuditResult> {
@@ -112,8 +114,20 @@ export async function uploadAudit(opts: UploadAuditOptions): Promise<UploadAudit
   console.log(`Insight created: ${insight.id}`);
 
   // Auto-promote main claims to main_claims table
-  const { promotedCount } = await autoPromoteAuditClaims(insight.id);
+  const { promotedCount, promotedClaimIds } = await autoPromoteAuditClaims(insight.id);
   console.log(`Promoted ${promotedCount} claims to main_claims table`);
+
+  // Generate thesis linkage suggestions for promoted claims
+  let suggestionCount = 0;
+  try {
+    if (promotedClaimIds.length > 0) {
+      const suggestionIds = await generateClaimThesisSuggestions(insight.id, promotedClaimIds);
+      suggestionCount = suggestionIds.length;
+      console.log(`Generated ${suggestionCount} thesis linkage suggestions`);
+    }
+  } catch (err) {
+    console.warn(`Warning: thesis suggestion generation failed (non-fatal):`, err);
+  }
 
   return {
     artifactId: artifact.id,
@@ -121,5 +135,6 @@ export async function uploadAudit(opts: UploadAuditOptions): Promise<UploadAudit
     promotedCount,
     mainClaimCount: claimsStructure.main_claims.length,
     evidenceClaimCount: claimsStructure.evidence_claims.length,
+    suggestionCount,
   };
 }
