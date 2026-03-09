@@ -3,49 +3,13 @@
  *
  * Converts markdown audit format (from process-transcript skill) into
  * the JSON structure expected by ClaimsBrowser component.
+ *
+ * Uses canonical types from @/types/claims to avoid field name drift.
  */
 
-export interface MainClaim {
-  id: string;
-  title: string;
-  level: 'main';
-  type: 'macro_thesis_candidate' | 'asset_thesis_candidate';
-  category: 'macro' | 'asset_specific';
-  tickers: string[];
-  time_horizon: 'long_term' | 'medium_term' | 'short_term';
-  qualifier: 'high' | 'medium' | 'low' | 'exploratory';
-  claim: string;
-  evidence: string[];
-  reasoning: string;
-  backing: string;
-  rebuttal: string[];
-  supporting_evidence_claims: string[];
-  rebutting_evidence_claims: string[];
-}
-
-export interface EvidenceClaim {
-  id: string;
-  title: string;
-  level: 'evidence';
-  type: 'supporting' | 'rebutting';
-  supports: string; // References main claim ID
-  claim: string;
-  evidence: string[];
-  reasoning: string; // Full Toulmin framework
-  backing: string; // Full Toulmin framework
-  qualifier: 'high' | 'medium' | 'low' | 'exploratory';
-  rebuttal?: string;
-}
-
-export interface ClaimsStructure {
-  main_claims: MainClaim[];
-  evidence_claims: EvidenceClaim[];
-  metadata: {
-    extraction_date: string;
-    source_skill: string;
-    toulmin_version?: string;
-  };
-}
+// Re-export canonical types for consumers that import from here
+export type { MainClaim, EvidenceClaim, ClaimsStructure } from '@/types/claims';
+import type { MainClaim, EvidenceClaim, ClaimsStructure } from '@/types/claims';
 
 /**
  * Parse the full audit markdown into claims structure
@@ -127,7 +91,7 @@ function parseMainClaimBlock(block: string): MainClaim | null {
   const type = (extractField(block, 'Type') || 'macro_thesis_candidate') as 'macro_thesis_candidate' | 'asset_thesis_candidate';
   const category = extractField(block, 'Category') as 'macro' | 'asset_specific' || 'macro';
   const tickersRaw = extractField(block, 'Tickers') || '';
-  const tickers = tickersRaw === 'N/A' ? [] : tickersRaw.split(',').map(t => t.trim()).filter(Boolean);
+  const relevant_tickers = tickersRaw === 'N/A' ? [] : tickersRaw.split(',').map(t => t.trim()).filter(Boolean);
   const time_horizon = extractField(block, 'Time Horizon') as 'long_term' | 'medium_term' | 'short_term' || 'medium_term';
   const qualifier = extractField(block, 'Qualifier') as 'high' | 'medium' | 'low' | 'exploratory' || 'medium';
 
@@ -153,7 +117,7 @@ function parseMainClaimBlock(block: string): MainClaim | null {
     level: 'main',
     type,
     category,
-    tickers,
+    relevant_tickers,
     time_horizon,
     qualifier,
     claim,
@@ -163,6 +127,7 @@ function parseMainClaimBlock(block: string): MainClaim | null {
     rebuttal,
     supporting_evidence_claims,
     rebutting_evidence_claims,
+    converted_to: null,
   };
 }
 
@@ -172,11 +137,11 @@ function parseMainClaimBlock(block: string): MainClaim | null {
 function parseEvidenceClaims(text: string): EvidenceClaim[] {
   const claims: EvidenceClaim[] = [];
 
-  // Split by claim headers (### Claim N:)
-  const claimBlocks = text.split(/(?=### Claim \d+:)/);
+  // Split by claim headers: ### Claim N: or ### E1: format
+  const claimBlocks = text.split(/(?=### (?:Claim \d+|E\d+):)/);
 
   for (const block of claimBlocks) {
-    if (!block.trim() || !block.includes('### Claim')) continue;
+    if (!block.trim() || !block.match(/### (?:Claim \d+|E\d+):/)) continue;
 
     const claim = parseEvidenceClaimBlock(block);
     if (claim) claims.push(claim);
@@ -189,8 +154,8 @@ function parseEvidenceClaims(text: string): EvidenceClaim[] {
  * Parse a single evidence claim block
  */
 function parseEvidenceClaimBlock(block: string): EvidenceClaim | null {
-  // Extract claim number and title
-  const titleMatch = block.match(/### Claim (\d+): (.+)/);
+  // Extract claim number and title: ### Claim N: or ### E1: format
+  const titleMatch = block.match(/### (?:Claim )?(\d+|E\d+): (.+)/);
   if (!titleMatch) return null;
 
   const claimNumber = titleMatch[1];
