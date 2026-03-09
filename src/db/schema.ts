@@ -361,6 +361,13 @@ export const claimThesisMappings = pgTable(
     mainClaimIdx: index('idx_claim_thesis_main_claim').on(table.mainClaimId),
     macroThesisIdx: index('idx_claim_thesis_macro').on(table.macroThesisId),
     assetThesisIdx: index('idx_claim_thesis').on(table.assetThesisId),
+    // One claim can only be linked to a given thesis once (regardless of mapping_type)
+    uniqueMacro: uniqueIndex('idx_claim_thesis_unique_macro')
+      .on(table.mainClaimId, table.macroThesisId)
+      .where(sql`macro_thesis_id IS NOT NULL`),
+    uniqueAsset: uniqueIndex('idx_claim_thesis_unique_asset')
+      .on(table.mainClaimId, table.assetThesisId)
+      .where(sql`asset_thesis_id IS NOT NULL`),
   })
 );
 
