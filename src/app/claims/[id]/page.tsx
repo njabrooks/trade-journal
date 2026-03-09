@@ -10,6 +10,7 @@ import { ExternalLink } from 'lucide-react';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
 import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } from '@/types/claims';
 import { InlineClaimSuggestions } from '@/components/research/InlineClaimSuggestions';
+import { ClaimLinkButton } from '@/components/research/ClaimLinkButton';
 
 interface ClaimDetailPageProps {
   params: Promise<{ id: string }>;
@@ -111,7 +112,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
         <div className="bg-card rounded-lg border border p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold">Overview</h3>
-            {/* TODO: Add EditMainClaimButton if needed */}
+            <ClaimLinkButton claim={claim} />
           </div>
           <dl className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-2">
             <div>
@@ -426,6 +427,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
             <p className="text-sm text-muted-foreground mb-4">
               This claim has not been linked to any macro theses or asset theses yet.
             </p>
+            <ClaimLinkButton claim={claim} />
           </div>
         )}
 
