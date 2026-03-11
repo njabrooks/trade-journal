@@ -254,6 +254,33 @@ export async function computePositionTriageForDate(
   // Pre-fetch all severity overrides for this date (batched to avoid N+1 queries)
   const severityOverrideCache = await prefetchSeverityOverrides(snapshotDate);
 
+  // P1 Dedup: Fetch existing inbox and recently-dismissed records for position-level triage
+  // to avoid recreating records for ongoing conditions. Position IDs change across snapshot dates,
+  // so we match by (symbol + recommendedAction) instead.
+  const existingPositionTriageRows = await db
+    .select({
+      symbol: triageRecords.symbol,
+      recommendedAction: triageRecords.recommendedAction,
+      status: triageRecords.status,
+      severity: triageRecords.severity,
+    })
+    .from(triageRecords)
+    .where(
+      and(
+        eq(triageRecords.contextLevel, 'position'),
+        ne(triageRecords.snapshotDate, snapshotDate),
+        or(
+          eq(triageRecords.status, 'inbox'),
+          eq(triageRecords.status, 'in_progress')
+        )
+      )
+    );
+
+  // Build set of (symbol:action) keys that already have an active triage record
+  const activePositionTriageKeys = new Set(
+    existingPositionTriageRows.map((r) => `${r.symbol}:${r.recommendedAction}`)
+  );
+
   for (const position of optionPositions) {
     if (!position.expiry || !position.accountId) continue;
 
@@ -405,6 +432,12 @@ export async function computePositionTriageForDate(
       ? strategyDirectionMap.get(position.strategyId) ?? null
       : null;
 
+    // P1 Dedup: Skip if an active triage record already exists for this symbol+action on another date
+    const dedupKey = `${position.symbol}:${recommendedAction}`;
+    if (activePositionTriageKeys.has(dedupKey)) {
+      continue;
+    }
+
     records.push({
       snapshotDate,
       accountId: position.accountId,
@@ -530,6 +563,40 @@ export async function computeStrategyTriageForDate(
   // Pre-fetch all severity overrides for this date (batched to avoid N+1 queries)
   const severityOverrideCache = await prefetchSeverityOverrides(snapshotDate);
 
+  // P1 Dedup: Fetch existing inbox/in_progress records for persistent strategy-level conditions
+  // (REVIEW_SIZE, LINK_STRATEGY_TO_THESIS, REVIEW_COMPLEXITY) to avoid recreating daily
+  const persistentStrategyActions = ['REVIEW_SIZE', 'LINK_STRATEGY_TO_THESIS', 'REVIEW_COMPLEXITY'];
+  const existingStrategyTriageRows = strategyIds.length > 0
+    ? await db
+        .select({
+          strategyId: triageRecords.strategyId,
+          recommendedAction: triageRecords.recommendedAction,
+          severity: triageRecords.severity,
+        })
+        .from(triageRecords)
+        .where(
+          and(
+            eq(triageRecords.contextLevel, 'strategy'),
+            ne(triageRecords.snapshotDate, snapshotDate),
+            or(
+              eq(triageRecords.status, 'inbox'),
+              eq(triageRecords.status, 'in_progress')
+            ),
+            inArray(triageRecords.recommendedAction, persistentStrategyActions),
+            inArray(triageRecords.strategyId, strategyIds)
+          )
+        )
+    : [];
+
+  const activeStrategyTriageKeys = new Set(
+    existingStrategyTriageRows.map((r) => `${r.strategyId}:${r.recommendedAction}`)
+  );
+
+  // Build a map for severity comparison (to detect escalations)
+  const activeStrategyTriageSeverity = new Map(
+    existingStrategyTriageRows.map((r) => [`${r.strategyId}:${r.recommendedAction}`, r.severity])
+  );
+
   for (const metric of strategyMetrics) {
     if (!metric.strategyId) continue;
 
@@ -577,6 +644,12 @@ export async function computeStrategyTriageForDate(
       const computedSeverity = 'info';
       const recommendedAction = 'LINK_STRATEGY_TO_THESIS';
 
+      // P1 Dedup: Skip if active triage record already exists on another date
+      const stratDedupKey = `${metric.strategyId}:${recommendedAction}`;
+      if (activeStrategyTriageKeys.has(stratDedupKey)) {
+        // Skip — condition already surfaced
+      } else {
+
       // Check for active override (sync lookup from batched cache)
       const override = lookupSeverityOverride(
         severityOverrideCache,
@@ -602,6 +675,7 @@ export async function computeStrategyTriageForDate(
         overrideExpiresDate: override?.overrideExpiresDate ?? null,
         overrideAt: override?.overrideAt ?? null,
       });
+      } // end dedup else
     }
 
     // 3. REVIEW_SIZE - Size vs NAV check (merged REDUCE_SIZE and REVIEW_SIZE)
@@ -624,6 +698,14 @@ export async function computeStrategyTriageForDate(
       }
       
       if (computedSeverity) {
+        // P1 Dedup: Skip if active triage record already exists on another date,
+        // UNLESS severity has escalated (e.g., position grew from 10% to 25% NAV)
+        const sizeDedupKey = `${metric.strategyId}:${recommendedAction}`;
+        const existingSeverity = activeStrategyTriageSeverity.get(sizeDedupKey);
+        const shouldSkipDedup = activeStrategyTriageKeys.has(sizeDedupKey) &&
+          !isMoreSevere(computedSeverity, existingSeverity ?? null);
+
+        if (!shouldSkipDedup) {
         // Check for active override (sync lookup from batched cache)
         const override = lookupSeverityOverride(
           severityOverrideCache,
@@ -650,6 +732,7 @@ export async function computeStrategyTriageForDate(
           overrideExpiresDate: override?.overrideExpiresDate ?? null,
           overrideAt: override?.overrideAt ?? null,
         });
+        } // end dedup check
       }
     }
 
@@ -657,6 +740,10 @@ export async function computeStrategyTriageForDate(
     if (metric.numOpenPositions && metric.numOpenPositions > TRIAGE_RULES_V1.complexityThreshold) {
       const computedSeverity = 'info';
       const recommendedAction = 'REVIEW_COMPLEXITY';
+
+      // P1 Dedup: Skip if active triage record already exists on another date
+      const complexityDedupKey = `${metric.strategyId}:${recommendedAction}`;
+      if (!activeStrategyTriageKeys.has(complexityDedupKey)) {
 
       // Check for active override (sync lookup from batched cache)
       const override = lookupSeverityOverride(
@@ -683,6 +770,7 @@ export async function computeStrategyTriageForDate(
         overrideExpiresDate: override?.overrideExpiresDate ?? null,
         overrideAt: override?.overrideAt ?? null,
       });
+      } // end dedup check
     }
 
     // 5. STATE_CODE_CHANGE - DEPRECATED (replaced by strategy signals)
@@ -1682,6 +1770,58 @@ export async function computeTriageForDate(
     position: positionRecords.length,
     strategy: strategyRecords.length,
     quantityChange: quantityChangeCount,
+  };
+}
+
+/**
+ * Archives old triage records that have been resolved (status=done) for more than `retentionDays`.
+ * Deletes them from the database to prevent table bloat.
+ *
+ * Also cleans up legacy/orphaned records:
+ * - PROVIDE_STRATEGY_METADATA (dead action type, not in current triage rules)
+ * - Records with null severity
+ *
+ * @returns Summary of archived/cleaned records
+ */
+export async function archiveOldTriageRecords(
+  retentionDays: number = 30
+): Promise<{ archivedDone: number; cleanedLegacy: number; fixedNullSeverity: number }> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+  // 1. Delete old done records beyond retention period
+  const archivedDone = await db
+    .delete(triageRecords)
+    .where(
+      and(
+        eq(triageRecords.status, 'done'),
+        lte(triageRecords.updatedAt, cutoffDate)
+      )
+    )
+    .returning({ id: triageRecords.id });
+
+  // 2. Clean up legacy PROVIDE_STRATEGY_METADATA records (dead action type)
+  const cleanedLegacy = await db
+    .delete(triageRecords)
+    .where(eq(triageRecords.recommendedAction, 'PROVIDE_STRATEGY_METADATA'))
+    .returning({ id: triageRecords.id });
+
+  // 3. Fix null severity on QUANTITY_CHANGE records (set to 'info' as default)
+  const fixedNullSeverity = await db
+    .update(triageRecords)
+    .set({ severity: 'info', updatedAt: new Date() })
+    .where(
+      and(
+        isNull(triageRecords.severity),
+        eq(triageRecords.recommendedAction, 'QUANTITY_CHANGE')
+      )
+    )
+    .returning({ id: triageRecords.id });
+
+  return {
+    archivedDone: archivedDone.length,
+    cleanedLegacy: cleanedLegacy.length,
+    fixedNullSeverity: fixedNullSeverity.length,
   };
 }
 
