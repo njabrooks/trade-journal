@@ -68,6 +68,9 @@ next-env.d.ts
 scripts/*-results*.json
 scripts/test-output-*.json
 
+# Temporary one-off scripts
+scripts/tmp-*
+
 # Launchd job logs
 logs/
 
