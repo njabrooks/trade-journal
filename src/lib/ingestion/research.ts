@@ -13,7 +13,7 @@ import type { NewResearchArtifact } from '@/db/schema';
 export interface IngestTextOptions {
   title: string;
   content: string;
-  sourceType: 'article' | 'transcript' | 'note' | 'report' | 'video' | 'manual';
+  sourceType: 'article' | 'transcript' | 'note' | 'report' | 'video' | 'manual' | 'thread';
   sourceUrl?: string;
   author?: string;
   publishedDate?: string;
@@ -23,7 +23,7 @@ export interface IngestTextOptions {
 
 export interface IngestUrlOptions {
   url: string;
-  sourceType: 'article' | 'transcript' | 'report' | 'video';
+  sourceType: 'article' | 'transcript' | 'report' | 'video' | 'thread';
   title?: string;
   author?: string;
   publishedDate?: string;
@@ -182,7 +182,7 @@ export function validateResearchData(data: Partial<IngestTextOptions>): string[]
   if (!data.sourceType) {
     errors.push('Source type is required');
   } else {
-    const validSourceTypes = ['article', 'transcript', 'note', 'report', 'video', 'manual'];
+    const validSourceTypes = ['article', 'transcript', 'note', 'report', 'video', 'manual', 'thread'];
     if (!validSourceTypes.includes(data.sourceType)) {
       errors.push(`Invalid source type. Must be one of: ${validSourceTypes.join(', ')}`);
     }

@@ -1,20 +1,23 @@
 #!/usr/bin/env tsx
 
 /**
- * Helper script to execute PostgreSQL queries via psql
+ * Helper script to execute PostgreSQL queries via postgres.js (no psql binary needed)
  * Loads DATABASE_URL_POOLER from .env.local and executes SQL
  *
  * Usage:
  *   npx tsx scripts/psql-query.ts "SELECT * FROM macro_theses LIMIT 1"
- *   npx tsx scripts/psql-query.ts "INSERT INTO ..." --format json
+ *   npx tsx scripts/psql-query.ts "SELECT ..." --format json
+ *   npx tsx scripts/psql-query.ts "SELECT ..." --format table
+ *   npx tsx scripts/psql-query.ts "SELECT ..." --format csv
  */
 
-import { execSync } from 'child_process';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
 // Load environment variables from .env.local
 dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
+
+import postgres from 'postgres';
 
 const DATABASE_URL = process.env.DATABASE_URL_POOLER;
 
@@ -36,43 +39,56 @@ const format = args.includes('--format')
   ? args[args.indexOf('--format') + 1]
   : 'json';
 
-// Build psql command - use PATH-based psql for version flexibility
-const psqlPath = '/opt/homebrew/bin/psql';
-let psqlCommand: string;
+const sql = postgres(DATABASE_URL, {
+  prepare: false,
+  max: 1,
+  connect_timeout: 10,
+  idle_timeout: 5,
+});
 
-if (format === 'json') {
-  // Return results as JSON (one JSON object per row)
-  psqlCommand = `${psqlPath} "${DATABASE_URL}" -c "SELECT row_to_json(t) as data FROM (${query}) t" -t -A`;
-} else if (format === 'table') {
-  // Return results as formatted table
-  psqlCommand = `${psqlPath} "${DATABASE_URL}" -c "${query.replace(/"/g, '\\"')}"`;
-} else if (format === 'csv') {
-  // Return results as CSV
-  psqlCommand = `${psqlPath} "${DATABASE_URL}" -c "${query.replace(/"/g, '\\"')}" -t -A -F','`;
-} else {
-  // Default: return raw output
-  psqlCommand = `${psqlPath} "${DATABASE_URL}" -c "${query.replace(/"/g, '\\"')}" -t -A`;
-}
+async function main() {
+  const rows = await sql.unsafe(query);
 
-try {
-  const result = execSync(psqlCommand, {
-    encoding: 'utf-8',
-    stdio: ['pipe', 'pipe', 'pipe']
-  });
-
-  if (format === 'json' && result.trim()) {
-    // Parse JSON lines and return as array
-    const lines = result.trim().split('\n').filter(line => line.trim());
-    const jsonResults = lines.map(line => JSON.parse(line));
-    console.log(JSON.stringify(jsonResults, null, 2));
+  if (format === 'json') {
+    console.log(JSON.stringify(rows, null, 2));
+  } else if (format === 'table') {
+    if (rows.length === 0) {
+      console.log('(0 rows)');
+    } else {
+      const cols = Object.keys(rows[0]);
+      // Calculate column widths
+      const widths = cols.map((c: string) =>
+        Math.max(c.length, ...rows.map((r: any) => String(r[c] ?? '').length))
+      );
+      // Header
+      console.log(cols.map((c: string, i: number) => c.padEnd(widths[i])).join(' | '));
+      console.log(widths.map((w: number) => '-'.repeat(w)).join('-+-'));
+      // Rows
+      for (const row of rows) {
+        console.log(cols.map((c: string, i: number) => String(row[c] ?? '').padEnd(widths[i])).join(' | '));
+      }
+      console.log(`(${rows.length} rows)`);
+    }
+  } else if (format === 'csv') {
+    if (rows.length > 0) {
+      for (const row of rows) {
+        console.log(Object.values(row).join(','));
+      }
+    }
   } else {
-    console.log(result);
+    // Raw: one value per line
+    for (const row of rows) {
+      console.log(Object.values(row).join('|'));
+    }
   }
-} catch (error: any) {
-  console.error('Error executing query:');
-  console.error(error.message);
-  if (error.stderr) {
-    console.error('PostgreSQL error:', error.stderr.toString());
-  }
-  process.exit(1);
+
+  await sql.end();
+  process.exit(0);
 }
+
+main().catch(async (e) => {
+  console.error('Error executing query:');
+  console.error(e.message);
+  await sql.end();
+  process.exit(1);
+});

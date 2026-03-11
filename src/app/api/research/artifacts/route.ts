@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate sourceType
-    const validSourceTypes = ['article', 'transcript', 'note', 'report', 'video', 'manual'];
+    const validSourceTypes = ['article', 'transcript', 'note', 'report', 'video', 'manual', 'thread'];
     if (!validSourceTypes.includes(sourceType)) {
       return NextResponse.json(
         { error: `Invalid source type. Must be one of: ${validSourceTypes.join(', ')}` },
@@ -142,7 +142,7 @@ export async function PATCH(request: NextRequest) {
 
     // Validate sourceType if provided
     if (updates.sourceType) {
-      const validSourceTypes = ['article', 'transcript', 'note', 'report', 'video', 'manual'];
+      const validSourceTypes = ['article', 'transcript', 'note', 'report', 'video', 'manual', 'thread'];
       if (!validSourceTypes.includes(updates.sourceType)) {
         return NextResponse.json(
           { error: `Invalid source type. Must be one of: ${validSourceTypes.join(', ')}` },
