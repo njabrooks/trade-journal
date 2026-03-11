@@ -88,12 +88,12 @@ function parseMainClaimBlock(block: string): MainClaim | null {
 
   // Extract metadata fields
   const level = extractField(block, 'Level') || 'main';
-  const type = (extractField(block, 'Type') || 'macro_thesis_candidate') as 'macro_thesis_candidate' | 'asset_thesis_candidate';
-  const category = extractField(block, 'Category') as 'macro' | 'asset_specific' || 'macro';
+  const type = normalizeEnum(extractField(block, 'Type') || 'macro_thesis_candidate') as 'macro_thesis_candidate' | 'asset_thesis_candidate';
+  const category = normalizeEnum(extractField(block, 'Category') || 'macro') as 'macro' | 'asset_specific';
   const tickersRaw = extractField(block, 'Tickers') || '';
   const relevant_tickers = tickersRaw === 'N/A' ? [] : tickersRaw.split(',').map(t => t.trim()).filter(Boolean);
-  const time_horizon = extractField(block, 'Time Horizon') as 'long_term' | 'medium_term' | 'short_term' || 'medium_term';
-  const qualifier = extractField(block, 'Qualifier') as 'high' | 'medium' | 'low' | 'exploratory' || 'medium';
+  const time_horizon = normalizeEnum(extractField(block, 'Time Horizon') || 'medium_term') as 'long_term' | 'medium_term' | 'short_term';
+  const qualifier = normalizeEnum(extractField(block, 'Qualifier') || 'medium') as 'high' | 'medium' | 'low' | 'exploratory';
 
   // Extract content sections
   const claim = extractSection(block, 'Claim');
@@ -137,11 +137,11 @@ function parseMainClaimBlock(block: string): MainClaim | null {
 function parseEvidenceClaims(text: string): EvidenceClaim[] {
   const claims: EvidenceClaim[] = [];
 
-  // Split by claim headers: ### Claim N: or ### E1: format
-  const claimBlocks = text.split(/(?=### (?:Claim \d+|E\d+):)/);
+  // Split by claim headers: ### Claim N: or ### E1:/EC1: format
+  const claimBlocks = text.split(/(?=### (?:Claim \d+|EC?\d+):)/);
 
   for (const block of claimBlocks) {
-    if (!block.trim() || !block.match(/### (?:Claim \d+|E\d+):/)) continue;
+    if (!block.trim() || !block.match(/### (?:Claim \d+|EC?\d+):/)) continue;
 
     const claim = parseEvidenceClaimBlock(block);
     if (claim) claims.push(claim);
@@ -154,8 +154,8 @@ function parseEvidenceClaims(text: string): EvidenceClaim[] {
  * Parse a single evidence claim block
  */
 function parseEvidenceClaimBlock(block: string): EvidenceClaim | null {
-  // Extract claim number and title: ### Claim N: or ### E1: format
-  const titleMatch = block.match(/### (?:Claim )?(\d+|E\d+): (.+)/);
+  // Extract claim number and title: ### Claim N: or ### E1:/EC1: format
+  const titleMatch = block.match(/### (?:Claim )?(\d+|EC?\d+): (.+)/);
   if (!titleMatch) return null;
 
   const claimNumber = titleMatch[1];
@@ -163,9 +163,9 @@ function parseEvidenceClaimBlock(block: string): EvidenceClaim | null {
   const id = `claim-${claimNumber}`;
 
   // Extract metadata fields
-  const type = extractField(block, 'Type') as 'supporting' | 'rebutting' || 'supporting';
+  const type = normalizeEnum(extractField(block, 'Type') || 'supporting') as 'supporting' | 'rebutting';
   const supports = extractField(block, 'Supports') || '';
-  const qualifier = extractField(block, 'Qualifier') as 'high' | 'medium' | 'low' | 'exploratory' || 'medium';
+  const qualifier = normalizeEnum(extractField(block, 'Qualifier') || 'medium') as 'high' | 'medium' | 'low' | 'exploratory';
 
   // Extract content sections (full Toulmin framework)
   const claim = extractSection(block, 'Claim');
@@ -190,39 +190,86 @@ function parseEvidenceClaimBlock(block: string): EvidenceClaim | null {
 }
 
 /**
- * Extract a simple field value (e.g., **Level**: main)
+ * Normalize enum values from audit markdown to DB-compatible format.
+ * Handles: "Macro" → "macro", "Medium-term" → "medium_term", "Asset-specific" → "asset_specific"
+ */
+function normalizeEnum(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, '_')     // "medium-term" → "medium_term"
+    .replace(/\s+/g, '_');  // "macro thesis candidate" → "macro_thesis_candidate"
+}
+
+/**
+ * Extract a simple field value (e.g., **Level**: main or **Level**:** main)
  */
 function extractField(block: string, fieldName: string): string | null {
-  const regex = new RegExp(`\\*\\*${fieldName}\\*\\*:\\s*(.+?)(?:\\n|$)`, 'i');
-  const match = block.match(regex);
-  return match ? match[1].trim() : null;
+  // Try both **Field**: value and **Field**:** value formats
+  let marker = `**${fieldName}:**`;
+  let idx = block.indexOf(marker);
+  if (idx === -1) {
+    marker = `**${fieldName}**:`;
+    idx = block.indexOf(marker);
+  }
+  if (idx === -1) return null;
+  const after = idx + marker.length;
+  const lineEnd = block.indexOf('\n', after);
+  if (lineEnd === -1) return block.substring(after).trim();
+  return block.substring(after, lineEnd).trim();
 }
 
 /**
- * Extract a multi-line section (e.g., **Claim**: paragraph text)
+ * Extract a multi-line section (e.g., **Claim**:\n paragraph text)
  */
 function extractSection(block: string, sectionName: string): string {
-  const regex = new RegExp(`\\*\\*${sectionName}\\*\\*:\\s*\\n([\\s\\S]*?)(?=\\n\\*\\*[A-Z]|\\n---|$)`, 'i');
-  const match = block.match(regex);
-  return match ? match[1].trim() : '';
+  // Try both **Claim**: and **Claim**:** formats
+  let marker = `**${sectionName}:`;
+  let startIdx = block.indexOf(marker);
+  if (startIdx === -1) {
+    marker = `**${sectionName}**:`;
+    startIdx = block.indexOf(marker);
+  }
+  if (startIdx === -1) return '';
+  const afterMarker = startIdx + marker.length;
+  // Find next ** at start of line or ---
+  const nextSection = block.indexOf('\n**', afterMarker);
+  const endMarker = block.indexOf('\n---', afterMarker);
+  let endIdx = -1;
+  if (nextSection !== -1 && endMarker !== -1) endIdx = Math.min(nextSection, endMarker);
+  else if (nextSection !== -1) endIdx = nextSection;
+  else endIdx = endMarker;
+  if (endIdx === -1) return block.substring(afterMarker).trim();
+  return block.substring(afterMarker, endIdx).trim();
 }
 
 /**
- * Extract a bullet list section (e.g., **Evidence**: \n- item1\n- item2)
+ * Extract a bullet list section (e.g., **Evidence**:\n- item1\n- item2)
  */
 function extractBulletList(block: string, sectionName: string): string[] {
-  const regex = new RegExp(`\\*\\*${sectionName}\\*\\*:\\s*\\n([\\s\\S]*?)(?=\\n\\*\\*[A-Z]|\\n---|$)`, 'i');
-  const match = block.match(regex);
-
-  if (!match) return [];
-
-  const text = match[1].trim();
+  // Try both **Evidence**: and **Evidence**:** formats
+  let marker = `**${sectionName}:`;
+  let startIdx = block.indexOf(marker);
+  if (startIdx === -1) {
+    marker = `**${sectionName}**:`;
+    startIdx = block.indexOf(marker);
+  }
+  if (startIdx === -1) return [];
+  const afterMarker = startIdx + marker.length;
+  // Find next ** at start of line or ---
+  const nextSection = block.indexOf('\n**', afterMarker);
+  const endMarker = block.indexOf('\n---', afterMarker);
+  let endIdx = -1;
+  if (nextSection !== -1 && endMarker !== -1) endIdx = Math.min(nextSection, endMarker);
+  else if (nextSection !== -1) endIdx = nextSection;
+  else endIdx = endMarker;
+  const text = (endIdx === -1 ? block.substring(afterMarker) : block.substring(afterMarker, endIdx)).trim();
 
   // Split by bullet points and clean up
   const items = text
     .split(/\n-\s+/)
     .map(item => item.trim())
-    .map(item => item.replace(/^-\s+/, '')) // Remove leading "- " if present
+    .map(item => item.replace(/^-\s+/, ''))
     .filter(item => item.length > 0);
 
   return items;
