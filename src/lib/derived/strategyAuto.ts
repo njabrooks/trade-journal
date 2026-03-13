@@ -5,6 +5,7 @@ import {
   strategies,
   strategyTemplates,
   underlyings,
+  triageRecords,
 } from '@/db/schema';
 import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc } from 'drizzle-orm';
 import { populateStrategyEntryContext } from '@/lib/services/strategies';
@@ -298,6 +299,7 @@ async function findOrCreateStrategyFromPosition(
       isAuto: strategies.isAuto,
       strategyKey: strategies.strategyKey,
       autoDerivedLabel: strategies.autoDerivedLabel,
+      confirmedAt: strategies.confirmedAt,
     })
     .from(strategies)
     .where(
@@ -343,20 +345,31 @@ async function findOrCreateStrategyFromPosition(
 
     if (strategy.status === 'complete') {
       // Completed strategy has new positions - reactivate it
+      // Reset confirmedAt so triage re-triggers CONFIRM_STRATEGY for the new positions
       await db
         .update(strategies)
-        .set({ status: 'active', updatedAt: new Date() })
+        .set({ status: 'active', confirmedAt: null, updatedAt: new Date() })
         .where(eq(strategies.id, strategy.id));
       await logToJournal({
         objectType: 'strategy',
         objectId: strategy.id,
         objectTitle: strategy.autoDerivedLabel ?? strategy.strategyKey,
         actionType: 'status_change',
-        actionDescription: 'Strategy reactivated: new positions detected after completion',
-        previousState: { status: 'complete' },
-        newState: { status: 'active' },
+        actionDescription: 'Strategy reactivated: new positions detected after completion. Requires re-confirmation.',
+        previousState: { status: 'complete', confirmedAt: strategy.confirmedAt },
+        newState: { status: 'active', confirmedAt: null },
         source: 'automation',
       });
+      // Clear old done CONFIRM_STRATEGY records so the triage system creates a new one
+      await db
+        .delete(triageRecords)
+        .where(
+          and(
+            eq(triageRecords.strategyId, strategy.id),
+            eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGY'),
+            eq(triageRecords.status, 'done')
+          )
+        );
       return { id: strategy.id, created: false };
     }
 
@@ -556,6 +569,7 @@ async function findOrCreateStrategyFromTrade(
       isAuto: strategies.isAuto,
       strategyKey: strategies.strategyKey,
       autoDerivedLabel: strategies.autoDerivedLabel,
+      confirmedAt: strategies.confirmedAt,
     })
     .from(strategies)
     .where(
@@ -594,20 +608,31 @@ async function findOrCreateStrategyFromTrade(
 
     if (strategy.status === 'complete') {
       // Completed strategy has new trades - reactivate it
+      // Reset confirmedAt so triage re-triggers CONFIRM_STRATEGY for the new trades
       await db
         .update(strategies)
-        .set({ status: 'active', updatedAt: new Date() })
+        .set({ status: 'active', confirmedAt: null, updatedAt: new Date() })
         .where(eq(strategies.id, strategy.id));
       await logToJournal({
         objectType: 'strategy',
         objectId: strategy.id,
         objectTitle: strategy.autoDerivedLabel ?? strategy.strategyKey,
         actionType: 'status_change',
-        actionDescription: 'Strategy reactivated: new trades detected after completion',
-        previousState: { status: 'complete' },
-        newState: { status: 'active' },
+        actionDescription: 'Strategy reactivated: new trades detected after completion. Requires re-confirmation.',
+        previousState: { status: 'complete', confirmedAt: strategy.confirmedAt },
+        newState: { status: 'active', confirmedAt: null },
         source: 'automation',
       });
+      // Clear old done CONFIRM_STRATEGY records so the triage system creates a new one
+      await db
+        .delete(triageRecords)
+        .where(
+          and(
+            eq(triageRecords.strategyId, strategy.id),
+            eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGY'),
+            eq(triageRecords.status, 'done')
+          )
+        );
       return { id: strategy.id, created: false };
     }
 

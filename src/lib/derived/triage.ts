@@ -1486,6 +1486,14 @@ export async function computeQuantityChangeTriageForDate(
 
     if (existingTradeIngestion.length > 0) {
       // Strategy already has trade ingestion triage - skip QUANTITY_CHANGE to avoid duplicates
+      // But upgrade TRADE_INGESTION severity to 'attention' if stages include open/close
+      const stages = new Set(data.positions.map(p => p.tradeStage).filter(Boolean));
+      if (stages.has('close') || stages.has('open')) {
+        await db
+          .update(triageRecords)
+          .set({ severity: 'attention', updatedAt: new Date() })
+          .where(eq(triageRecords.id, existingTradeIngestion[0].id));
+      }
       continue;
     }
 
@@ -1696,6 +1704,100 @@ export async function computeQuantityChangeTriageForDate(
 
 
 /**
+ * Detects open positions without a strategy link and creates UNLINKED_POSITION triage records.
+ * This covers positions left unlinked due to rejected strategy blocking or other gaps.
+ * Uses persist-until-dismissed model: only creates if no active inbox/in_progress record exists.
+ */
+export async function computeUnlinkedPositionTriageForDate(
+  snapshotDate: string,
+  accountId?: string
+): Promise<number> {
+  const whereConditions = [
+    isNull(positions.strategyId),
+    eq(positions.isOpen, true),
+    ne(positions.quantity, '0'),
+  ];
+
+  if (accountId) {
+    whereConditions.push(eq(positions.accountId, accountId));
+  }
+
+  const unlinkedPositions = await db
+    .select({
+      id: positions.id,
+      accountId: positions.accountId,
+      symbol: positions.symbol,
+      assetClass: positions.assetClass,
+      marketValueUsd: positions.marketValueUsd,
+      unrealizedPnl: positions.unrealizedPnl,
+    })
+    .from(positions)
+    .where(and(...whereConditions));
+
+  if (unlinkedPositions.length === 0) return 0;
+
+  // Check for existing active UNLINKED_POSITION records to avoid recreating daily
+  const positionIds = unlinkedPositions.map((p) => p.id);
+  const existingRecords = await db
+    .select({ positionId: triageRecords.positionId })
+    .from(triageRecords)
+    .where(
+      and(
+        eq(triageRecords.recommendedAction, 'UNLINKED_POSITION'),
+        inArray(triageRecords.positionId, positionIds),
+        or(
+          eq(triageRecords.status, 'inbox'),
+          eq(triageRecords.status, 'in_progress')
+        )
+      )
+    );
+
+  const positionsWithActiveRecord = new Set(existingRecords.map((r) => r.positionId));
+
+  // Also check for done records to avoid re-creating dismissed items
+  const doneRecords = await db
+    .select({ positionId: triageRecords.positionId })
+    .from(triageRecords)
+    .where(
+      and(
+        eq(triageRecords.recommendedAction, 'UNLINKED_POSITION'),
+        inArray(triageRecords.positionId, positionIds),
+        eq(triageRecords.status, 'done')
+      )
+    );
+
+  const positionsWithDoneRecord = new Set(doneRecords.map((r) => r.positionId));
+
+  const recordsToInsert: NewTriageRecord[] = [];
+  for (const pos of unlinkedPositions) {
+    // Skip if already has an active or previously dismissed UNLINKED_POSITION record
+    if (positionsWithActiveRecord.has(pos.id) || positionsWithDoneRecord.has(pos.id)) continue;
+
+    recordsToInsert.push({
+      snapshotDate,
+      accountId: pos.accountId,
+      contextLevel: 'position',
+      positionId: pos.id,
+      strategyId: null,
+      symbol: pos.symbol,
+      assetClass: pos.assetClass,
+      absNotional: pos.marketValueUsd,
+      unrealizedPnl: pos.unrealizedPnl,
+      severity: 'attention',
+      recommendedAction: 'UNLINKED_POSITION',
+      notes: 'Position has no strategy link — may need manual linking or a new strategy',
+      ruleSet: 'strategy_workflow',
+    });
+  }
+
+  if (recordsToInsert.length > 0) {
+    await db.insert(triageRecords).values(recordsToInsert);
+  }
+
+  return recordsToInsert.length;
+}
+
+/**
  * Deletes all triage records for a snapshot date (or date range)
  * Useful for clean recomputation when logic changes
  * @param accountId - Optional: filter to specific account
@@ -1752,7 +1854,7 @@ export async function computeTriageForDate(
   accountId?: string,
   strategyId?: string,
   cleanFirst: boolean = false
-): Promise<{ position: number; strategy: number; quantityChange: number }> {
+): Promise<{ position: number; strategy: number; quantityChange: number; unlinkedPosition: number }> {
   // Clean existing records first if requested (ensures stale records are removed)
   if (cleanFirst) {
     await deleteTriageRecordsForDate(snapshotDate, accountId, strategyId);
@@ -1760,16 +1862,23 @@ export async function computeTriageForDate(
 
   const positionRecords = await computePositionTriageForDate(snapshotDate, accountId, strategyId);
   const strategyRecords = await computeStrategyTriageForDate(snapshotDate, accountId, strategyId);
-  
+
   // Compute quantity change triage records (compares positions between snapshots)
   const quantityChangeCount = await computeQuantityChangeTriageForDate(snapshotDate, accountId, strategyId);
 
   await upsertTriageRecords([...positionRecords, ...strategyRecords]);
 
+  // Detect unlinked positions (no strategy link, e.g. from rejected strategy blocking)
+  // Only runs when not filtering by a specific strategy (unlinked positions have no strategy)
+  const unlinkedPositionCount = strategyId
+    ? 0
+    : await computeUnlinkedPositionTriageForDate(snapshotDate, accountId);
+
   return {
     position: positionRecords.length,
     strategy: strategyRecords.length,
     quantityChange: quantityChangeCount,
+    unlinkedPosition: unlinkedPositionCount,
   };
 }
 

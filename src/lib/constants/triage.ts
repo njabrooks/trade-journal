@@ -34,6 +34,8 @@ export const ALL_TRIGGERS = [
   "REVIEW_SIZE",
   "REVIEW_COMPLEXITY",
   "QUANTITY_CHANGE",
+  "TRADE_INGESTION",
+  "UNLINKED_POSITION",  // Position has no strategy link (e.g. rejected strategy blocking)
   // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
 ] as const;
 

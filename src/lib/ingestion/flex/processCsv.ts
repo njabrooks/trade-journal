@@ -1370,7 +1370,7 @@ export async function createTradeIngestionRecords(
         contextLevel: 'strategy',
         ruleSet: 'trade_ingestion_v1',
         symbol: primarySymbol,
-        severity: 'urgent', // Trades require immediate attention to capture metadata
+        severity: 'info', // Default to info; upgraded to attention by QUANTITY_CHANGE for opens/closes
         status: 'inbox',
         direction: strategyInfo.direction,
         recommendedAction: 'TRADE_INGESTION',
