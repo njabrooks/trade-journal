@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Computed ${counts.position} position-level, ${counts.strategy} strategy-level, and ${counts.quantityChange} quantity change triage records`,
+        message: `Computed ${counts.position} position-level, ${counts.strategy} strategy-level, ${counts.quantityChange} quantity change, and ${counts.unlinkedPosition} unlinked position triage records`,
         counts,
       });
     }
@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
       let totalPosition = 0;
       let totalStrategy = 0;
       let totalQuantityChange = 0;
+      let totalUnlinkedPosition = 0;
 
       const sortedDates = Array.from(allDates).sort();
 
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
         totalPosition += counts.position;
         totalStrategy += counts.strategy;
         totalQuantityChange += counts.quantityChange;
+        totalUnlinkedPosition += counts.unlinkedPosition;
       }
 
       return NextResponse.json({
@@ -119,6 +121,7 @@ export async function POST(request: NextRequest) {
           position: totalPosition,
           strategy: totalStrategy,
           quantityChange: totalQuantityChange,
+          unlinkedPosition: totalUnlinkedPosition,
         },
         datesProcessed: sortedDates.length,
       });

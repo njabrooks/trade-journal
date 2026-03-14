@@ -72,6 +72,7 @@ export function StrategySidebar({
     if (strategy.status === 'draft') return 'Needs type, direction, and thesis link';
     if (strategy.status === 'active' && !linkedAssetThesis) return 'No thesis linked';
     if (strategy.status === 'complete' && strategy.closedAt) return 'Manually closed — can reopen';
+    if (strategy.status === 'rejected') return 'Rejected — can reconsider';
     return null;
   };
   const contextualHint = getContextualHint();

@@ -585,6 +585,31 @@ export function StrategyConfirmationDialog({
     }
   };
 
+  const handleReconsiderStrategy = async () => {
+    if (!strategy) return;
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/strategies/${strategy.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'draft' }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to reconsider strategy');
+      }
+
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reconsider strategy');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleRejectStrategy = async () => {
     if (!strategy) return;
 
@@ -1353,6 +1378,26 @@ export function StrategyConfirmationDialog({
                   <>
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Reopen Strategy
+                  </>
+                )}
+              </Button>
+            )}
+            {strategy.status === 'rejected' && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleReconsiderStrategy}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Reconsidering...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Reconsider Strategy
                   </>
                 )}
               </Button>

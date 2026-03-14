@@ -62,7 +62,7 @@ export async function getTriageQueue(
   //   These are created once on a specific date and represent events that need documentation
   // - Time-bound: Should only show for latest date (everything else, including PROVIDE_STRATEGY_METADATA)
   //   These are recalculated daily and would create duplicates if persisted across dates
-  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
+  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES', 'UNLINKED_POSITION'];
   
   const conditions = [
     eq(triageRecords.accountId, accountId),
@@ -280,7 +280,7 @@ export async function getTriageQueueAllAccounts(
   }
 
   // Categorize triggers (same logic as getTriageQueue)
-  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES', 'TRADE_INGESTION'];
+  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES', 'TRADE_INGESTION', 'UNLINKED_POSITION'];
 
   // No accountId filter - this is the key difference
   const conditions = [
@@ -472,7 +472,7 @@ export async function getTriageQueueForStrategy(
 
   // Categorize triggers: Historical vs time-bound (same as account-level queue)
   // Historical: Created once, persist until resolved. Time-bound: Recalculated daily, only show latest.
-  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
+  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES', 'UNLINKED_POSITION'];
   
   const conditions = [
     eq(triageRecords.strategyId, strategyId),
@@ -702,7 +702,7 @@ export async function getTriageQueueCounts(
   }
 
   // Same logic as getTriageQueue for which records to include
-  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
+  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES', 'UNLINKED_POSITION'];
 
   const baseConditions = [
     eq(triageRecords.accountId, accountId),

@@ -25,6 +25,7 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "REVIEW_COMPLEXITY": [], // No actions available
   "QUANTITY_CHANGE": [], // TRADE action handled by quick action button in TriageQuickAction
   "TRADE_INGESTION": [], // TRADE action handled by quick action button in TriageQuickAction
+  "UNLINKED_POSITION": ["DISMISS"], // Position has no strategy link — user can dismiss or handle manually
   // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
 };
 

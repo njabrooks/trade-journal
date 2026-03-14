@@ -211,6 +211,10 @@ const TRIGGER_CONFIG: Record<string, TriggerConfig> = {
     primaryAction: ACTIONS.trade,
     secondaryActions: [ACTIONS.dismiss],
   },
+  'UNLINKED_POSITION': {
+    primaryAction: ACTIONS.dismiss,
+    secondaryActions: [],
+  },
 
   // Thesis-level triggers
   'NEEDS_RESEARCH': {

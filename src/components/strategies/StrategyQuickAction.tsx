@@ -27,7 +27,7 @@ import { StrategyConfirmationDialog } from '@/components/strategies/StrategyConf
 // Types
 // =============================================================================
 
-type StrategyActionType = 'CONFIRM' | 'EDIT' | 'LINK_THESIS' | 'CLOSE' | 'REOPEN' | 'REJECT';
+type StrategyActionType = 'CONFIRM' | 'EDIT' | 'LINK_THESIS' | 'CLOSE' | 'REOPEN' | 'REJECT' | 'RECONSIDER';
 
 interface StrategyActionConfig {
   type: StrategyActionType;
@@ -82,6 +82,12 @@ const ACTIONS: Record<string, StrategyActionConfig> = {
     icon: Ban,
     description: 'Mark as spam, airdrop, or no economic value',
   },
+  reconsider: {
+    type: 'RECONSIDER',
+    label: 'Reconsider',
+    icon: RotateCcw,
+    description: 'Move rejected strategy back to draft for re-evaluation',
+  },
 };
 
 // =============================================================================
@@ -112,8 +118,8 @@ const STATUS_CONFIG: Record<StatusKey, StatusConfig> = {
     secondaryActions: [],
   },
   rejected: {
-    primaryAction: ACTIONS.edit,
-    secondaryActions: [],
+    primaryAction: ACTIONS.reconsider,
+    secondaryActions: [ACTIONS.edit],
   },
 };
 
