@@ -82,11 +82,8 @@ export async function POST(request: NextRequest) {
         {
           error: 'AI API key not configured',
           message: isDev
-            ? `Missing API key for selected model. Configure ANTHROPIC_API_KEY, OPENAI_API_KEY, or GOOGLE_AI_API_KEY in .env.local`
+            ? `Missing API key for selected model. Configure OPENAI_API_KEY or GOOGLE_AI_API_KEY in .env.local`
             : 'AI API key environment variable is not set. Please configure the API key for your selected model.',
-          devAlternative: isDev
-            ? 'Run "npx tsx scripts/process-research-with-claude.ts" to process research for free using Claude Code'
-            : null,
         },
         { status: 500 }
       );

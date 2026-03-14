@@ -1,21 +1,17 @@
 /**
  * AI Provider Factory
  *
- * Creates and manages AI provider instances
+ * Creates and manages AI provider instances.
+ * Claude interactions use spawned agent workflows (Claude CLI / Claude Max),
+ * not direct API calls. Only OpenAI and Gemini use API key providers.
  */
 
-import { ClaudeProvider } from './claude';
 import { OpenAIProvider } from './openai';
 import { GeminiProvider } from './gemini';
 import type { AIProvider, AIModel } from './types';
 
 export function createAIProvider(model: AIModel): AIProvider {
   switch (model) {
-    case 'claude-sonnet-4':
-    case 'claude-3-5-sonnet-20241022':
-    case 'claude-opus-4':
-      return new ClaudeProvider(model);
-
     case 'gpt-4o':
     case 'gpt-4o-mini':
     case 'gpt-4-turbo':
@@ -40,10 +36,6 @@ export function getAvailableModels(): Array<{
   pricing: { input: number; output: number };
 }> {
   const models: AIModel[] = [
-    // Claude models
-    'claude-sonnet-4',
-    'claude-3-5-sonnet-20241022',
-    'claude-opus-4',
     // OpenAI models
     'gpt-4o',
     'gpt-4o-mini',
@@ -67,9 +59,8 @@ export function getAvailableModels(): Array<{
 }
 
 export function getDefaultModel(): AIModel {
-  return 'claude-sonnet-4';
+  return 'gpt-4o';
 }
 
 // Re-export types
 export type { AIProvider, AIModel, AIProviderConfig, AIProviderResponse, StructuredInsight } from './types';
-

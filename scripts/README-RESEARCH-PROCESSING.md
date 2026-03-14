@@ -75,36 +75,16 @@ Claude Code will provide a JSON response in the chat. Copy it and paste into you
 
 The script saves the insights to your database. View them at http://localhost:3000/research
 
-## Production Alternative
+## Preferred Workflow
 
-For production use (automated processing), set up the Anthropic API:
+Use the unified `/intake` skill for all new research processing. It handles
+classification, extraction, filing, and upload automatically via spawned
+Claude agent workflows (Claude Max subscription — no API key needed).
 
-1. Get an API key from https://console.anthropic.com/
-2. Add to `.env.local`:
-   ```bash
-   ANTHROPIC_API_KEY=sk-ant-api03-...your-key...
-   ```
-3. Click "Process with AI" in the UI (no script needed)
-
-**Cost:** ~$0.10-0.20 per transcript (2000 words)
-
-## Workflow Comparison
-
-### Dev Mode (Claude Code Script) - FREE ⭐
 ```
-Upload → Run Script → Claude provides JSON → Paste → Done
+/intake notes/inbox/YYYYMMDD-slug.md
+/intake https://substack.com/some-article
 ```
-- ✅ Zero cost
-- ⚠️ Manual interaction required
-- ⚠️ Only works when Claude Code session is active
-
-### Production (API) - AUTOMATED
-```
-Upload → Click "Process with AI" → Done
-```
-- ✅ Fully automated
-- ✅ Works 24/7
-- ⚠️ Costs ~$0.10-0.20 per article
 
 ## Tips
 

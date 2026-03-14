@@ -8,8 +8,7 @@ import { writeFileSync, unlinkSync } from 'fs';
  * Used by Web UI API routes to spawn Claude CLI as a child process.
  * Paperclip and OpenClaw have their own sub-agent spawning and don't use this.
  *
- * All paths use Claude Max subscription — ANTHROPIC_API_KEY is stripped from env
- * to prevent accidental raw API token consumption.
+ * All paths use Claude Max subscription — no API key needed.
  */
 
 export interface SkillRunConfig {
@@ -73,10 +72,9 @@ async function findClaudeBinary(): Promise<string> {
 
 /**
  * Build a sanitized environment for the child process.
- * Strips ANTHROPIC_API_KEY to force Max subscription usage.
  */
 function buildEnv(): Record<string, string | undefined> {
-  const { ANTHROPIC_API_KEY: _removed, ...env } = process.env;
+  const env = { ...process.env };
 
   // Ensure common bin dirs are on PATH
   const home = process.env.HOME || '/home/openclaw';
