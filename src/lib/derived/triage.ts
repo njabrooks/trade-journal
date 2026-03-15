@@ -564,8 +564,8 @@ export async function computeStrategyTriageForDate(
   const severityOverrideCache = await prefetchSeverityOverrides(snapshotDate);
 
   // P1 Dedup: Fetch existing inbox/in_progress records for persistent strategy-level conditions
-  // (REVIEW_SIZE, LINK_STRATEGY_TO_THESIS, REVIEW_COMPLEXITY) to avoid recreating daily
-  const persistentStrategyActions = ['REVIEW_SIZE', 'LINK_STRATEGY_TO_THESIS', 'REVIEW_COMPLEXITY'];
+  // (REVIEW_SIZE, LINK_STRATEGY_TO_THESIS) to avoid recreating daily
+  const persistentStrategyActions = ['REVIEW_SIZE', 'LINK_STRATEGY_TO_THESIS'];
   const existingStrategyTriageRows = strategyIds.length > 0
     ? await db
         .select({
@@ -596,6 +596,29 @@ export async function computeStrategyTriageForDate(
   const activeStrategyTriageSeverity = new Map(
     existingStrategyTriageRows.map((r) => [`${r.strategyId}:${r.recommendedAction}`, r.severity])
   );
+
+  // Pre-compute aggregate metrics per strategy across all accounts for cross-account REVIEW_SIZE
+  // This ensures REVIEW_SIZE reflects total exposure relative to total NAV, not just one account's view
+  const strategyAggregateMetrics = new Map<string, { totalAbsNotional: number; totalNav: number; pctNav: number }>();
+  for (const metric of strategyMetrics) {
+    if (!metric.strategyId) continue;
+    const current = strategyAggregateMetrics.get(metric.strategyId) ?? { totalAbsNotional: 0, totalNav: 0, pctNav: 0 };
+    const absNotional = parseFloat(metric.totalAbsNotional ?? '0');
+    const navAtSnapshot = parseFloat(metric.navAtSnapshot ?? '0');
+    strategyAggregateMetrics.set(metric.strategyId, {
+      totalAbsNotional: current.totalAbsNotional + absNotional,
+      totalNav: current.totalNav + navAtSnapshot,
+      pctNav: 0, // calculated below
+    });
+  }
+  for (const [, agg] of strategyAggregateMetrics) {
+    if (agg.totalNav > 0) {
+      agg.pctNav = (agg.totalAbsNotional / agg.totalNav) * 100;
+    }
+  }
+
+  // Track which strategies already have a REVIEW_SIZE queued this run (prevent multi-account duplicates)
+  const reviewSizeQueued = new Set<string>();
 
   for (const metric of strategyMetrics) {
     if (!metric.strategyId) continue;
@@ -678,102 +701,72 @@ export async function computeStrategyTriageForDate(
       } // end dedup else
     }
 
-    // 3. REVIEW_SIZE - Size vs NAV check (merged REDUCE_SIZE and REVIEW_SIZE)
-    if (metric.pctNavAbsNotional) {
-      const pctNav = parseFloat(metric.pctNavAbsNotional) / 100; // Convert from percentage
+    // 3. REVIEW_SIZE - Size vs aggregate NAV check (cross-account: sums notional and NAV across all accounts)
+    // One record per strategy per day — skip if already queued for this strategy in this run
+    if (!reviewSizeQueued.has(metric.strategyId)) {
+      const aggMetrics = strategyAggregateMetrics.get(metric.strategyId);
+      const aggregatePctNav = aggMetrics && aggMetrics.totalNav > 0 ? aggMetrics.pctNav : 0;
 
-      const recommendedAction = 'REVIEW_SIZE';
-      let computedSeverity: 'urgent' | 'attention' | 'info' | null = null;
-      let notes = '';
-      
-      if (pctNav >= 0.5) {
-        computedSeverity = 'urgent';
-        notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (>= 50%)`;
-      } else if (pctNav >= 0.25) {
-        computedSeverity = 'attention';
-        notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (25-50%)`;
-      } else if (pctNav >= 0.1) {
-        computedSeverity = 'info';
-        notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of NAV (10-25%)`;
-      }
-      
-      if (computedSeverity) {
-        // P1 Dedup: Skip if active triage record already exists on another date,
-        // UNLESS severity has escalated (e.g., position grew from 10% to 25% NAV)
-        const sizeDedupKey = `${metric.strategyId}:${recommendedAction}`;
-        const existingSeverity = activeStrategyTriageSeverity.get(sizeDedupKey);
-        const shouldSkipDedup = activeStrategyTriageKeys.has(sizeDedupKey) &&
-          !isMoreSevere(computedSeverity, existingSeverity ?? null);
+      if (aggregatePctNav > 0) {
+        const pctNav = aggregatePctNav / 100; // Convert from percentage to decimal
 
-        if (!shouldSkipDedup) {
-        // Check for active override (sync lookup from batched cache)
-        const override = lookupSeverityOverride(
-          severityOverrideCache,
-          null,
-          metric.strategyId,
-          recommendedAction
-        );
+        const recommendedAction = 'REVIEW_SIZE';
+        let computedSeverity: 'urgent' | 'attention' | 'info' | null = null;
+        let notes = '';
 
-        records.push({
-          snapshotDate,
-          accountId: metric.accountId,
-          contextLevel: 'strategy',
-          strategyId: metric.strategyId,
-          absNotional: metric.totalAbsNotional,
-          unrealizedPnl: metric.totalUnrealizedPnl,
-          pctNavAbsNotional: metric.pctNavAbsNotional,
-          severity: override?.severity || computedSeverity,
-          direction: strategyRow?.direction ?? null,
-          recommendedAction,
-          notes,
-          ruleSet: TRIAGE_RULES_V1.strategySizeRuleSet,
-          symbol: strategyKey,
-          overrideSource: override?.overrideSource ?? null,
-          overrideExpiresDate: override?.overrideExpiresDate ?? null,
-          overrideAt: override?.overrideAt ?? null,
-        });
-        } // end dedup check
+        if (pctNav >= 0.5) {
+          computedSeverity = 'urgent';
+          notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of total NAV (>= 50%)`;
+        } else if (pctNav >= 0.25) {
+          computedSeverity = 'attention';
+          notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of total NAV (25-50%)`;
+        } else if (pctNav >= 0.1) {
+          computedSeverity = 'info';
+          notes = `Strategy represents ${(pctNav * 100).toFixed(1)}% of total NAV (10-25%)`;
+        }
+
+        if (computedSeverity) {
+          // P1 Dedup: Skip if active triage record already exists on another date,
+          // UNLESS severity has escalated (e.g., position grew from 10% to 25% NAV)
+          const sizeDedupKey = `${metric.strategyId}:${recommendedAction}`;
+          const existingSeverity = activeStrategyTriageSeverity.get(sizeDedupKey);
+          const shouldSkipDedup = activeStrategyTriageKeys.has(sizeDedupKey) &&
+            !isMoreSevere(computedSeverity, existingSeverity ?? null);
+
+          if (!shouldSkipDedup) {
+            // Check for active override (sync lookup from batched cache)
+            const override = lookupSeverityOverride(
+              severityOverrideCache,
+              null,
+              metric.strategyId,
+              recommendedAction
+            );
+
+            records.push({
+              snapshotDate,
+              accountId: metric.accountId,
+              contextLevel: 'strategy',
+              strategyId: metric.strategyId,
+              absNotional: aggMetrics ? aggMetrics.totalAbsNotional.toString() : metric.totalAbsNotional,
+              unrealizedPnl: metric.totalUnrealizedPnl,
+              pctNavAbsNotional: aggregatePctNav.toString(),
+              severity: override?.severity || computedSeverity,
+              direction: strategyRow?.direction ?? null,
+              recommendedAction,
+              notes,
+              ruleSet: TRIAGE_RULES_V1.strategySizeRuleSet,
+              symbol: strategyKey,
+              overrideSource: override?.overrideSource ?? null,
+              overrideExpiresDate: override?.overrideExpiresDate ?? null,
+              overrideAt: override?.overrideAt ?? null,
+            });
+          } // end dedup check
+          reviewSizeQueued.add(metric.strategyId);
+        }
       }
     }
 
-    // 4. Complexity check
-    if (metric.numOpenPositions && metric.numOpenPositions > TRIAGE_RULES_V1.complexityThreshold) {
-      const computedSeverity = 'info';
-      const recommendedAction = 'REVIEW_COMPLEXITY';
-
-      // P1 Dedup: Skip if active triage record already exists on another date
-      const complexityDedupKey = `${metric.strategyId}:${recommendedAction}`;
-      if (!activeStrategyTriageKeys.has(complexityDedupKey)) {
-
-      // Check for active override (sync lookup from batched cache)
-      const override = lookupSeverityOverride(
-        severityOverrideCache,
-        null,
-        metric.strategyId,
-        recommendedAction
-      );
-
-      records.push({
-        snapshotDate,
-        accountId: metric.accountId,
-        contextLevel: 'strategy',
-        strategyId: metric.strategyId,
-        absNotional: metric.totalAbsNotional,
-        unrealizedPnl: metric.totalUnrealizedPnl,
-        severity: override?.severity || computedSeverity,
-        direction: strategyRow?.direction ?? null,
-        recommendedAction,
-        notes: `Strategy has ${metric.numOpenPositions} open positions`,
-        ruleSet: TRIAGE_RULES_V1.strategyComplexityRuleSet,
-        symbol: strategyKey,
-        overrideSource: override?.overrideSource ?? null,
-        overrideExpiresDate: override?.overrideExpiresDate ?? null,
-        overrideAt: override?.overrideAt ?? null,
-      });
-      } // end dedup check
-    }
-
-    // 5. STATE_CODE_CHANGE - DEPRECATED (replaced by strategy signals)
+    // 4. STATE_CODE_CHANGE - DEPRECATED (replaced by strategy signals)
     // State code detection removed - signals now handle tactical workflow triggers
   }
 

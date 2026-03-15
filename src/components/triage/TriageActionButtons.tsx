@@ -46,6 +46,18 @@ interface TradePosition {
 
 type ActionType = "TRADE" | "MONITOR" | "DISMISS" | "UPDATE";
 
+// Position-level triggers always allow dismiss regardless of severity
+const POSITION_LEVEL_TRIGGERS = new Set([
+  "ASSIGNMENT_RISK≤14_DTE",
+  "ASSIGNMENT_RISK≤30_DTE",
+  "ITM_SHORT",
+  "ITM_LONG",
+  "SIGMA_0.5_SHORT",
+  "SIGMA_0.5_LONG",
+  "SIGMA_1.0",
+  "REVIEW_DTE",
+]);
+
 // Mapping of trigger types to available actions
 // Note: TRADE actions are handled via checkbox selection in positions table or quantity change triggers
 const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
@@ -58,12 +70,11 @@ const TRIGGER_ACTIONS: Record<string, ActionType[]> = {
   "SIGMA_0.5_LONG": ["MONITOR", "DISMISS"],
   "SIGMA_1.0": ["MONITOR", "DISMISS"],
   "REVIEW_DTE": ["MONITOR", "DISMISS"],
-  
+
   // Strategy-level triggers
   "CONFIRM_STRATEGY": ["UPDATE", "DISMISS"],  // Confirmation or close (for strategies with no open positions)
   "LINK_STRATEGY_TO_THESIS": ["UPDATE", "DISMISS"],  // Link thesis to confirmed strategy (info, dismissable)
   "REVIEW_SIZE": ["MONITOR", "DISMISS"],
-  "REVIEW_COMPLEXITY": [], // No actions available
   "QUANTITY_CHANGE": ["TRADE", "DISMISS"], // TRADE action for quantity change triggers, or DISMISS for spam/airdrop
   "TRADE_INGESTION": ["TRADE", "DISMISS"], // TRADE action for newly ingested trades, or DISMISS for spam/airdrop
   // Note: STATE_CODE_CHANGE removed - replaced by strategy signals
@@ -84,9 +95,17 @@ function getAvailableActions(recommendedAction: string | null, severity: string 
 
   const actions = TRIGGER_ACTIONS[recommendedAction] || ["MONITOR", "DISMISS"];
 
-  // Special case: DISMISS not available if severity is 'info'
-  // Exception: LINK_STRATEGY_TO_THESIS allows dismiss at info level (to permanently skip thesis linkage)
-  if (severity === "info" && actions.includes("DISMISS") && recommendedAction !== "LINK_STRATEGY_TO_THESIS" && recommendedAction !== "QUANTITY_CHANGE" && recommendedAction !== "TRADE_INGESTION") {
+  // DISMISS not available at info severity, except for:
+  // - Position-level triggers (always dismissable — data-driven, recurring)
+  // - LINK_STRATEGY_TO_THESIS (permanently skip thesis linkage)
+  // - QUANTITY_CHANGE / TRADE_INGESTION (dismiss spam/airdrops)
+  const isDismissAlwaysAllowed =
+    POSITION_LEVEL_TRIGGERS.has(recommendedAction) ||
+    recommendedAction === "LINK_STRATEGY_TO_THESIS" ||
+    recommendedAction === "QUANTITY_CHANGE" ||
+    recommendedAction === "TRADE_INGESTION";
+
+  if (severity === "info" && actions.includes("DISMISS") && !isDismissAlwaysAllowed) {
     return actions.filter((a) => a !== "DISMISS");
   }
 
