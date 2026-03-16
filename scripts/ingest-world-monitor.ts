@@ -1,7 +1,7 @@
 /**
- * World Monitor Intelligence Report Ingestion Script
+ * Intelligence Report Ingestion Script
  *
- * Ingests World Monitor markdown reports into the database.
+ * Ingests World Monitor and Thesis Monitor markdown reports into the database.
  *
  * Usage:
  *   npx tsx scripts/ingest-world-monitor.ts --file <path>        # Ingest a single report
@@ -103,10 +103,10 @@ async function main() {
     // Look for reports in notes/intelligence/
     const intelDir = resolve(__dirname, '../../notes/intelligence');
     const files = readdirSync(intelDir)
-      .filter(f => f.endsWith('.md') && f.includes('world-monitor'))
+      .filter(f => f.endsWith('.md') && (f.includes('world-monitor') || f.includes('thesis-monitor')))
       .sort();
 
-    console.log(`Found ${files.length} World Monitor reports in ${intelDir}`);
+    console.log(`Found ${files.length} intelligence reports in ${intelDir}`);
 
     let ingested = 0;
     let skipped = 0;

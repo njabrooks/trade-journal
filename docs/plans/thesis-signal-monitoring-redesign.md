@@ -90,7 +90,7 @@ Only recommend re-articulation if new evidence fundamentally challenges the thes
 
 ## Phase 2: Thesis Monitor Report
 
-**Status**: Not started
+**Status**: Complete (2026-03-16)
 
 ### What
 A new scheduled skill that leverages the World Monitor infrastructure but narrows the search to active theses, their signals, and strategy price targets.
@@ -148,18 +148,21 @@ Signals need a monitoring mechanism. Rather than manual checking, the system sho
 
 **Schedule**: Twice daily, offset from World Monitor (e.g., 7:00 AM / 7:00 PM)
 
-### Key files to create/modify
-- `notes/.claude/skills/thesis-monitor/SKILL.md` — new skill
-- `trade-journal/src/lib/intelligence/parseThesisMonitor.ts` — parser
-- `trade-journal/scripts/ingest-thesis-monitor.ts` — ingestion
-- `paperclip/agents/thesis-monitor/` — agent config
-- Possibly extend `intelligenceReports` schema or add new table
+### Files created/modified
+- `notes/.claude/skills/thesis-monitor/SKILL.md` — new skill definition
+- `paperclip/agents/research-analyst/HEARTBEAT.md` — added Section 6 for thesis monitor tasks
+- `paperclip/scripts/schedule-thesis-monitor.sh` — scheduling script (7:07 AM/PM, offset from World Monitor)
+- `trade-journal/scripts/ingest-world-monitor.ts` — extended to handle thesis-monitor report type
+- `CLAUDE.md` — added `/thesis-monitor` skill reference
+- Uses existing `parseWorldMonitor.ts` parser (handles both report types via frontmatter `type` field)
+- Uses existing `intelligence_reports` + `intelligence_items` tables (thesis-monitor is a report type, not a separate schema)
 
 ### Verification
 - [ ] Skill loads active theses + signals from database
 - [ ] Produces structured report with signal assessments
-- [ ] Report ingests to database
+- [ ] Report ingests to database via existing pipeline
 - [ ] Scheduled runs produce reports on cadence
+- [ ] Research analyst agent picks up "Thesis Monitor Report" tasks
 
 ---
 
