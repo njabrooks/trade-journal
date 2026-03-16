@@ -12,6 +12,7 @@ import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } f
 import { ConvertClaimToEntityDialog } from './ConvertClaimToEntityDialog';
 import { ExpandableEvidenceClaim } from './ExpandableEvidenceClaim';
 import { InlineClaimSuggestions } from './InlineClaimSuggestions';
+import type { SuggestionActionResult } from './InlineClaimSuggestions';
 import type { ClaimSuggestion } from '@/db/queries/research';
 
 interface LinkedThesis {
@@ -42,6 +43,7 @@ interface UnifiedClaimsBrowserProps {
   initialLinkedToFilter?: string; // Optional: pre-filter to a specific thesis/view ID
   showSourceColumn?: boolean; // Optional: show the Research source column in table (default: false)
   compact?: boolean; // Optional: hide filter panel and show minimal UI (default: false)
+  onSuggestionActioned?: (result: SuggestionActionResult) => void; // Callback when a suggestion is accepted/rejected
 }
 
 type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
@@ -55,6 +57,7 @@ export function UnifiedClaimsBrowser({
   filterArtifactId,
   initialLinkedToFilter,
   showSourceColumn = false,
+  onSuggestionActioned,
 }: UnifiedClaimsBrowserProps) {
   const router = useRouter();
   const [expandedClaim, setExpandedClaim] = useState<string | null>(null);
@@ -323,15 +326,13 @@ export function UnifiedClaimsBrowser({
         throw new Error(data.error || 'Failed to update status');
       }
 
-      console.log('Status updated successfully, refreshing data...');
+      console.log('Status updated successfully');
 
-      // Use Next.js router refresh instead of hard reload
+      // Clear loading state
+      setUpdatingClaimId(null);
+
+      // Notify parent to refresh data
       router.refresh();
-
-      // Clear loading state after a brief delay to show feedback
-      setTimeout(() => {
-        setUpdatingClaimId(null);
-      }, 300);
 
     } catch (error) {
       console.error('Error updating status:', error);
@@ -668,7 +669,7 @@ export function UnifiedClaimsBrowser({
                           <div className={isExpanded ? "space-y-1" : "flex items-center gap-1 overflow-hidden"}>
                             {linkedTheses.length === 0 && linkedViews.length === 0 ? (
                               suggestions.length > 0 ? (
-                                <InlineClaimSuggestions suggestions={suggestions} compact={true} />
+                                <InlineClaimSuggestions suggestions={suggestions} compact={true} onSuggestionActioned={onSuggestionActioned} />
                               ) : (
                                 <span className="text-xs text-muted-foreground">Not linked</span>
                               )
@@ -1000,7 +1001,7 @@ export function UnifiedClaimsBrowser({
                                     <span>Suggested Linkages</span>
                                     <Badge className="bg-amber-100 text-amber-700 text-xs">AI</Badge>
                                   </h4>
-                                  <InlineClaimSuggestions suggestions={suggestions} compact={false} />
+                                  <InlineClaimSuggestions suggestions={suggestions} compact={false} onSuggestionActioned={onSuggestionActioned} />
                                 </div>
                               )}
 

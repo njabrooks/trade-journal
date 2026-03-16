@@ -6,14 +6,32 @@ import { Check, X, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { ClaimSuggestion } from '@/db/queries/research';
 
+export interface SuggestionActionResult {
+  claimId: string;
+  suggestionId: string;
+  action: 'accepted' | 'rejected';
+  // Only present for 'accepted':
+  newLink?: {
+    thesisId?: string | null;
+    thesisTitle?: string | null;
+    assetThesisId?: string | null;
+    assetThesisTitle?: string | null;
+    ticker?: string | null;
+    mappingType: string;
+  };
+  claimStatus?: string;
+}
+
 interface InlineClaimSuggestionsProps {
   suggestions: ClaimSuggestion[];
   compact?: boolean; // true = table cell view, false = expanded detail view
+  onSuggestionActioned?: (result: SuggestionActionResult) => void;
 }
 
 export function InlineClaimSuggestions({
   suggestions,
   compact = true,
+  onSuggestionActioned,
 }: InlineClaimSuggestionsProps) {
   const router = useRouter();
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -36,8 +54,26 @@ export function InlineClaimSuggestions({
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }
       );
       if (!response.ok) throw new Error('Failed to accept');
+      const data = await response.json();
       setAcceptedIds((prev) => new Set([...prev, suggestion.id]));
-      router.refresh();
+      if (onSuggestionActioned) {
+        onSuggestionActioned({
+          claimId: suggestion.claimId,
+          suggestionId: suggestion.id,
+          action: 'accepted',
+          newLink: {
+            thesisId: suggestion.thesisId,
+            thesisTitle: suggestion.thesisTitle,
+            assetThesisId: suggestion.assetThesisId,
+            assetThesisTitle: suggestion.assetThesisTitle,
+            ticker: suggestion.ticker,
+            mappingType: data.mappingType || suggestion.mappingType || 'supports',
+          },
+          claimStatus: data.claimStatus,
+        });
+      } else {
+        router.refresh();
+      }
     } catch (error) {
       console.error('Failed to accept suggestion:', error);
     } finally {
@@ -54,7 +90,15 @@ export function InlineClaimSuggestions({
       );
       if (!response.ok) throw new Error('Failed to reject');
       setDismissedIds((prev) => new Set([...prev, suggestion.id]));
-      router.refresh();
+      if (onSuggestionActioned) {
+        onSuggestionActioned({
+          claimId: suggestion.claimId,
+          suggestionId: suggestion.id,
+          action: 'rejected',
+        });
+      } else {
+        router.refresh();
+      }
     } catch (error) {
       console.error('Failed to reject suggestion:', error);
     } finally {
