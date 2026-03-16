@@ -9,7 +9,6 @@ import {
   ChevronDown,
   ChevronRight,
   Target,
-  Scale,
   Filter,
   Search,
   ArrowUpDown,
@@ -31,15 +30,14 @@ import type { Signal } from '@/db/schema';
 import { SignalConfigForm, type ExplicitDetails } from './SignalConfigForm';
 
 // Types
-type SignalType = 'confirmation' | 'warning';
+type SignalType = 'confirmation' | 'warning' | 'completion';
 type SignalCategory = 'judgment' | 'data_driven';
 type SignalStatus = 'draft' | 'active' | 'complete' | 'rejected';
 type TableMode = 'browse' | 'review';
 
 type TypeFilter = 'all' | SignalType;
-type CategoryFilter = 'all' | SignalCategory;
 type StatusFilter = 'all' | 'pending' | SignalStatus;
-type SortColumn = 'statement' | 'type' | 'category' | 'status' | 'importance' | 'updatedAt';
+type SortColumn = 'statement' | 'type' | 'status' | 'updatedAt';
 type SortDirection = 'asc' | 'desc';
 
 interface SignalWithModifications extends Signal {
@@ -101,7 +99,6 @@ export function UnifiedSignalsTable({
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   // Default to 'pending' (draft + active) to hide rejected/complete by default
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
   const [showFilters, setShowFilters] = useState(false);
@@ -155,11 +152,6 @@ export function UnifiedSignalsTable({
       result = result.filter((s) => s.type === typeFilter);
     }
 
-    // Category filter
-    if (categoryFilter !== 'all') {
-      result = result.filter((s) => s.category === categoryFilter);
-    }
-
     // Status filter (only in browse mode)
     if (mode === 'browse') {
       if (statusFilter === 'pending') {
@@ -193,22 +185,14 @@ export function UnifiedSignalsTable({
           bVal = b.statement.toLowerCase();
           break;
         case 'type':
-          aVal = a.type;
-          bVal = b.type;
-          break;
-        case 'category':
-          aVal = a.category;
-          bVal = b.category;
+          const typeOrder = { confirmation: 0, warning: 1, completion: 2 };
+          aVal = typeOrder[a.type as keyof typeof typeOrder] ?? 3;
+          bVal = typeOrder[b.type as keyof typeof typeOrder] ?? 3;
           break;
         case 'status':
           const statusOrder = { draft: 0, active: 1, complete: 2, rejected: 3 };
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 4;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 4;
-          break;
-        case 'importance':
-          const importanceOrder = { critical: 0, significant: 1, supporting: 2 };
-          aVal = importanceOrder[a.importance as keyof typeof importanceOrder] ?? 3;
-          bVal = importanceOrder[b.importance as keyof typeof importanceOrder] ?? 3;
           break;
         case 'updatedAt':
           aVal = new Date(a.updatedAt).getTime();
@@ -224,7 +208,7 @@ export function UnifiedSignalsTable({
     });
 
     return result;
-  }, [signals, mode, typeFilter, categoryFilter, statusFilter, searchQuery, sortColumn, sortDirection]);
+  }, [signals, mode, typeFilter, statusFilter, searchQuery, sortColumn, sortDirection]);
 
   // Handlers
   const handleSort = (column: SortColumn) => {
@@ -465,19 +449,32 @@ export function UnifiedSignalsTable({
 
   // Style helpers
   const typeIcon = (type: string) => {
-    return type === 'confirmation' ? (
-      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-    ) : (
-      <AlertTriangle className="w-4 h-4 text-amber-600" />
-    );
+    switch (type) {
+      case 'confirmation':
+        return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
+      case 'completion':
+        return <Target className="w-4 h-4 text-blue-600" />;
+      default: // warning/invalidation
+        return <AlertTriangle className="w-4 h-4 text-amber-600" />;
+    }
   };
 
-  const categoryIcon = (category: string) => {
-    return category === 'data_driven' ? (
-      <Target className="w-3 h-3" />
-    ) : (
-      <Scale className="w-3 h-3" />
-    );
+  const typeLabel = (type: string) => {
+    switch (type) {
+      case 'confirmation': return 'Confirmation';
+      case 'warning': return 'Invalidation';
+      case 'completion': return 'Completion';
+      default: return type;
+    }
+  };
+
+  const typeBadgeColor = (type: string) => {
+    switch (type) {
+      case 'confirmation': return 'bg-emerald-100 text-emerald-700';
+      case 'warning': return 'bg-amber-100 text-amber-700';
+      case 'completion': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-slate-100 text-foreground';
+    }
   };
 
   const statusBadgeColor = (status: string) => {
@@ -495,24 +492,10 @@ export function UnifiedSignalsTable({
     }
   };
 
-  const importanceBadgeColor = (importance: string) => {
-    switch (importance) {
-      case 'critical':
-        return 'bg-red-100 text-red-700';
-      case 'significant':
-        return 'bg-amber-100 text-amber-700';
-      case 'supporting':
-        return 'bg-slate-100 text-muted-foreground';
-      default:
-        return 'bg-slate-100 text-muted-foreground';
-    }
-  };
-
   // Counts for filter badges
   const confirmationCount = signals.filter((s) => s.type === 'confirmation').length;
   const warningCount = signals.filter((s) => s.type === 'warning').length;
-  const judgmentCount = signals.filter((s) => s.category === 'judgment').length;
-  const dataDrivenCount = signals.filter((s) => s.category === 'data_driven').length;
+  const completionCount = signals.filter((s) => s.type === 'completion').length;
 
   // Loading state
   if (isLoading) {
@@ -642,7 +625,7 @@ export function UnifiedSignalsTable({
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {/* Type */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">Type</label>
@@ -653,21 +636,8 @@ export function UnifiedSignalsTable({
               >
                 <option value="all">All Types</option>
                 <option value="confirmation">Confirmation ({confirmationCount})</option>
-                <option value="warning">Warning ({warningCount})</option>
-              </select>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Category</label>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Categories</option>
-                <option value="judgment">Judgment ({judgmentCount})</option>
-                <option value="data_driven">Data-Driven ({dataDrivenCount})</option>
+                <option value="warning">Invalidation ({warningCount})</option>
+                <option value="completion">Completion ({completionCount})</option>
               </select>
             </div>
           </div>
@@ -680,7 +650,6 @@ export function UnifiedSignalsTable({
               onClick={() => {
                 setSearchQuery('');
                 setTypeFilter('all');
-                setCategoryFilter('all');
                 setStatusFilter('pending');
               }}
             >
@@ -702,7 +671,15 @@ export function UnifiedSignalsTable({
               <thead>
                 <tr className="border-b bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-3 w-8"></th>
-                  <th className="px-2 py-3 w-8"></th>
+                  <th
+                    className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
+                    onClick={() => handleSort('type')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Type
+                      {getSortIcon('type')}
+                    </div>
+                  </th>
                   <th
                     className="px-4 py-3 text-left cursor-pointer hover:bg-accent transition-colors"
                     onClick={() => handleSort('statement')}
@@ -710,24 +687,6 @@ export function UnifiedSignalsTable({
                     <div className="flex items-center gap-2">
                       Statement
                       {getSortIcon('statement')}
-                    </div>
-                  </th>
-                  <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
-                    onClick={() => handleSort('category')}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      Category
-                      {getSortIcon('category')}
-                    </div>
-                  </th>
-                  <th
-                    className="px-4 py-3 text-center cursor-pointer hover:bg-accent transition-colors"
-                    onClick={() => handleSort('importance')}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      Importance
-                      {getSortIcon('importance')}
                     </div>
                   </th>
                   {mode === 'browse' && (
@@ -779,8 +738,13 @@ export function UnifiedSignalsTable({
                           </button>
                         </td>
 
-                        {/* Type Icon */}
-                        <td className="px-2 py-3">{typeIcon(signal.type)}</td>
+                        {/* Type Badge */}
+                        <td className="px-4 py-3">
+                          <Badge className={`gap-1 text-xs font-normal ${typeBadgeColor(signal.type)}`}>
+                            {typeIcon(signal.type)}
+                            {typeLabel(signal.type)}
+                          </Badge>
+                        </td>
 
                         {/* Statement */}
                         <td className="px-4 py-3">
@@ -798,24 +762,6 @@ export function UnifiedSignalsTable({
                               </span>
                             )}
                           </div>
-                        </td>
-
-                        {/* Category */}
-                        <td className="px-4 py-3 text-center">
-                          <Badge
-                            variant="outline"
-                            className="gap-1 text-xs font-normal bg-muted"
-                          >
-                            {categoryIcon(signal.category)}
-                            {signal.category === 'data_driven' ? 'Data-Driven' : 'Judgment'}
-                          </Badge>
-                        </td>
-
-                        {/* Importance */}
-                        <td className="px-4 py-3 text-center">
-                          <Badge className={`text-xs font-normal ${importanceBadgeColor(signal.importance)}`}>
-                            {signal.importance}
-                          </Badge>
                         </td>
 
                         {/* Status (browse mode) */}
@@ -902,7 +848,7 @@ export function UnifiedSignalsTable({
                       {/* Expanded Row */}
                       {isExpanded && (
                         <tr className="bg-muted">
-                          <td colSpan={mode === 'browse' ? 7 : 6} className="px-4 py-4">
+                          <td colSpan={mode === 'browse' ? 5 : 4} className="px-4 py-4">
                             <div className="ml-8 space-y-3">
                               {isEditing ? (
                                 // Edit Form
