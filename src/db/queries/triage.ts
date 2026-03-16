@@ -57,20 +57,10 @@ export async function getTriageQueue(
     return { snapshotDate: null, records: [] };
   }
 
-  // Categorize triggers:
-  // - Historical record-keeping: Should persist until resolved (QUANTITY_CHANGE, CONFIRM_STRATEGIES)
-  //   These are created once on a specific date and represent events that need documentation
-  // - Time-bound: Should only show for latest date (everything else, including PROVIDE_STRATEGY_METADATA)
-  //   These are recalculated daily and would create duplicates if persisted across dates
-  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
-  
+  // All triage records persist until dismissed — no snapshot date filtering.
+  // Dedup in computePositionTriageForDate prevents duplicates across dates.
   const conditions = [
     eq(triageRecords.accountId, accountId),
-    // For historical triggers, show across all dates. For time-bound triggers, only show latest date
-    or(
-      inArray(triageRecords.recommendedAction, historicalTriggers),
-      eq(triageRecords.snapshotDate, snapshotDate)
-    ),
   ];
 
   // Handle status filtering (workflow state)
@@ -177,7 +167,7 @@ export async function getTriageQueue(
     or(
       isNull(strategies.status),
       ne(strategies.status, 'rejected')
-    )
+    )!
   );
 
   const rows = await db
@@ -266,7 +256,7 @@ export async function getTriageQueue(
 export async function getTriageQueueAllAccounts(
   filters: TriageQueueFilters = {}
 ): Promise<TriageQueueResult> {
-  // Get latest snapshot date across all accounts
+  // Get latest snapshot date across all accounts (for display purposes only)
   const latestDateRow = await db
     .select({ snapshotDate: triageRecords.snapshotDate })
     .from(triageRecords)
@@ -279,17 +269,9 @@ export async function getTriageQueueAllAccounts(
     return { snapshotDate: null, records: [] };
   }
 
-  // Categorize triggers (same logic as getTriageQueue)
-  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES', 'TRADE_INGESTION'];
-
-  // No accountId filter - this is the key difference
-  const conditions = [
-    // For historical triggers, show across all dates. For time-bound triggers, only show latest date
-    or(
-      inArray(triageRecords.recommendedAction, historicalTriggers),
-      eq(triageRecords.snapshotDate, snapshotDate)
-    ),
-  ];
+  // All triage records persist until dismissed — no snapshot date filtering.
+  // Dedup in computePositionTriageForDate prevents duplicates across dates.
+  const conditions: any[] = [];
 
   // Handle status filtering (workflow state)
   if (filters.status) {
@@ -375,7 +357,7 @@ export async function getTriageQueueAllAccounts(
     or(
       isNull(strategies.status),
       ne(strategies.status, 'rejected')
-    )
+    )!
   );
 
   const rows = await db
@@ -470,17 +452,9 @@ export async function getTriageQueueForStrategy(
     return { snapshotDate: null, records: [] };
   }
 
-  // Categorize triggers: Historical vs time-bound (same as account-level queue)
-  // Historical: Created once, persist until resolved. Time-bound: Recalculated daily, only show latest.
-  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
-  
+  // All triage records persist until dismissed — no snapshot date filtering.
   const conditions = [
     eq(triageRecords.strategyId, strategyId),
-    // For historical triggers, show across all dates. For time-bound triggers, only show latest date
-    or(
-      inArray(triageRecords.recommendedAction, historicalTriggers),
-      eq(triageRecords.snapshotDate, snapshotDate)
-    ),
   ];
 
   // Handle status filtering (workflow state)
@@ -584,7 +558,7 @@ export async function getTriageQueueForStrategy(
     or(
       isNull(strategies.status),
       ne(strategies.status, 'rejected')
-    )
+    )!
   );
 
   const rows = await db
@@ -701,20 +675,14 @@ export async function getTriageQueueCounts(
     };
   }
 
-  // Same logic as getTriageQueue for which records to include
-  const historicalTriggers = ['QUANTITY_CHANGE', 'CONFIRM_STRATEGIES'];
-
+  // All triage records persist until dismissed — no snapshot date filtering.
   const baseConditions = [
     eq(triageRecords.accountId, accountId),
-    or(
-      inArray(triageRecords.recommendedAction, historicalTriggers),
-      eq(triageRecords.snapshotDate, snapshotDate)
-    ),
     ne(triageRecords.status, 'done'), // Exclude done by default
     or(
       isNull(strategies.status),
       ne(strategies.status, 'rejected') // Exclude rejected (abandoned) strategies
-    ),
+    )!,
   ];
 
   // Get counts for each dimension using SQL GROUP BY

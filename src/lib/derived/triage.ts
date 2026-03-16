@@ -255,15 +255,18 @@ export async function computePositionTriageForDate(
   // Pre-fetch all severity overrides for this date (batched to avoid N+1 queries)
   const severityOverrideCache = await prefetchSeverityOverrides(snapshotDate);
 
-  // P1 Dedup: Fetch existing inbox and recently-dismissed records for position-level triage
-  // to avoid recreating records for ongoing conditions. Position IDs change across snapshot dates,
-  // so we match by (symbol + recommendedAction) instead.
+  // P1 Dedup: Fetch existing triage records for position-level conditions to avoid duplicates.
+  // Position IDs change across snapshot dates, so we match by (symbol + recommendedAction).
+  // Include all statuses except expired monitors — dismissed (done) records block permanently,
+  // active monitors (in_progress) block until their override expires.
   const existingPositionTriageRows = await db
     .select({
       symbol: triageRecords.symbol,
       recommendedAction: triageRecords.recommendedAction,
       status: triageRecords.status,
       severity: triageRecords.severity,
+      overrideSource: triageRecords.overrideSource,
+      overrideExpiresDate: triageRecords.overrideExpiresDate,
     })
     .from(triageRecords)
     .where(
@@ -272,14 +275,30 @@ export async function computePositionTriageForDate(
         ne(triageRecords.snapshotDate, snapshotDate),
         or(
           eq(triageRecords.status, 'inbox'),
-          eq(triageRecords.status, 'in_progress')
+          eq(triageRecords.status, 'in_progress'),
+          // Dismissed records block permanently (dismiss = gone for good)
+          eq(triageRecords.status, 'done')
         )
       )
     );
 
-  // Build set of (symbol:action) keys that already have an active triage record
+  // Build set of (symbol:action) keys that should block new record creation.
+  // Exclude expired monitors — they should allow the trigger to return.
   const activePositionTriageKeys = new Set(
-    existingPositionTriageRows.map((r) => `${r.symbol}:${r.recommendedAction}`)
+    existingPositionTriageRows
+      .filter((r) => {
+        // Expired monitors don't block — the trigger should return
+        if (
+          r.status === 'in_progress' &&
+          r.overrideSource === 'user_monitor' &&
+          r.overrideExpiresDate &&
+          r.overrideExpiresDate < snapshotDate
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map((r) => `${r.symbol}:${r.recommendedAction}`)
   );
 
   for (const position of optionPositions) {
@@ -564,8 +583,9 @@ export async function computeStrategyTriageForDate(
   // Pre-fetch all severity overrides for this date (batched to avoid N+1 queries)
   const severityOverrideCache = await prefetchSeverityOverrides(snapshotDate);
 
-  // P1 Dedup: Fetch existing inbox/in_progress records for persistent strategy-level conditions
-  // (REVIEW_SIZE, LINK_STRATEGY_TO_THESIS) to avoid recreating daily
+  // P1 Dedup: Fetch existing triage records for persistent strategy-level conditions
+  // (REVIEW_SIZE, LINK_STRATEGY_TO_THESIS) to avoid recreating daily.
+  // Same dismiss/monitor semantics as position-level: dismissed = permanent, monitor = until expiry.
   const persistentStrategyActions = ['REVIEW_SIZE', 'LINK_STRATEGY_TO_THESIS'];
   const existingStrategyTriageRows = strategyIds.length > 0
     ? await db
@@ -573,6 +593,9 @@ export async function computeStrategyTriageForDate(
           strategyId: triageRecords.strategyId,
           recommendedAction: triageRecords.recommendedAction,
           severity: triageRecords.severity,
+          overrideSource: triageRecords.overrideSource,
+          overrideExpiresDate: triageRecords.overrideExpiresDate,
+          status: triageRecords.status,
         })
         .from(triageRecords)
         .where(
@@ -581,7 +604,8 @@ export async function computeStrategyTriageForDate(
             ne(triageRecords.snapshotDate, snapshotDate),
             or(
               eq(triageRecords.status, 'inbox'),
-              eq(triageRecords.status, 'in_progress')
+              eq(triageRecords.status, 'in_progress'),
+              eq(triageRecords.status, 'done')
             ),
             inArray(triageRecords.recommendedAction, persistentStrategyActions),
             inArray(triageRecords.strategyId, strategyIds)
@@ -590,7 +614,19 @@ export async function computeStrategyTriageForDate(
     : [];
 
   const activeStrategyTriageKeys = new Set(
-    existingStrategyTriageRows.map((r) => `${r.strategyId}:${r.recommendedAction}`)
+    existingStrategyTriageRows
+      .filter((r) => {
+        if (
+          r.status === 'in_progress' &&
+          r.overrideSource === 'user_monitor' &&
+          r.overrideExpiresDate &&
+          r.overrideExpiresDate < snapshotDate
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map((r) => `${r.strategyId}:${r.recommendedAction}`)
   );
 
   // Build a map for severity comparison (to detect escalations)
