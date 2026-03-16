@@ -1,6 +1,6 @@
 ---
 name: build-core-argument
-description: Build a core argument for a thesis from its linked claims. Generates a structured articulation (core argument, key drivers, assumptions, confidence assessment) plus confirmation and warning signals. Stores everything to the database and creates triage records for signal review.
+description: Build a core argument for a thesis from its linked claims. Generates a structured articulation (core argument, key drivers, assumptions, confidence assessment) plus focused signals (confirmation, invalidation, completion). Stores everything to the database.
 allowed-tools: Bash, Read, Write
 ---
 
@@ -11,11 +11,11 @@ allowed-tools: Bash, Read, Write
 Transform a collection of linked claims into a **thesis articulation** - a coherent, synthesized investment thesis with explicit confirmation/warning signals. This skill:
 
 1. **Synthesizes claims** into a unified core argument with key drivers and assumptions
-2. **Extracts signals** - confirmation and warning signals with measurable criteria for thesis success/failure
+2. **Extracts focused signals** - up to 2 confirmation, 2 invalidation, and 1 completion signal, grounded in claims evidence
 3. **Discovers compositional dependencies** - identifies when thesis depends on other theses
 4. **Pushes for specificity** - challenges vague criteria with observable proxies
 5. **Creates versioned storage** - tracks how articulations evolve over time
-6. **Outputs `recommended` status** - signals default to `recommended` status for user review via batch review UI
+6. **Quality over quantity** - only generates signals genuinely supported by the claims, not to fill slots
 
 This is **Layer 2** of the Thesis Synthesis & Monitoring System (see `docs/features/thesis-synthesis-monitoring.md`).
 
@@ -42,7 +42,7 @@ STEP 2: Generate draft articulation (core argument, drivers, assumptions)
   |
 STEP 3: Discover compositional dependencies (thesis-to-thesis relationships)
   |
-STEP 4: Extract validation/invalidation points from articulation
+STEP 4: Extract focused signals (confirmation, invalidation, completion)
   |
 STEP 5: Interactive refinement with user
   |
@@ -422,153 +422,116 @@ Sibling Asset Theses: 2
 
 **Present to user**: "I found [N] parent macro thesis(es) linked to this asset thesis. [Macro thesis title] has [N] claims that provide cross-asset context. I recommend creating a dependent invalidation point. Does this match your thinking?"
 
-**Auto-generated Dependent Validation Point**:
-For each parent macro thesis with `depends_on` relationship, automatically propose an invalidation point:
+**Auto-generated Dependent Invalidation Signal**:
+For each parent macro thesis with `depends_on` relationship, automatically create an invalidation signal (this counts toward the max 2 invalidation signals):
 ```typescript
 {
-  type: 'invalidation',
+  type: 'warning',
   statement: '"[MACRO_THESIS_TITLE]" macro thesis is invalidated or downgraded to low confidence',
-  rationale: '[ASSET_THESIS] is a derivative bet on [MACRO_THESIS]; if parent fails, child assumption collapses',
-  category: 'explicit',
-  importance: 'critical',
+  notes: '[ASSET_THESIS] is a derivative bet on [MACRO_THESIS]; if parent fails, child assumption collapses. Action: immediate thesis re-evaluation, likely exit.',
   dependentThesisId: '[MACRO_THESIS_ID]',
   dependentThesisType: 'macro',
   dependentThesisCondition: 'invalidated',
-  responseProtocol: {
-    description: 'Immediate thesis re-evaluation. If macro thesis invalidated, reassess position.',
-    escalation: 'exit'
-  }
 }
 ```
 
 ---
 
-### Step 4: Extract Validation/Invalidation Points
+### Step 4: Extract Focused Signals
 
-This is the core accountability mechanism. Extract explicit, measurable criteria for thesis success and failure.
+Generate a small, high-quality set of signals grounded in the claims evidence. These are the thesis's key decision triggers — not an exhaustive monitoring checklist.
 
 ---
 
-#### 4.1 Types of Points
+#### 4.1 Signal Categories
 
-**Validation Points**: What would prove the thesis RIGHT?
-**Invalidation Points**: What would prove the thesis WRONG?
+| Category | DB `type` | Purpose | Max per thesis |
+|----------|-----------|---------|----------------|
+| **Confirmation** | `confirmation` | Key evidence the thesis is playing out as expected | 2 |
+| **Invalidation** | `warning` | Key evidence the thesis is wrong — triggers re-evaluation or exit | 2 |
+| **Completion** | `completion` | The thesis has fully played out — no remaining catalysts, consider taking profits | 1 |
 
-**Categories**:
+**CRITICAL: Quality over quantity.** Only generate a signal if there is genuinely strong evidence from the linked claims to support it. Do NOT generate signals just to fill slots. A thesis with 1 confirmation and 1 invalidation signal is better than one with weak signals in every slot.
 
-| Category | Description | Example |
-|----------|-------------|---------|
-| `explicit` | Measurable, observable | "NVDA datacenter share drops below 70%" |
-| `judgment_required` | Needs interpretation | "Developer sentiment shifts away from CUDA" |
+- **Confirmation**: "What is the single most important thing I'd see in the world if this thesis is right?" Derived from key drivers and foundation claims.
+- **Invalidation**: "What would make me abandon this thesis?" Derived from key assumptions (inverted), rebutting claims, and dependent thesis failures.
+- **Completion**: "What would tell me the opportunity has been fully realized?" Derived from the thesis timeframe and expected resolution — the world state where the thesis has won and remaining upside is priced in.
+
+**Note on completion vs invalidation**: Completion means the thesis was *right* and has played out. Invalidation means the thesis was *wrong*. Both may lead to exiting positions, but for different reasons.
 
 ---
 
 #### 4.2 Extraction Sources
 
-Look for validation/invalidation criteria in:
+Ground every signal in the claims evidence:
 
-1. **Key assumptions** → Each assumption can be inverted to create an invalidation point
-2. **Key drivers** → Each driver can be tested
-3. **Rebutting claims** → Counter-evidence suggests what would prove thesis wrong
-4. **Confidence gaps** → What data would fill gaps?
-5. **Dependent theses** → If dependent thesis is invalidated, parent should be reviewed
+1. **Foundation/supporting claims** → What key drivers would confirm the thesis?
+2. **Rebutting claims** → What counter-evidence would invalidate the thesis?
+3. **Key assumptions** → Invert critical assumptions for invalidation signals
+4. **Dependent theses** → If a parent macro thesis is invalidated, auto-create a dependent invalidation signal
+5. **Timeframe + milestones** → What end-state means the thesis has fully played out (completion)?
 
 ---
 
-#### 4.3 Point Structure
-
-For each validation/invalidation point:
+#### 4.3 Signal Structure
 
 ```typescript
 {
-  type: 'validation' | 'invalidation',
+  type: 'confirmation' | 'warning' | 'completion',
   statement: string,      // Clear, testable criterion
-  rationale: string,      // Why this matters to the thesis
-  category: 'explicit' | 'judgment_required',
-  importance: 'critical' | 'significant' | 'supporting',
-  timeframe: 'immediate' | 'medium_term' | 'secular',
+  notes: string,          // Why this matters + what action to take when triggered
+  linkedClaimIds: string[] // Which claims support this signal — REQUIRED
 
-  // For explicit points:
-  explicit?: {
-    metric: string,
-    threshold: string,
-    dataSources: string[],
-    monitoringFrequency: 'daily' | 'weekly' | 'monthly' | 'on_demand'
-  },
-
-  // For judgment-required points:
-  judgment?: {
-    observableProxies: string[],
-    judgmentCriteria: string,
-    reviewFrequency: 'daily' | 'weekly' | 'monthly'
-  },
-
-  // Response protocol:
-  responseProtocol: {
-    description: string,
-    escalation: 'review_thesis' | 'reduce_exposure' | 'exit' | 'increase_exposure'
-  },
-
-  // If this point depends on another thesis:
-  dependentThesis?: {
-    thesisId: string,
-    thesisType: 'macro' | 'asset',
-    condition: 'invalidated' | 'confidence_drops' | 'status_changes'
-  },
-
-  linkedClaimIds: string[]  // Which claims support this point
+  // If this signal depends on another thesis:
+  dependentThesisId?: string,
+  dependentThesisType?: 'macro' | 'asset',
+  dependentThesisCondition?: 'invalidated' | 'confidence_drops' | 'status_changes',
 }
 ```
+
+All signals are generated with `status: 'active'` and `importance: 'critical'` (since we only generate the most important ones).
 
 ---
 
 #### 4.4 Quality Standards
 
-**Good validation/invalidation points**:
-- Specific and measurable (or have clear observable proxies)
-- Linked to key assumptions or drivers
-- Have defined response protocols
-- Include timeframe for monitoring
+Every signal MUST be:
+- **Grounded in claims evidence** — linked to specific claim IDs
+- **Specific and testable** — clear enough that you'd know it when you see it
+- **Actionable** — the notes field describes what to do when triggered
 
 **Examples**:
 
-✅ GOOD (explicit):
+✅ GOOD confirmation:
 ```
-Type: invalidation
-Statement: NVIDIA datacenter revenue share drops below 70% for 2 consecutive quarters
-Rationale: Core thesis is dominance; below 70% suggests moat is eroding
-Category: explicit
-Importance: critical
-Metric: Datacenter GPU market share (Mercury Research)
-Threshold: <70% for 2 consecutive quarters
-Data Sources: Mercury Research quarterly reports, NVDA earnings
-Monitoring: quarterly
-Response: Exit all NVDA-related strategies within 30 days
+Type: confirmation
+Statement: NVIDIA datacenter revenue grows >25% YoY through 2026
+Notes: Core thesis is continued dominance; sustained growth confirms TAM expansion and CUDA lock-in. Action: maintain or increase position.
+Linked Claims: [claim-uuid-for-datacenter-growth, claim-uuid-for-cuda-moat]
 ```
 
-✅ GOOD (judgment_required):
+✅ GOOD invalidation:
 ```
-Type: invalidation
-Statement: Major developer ecosystem shifts away from CUDA
-Rationale: CUDA lock-in is key moat; developer migration would undermine thesis
-Category: judgment_required
-Importance: critical
-Observable Proxies:
-  - GitHub star trends: PyTorch with ROCm vs CUDA
-  - Developer survey sentiment (Stack Overflow, JetBrains)
-  - Major framework announcements (native AMD/Intel support)
-Judgment Criteria: Clear trend in 2+ proxies over 6 months
-Review Frequency: monthly
-Response: Trigger full thesis re-evaluation
+Type: warning
+Statement: Major cloud provider ships CUDA-compatible custom chip with >50% cost savings
+Notes: CUDA lock-in is the key moat; a compatible alternative would undermine the entire thesis. Action: full thesis re-evaluation, likely exit.
+Linked Claims: [claim-uuid-for-custom-chip-threat]
+```
+
+✅ GOOD completion:
+```
+Type: completion
+Statement: AI infrastructure capex plateaus with all major hyperscalers reporting steady-state spending
+Notes: Thesis is about the build-out phase; once spending normalizes, the explosive growth period is over and upside is priced in. Action: take profits on linked strategies.
+Linked Claims: [claim-uuid-for-capex-growth]
 ```
 
 ❌ BAD:
 ```
 Statement: "Competition increases"
-Rationale: More competition is bad
+Notes: More competition is bad
 ```
-- Too vague, not measurable
-- What competition? From whom? How would you know?
+- Too vague, not grounded in claims, not testable
 
 ---
 
@@ -604,11 +567,10 @@ Expected Resolution: [date/range]
 ### Compositional Dependencies
 [List of referenced theses with relationship types]
 
-### Validation Points
-[List with full structure]
-
-### Invalidation Points
-[List with full structure]
+### Signals
+**Confirmation**: [up to 2, grounded in claims]
+**Invalidation**: [up to 2, grounded in claims]
+**Completion**: [0-1, if thesis has clear end-state]
 
 ---
 
@@ -808,57 +770,26 @@ Create a JSON file with the articulation data (e.g., `articulation-data.json`):
   "signals": [
     {
       "type": "confirmation",
-      "statement": "What would prove the thesis right",
-      "rationale": "Why this matters",
-      "category": "explicit",
-      "importance": "critical",
-      "timeframe": "medium_term",
-      "status": "recommended",
-      "explicitDetails": {
-        "metric": "Metric name",
-        "threshold": "Threshold description",
-        "dataSources": ["Source 1"],
-        "monitoringFrequency": "quarterly"
-      },
-      "responseProtocol": {
-        "description": "What to do when triggered",
-        "escalation": "review_thesis"
-      },
+      "statement": "NVIDIA datacenter revenue grows >25% YoY through 2026",
+      "notes": "Core thesis is dominance; sustained growth confirms TAM expansion and CUDA lock-in. Action: maintain or increase position.",
       "linkedClaimIds": ["claim-uuid-1"]
     },
     {
       "type": "warning",
-      "statement": "What would prove the thesis wrong",
-      "rationale": "Why this matters",
-      "category": "judgment_required",
-      "importance": "critical",
-      "timeframe": "medium_term",
-      "status": "recommended",
-      "judgmentDetails": {
-        "observableProxies": ["Proxy 1", "Proxy 2"],
-        "judgmentCriteria": "How to judge",
-        "reviewFrequency": "quarterly"
-      },
-      "responseProtocol": {
-        "description": "What to do when triggered",
-        "escalation": "exit"
-      },
-      "linkedClaimIds": []
+      "statement": "Major cloud provider ships CUDA-compatible custom chip with >50% cost savings",
+      "notes": "CUDA lock-in is the key moat; a compatible alternative would undermine the thesis. Action: full re-evaluation, likely exit.",
+      "linkedClaimIds": ["claim-uuid-2"]
+    },
+    {
+      "type": "completion",
+      "statement": "AI infrastructure capex plateaus with all major hyperscalers at steady-state spending",
+      "notes": "Thesis is about the build-out phase; once spending normalizes, upside is priced in. Action: take profits.",
+      "linkedClaimIds": ["claim-uuid-3"]
     }
   ]
 }
 
-**IMPORTANT: Signal Status Workflow**
-
-AI-generated signals default to `status: "recommended"`. This means:
-1. Signals are NOT active until the user reviews and accepts them
-2. A triage record (`REVIEW_RECOMMENDED_SIGNALS`) is automatically created for the thesis
-3. User reviews signals in the batch review UI at `/triage` → expand thesis → "Review Signals"
-4. User can Accept, Reject, or Modify each signal
-5. Accepted signals transition to `status: "not_triggered"` (active, monitoring)
-6. Rejected signals are deleted
-
-This workflow ensures the user explicitly approves each signal before it becomes part of the monitoring system.
+**Signal Status**: All signals are generated with `status: "active"`. Since we generate at most 5 focused, evidence-grounded signals per thesis, there is no draft/review workflow — signals go directly to active monitoring.
 ```
 
 **Step 7.2: Execute the Permanent Script**
@@ -892,10 +823,7 @@ rm articulation-data.json
 | `evidenceGaps` | `string[]` |
 | `claimIdsUsed` | `string[]` (UUIDs) |
 | `referencedTheses` | `[{ thesisId: string, thesisType: string, title: string, relationship: string, notes?: string }]` |
-| `explicitDetails` | `{ metric: string, threshold: string, dataSources: string[], monitoringFrequency: string, dataSource?: 'fred' \| 'price_iv', operator?: string, value?: number }` |
-| `judgmentDetails` | `{ observableProxies: string[], judgmentCriteria: string, reviewFrequency: string }` |
-| `responseProtocol` | `{ description: string, escalation?: string }` |
-| `linkedClaimIds` | `string[]` (UUIDs) |
+| `linkedClaimIds` | `string[]` (UUIDs) — REQUIRED for all signals |
 
 **Common Mistakes to Avoid:**
 1. ❌ Using `thesisTitle` instead of `title` in referencedTheses
@@ -929,40 +857,20 @@ Display to user:
 
 Version: [N]
 Claims Synthesized: [COUNT]
-Signals: [X confirmation, Y warning]
+Signals: [X confirmation, Y invalidation, Z completion]
 Dependencies: [N theses referenced]
-Generated: [TIMESTAMP]
 
-**Signals Summary**:
-- Critical: [N] ([list types])
-- Significant: [N]
-- Supporting: [N]
-
-**Signal Review Required**:
-⚠️ All [N] signals have 'recommended' status and need your review.
-A triage record has been created. Go to /triage to review and accept/reject signals.
-
-Signals are NOT active until you review them:
-- Accept: Signal becomes active (status → 'not_triggered')
-- Reject: Signal is deleted
-- Modify: Edit statement/rationale/importance before accepting
-
-**Auto-Triggered Monitoring** (after signals are accepted):
-- [X] signals with auto-trigger sources (fred/price_iv) will be monitored daily
-- Thresholds: [list threshold descriptions]
-- When breached, signal status auto-updates and triage record is created
-- [Y] signals require manual monitoring (unsupported data sources)
+**Signals** (all active):
+- Confirmation: [list statements]
+- Invalidation: [list statements]
+- Completion: [list statements, if any]
 
 **Next Steps**:
-1. Review signals in /triage → expand thesis → "Review Signals"
-2. Accept, modify, or reject each signal
-3. Once accepted, signals become part of your monitoring system
-4. View articulation at /macro-theses/[ID] or /asset-theses/[ID]
-5. Re-synthesize when new claims are added with /build-core-argument [TICKER]
+1. View articulation at /macro-theses/[ID] or /asset-theses/[ID]
+2. Re-synthesize when new claims are added with /build-core-argument [TICKER]
 
-**Note**: These confirmation/warning signals are your commitment device.
-When they trigger, you've stated in advance what action you'll take.
-The system will track whether you follow through.
+**Note**: These signals are your key decision triggers.
+When incoming research matches a signal, you'll be prompted to evaluate it.
 ```
 
 ---
@@ -986,7 +894,7 @@ Challenge vague answers, but accept them if the user insists. The goal is to sur
 
 Always link outputs to inputs:
 - Which claims support which drivers?
-- Which assumptions generate which invalidation points?
+- Which assumptions generate which invalidation signals?
 - Which theses are compositionally related?
 
 ### 5. Make It Iterative
@@ -1103,56 +1011,31 @@ Expected Resolution: Q4 2026
    - This thesis assumes AI infrastructure spending continues at current trajectory
    - If macro thesis is invalidated, asset thesis should be re-evaluated
 
-### Validation Points
+### Signals
 
+**Confirmation:**
 1. **NVIDIA datacenter revenue grows >25% YoY through 2026**
-   - Type: validation
-   - Category: explicit
-   - Importance: critical
-   - Metric: NVDA datacenter segment revenue YoY growth
-   - Threshold: >25% for each quarter through Q4 2026
-   - Data Sources: NVDA quarterly earnings
-   - Monitoring: quarterly
-   - Response: If sustained, increase position size
+   - Type: confirmation
+   - Notes: Core thesis is dominance; sustained growth confirms TAM expansion and CUDA lock-in. Action: maintain or increase position.
+   - Linked Claims: [Claim 2, Claim 5]
 
-2. **Enterprise AI deployment surveys show >80% NVIDIA preference**
-   - Type: validation
-   - Category: explicit
-   - Importance: significant
-   - Metric: Enterprise GPU vendor preference in IT surveys
-   - Threshold: >80% NVIDIA preference
-   - Data Sources: Gartner, IDC surveys
-   - Monitoring: annually
-   - Response: Confirms moat thesis
+**Invalidation:**
+1. **Major cloud provider ships CUDA-compatible custom chip with >50% cost savings**
+   - Type: warning
+   - Notes: CUDA lock-in is the key moat; a compatible alternative would undermine the entire thesis. Action: full re-evaluation, likely exit.
+   - Linked Claims: [Claim 7]
 
-### Invalidation Points
-
-1. **NVIDIA datacenter share drops below 70%**
-   - Type: invalidation
-   - Category: explicit
-   - Importance: critical
-   - Metric: Datacenter GPU market share (Mercury Research)
-   - Threshold: <70% for 2 consecutive quarters
-   - Data Sources: Mercury Research quarterly reports
-   - Monitoring: quarterly
-   - Response: Exit all NVDA strategies within 30 days
-
-2. **Major cloud provider offers CUDA-compatible custom chips**
-   - Type: invalidation
-   - Category: judgment_required
-   - Importance: critical
-   - Observable Proxies: AWS/Azure/GCP announcements, developer migration patterns
-   - Judgment Criteria: Major cloud provider ships CUDA-compatible alternative with >50% cost savings
-   - Review Frequency: monthly
-   - Response: Trigger full thesis re-evaluation
-
-3. **Parent macro thesis "AI Infrastructure Build-Out" is invalidated**
-   - Type: invalidation
-   - Category: explicit
-   - Importance: critical
+2. **Parent macro thesis "AI Infrastructure Build-Out" is invalidated**
+   - Type: warning (dependent)
    - Dependent Thesis: "AI Infrastructure Build-Out" (macro)
    - Condition: invalidated
-   - Response: Immediate thesis re-evaluation required
+   - Notes: This thesis assumes AI infrastructure spending continues. If parent fails, re-evaluate immediately.
+
+**Completion:**
+1. **AI infrastructure capex plateaus with all major hyperscalers at steady-state spending**
+   - Type: completion
+   - Notes: Thesis is about the build-out phase; once spending normalizes, the explosive growth is over. Action: take profits on linked strategies.
+   - Linked Claims: [Claim 2]
 
 ---
 

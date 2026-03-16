@@ -73,14 +73,14 @@ interface ArticulationInput {
 }
 
 interface SignalInput {
-  type: 'confirmation' | 'warning' | 'validation' | 'invalidation'; // Support both old and new type values
+  type: 'confirmation' | 'warning' | 'completion' | 'validation' | 'invalidation'; // completion is new; validation/invalidation are legacy
   statement: string;
-  notes?: string; // New simplified field (replaces rationale, judgmentDetails, responseProtocol)
+  notes?: string; // Why this matters + what action to take when triggered
   rationale?: string; // @deprecated - migrated to notes
   category?: 'judgment' | 'data_driven' | 'explicit' | 'judgment_required'; // Optional - defaults to 'judgment'
-  importance: 'critical' | 'significant' | 'supporting';
+  importance?: 'critical' | 'significant' | 'supporting'; // Optional - defaults to 'critical' (focused signals are all critical)
   timeframe?: 'immediate' | 'medium_term' | 'secular'; // @deprecated
-  status?: 'draft' | 'active' | 'complete' | 'rejected'; // Default: 'draft' for AI-generated signals (pending user review)
+  status?: 'draft' | 'active' | 'complete' | 'rejected'; // Default: 'active' (focused signals go directly to monitoring)
   explicitDetails?: {
     metric: string;
     threshold: string;
@@ -256,10 +256,10 @@ async function main() {
   // Step 3: Insert signals
   // -------------------------------------------------------------------------
   // Helper to convert old type values to new ones
-  const normalizeType = (type: string): 'confirmation' | 'warning' => {
+  const normalizeType = (type: string): 'confirmation' | 'warning' | 'completion' => {
     if (type === 'validation') return 'confirmation';
     if (type === 'invalidation') return 'warning';
-    return type as 'confirmation' | 'warning';
+    return type as 'confirmation' | 'warning' | 'completion';
   };
 
   // Helper to normalize category - all signals start as 'judgment'
@@ -295,7 +295,7 @@ async function main() {
       notes: buildNotes(sig), // New simplified field
       rationale: sig.rationale || null, // @deprecated - kept for backwards compatibility
       category: normalizeCategory(sig.category), // Always 'judgment' until user configures data trigger
-      importance: sig.importance,
+      importance: sig.importance || 'critical', // Focused signals are all critical by default
       timeframe: sig.timeframe || null, // @deprecated
       explicitDetails: null, // Never pre-populate - user must configure via UI
       judgmentDetails: sig.judgmentDetails || null, // @deprecated
@@ -304,8 +304,8 @@ async function main() {
       dependentThesisId: sig.dependentThesisId || null,
       dependentThesisType: sig.dependentThesisType || null,
       dependentThesisCondition: sig.dependentThesisCondition || null,
-      // Default to 'draft' for AI-generated signals (user must review before they become active)
-      status: (sig.status || 'draft') as 'draft' | 'active' | 'complete' | 'rejected',
+      // Default to 'active' - focused signals go directly to monitoring (no draft review workflow)
+      status: (sig.status || 'active') as 'draft' | 'active' | 'complete' | 'rejected',
     }));
 
     const insertedSignals = await db
@@ -318,11 +318,8 @@ async function main() {
     // Count by type
     const confirmationCount = insertedSignals.filter((s) => s.type === 'confirmation').length;
     const warningCount = insertedSignals.filter((s) => s.type === 'warning').length;
-    const draftCount = insertedSignals.filter((s) => s.status === 'draft').length;
-    console.log(`   - ${confirmationCount} confirmation, ${warningCount} warning`);
-    if (draftCount > 0) {
-      console.log(`   - ${draftCount} with 'draft' status (pending user review)`);
-    }
+    const completionCount = insertedSignals.filter((s) => s.type === 'completion').length;
+    console.log(`   - ${confirmationCount} confirmation, ${warningCount} invalidation, ${completionCount} completion`);
   } else {
     console.log('ℹ️  No signals to insert');
   }
@@ -425,71 +422,8 @@ async function main() {
   }
   console.log(`✅ Resolved ${articulationTriage.length} triage records`);
 
-  // -------------------------------------------------------------------------
-  // Step 4b: Create REVIEW_RECOMMENDED_SIGNALS triage if needed
-  // -------------------------------------------------------------------------
-  const recommendedSignalsInserted = signals.filter((s) => !s.status || s.status === 'draft');
-  if (recommendedSignalsInserted.length > 0) {
-    // Check if triage record already exists
-    const existingReviewTriage = await db
-      .select()
-      .from(thesisTriageRecords)
-      .where(
-        and(
-          eq(thesisTriageRecords.thesisId, thesisId),
-          eq(thesisTriageRecords.thesisType, thesisType),
-          eq(thesisTriageRecords.triageRule, 'REVIEW_RECOMMENDED_SIGNALS'),
-          sql`${thesisTriageRecords.status} != 'done'`
-        )
-      )
-      .limit(1);
-
-    if (existingReviewTriage.length === 0) {
-      // Create new triage record for signal review
-      const [newTriage] = await db
-        .insert(thesisTriageRecords)
-        .values({
-          thesisId,
-          thesisType,
-          thesisTitle: thesis?.title || 'Unknown',
-          triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
-          triggerType: 'signal_recommendation',
-          triggerSource: 'insert-thesis-articulation',
-          severity: 'attention',
-          status: 'inbox',
-          lifecycleStage: 'monitoring',
-          suggestedSkill: null,
-          actionRequired: `${recommendedSignalsInserted.length} AI-recommended signal(s) need review. Accept, modify, or reject each signal.`,
-          contentSummary: {
-            recommendedSignalCount: recommendedSignalsInserted.length,
-            totalSignalCount: signals.length,
-          },
-          aiAnalysis: {},
-          matchedResults: [],
-        })
-        .returning();
-
-      // Log triage creation
-      await logToJournal({
-        objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-        objectId: thesisId,
-        objectTitle: thesis?.title,
-        actionType: 'triage_created',
-        actionDescription: `Triage created: REVIEW_RECOMMENDED_SIGNALS. ${recommendedSignalsInserted.length} signal(s) need review.`,
-        triageRecordId: newTriage.id,
-        skillInvoked: '/build-core-argument',
-        newState: {
-          triageRule: 'REVIEW_RECOMMENDED_SIGNALS',
-          status: 'inbox',
-        },
-        source: 'skill',
-      });
-
-      console.log(`✅ Created REVIEW_RECOMMENDED_SIGNALS triage record`);
-    } else {
-      console.log(`ℹ️  REVIEW_RECOMMENDED_SIGNALS triage already exists`);
-    }
-  }
+  // Note: REVIEW_RECOMMENDED_SIGNALS triage creation removed.
+  // Focused signals (max 5 per thesis) go directly to 'active' status.
 
   // -------------------------------------------------------------------------
   // Step 5: Cleanup
@@ -501,13 +435,6 @@ async function main() {
   console.log(`   Version: ${nextVersion}`);
   console.log(`   Signals: ${signals.length}`);
   console.log(`   Triage Records Resolved: ${articulationTriage.length}`);
-
-  // Notify about draft signals needing review
-  const draftSignals = signals.filter((s) => !s.status || s.status === 'draft');
-  if (draftSignals.length > 0) {
-    console.log(`\n⚠️  ${draftSignals.length} signal(s) have 'draft' status and need user review.`);
-    console.log('   A triage record will be created for batch review.');
-  }
 
   process.exit(0);
 }
