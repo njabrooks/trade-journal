@@ -215,23 +215,23 @@ const TRIGGER_CONFIG: Record<string, TriggerConfig> = {
   // Thesis-level triggers
   'NEEDS_RESEARCH': {
     primaryAction: ACTIONS.research,
-    secondaryActions: [ACTIONS.dismiss],
+    secondaryActions: [ACTIONS.monitor, ACTIONS.dismiss],
   },
   'PRODUCE_CORE_ARGUMENT': {
     primaryAction: ACTIONS.synthesize,
-    secondaryActions: [ACTIONS.dismiss],
+    secondaryActions: [ACTIONS.monitor, ACTIONS.dismiss],
   },
   'UPDATE_CORE_ARGUMENT': {
     primaryAction: ACTIONS.update,
-    secondaryActions: [ACTIONS.dismiss],
+    secondaryActions: [ACTIONS.monitor, ACTIONS.dismiss],
   },
   'SIGNAL_TRIGGERED': {
     primaryAction: ACTIONS.assess,
-    secondaryActions: [ACTIONS.dismiss],
+    secondaryActions: [ACTIONS.monitor, ACTIONS.dismiss],
   },
   'REVIEW_RECOMMENDED_SIGNALS': {
     primaryAction: ACTIONS.review,
-    secondaryActions: [ACTIONS.dismiss],
+    secondaryActions: [ACTIONS.monitor, ACTIONS.dismiss],
   },
   'REVIEW_CONTENT': {
     primaryAction: ACTIONS.monitor,
@@ -310,16 +310,8 @@ export function TriageQuickAction({
   const { primaryAction, secondaryActions } = config;
   const PrimaryIcon = primaryAction.icon;
 
-  // Filter out dismiss for info severity (unless explicitly allowed)
-  const filteredSecondaryActions = secondaryActions.filter((action) => {
-    if (action.type === 'DISMISS' && record.severity === 'info') {
-      // Allow dismiss for these triggers even at info level
-      return record.trigger === 'LINK_STRATEGY_TO_THESIS'
-        || record.trigger === 'QUANTITY_CHANGE'
-        || record.trigger === 'TRADE_INGESTION';
-    }
-    return true;
-  });
+  // All triggers now persist until dismissed, so dismiss should always be available
+  const filteredSecondaryActions = secondaryActions;
 
   const hasSecondaryActions = filteredSecondaryActions.length > 0;
 
