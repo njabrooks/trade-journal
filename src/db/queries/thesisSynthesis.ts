@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { thesisArticulations, signals, signalStatusHistory } from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, ne, desc } from 'drizzle-orm';
 
 /**
  * Get the latest articulation for a thesis
@@ -44,7 +44,7 @@ export async function getArticulationHistory(
 }
 
 /**
- * Get active signals for a thesis (excludes rejected)
+ * Get non-rejected signals for a thesis (draft, active, complete)
  * Note: Legacy alias getActiveValidationPoints also exported for backwards compatibility
  */
 export async function getActiveSignals(
@@ -57,7 +57,8 @@ export async function getActiveSignals(
     .where(
       and(
         eq(signals.thesisId, thesisId),
-        eq(signals.thesisType, thesisType)
+        eq(signals.thesisType, thesisType),
+        ne(signals.status, 'rejected')
       )
     )
     .orderBy(signals.createdAt);
