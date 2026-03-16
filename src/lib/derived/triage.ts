@@ -1,6 +1,7 @@
 import { db } from '@/db';
 import {
   positions,
+  portfolioSnapshots,
   strategyMetricsSnapshots,
   strategies,
   strategyTemplates,
@@ -598,16 +599,29 @@ export async function computeStrategyTriageForDate(
   );
 
   // Pre-compute aggregate metrics per strategy across all accounts for cross-account REVIEW_SIZE
-  // This ensures REVIEW_SIZE reflects total exposure relative to total NAV, not just one account's view
+  // Uses TOTAL portfolio NAV (all accounts) as denominator, not just accounts where the strategy has positions
+  const allAccountSnapshots = await db
+    .select({ navAtSnapshotUsd: portfolioSnapshots.navAtSnapshotUsd })
+    .from(portfolioSnapshots)
+    .where(
+      and(
+        eq(portfolioSnapshots.snapshotDate, snapshotDate),
+        eq(portfolioSnapshots.level, 'account')
+      )
+    );
+  const totalPortfolioNav = allAccountSnapshots.reduce(
+    (sum, s) => sum + parseFloat(s.navAtSnapshotUsd ?? '0'),
+    0
+  );
+
   const strategyAggregateMetrics = new Map<string, { totalAbsNotional: number; totalNav: number; pctNav: number }>();
   for (const metric of strategyMetrics) {
     if (!metric.strategyId) continue;
     const current = strategyAggregateMetrics.get(metric.strategyId) ?? { totalAbsNotional: 0, totalNav: 0, pctNav: 0 };
     const absNotional = parseFloat(metric.totalAbsNotional ?? '0');
-    const navAtSnapshot = parseFloat(metric.navAtSnapshot ?? '0');
     strategyAggregateMetrics.set(metric.strategyId, {
       totalAbsNotional: current.totalAbsNotional + absNotional,
-      totalNav: current.totalNav + navAtSnapshot,
+      totalNav: totalPortfolioNav,
       pctNav: 0, // calculated below
     });
   }
