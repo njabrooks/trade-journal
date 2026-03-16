@@ -252,7 +252,18 @@ This flow handles strategies with back data that wasn't ingested (e.g., position
 
 **Source:** `src/lib/derived/thesisTriage.ts` (550 lines)
 
-### Triage Types (5 Total)
+### Thesis Lifecycle Phases
+
+Thesis triage rules are governed by the thesis lifecycle phase:
+
+| Phase | Condition | New claims trigger |
+|-------|-----------|-------------------|
+| **Building** | No articulation, or articulation exists but no active signals | `PRODUCE_CORE_ARGUMENT` or `UPDATE_CORE_ARGUMENT` |
+| **Monitoring** | Articulation exists AND has active signals | `EVALUATE_NEW_EVIDENCE` |
+
+**Transition**: Once `/build-core-argument` generates signals and user accepts them (signals become `active`), the thesis enters monitoring mode. Re-running `/build-core-argument` explicitly supersedes old signals and can reset to building mode if new signals are rejected.
+
+### Triage Types (6 Total)
 
 #### 1. NEEDS_RESEARCH
 
@@ -260,7 +271,6 @@ This flow handles strategies with back data that wasn't ingested (e.g., position
 |--------|-------|
 | **Trigger** | Thesis created with < 3 claims |
 | **Severity** | `info` |
-| **Urgency** | `when_convenient` |
 | **Lifecycle Stage** | `research` |
 | **Suggested Skill** | `/process-transcript` |
 | **Resolution** | Claim count reaches 3 (auto-transitions to PRODUCE_CORE_ARGUMENT) |
@@ -271,7 +281,6 @@ This flow handles strategies with back data that wasn't ingested (e.g., position
 |--------|-------|
 | **Trigger** | Thesis has ≥ 3 claims but no articulation |
 | **Severity** | `attention` |
-| **Urgency** | `this_week` |
 | **Lifecycle Stage** | `synthesis` |
 | **Suggested Skill** | `/build-core-argument` |
 | **Resolution** | Articulation created |
@@ -280,43 +289,56 @@ This flow handles strategies with back data that wasn't ingested (e.g., position
 
 | Aspect | Value |
 |--------|-------|
-| **Trigger** | ≥ 3 new claims linked since last articulation |
+| **Trigger** | ≥ 3 new claims linked since last articulation, **no active signals** (building phase) |
 | **Severity** | `info` |
-| **Urgency** | `when_convenient` |
 | **Lifecycle Stage** | `synthesis` |
 | **Suggested Skill** | `/build-core-argument` |
 | **Resolution** | New articulation created OR user dismisses |
 
-**Calculation:** `claimCount - claimsCountAtLastArticulation >= 3`
+**Calculation:** `claimCount - claimsCountAtLastArticulation >= 3` AND `activeSignalCount == 0`
 
-#### 4. REVIEW_DRAFT_SIGNALS
+#### 4. EVALUATE_NEW_EVIDENCE
+
+| Aspect | Value |
+|--------|-------|
+| **Trigger** | ≥ 3 new claims linked since last articulation, **has active signals** (monitoring phase) |
+| **Severity** | `info` |
+| **Lifecycle Stage** | `monitoring` |
+| **Suggested Skill** | — |
+| **Resolution** | User evaluates claims against signals OR re-articulates |
+
+**Calculation:** `claimCount - claimsCountAtLastArticulation >= 3` AND `activeSignalCount > 0`
+
+The triage record includes a summary of the active signals so the user can evaluate new claims against them without needing to look them up separately.
+
+#### 5. REVIEW_DRAFT_SIGNALS
 
 | Aspect | Value |
 |--------|-------|
 | **Trigger** | ≥ 1 draft signals need review |
 | **Severity** | `attention` |
-| **Urgency** | `this_week` |
 | **Resolution** | All signals reviewed (status = `active` OR `rejected`) |
 
-#### 5. SIGNAL_TRIGGERED
+**Note:** With the focused signal redesign (max 5 per thesis), signals now default to `active` status. This rule is retained for backwards compatibility but should rarely trigger.
+
+#### 6. SIGNAL_TRIGGERED
 
 | Aspect | Value |
 |--------|-------|
 | **Trigger** | ≥ 1 signals with status = `complete` |
 | **Severity** | `urgent` if critical signal, else `attention` |
-| **Urgency** | `immediate` if critical, else `this_week` |
 | **Resolution** | User addresses triggered signals |
 
 **Severity Logic:**
-- Any `critical` signal triggered → `urgent`, `immediate`
-- Any `significant` signal triggered → `attention`, `this_week`
-- Otherwise → `attention`, `this_week`
+- Any `critical` signal triggered → `urgent`
+- Any `significant` signal triggered → `attention`
+- Otherwise → `attention`
 
 ### Auto-Resolution Rules
 
 | Condition | Resolves |
 |-----------|----------|
-| Articulation created | `NEEDS_RESEARCH`, `PRODUCE_CORE_ARGUMENT`, `UPDATE_CORE_ARGUMENT` |
+| Articulation created | `NEEDS_RESEARCH`, `PRODUCE_CORE_ARGUMENT`, `UPDATE_CORE_ARGUMENT`, `EVALUATE_NEW_EVIDENCE` |
 | Claim count reaches 3 | `NEEDS_RESEARCH` (transitions to `PRODUCE_CORE_ARGUMENT`) |
 | All draft signals reviewed | `REVIEW_DRAFT_SIGNALS` |
 

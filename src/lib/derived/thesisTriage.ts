@@ -7,7 +7,8 @@
  * Trigger Rules (UPPER_SNAKE_CASE to match position/strategy triggers):
  * - NEEDS_RESEARCH: <3 claims, no articulation → status: 'info'
  * - PRODUCE_CORE_ARGUMENT: ≥3 claims, no articulation → status: 'attention'
- * - UPDATE_CORE_ARGUMENT: ≥3 new claims since last articulation → status: 'info'
+ * - UPDATE_CORE_ARGUMENT: ≥3 new claims since last articulation, NO active signals → status: 'info'
+ * - EVALUATE_NEW_EVIDENCE: ≥3 new claims since last articulation, HAS active signals → status: 'info'
  * - REVIEW_DRAFT_SIGNALS: ≥1 signals with status='draft' → status: 'attention'
  * - SIGNAL_TRIGGERED: ≥1 explicit signals triggered for thesis → status: 'attention' (consolidates all)
  *
@@ -156,35 +157,82 @@ export async function computeThesisTriageForThesis(
       result.existingTriageResolved = true;
     }
 
-    // UPDATE_CORE_ARGUMENT: ≥3 new claims since last articulation
+    // ≥3 new claims since last articulation: route based on whether thesis has active signals
     const claimsSinceArticulation =
       evolutionState.claimCount - (thesis.claimsCountAtLastArticulation ?? 0);
 
     if (claimsSinceArticulation >= NEW_CLAIMS_THRESHOLD) {
-      // Check for existing pending triage (new and legacy names)
-      const existingUpdateCoreArgument = existingTriage.find(
-        (t) => t.triageRule === 'UPDATE_CORE_ARGUMENT' || t.triageRule === 'thesis_new_claims_available'
-      );
+      const hasActiveSignals = evolutionState.activeSignalCount > 0;
 
-      if (!existingUpdateCoreArgument) {
-        await createTriageRecord({
-          thesisId,
-          thesisType,
-          thesisTitle: thesis.title,
-          triageRule: 'UPDATE_CORE_ARGUMENT',
-          triggerType: 'lifecycle_transition',
-          triggerSource: 'computeThesisTriageForThesis',
-          status: 'info',
-          lifecycleStage: 'synthesis',
-          suggestedSkill: '/build-core-argument',
-          actionRequired: `${claimsSinceArticulation} new claims since last articulation. Consider updating the core argument.`,
-          contentSummary: {
-            currentClaimCount: evolutionState.claimCount,
-            claimsAtLastArticulation: thesis.claimsCountAtLastArticulation ?? 0,
-            newClaimCount: claimsSinceArticulation,
-          },
-        });
-        result.triageCreated = 'UPDATE_CORE_ARGUMENT';
+      if (hasActiveSignals) {
+        // EVALUATE_NEW_EVIDENCE: thesis is in monitoring mode (has active signals)
+        // New claims should be evaluated against existing signals, not trigger re-articulation
+        const existingEvaluate = existingTriage.find(
+          (t) => t.triageRule === 'EVALUATE_NEW_EVIDENCE'
+        );
+
+        if (!existingEvaluate) {
+          // Load active signal statements for the triage summary
+          const activeSignals = await db
+            .select({ id: signals.id, type: signals.type, statement: signals.statement })
+            .from(signals)
+            .where(
+              and(
+                eq(signals.thesisId, thesisId),
+                eq(signals.thesisType, thesisType),
+                eq(signals.status, 'active')
+              )
+            );
+
+          const signalSummary = activeSignals.map(s => `${s.type}: ${s.statement}`);
+
+          await createTriageRecord({
+            thesisId,
+            thesisType,
+            thesisTitle: thesis.title,
+            triageRule: 'EVALUATE_NEW_EVIDENCE',
+            triggerType: 'new_evidence',
+            triggerSource: 'computeThesisTriageForThesis',
+            status: 'info',
+            lifecycleStage: 'monitoring',
+            suggestedSkill: null,
+            actionRequired: `${claimsSinceArticulation} new claims since last articulation. Evaluate against ${evolutionState.activeSignalCount} active signal(s).`,
+            contentSummary: {
+              currentClaimCount: evolutionState.claimCount,
+              claimsAtLastArticulation: thesis.claimsCountAtLastArticulation ?? 0,
+              newClaimCount: claimsSinceArticulation,
+              activeSignalCount: evolutionState.activeSignalCount,
+              activeSignals: signalSummary,
+            },
+          });
+          result.triageCreated = 'EVALUATE_NEW_EVIDENCE';
+        }
+      } else {
+        // UPDATE_CORE_ARGUMENT: thesis is still in building mode (no active signals)
+        const existingUpdateCoreArgument = existingTriage.find(
+          (t) => t.triageRule === 'UPDATE_CORE_ARGUMENT' || t.triageRule === 'thesis_new_claims_available'
+        );
+
+        if (!existingUpdateCoreArgument) {
+          await createTriageRecord({
+            thesisId,
+            thesisType,
+            thesisTitle: thesis.title,
+            triageRule: 'UPDATE_CORE_ARGUMENT',
+            triggerType: 'lifecycle_transition',
+            triggerSource: 'computeThesisTriageForThesis',
+            status: 'info',
+            lifecycleStage: 'synthesis',
+            suggestedSkill: '/build-core-argument',
+            actionRequired: `${claimsSinceArticulation} new claims since last articulation. Consider updating the core argument.`,
+            contentSummary: {
+              currentClaimCount: evolutionState.claimCount,
+              claimsAtLastArticulation: thesis.claimsCountAtLastArticulation ?? 0,
+              newClaimCount: claimsSinceArticulation,
+            },
+          });
+          result.triageCreated = 'UPDATE_CORE_ARGUMENT';
+        }
       }
     }
   }
@@ -447,11 +495,13 @@ export async function onArticulationCreated(
   });
 
   // Resolve any pending articulation-related triage (new and legacy names)
+  // Also resolves EVALUATE_NEW_EVIDENCE since re-articulation resets the thesis to building mode
   const existingTriage = await getExistingPendingTriage(thesisId, thesisType);
   const articulationTriage = existingTriage.filter(
     (t) => t.triageRule === 'UPDATE_CORE_ARGUMENT' ||
            t.triageRule === 'PRODUCE_CORE_ARGUMENT' ||
            t.triageRule === 'NEEDS_RESEARCH' ||
+           t.triageRule === 'EVALUATE_NEW_EVIDENCE' ||
            t.triageRule === 'thesis_new_claims_available' ||
            t.triageRule === 'thesis_needs_articulation'
   );
@@ -471,6 +521,7 @@ interface ThesisEvolutionState {
   hasArticulation: boolean;
   hasSignals: boolean;
   totalSignalCount: number;
+  activeSignalCount: number;
   draftSignalCount: number;
   completeSignalCount: number;
   // Legacy aliases for backward compatibility
@@ -511,10 +562,11 @@ async function getThesisEvolutionState(
     )
     .limit(1);
 
-  // Check for signals and count recommended/triggered ones
+  // Check for signals and count by status
   const signalCounts = await db
     .select({
       total: count(),
+      active: sql<number>`count(*) filter (where ${signals.status} = 'active')`,
       draft: sql<number>`count(*) filter (where ${signals.status} = 'draft')`,
       complete: sql<number>`count(*) filter (where ${signals.status} = 'complete')`,
     })
@@ -547,6 +599,7 @@ async function getThesisEvolutionState(
     hasArticulation: articulation.length > 0,
     hasSignals: (signalCounts[0]?.total ?? 0) > 0,
     totalSignalCount: signalCounts[0]?.total ?? 0,
+    activeSignalCount: signalCounts[0]?.active ?? 0,
     draftSignalCount: signalCounts[0]?.draft ?? 0,
     completeSignalCount: signalCounts[0]?.complete ?? 0,
     // Legacy aliases for backward compatibility
