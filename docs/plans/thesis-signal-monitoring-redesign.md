@@ -166,6 +166,53 @@ Signals need a monitoring mechanism. Rather than manual checking, the system sho
 
 ---
 
+## Phase 2b: Signal Data Sources & Automated Monitoring
+
+**Status**: In progress (2026-03-17)
+
+### What
+For each active signal, identify and configure a specific data source that can be programmatically queried to track progress toward the signal threshold. The thesis monitor report queries these sources during generation.
+
+### Data source tiers
+
+| Tier | Source | Auth | Examples |
+|------|--------|------|----------|
+| **Free APIs** | HypeFlows, DefiLlama, CoinGecko, Hyperliquid API, FRED | No | Volume, revenue, market cap, economic data |
+| **CDP authenticated** | TradingView scanner, economic calendar, chart drawings, alerts | Persistent Chrome session | Price targets, S/R levels, economic events |
+| **Existing integrations** | Massive API, IBKR, exchange APIs | API keys (configured) | Real-time pricing, IV, options |
+| **News/manual** | RSS feeds, `/cdp-discover` for new sites | Varies | Regulatory actions, judgment calls |
+
+### Process for each signal
+1. **Identify metric** — what specific data point indicates progress?
+2. **Find data source** — free API first, then CDP authenticated, then manual
+3. **Verify access** — test the endpoint, confirm data structure
+4. **Configure** — store in signal's `explicit_details` JSONB field
+5. **Wire into monitor** — thesis monitor queries during report generation
+
+### Confirmed data sources (HYPE thesis)
+
+| Signal | Source | Endpoint | Metric | Current | Threshold |
+|--------|--------|----------|--------|---------|-----------|
+| Revenue $1.4B ARR | DefiLlama | `api.llama.fi/summary/fees/hyperliquid?dataType=dailyRevenue` | `total30d * 12` | $638M | $1.4B |
+| 10% perp share | HypeFlows | `hypeflows.com/api/perp-data?metric=volume` | HL / total | 4.8% | 10% |
+| $40B market cap | CoinGecko | `api.coingecko.com/api/v3/coins/hyperliquid` | `market_data.market_cap.usd` | $9.4B | $40B |
+| Regulatory action | News/manual | — | — | Manual | — |
+| Parent thesis | Internal DB | SQL query | `macro_theses.status` | Active | — |
+
+### Built
+- [x] `scripts/lib/hypeflows.ts` — HypeFlows client (market share, volume, OI)
+- [x] CDP infrastructure (`cdp-discover`, `cdp-fetch`, Chrome Debug on port 9222)
+- [x] TradingView API discovery (scanner, calendar, drawings, alerts)
+
+### Remaining
+- [ ] Populate `explicit_details` on all 15 active signals (HYPE, BTC, GLXY)
+- [ ] Add data fetching to thesis monitor skill (query `explicit_details` during report)
+- [ ] TradingView price target extraction via CDP for strategy signals
+- [ ] TradingView economic calendar integration for macro signals
+- [ ] BTC and GLXY signal data source mapping
+
+---
+
 ## Phase 3: Strategy profit-taking targets
 
 **Status**: Not started
