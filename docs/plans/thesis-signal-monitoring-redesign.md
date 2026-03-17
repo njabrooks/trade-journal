@@ -41,6 +41,17 @@ If accepted → transitions to monitoring     ↓
   - Generated as `active` (no draft/review workflow)
   - `completion` signal type added: "thesis has fully played out, no remaining catalysts"
   - Removed REVIEW_RECOMMENDED_SIGNALS triage creation from insert script
+- [x] **Signal UI cleanup** (`src/components/signals/UnifiedSignalsTable.tsx`):
+  - Added `completion` type with blue badge and target icon
+  - Display "Confirmation / Invalidation / Completion" (not "warning")
+  - Removed category and importance columns (always "judgment" and "critical")
+  - DB migration: added `completion` to `signals_type_check` constraint
+  - Fixed `getActiveSignals` query to exclude rejected signals
+- [x] **Generated focused signals** on 3 key theses via `/build-core-argument`: HYPE (5 signals), BTC (5 signals), GLXY (5 signals) — 15 active signals total
+- [x] **CDP data discovery** (`docs/cdp-data-discovery.md`, `.claude/skills/cdp-discover/`):
+  - Chrome Debug instance on Mac Mini port 9222 with persistent profile
+  - Discovered HypeFlows API (public, no auth) and TradingView APIs (authenticated)
+  - Reference: `docs/cdp-data-discovery.md` for all discovered endpoints and integration patterns
 
 ---
 
