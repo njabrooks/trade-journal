@@ -2,7 +2,7 @@
 
 > Created: 2026-03-16
 > Last updated: 2026-03-17
-> Status: Phases 1–2c complete, Phase 5 complete. Phase 2d documented. Phase 3 in progress (design complete, CDP discovery underway). Phase 4 not started.
+> Status: Phases 1–2c complete, Phase 5 complete. Phase 2d documented. Phase 3 substantially complete (sync + price collection live). Phase 4 not started.
 
 ## Context
 
@@ -59,6 +59,7 @@ If accepted → transitions to monitoring     ↓
 - [x] **Price history backfill**: 60 days BTC/NDX/SPX daily closes, 30d correlation = 0.676, 60d = 0.582
 - [x] **GLXY-STK orphaned signal fix** (2026-03-17): The $41.21 take-profit signal was assigned to a merged/inactive strategy. Moved to the active GLXY-STK strategy (`strategy_id = 13d03c32-...`). Root cause: no unified signal view existed to surface this. Fixed by Phase 5.
 - [x] **Phase 5: Unified Signals Browser page** (2026-03-17): `/signals` entity page built and added to sidebar under Activity. Filterable by status/type/entity, sortable by % to threshold. Expanded rows reuse `SignalProgressCard`. New files: `src/db/queries/signals.ts`, `src/components/signals/SignalsBrowser.tsx`, `src/components/signals/SignalTrendIndicator.tsx`, `src/app/signals/page.tsx`.
+- [x] **Phase 3: Strategy price signal system** (2026-03-17): `sync-tv-drawings.ts` CDP job reads TP/SL drawings from both BTC indicator panel (`/layout/{uid}/sources`) and USD main-series panel (`/user/sources?symbol=`) in a single CDP session. Idempotent upsert by `tvDrawingId`. 35 signals created (10 BTC-ratio, 25 USD) across GLXY, HYPE, BTC strategies. `collect-signal-data.ts` extended to batch-collect spot prices and compute BTC ratios, writing `strategy_price` snapshots. Progress bars visible in Signals Browser for all strategy signals.
 
 ## Key Learnings & Insights
 
@@ -799,7 +800,7 @@ This would allow rapid signal configuration for new theses without manual invest
 
 ## Phase 3: Strategy price signal system (TradingView CDP ingestion)
 
-**Status**: In progress — design complete, CDP discovery underway (2026-03-17)
+**Status**: Substantially complete (2026-03-17) — sync and price collection live. Cleanup (webhook removal) deferred.
 
 ### What
 
@@ -901,40 +902,35 @@ Extend existing `tradingview.ts` collector in `scripts/lib/collectors/` to handl
 
 ### New components / scripts
 
-| File | Purpose |
-|------|---------|
-| `scripts/sync-tv-drawings.ts` | CDP job: read watchlist → parse drawings → upsert signals |
-| `scripts/lib/collectors/tradingview-price.ts` | Price monitoring for strategy price signals |
-| `src/components/signals/StrategySignalsSection.tsx` | Simplified: shows imported signals, position % editing only |
-| DB migration | Add `tvChartSymbol` to `strategies` table |
+| File | Status | Purpose |
+|------|--------|---------|
+| `scripts/sync-tv-drawings.ts` | ✅ Built | CDP job: reads BTC indicator + USD main-series drawings → upserts signals. Configure via `TV_USD_SYMBOLS`, `TV_PRICE_LAYOUT_ID` env vars. |
+| `scripts/collect-signal-data.ts` | ✅ Extended | Strategy price signal section added: batch spot lookup → BTC ratio calculation → snapshot insert |
+| `src/components/signals/StrategySignalsSection.tsx` | Deferred | Simplify to show imported signals + position % editing only |
+| DB migration | Deferred | Add `tvChartSymbol` to `strategies` table |
 
-### CDP discovery required (first step)
+### CDP discovery
 
-Before building, need to confirm via CDP what TradingView API endpoints expose:
-- The symbol list for a named watchlist
-- Chart drawings (horizontal lines) for a given symbol/chart, including their labels and price levels
-- The drawing ID format for use as idempotency key
-
-Chrome debug is running on Mac Mini port 9222, logged in to TradingView.
+Completed. Two drawing namespaces identified:
+- `/charts-storage/get/layout/{uid}/sources` — indicator panel drawings (BTC-ratio prices). Accessed via `Runtime.evaluate` with session cookies. JWT obtained from `GET /chart-token/?image_url={layoutId}&user_id={userId}`.
+- `/charts-storage/get/user/sources?layout_id={uid}&symbol={TV_SYMBOL}` — main-series drawings (USD prices). Must be fetched per symbol, also requires JWT.
 
 ### Implementation order
 
-1. **CDP discovery** — find watchlist and drawings API endpoints (this session)
-2. **DB migration** — add `tvChartSymbol` to `strategies`
-3. **`sync-tv-drawings.ts`** — CDP ingestion job: watchlist → drawings → upsert signals
-4. **Extend price collector** — strategy price signals → snapshots via scanner API
-5. **Simplify `StrategySignalsSection`** — position % editing, sync status, remove form
-6. **Remove webhook infrastructure** — form, edge function, env var
+1. ~~**CDP discovery**~~ ✅
+2. ~~**`sync-tv-drawings.ts`**~~ ✅ — reads both BTC indicator panel + USD main-series drawings per symbol. `TV_USD_SYMBOLS` env var configures which symbols to query. 35 signals created (10 BTC-ratio, 25 USD) across GLXY, HYPE, BTC strategies.
+3. ~~**Extend price collector**~~ ✅ — `collect-signal-data.ts` now processes strategy signals: batch-fetches `underlyings.spot`, falls back to TV scanner for stocks (GLXY), computes BTC ratio from asset/BTC. `data_source='strategy_price'`.
+4. **Simplify `StrategySignalsSection`** — position % editing, sync status, remove form (deferred)
+5. **Remove webhook infrastructure** — `StrategySignalConfigForm`, edge function, env var (deferred)
 
 ### Verification
-- [ ] CDP discovery confirms drawings API endpoint and drawing ID format
-- [ ] `sync-tv-drawings.ts` runs and upserts TP1/TP2/SL signals from watchlist drawings
+- [x] CDP discovery confirms drawings API endpoint and drawing ID format
+- [x] `sync-tv-drawings.ts` runs and upserts TP1/TP2/SL signals from watchlist drawings
 - [ ] Moving a drawing in TradingView → price updates on next sync
 - [ ] Deleting a drawing → signal marked rejected on next sync
-- [ ] Price collector generates snapshots for strategy signals (pct_to_threshold visible in Signals Browser)
-- [ ] GLXY-STK $41.21 signal appears with live price progress in `/signals`
+- [x] Price collector generates snapshots for strategy signals (pct_to_threshold visible in Signals Browser)
+- [x] Multiple strategies on same underlying both receive signals from shared chart drawings
 - [ ] `StrategySignalConfigForm` and webhook infrastructure removed
-- [ ] Multiple strategies on same underlying both receive signals from shared chart drawings
 
 ---
 
@@ -1128,8 +1124,8 @@ The `explicit_details` on each signal has a `checkFrequency` field (`"daily"` or
 
 ### Medium-term
 
-**5. Phase 3: Strategy price signal system** ← current focus
-See Phase 3 section above. Design complete. Next: CDP discovery to confirm TradingView drawings API, then build `sync-tv-drawings.ts` ingestion job and extend price collector for strategy signals.
+**5. Phase 3: Strategy price signal system** ← substantially complete
+`sync-tv-drawings.ts` ingests TP/SL drawings from both BTC indicator and USD main-series panels. `collect-signal-data.ts` collects live price snapshots. 35 strategy signals live with progress bars in Signals Browser. Remaining: simplify `StrategySignalsSection`, remove webhook infrastructure.
 
 **6. Phase 4: Process-inbox signal integration**
 See Phase 4 section above. Would close the loop between research ingestion and signal tracking — new claims automatically checked against active signals.
