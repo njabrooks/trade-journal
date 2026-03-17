@@ -35,23 +35,25 @@ export async function computeStrategyMetrics(
       )
     );
 
-  // 2. Get NAV (USD) from account-level portfolio snapshot (already computed with FX conversion)
-  const accountSnapshot = await db
+  // 2. Get total portfolio NAV (USD) across ALL accounts for this date.
+  // Strategy size as % of NAV must use total portfolio NAV, not per-account NAV,
+  // because positions are spread across multiple exchange accounts and per-account
+  // percentages are misleading for risk sizing.
+  const totalNavResult = await db
     .select({
-      navAtSnapshotUsd: portfolioSnapshots.navAtSnapshotUsd,
-      navAtSnapshot: portfolioSnapshots.navAtSnapshot,
+      totalNavUsd: sql<string>`COALESCE(SUM(CAST(${portfolioSnapshots.navAtSnapshotUsd} AS NUMERIC)), 0)`,
     })
     .from(portfolioSnapshots)
     .where(
       and(
-        eq(portfolioSnapshots.accountId, accountId),
         eq(portfolioSnapshots.snapshotDate, snapshotDate),
         eq(portfolioSnapshots.level, 'account')
       )
-    )
-    .limit(1);
+    );
 
-  const navAtSnapshot = accountSnapshot[0]?.navAtSnapshotUsd ?? accountSnapshot[0]?.navAtSnapshot ?? null;
+  const navAtSnapshot = totalNavResult[0]?.totalNavUsd && parseFloat(totalNavResult[0].totalNavUsd) > 0
+    ? totalNavResult[0].totalNavUsd
+    : null;
 
   // 3. Compute total_abs_notional (prefer marketValueUsd for cross-currency consistency)
   // Policy: Absolute notional is always positive - sum of absolute values of each position's market value
