@@ -10,15 +10,21 @@
  */
 
 import { db, closeDb, schema } from './lib/db.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { collectDefiLlama } from './lib/collectors/defillama.js';
 import { collectCoinGecko } from './lib/collectors/coingecko.js';
 import { collectHypeFlows } from './lib/collectors/hypeflows.js';
 import { collectInternalDb } from './lib/collectors/internal-db.js';
-import { collectTradingView } from './lib/collectors/tradingview.js';
+import { collectTradingView, fetchPrices } from './lib/collectors/tradingview.js';
 import { collectDerived } from './lib/collectors/derived.js';
 
-const { signals, signalDataSnapshots } = schema;
+const { signals, signalDataSnapshots, underlyings } = schema;
+
+// Extract base ticker from a TradingView symbol (e.g. CRYPTO:HYPEHUSD → HYPE, NASDAQ:GLXY → GLXY)
+function extractBaseTicker(tvSymbol: string): string {
+  const raw = tvSymbol.split(':').pop() ?? tvSymbol;
+  return raw.replace(/(HUSD|USD|BTC|ETH|USDT|USDC)$/, '') || raw;
+}
 
 interface CollectorResult {
   observedValue: number;
@@ -160,7 +166,129 @@ async function main() {
     }
   }
 
-  console.log(`\nDone: ${collected} collected, ${skipped} skipped (qualitative), ${errors} errors`);
+  console.log(`\nThesis signals: ${collected} collected, ${skipped} skipped (qualitative), ${errors} errors`);
+
+  // ── Strategy price signals ────────────────────────────────────────────────
+  // These come from sync-tv-drawings and have denomination + tvSymbol in explicit_details.
+
+  const strategySignals = await db
+    .select({
+      id: signals.id,
+      type: signals.type,
+      statement: signals.statement,
+      explicitDetails: signals.explicitDetails,
+    })
+    .from(signals)
+    .where(and(
+      eq(signals.entityType, 'strategy'),
+      eq(signals.status, 'active'),
+    ));
+
+  // Collect unique base tickers so we can batch-fetch spot prices
+  const tickerSet = new Set<string>();
+  for (const s of strategySignals) {
+    const d = s.explicitDetails as Record<string, unknown> | null;
+    if (!d?.tvSymbol || !d?.denomination) continue;
+    tickerSet.add(extractBaseTicker(d.tvSymbol as string).toUpperCase());
+    if (d.denomination === 'BTC') tickerSet.add('BTC');
+  }
+
+  const spotMap = new Map<string, number | null>();
+
+  if (tickerSet.size > 0) {
+    const spotRows = await db
+      .select({ ticker: underlyings.ticker, spot: underlyings.spot })
+      .from(underlyings)
+      .where(inArray(underlyings.ticker, [...tickerSet]));
+
+    for (const row of spotRows) {
+      spotMap.set(row.ticker, row.spot != null ? parseFloat(String(row.spot)) : null);
+    }
+
+    // Fall back to TradingView scanner for any tickers with null spot (stocks)
+    const needsScanner = [...tickerSet].filter(t => spotMap.get(t) == null);
+    if (needsScanner.length > 0) {
+      console.log(`\n  Fetching scanner prices for: ${needsScanner.join(', ')}`);
+      const scannerPrices = await fetchPrices(needsScanner);
+      for (const [ticker, data] of Object.entries(scannerPrices)) {
+        spotMap.set(ticker.toUpperCase(), data.price);
+      }
+    }
+  }
+
+  console.log(`\nStrategy price signals: ${strategySignals.length} signals\n`);
+
+  let sCollected = 0, sSkipped = 0, sErrors = 0;
+
+  for (const signal of strategySignals) {
+    const d = signal.explicitDetails as Record<string, unknown> | null;
+    if (!d?.tvSymbol || !d?.denomination || d?.price == null) {
+      sSkipped++;
+      continue;
+    }
+
+    const ticker = extractBaseTicker(d.tvSymbol as string).toUpperCase();
+    const denomination = d.denomination as 'BTC' | 'USD';
+    const threshold = parseFloat(String(d.price));
+    const tvLabel = (d.tvLabel as string) || signal.statement.slice(0, 40);
+
+    const assetSpot = spotMap.get(ticker);
+    if (assetSpot == null) {
+      console.log(`  ⚠ ${tvLabel}: no price data for ${ticker}`);
+      sSkipped++;
+      continue;
+    }
+
+    let observedValue: number;
+    let unit: string;
+
+    if (denomination === 'USD') {
+      observedValue = assetSpot;
+      unit = 'USD';
+    } else {
+      const btcSpot = spotMap.get('BTC');
+      if (btcSpot == null) {
+        console.log(`  ⚠ ${tvLabel}: no BTC price for ratio calculation`);
+        sSkipped++;
+        continue;
+      }
+      observedValue = assetSpot / btcSpot;
+      unit = 'BTC_RATIO';
+    }
+
+    const pct = threshold > 0 ? (observedValue / threshold) * 100 : 0;
+    const pctToThreshold = Math.round(pct * 100) / 100;
+
+    const priceStr = denomination === 'USD'
+      ? `$${observedValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+      : observedValue.toPrecision(5);
+    console.log(`  [${signal.type}] ${tvLabel}: ${priceStr} (${pctToThreshold.toFixed(1)}% of threshold)`);
+
+    try {
+      if (!dryRun) {
+        await db
+          .insert(signalDataSnapshots)
+          .values({
+            signalId: signal.id,
+            snapshotDate: now,
+            observedValue: String(observedValue),
+            thresholdValue: String(threshold),
+            pctToThreshold: String(pctToThreshold),
+            unit,
+            evidenceSummary: null,
+            dataSource: 'strategy_price',
+          })
+          .onConflictDoNothing();
+      }
+      sCollected++;
+    } catch (err) {
+      console.log(`  ✗ snapshot insert failed: ${err instanceof Error ? err.message : err}`);
+      sErrors++;
+    }
+  }
+
+  console.log(`\nDone — Thesis: ${collected} collected, ${skipped} skipped, ${errors} errors`);
+  console.log(`       Strategy: ${sCollected} collected, ${sSkipped} skipped, ${sErrors} errors`);
 
   await closeDb();
   process.exit(0);
