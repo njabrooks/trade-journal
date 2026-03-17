@@ -20,6 +20,7 @@ import {
   ScrollText,
   Calculator,
   Newspaper,
+  Zap,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +35,7 @@ import {
 
 const ACTIVITY_NAV = [
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
+  { href: "/signals", label: "Signals", icon: Zap, id: "signals" },
   { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
   { href: "/news", label: "News", icon: Newspaper, id: "news" },
 ] as const;

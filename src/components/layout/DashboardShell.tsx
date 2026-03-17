@@ -12,6 +12,7 @@ export type NavKey =
   | "asset-theses"
   | "strategies"
   | "triage"
+  | "signals"
   | "blotter"
   | "journal"
   | "news"
