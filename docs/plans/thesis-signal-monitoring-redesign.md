@@ -2,7 +2,7 @@
 
 > Created: 2026-03-16
 > Last updated: 2026-03-17
-> Status: Phases 1–2c complete, Phase 5 complete. Phase 2d documented. Phases 3–4 not started.
+> Status: Phases 1–2c complete, Phase 5 complete. Phase 2d documented. Phase 3 in progress (design complete, CDP discovery underway). Phase 4 not started.
 
 ## Context
 
@@ -797,29 +797,144 @@ This would allow rapid signal configuration for new theses without manual invest
 
 ---
 
-## Phase 3: Strategy profit-taking targets
+## Phase 3: Strategy price signal system (TradingView CDP ingestion)
 
-**Status**: Not started
+**Status**: In progress — design complete, CDP discovery underway (2026-03-17)
 
 ### What
-Extend strategy signals to support up to 3 scaled exit levels (e.g., 50% at target 1, 25% at target 2, 25% at target 3).
+
+Replace the existing manual strategy signal form and TradingView webhook approach with a fully automated pipeline that reads chart drawings from a dedicated TradingView watchlist via CDP and ingests them as strategy price signals (TP/SL). Price is then monitored on a schedule using the existing TradingView scanner API, producing snapshots that feed the Signals Browser.
 
 ### Why
-Profit-taking is a strategy-level action. Scaled exits are standard practice for managing positions.
 
-### Design
-Leverage existing strategy signal system (`StrategySignalConfig` with `price_above`/`price_below` conditions). Each profit target is a separate strategy signal with:
-- Price trigger condition
-- Recommended action (e.g., "Close 50% of position")
-- Action notes with scaling context
+The previous approach (manual form + TradingView webhook alerts) created friction that discouraged use. Traders already draw TP/SL levels on charts — if Trade Journal can read those drawings automatically, signal configuration becomes a zero-friction side effect of normal charting workflow.
 
-### Key files
-- `src/components/signals/StrategySignalConfigForm.tsx` — UI
-- Possibly add convenience wrapper for creating scaled exit plans
+The strategy signal form (`StrategySignalConfigForm`) and all webhook infrastructure are being replaced entirely. The only in-app action required is setting position % per exit level after drawings are imported.
+
+### Architecture
+
+```
+TradingView "Trade Journal" watchlist (user-maintained)
+    │
+    ▼ CDP job (scheduled, Mac Mini)
+    Symbols in watchlist + chart drawings per symbol
+    (horizontal lines with labels: TP1, TP2, TP3, SL)
+    │
+    ▼ Matching + upsert
+    Strategy signals in DB (entity_type='strategy')
+    Optimistic match: watchlist symbol → strategy via underlying.ticker
+    Override: tvChartSymbol field on strategy (e.g. GLXY:NASDAQ)
+    Multiple strategies can reference same TP/SL levels
+    │
+    ▼ User edits in app (optional)
+    Set positionPct per exit level
+    Override chart symbol mapping if needed
+    │
+    ▼ Price monitoring (TradingView scanner API — existing collector)
+    Current price → signal_data_snapshots
+    observed_value=currentPrice, threshold_value=targetPrice, pct_to_threshold
+    │
+    ▼ Signals Browser (/signals)
+    Progress bars, proximity indicators, alerts when approaching/crossing
+```
+
+### Signal data model
+
+Each TP/SL drawing becomes one row in `signals` with `entity_type='strategy'`.
+
+`explicit_details` shape for price signals (simplified from old `StrategySignalConfig`):
+
+```typescript
+interface PriceSignalDetails {
+  conditionType: 'price_above' | 'price_below'; // TP = price_above, SL = price_below
+  price: number;                                  // The drawn level
+  positionPct?: number;                           // % of position to exit (user-set in app)
+  tvLabel: string;                                // Raw label from drawing: 'TP1', 'TP2', 'SL', etc.
+  tvDrawingId: string;                            // TradingView internal drawing ID (upsert key)
+  tvSymbol: string;                               // e.g. 'GLXY:NASDAQ' — which chart this came from
+}
+```
+
+Signal type mapping from label:
+- `TP*` → `type: 'confirmation'`, `conditionType: 'price_above'`
+- `SL` → `type: 'warning'`, `conditionType: 'price_below'`
+
+### Strategy → chart mapping
+
+- **Default**: `underlying.ticker` matched against watchlist symbols (optimistic)
+- **Override**: `tvChartSymbol` field on `strategies` table (e.g., `GLXY:NASDAQ` for a strategy on an underlying that trades on multiple exchanges)
+- **Universe**: Only symbols present in the dedicated "Trade Journal" watchlist are candidates
+- **Many strategies, one chart**: Multiple strategies on the same underlying all reference the same watchlist symbol's drawings — each gets its own signal row, same source drawing
+
+### Watchlist config
+
+- Watchlist name stored as env var: `TV_TRADE_JOURNAL_WATCHLIST=Trade Journal`
+- CDP job enumerates the watchlist to get the symbol list, then reads drawings for each symbol
+- Only drawings with recognised labels (TP1, TP2, TP3, SL, or user-defined variants) are ingested
+
+### Upsert / sync logic
+
+- `tvDrawingId` is the idempotency key — re-running the sync won't duplicate signals
+- If a drawing's price changes → update `explicit_details.price` + reset `pctToThreshold`
+- If a drawing is deleted → mark signal `rejected` (or `complete` if price already crossed)
+- New drawings → create new signal (status: `active`)
+
+### Price monitoring (collector extension)
+
+Extend existing `tradingview.ts` collector in `scripts/lib/collectors/` to handle strategy price signals:
+
+1. For each `active` strategy signal with `explicit_details.conditionType` in `['price_above', 'price_below']`:
+   - Fetch current price for `tvSymbol` via TradingView scanner API (already working)
+   - Compute `pct_to_threshold = (currentPrice / targetPrice) * 100` for price_above, inverse for price_below
+   - Insert `signal_data_snapshots` row with `data_source: 'tradingview_cdp'`
+2. Wire into `collect-signal-data.ts` orchestrator alongside existing thesis signal collectors
+
+### What gets removed
+
+| Component | Fate |
+|-----------|------|
+| `StrategySignalConfigForm.tsx` | Deleted — replaced by CDP ingestion |
+| `StrategySignalsSection` "Add Signal" button | Replaced by sync status + last-sync timestamp |
+| TradingView webhook infrastructure | Deleted — `tvAlertName`, webhook URL, Supabase Edge Function |
+| `tv-webhook` Supabase Edge Function | Deprecated |
+| `NEXT_PUBLIC_TV_WEBHOOK_URL` env var | Removed |
+
+### New components / scripts
+
+| File | Purpose |
+|------|---------|
+| `scripts/sync-tv-drawings.ts` | CDP job: read watchlist → parse drawings → upsert signals |
+| `scripts/lib/collectors/tradingview-price.ts` | Price monitoring for strategy price signals |
+| `src/components/signals/StrategySignalsSection.tsx` | Simplified: shows imported signals, position % editing only |
+| DB migration | Add `tvChartSymbol` to `strategies` table |
+
+### CDP discovery required (first step)
+
+Before building, need to confirm via CDP what TradingView API endpoints expose:
+- The symbol list for a named watchlist
+- Chart drawings (horizontal lines) for a given symbol/chart, including their labels and price levels
+- The drawing ID format for use as idempotency key
+
+Chrome debug is running on Mac Mini port 9222, logged in to TradingView.
+
+### Implementation order
+
+1. **CDP discovery** — find watchlist and drawings API endpoints (this session)
+2. **DB migration** — add `tvChartSymbol` to `strategies`
+3. **`sync-tv-drawings.ts`** — CDP ingestion job: watchlist → drawings → upsert signals
+4. **Extend price collector** — strategy price signals → snapshots via scanner API
+5. **Simplify `StrategySignalsSection`** — position % editing, sync status, remove form
+6. **Remove webhook infrastructure** — form, edge function, env var
 
 ### Verification
-- [ ] Can create 3 scaled exit signals on a strategy
-- [ ] Each triggers independently at different price levels
+- [ ] CDP discovery confirms drawings API endpoint and drawing ID format
+- [ ] `sync-tv-drawings.ts` runs and upserts TP1/TP2/SL signals from watchlist drawings
+- [ ] Moving a drawing in TradingView → price updates on next sync
+- [ ] Deleting a drawing → signal marked rejected on next sync
+- [ ] Price collector generates snapshots for strategy signals (pct_to_threshold visible in Signals Browser)
+- [ ] GLXY-STK $41.21 signal appears with live price progress in `/signals`
+- [ ] `StrategySignalConfigForm` and webhook infrastructure removed
+- [ ] Multiple strategies on same underlying both receive signals from shared chart drawings
 
 ---
 
@@ -1013,8 +1128,8 @@ The `explicit_details` on each signal has a `checkFrequency` field (`"daily"` or
 
 ### Medium-term
 
-**5. Phase 3: Strategy profit-taking targets**
-See Phase 3 section above. Not blocked by anything. The GLXY-STK $41.21 signal is now visible on `/signals` — Phase 3 defines the formal workflow for creating strategy exit signals with monitoring attached from the start.
+**5. Phase 3: Strategy price signal system** ← current focus
+See Phase 3 section above. Design complete. Next: CDP discovery to confirm TradingView drawings API, then build `sync-tv-drawings.ts` ingestion job and extend price collector for strategy signals.
 
 **6. Phase 4: Process-inbox signal integration**
 See Phase 4 section above. Would close the loop between research ingestion and signal tracking — new claims automatically checked against active signals.
