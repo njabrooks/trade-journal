@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Signal } from '@/db/schema';
 import { SignalConfigForm, type ExplicitDetails } from './SignalConfigForm';
+import { SignalProgressCard } from './SignalProgressCard';
 
 // Types
 type SignalType = 'confirmation' | 'warning' | 'completion';
@@ -911,6 +912,16 @@ export function UnifiedSignalsTable({
                                         Notes
                                       </h5>
                                       <p className="text-sm text-foreground whitespace-pre-wrap">{signal.notes}</p>
+                                    </div>
+                                  )}
+
+                                  {/* Signal Progress Tracking */}
+                                  {signal.status === 'active' && signal.explicitDetails && (
+                                    <div>
+                                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                                        Tracking
+                                      </h5>
+                                      <SignalProgressCard signal={signal} />
                                     </div>
                                   )}
 

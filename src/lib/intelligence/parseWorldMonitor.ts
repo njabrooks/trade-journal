@@ -18,6 +18,7 @@ export interface ParsedReport {
   generatedAt: string;         // ISO datetime
   timeWindow: string | null;
   version: number;
+  reportType: string;          // 'world-monitor' | 'thesis-monitor'
   executiveSummary: string;
   keyThemes: string;
   fullMarkdown: string;
@@ -40,6 +41,16 @@ const SEVERITY_MAP: Record<string, 'critical' | 'high' | 'medium' | 'info'> = {
   '🟠': 'high',
   '🟡': 'medium',
   'ℹ️': 'info',
+};
+
+// Thesis monitor uses a different emoji set for signal assessments
+const THESIS_MONITOR_SEVERITY_MAP: Record<string, 'critical' | 'high' | 'medium' | 'info'> = {
+  '🟢': 'critical',   // Strong evidence / confirmed
+  '🟡': 'medium',     // Partial evidence / emerging
+  '⚪': 'info',        // No new evidence
+  '🟠': 'high',       // Emerging concern (invalidation)
+  '🔴': 'critical',   // Active threat
+  '✅': 'critical',    // Confirmed
 };
 
 const SECTOR_MAP: Record<string, string> = {
@@ -114,6 +125,7 @@ function extractTickers(text: string): string[] {
     'NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'TSLA', 'AMD',
     'INTC', 'TSMC', 'TSM', 'KWEB', 'BABA', 'SPY', 'QQQ', 'IWM',
     'TLT', 'GLD', 'SLV', 'USO', 'XLE', 'XLF', 'XLK', 'IBIT',
+    'HYPE', 'GLXY',
   ]);
 
   const tickers: string[] = [];
@@ -206,6 +218,63 @@ function parseSeverityItems(
 }
 
 /**
+ * Parse thesis-monitor signal assessment items.
+ * Format: - {emoji} **Signal statement**\n  Assessment text\n  [Source](url)
+ */
+function parseSignalAssessmentItems(text: string): ParsedItem[] {
+  const items: ParsedItem[] = [];
+
+  // Split by lines starting with - {emoji}
+  const emojis = Object.keys(THESIS_MONITOR_SEVERITY_MAP);
+  const emojiPattern = emojis.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const itemBlocks = text.split(new RegExp(`(?=^- (?:${emojiPattern}))`, 'm'));
+
+  for (const block of itemBlocks) {
+    const trimmed = block.trim();
+    if (!trimmed.startsWith('- ')) continue;
+
+    const content = trimmed.slice(2).trim(); // Remove "- "
+
+    // Detect severity from leading emoji
+    let severity: 'critical' | 'high' | 'medium' | 'info' | null = null;
+    let rest = content;
+
+    for (const [emoji, sev] of Object.entries(THESIS_MONITOR_SEVERITY_MAP)) {
+      if (content.startsWith(emoji)) {
+        severity = sev;
+        rest = content.slice(emoji.length).trim();
+        break;
+      }
+    }
+
+    if (!severity) continue;
+
+    // Extract headline from **bold text**
+    const headlineMatch = rest.match(/\*\*(.*?)\*\*/);
+    if (!headlineMatch) continue;
+
+    const headline = headlineMatch[1].trim();
+    const bodyStartIdx = rest.indexOf('**', rest.indexOf('**') + 2) + 2;
+    let body = rest.slice(bodyStartIdx).trim();
+
+    const sourceUrls = extractUrls(block);
+    const relevantTickers = extractTickers(block);
+
+    items.push({
+      severity,
+      sector: null,
+      headline,
+      body,
+      sourceUrls,
+      relevantTickers,
+      section: 'deep_dive', // Use deep_dive as the section for signal assessments
+    });
+  }
+
+  return items;
+}
+
+/**
  * Parse a World Monitor markdown report into structured data.
  */
 export function parseWorldMonitor(markdown: string): ParsedReport {
@@ -218,6 +287,7 @@ export function parseWorldMonitor(markdown: string): ParsedReport {
   const generatedAt = dateObj.toISOString();
   const timeWindow = frontmatter.time_window || null;
   const version = parseInt(frontmatter.version || '1', 10);
+  const reportType = frontmatter.type || 'world-monitor';
   const sectors = (frontmatter.sectors || '')
     .split(',')
     .map((s: string) => s.trim())
@@ -253,6 +323,21 @@ export function parseWorldMonitor(markdown: string): ParsedReport {
         const items = parseSeverityItems(subContent, 'deep_dive', sector);
         allItems.push(...items);
       }
+    } else if (headerName.includes('SIGNAL ASSESSMENT')) {
+      // Thesis-monitor: parse signal assessment subsections (### Thesis Name)
+      executiveSummary = section.replace(/^## .+\n+/, '').trim();
+      const subSections = section.split(/(?=^### )/m);
+      for (const subSection of subSections) {
+        const subHeaderMatch = subSection.match(/^### (.+)/m);
+        if (!subHeaderMatch) continue;
+        // Extract ticker from header like "### Bullish HYPE Medium Term (asset — bullish — HYPE)"
+        const subContent = subSection.replace(/^### .+\n+/, '').trim();
+        const items = parseSignalAssessmentItems(subContent);
+        allItems.push(...items);
+      }
+    } else if (headerName.includes('SIGNAL WATCH SUMMARY')) {
+      // Thesis-monitor: use signal watch summary as key themes
+      keyThemes = section.replace(/^## .+\n+/, '').trim();
     } else if (headerName.includes('OPPORTUNITIES') || headerName.includes('ANGLES')) {
       // Opportunities section — parse individual items
       const content = section.replace(/^## .+\n+/, '').trim();
@@ -292,6 +377,7 @@ export function parseWorldMonitor(markdown: string): ParsedReport {
     generatedAt,
     timeWindow,
     version,
+    reportType,
     executiveSummary,
     keyThemes,
     fullMarkdown: markdown,

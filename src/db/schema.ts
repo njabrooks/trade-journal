@@ -1534,6 +1534,44 @@ export const signalDataTracking = pgTable(
 export type SignalDataTracking = typeof signalDataTracking.$inferSelect;
 export type NewSignalDataTracking = typeof signalDataTracking.$inferInsert;
 
+// Signal Data Snapshots - Time-series tracking for all signal types (quantitative + qualitative)
+export const signalDataSnapshots = pgTable(
+  'signal_data_snapshots',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    signalId: uuid('signal_id')
+      .notNull()
+      .references(() => signals.id, { onDelete: 'cascade' }),
+    snapshotDate: timestamp('snapshot_date', { withTimezone: true }).notNull().defaultNow(),
+
+    // Quantitative data (for data-driven signals)
+    observedValue: numeric('observed_value', { precision: 18, scale: 6 }),
+    thresholdValue: numeric('threshold_value', { precision: 18, scale: 6 }),
+    pctToThreshold: numeric('pct_to_threshold', { precision: 8, scale: 4 }),
+    unit: text('unit'), // 'USD', '%', 'ratio', 'count', 'MW'
+
+    // Qualitative data (for thesis monitor assessments)
+    assessment: text('assessment'), // 'no_evidence' | 'emerging' | 'partial' | 'strong' | 'confirmed'
+    evidenceSummary: text('evidence_summary'),
+    intelligenceItemId: uuid('intelligence_item_id')
+      .references(() => intelligenceItems.id, { onDelete: 'set null' }),
+
+    // Source tracking
+    dataSource: text('data_source').notNull(), // 'defillama' | 'hypeflows' | 'coingecko' | 'tradingview_cdp' | 'internal_db' | 'thesis_monitor' | 'derived'
+    reportId: uuid('report_id')
+      .references(() => intelligenceReports.id, { onDelete: 'set null' }),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    signalIdx: index('idx_signal_data_snapshots_signal').on(table.signalId, table.snapshotDate),
+    reportIdx: index('idx_signal_data_snapshots_report').on(table.reportId),
+  })
+);
+
+export type SignalDataSnapshot = typeof signalDataSnapshots.$inferSelect;
+export type NewSignalDataSnapshot = typeof signalDataSnapshots.$inferInsert;
+
 // Decision Audit Log - Process vs actual actions
 export const decisionAuditLog = pgTable(
   'decision_audit_log',
@@ -2602,6 +2640,7 @@ export const intelligenceReports = pgTable(
     mediumCount: integer('medium_count').default(0),
     infoCount: integer('info_count').default(0),
     sectors: text('sectors').array().default(sql`'{}'`),
+    reportType: text('report_type').default('world-monitor'), // 'world-monitor' | 'thesis-monitor'
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
