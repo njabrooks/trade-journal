@@ -15,6 +15,8 @@
  */
 
 import { fetchPrices } from './tradingview.js';
+import { db, schema } from '../db.js';
+import { eq, and, gte } from 'drizzle-orm';
 
 export interface DerivedSnapshot {
   observedValue: number;
@@ -40,6 +42,11 @@ export async function collectDerived(
     return collectCorrelationProxy(explicitDetails);
   }
 
+  // HYPE P/E ratio (market cap / annualised revenue)
+  if (calculation === 'market_cap / annualized_revenue') {
+    return collectPERatio(explicitDetails);
+  }
+
   // GLXY valuation per MW
   if (calculation === 'market_cap / helios_capacity_mw') {
     return collectValuationPerMW(explicitDetails);
@@ -49,9 +56,12 @@ export async function collectDerived(
 }
 
 /**
- * Compute BTC-NASDAQ correlation from Yahoo Finance daily prices.
- * Fetches 3 months of daily closes, aligns on common trading days,
- * and computes Pearson correlation on daily returns.
+ * Compute BTC-NASDAQ correlation using price_history as primary source.
+ * Falls back to Yahoo Finance API if price_history has insufficient data.
+ *
+ * Reads daily closes for BTC, ^IXIC (NASDAQ), and ^GSPC (S&P 500) from
+ * the price_history table, aligns on common trading days, and computes
+ * Pearson correlation on daily returns.
  */
 async function collectCorrelationProxy(
   details: Record<string, unknown>
@@ -60,24 +70,44 @@ async function collectCorrelationProxy(
   const metric = details.metric as string || '';
   const window = metric.includes('90') ? 90 : 30;
 
-  // Fetch daily closes from Yahoo Finance
+  // Try price_history first (need ~window + buffer days)
+  const minDays = window + 10;
   const [btcData, ndxData, spxData] = await Promise.all([
-    fetchYahooPrices('BTC-USD'),
-    fetchYahooPrices('^IXIC'),
-    fetchYahooPrices('^GSPC'),
+    fetchPriceHistoryByTicker('BTC', minDays),
+    fetchPriceHistoryByTicker('^IXIC', minDays),
+    fetchPriceHistoryByTicker('^GSPC', minDays),
   ]);
 
-  if (btcData.length < 20 || ndxData.length < 20) {
+  const dbSource = btcData.length >= 20 && ndxData.length >= 20;
+
+  // Fallback to Yahoo Finance if price_history has insufficient data
+  let btcFinal = btcData;
+  let ndxFinal = ndxData;
+  let spxFinal = spxData;
+
+  if (!dbSource) {
+    console.log('  [derived] Insufficient price_history data, falling back to Yahoo Finance');
+    const [btcYahoo, ndxYahoo, spxYahoo] = await Promise.all([
+      fetchYahooPrices('BTC-USD'),
+      fetchYahooPrices('^IXIC'),
+      fetchYahooPrices('^GSPC'),
+    ]);
+    btcFinal = btcYahoo.length > btcData.length ? btcYahoo : btcData;
+    ndxFinal = ndxYahoo.length > ndxData.length ? ndxYahoo : ndxData;
+    spxFinal = spxYahoo.length > spxData.length ? spxYahoo : spxData;
+  }
+
+  if (btcFinal.length < 20 || ndxFinal.length < 20) {
     return null;
   }
 
   // Align on common dates
-  const btcMap = Object.fromEntries(btcData.map(p => [p.date, p.close]));
-  const ndxMap = Object.fromEntries(ndxData.map(p => [p.date, p.close]));
-  const spxMap = Object.fromEntries(spxData.map(p => [p.date, p.close]));
+  const btcMap = Object.fromEntries(btcFinal.map(p => [p.date, p.close]));
+  const ndxMap = Object.fromEntries(ndxFinal.map(p => [p.date, p.close]));
+  const spxMap = Object.fromEntries(spxFinal.map(p => [p.date, p.close]));
 
-  const btcDates = new Set(btcData.map(p => p.date));
-  const ndxDates = new Set(ndxData.map(p => p.date));
+  const btcDates = new Set(btcFinal.map(p => p.date));
+  const ndxDates = new Set(ndxFinal.map(p => p.date));
   const commonDates = [...btcDates].filter(d => ndxDates.has(d)).sort();
 
   const useWindow = Math.min(window, commonDates.length);
@@ -95,11 +125,13 @@ async function collectCorrelationProxy(
   const spxDrawdown = spxPeak > 0 ? ((spxPeak - spxCurrent) / spxPeak) * 100 : 0;
 
   const pct = threshold > 0 ? (corr / threshold) * 100 : 0;
+  const source = dbSource ? 'price_history' : 'yahoo_fallback';
 
   const summary = [
     `${useWindow}d BTC-NASDAQ correlation: ${corr.toFixed(4)}`,
     `SPX drawdown: ${spxDrawdown.toFixed(1)}% from ${useWindow}d high`,
     `BTC: $${btcPrices[btcPrices.length - 1]?.toLocaleString()}`,
+    `(src: ${source})`,
   ].join(' | ');
 
   return {
@@ -113,27 +145,81 @@ async function collectCorrelationProxy(
 
 interface DailyPrice { date: string; close: number; }
 
+/**
+ * Read daily closes from price_history for a given asset ticker.
+ * Returns the most recent `minDays` entries, ordered by date ascending.
+ */
+async function fetchPriceHistoryByTicker(ticker: string, minDays: number): Promise<DailyPrice[]> {
+  try {
+    // Look up asset by ticker
+    const [asset] = await db
+      .select({ id: schema.assets.id })
+      .from(schema.assets)
+      .where(eq(schema.assets.ticker, ticker))
+      .limit(1);
+
+    if (!asset) return [];
+
+    // Fetch recent prices, ordered ascending by date
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - (minDays * 2)); // 2x buffer for weekends/holidays
+    const cutoff = cutoffDate.toISOString().split('T')[0];
+
+    const rows = await db
+      .select({
+        priceDate: schema.priceHistory.priceDate,
+        priceClose: schema.priceHistory.priceClose,
+      })
+      .from(schema.priceHistory)
+      .where(
+        and(
+          eq(schema.priceHistory.assetId, asset.id),
+          gte(schema.priceHistory.priceDate, cutoff),
+        )
+      )
+      .orderBy(schema.priceHistory.priceDate);
+
+    return rows.map(r => ({
+      date: typeof r.priceDate === 'string'
+        ? r.priceDate.split('T')[0]
+        : new Date(r.priceDate).toISOString().split('T')[0],
+      close: Number(r.priceClose),
+    }));
+  } catch (err) {
+    console.warn(`  [derived] Failed to read price_history for ${ticker}:`, err);
+    return [];
+  }
+}
+
+/**
+ * Fetch daily closes from Yahoo Finance (fallback).
+ */
 async function fetchYahooPrices(ticker: string): Promise<DailyPrice[]> {
-  const res = await fetch(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=3mo`,
-    { headers: { 'User-Agent': 'Mozilla/5.0' } }
-  );
-  if (!res.ok) return [];
+  try {
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=3mo`,
+      { headers: { 'User-Agent': 'Mozilla/5.0' } }
+    );
+    if (!res.ok) return [];
 
-  const data = await res.json() as Record<string, unknown>;
-  const chart = data.chart as Record<string, unknown>;
-  const results = (chart?.result as Array<Record<string, unknown>>) || [];
-  if (results.length === 0) return [];
+    const data = await res.json() as Record<string, unknown>;
+    const chart = data.chart as Record<string, unknown>;
+    const results = (chart?.result as Array<Record<string, unknown>>) || [];
+    if (results.length === 0) return [];
 
-  const result = results[0];
-  const timestamps = result.timestamp as number[];
-  const quote = ((result.indicators as Record<string, unknown>)?.quote as Array<Record<string, unknown>>)?.[0];
-  const closes = quote?.close as (number | null)[];
-  if (!timestamps || !closes) return [];
+    const result = results[0];
+    const timestamps = result.timestamp as number[];
+    const quote = ((result.indicators as Record<string, unknown>)?.quote as Array<Record<string, unknown>>)?.[0];
+    const closes = quote?.close as (number | null)[];
+    if (!timestamps || !closes) return [];
 
-  return timestamps
-    .map((ts, i) => closes[i] != null ? { date: new Date(ts * 1000).toISOString().split('T')[0], close: closes[i]! } : null)
-    .filter((p): p is DailyPrice => p !== null);
+    return timestamps
+      .map((ts, i) => closes[i] != null ? { date: new Date(ts * 1000).toISOString().split('T')[0], close: closes[i]! } : null)
+      .filter((p): p is DailyPrice => p !== null);
+  } catch (err) {
+    console.warn(`  [derived] Yahoo Finance fallback failed for ${ticker}:`, err);
+    return [];
+  }
 }
 
 function pearsonCorrelation(x: number[], y: number[]): number {
