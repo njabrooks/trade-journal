@@ -2,7 +2,7 @@
 
 > Created: 2026-03-16
 > Last updated: 2026-03-18
-> Status: Phases 1–2c complete, Phase 5 complete. Phase 2d documented. Phase 3 complete (sync + price collection live, both USD and BTC-ratio panels ingested). Phase 4 not started.
+> Status: Phases 1–3 complete (incl. signal dedup via junction table). Phase 5 complete. Phase 2d documented. Phase 4 not started.
 
 ## Context
 
@@ -894,20 +894,25 @@ Extend existing `tradingview.ts` collector in `scripts/lib/collectors/` to handl
 
 | Component | Fate |
 |-----------|------|
-| `StrategySignalConfigForm.tsx` | Deleted — replaced by CDP ingestion |
-| `StrategySignalsSection` "Add Signal" button | Replaced by sync status + last-sync timestamp |
-| TradingView webhook infrastructure | Deleted — `tvAlertName`, webhook URL, Supabase Edge Function |
-| `tv-webhook` Supabase Edge Function | Deprecated |
-| `NEXT_PUBLIC_TV_WEBHOOK_URL` env var | Removed |
+| `StrategySignalConfigForm.tsx` | ✅ Deleted (2026-03-18) — replaced by CDP ingestion |
+| `StrategySignalsSection` | ✅ Simplified (2026-03-18) — read-only display, no form/edit UI |
+| TradingView webhook infrastructure | ✅ Deleted (2026-03-18) — `tvAlertName`, webhook URL, Edge Function all removed |
+| `tv-webhook` Supabase Edge Function | ✅ Deleted (2026-03-18) |
+| `NEXT_PUBLIC_TV_WEBHOOK_URL` env var | ✅ Removed from CLAUDE.md (2026-03-18) |
 
 ### New components / scripts
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `scripts/sync-tv-drawings.ts` | ✅ Built | CDP job: reads BTC indicator + USD main-series drawings → upserts signals. Configure via `TV_USD_SYMBOLS`, `TV_PRICE_LAYOUT_ID` env vars. |
-| `scripts/collect-signal-data.ts` | ✅ Extended | Strategy price signal section added: batch spot lookup → BTC ratio calculation → snapshot insert |
-| `src/components/signals/StrategySignalsSection.tsx` | Deferred | Simplify to show imported signals + position % editing only |
-| DB migration | Deferred | Add `tvChartSymbol` to `strategies` table |
+| `scripts/sync-tv-drawings.ts` | ✅ Built | CDP job: reads BTC indicator + USD main-series drawings → upserts as deduplicated signals with junction links |
+| `scripts/collect-signal-data.ts` | ✅ Extended | Strategy price signals + checkFrequency enforcement for weekly signals |
+| `scripts/backfill-correlation.ts` | ✅ Built | Backfills historical BTC-NASDAQ correlation from Yahoo Finance (882 daily snapshots) |
+| `scripts/migrate-signal-entity-links.ts` | ✅ Built | Data migration: populates junction table + deduplicates strategy signals |
+| `migrations/add-signal-entity-links.sql` | ✅ Applied | Junction table for many-to-many signal ↔ entity relationships |
+| `src/components/signals/StrategySignalsSection.tsx` | ✅ Simplified | Read-only display of synced signals (no form/edit UI) |
+| `src/components/signals/TradingViewMiniChart.tsx` | ✅ Built | TradingView Symbol Overview widget embed for strategy signal charts |
+| `src/components/signals/SignalSnapshotChart.tsx` | ✅ Built | Recharts sparkline with threshold reference line for thesis quantitative signals |
+| `src/components/signals/AssessmentTimeline.tsx` | ✅ Built | Qualitative assessment dot timeline with trend label |
 
 ### CDP discovery
 
@@ -918,10 +923,11 @@ Completed. Two drawing namespaces identified:
 ### Implementation order
 
 1. ~~**CDP discovery**~~ ✅
-2. ~~**`sync-tv-drawings.ts`**~~ ✅ — reads both BTC indicator panel + USD main-series drawings per symbol. `TV_USD_SYMBOLS` env var configures which symbols to query. 35 signals created (10 BTC-ratio, 25 USD) across GLXY, HYPE, BTC strategies.
-3. ~~**Extend price collector**~~ ✅ — `collect-signal-data.ts` now processes strategy signals: batch-fetches `underlyings.spot`, falls back to TV scanner for stocks (GLXY), computes BTC ratio from asset/BTC. `data_source='strategy_price'`.
-4. **Simplify `StrategySignalsSection`** — position % editing, sync status, remove form (deferred)
-5. **Remove webhook infrastructure** — `StrategySignalConfigForm`, edge function, env var (deferred)
+2. ~~**`sync-tv-drawings.ts`**~~ ✅ — reads both BTC indicator panel + USD main-series drawings per symbol. Creates one signal per drawing, links to all matching strategies via `signal_entity_links` junction table.
+3. ~~**Extend price collector**~~ ✅ — `collect-signal-data.ts` processes strategy signals with checkFrequency enforcement.
+4. ~~**Signal deduplication**~~ ✅ — `signal_entity_links` junction table. 35 duplicate signals merged to 13 unique + 35 links. `position_pct` moved to link. Statements no longer include "X% of position".
+5. ~~**Simplify `StrategySignalsSection`**~~ ✅ — read-only display, form/edit/delete UI removed.
+6. ~~**Remove webhook infrastructure**~~ ✅ — `StrategySignalConfigForm`, `tv-webhook` Edge Function, `NEXT_PUBLIC_TV_WEBHOOK_URL` all deleted.
 
 ### Verification
 - [x] CDP discovery confirms drawings API endpoint and drawing ID format
@@ -929,8 +935,10 @@ Completed. Two drawing namespaces identified:
 - [ ] Moving a drawing in TradingView → price updates on next sync
 - [ ] Deleting a drawing → signal marked rejected on next sync
 - [x] Price collector generates snapshots for strategy signals (pct_to_threshold visible in Signals Browser)
-- [x] Multiple strategies on same underlying both receive signals from shared chart drawings
-- [ ] `StrategySignalConfigForm` and webhook infrastructure removed
+- [x] Multiple strategies on same underlying receive signals via junction links (not duplicate signals)
+- [x] `StrategySignalConfigForm` and webhook infrastructure removed (2026-03-18)
+- [x] Signal deduplication via `signal_entity_links` junction table (2026-03-18)
+- [x] checkFrequency enforcement — weekly signals skip collection within 6 days (2026-03-18)
 
 ---
 
@@ -1102,85 +1110,76 @@ The signals browser is additive — it does **not** replace the signal sections 
 - [x] Filters work: by type, entity type, ticker, status
 - [x] Strategy signals (like GLXY-STK $41.21 target) are visible alongside thesis signals
 - [x] Sort by "closest to trigger" surfaces most actionable signals first
-- [ ] Sparkline trend chart in expanded row (deferred — tracked in Next Steps item 1)
+- [x] Sparkline trend chart in expanded row (2026-03-18) — TradingView embed for strategy, Recharts for thesis quant, assessment timeline for thesis qual
 
 ---
 
 ## Next Steps (for new context)
 
+### Completed (2026-03-18)
+
+- ~~**Signal tracking trajectory views**~~ ✅ — Three chart types in signal expanded rows: TradingView Symbol Overview for strategy price, Recharts sparkline for thesis quant, assessment timeline for thesis qual.
+- ~~**checkFrequency enforcement**~~ ✅ — Weekly signals skip collection within 6 days.
+- ~~**Phase 3 cleanup**~~ ✅ — `StrategySignalConfigForm`, `tv-webhook` Edge Function, `NEXT_PUBLIC_TV_WEBHOOK_URL` all deleted. `StrategySignalsSection` simplified to read-only.
+- ~~**Signals Browser: group by underlying**~~ ✅ — Signals grouped by underlying ticker (BTC, GLXY, HYPE). Macro thesis signals appear under each linked underlying. Collapsible group headers. Toggle between grouped/flat views.
+- ~~**Signal deduplication**~~ ✅ — `signal_entity_links` junction table. One signal per TradingView drawing, linked to multiple strategies. 35 → 13 signals + 35 links. `position_pct` per-link. Query layer returns `entities[]` per signal.
+- ~~**Correlation backfill**~~ ✅ — 882 daily BTC-NASDAQ correlation snapshots from mid-2024 via Yahoo Finance.
+- ~~**Clean up test data**~~ ✅ — Test thesis-monitor report removed.
+
 ### Immediate priorities
 
-**1. Frontend: signal tracking trajectory view**
-The `SignalProgressCard` currently shows the latest snapshot value vs threshold. Once a few days of data accumulate (3+ snapshots per signal), add a sparkline/trend chart showing whether the signal is tracking toward or away from its threshold. The Recharts infrastructure is already in place (`src/components/ui/chart.tsx`). Data is available via `GET /api/signals/[id]/snapshots?days=90`.
+**1. Qualitative snapshot assessment accuracy**
+The current keyword-matching in `generateQualitativeSnapshots()` (in `ingest-world-monitor.ts`) assigns assessment levels based on a scoring heuristic (ticker match + keyword overlap). Review the real thesis monitor output vs the assessments generated to see if the matching is accurate.
 
-**2. Qualitative snapshot assessment accuracy**
-The current keyword-matching in `generateQualitativeSnapshots()` (in `ingest-world-monitor.ts`) assigns assessment levels based on a scoring heuristic (ticker match + keyword overlap). Review the real thesis monitor output vs the assessments generated to see if the matching is accurate. The scoring may need tuning — for example, "no_evidence" assessments currently only appear when zero items match a signal, but many items with ⚪ emojis in the thesis monitor report should map to "no_evidence" rather than getting matched to another signal.
+**2. Phase 2d: `/configure-signal` skill**
+The signal configuration workflow is documented but not yet packaged as a skill. Would speed up adding monitoring to new signals. The skill would: read signal statement → propose data sources → test endpoints → populate `explicit_details` → verify snapshot.
 
-**3. Phase 2d: `/configure-signal` skill**
-The signal configuration workflow is documented but not yet packaged as a skill. Building this would significantly speed up adding monitoring to new signals (e.g., when a new thesis is created via `/build-core-argument`). The skill would: read signal statement → propose data sources → test endpoints → populate `explicit_details` → verify snapshot.
-
-**4. `checkFrequency` enforcement**
-The `explicit_details` on each signal has a `checkFrequency` field (`"daily"` or `"weekly"`), but the collection orchestrator currently ignores it — it collects everything on every run. Update `collect-signal-data.ts` to check when the signal was last collected and skip if within the configured frequency window.
+**3. Drop old columns from signals table**
+Phase 2 of junction table migration: remove `entity_type`, `strategy_id`, `thesis_id`, `thesis_type` from `signals` table. All code now reads from `signal_entity_links`.
 
 ### Medium-term
 
-**5. Phase 3: Strategy price signal system** ← complete (cleanup remaining)
-`sync-tv-drawings.ts` ingests TP/SL drawings from both BTC indicator and USD main-series panels. `collect-signal-data.ts` collects live price snapshots. 35 strategy signals live with progress bars in Signals Browser. Remaining cleanup: simplify `StrategySignalsSection`, remove webhook infrastructure (`StrategySignalConfigForm`, `tv-webhook` Edge Function, `NEXT_PUBLIC_TV_WEBHOOK_URL`).
-
-**6. Phase 4: Process-inbox signal integration**
+**4. Phase 4: Process-inbox signal integration**
 See Phase 4 section above. Would close the loop between research ingestion and signal tracking — new claims automatically checked against active signals.
 
-**7. Sparkline trend chart in signal expanded row** ← complete (2026-03-18)
-Signal expanded rows now show three chart types depending on signal:
-- **Strategy price signals**: TradingView Symbol Overview widget (free embed, interactive hover tracking)
-- **Thesis quantitative signals**: Recharts AreaChart sparkline with dashed threshold reference line
-- **Thesis qualitative signals**: Assessment timeline dots showing progression (no_evidence → emerging → partial → strong → confirmed) with trend label
-Files: `TradingViewMiniChart.tsx`, `SignalSnapshotChart.tsx`, `AssessmentTimeline.tsx`, updated `SignalProgressCard.tsx`.
+**5. Centralise price data in `price_history` table**
+The `price_history` table (via `assets`) is the single source of truth for daily prices. Currently missing NASDAQ (^IXIC) and S&P 500 (^GSPC) indices. Add these as assets with Yahoo Finance daily ingestion. Then update `derived.ts` correlation collector to read from `price_history` instead of hitting Yahoo Finance API on each run.
 
-**8. Signals Browser: group by underlying asset**
-Add ability to group signals by underlying ticker in the Signals Browser. For example, all BTC-related signals (macro thesis, asset thesis, strategy) grouped together so you can see the full picture for one asset. Requires resolving the underlying for macro thesis signals (which don't have a direct ticker link).
+**6. TradingView CDP collector for economic calendar**
+Build a collector that uses CDP to access the TradingView economic calendar. Would feed macro thesis signals that depend on economic events (FOMC decisions, CPI releases, employment data).
 
-**9. Centralise price data in `price_history` table**
-The `price_history` table (via `assets`) is the single source of truth for daily prices. Currently missing NASDAQ (^IXIC) and S&P 500 (^GSPC) indices. Add these as assets with Yahoo Finance daily ingestion. Then update `derived.ts` correlation collector to read from `price_history` instead of hitting Yahoo Finance API on each run. Benefits: faster collection, no external API dependency, consistent data.
-
-**10. TradingView CDP collector for economic calendar**
-Build a collector that uses CDP (Chrome Debug on port 9222) to access the TradingView economic calendar. This would feed macro thesis signals that depend on economic events (FOMC decisions, CPI releases, employment data). The CDP infrastructure exists but no collector is wired to it yet.
-
-**11. Signal trigger automation**
-When a quantitative signal's `pct_to_threshold` reaches 100% (or crosses the threshold), automatically:
-- Update the signal status to `triggered` or `complete`
-- Create a `thesis_triage_record` for user review
-- Log a journal entry with the evidence
-Currently the snapshots are passive — they record data but don't trigger actions.
+**7. Signal trigger automation**
+When a quantitative signal's `pct_to_threshold` reaches 100%, automatically: update signal status to `complete`, create a `thesis_triage_record` for user review, log a journal entry with the evidence.
 
 ### Technical debt / improvements
 
-**12. Dedup logic for qualitative snapshots**
-The `generateQualitativeSnapshots()` function in `ingest-world-monitor.ts` can match the same intelligence item to multiple signals, creating noisy snapshots. Consider improving the matching to prioritise the best-fit signal for each item.
+**8. Dedup logic for qualitative snapshots**
+The `generateQualitativeSnapshots()` function can match the same intelligence item to multiple signals. Consider improving the matching to prioritise the best-fit signal for each item.
 
-**13. HYPE P/E re-rating condition**
-The HYPE completion signal's second condition (P/E re-rating to 15-20x) returns no data because it requires both CoinGecko market cap and DefiLlama revenue combined. This needs a custom derived collector that fetches both and computes the ratio.
-
-**14. Clean up test data**
-The test thesis-monitor report at `notes/intelligence/20260317-1300-thesis-monitor.md` and its associated snapshots (report_id `23fa617e...`) should be cleaned up to avoid confusion with real data.
+**9. HYPE P/E re-rating condition**
+The HYPE completion signal's second condition (P/E re-rating to 15-20x) returns no data because it requires both CoinGecko market cap and DefiLlama revenue combined. Needs a custom derived collector.
 
 ### Key files for orientation
 
 | File | Purpose |
 |------|---------|
 | `trade-journal/docs/plans/thesis-signal-monitoring-redesign.md` | This plan (single source of truth) |
-| `trade-journal/scripts/collect-signal-data.ts` | Quantitative collection orchestrator |
+| `trade-journal/scripts/sync-tv-drawings.ts` | CDP: reads TradingView drawings → upserts signals + junction links |
+| `trade-journal/scripts/collect-signal-data.ts` | Quantitative collection orchestrator (thesis + strategy signals) |
+| `trade-journal/scripts/backfill-correlation.ts` | Historical BTC-NASDAQ correlation backfill from Yahoo Finance |
+| `trade-journal/scripts/migrate-signal-entity-links.ts` | Data migration for signal deduplication |
 | `trade-journal/scripts/ingest-world-monitor.ts` | Ingestion + qualitative snapshot generation |
 | `trade-journal/scripts/lib/collectors/` | Per-source data collectors |
-| `trade-journal/scripts/backfill-price-history.ts` | Yahoo Finance backfill + correlation |
-| `trade-journal/src/components/signals/SignalProgressCard.tsx` | Frontend progress card (expanded row detail) |
-| `trade-journal/src/components/signals/SignalsBrowser.tsx` | Unified signals browser (filterable table) |
-| `trade-journal/src/components/signals/SignalTrendIndicator.tsx` | Compact inline trend indicator |
-| `trade-journal/src/components/signals/UnifiedSignalsTable.tsx` | Signals table on entity detail pages |
+| `trade-journal/src/db/schema.ts` | `signalEntityLinks` junction table definition |
+| `trade-journal/src/db/queries/signals.ts` | Query: signals + entities[] via junction table + latest snapshots |
+| `trade-journal/src/components/signals/SignalProgressCard.tsx` | Expanded row: progress bar + chart (TV embed / sparkline / timeline) |
+| `trade-journal/src/components/signals/SignalsBrowser.tsx` | Unified signals browser (grouped by underlying, multi-entity display) |
+| `trade-journal/src/components/signals/TradingViewMiniChart.tsx` | TradingView Symbol Overview widget embed |
+| `trade-journal/src/components/signals/SignalSnapshotChart.tsx` | Recharts sparkline with threshold reference line |
+| `trade-journal/src/components/signals/AssessmentTimeline.tsx` | Qualitative assessment dot timeline |
+| `trade-journal/src/components/signals/StrategySignalsSection.tsx` | Read-only signal display on strategy detail pages |
 | `trade-journal/src/app/signals/page.tsx` | `/signals` entity page (Phase 5) |
-| `trade-journal/src/db/queries/signals.ts` | Query: all signals with entity joins + latest snapshots |
-| `trade-journal/src/app/api/signals/[id]/snapshots/route.ts` | Snapshot history API |
-| `trade-journal/migrations/add-signal-data-snapshots.sql` | Table migration |
+| `trade-journal/migrations/add-signal-entity-links.sql` | Junction table migration |
+| `trade-journal/migrations/add-signal-data-snapshots.sql` | Snapshots table migration |
 | `paperclip/.claude/skills/thesis-monitor/SKILL.md` | Thesis monitor skill definition |
-| `paperclip/launchd/install.sh` | Scheduling (launchd jobs) |
 | `paperclip/scripts/collect-signal-data.sh` | Shell wrapper for quantitative collection |
