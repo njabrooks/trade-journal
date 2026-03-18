@@ -31,6 +31,12 @@ export interface SignalWithContext {
   ticker: string | null;
   strategyKey: string | null;
 
+  // Underlying grouping — resolved ticker(s) for this signal
+  // Strategy → strategy.assetThesis.underlying
+  // Asset thesis → assetThesis.underlying
+  // Macro thesis → all linked asset theses' underlyings
+  underlyingTickers: string[];
+
   // Latest quantitative snapshot
   latestObservedValue: string | null;
   latestThresholdValue: string | null;
@@ -138,11 +144,42 @@ export async function getAllSignalsWithContext(): Promise<{
     ORDER BY signal_id, snapshot_date DESC
   `);
 
+  // 4. Resolve underlying tickers for strategy signals (strategy → asset thesis → underlying)
+  const strategyUnderlyings = await db.execute<{
+    strategy_id: string;
+    ticker: string;
+  }>(sql`
+    SELECT s.id as strategy_id, u.ticker
+    FROM strategies s
+    JOIN asset_theses at ON at.id = s.asset_thesis_id
+    JOIN underlyings u ON u.id = at.underlying_id
+  `);
+  const strategyTickerMap = new Map(
+    strategyUnderlyings.map(r => [r.strategy_id, r.ticker])
+  );
+
+  // 5. Resolve underlying tickers for macro thesis signals (macro → linked asset theses → underlyings)
+  const macroUnderlyings = await db.execute<{
+    macro_thesis_id: string;
+    ticker: string;
+  }>(sql`
+    SELECT atrm.macro_thesis_id, u.ticker
+    FROM asset_thesis_related_macro_theses atrm
+    JOIN asset_theses at ON at.id = atrm.asset_thesis_id
+    JOIN underlyings u ON u.id = at.underlying_id
+  `);
+  const macroTickerMap = new Map<string, string[]>();
+  for (const r of macroUnderlyings) {
+    const existing = macroTickerMap.get(r.macro_thesis_id) || [];
+    if (!existing.includes(r.ticker)) existing.push(r.ticker);
+    macroTickerMap.set(r.macro_thesis_id, existing);
+  }
+
   // Build lookup maps
   const quantMap = new Map(latestQuantSnapshots.map(s => [s.signal_id, s]));
   const qualMap = new Map(latestQualSnapshots.map(s => [s.signal_id, s]));
 
-  // 4. Merge
+  // 6. Merge
   const merged: SignalWithContext[] = rawSignals.map(s => {
     const quant = quantMap.get(s.id);
     const qual = qualMap.get(s.id);
@@ -161,12 +198,22 @@ export async function getAllSignalsWithContext(): Promise<{
       entityStatus = s.assetStatus;
     }
 
-    // For strategy signals, get ticker from the strategy's asset thesis
+    // Resolve ticker for display
     let ticker = s.ticker;
     if (!ticker && s.entityType === 'strategy' && s.strategyKey) {
-      // Extract ticker hint from strategy key (e.g., "GLXY-STK" → "GLXY")
       const parts = s.strategyKey.split(/[-_ ]/);
       if (parts.length > 0) ticker = parts[0];
+    }
+
+    // Resolve underlying tickers for grouping
+    let underlyingTickers: string[] = [];
+    if (s.entityType === 'strategy' && s.strategyId) {
+      const t = strategyTickerMap.get(s.strategyId);
+      if (t) underlyingTickers = [t];
+    } else if (s.thesisType === 'asset' && s.ticker) {
+      underlyingTickers = [s.ticker];
+    } else if (s.thesisType === 'macro' && s.thesisId) {
+      underlyingTickers = macroTickerMap.get(s.thesisId) || [];
     }
 
     return {
@@ -188,6 +235,7 @@ export async function getAllSignalsWithContext(): Promise<{
       entityStatus,
       ticker,
       strategyKey: s.strategyKey,
+      underlyingTickers,
       latestObservedValue: quant?.observed_value ?? null,
       latestThresholdValue: quant?.threshold_value ?? null,
       latestPctToThreshold: quant?.pct_to_threshold ?? null,
@@ -200,7 +248,7 @@ export async function getAllSignalsWithContext(): Promise<{
     };
   });
 
-  // 5. Compute counts
+  // 7. Compute counts
   const counts: SignalFilterCounts = {
     total: merged.length,
     active: 0,

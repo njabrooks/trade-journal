@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Lightbulb,
   FolderKanban,
+  Layers,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -98,8 +99,16 @@ function entityTypeBadge(entityType: string, thesisType: string | null) {
   return 'Asset';
 }
 
+// Entity type sort order for grouped view: strategies first, then asset thesis, then macro thesis
+function entitySortOrder(s: SignalWithContext): number {
+  if (s.entityType === 'strategy') return 0;
+  if (s.thesisType === 'asset') return 1;
+  return 2; // macro
+}
+
 export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Filters
@@ -108,6 +117,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
   const [entityFilter, setEntityFilter] = useState<EntityFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [groupByUnderlying, setGroupByUnderlying] = useState(true);
 
   // Sort
   const [sortColumn, setSortColumn] = useState<SortColumn>('trend');
@@ -130,29 +140,23 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
   const filtered = useMemo(() => {
     let result = signals;
 
-    // Status filter
     if (statusFilter !== 'all') {
       result = result.filter(s => s.status === statusFilter);
     }
-
-    // Type filter
     if (typeFilter !== 'all') {
       result = result.filter(s => s.type === typeFilter);
     }
-
-    // Entity filter
     if (entityFilter !== 'all') {
       result = result.filter(s => s.entityType === entityFilter);
     }
-
-    // Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(s =>
         s.statement.toLowerCase().includes(q) ||
         (s.entityTitle?.toLowerCase().includes(q)) ||
         (s.ticker?.toLowerCase().includes(q)) ||
-        (s.strategyKey?.toLowerCase().includes(q))
+        (s.strategyKey?.toLowerCase().includes(q)) ||
+        s.underlyingTickers.some(t => t.toLowerCase().includes(q))
       );
     }
 
@@ -188,6 +192,43 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
     return result;
   }, [signals, statusFilter, typeFilter, entityFilter, searchQuery, sortColumn, sortDirection]);
 
+  // Group signals by underlying ticker
+  const grouped = useMemo(() => {
+    if (!groupByUnderlying) return null;
+
+    const groups = new Map<string, SignalWithContext[]>();
+
+    for (const signal of filtered) {
+      const tickers = signal.underlyingTickers.length > 0
+        ? signal.underlyingTickers
+        : ['Other'];
+
+      for (const ticker of tickers) {
+        const group = groups.get(ticker) || [];
+        // Avoid duplicates (macro thesis signals can appear in multiple groups,
+        // but within one group should only appear once)
+        if (!group.some(s => s.id === signal.id)) {
+          group.push(signal);
+        }
+        groups.set(ticker, group);
+      }
+    }
+
+    // Sort groups alphabetically, "Other" last
+    const sorted = [...groups.entries()].sort(([a], [b]) => {
+      if (a === 'Other') return 1;
+      if (b === 'Other') return -1;
+      return a.localeCompare(b);
+    });
+
+    // Sort signals within each group: strategies → asset thesis → macro thesis
+    for (const [, groupSignals] of sorted) {
+      groupSignals.sort((a, b) => entitySortOrder(a) - entitySortOrder(b));
+    }
+
+    return sorted;
+  }, [filtered, groupByUnderlying]);
+
   function toggleSort(col: SortColumn) {
     if (sortColumn === col) {
       setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
@@ -197,6 +238,15 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
     }
   }
 
+  function toggleGroup(ticker: string) {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(ticker)) next.delete(ticker);
+      else next.add(ticker);
+      return next;
+    });
+  }
+
   function SortIcon({ col }: { col: SortColumn }) {
     if (sortColumn !== col) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />;
     return sortDirection === 'asc'
@@ -204,7 +254,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
       : <ArrowDown className="h-3 w-3 text-foreground" />;
   }
 
-  // Count for active filter context
   const statusCounts: Record<StatusFilter, number> = {
     all: counts.total,
     active: counts.active,
@@ -212,6 +261,107 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
     draft: counts.draft,
     rejected: counts.rejected,
   };
+
+  // Signal row renderer (shared between grouped and flat views)
+  function renderSignalRow(signal: SignalWithContext) {
+    const isExpanded = expandedId === signal.id;
+    const link = entityLink(signal);
+    const pct = signal.latestPctToThreshold ? parseFloat(signal.latestPctToThreshold) : null;
+
+    return (
+      <Fragment key={signal.id}>
+        <tr
+          className={`border-b cursor-pointer transition-colors hover:bg-muted/30 ${isExpanded ? 'bg-muted/20' : ''}`}
+          onClick={() => setExpandedId(isExpanded ? null : signal.id)}
+        >
+          <td className="px-2 py-3 text-center">
+            {isExpanded
+              ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              : <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            }
+          </td>
+          <td className="px-3 py-3">
+            <Badge className={`gap-1 text-xs font-normal ${typeBadgeColor(signal.type)}`}>
+              {typeIcon(signal.type)}
+              {typeLabel(signal.type)}
+            </Badge>
+          </td>
+          <td className="px-3 py-3">
+            <p className="text-sm line-clamp-2">{signal.statement}</p>
+          </td>
+          <td className="px-3 py-3">
+            <div className="flex items-center gap-1.5">
+              {entityTypeIcon(signal.entityType, signal.thesisType)}
+              {link ? (
+                <Link
+                  href={link}
+                  onClick={e => e.stopPropagation()}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate max-w-[200px]"
+                >
+                  {signal.entityTitle || 'Unknown'}
+                </Link>
+              ) : (
+                <span className="text-sm truncate max-w-[200px]">{signal.entityTitle || 'Unknown'}</span>
+              )}
+              {signal.ticker && !groupByUnderlying && (
+                <Badge variant="outline" className="text-[10px] px-1 py-0 font-mono">
+                  {signal.ticker}
+                </Badge>
+              )}
+            </div>
+          </td>
+          <td className="px-3 py-3">
+            <Badge className={`text-xs font-normal ${statusBadgeColor(signal.status)}`}>
+              {signal.status}
+            </Badge>
+          </td>
+          <td className="px-3 py-3 text-right">
+            <SignalTrendIndicator
+              pctToThreshold={pct}
+              signalType={signal.type}
+              assessment={signal.latestAssessment}
+            />
+          </td>
+        </tr>
+        {isExpanded && (
+          <tr className="bg-muted/10">
+            <td colSpan={6} className="px-6 py-4">
+              <div className="max-w-4xl">
+                <SignalProgressCard
+                  signal={{
+                    id: signal.id,
+                    entityType: signal.entityType,
+                    type: signal.type,
+                    statement: signal.statement,
+                    status: signal.status,
+                    category: signal.category,
+                    importance: signal.importance,
+                    notes: signal.notes,
+                    explicitDetails: signal.explicitDetails,
+                    thesisId: signal.thesisId,
+                    thesisType: signal.thesisType,
+                    strategyId: signal.strategyId,
+                    createdAt: signal.createdAt,
+                    updatedAt: signal.updatedAt,
+                  } as any}
+                />
+                {link && (
+                  <div className="mt-2">
+                    <Link
+                      href={link}
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      View {entityTypeBadge(signal.entityType, signal.thesisType)} →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </td>
+          </tr>
+        )}
+      </Fragment>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -233,6 +383,16 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
         <div className="flex-1" />
 
         <Button
+          variant={groupByUnderlying ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setGroupByUnderlying(v => !v)}
+          className="text-xs gap-1"
+        >
+          <Layers className="h-3 w-3" />
+          Group
+        </Button>
+
+        <Button
           variant="ghost"
           size="sm"
           onClick={() => setShowFilters(v => !v)}
@@ -246,7 +406,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
       {/* Expanded filters */}
       {showFilters && (
         <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/50 rounded-lg border">
-          {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
@@ -258,8 +417,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
               className="w-full pl-8 pr-3 py-1.5 text-sm border rounded-md bg-background"
             />
           </div>
-
-          {/* Type filter */}
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value as TypeFilter)}
@@ -270,8 +427,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
             <option value="warning">Invalidation ({counts.invalidation})</option>
             <option value="completion">Completion ({counts.completion})</option>
           </select>
-
-          {/* Entity type filter */}
           <select
             value={entityFilter}
             onChange={e => setEntityFilter(e.target.value as EntityFilter)}
@@ -281,7 +436,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
             <option value="thesis">Thesis ({counts.thesis})</option>
             <option value="strategy">Strategy ({counts.strategy})</option>
           </select>
-
           {searchQuery || typeFilter !== 'all' || entityFilter !== 'all' ? (
             <Button
               variant="ghost"
@@ -298,6 +452,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
       {/* Results count */}
       <p className="text-xs text-muted-foreground">
         Showing {filtered.length} of {counts.total} signals
+        {groupByUnderlying && grouped ? ` across ${grouped.length} underlyings` : ''}
       </p>
 
       {/* Table */}
@@ -341,118 +496,40 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                 </td>
               </tr>
             )}
-            {filtered.map(signal => {
-              const isExpanded = expandedId === signal.id;
-              const link = entityLink(signal);
-              const pct = signal.latestPctToThreshold ? parseFloat(signal.latestPctToThreshold) : null;
 
-              return (
-                <Fragment key={signal.id}>
-                  <tr
-                    className={`border-b cursor-pointer transition-colors hover:bg-muted/30 ${isExpanded ? 'bg-muted/20' : ''}`}
-                    onClick={() => setExpandedId(isExpanded ? null : signal.id)}
-                  >
-                    {/* Chevron */}
-                    <td className="px-2 py-3 text-center">
-                      {isExpanded
-                        ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        : <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      }
-                    </td>
-
-                    {/* Type badge */}
-                    <td className="px-3 py-3">
-                      <Badge className={`gap-1 text-xs font-normal ${typeBadgeColor(signal.type)}`}>
-                        {typeIcon(signal.type)}
-                        {typeLabel(signal.type)}
-                      </Badge>
-                    </td>
-
-                    {/* Statement */}
-                    <td className="px-3 py-3">
-                      <p className="text-sm line-clamp-2">{signal.statement}</p>
-                    </td>
-
-                    {/* Entity */}
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-1.5">
-                        {entityTypeIcon(signal.entityType, signal.thesisType)}
-                        {link ? (
-                          <Link
-                            href={link}
-                            onClick={e => e.stopPropagation()}
-                            className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate max-w-[200px]"
-                          >
-                            {signal.entityTitle || 'Unknown'}
-                          </Link>
-                        ) : (
-                          <span className="text-sm truncate max-w-[200px]">{signal.entityTitle || 'Unknown'}</span>
-                        )}
-                        {signal.ticker && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 font-mono">
-                            {signal.ticker}
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-3 py-3">
-                      <Badge className={`text-xs font-normal ${statusBadgeColor(signal.status)}`}>
-                        {signal.status}
-                      </Badge>
-                    </td>
-
-                    {/* Trend / Progress */}
-                    <td className="px-3 py-3 text-right">
-                      <SignalTrendIndicator
-                        pctToThreshold={pct}
-                        signalType={signal.type}
-                        assessment={signal.latestAssessment}
-                      />
-                    </td>
-                  </tr>
-
-                  {/* Expanded detail */}
-                  {isExpanded && (
-                    <tr className="bg-muted/10">
-                      <td colSpan={6} className="px-6 py-4">
-                        <div className="max-w-4xl">
-                          <SignalProgressCard
-                            signal={{
-                              id: signal.id,
-                              entityType: signal.entityType,
-                              type: signal.type,
-                              statement: signal.statement,
-                              status: signal.status,
-                              category: signal.category,
-                              importance: signal.importance,
-                              notes: signal.notes,
-                              explicitDetails: signal.explicitDetails,
-                              thesisId: signal.thesisId,
-                              thesisType: signal.thesisType,
-                              strategyId: signal.strategyId,
-                              createdAt: signal.createdAt,
-                              updatedAt: signal.updatedAt,
-                            } as any}
-                          />
-                          {link && (
-                            <div className="mt-2">
-                              <Link
-                                href={link}
-                                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                              >
-                                View {entityTypeBadge(signal.entityType, signal.thesisType)} →
-                              </Link>
-                            </div>
-                          )}
+            {groupByUnderlying && grouped ? (
+              // Grouped view
+              grouped.map(([ticker, groupSignals]) => {
+                const isCollapsed = collapsedGroups.has(ticker);
+                return (
+                  <Fragment key={`group-${ticker}`}>
+                    <tr
+                      className="bg-muted/30 border-b cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => toggleGroup(ticker)}
+                    >
+                      <td className="px-2 py-2 text-center">
+                        {isCollapsed
+                          ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        }
+                      </td>
+                      <td colSpan={5} className="px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold font-mono">{ticker}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {groupSignals.length} signal{groupSignals.length !== 1 ? 's' : ''}
+                          </span>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              );
-            })}
+                    {!isCollapsed && groupSignals.map(renderSignalRow)}
+                  </Fragment>
+                );
+              })
+            ) : (
+              // Flat view
+              filtered.map(renderSignalRow)
+            )}
           </tbody>
         </table>
       </div>
