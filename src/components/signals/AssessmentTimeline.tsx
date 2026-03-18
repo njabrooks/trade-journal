@@ -19,40 +19,40 @@ const ASSESSMENT_LEVELS: Record<string, {
   borderColor: string;
   rank: number;
 }> = {
-  no_evidence: {
-    label: 'None',
+  neutral: {
+    label: 'Neutral',
     color: 'bg-zinc-400 dark:bg-zinc-500',
     bgColor: 'bg-zinc-50 dark:bg-zinc-900',
     borderColor: 'border-zinc-300 dark:border-zinc-700',
     rank: 0,
   },
-  emerging: {
-    label: 'Emerging',
-    color: 'bg-yellow-400 dark:bg-yellow-500',
-    bgColor: 'bg-yellow-50 dark:bg-yellow-950/30',
-    borderColor: 'border-yellow-300 dark:border-yellow-700',
+  strengthening: {
+    label: 'Strengthening',
+    color: 'bg-blue-400 dark:bg-blue-500',
+    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
+    borderColor: 'border-blue-300 dark:border-blue-700',
     rank: 1,
-  },
-  partial: {
-    label: 'Partial',
-    color: 'bg-amber-500 dark:bg-amber-400',
-    bgColor: 'bg-amber-50 dark:bg-amber-950/30',
-    borderColor: 'border-amber-300 dark:border-amber-700',
-    rank: 2,
-  },
-  strong: {
-    label: 'Strong',
-    color: 'bg-green-500 dark:bg-green-400',
-    bgColor: 'bg-green-50 dark:bg-green-950/30',
-    borderColor: 'border-green-300 dark:border-green-700',
-    rank: 3,
   },
   confirmed: {
     label: 'Confirmed',
     color: 'bg-emerald-600 dark:bg-emerald-400',
     bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
     borderColor: 'border-emerald-300 dark:border-emerald-700',
-    rank: 4,
+    rank: 2,
+  },
+  weakening: {
+    label: 'Weakening',
+    color: 'bg-amber-500 dark:bg-amber-400',
+    bgColor: 'bg-amber-50 dark:bg-amber-950/30',
+    borderColor: 'border-amber-300 dark:border-amber-700',
+    rank: -1,
+  },
+  invalidated: {
+    label: 'Invalidated',
+    color: 'bg-red-500 dark:bg-red-400',
+    bgColor: 'bg-red-50 dark:bg-red-950/30',
+    borderColor: 'border-red-300 dark:border-red-700',
+    rank: -2,
   },
 };
 
@@ -95,7 +95,7 @@ export function AssessmentTimeline({ assessments }: AssessmentTimelineProps) {
       {/* Compact dot timeline */}
       <div className="flex items-center gap-1">
         {timeline.map((point, i) => {
-          const level = ASSESSMENT_LEVELS[point.assessment] || ASSESSMENT_LEVELS.no_evidence;
+          const level = ASSESSMENT_LEVELS[point.assessment] || ASSESSMENT_LEVELS.neutral;
           return (
             <div key={i} className="flex items-center gap-1">
               {/* Connector line */}
@@ -134,7 +134,7 @@ export function AssessmentTimeline({ assessments }: AssessmentTimelineProps) {
       {/* Latest assessment card */}
       {timeline.length > 0 && (() => {
         const latest = timeline[timeline.length - 1];
-        const level = ASSESSMENT_LEVELS[latest.assessment] || ASSESSMENT_LEVELS.no_evidence;
+        const level = ASSESSMENT_LEVELS[latest.assessment] || ASSESSMENT_LEVELS.neutral;
         return (
           <div className={`rounded-md border px-2.5 py-1.5 ${level.bgColor} ${level.borderColor}`}>
             <div className="flex items-center gap-1.5">

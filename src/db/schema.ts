@@ -1567,7 +1567,7 @@ export const signalDataSnapshots = pgTable(
     unit: text('unit'), // 'USD', '%', 'ratio', 'count', 'MW'
 
     // Qualitative data (for thesis monitor assessments)
-    assessment: text('assessment'), // 'no_evidence' | 'emerging' | 'partial' | 'strong' | 'confirmed'
+    assessment: text('assessment'), // 'neutral' | 'strengthening' | 'confirmed' | 'weakening' | 'invalidated'
     evidenceSummary: text('evidence_summary'),
     intelligenceItemId: uuid('intelligence_item_id')
       .references(() => intelligenceItems.id, { onDelete: 'set null' }),

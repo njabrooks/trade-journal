@@ -9,10 +9,16 @@ Signals live in the `signals` table. They are linked to theses (macro or asset) 
 
 Qualitative assessments are stored as `signal_data_snapshots` rows with:
 - `data_source = 'qualitative'`
-- `assessment` = one of: `no_evidence` | `emerging` | `partial` | `strong` | `confirmed`
+- `assessment` = one of: `neutral` | `strengthening` | `confirmed` | `weakening` | `invalidated`
 - `evidence_summary` = 1-2 sentence human-readable summary of what was found
 
-The `generateQualitativeSnapshots()` function in `scripts/ingest-world-monitor.ts` is the authoritative reference for how qualitative scoring works. This skill applies the same scoring logic to manually-supplied content.
+**Assessment is always relative to the signal itself:**
+- For **confirmation signals**: `strengthening` when evidence supports the condition forming; `weakening` when evidence contradicts it
+- For **warning signals**: `strengthening` when the risk described is growing; `weakening` when the risk is receding or external conditions reduce probability
+- `confirmed` / `invalidated` only for definitive (not directional) outcomes
+- `neutral` when content is topically related but has no material bearing on whether the signal triggers
+
+The `generateQualitativeSnapshots()` function in `scripts/ingest-world-monitor.ts` is the authoritative reference for how automated qualitative scoring works. That function can only produce `neutral` or `strengthening` (it cannot determine direction). This skill applies human judgement to also assign `weakening`, `invalidated`, or `confirmed`.
 
 ## Usage
 
@@ -40,7 +46,7 @@ The `generateQualitativeSnapshots()` function in `scripts/ingest-world-monitor.t
 2. **Fetch active signals** for the thesis via `signal_entity_links` junction table
 3. **Read content** from provided source
 4. **Score each signal** against content (ticker overlap + keyword overlap + statement overlap)
-5. **Assess** each signal: `no_evidence` | `emerging` | `partial` | `strong` | `confirmed`
+5. **Assess** each signal: `neutral` | `strengthening` | `confirmed` | `weakening` | `invalidated`
 6. **Write `signal_data_snapshots` rows** for all assessed signals
 7. **Add journal note** on the thesis summarising key findings
 8. **Output structured report**
@@ -145,27 +151,33 @@ for each word in signal statement (len > 4, lowercased):
 
 ### Determine assessment level
 
-Check content for no-evidence indicators first: phrases like `no evidence`, `no change`, `no new`, `status quo`, `unchanged`, `no significant`, `no notable`, `no material`.
+Assessment is **directional relative to the signal**. The automated scoring above only determines relevance (score). Human judgement (this skill) determines direction.
 
-| Score | Assessment |
-|-------|-----------|
-| score = 0 OR no-evidence indicators found | `no_evidence` |
-| score < 3 (and no no-evidence indicators) | `emerging` |
-| 3 ≤ score < 5 | `partial` |
-| score ≥ 5 | `strong` |
-| Independently, unambiguous direct confirmation of signal threshold | `confirmed` |
+**Step 1 — Check for neutral indicators:** phrases like `no evidence`, `no change`, `no new`, `status quo`, `unchanged`, `no significant`, `no notable`, `no material`.
 
-Use `confirmed` conservatively — only when the content contains clear, unambiguous evidence that the signal's stated threshold/condition has been met (e.g., price explicitly above target, metric explicitly crossed threshold).
+**Step 2 — Determine direction:**
+
+| Condition | Assessment |
+|-----------|-----------|
+| score = 0 OR neutral indicators found | `neutral` |
+| Evidence moves signal *closer* to triggering | `strengthening` |
+| Evidence moves signal *further* from triggering | `weakening` |
+| Signal condition definitively met | `confirmed` |
+| Signal condition definitively ruled out | `invalidated` |
+
+**Key principle for warning signals:** `strengthening` means the risk is growing (bad for thesis); `weakening` means the risk is receding (good for thesis). For example, an SEC ruling reducing enforcement risk is `weakening` for an enforcement warning signal — not `strengthening`.
+
+Use `confirmed` / `invalidated` conservatively — only when the content contains clear, unambiguous evidence that the signal's stated condition has been definitively met or ruled out.
 
 ---
 
 ## Step 5: Assess Each Signal
 
 For each signal, produce:
-- **Assessment**: `no_evidence` | `emerging` | `partial` | `strong` | `confirmed`
+- **Assessment**: `neutral` | `strengthening` | `confirmed` | `weakening` | `invalidated`
 - **Confidence**: `high` | `medium` | `low`
-- **Key findings**: bullet list of specific evidence from content (skip if `no_evidence`)
-- **Relevant quotes**: direct quotes from source (skip if `no_evidence`)
+- **Key findings**: bullet list of specific evidence from content (skip if `neutral`)
+- **Relevant quotes**: direct quotes from source (skip if `neutral`)
 - **Evidence summary** (1-2 sentences): plain text for `signal_data_snapshots.evidence_summary`
 - **Recommendation**: what action, if any, to take
 
@@ -173,7 +185,7 @@ For each signal, produce:
 
 ## Step 6: Write signal_data_snapshots Rows
 
-Write a qualitative snapshot for **every** assessed signal (including `no_evidence` entries — this keeps the timeline complete, consistent with `generateQualitativeSnapshots()`).
+Write a qualitative snapshot for **every** assessed signal (including `neutral` entries — this keeps the timeline complete, consistent with `generateQualitativeSnapshots()`).
 
 ```bash
 cd /Users/home-hub/projects/trade-journal
@@ -201,7 +213,7 @@ Replace `{{SNAPSHOTS_JSON}}` with an array like:
   {
     "signalId": "<uuid>",
     "snapshotDate": "new Date()",
-    "assessment": "partial",
+    "assessment": "strengthening",
     "evidenceSummary": "Galaxy's Helios data centre reached 300MW operational capacity, ahead of 250MW target cited in signal.",
     "intelligenceItemId": null,
     "dataSource": "qualitative",
@@ -216,12 +228,12 @@ Replace `{{SNAPSHOTS_JSON}}` with an array like:
 
 ## Step 6b: Add Journal Entry Per Signal Assessed
 
-After writing snapshots, write a journal entry for **each** signal that received an assessment other than `no_evidence`. This provides narrative traceability on each signal's Journal tab.
+After writing snapshots, write a journal entry for **each** signal that received an assessment other than `neutral`. This provides narrative traceability on each signal's Journal tab.
 
 ```bash
 cd /Users/home-hub/projects/trade-journal
 
-# Repeat for each assessed signal (skip no_evidence signals):
+# Repeat for each assessed signal (skip neutral signals):
 npx tsx scripts/ops/add-journal-note.ts \
   --entity-type signal \
   --id {{SIGNAL_ID}} \
@@ -229,7 +241,7 @@ npx tsx scripts/ops/add-journal-note.ts \
 ```
 
 **Rules:**
-- Skip signals with `no_evidence` assessment — they add noise without value
+- Skip signals with `neutral` assessment — they add noise without value
 - The `--note` should include the assessment level and the evidence summary you wrote to the snapshot
 - Use `--entity-type signal` (not `macro_thesis` or `asset_thesis`)
 - Source should identify the content that was assessed (file name, article title, or URL)
@@ -264,7 +276,7 @@ Generate a structured markdown report. This is the output that `process-inbox` e
 ### Signal: [signal statement]
 **Type**: confirmation | warning
 **Importance**: critical | significant | supporting
-**Assessment**: No Evidence | Emerging | Partial | Strong | Confirmed
+**Assessment**: Neutral | Strengthening | Confirmed | Weakening | Invalidated
 **Confidence**: high | medium | low
 
 **Key Findings**:
@@ -278,9 +290,9 @@ Generate a structured markdown report. This is the output that `process-inbox` e
 
 ---
 
-[Repeat for each signal. For no_evidence signals, list them in a summary section at the end.]
+[Repeat for each signal. For neutral signals, list them in a summary section at the end.]
 
-### Signals with No Evidence (N of M assessed)
+### Signals with Neutral Assessment (N of M assessed)
 - [signal statement] (importance: critical/significant/supporting)
 - ...
 
@@ -288,9 +300,9 @@ Generate a structured markdown report. This is the output that `process-inbox` e
 
 ### Summary
 - **Signals assessed**: N total (M confirmation, K warning)
-- **Strong / Confirmed**: N
-- **Partial / Emerging**: N
-- **No evidence**: N
+- **Confirmed / Invalidated**: N
+- **Strengthening / Weakening**: N
+- **Neutral**: N
 - **Recommended actions**: [bullet list of any status update suggestions or triage flags]
 ```
 
@@ -315,7 +327,7 @@ When invoked from `process-inbox` or another headless skill, output JSON instead
       "statement": "<signal statement>",
       "type": "confirmation|warning",
       "importance": "critical|significant|supporting",
-      "assessment": "strong|partial|emerging|no_evidence|confirmed",
+      "assessment": "strengthening|confirmed|weakening|invalidated|neutral",
       "confidence": "high|medium|low",
       "evidenceSummary": "1-2 sentence summary",
       "findings": ["Finding 1", "Finding 2"],
@@ -332,9 +344,9 @@ When invoked from `process-inbox` or another headless skill, output JSON instead
 ## Implementation Notes
 
 - **Always use `signal_entity_links`** for fetching thesis signals — the `signals` table has no direct `thesis_id`/`thesis_type` columns
-- **Write snapshots for ALL signals**, including `no_evidence` — the timeline completeness matters
+- **Write snapshots for ALL signals**, including `neutral` — the timeline completeness matters
 - `dataSource` = `'qualitative'` for this skill (vs `'thesis_monitor'` for automated world-monitor runs)
-- Assessment scale (`no_evidence | emerging | partial | strong | confirmed`) matches `signal_data_snapshots.assessment` column
+- Assessment scale (`neutral | strengthening | confirmed | weakening | invalidated`) matches `signal_data_snapshots.assessment` column
 - **Do NOT automatically update signal status** — only write snapshots and journal notes. Status changes require user review.
 - This skill can be run repeatedly against the same thesis with different content — each run adds new snapshot rows
 - `psql-query.ts` is **read-only** — use temp scripts for inserts

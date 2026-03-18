@@ -89,7 +89,7 @@ async function ingestReport(filePath: string): Promise<{ reportId: string; itemC
  *
  * For each active thesis signal, checks the report's intelligence items for
  * relevant matches (by ticker and keywords from explicit_details.monitorKeywords).
- * Creates a snapshot per signal — even "no_evidence" entries so the timeline is complete.
+ * Creates a snapshot per signal — even "neutral" entries so the timeline is complete.
  */
 async function generateQualitativeSnapshots(reportId: string): Promise<number> {
   // Load the report's intelligence items
@@ -154,7 +154,7 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
     signal: typeof activeSignals[number];
     bestMatch: typeof items[number] | null;
     bestScore: number;
-    matchStrength: 'no_evidence' | 'emerging' | 'partial' | 'strong';
+    matchStrength: 'neutral' | 'strengthening';
   }> = [];
 
   for (const signal of activeSignals) {
@@ -225,7 +225,7 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
     }
 
     // Determine assessment level from score
-    let matchStrength: 'no_evidence' | 'emerging' | 'partial' | 'strong' = 'no_evidence';
+    let matchStrength: 'neutral' | 'strengthening' = 'neutral';
 
     if (bestMatch && bestScore > 0) {
       // Check if the matched evidence actually indicates no evidence / no change
@@ -236,19 +236,19 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
       );
 
       if (hasNoEvidenceIndicator) {
-        // Evidence text explicitly signals no change — force no_evidence
-        matchStrength = 'no_evidence';
+        // Evidence text explicitly signals no change — force neutral
+        matchStrength = 'neutral';
       } else if (bestScore >= 5) {
-        matchStrength = 'strong';
+        matchStrength = 'strengthening';
       } else if (bestScore >= 3) {
-        matchStrength = 'partial';
+        matchStrength = 'strengthening';
       } else {
-        matchStrength = 'emerging';
+        matchStrength = 'strengthening';
       }
     }
 
     // Track this signal's claim on the best-matched item for dedup
-    if (bestMatch && bestScore > 0 && matchStrength !== 'no_evidence') {
+    if (bestMatch && bestScore > 0 && matchStrength !== 'neutral') {
       const itemId = bestMatch.id;
       const existing = itemBestSignal.get(itemId);
       if (!existing || bestScore > existing.score) {
@@ -272,12 +272,12 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
     let finalAssessment = matchStrength;
 
     // If this signal matched an item, check if another signal has a stronger claim on it
-    if (finalMatch && bestScore > 0 && finalAssessment !== 'no_evidence') {
+    if (finalMatch && bestScore > 0 && finalAssessment !== 'neutral') {
       const owner = itemBestSignal.get(finalMatch.id);
       if (owner && owner.signalId !== signal.id) {
-        // Another signal has a stronger match on this item — demote to no_evidence
+        // Another signal has a stronger match on this item — demote to neutral
         finalMatch = null;
-        finalAssessment = 'no_evidence';
+        finalAssessment = 'neutral';
       }
     }
 

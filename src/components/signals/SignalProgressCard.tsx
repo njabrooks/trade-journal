@@ -23,11 +23,11 @@ interface SignalProgressCardProps {
 }
 
 const ASSESSMENT_LABELS: Record<string, { label: string; color: string; emoji: string }> = {
-  no_evidence: { label: 'No evidence', color: 'text-muted-foreground', emoji: '⚪' },
-  emerging: { label: 'Emerging', color: 'text-yellow-600 dark:text-yellow-400', emoji: '🟡' },
-  partial: { label: 'Partial', color: 'text-amber-600 dark:text-amber-400', emoji: '🟠' },
-  strong: { label: 'Strong', color: 'text-green-600 dark:text-green-400', emoji: '🟢' },
+  neutral: { label: 'Neutral', color: 'text-muted-foreground', emoji: '⚪' },
+  strengthening: { label: 'Strengthening', color: 'text-blue-600 dark:text-blue-400', emoji: '🔵' },
   confirmed: { label: 'Confirmed', color: 'text-emerald-600 dark:text-emerald-400', emoji: '✅' },
+  weakening: { label: 'Weakening', color: 'text-amber-600 dark:text-amber-400', emoji: '🟠' },
+  invalidated: { label: 'Invalidated', color: 'text-red-600 dark:text-red-400', emoji: '🔴' },
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -193,7 +193,7 @@ export function SignalProgressCard({ signal }: SignalProgressCardProps) {
         <AssessmentTimeline
           assessments={qualitative.map(s => ({
             date: s.snapshotDate,
-            assessment: s.assessment || 'no_evidence',
+            assessment: s.assessment || 'neutral',
             summary: s.evidenceSummary,
           }))}
         />
