@@ -2,7 +2,7 @@
 
 > Created: 2026-03-16
 > Last updated: 2026-03-18
-> Status: Phases 1–3 complete (incl. signal dedup via junction table). Phase 5 complete. Phase 2d documented. Phase 4 not started. All quick wins (tasks 1, 2, 5, 6/7, 8, 9) complete as of 2026-03-18.
+> Status: Phases 1–3 complete (incl. signal dedup via junction table). Phase 5 complete. Phase 2d complete. Phase 4 not started. All quick wins (tasks 1, 2, 5, 6/7, 8, 9) complete as of 2026-03-18.
 
 ## Context
 
@@ -395,7 +395,7 @@ CREATE TABLE signal_data_snapshots (
   unit                text,                    -- 'USD', '%', 'ratio', 'count', 'MW'
 
   -- Qualitative data (for thesis monitor assessments)
-  assessment          text,                    -- 'no_evidence' | 'emerging' | 'partial' | 'strong' | 'confirmed'
+  assessment          text,                    -- 'neutral' | 'strengthening' | 'confirmed' | 'weakening' | 'invalidated'
   evidence_summary    text,                    -- human-readable summary of what was found
   intelligence_item_id uuid REFERENCES intelligence_items(id),  -- link to specific news item
 
@@ -446,11 +446,11 @@ After INSERT intelligence_reports + intelligence_items:
    - By `relevantTickers` → asset thesis signals for that ticker
    - By `monitorKeywords` from `explicit_details` → keyword matching against headline + body
 4. For each signal, determine assessment level from the matched items:
-   - `no_evidence` — no items matched this signal
-   - `emerging` — weak/indirect match
-   - `partial` — relevant item found but doesn't fully confirm/deny
-   - `strong` — clear evidence for/against the signal
-   - `confirmed` — signal criterion is met
+   - `neutral` — no items matched this signal
+   - `strengthening` — weak/indirect match supporting the signal
+   - `confirmed` — signal criterion is clearly met
+   - `weakening` — evidence working against the signal
+   - `invalidated` — signal is definitively contradicted
 5. Insert to `signal_data_snapshots` with `data_source = 'thesis_monitor'`, `report_id`, `intelligence_item_id`
 
 This means every thesis monitor run generates a qualitative snapshot for every active signal — even "no_evidence" snapshots, so the timeline is complete.
@@ -1057,10 +1057,13 @@ This is the monitoring equivalent of what triage is for position management and 
 **Query pattern** — join signals with their parent entity and latest snapshot:
 
 ```sql
+-- NOTE: signals no longer have direct entity_type/thesis_id/strategy_id columns.
+-- All entity relationships are via signal_entity_links junction table.
+-- See src/db/queries/signals.ts → getAllSignalsWithContext() for the working implementation.
 SELECT
-  s.id, s.type, s.statement, s.status, s.entity_type,
-  s.thesis_id, s.thesis_type, s.strategy_id,
-  -- Entity context
+  s.id, s.type, s.statement, s.status,
+  -- Entity context (via junction table)
+  sel.thesis_type, sel.thesis_id, sel.strategy_id,
   COALESCE(mt.title, at.title) as thesis_title,
   u.ticker,
   str.strategy_key,
@@ -1071,10 +1074,11 @@ SELECT
   latest_qual.assessment, latest_qual.evidence_summary,
   latest_qual.snapshot_date as last_assessed
 FROM signals s
-LEFT JOIN macro_theses mt ON s.thesis_type = 'macro' AND s.thesis_id = mt.id
-LEFT JOIN asset_theses at ON s.thesis_type = 'asset' AND s.thesis_id = at.id
+JOIN signal_entity_links sel ON sel.signal_id = s.id
+LEFT JOIN macro_theses mt ON sel.thesis_type = 'macro' AND sel.thesis_id = mt.id
+LEFT JOIN asset_theses at ON sel.thesis_type = 'asset' AND sel.thesis_id = at.id
 LEFT JOIN underlyings u ON at.underlying_id = u.id
-LEFT JOIN strategies str ON s.strategy_id = str.id
+LEFT JOIN strategies str ON sel.strategy_id = str.id
 LEFT JOIN LATERAL (
   SELECT observed_value, threshold_value, pct_to_threshold, unit
   FROM signal_data_snapshots
@@ -1143,16 +1147,22 @@ The signals browser is additive — it does **not** replace the signal sections 
 
 ### Immediate priorities
 
-**1. Phase 2d: `/configure-signal` skill**
-The signal configuration workflow is documented but not yet packaged as a skill. Would speed up adding monitoring to new signals. The skill would: read signal statement → propose data sources → test endpoints → populate `explicit_details` → verify snapshot.
+**1. TWO-126: Fix qualitative assessment semantics** — activate now, unblocks everything assessment-related.
+
+**2. TWO-119: Add claim_signal_evidences junction table** — fix description done (2026-03-18), activate after TWO-126 executes.
+
+**3. TWO-120: Redesign /news page** — activate independently (no dependencies).
+
+**4. TWO-129: Comprehensive signal journal coverage** — activate after TWO-126 completes.
+
+~~**Phase 2d: `/configure-signal` skill**~~ ✅ Done (TWO-123 — journaling on config save). The skill exists and is fully functional.
 
 ### Medium-term
 
 **2. Phase 4: Process-inbox signal integration**
 See Phase 4 section above. Would close the loop between research ingestion and signal tracking — new claims automatically checked against active signals.
 
-**3. TradingView CDP collector for economic calendar**
-Build a collector that uses CDP to access the TradingView economic calendar. Would feed macro thesis signals that depend on economic events (FOMC decisions, CPI releases, employment data).
+~~**3. TradingView CDP collector for economic calendar**~~ ✅ Done — `scripts/ingest-economic-calendar.ts` built and scheduled via GitHub Actions. Ingests into `economic_events` table. (`3b7b6a7`)
 
 ### Key files for orientation
 
@@ -1185,14 +1195,19 @@ Build a collector that uses CDP to access the TradingView economic calendar. Wou
 
 Tracked in Paperclip (Two Trees Capital). See issues:
 
-| Issue | Title | Project |
-|-------|-------|---------|
-| TWO-119 | Add claim_signal_evidences junction table | Engineering |
-| TWO-120 | Redesign /news page as a proper news hub | Engineering |
-| TWO-121 | In-app LLM chat interface for investigative workflows | Engineering |
-| TWO-122 | Schedule ingest-economic-calendar.ts in launchd | Daily Portfolio Ops |
-| TWO-123 | configure-signal skill: write journal_entry when explicit_details saved | Daily Portfolio Ops |
-| TWO-124 | Fix signal journal entries: assess-validation-evidence should write journal entries per signal assessed | Research Pipeline |
+| Issue | Title | Project | Status |
+|-------|-------|---------|--------|
+| TWO-119 | Add claim_signal_evidences junction table | Engineering | backlog — activate after TWO-126 |
+| TWO-120 | Redesign /news page as a proper news hub | Engineering | backlog — activate independently |
+| TWO-121 | In-app LLM chat interface for investigative workflows | Engineering | backlog — needs architecture discussion |
+| TWO-122 | Schedule ingest-economic-calendar.ts in launchd | Daily Portfolio Ops | ✅ done |
+| TWO-123 | configure-signal skill: write journal_entry when explicit_details saved | Daily Portfolio Ops | ✅ done |
+| TWO-124 | Fix signal journal entries: assess-validation-evidence should write journal entries per signal assessed | Research Pipeline | ✅ done |
+| TWO-126 | Fix qualitative assessment semantics (new scale) | Engineering | backlog — activate immediately |
+| TWO-129 | Comprehensive signal journal coverage — all lifecycle events | Research Pipeline | backlog — activate now (TWO-124 done); signal/claim_evidenced event needs TWO-119 |
+| TWO-134 | Phase 4: Process-inbox active signal matching | Engineering | backlog — depends on TWO-119 |
+| TWO-135 | Economic calendar: signal context on news page + 30-day window | Engineering | backlog |
+| TWO-136 | configure-signal skill: add economic calendar as a discoverable data source | Engineering | backlog — prerequisite for wiring any calendar signals |
 
 ### Configure-signal workflow (confirmed model)
 

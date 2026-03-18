@@ -4,9 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Next.js full-stack application** for managing options trading strategies, tracking trades, and analyzing performance. The system integrates multiple data sources (IBKR, Massive.com) and implements a decision hierarchy from macro theses down to individual positions.
+This is a **Next.js full-stack application** for managing a multi-exchange investment portfolio, developing macro and asset theses, and monitoring evidence for those theses over time. The system spans five integrated layers:
 
-The application features a **local-first research workflow** using Toulmin framework claim extraction to process research artifacts (transcripts, articles) into structured evidence that feeds macro theses and asset thesiss. This research layer bridges external intelligence gathering with the tactical execution system.
+1. **Data ingestion** — live portfolio data from IBKR (equity options), HyperLiquid, Coinbase Prime, Kraken, Deribit, Solana, and Massive.com (IV/spot snapshots)
+2. **Belief hierarchy** — macro theses and asset theses, structured with claims provenance and synthesised articulations; linked to tactical strategies and positions
+3. **Research intelligence** — Toulmin-framework claim extraction from transcripts and articles feeds the thesis hierarchy. World Monitor and Thesis Monitor intelligence briefings are ingested and linked to thesis signals.
+4. **Signal monitoring** — explicit confirmation/warning criteria per thesis and strategy, with time-series data snapshots (quantitative and qualitative), FRED economic indicator thresholds, and TradingView economic calendar integration
+5. **Research playbook** — stage-gated pipeline (5 stages: init → thesis → unknowns → evidence → expression) for developing new investment ideas from initial claim to expressed position
 
 ## Technology Stack
 
@@ -40,43 +44,19 @@ npx tsx scripts/ingest-deribit.ts              # Deribit crypto ingestion
 npx tsx scripts/ingest-deribit.ts --full       # Deribit full backfill
 npx tsx scripts/ingest-solana.ts               # Solana wallet balance ingestion
 
-# Research workflow scripts
-npx tsx scripts/test-claims-integration.ts      # Test claims parsing & DB integration
-npx tsx scripts/upload-audit-with-claims.ts     # Upload research artifact with claims
-npx tsx scripts/migrate-claims-structure.ts     # Migrate existing insights to claims structure
-
 # Database query helper (used by skills)
 npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Execute SQL via psql
 ```
 
-## Documentation Map
-
-**Core Reference** (the three key documents):
-- **[PRD v1.1](docs/PRD_v1.1.md)** - Product vision and requirements (locked)
-- **[Current State](docs/CURRENT_STATE.md)** - Actual implementation state, state machines, cross-domain flows
-- **[Future Enhancements](docs/FUTURE_ENHANCEMENTS.md)** - Single source of truth for planned work
-
-**Feature Documentation** (detailed guides):
-- **CLAUDE.md** (this file) - Quick reference, common commands, file navigation
-- **[Terminology Guide](docs/features/terminology.md)** - Authoritative term definitions (PRD-aligned)
-- **[Research Workflow](docs/features/research-workflow.md)** - Complete research workflow guide
-- **[Signal & Triage Rules](docs/features/signal-triage-rules.md)** - All trigger rules, severity levels, auto-promotion flows
-- **[Entity Status Guide](docs/features/entity-status-standardization.md)** - Universal lifecycle status model for domain entities
-
-**Operations**:
-- **[Database Mode Switch Runbook](docs/runbook-database-mode-switch.md)** - Switching between local and remote Supabase
-
-**Historical/Reference**:
-- **[docs/archive/](docs/archive/)** - Completed implementation notes and planning docs
 
 ## Architecture Overview
 
 ### Decision Hierarchy
 
-The system implements a four-level decision hierarchy (see `docs/PRD_v1.1.md` and `docs/terminology.md`):
+The system implements a four-level decision hierarchy:
 
 1. **Macro Theses** - Cross-asset beliefs (secular, cyclical, structural)
-2. **Asset Thesiss** - Asset-specific theses about underlyings
+2. **Asset Theses** - Asset-specific theses about underlyings
 3. **Strategies** - Tactical implementations (options, duration, relative value)
 4. **Positions** - Individual trades and live exposures
 
@@ -117,7 +97,7 @@ Claim Conversion (/src/app/api/research/convert-claim/)
   ↓
 Decision Hierarchy (macro_theses, asset_theses)
   ↓
-React Frontend (ClaimsBrowser, ConvertClaimDialog)
+React Frontend (UnifiedClaimsBrowser, ConvertClaimToEntityDialog)
 ```
 
 ### Core Architectural Patterns
@@ -132,7 +112,7 @@ React Frontend (ClaimsBrowser, ConvertClaimDialog)
 
 ### Entity State Machines
 
-All lifecycle entities use a **universal status model** (as of #ENH-048):
+All lifecycle entities use a **universal status model**:
 
 ```
 draft ──► active ──┬──► complete
@@ -156,8 +136,6 @@ Universal:  draft → active → complete | rejected
 Strategy:   draft (no positions) → active (open positions) → complete (closed) | rejected (abandoned)
 Triage:     inbox → in_progress → done (workflow), severity is independent
 ```
-
-For complete documentation, see `docs/CURRENT_STATE.md`.
 
 ### Cross-Domain Data Flow
 
@@ -218,6 +196,38 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 └──────────────────────────────────────────────────────────────────┘
 ```
 
+### Investment Pipeline
+
+New investment ideas are developed through a stage-gated research playbook in `research-workspace/pipeline/`. Each idea lives in its own directory (`idea-NNN-slug/`) with a `_meta.yaml` tracking file and one markdown file per stage:
+
+```
+pipeline/idea-NNN-slug/
+├── _meta.yaml          # State: stage, confidence, linked_theses, stage_history, next_review
+├── stage-1-triage.md
+├── stage-2-thesis.md
+├── stage-3-unknowns.md
+├── stage-4-evidence.md
+└── stage-5-expression.md
+```
+
+**Stages:**
+1. **Init** — claim or transcript initialises the idea with source reference and initial confidence
+2. **Formalise** — produce a falsifiable thesis with explicit failure modes
+3. **Map unknowns** — identify decision-critical unknowns (primary gate: is research effort justified?)
+4. **Evidence** — research unknowns via falsification, validation, or analogue tracks; update posterior confidence
+5. **Express** — translate conviction into actionable positioning (value chain, sizing inputs)
+
+Ideas that don't reach conviction threshold are archived or moved to "watch" status. Stage gates are managed via the `/advance-or-kill` skill. The pipeline is independent of the live thesis hierarchy — a pipeline idea creates a `macro_thesis` or `asset_thesis` record only when it reaches the expression stage with sufficient confidence.
+
+### Signal Monitoring & Intelligence
+
+The signals system connects the belief layer to live data:
+
+- **`thesis_articulations`** — `build-core-argument` synthesises linked claims into a versioned core argument. Articulations generate the signals that define what would confirm or invalidate the thesis.
+- **`signal_data_snapshots`** — time-series record of each signal's state. Quantitative snapshots come from `collect-signal-data.ts` (data-driven signals); qualitative snapshots come from `ingest-world-monitor.ts` (thesis-monitor reports) and `assess-validation-evidence` (research routing).
+- **Intelligence briefings** — World Monitor and Thesis Monitor reports (from Arbor) are ingested via `ingest-world-monitor.ts` into `intelligence_reports` + `intelligence_items`. Thesis Monitor reports trigger `generateQualitativeSnapshots()` which writes directly to `signal_data_snapshots`.
+- **FRED indicators** — macro signals can be wired to FRED economic series via `thesis_fred_indicators`. Threshold breaches are logged to `fred_threshold_breaches`.
+
 ## Key Directories
 
 ### `/src/app` - Next.js App Router
@@ -225,7 +235,7 @@ INGESTION (Entry Points)                    RESEARCH (Entry Points)
 - **API Routes:** `/api/ingest/*`, `/api/ibkr/*`, `/api/strategies/*`, `/api/triage/*`, `/api/journal/*`, `/api/recompute/*`, `/api/research/*`
 
 ### `/src/db` - Data Layer
-- **`schema.ts`** (705 lines) - Complete Drizzle ORM schema with relationships and indexes
+- **`schema.ts`** - Complete Drizzle ORM schema with relationships and indexes (authoritative)
 - **`index.ts`** - Database client with Supabase connection pooling
 - **`types.ts`** - Auto-generated TypeScript types from Supabase
 - **`queries/`** - Pre-built query functions organized by entity
@@ -292,7 +302,7 @@ Feature-based component organization:
 - **`research/`** - Research workflow components
   - `UnifiedClaimsBrowser.tsx` - Browse main claims with filtering, search, status management
   - `ExpandableEvidenceClaim.tsx` - Expandable card showing full Toulmin framework for evidence claims
-  - `ConvertClaimDialog.tsx` (282 lines) - Convert claims to macro theses or asset thesiss
+  - `ConvertClaimToEntityDialog.tsx` - Convert claims to macro theses or asset theses
   - `WorkflowStatusCard.tsx` (130 lines) - Research workflow progress tracking UI
   - `EmptyClaimsState.tsx` (98 lines) - Onboarding guidance for research workflow
   - `archive/` - Deprecated in-app AI workflow components (11 components archived)
@@ -301,25 +311,38 @@ Feature-based component organization:
 - **`lib/db.ts`** - Database helper for scripts (handles dotenv + Drizzle ORM correctly)
 - **`run-flex-ingestion.ts`** - Flex ingestion runner (used by GitHub Actions)
 - **`ingest-underlyings-massive.ts`** - Massive.com daily ingestion
-- **`test-claims-integration.ts`** - Test claims parsing and database integration (48 tests)
-- **`upload-audit-with-claims.ts`** - Upload research artifact with claims structure
-- **`migrate-claims-structure.ts`** - Migrate existing insights to new claims structure
-- **`test-claim-conversion.ts`** - Test claim-to-thesis conversion logic
+- **`collect-signal-data.ts`** - Quantitative signal data collection (writes `signal_data_snapshots`)
+- **`ingest-world-monitor.ts`** - Runs `generateQualitativeSnapshots()`: auto-writes qualitative `signal_data_snapshots` from thesis monitor reports
+- **`ingest-economic-calendar.ts`** - TradingView economic calendar ingestion (writes `economic_events`)
+- **`psql-query.ts`** - Read-only SQL query helper used by skills
 
 ### `/.claude/skills` - Claude Code Skills
-Research workflow automation skills (managed skills, invoked via `/skill-name`):
 
 **Research Ingestion (Bottom-Up Discovery):**
-- **`process-transcript`** - Process research transcripts with forensic Toulmin claim extraction
-- **`synthesize-claims`** - Cross-reference audit claims against existing macro theses and asset theses in database
-- **`deep-dive`** - Guide collaborative deep dive analysis on themes or tickers (archived)
+- **`process-transcript`** - Forensic Toulmin claim extraction from research transcripts
+- **`process-note`** - Toulmin extraction for general (non-investment) content
+- **`synthesize-claims`** - Cross-reference audit claims against existing theses in database
 - **`finalize-for-upload`** - Upload finalized research (auto-detects artifact/insight/macro thesis/asset thesis)
 
 **Thesis Synthesis:**
 - **`build-core-argument`** - Build core argument for a thesis from linked claims (generates articulation + confirmation/warning signals)
 
 **Signal Assessment (Top-Down Evidence):**
-- **`assess-validation-evidence`** - Assess content against existing signals to identify confirmation or warning evidence
+- **`assess-validation-evidence`** - Assess content against active signals to identify confirmation or warning evidence. Resolves signals via `signal_entity_links`, writes `signal_data_snapshots` directly to DB.
+- **`configure-signal`** - Interactive 7-step workflow: classify signal → identify data source → test live endpoint → set thresholds → write `explicit_details` JSON to signal record → verify
+
+**Investment Pipeline (Stage-Gated Research Playbook):**
+- **`stage-1-init-idea`** - Initialize a pipeline idea from a claim/transcript; creates `_meta.yaml` + `stage-1-triage.md`
+- **`stage-2-formalize-thesis`** - Produce a falsifiable thesis with failure modes
+- **`stage-3-map-unknowns`** - Identify decision-critical unknowns; primary gate before research effort
+- **`stage-4a-prep-desktop-research`** / **`stage-4a-research-unknown`** - Stage 4 research tracks
+- **`stage-4b-synthesize-evidence`** - Consolidate findings into belief update with posterior confidence
+- **`stage-5-express-thesis`** - Translate conviction to actionable positioning
+- **`pipeline-status`** - View all active pipeline ideas (stage, confidence, age, status)
+- **`advance-or-kill`** - Gate evaluation: advance, hold, or kill an idea; handles kill log
+
+**Workflow Coordination:**
+- **`paperclip-backlog`** - Create and read Paperclip issues. Use to log follow-up work, technical debt, or feature requests.
 
 **Database Access**: All database skills use `scripts/psql-query.ts` helper instead of Supabase MCP due to reliability issues. The helper loads env vars and executes SQL via psql directly.
 
@@ -352,70 +375,48 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`triage_rules`** - Configurable triage logic
 - **`ingestion_runs`** - Process tracking for all data imports
 - **`ingestion_cursors`** - Incremental ingestion state per exchange/account (high-water mark timestamps)
+- **`economic_events`** - TradingView economic calendar data. Fields: `tv_event_id`, `event_type`, `title`, `indicator`, `category`, `country`, `event_date` (timestamp), `impact_level` (high|medium|low), `actual`, `forecast`, `previous`, `unit`, `source`, `source_url`, `period`. Ingested by `scripts/ingest-economic-calendar.ts`.
 
 ### Research Tables
 - **`research_artifacts`** - Raw research content (transcripts, articles, notes) with metadata
 - **`research_insights`** - Processed insights with `claims_structure` JSONB field
   - `claims_structure` stores hierarchical Toulmin framework (main_claims + evidence_claims)
   - Each claim has: text, evidence, reasoning, backing, confidence, category, conversion status
+- **`research_hierarchy_recommendations`** - Auto-generated suggestions for linking claims to theses
 - **`prompts`** - AI prompts for research processing (versioned, activatable)
 - **Provenance tracking** - `macro_theses` and `asset_theses` include source claim metadata for traceability
 
-## Terminology Reference
+### Thesis Synthesis & Triage
+- **`thesis_articulations`** - Versioned synthesised core arguments per thesis. Fields: `thesis_id`, `thesis_type`, `version`, `core_argument`, `key_drivers` (jsonb), `key_assumptions` (jsonb), `confidence_level`, `confidence_rationale`, `evidence_gaps`, `claim_ids_used`, `referenced_theses`. Created by `build-core-argument` skill via `scripts/insert-thesis-articulation.ts`.
+- **`thesis_triage_records`** - Thesis-level triage queue (needs articulation, new claims, etc.). Separate from position-level `triage_records`.
+- **`thesis_news_items`** - News items archived per thesis for ongoing monitoring.
 
-See `docs/features/terminology.md` for the authoritative terminology guide. Key concepts:
+### Signals & Monitoring Tables
+- **`signals`** - Explicit confirmation/warning criteria. Fields: `id`, `articulation_id`, `type` (confirmation|warning), `statement`, `notes`, `category` (judgment|data_driven), `importance` (critical|significant|supporting), `explicit_details` (jsonb), `status` (draft|active|complete|rejected). Entity linkages live in `signal_entity_links`, not on this table.
+- **`signal_entity_links`** - Junction table linking signals to strategies and theses (many-to-many). Replaced direct `strategy_id`/`thesis_id` FK columns on signals.
+- **`signal_data_snapshots`** - Time-series assessments per signal. Tracks both quantitative data (`observed_value`, `threshold_value`, `pct_to_threshold`) and qualitative assessments (`assessment`: neutral|strengthening|confirmed|weakening|invalidated, `evidence_summary`). Source tracked via `data_source` and optional `report_id`.
+- **`signal_status_history`** - Audit trail of signal status transitions.
+- **`signal_data_tracking`** - Last observed data point per signal (used for on_release triggers).
 
-### PRD-Aligned Terms (Use These)
-- **Macro Thesis / Macro Theses** - Cross-asset beliefs ✅ (implemented with claims provenance)
-- **Asset Thesis / Asset Theses** - Asset-specific theses about underlyings ✅ (implemented with claims provenance)
-- **Research Artifact** - Raw research content (transcript, article, note) ✅
-- **Research Insight** - Processed artifact with Toulmin claims structure ✅
-- **Claim** - Individual assertion from research with evidence/reasoning/backing ✅
-- **Strategies** - Tactical implementations ✅ (existing, aligns with PRD)
-- **Positions** - Live exposures ✅ (existing, aligns with PRD)
-- **Triage** - Evaluation of urgency/severity ✅ (existing, aligns perfectly)
-- **Signals** - Strategy trigger rules (price_above, price_below, etc.) ✅ (implemented 2026-01-16)
-- **Journal** - Chronological log of decisions and events ✅ (`journal_entries` table)
+### Intelligence & Economic Data
+- **`intelligence_reports`** - World Monitor and Thesis Monitor intelligence briefings. Fields: `report_date`, `report_type` (world-monitor|thesis-monitor), `executive_summary`, `key_themes`, `full_markdown`, severity counts. Ingested by `scripts/ingest-world-monitor.ts`.
+- **`intelligence_items`** - Individual items extracted from reports. Fields: `report_id`, `severity`, `sector`, `headline`, `body`, `source_urls`, `relevant_tickers`.
+- **`fred_series_metadata`** - FRED series reference data (title, frequency, units, source).
+- **`fred_observations`** - Historical time-series data from FRED API.
+- **`thesis_fred_indicators`** - Links theses to FRED series with threshold configurations for breach detection.
+- **`fred_threshold_breaches`** - Audit trail of FRED threshold breach events.
 
-### Implementation Terms (Keep As-Is)
-- **Underlying** - The financial instrument (reference data, not a belief)
-- **Strategy Template** - Reusable strategy pattern (tactical, not in PRD)
+## Key Terminology Distinctions
 
-### Critical Distinctions
-- **Underlying** (reference data) vs **Asset Thesis** (belief about that underlying)
-- **Strategy** (tactical execution) vs **Thesis** (long-lived belief at macro or asset level)
-- **Triage** (evaluation process) vs **Action Items** (user-facing queue)
-- **Signal** (confirmation/warning criteria) vs **Triage Record** (actionable item created when signal triggers)
+- **Underlying** (reference data — ticker, spot price, IV) vs **Asset Thesis** (belief about that underlying)
+- **Strategy** (tactical execution construct) vs **Thesis** (long-lived belief that evolves with evidence)
+- **Signal** (confirmation/warning criterion attached to a thesis or strategy) vs **Triage Record** (actionable item created when a signal or rule triggers)
+- **Research Artifact** (raw content: transcript, article) vs **Research Insight** (processed artifact with Toulmin claims structure)
+- **Claim** (individual Toulmin assertion from research) vs **Articulation** (synthesised core argument built from multiple linked claims)
 
-## Data Ingestion Architecture (Remote-Primary)
+## Data Ingestion Architecture
 
-**Primary**: Remote Supabase is the source of truth. Ingestion runs via GitHub Actions.
-**Development**: All machines connect directly to remote Supabase.
-**Fallback**: Local Mac Mini Supabase available for offline development (see runbook).
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│              REMOTE SUPABASE (Primary)                      │
-│              aws-1-eu-north-1.pooler.supabase.com           │
-├─────────────────────────────────────────────────────────────┤
-│  Source of truth for all data                               │
-│                                                             │
-│  Data flows:                                                │
-│  ├── GitHub Actions → Ingestion (Flex, Massive)            │
-│  ├── Edge Functions → TradingView webhooks (tv-webhook)    │
-│  └── All machines → Direct reads/writes                     │
-└─────────────────────────────────────────────────────────────┘
-                    ▲
-                    │ Direct connection (all machines)
-                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│            DEVELOPMENT MACHINES                             │
-├─────────────────────────────────────────────────────────────┤
-│  MacBook Pro / Mac Mini / Any machine                      │
-│  npm run dev → connects to remote Supabase                 │
-│  Works from anywhere with internet                          │
-└─────────────────────────────────────────────────────────────┘
-```
+Remote Supabase is the single source of truth. All machines connect directly to remote Supabase; there is no local database mode.
 
 ### GitHub Actions Scheduled Jobs
 
@@ -436,45 +437,23 @@ Workflows:
 - `.github/workflows/kraken-ingestion.yml` - Kraken trades/balances/margin positions
 - `.github/workflows/deribit-ingestion.yml` - Deribit spot fills/balances
 - `.github/workflows/solana-ingestion.yml` - Solana wallet balance snapshots
+- `.github/workflows/economic-calendar-ingestion.yml` - TradingView economic calendar
+- `.github/workflows/earnings-calendar-ingestion.yml` - Earnings calendar
+- `.github/workflows/sec-filings-ingestion.yml` - SEC filings
+- `.github/workflows/crypto-prices.yml` - Crypto price snapshots
+- `.github/workflows/manual-snapshots.yml` - Manual data snapshots
+- `.github/workflows/price-gap-check.yml` - Price data gap detection
 
 Manual trigger available from GitHub UI for testing.
-
-### Environment Configuration
-
-All machines use remote Supabase in `.env.local`:
-```bash
-DATABASE_URL_POOLER=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
-DATABASE_URL_DIRECT=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:5432/postgres
-USE_DIRECT_CONNECTION=false
-```
-
-### Mode Switching
-
-To switch between local and remote modes, see **[Database Mode Switch Runbook](docs/runbook-database-mode-switch.md)**.
-
-**Why remote-primary?**
-- Simpler architecture (no Mac Mini dependency, no Tailscale)
-- Edge Functions for webhooks (TradingView alerts)
-- Works from anywhere without VPN setup
-- GitHub Actions handles scheduled ingestion reliably
-
-**When to use local mode:**
-- Offline development
-- Schema experimentation
-- Heavy data manipulation without egress costs
 
 ## Environment Variables
 
 Required in `.env.local`:
 
 ```bash
-# Database - Local Supabase (primary)
-DATABASE_URL_POOLER=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-DATABASE_URL_DIRECT=postgresql://postgres:postgres@127.0.0.1:54322/postgres
-
-# Database - Remote Supabase (for sync scripts)
-DATABASE_URL_REMOTE=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
-
+# Database - Remote Supabase
+DATABASE_URL_POOLER=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:6543/postgres
+DATABASE_URL_DIRECT=postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabase.com:5432/postgres
 USE_DIRECT_CONNECTION=false
 
 # IBKR Flex API
@@ -514,15 +493,43 @@ HELIUS_API_KEY=<api-key>
 SOLANA_WALLETS='[{"address":"<wallet-1>","label":"Owner Name 1"},{"address":"<wallet-2>","label":"Owner Name 2"}]'
 ```
 
+## Cross-Repo Workflow & Operating Model
+
+### Paperclip Workflow Model
+
+- **Claude Code** (this session) = problem-solving and scoping partner. Use it for investigation, debugging, schema work, skill execution, and scoping new issues.
+- **Paperclip agents** = execution engine for discrete engineering tasks. Once a task is scoped clearly enough that an agent could execute it with zero clarifying questions, file it in Paperclip via `/paperclip-backlog` rather than doing it here.
+- **Do not** execute multi-step engineering tasks in Claude Code that belong in Paperclip. Scope → file → let agents execute.
+
+### Notes → Trade Journal Interface
+
+Research flows one way: notes repo → trade-journal database. The `process-inbox` skill (notes) handles the full pipeline:
+
+1. **Signal routing** — scores the inbox item against active signals by ticker/keyword overlap; when relevance is high, routes to `/assess-validation-evidence` (trade-journal skill), which resolves signals via `signal_entity_links` and writes `signal_data_snapshots` to DB
+2. **Claim extraction** — runs Toulmin extraction and produces an audit file; investment content is uploaded to Supabase via `/finalize-for-upload`, populating `research_artifacts`, `research_insights`, and `main_claims`
+3. **Claim linkage** — after upload, generates linkage suggestions mapping new claims to existing theses; `/synthesize-claims` can be run to cross-reference and produce explicit `claim_thesis_mappings`
+
+Trade-journal CLAUDE.md describes this interface. Notes-side pipeline details live in the notes repo CLAUDE.md.
+
+### Signal Monitoring Architecture
+
+Qualitative signal data flows in via two paths:
+- **Scheduled**: `scripts/ingest-world-monitor.ts` → `generateQualitativeSnapshots()` — reads thesis monitor reports and writes qualitative `signal_data_snapshots`
+- **Research routing**: `assess-validation-evidence` skill — writes snapshots directly when processing inbox content with high signal relevance
+
+Quantitative signal data:
+- `scripts/collect-signal-data.ts` — collects from configured data sources per signal's `explicit_details`
+- `/configure-signal` skill — interactive setup for wiring a signal to its data source
+
 ## Working with the Codebase
 
 ### When Adding Features
-1. **Read PRD first** - Check `docs/PRD_v1.1.md` and `docs/terminology.md` for context
+1. **Check CLAUDE.md first** - This file is the living reference for architecture, schema, and patterns
 2. **Check existing patterns** - Look at similar features in `/src/lib/derived/` or `/src/lib/services/`
 3. **Use Drizzle ORM** - All database access via Drizzle; prefer pre-built queries in `/src/db/queries/`
 4. **Add process tracking** - Log ingestion runs to `ingestion_runs` table
 5. **Follow computation pattern** - Compute during ingestion, store results, don't compute on query
-6. **Update documentation** - Follow the checklist below
+6. **Update CLAUDE.md** - Keep schema and directory sections in sync with code changes
 
 ### Documentation Maintenance
 
@@ -535,58 +542,29 @@ SOLANA_WALLETS='[{"address":"<wallet-1>","label":"Owner Name 1"},{"address":"<wa
 | New table/column | `CLAUDE.md` (Database Schema section) |
 | New API route | `CLAUDE.md` (Key Directories section) |
 | New component | `CLAUDE.md` (Key Directories section) |
-| State field changes | `docs/CURRENT_STATE.md` (State Machines section) |
-| New enhancement started | `docs/FUTURE_ENHANCEMENTS.md` (move to Active) |
-| Enhancement completed | `docs/FUTURE_ENHANCEMENTS.md` (move to Completed summary table) + `docs/archive/completed-enhancements-2025-2026.md` (add full specification) |
-| Dead code identified | `docs/CURRENT_STATE.md` (Dead Code Registry) |
-| Dead code removed | `docs/CURRENT_STATE.md` (mark as removed) |
-| Technical debt added | `docs/FUTURE_ENHANCEMENTS.md` (add to backlog or deferred) |
-| Technical debt resolved | `docs/FUTURE_ENHANCEMENTS.md` (mark complete) |
-| New terminology | `docs/terminology.md` |
-| Terminology changed | Search and update all docs |
+| State field changes | `CLAUDE.md` (Entity State Machines section) |
+| New work item / technical debt | File a Paperclip issue via `/paperclip-backlog` |
+| Dead code identified / removed | Note in a journal entry or Paperclip issue |
 
-**Quick sanity checks:**
-- Does `CLAUDE.md` Key Directories match actual file structure?
-- Does `CURRENT_STATE.md` State Machines match actual schema?
-- Is `FUTURE_ENHANCEMENTS.md` accurate for current sprint?
+**Quick sanity check:**
+- Does `CLAUDE.md` Key Directories and Database Schema match actual file structure?
 
 **Quarterly cleanup (or when docs feel stale):**
 1. Run `grep -r "TODO\|FIXME\|DEPRECATED" src/` to find code debt
-2. Compare `CURRENT_STATE.md` dead code registry against actual codebase
-3. Archive completed enhancements older than 3 months
-4. Verify all cross-references between docs are valid
+2. Review Paperclip backlog for stale items that may no longer be relevant
 
 ### When Planning Future Work
 
-All enhancements must be tracked in `docs/FUTURE_ENHANCEMENTS.md` - the **single source of truth** for work planning.
+All follow-up work, technical debt, and feature requests are tracked in **Paperclip** — use the `/paperclip-backlog` skill to create and read issues.
+
+**Quality bar for a Paperclip issue:** could an agent execute it with zero clarifying questions? If not, scope it further before filing.
 
 **Process:**
-1. **Check existing enhancement registry** - Search `FUTURE_ENHANCEMENTS.md` for related work
-2. **Create enhancement entry** with unique ID (format: `#ENH-xxx`)
-3. **Reference PRD section** - Every enhancement should map to PRD v1.1 sections
-4. **Document in appropriate section**:
-   - Active/In Progress - Current sprint work
-   - Planned - Prioritized backlog
-   - Deferred - Intentionally delayed
-   - Abandoned - Cancelled with rationale
+1. Identify the work item during a session
+2. Run `/paperclip-backlog` to file a Paperclip issue with full context
+3. Reference the Paperclip issue ID (e.g. TWO-xxx) in any related code or notes
 
-**Enhancement Entry Template:**
-```markdown
-#### #ENH-xxx: Feature Name
-**Status**: Planned | In Progress | Complete | Deferred | Abandoned
-**Priority**: High | Medium | Low
-**PRD**: Section X (relevant PRD section)
-**Source**: Link to original discussion/issue
-
-**Description**: What this enhancement does
-**Technical Implementation**: Key files and approach
-**Big Picture Impact**: How this fits into the system
-```
-
-**The Three Core Documents:**
-- `docs/PRD_v1.1.md` - Product vision and requirements (locked)
-- `docs/CURRENT_STATE.md` - Actual implementation state, state machines, dead code registry
-- `docs/FUTURE_ENHANCEMENTS.md` - Single source of truth for planned work and technical debt
+**Do not** create entries in `docs/FUTURE_ENHANCEMENTS.md` for new work — that file is legacy and no longer maintained.
 
 ### When Modifying Data Ingestion
 - CSV ingestion uses PapaParse via `/src/lib/ingestion/flex/processCsv.ts`
@@ -656,18 +634,11 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 /finalize-for-upload path/to/audit        # Upload to Supabase (one-way)
 ```
 
-**Full Guide**: See **[docs/features/research-workflow.md](251231-research-workflow.md)** for:
-- Detailed workflow stages and Toulmin framework explanation
-- Claims structure specification (main claims + evidence claims)
-- UI features (filtering, search, conversion, promotion)
-- Testing procedures and troubleshooting
-- Environment configuration (local Markdown output paths)
-
 **Key Components**:
 - **Parser**: `src/lib/research/parseClaimsMarkdown.ts` - Audit markdown → JSON
 - **Markdown Generator**: `src/lib/obsidian/markdown.ts` - Used by skills to write local files
-- **UI Components**: `src/components/research/` (ClaimsBrowser, ConvertClaimDialog, etc.)
-- **Skills**: `.claude/skills/` (process-transcript, synthesize-claims, deep-dive, finalize-for-upload)
+- **UI Components**: `src/components/research/` (UnifiedClaimsBrowser, ConvertClaimToEntityDialog, etc.)
+- **Skills**: `.claude/skills/` (process-transcript, synthesize-claims, finalize-for-upload, assess-validation-evidence)
 - **Database**: `research_artifacts`, `research_insights` (with `claims_structure` JSONB), `main_claims` tables
 
 **Data Flow**: Local Markdown → Upload to Supabase → Browse/manage in web UI. No automatic sync back to local files.
@@ -738,7 +709,7 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 4. **IBKR conid** - Stored in `underlyings` table for faster IBKR API calls
 5. **Multi-source Data** - Yahoo Finance (spot) → IBKR Gateway → Massive (fallback priority)
 6. **CSV Error Handling** - Detailed row-by-row error reporting with line numbers
-7. **Signal-Based Triggers** - Signals system handles strategy trigger evaluation (playbook/stateCode system removed)
+7. **Signal-Based Triggers** - Signals system handles strategy trigger evaluation
 8. **Local-First Research** - Research processing via Claude Code skills with Supabase as single source of truth
 9. **Toulmin Framework** - Claims use Toulmin argumentation model (claim, evidence, reasoning, backing)
 10. **Provenance Tracking** - Automatic tracking from research claims → theses with source metadata
@@ -749,8 +720,8 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 15. **Multi-Exchange Position Snapshots** - Strategy status/metrics use per-account latest snapshot dates (not global) to handle different ingestion schedules across IBKR and crypto exchanges
 16. **Crypto Asset Classes** - `CRYPTO` (spot holdings) and `PERP` (perpetual futures) alongside existing `STK`/`OPT`. Position types: `crypto_long`, `crypto_short`, `crypto_staked`, `perp_long`, `perp_short`
 17. **HyperLiquid Integration** - No auth needed for reads. Fills (trades), perp/spot positions, staked HYPE (delegations), and mark prices via single POST endpoint. Incremental fill ingestion via `ingestion_cursors` table
-18. **Coinbase Prime Integration** - HMAC-SHA256 auth with base64-decoded secret. Fills (trades) with cursor pagination, balances (positions) with USD fiat_amount. No cost basis on positions (deferred to #ENH-051). Spot-only (no perps)
-19. **Kraken Integration** - HMAC-SHA512 auth with base64-decoded secret + nonce. TradesHistory (offset pagination, 50/page, rate cost 2), Balance (spot positions with Ticker price enrichment), OpenPositions (margin with cost basis/PnL from API). No cost basis on spot positions (deferred to #ENH-051)
+18. **Coinbase Prime Integration** - HMAC-SHA256 auth with base64-decoded secret. Fills (trades) with cursor pagination, balances (positions) with USD fiat_amount. Cost basis not tracked on positions. Spot-only (no perps)
+19. **Kraken Integration** - HMAC-SHA512 auth with base64-decoded secret + nonce. TradesHistory (offset pagination, 50/page, rate cost 2), Balance (spot positions with Ticker price enrichment), OpenPositions (margin with cost basis/PnL from API). Cost basis not tracked on spot positions
 20. **Deribit Integration** - OAuth client credentials auth (token cached, auto-refreshed on expiry). Spot fills (trade history) with incremental cursor ingestion + account balance snapshots. Options/futures support deferred — shared types pre-wired with OPT asset class and expiry/strike/optionRight fields for future use. Iterates over supported currencies (BTC, ETH, SOL, USDC). Index prices fetched from public endpoint for USD conversion
 21. **Solana Integration** - Balance-only snapshot via Helius DAS API (`getAssetsByOwner`). No trade history. API key appended to RPC URL. Captures native SOL + SPL fungible tokens with USD pricing from Helius. Filters dust tokens (< $0.01) and stablecoins. Supports multiple wallets via `SOLANA_WALLETS` JSON env var with per-wallet labels. Each wallet becomes a separate account with its label set
 22. **Cash & NAV Tracking** - Cash/stablecoin/fiat balances tracked in `cash_balances` table across all sources. NAV is dual-path: authoritative from `nav_snapshots` for margin accounts (IBKR, HyperLiquid), derived as positions + cash for non-margin accounts (Coinbase, Kraken, Deribit, Solana). Portfolio page shows Market Value, Cash, NAV, Leverage (gross exposure / NAV), and Positions. Cash breakdown available via "Cash" filter tab
@@ -772,9 +743,9 @@ Strategy price signals are created by drawing TP/SL lines on a dedicated Trading
 
 ## Quick Navigation for Specific Features
 
-- **Research Workflow** → [docs/features/research-workflow.md](251231-research-workflow.md) (full guide) + `/src/lib/research/` + `/.claude/skills/`
-- **Claims Browsing** → `/src/components/research/ClaimsBrowser.tsx` + `/src/app/research/[id]/page.tsx`
-- **Claim Conversion** → `/src/components/research/ConvertClaimDialog.tsx` + `/src/app/api/research/convert-claim/`
+- **Research Workflow** → `/src/lib/research/` + `/.claude/skills/`
+- **Claims Browsing** → `/src/components/research/UnifiedClaimsBrowser.tsx` + `/src/app/research/[id]/page.tsx`
+- **Claim Conversion** → `/src/components/research/ConvertClaimToEntityDialog.tsx` + `/src/app/api/research/convert-claim/`
 - **Macro Theses** → `/src/app/theses/` + `/src/db/schema.ts` (macro_theses table)
 - **Asset Theses** → `/src/app/asset-theses/` + `/src/db/schema.ts` (asset_theses table)
 - **Strategy Management** → `/src/lib/services/strategies.ts` + `/src/app/admin/strategies/`
@@ -787,29 +758,11 @@ Strategy price signals are created by drawing TP/SL lines on a dedicated Trading
 - **Trade Ingestion** → `/src/lib/ingestion/flex/trades.ts` + `/src/app/api/ingest/flex/trades/route.ts`
 - **IBKR Integration** → `/src/lib/services/ibkr/` + `/src/app/admin/ingestion/ibkr/`
 - **Journal** → `/src/lib/workflow/lifecycleDetection.ts` + `/src/components/journal/`
-- **Database Schema** → `/src/db/schema.ts` (705 lines, authoritative)
+- **Database Schema** → `/src/db/schema.ts` (authoritative)
 - **Styles** → `/src/app/globals.css` (Tailwind with custom animations)
 
 ## Future Development Context
 
-This codebase is transitioning from a tactical options trading tool to the "Universal Investment Operating System" described in `docs/PRD_v1.1.md`.
+Backlog tracked in Paperclip. Use `/paperclip-backlog` to pull current issues.
 
-### Implemented Features ✅
-- **Macro Theses** and **Asset Theses** - Core entities with claims provenance tracking
-- **Research & Intelligence Layer** - Local-first Toulmin claim extraction workflow
-- **Claims Browsing & Conversion** - Web UI for exploring and converting research into macro/asset theses
-- **Claude Code Skills** - Automated research processing and database integration
-- **Signals System** - Strategy trigger rules with TradingView webhook integration
-- **Journal System** - Chronological log of decisions and events (`logToJournal()`)
-- **Thesis Triage** - Automated detection of theses needing articulation or new claims
-
-### Remaining Future Additions
-See `docs/FUTURE_ENHANCEMENTS.md` for the complete prioritized backlog. Key items:
-- **Phase 3.3: Thesis Synthesis** - AI-assisted thesis articulation from accumulated claims
-- **Enhanced Evidence Linking** - Direct linkage from positions/strategies back to supporting claims
-- **Research Synthesis Dashboard** - Portfolio-wide view of macro thesis → asset thesis → strategy → position chain
-
-### Recently Completed (2026-01-16)
-- **Blotter-to-Journal Migration** - `blotter_actions` table removed, overrides now stored on `triage_records`
-
-When implementing new features, consult PRD, terminology docs, and FUTURE_ENHANCEMENTS.md for alignment.
+When implementing new features, use CLAUDE.md as the primary reference.

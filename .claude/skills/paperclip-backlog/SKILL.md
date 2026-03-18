@@ -73,6 +73,48 @@ curl -s -X POST "$BASE/api/companies/$COMPANY_ID/issues" \
 
 Priority values: `critical`, `high`, `medium`, `low`
 
+## Update an existing issue
+
+Use the CLI (preferred — handles escaping cleanly for long descriptions):
+
+```bash
+/Users/home-hub/.npm/_npx/43414d9b790239bb/node_modules/.bin/paperclipai issue update <issueId-uuid> \
+  --api-base 'https://njb-m2-mac-mini.tailcfacb3.ts.net:3100' \
+  --api-key "$API_KEY" \
+  --description "..." \
+  --title "..." \
+  --priority high \
+  --json
+```
+
+Or via curl — note the endpoint is `/api/issues/:id` (NOT nested under `/companies/`):
+
+```bash
+curl -s -X PATCH "$BASE/api/issues/<issueId-uuid>" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"description": "...", "priority": "high"}' \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('identifier'), d.get('error',''))"
+```
+
+To get an issue UUID from its identifier (e.g. TWO-126):
+```bash
+curl -s "$BASE/api/companies/$COMPANY_ID/issues?status=backlog" -H "Authorization: Bearer $API_KEY" \
+  | python3 -c "import sys,json; issues=json.load(sys.stdin); print([i['id'] for i in issues if i.get('identifier')=='TWO-126'][0])"
+```
+
+## Search issues
+
+```bash
+curl -s "$BASE/api/companies/$COMPANY_ID/issues?q=search+term" \
+  -H "Authorization: Bearer $API_KEY" | python3 -c "
+import sys, json
+issues = json.load(sys.stdin)
+for i in issues:
+    print(i.get('identifier'), '|', i.get('status'), '|', i.get('title'))
+"
+```
+
 ## Description template
 
 ```markdown
