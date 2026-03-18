@@ -1,8 +1,8 @@
 # Thesis Signal & Monitoring System Redesign
 
 > Created: 2026-03-16
-> Last updated: 2026-03-17
-> Status: Phases 1–2c complete, Phase 5 complete. Phase 2d documented. Phase 3 substantially complete (sync + price collection live). Phase 4 not started.
+> Last updated: 2026-03-18
+> Status: Phases 1–2c complete, Phase 5 complete. Phase 2d documented. Phase 3 complete (sync + price collection live, both USD and BTC-ratio panels ingested). Phase 4 not started.
 
 ## Context
 
@@ -1124,8 +1124,8 @@ The `explicit_details` on each signal has a `checkFrequency` field (`"daily"` or
 
 ### Medium-term
 
-**5. Phase 3: Strategy price signal system** ← substantially complete
-`sync-tv-drawings.ts` ingests TP/SL drawings from both BTC indicator and USD main-series panels. `collect-signal-data.ts` collects live price snapshots. 35 strategy signals live with progress bars in Signals Browser. Remaining: simplify `StrategySignalsSection`, remove webhook infrastructure.
+**5. Phase 3: Strategy price signal system** ← complete (cleanup remaining)
+`sync-tv-drawings.ts` ingests TP/SL drawings from both BTC indicator and USD main-series panels. `collect-signal-data.ts` collects live price snapshots. 35 strategy signals live with progress bars in Signals Browser. Remaining cleanup: simplify `StrategySignalsSection`, remove webhook infrastructure (`StrategySignalConfigForm`, `tv-webhook` Edge Function, `NEXT_PUBLIC_TV_WEBHOOK_URL`).
 
 **6. Phase 4: Process-inbox signal integration**
 See Phase 4 section above. Would close the loop between research ingestion and signal tracking — new claims automatically checked against active signals.
