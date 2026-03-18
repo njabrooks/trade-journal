@@ -120,7 +120,25 @@ Replace `SNAPSHOTS_PLACEHOLDER` with the actual array of snapshot objects:
 ]
 ```
 
-### 5. Output JSON result
+### 5. Add journal entry per signal assessed
+
+After writing snapshots, write a journal entry for **each** signal with an assessment other than `no_evidence`. This provides narrative traceability on each signal's Journal tab.
+
+```bash
+cd /Users/home-hub/projects/trade-journal
+
+# Repeat for each assessed signal (skip no_evidence signals):
+npx tsx scripts/ops/add-journal-note.ts \
+  --entity-type signal \
+  --id {{SIGNAL_ID}} \
+  --note "Evidence assessment ({{assessment}}): {{evidence_summary}}. Source: {{contentFile basename or title}}."
+```
+
+- Skip `no_evidence` signals
+- Include the assessment level and evidence summary from the snapshot
+- Use `--entity-type signal`
+
+### 6. Output JSON result
 
 Output a single JSON result as your final output:
 
@@ -132,6 +150,7 @@ Output a single JSON result as your final output:
   "thesisTitle": "Thesis Title",
   "signalsAssessed": 8,
   "snapshotsWritten": 8,
+  "journalEntriesWritten": 5,
   "assessments": [
     {
       "signalId": "<uuid>",
