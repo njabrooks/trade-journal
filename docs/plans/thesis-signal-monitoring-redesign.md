@@ -1178,3 +1178,49 @@ Build a collector that uses CDP to access the TradingView economic calendar. Wou
 | `trade-journal/migrations/add-signal-data-snapshots.sql` | Snapshots table migration |
 | `paperclip/.claude/skills/thesis-monitor/SKILL.md` | Thesis monitor skill definition |
 | `paperclip/scripts/collect-signal-data.sh` | Shell wrapper for quantitative collection |
+
+---
+
+## Backlog — Follow-up work identified
+
+Items identified but not yet scheduled. Add to FUTURE_ENHANCEMENTS.md when prioritising.
+
+### Signal monitoring
+
+**`claim_signal_evidences` junction table**
+When a piece of research is assessed as evidence for a signal (via the process-inbox routing), there is currently no DB-level link between the claim and the signal. The connection exists only via the `journal_entries` narrative. A `claim_signal_evidences` table would allow:
+- The Claims browser to show "this claim validated Signal X"
+- The signal expanded row to show "supported by N research claims"
+- Bidirectional navigation: claim → signals it evidences, signal → claims that evidence it
+Schema: `(id, claim_id FK → main_claims, signal_id FK → signals, assessment text, snapshot_id FK → signal_data_snapshots nullable, created_at)`
+
+**Schedule `ingest-economic-calendar.ts` in launchd**
+The economic calendar ingestion script exists but is not yet scheduled. Add a launchd job (alongside the existing thesis-monitor and signal-collection jobs) to run daily — e.g. 6:00 AM, before the thesis monitor runs. This ensures the calendar is fresh when thesis monitor evaluates FOMC/CPI-related signals.
+
+### Configure-signal workflow
+
+**How it works today (confirmed)**
+`/configure-signal` is a Claude Code skill — the investigative workflow (trying endpoints, evaluating data quality, reasoning about threshold values) happens as a back-and-forth dialogue in VS Code / Claude Code. Once the config is agreed, the skill writes `explicit_details` to the DB and the signal immediately appears with a working progress bar in the front end. This is the right model for now: the investigative work requires AI reasoning that a form UI cannot replicate.
+
+**What the app should surface (to do)**
+When the skill writes `explicit_details`, it should also create a `journal_entry` capturing the rationale (which source, why that threshold, any caveats). Currently it does not. This would make the Journal tab on thesis/signal pages show the full configuration history.
+
+### In-app LLM chat interface (future vision)
+
+The longer-term goal is to embed Claude directly into the app so that investigative workflows (configure-signal, thesis exploration, signal assessment) can happen inside the UI with full DB access and tool use. This would:
+- Allow signal configuration without switching to the IDE
+- Keep a persistent conversation log attached to the relevant entity (thesis/signal)
+- Enable the user to interrogate "why is this signal at 67%?" and get a reasoned answer using live data
+
+This is a significant build (streaming Claude API responses, in-app tool use, conversation persistence) — treat as a Phase N feature. Worth designing thoughtfully before starting.
+
+### News hub redesign
+
+The current `/news` page is functional but not well-organised UX-wise. The different data streams (World Monitor report, Thesis Monitor report, Economic Calendar, Earnings, SEC filings) are all present but lack a clear layout hierarchy. The redesign should:
+- Treat `/news` as a proper "news hub" with distinct, well-sized panels for each stream
+- Economic Calendar: full date-grouped view with actual/forecast/previous values and impact badges, not a compressed list
+- World Monitor: headline + key intelligence items from the latest report, with link to full report
+- Thesis Monitor: summary of signal assessments from the latest run — which signals moved, which confirmed/contradicted
+- Earnings: upcoming earnings for tickers in active theses/strategies, highlighted
+- SEC filings: relevant filings for tracked tickers
+- Consider a "today's relevance" section at the top that surfaces the 3-5 most actionable items across all streams for the user's active positions and theses
