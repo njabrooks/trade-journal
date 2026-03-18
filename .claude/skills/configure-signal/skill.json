@@ -1,0 +1,5 @@
+{
+  "name": "configure-signal",
+  "description": "Interactive workflow to wire up data-source monitoring on a signal that has explicit_details: null. Guides through classification → source identification → live endpoint test → threshold setting → DB write → verification.",
+  "instructions": "SKILL.md"
+}
