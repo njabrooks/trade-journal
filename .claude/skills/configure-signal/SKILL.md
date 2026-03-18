@@ -22,7 +22,7 @@ This is **not a fully automated skill**. You are in the loop at every decision p
 3. IDENTIFY — propose a data source per dimension, confirm or amend
 4. TEST     — hit the proposed endpoint live, show the current value
 5. THRESHOLD — agree on the threshold value
-6. POPULATE — write explicit_details to the DB (psql UPDATE)
+6. POPULATE — write explicit_details to the DB (psql UPDATE) + log journal entry
 7. VERIFY   — dry-run collect-signal-data.ts to confirm end-to-end
 ```
 
@@ -429,6 +429,19 @@ Updated signal <id>:
 ```
 
 If the update fails, diagnose and retry.
+
+### Log a journal entry
+
+After the `explicit_details` UPDATE succeeds, log a journal entry capturing the configuration rationale. Summarise: which data source was chosen, what threshold was set, and any caveats or notes from the conversation.
+
+```bash
+cd /Users/home-hub/projects/trade-journal && npx tsx scripts/ops/add-journal-note.ts \
+  --entity-type signal \
+  --id '<signal_id>' \
+  --note 'Configured explicit_details: <dataSource> monitoring, threshold <threshold> <unit> (<operator>). <any relevant caveats or reasoning from the conversation>.'
+```
+
+This ensures the signal's Journal tab records **how and why** the monitoring was set up.
 
 ---
 
