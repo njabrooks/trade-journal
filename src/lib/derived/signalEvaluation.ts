@@ -405,13 +405,14 @@ export async function evaluateStrategySignalsForDate(
     return results;
   }
 
-  // Group signals by strategy
+  // Group signals by strategy (using junction table link data)
   const signalsByStrategy = new Map<string, Signal[]>();
-  for (const signal of activeSignals) {
-    if (!signal.strategyId) continue;
-    const existing = signalsByStrategy.get(signal.strategyId) || [];
-    existing.push(signal);
-    signalsByStrategy.set(signal.strategyId, existing);
+  for (const row of activeSignalRows) {
+    const strategyId = row.signal_entity_links.strategyId;
+    if (!strategyId) continue;
+    const existing = signalsByStrategy.get(strategyId) || [];
+    existing.push(row.signals);
+    signalsByStrategy.set(strategyId, existing);
   }
 
   // Evaluate signals for each strategy

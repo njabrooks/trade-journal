@@ -1,5 +1,5 @@
 import { getMacroThesisById } from '@/db/queries/macroTheses';
-import { getSignalById } from '@/db/queries/thesisSynthesis';
+import { getSignalById, isSignalLinkedToThesis } from '@/db/queries/thesisSynthesis';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { ValidationPointDetailClient } from './ValidationPointDetailClient';
 import { notFound } from 'next/navigation';
@@ -24,8 +24,9 @@ export default async function SignalPage({ params }: SignalPageProps) {
     notFound();
   }
 
-  // Verify the signal belongs to this thesis
-  if (signal.thesisId !== id || signal.thesisType !== 'macro') {
+  // Verify the signal belongs to this thesis (via junction table)
+  const isLinked = await isSignalLinkedToThesis(signalId, id, 'macro');
+  if (!isLinked) {
     notFound();
   }
 

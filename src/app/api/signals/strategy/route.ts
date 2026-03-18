@@ -121,10 +121,6 @@ export async function POST(request: NextRequest) {
     const [createdSignal] = await db
       .insert(signals)
       .values({
-        entityType: 'strategy',
-        strategyId,
-        thesisId: null,
-        thesisType: null,
         statement,
         type,
         category: 'data_driven',

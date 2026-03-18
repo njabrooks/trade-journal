@@ -126,7 +126,7 @@ export function SignalProgressCard({ signal }: SignalProgressCardProps) {
   // Determine if this is a strategy price signal with a TradingView symbol
   const details = signal.explicitDetails as Record<string, unknown> | null;
   const tvSymbol = details?.tvSymbol as string | undefined;
-  const isStrategyPrice = signal.entityType === 'strategy' && !!tvSymbol;
+  const isStrategyPrice = !!tvSymbol;
 
   return (
     <div className="border border-border rounded-lg p-3 space-y-3">

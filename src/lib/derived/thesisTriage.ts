@@ -27,6 +27,7 @@ import {
   thesisTriageRecords,
   claimThesisMappings,
   signals,
+  signalEntityLinks,
   NewThesisTriageRecord,
 } from '@/db/schema';
 import { eq, ne, and, desc, sql, count, isNotNull } from 'drizzle-orm';
@@ -172,14 +173,15 @@ export async function computeThesisTriageForThesis(
         );
 
         if (!existingEvaluate) {
-          // Load active signal statements for the triage summary
+          // Load active signal statements for the triage summary (via junction table)
           const activeSignals = await db
             .select({ id: signals.id, type: signals.type, statement: signals.statement })
             .from(signals)
+            .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
             .where(
               and(
-                eq(signals.thesisId, thesisId),
-                eq(signals.thesisType, thesisType),
+                eq(signalEntityLinks.thesisId, thesisId),
+                eq(signalEntityLinks.thesisType, thesisType),
                 eq(signals.status, 'active')
               )
             );
@@ -250,10 +252,11 @@ export async function computeThesisTriageForThesis(
       const [draftSignal] = await db
         .select({ articulationId: signals.articulationId })
         .from(signals)
+        .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
         .where(
           and(
-            eq(signals.thesisId, thesisId),
-            eq(signals.thesisType, thesisType),
+            eq(signalEntityLinks.thesisId, thesisId),
+            eq(signalEntityLinks.thesisType, thesisType),
             eq(signals.status, 'draft'),
             isNotNull(signals.articulationId)
           )
@@ -288,10 +291,11 @@ export async function computeThesisTriageForThesis(
     const [anySignal] = await db
       .select({ articulationId: signals.articulationId })
       .from(signals)
+      .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
       .where(
         and(
-          eq(signals.thesisId, thesisId),
-          eq(signals.thesisType, thesisType),
+          eq(signalEntityLinks.thesisId, thesisId),
+          eq(signalEntityLinks.thesisType, thesisType),
           isNotNull(signals.articulationId)
         )
       )
@@ -562,7 +566,7 @@ async function getThesisEvolutionState(
     )
     .limit(1);
 
-  // Check for signals and count by status
+  // Check for signals and count by status (via junction table)
   const signalCounts = await db
     .select({
       total: count(),
@@ -571,10 +575,11 @@ async function getThesisEvolutionState(
       complete: sql<number>`count(*) filter (where ${signals.status} = 'complete')`,
     })
     .from(signals)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(
       and(
-        eq(signals.thesisId, thesisId),
-        eq(signals.thesisType, thesisType)
+        eq(signalEntityLinks.thesisId, thesisId),
+        eq(signalEntityLinks.thesisType, thesisType)
       )
     );
 
@@ -584,10 +589,11 @@ async function getThesisEvolutionState(
     const completedSignals = await db
       .select({ id: signals.id })
       .from(signals)
+      .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
       .where(
         and(
-          eq(signals.thesisId, thesisId),
-          eq(signals.thesisType, thesisType),
+          eq(signalEntityLinks.thesisId, thesisId),
+          eq(signalEntityLinks.thesisType, thesisType),
           eq(signals.status, 'complete')
         )
       );

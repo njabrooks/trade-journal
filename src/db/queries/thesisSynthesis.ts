@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { thesisArticulations, signals, signalStatusHistory } from '@/db/schema';
+import { thesisArticulations, signals, signalEntityLinks, signalStatusHistory } from '@/db/schema';
 import { eq, and, ne, desc } from 'drizzle-orm';
 
 /**
@@ -51,17 +51,19 @@ export async function getActiveSignals(
   thesisId: string,
   thesisType: 'macro' | 'asset'
 ) {
-  return db
-    .select()
+  const rows = await db
+    .select({ signals })
     .from(signals)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(
       and(
-        eq(signals.thesisId, thesisId),
-        eq(signals.thesisType, thesisType),
+        eq(signalEntityLinks.thesisId, thesisId),
+        eq(signalEntityLinks.thesisType, thesisType),
         ne(signals.status, 'rejected')
       )
     )
     .orderBy(signals.createdAt);
+  return rows.map(r => r.signals);
 }
 
 // Legacy alias
@@ -74,16 +76,18 @@ export async function getAllSignals(
   thesisId: string,
   thesisType: 'macro' | 'asset'
 ) {
-  return db
-    .select()
+  const rows = await db
+    .select({ signals })
     .from(signals)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(
       and(
-        eq(signals.thesisId, thesisId),
-        eq(signals.thesisType, thesisType)
+        eq(signalEntityLinks.thesisId, thesisId),
+        eq(signalEntityLinks.thesisType, thesisType)
       )
     )
     .orderBy(signals.createdAt);
+  return rows.map(r => r.signals);
 }
 
 // Legacy alias
@@ -104,6 +108,28 @@ export async function getSignalById(id: string) {
 
 // Legacy alias
 export const getValidationPointById = getSignalById;
+
+/**
+ * Check if a signal is linked to a specific thesis via the junction table
+ */
+export async function isSignalLinkedToThesis(
+  signalId: string,
+  thesisId: string,
+  thesisType: 'macro' | 'asset'
+): Promise<boolean> {
+  const [link] = await db
+    .select({ id: signalEntityLinks.id })
+    .from(signalEntityLinks)
+    .where(
+      and(
+        eq(signalEntityLinks.signalId, signalId),
+        eq(signalEntityLinks.thesisId, thesisId),
+        eq(signalEntityLinks.thesisType, thesisType)
+      )
+    )
+    .limit(1);
+  return !!link;
+}
 
 /**
  * Get status history for a signal
@@ -129,14 +155,18 @@ export async function getSignalsNeedingAttention(
   const baseQuery = db.select().from(signals);
 
   if (thesisId && thesisType) {
-    return baseQuery
+    const rows = await db
+      .select({ signals })
+      .from(signals)
+      .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
       .where(
         and(
-          eq(signals.thesisId, thesisId),
-          eq(signals.thesisType, thesisType)
+          eq(signalEntityLinks.thesisId, thesisId),
+          eq(signalEntityLinks.thesisType, thesisType)
         )
       )
       .orderBy(signals.updatedAt);
+    return rows.map(r => r.signals);
   }
 
   // Get all triggered/monitoring signals across all theses

@@ -14,7 +14,6 @@ import {
   ArrowDown,
   TrendingUp,
   Target,
-  FolderKanban,
   Layers,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +24,7 @@ import type { SignalWithContext, SignalFilterCounts, SignalEntityInfo } from '@/
 
 type StatusFilter = 'all' | 'active' | 'complete' | 'draft' | 'rejected';
 type TypeFilter = 'all' | 'confirmation' | 'warning' | 'completion';
-type EntityFilter = 'all' | 'thesis' | 'strategy';
+type EntityFilter = 'all' | 'macro_thesis' | 'asset_thesis' | 'strategy';
 type SortColumn = 'statement' | 'type' | 'entity' | 'status' | 'trend' | 'updatedAt';
 type SortDirection = 'asc' | 'desc';
 
@@ -73,16 +72,16 @@ function statusBadgeColor(status: string) {
   }
 }
 
-function entityTypeIcon(entity: SignalEntityInfo) {
-  if (entity.entityType === 'strategy') return <FolderKanban className="h-3 w-3 text-muted-foreground" />;
-  if (entity.thesisType === 'macro') return <TrendingUp className="h-3 w-3 text-muted-foreground" />;
-  return <Target className="h-3 w-3 text-muted-foreground" />;
-}
-
 function entityTypeBadgeLabel(entity: SignalEntityInfo) {
   if (entity.entityType === 'strategy') return 'Strategy';
-  if (entity.thesisType === 'macro') return 'Macro';
-  return 'Asset';
+  if (entity.thesisType === 'macro') return 'Macro Thesis';
+  return 'Asset Thesis';
+}
+
+function entityTypeBadgeColor(entity: SignalEntityInfo) {
+  if (entity.entityType === 'strategy') return 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300';
+  if (entity.thesisType === 'macro') return 'bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300';
+  return 'bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300';
 }
 
 // Entity type sort order for grouped view
@@ -106,8 +105,10 @@ function EntitiesList({ entities, compact }: { entities: SignalEntityInfo[]; com
   return (
     <div className={`flex items-center gap-1.5 ${compact ? '' : 'flex-wrap'}`}>
       {show.map((entity, i) => (
-        <div key={i} className="flex items-center gap-1">
-          {entityTypeIcon(entity)}
+        <div key={i} className="flex items-center gap-1.5">
+          <Badge className={`text-[10px] font-normal px-1.5 py-0 ${entityTypeBadgeColor(entity)}`}>
+            {entityTypeBadgeLabel(entity)}
+          </Badge>
           {entity.entityLink ? (
             <Link
               href={entity.entityLink}
@@ -169,7 +170,11 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
       result = result.filter(s => s.type === typeFilter);
     }
     if (entityFilter !== 'all') {
-      result = result.filter(s => s.entities.some(e => e.entityType === entityFilter));
+      result = result.filter(s => s.entities.some(e => {
+        if (entityFilter === 'macro_thesis') return e.entityType === 'thesis' && e.thesisType === 'macro';
+        if (entityFilter === 'asset_thesis') return e.entityType === 'thesis' && e.thesisType === 'asset';
+        return e.entityType === 'strategy';
+      }));
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -216,33 +221,60 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
     return result;
   }, [signals, statusFilter, typeFilter, entityFilter, searchQuery, sortColumn, sortDirection]);
 
-  // Group signals by underlying ticker
+  // Classify a signal as macro thesis, asset thesis, or strategy based on its linked entities
+  function signalEntityKind(signal: SignalWithContext): 'macro_thesis' | 'asset_thesis' | 'strategy' {
+    // A signal linked to a macro thesis is macro (even if also linked to strategies)
+    if (signal.entities.some(e => e.entityType === 'thesis' && e.thesisType === 'macro')) return 'macro_thesis';
+    if (signal.entities.some(e => e.entityType === 'strategy')) return 'strategy';
+    return 'asset_thesis';
+  }
+
+  // Group signals: macro theses in own section, asset thesis + strategy grouped by underlying
   const grouped = useMemo(() => {
     if (!groupByUnderlying) return null;
 
-    const groups = new Map<string, SignalWithContext[]>();
+    // Separate macro thesis signals from underlying-scoped signals
+    const macroGroups = new Map<string, { title: string; thesisId: string; signals: SignalWithContext[] }>();
+    const underlyingGroups = new Map<string, SignalWithContext[]>();
 
     for (const signal of filtered) {
-      const tickers = signal.underlyingTickers.length > 0
-        ? signal.underlyingTickers
-        : ['Other'];
+      const kind = signalEntityKind(signal);
 
-      for (const ticker of tickers) {
-        const group = groups.get(ticker) || [];
-        if (!group.some(s => s.id === signal.id)) {
-          group.push(signal);
+      if (kind === 'macro_thesis') {
+        // Group by macro thesis title
+        const macroEntity = signal.entities.find(e => e.entityType === 'thesis' && e.thesisType === 'macro');
+        const key = macroEntity?.thesisId || 'unknown';
+        const existing = macroGroups.get(key) || {
+          title: macroEntity?.entityTitle || 'Unknown Macro Thesis',
+          thesisId: key,
+          signals: [],
+        };
+        existing.signals.push(signal);
+        macroGroups.set(key, existing);
+      } else {
+        // Group by underlying ticker
+        const tickers = signal.underlyingTickers.length > 0
+          ? signal.underlyingTickers
+          : ['Other'];
+
+        for (const ticker of tickers) {
+          const group = underlyingGroups.get(ticker) || [];
+          if (!group.some(s => s.id === signal.id)) {
+            group.push(signal);
+          }
+          underlyingGroups.set(ticker, group);
         }
-        groups.set(ticker, group);
       }
     }
 
-    const sorted = [...groups.entries()].sort(([a], [b]) => {
+    const sortedMacro = [...macroGroups.values()].sort((a, b) => a.title.localeCompare(b.title));
+    const sortedUnderlying = [...underlyingGroups.entries()].sort(([a], [b]) => {
       if (a === 'Other') return 1;
       if (b === 'Other') return -1;
       return a.localeCompare(b);
     });
 
-    return sorted;
+    return { macroGroups: sortedMacro, underlyingGroups: sortedUnderlying };
   }, [filtered, groupByUnderlying]);
 
   function toggleSort(col: SortColumn) {
@@ -281,7 +313,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
   function renderSignalRow(signal: SignalWithContext) {
     const isExpanded = expandedId === signal.id;
     const pct = signal.latestPctToThreshold ? parseFloat(signal.latestPctToThreshold) : null;
-    const firstLink = signal.entities.find(e => e.entityLink)?.entityLink;
 
     return (
       <Fragment key={signal.id}>
@@ -327,7 +358,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                 <SignalProgressCard
                   signal={{
                     id: signal.id,
-                    entityType: signal.entities[0]?.entityType || 'thesis',
                     type: signal.type,
                     statement: signal.statement,
                     status: signal.status,
@@ -335,9 +365,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                     importance: signal.importance,
                     notes: signal.notes,
                     explicitDetails: signal.explicitDetails,
-                    thesisId: signal.entities[0]?.thesisId || null,
-                    thesisType: signal.entities[0]?.thesisType || null,
-                    strategyId: signal.entities[0]?.strategyId || null,
                     createdAt: signal.createdAt,
                     updatedAt: signal.updatedAt,
                   } as any}
@@ -429,7 +456,8 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
             className="text-sm border rounded-md px-2 py-1.5 bg-background"
           >
             <option value="all">All Entities</option>
-            <option value="thesis">Thesis ({counts.thesis})</option>
+            <option value="macro_thesis">Macro Thesis ({counts.macroThesis})</option>
+            <option value="asset_thesis">Asset Thesis ({counts.assetThesis})</option>
             <option value="strategy">Strategy ({counts.strategy})</option>
           </select>
           {searchQuery || typeFilter !== 'all' || entityFilter !== 'all' ? (
@@ -448,7 +476,12 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
       {/* Results count */}
       <p className="text-xs text-muted-foreground">
         Showing {filtered.length} of {counts.total} signals
-        {groupByUnderlying && grouped ? ` across ${grouped.length} underlyings` : ''}
+        {groupByUnderlying && grouped ? (() => {
+          const parts: string[] = [];
+          if (grouped.macroGroups.length > 0) parts.push(`${grouped.macroGroups.length} macro ${grouped.macroGroups.length === 1 ? 'thesis' : 'theses'}`);
+          if (grouped.underlyingGroups.length > 0) parts.push(`${grouped.underlyingGroups.length} ${grouped.underlyingGroups.length === 1 ? 'underlying' : 'underlyings'}`);
+          return parts.length > 0 ? ` across ${parts.join(' and ')}` : '';
+        })() : ''}
       </p>
 
       {/* Table */}
@@ -494,33 +527,91 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
             )}
 
             {groupByUnderlying && grouped ? (
-              grouped.map(([ticker, groupSignals]) => {
-                const isCollapsed = collapsedGroups.has(ticker);
-                return (
-                  <Fragment key={`group-${ticker}`}>
-                    <tr
-                      className="bg-muted/30 border-b cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => toggleGroup(ticker)}
-                    >
-                      <td className="px-2 py-2 text-center">
-                        {isCollapsed
-                          ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        }
-                      </td>
-                      <td colSpan={5} className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold font-mono">{ticker}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {groupSignals.length} signal{groupSignals.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
+              <>
+                {/* Macro thesis signals */}
+                {grouped.macroGroups.length > 0 && (
+                  <>
+                    <tr className="bg-muted/60 border-b">
+                      <td colSpan={6} className="px-3 py-1.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Macro Theses
+                        </span>
                       </td>
                     </tr>
-                    {!isCollapsed && groupSignals.map(renderSignalRow)}
-                  </Fragment>
-                );
-              })
+                    {grouped.macroGroups.map(group => {
+                      const groupKey = `macro-${group.thesisId}`;
+                      const isCollapsed = collapsedGroups.has(groupKey);
+                      return (
+                        <Fragment key={groupKey}>
+                          <tr
+                            className="bg-muted/30 border-b cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => toggleGroup(groupKey)}
+                          >
+                            <td className="px-2 py-2 text-center">
+                              {isCollapsed
+                                ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              }
+                            </td>
+                            <td colSpan={5} className="px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-sm font-semibold">{group.title}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {group.signals.length} signal{group.signals.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                          {!isCollapsed && group.signals.map(renderSignalRow)}
+                        </Fragment>
+                      );
+                    })}
+                  </>
+                )}
+
+                {/* Asset thesis + strategy signals grouped by underlying */}
+                {grouped.underlyingGroups.length > 0 && (
+                  <>
+                    {grouped.macroGroups.length > 0 && (
+                      <tr className="bg-muted/60 border-b">
+                        <td colSpan={6} className="px-3 py-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                            By Underlying
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                    {grouped.underlyingGroups.map(([ticker, groupSignals]) => {
+                      const isCollapsed = collapsedGroups.has(ticker);
+                      return (
+                        <Fragment key={`group-${ticker}`}>
+                          <tr
+                            className="bg-muted/30 border-b cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => toggleGroup(ticker)}
+                          >
+                            <td className="px-2 py-2 text-center">
+                              {isCollapsed
+                                ? <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              }
+                            </td>
+                            <td colSpan={5} className="px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold font-mono">{ticker}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {groupSignals.length} signal{groupSignals.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                          {!isCollapsed && groupSignals.map(renderSignalRow)}
+                        </Fragment>
+                      );
+                    })}
+                  </>
+                )}
+              </>
             ) : (
               filtered.map(renderSignalRow)
             )}

@@ -17,7 +17,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
 import { parseWorldMonitor } from '../src/lib/intelligence/parseWorldMonitor.js';
 
-const { intelligenceReports, intelligenceItems, signals, signalDataSnapshots } = schema;
+const { intelligenceReports, intelligenceItems, signals, signalDataSnapshots, signalEntityLinks } = schema;
 
 async function ingestReport(filePath: string): Promise<{ reportId: string; itemCount: number; skipped: boolean }> {
   const markdown = readFileSync(filePath, 'utf-8');
@@ -100,23 +100,25 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
 
   if (items.length === 0) return 0;
 
-  // Load all active thesis signals with explicit_details
-  const activeSignals = await db
+  // Load all active thesis signals with their linked thesis info (via junction table)
+  const activeSignalRows = await db
     .select({
       id: signals.id,
       type: signals.type,
       statement: signals.statement,
-      thesisId: signals.thesisId,
-      thesisType: signals.thesisType,
+      thesisId: signalEntityLinks.thesisId,
+      thesisType: signalEntityLinks.thesisType,
       explicitDetails: signals.explicitDetails,
     })
     .from(signals)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(
       and(
-        eq(signals.entityType, 'thesis'),
+        eq(signalEntityLinks.entityType, 'thesis'),
         eq(signals.status, 'active')
       )
     );
+  const activeSignals = activeSignalRows;
 
   if (activeSignals.length === 0) return 0;
 

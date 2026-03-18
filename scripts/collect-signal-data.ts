@@ -113,24 +113,12 @@ async function checkAndTriggerSignal(
       )
     );
 
-  // Also check the direct thesis_id on the signal itself (for thesis-type signals)
-  const directThesisLink = await db
-    .select({ thesisId: signals.thesisId, thesisType: signals.thesisType })
-    .from(signals)
-    .where(eq(signals.id, signal.id));
-
-  // Combine direct + junction links, dedup by thesisId
+  // Build thesis links map, dedup by thesisId
   const allThesisLinks = new Map<string, { thesisId: string; thesisType: string }>();
   for (const link of thesisLinks) {
     if (link.thesisId && link.thesisType) {
       allThesisLinks.set(link.thesisId, { thesisId: link.thesisId, thesisType: link.thesisType });
     }
-  }
-  if (directThesisLink[0]?.thesisId && directThesisLink[0]?.thesisType) {
-    allThesisLinks.set(directThesisLink[0].thesisId, {
-      thesisId: directThesisLink[0].thesisId,
-      thesisType: directThesisLink[0].thesisType,
-    });
   }
 
   for (const { thesisId, thesisType } of allThesisLinks.values()) {
@@ -208,9 +196,9 @@ async function main() {
   if (skipTriggers) console.log('(SKIP TRIGGERS — threshold triggers disabled)');
   if (dryRun || skipTriggers) console.log('');
 
-  // Load all active thesis signals with explicit_details
-  const activeSignals = await db
-    .select({
+  // Load all active thesis signals with explicit_details (via junction table)
+  const activeSignalRows = await db
+    .selectDistinctOn([signals.id], {
       id: signals.id,
       type: signals.type,
       status: signals.status,
@@ -218,12 +206,14 @@ async function main() {
       explicitDetails: signals.explicitDetails,
     })
     .from(signals)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(
       and(
-        eq(signals.entityType, 'thesis'),
+        eq(signalEntityLinks.entityType, 'thesis'),
         eq(signals.status, 'active')
       )
     );
+  const activeSignals = activeSignalRows;
 
   console.log(`Active thesis signals: ${activeSignals.length}\n`);
 
@@ -346,8 +336,8 @@ async function main() {
   // ── Strategy price signals ────────────────────────────────────────────────
   // These come from sync-tv-drawings and have denomination + tvSymbol in explicit_details.
 
-  const strategySignals = await db
-    .select({
+  const strategySignalRows = await db
+    .selectDistinctOn([signals.id], {
       id: signals.id,
       type: signals.type,
       status: signals.status,
@@ -355,10 +345,12 @@ async function main() {
       explicitDetails: signals.explicitDetails,
     })
     .from(signals)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(and(
-      eq(signals.entityType, 'strategy'),
+      eq(signalEntityLinks.entityType, 'strategy'),
       eq(signals.status, 'active'),
     ));
+  const strategySignals = strategySignalRows;
 
   // Collect unique base tickers so we can batch-fetch spot prices
   const tickerSet = new Set<string>();

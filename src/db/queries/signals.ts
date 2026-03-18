@@ -61,7 +61,8 @@ export interface SignalFilterCounts {
   complete: number;
   draft: number;
   rejected: number;
-  thesis: number;
+  macroThesis: number;
+  assetThesis: number;
   strategy: number;
   confirmation: number;
   invalidation: number;
@@ -269,7 +270,8 @@ export async function getAllSignalsWithContext(): Promise<{
     complete: 0,
     draft: 0,
     rejected: 0,
-    thesis: 0,
+    macroThesis: 0,
+    assetThesis: 0,
     strategy: 0,
     confirmation: 0,
     invalidation: 0,
@@ -282,9 +284,11 @@ export async function getAllSignalsWithContext(): Promise<{
     else if (s.status === 'draft') counts.draft++;
     else if (s.status === 'rejected') counts.rejected++;
 
-    const hasThesis = s.entities.some(e => e.entityType === 'thesis');
+    const hasMacro = s.entities.some(e => e.entityType === 'thesis' && e.thesisType === 'macro');
+    const hasAsset = s.entities.some(e => e.entityType === 'thesis' && e.thesisType === 'asset');
     const hasStrategy = s.entities.some(e => e.entityType === 'strategy');
-    if (hasThesis) counts.thesis++;
+    if (hasMacro) counts.macroThesis++;
+    if (hasAsset) counts.assetThesis++;
     if (hasStrategy) counts.strategy++;
 
     if (s.type === 'confirmation') counts.confirmation++;

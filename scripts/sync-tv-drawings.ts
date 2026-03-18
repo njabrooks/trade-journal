@@ -416,7 +416,6 @@ async function main() {
         console.log(`    + ${drawing.label}${denomTag} @ ${priceStr} — creating signal`);
         if (!DRY_RUN) {
           const [inserted] = await db.insert(signals).values({
-            entityType: 'strategy',
             type: drawing.signalType,
             statement: buildStatement(drawing),
             category: 'data_driven',

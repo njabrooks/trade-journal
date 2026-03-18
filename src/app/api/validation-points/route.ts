@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signals } from '@/db/schema';
+import { signals, signalEntityLinks } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 import { getMacroThesisById } from '@/db/queries/macroTheses';
@@ -35,21 +35,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build query conditions
+    // Build query conditions (via junction table)
     const conditions = [
-      eq(signals.thesisId, thesisId),
-      eq(signals.thesisType, thesisType),
+      eq(signalEntityLinks.thesisId, thesisId),
+      eq(signalEntityLinks.thesisType, thesisType),
     ];
 
     if (status) {
       conditions.push(eq(signals.status, status));
     }
 
-    const result = await db
-      .select()
+    const rows = await db
+      .select({ signals })
       .from(signals)
+      .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
       .where(and(...conditions))
       .orderBy(signals.createdAt);
+    const result = rows.map(r => r.signals);
 
     return NextResponse.json({ validationPoints: result });
   } catch (error) {
@@ -119,12 +121,23 @@ export async function PATCH(request: NextRequest) {
       .where(eq(signals.id, id))
       .returning();
 
+    // Look up linked entity from junction table for journal logging
+    const [linkedEntity] = await db
+      .select({
+        entityType: signalEntityLinks.entityType,
+        thesisId: signalEntityLinks.thesisId,
+        thesisType: signalEntityLinks.thesisType,
+      })
+      .from(signalEntityLinks)
+      .where(eq(signalEntityLinks.signalId, id))
+      .limit(1);
+
     // Get thesis for journal (only for thesis signals)
     let thesis: { title: string } | null | undefined;
-    if (existingSignal.entityType === 'thesis' && existingSignal.thesisId) {
-      thesis = existingSignal.thesisType === 'macro'
-        ? await getMacroThesisById(existingSignal.thesisId)
-        : await getAssetThesisById(existingSignal.thesisId);
+    if (linkedEntity?.entityType === 'thesis' && linkedEntity.thesisId) {
+      thesis = linkedEntity.thesisType === 'macro'
+        ? await getMacroThesisById(linkedEntity.thesisId)
+        : await getAssetThesisById(linkedEntity.thesisId);
     }
 
     // Build change description
@@ -153,8 +166,8 @@ export async function PATCH(request: NextRequest) {
       },
       source: 'user',
       metadata: {
-        thesisId: existingSignal.thesisId,
-        thesisType: existingSignal.thesisType,
+        thesisId: linkedEntity?.thesisId,
+        thesisType: linkedEntity?.thesisType,
         thesisTitle: thesis?.title,
       },
     });

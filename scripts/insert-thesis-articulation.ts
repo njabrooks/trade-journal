@@ -29,6 +29,7 @@ const {
   assetTheses,
   thesisTriageRecords,
   claimThesisMappings,
+  signalEntityLinks,
 } = schema;
 
 // ============================================================================
@@ -205,31 +206,28 @@ async function main() {
   // -------------------------------------------------------------------------
   // When re-articulating, mark all existing signals as 'rejected' so new ones take precedence.
   // User can later delete rejected signals or reinstate valuable ones.
-  const existingSignals = await db
+  const existingSignalRows = await db
     .select({ id: signalsTable.id, status: signalsTable.status, statement: signalsTable.statement })
     .from(signalsTable)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signalsTable.id))
     .where(
       and(
-        eq(signalsTable.thesisId, thesisId),
-        eq(signalsTable.thesisType, thesisType),
+        eq(signalEntityLinks.thesisId, thesisId),
+        eq(signalEntityLinks.thesisType, thesisType),
         sql`${signalsTable.status} IN ('draft', 'active')` // Only supersede draft/active signals
       )
     );
+  const existingSignals = existingSignalRows;
 
   if (existingSignals.length > 0) {
+    const existingIds = existingSignals.map(s => s.id);
     await db
       .update(signalsTable)
       .set({
         status: 'rejected',
         updatedAt: new Date(),
       })
-      .where(
-        and(
-          eq(signalsTable.thesisId, thesisId),
-          eq(signalsTable.thesisType, thesisType),
-          sql`${signalsTable.status} IN ('draft', 'active')`
-        )
-      );
+      .where(sql`${signalsTable.id} IN (${sql.join(existingIds.map(id => sql`${id}`), sql`, `)})`);
 
     console.log(`✅ Superseded ${existingSignals.length} existing signals (marked as rejected)`);
 
@@ -287,8 +285,6 @@ async function main() {
 
   if (signals.length > 0) {
     const signalsToInsert = signals.map((sig) => ({
-      thesisId,
-      thesisType,
       articulationId: insertedArticulation.id,
       type: normalizeType(sig.type),
       statement: sig.statement,
@@ -312,6 +308,18 @@ async function main() {
       .insert(signalsTable)
       .values(signalsToInsert)
       .returning();
+
+    // Create junction table links for each inserted signal
+    if (insertedSignals.length > 0) {
+      await db.insert(signalEntityLinks).values(
+        insertedSignals.map(s => ({
+          signalId: s.id,
+          entityType: 'thesis' as const,
+          thesisId,
+          thesisType,
+        }))
+      );
+    }
 
     console.log(`✅ Inserted ${insertedSignals.length} signals`);
 

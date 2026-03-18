@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { updateThesisTriageStatus, getThesisTriageById } from '@/db/queries/triage';
 import { logToJournal } from '@/lib/workflow';
 import { db } from '@/db';
-import { signals } from '@/db/schema';
+import { signals, signalEntityLinks } from '@/db/schema';
 import { eq, and, isNotNull, desc } from 'drizzle-orm';
 
 export async function PATCH(
@@ -57,10 +57,11 @@ export async function PATCH(
         const [anySignal] = await db
           .select({ articulationId: signals.articulationId })
           .from(signals)
+          .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
           .where(
             and(
-              eq(signals.thesisId, triageRecord.thesisId),
-              eq(signals.thesisType, triageRecord.thesisType),
+              eq(signalEntityLinks.thesisId, triageRecord.thesisId),
+              eq(signalEntityLinks.thesisType, triageRecord.thesisType),
               isNotNull(signals.articulationId)
             )
           )

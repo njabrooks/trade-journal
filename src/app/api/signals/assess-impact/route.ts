@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signals, macroTheses, assetTheses, thesisTriageRecords, signalStatusHistory } from '@/db/schema';
+import { signals, signalEntityLinks, macroTheses, assetTheses, thesisTriageRecords, signalStatusHistory } from '@/db/schema';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 
@@ -128,20 +128,14 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Update signal statuses to not_triggered (back to watching, trigger acknowledged)
+      // Update signal statuses to active (back to watching, trigger acknowledged)
       await db
         .update(signals)
         .set({
           status: 'active',
           updatedAt: new Date(),
         })
-        .where(
-          and(
-            eq(signals.thesisId, thesisId),
-            eq(signals.thesisType, thesisType),
-            eq(signals.status, 'complete')
-          )
-        );
+        .where(inArray(signals.id, triggeredSignalIds));
     }
 
     // Find and resolve the SIGNAL_TRIGGERED triage record

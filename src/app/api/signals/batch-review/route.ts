@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signals, signalStatusHistory, thesisTriageRecords } from '@/db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { signals, signalStatusHistory, signalEntityLinks, thesisTriageRecords } from '@/db/schema';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 import { getMacroThesisById } from '@/db/queries/macroTheses';
 import { getAssetThesisById } from '@/db/queries/assetTheses';
@@ -95,14 +95,29 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Look up linked entity from junction table
+      const [linkedEntity] = await db
+        .select({
+          entityType: signalEntityLinks.entityType,
+          thesisId: signalEntityLinks.thesisId,
+          thesisType: signalEntityLinks.thesisType,
+        })
+        .from(signalEntityLinks)
+        .where(eq(signalEntityLinks.signalId, signalId))
+        .limit(1);
+
+      const signalEntityType = linkedEntity?.entityType || 'thesis';
+      const signalThesisId = linkedEntity?.thesisId;
+      const signalThesisType = linkedEntity?.thesisType as 'macro' | 'asset' | null;
+
       // Get thesis for logging (only for thesis signals, not strategy signals)
       let thesisTitle = 'Unknown Thesis';
-      if (signal.entityType === 'thesis' && signal.thesisId) {
-        const thesis = signal.thesisType === 'macro'
-          ? await getMacroThesisById(signal.thesisId)
-          : await getAssetThesisById(signal.thesisId);
+      if (signalEntityType === 'thesis' && signalThesisId) {
+        const thesis = signalThesisType === 'macro'
+          ? await getMacroThesisById(signalThesisId)
+          : await getAssetThesisById(signalThesisId);
         thesisTitle = thesis?.title || 'Unknown Thesis';
-      } else if (signal.entityType === 'strategy') {
+      } else if (signalEntityType === 'strategy') {
         thesisTitle = 'Strategy Signal';
       }
 
@@ -164,10 +179,10 @@ export async function POST(request: NextRequest) {
 
         // Log to journal and check triage (only for thesis signals)
         // Use articulation_id as batchId to group journal entries from the same synthesis
-        if (signal.entityType === 'thesis' && signal.thesisId && signal.thesisType) {
+        if (signalEntityType === 'thesis' && signalThesisId && signalThesisType) {
           await logToJournal({
-            objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-            objectId: signal.thesisId,
+            objectType: signalThesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+            objectId: signalThesisId,
             objectTitle: thesisTitle,
             actionType: explicitDetails ? 'signal_configured_data_driven' : 'signal_accepted',
             actionDescription,
@@ -178,7 +193,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Check if any recommended signals remain and resolve triage if not
-          await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset', signal.articulationId);
+          await checkAndResolveTriage(signalThesisId, signalThesisType, signal.articulationId);
         }
 
         return NextResponse.json({
@@ -193,10 +208,10 @@ export async function POST(request: NextRequest) {
 
         // Log to journal and check triage (only for thesis signals)
         // Use articulation_id as batchId to group journal entries from the same synthesis
-        if (signal.entityType === 'thesis' && signal.thesisId && signal.thesisType) {
+        if (signalEntityType === 'thesis' && signalThesisId && signalThesisType) {
           await logToJournal({
-            objectType: signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-            objectId: signal.thesisId,
+            objectType: signalThesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+            objectId: signalThesisId,
             objectTitle: thesisTitle,
             actionType: 'signal_rejected',
             actionDescription: `Rejected recommended signal: "${signal.statement}"`,
@@ -207,7 +222,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Check if any recommended signals remain and resolve triage if not
-          await checkAndResolveTriage(signal.thesisId, signal.thesisType as 'macro' | 'asset', signal.articulationId);
+          await checkAndResolveTriage(signalThesisId, signalThesisType, signal.articulationId);
         }
 
         return NextResponse.json({
@@ -227,17 +242,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Fetch all recommended signals for this thesis
-      const recommendedSignals = await db
-        .select()
+      // Fetch all recommended signals for this thesis (via junction table)
+      const recommendedSignalRows = await db
+        .select({ signals })
         .from(signals)
+        .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
         .where(
           and(
-            eq(signals.thesisId, thesisId),
-            eq(signals.thesisType, thesisType),
+            eq(signalEntityLinks.thesisId, thesisId),
+            eq(signalEntityLinks.thesisType, thesisType),
             eq(signals.status, 'draft')
           )
         );
+      const recommendedSignals = recommendedSignalRows.map(r => r.signals);
 
       if (recommendedSignals.length === 0) {
         return NextResponse.json({
@@ -254,21 +271,17 @@ export async function POST(request: NextRequest) {
         : await getAssetThesisById(thesisId);
       const thesisTitle = thesis?.title || 'Unknown Thesis';
 
+      const signalIds = recommendedSignals.map(s => s.id);
+
       if (action === 'accept_all') {
-        // Accept all - update status to not_triggered
+        // Accept all - update status to active (using IDs from earlier fetch)
         await db
           .update(signals)
           .set({
             status: 'active',
             updatedAt: new Date(),
           })
-          .where(
-            and(
-              eq(signals.thesisId, thesisId),
-              eq(signals.thesisType, thesisType),
-              eq(signals.status, 'draft')
-            )
-          );
+          .where(inArray(signals.id, signalIds));
 
         // Create history records for each
         for (const signal of recommendedSignals) {
@@ -299,16 +312,10 @@ export async function POST(request: NextRequest) {
         });
 
       } else {
-        // Reject all - delete signals
+        // Reject all - delete signals (using IDs from earlier fetch)
         await db
           .delete(signals)
-          .where(
-            and(
-              eq(signals.thesisId, thesisId),
-              eq(signals.thesisType, thesisType),
-              eq(signals.status, 'draft')
-            )
-          );
+          .where(inArray(signals.id, signalIds));
 
         // Log to journal - use articulation_id as batchId for grouping
         await logToJournal({
@@ -358,14 +365,15 @@ async function checkAndResolveTriage(
   thesisType: 'macro' | 'asset',
   articulationId?: string | null
 ) {
-  // Count remaining recommended signals
+  // Count remaining recommended signals (via junction table)
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(signals)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(
       and(
-        eq(signals.thesisId, thesisId),
-        eq(signals.thesisType, thesisType),
+        eq(signalEntityLinks.thesisId, thesisId),
+        eq(signalEntityLinks.thesisType, thesisType),
         eq(signals.status, 'draft')
       )
     );
@@ -435,18 +443,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch recommended signals
-    const recommendedSignals = await db
-      .select()
+    // Fetch recommended signals (via junction table)
+    const recommendedSignalRows = await db
+      .select({ signals })
       .from(signals)
+      .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
       .where(
         and(
-          eq(signals.thesisId, thesisId),
-          eq(signals.thesisType, thesisType),
+          eq(signalEntityLinks.thesisId, thesisId),
+          eq(signalEntityLinks.thesisType, thesisType),
           eq(signals.status, 'draft')
         )
       )
       .orderBy(signals.importance, signals.type);
+    const recommendedSignals = recommendedSignalRows.map(r => r.signals);
 
     // Get thesis info
     const thesis = thesisType === 'macro'

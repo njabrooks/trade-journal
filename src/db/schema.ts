@@ -1397,19 +1397,9 @@ export const signals = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
 
-    // Entity type: 'thesis' (macro/asset thesis) or 'strategy'
-    entityType: text('entity_type').notNull().default('thesis'), // 'thesis' | 'strategy'
-
-    // For thesis signals (entity_type = 'thesis')
-    thesisId: uuid('thesis_id'), // Nullable - null when entity_type = 'strategy'
-    thesisType: text('thesis_type'), // 'macro' | 'asset' - null when entity_type = 'strategy'
+    // Entity relationships now managed via signal_entity_links junction table
     articulationId: uuid('articulation_id').references(() => thesisArticulations.id, {
       onDelete: 'set null',
-    }),
-
-    // For strategy signals (entity_type = 'strategy')
-    strategyId: uuid('strategy_id').references(() => strategies.id, {
-      onDelete: 'cascade',
     }),
 
     // Core definition
@@ -1448,9 +1438,6 @@ export const signals = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    thesisIdx: index('idx_signals_thesis').on(table.thesisId, table.thesisType),
-    strategyIdx: index('idx_signals_strategy').on(table.strategyId),
-    entityTypeIdx: index('idx_signals_entity_type').on(table.entityType),
     statusIdx: index('idx_signals_status').on(table.status),
     typeIdx: index('idx_signals_type').on(table.type),
     importanceIdx: index('idx_signals_importance').on(table.importance),
