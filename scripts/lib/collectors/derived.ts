@@ -3,6 +3,7 @@
  *
  * Handles computed metrics that require multiple data sources:
  * - BTC-NASDAQ correlation (30d and 90d rolling)
+ * - HYPE P/E ratio (CoinGecko market cap / DefiLlama annualised revenue)
  * - GLXY implied valuation per MW
  *
  * For correlation signals, this collector reports current correlation
@@ -53,6 +54,101 @@ export async function collectDerived(
   }
 
   return null;
+}
+
+/**
+ * Compute HYPE P/E ratio by combining CoinGecko market cap with
+ * DefiLlama annualised revenue.
+ *
+ * P/E = market_cap / annualised_revenue
+ *
+ * CoinGecko: https://api.coingecko.com/api/v3/coins/hyperliquid
+ *   -> market_data.market_cap.usd
+ *
+ * DefiLlama: https://api.llama.fi/summary/fees/hyperliquid?dataType=dailyRevenue
+ *   -> annualise from total30d (* 12) or recent daily values
+ */
+async function collectPERatio(
+  details: Record<string, unknown>
+): Promise<DerivedSnapshot | null> {
+  const threshold = (details.threshold as number) ?? 17.5; // midpoint of 15-20x range
+  const coingeckoEndpoint = (details.coingeckoEndpoint as string) ||
+    'https://api.coingecko.com/api/v3/coins/hyperliquid';
+  const defillamaEndpoint = (details.defillamaEndpoint as string) ||
+    'https://api.llama.fi/summary/fees/hyperliquid?dataType=dailyRevenue';
+
+  // Fetch market cap from CoinGecko and revenue from DefiLlama in parallel
+  const [cgRes, dlRes] = await Promise.all([
+    fetch(coingeckoEndpoint).catch(() => null),
+    fetch(defillamaEndpoint).catch(() => null),
+  ]);
+
+  if (!cgRes?.ok) {
+    console.warn(`  CoinGecko fetch failed: ${cgRes?.status ?? 'network error'}`);
+    return null;
+  }
+  if (!dlRes?.ok) {
+    console.warn(`  DefiLlama fetch failed: ${dlRes?.status ?? 'network error'}`);
+    return null;
+  }
+
+  const cgData = await cgRes.json() as Record<string, unknown>;
+  const dlData = await dlRes.json() as Record<string, unknown>;
+
+  // Extract market cap: market_data.market_cap.usd
+  const marketData = cgData.market_data as Record<string, unknown> | undefined;
+  const marketCapObj = marketData?.market_cap as Record<string, unknown> | undefined;
+  const marketCap = marketCapObj?.usd as number | undefined;
+
+  if (!marketCap || marketCap <= 0) {
+    console.warn('  CoinGecko: no market cap data for hyperliquid');
+    return null;
+  }
+
+  // Extract revenue from DefiLlama and annualise
+  // Prefer total30d * 12; fall back to totalDataChart daily averages
+  let annualisedRevenue: number | null = null;
+
+  const total30d = dlData.total30d as number | undefined;
+  if (total30d && total30d > 0) {
+    annualisedRevenue = total30d * 12;
+  } else {
+    // Fall back: compute from daily data chart
+    const totalDataChart = dlData.totalDataChart as Array<[number, number]> | undefined;
+    if (totalDataChart && totalDataChart.length >= 7) {
+      // Take last 30 entries (or all if fewer), average daily, then * 365
+      const recentDays = totalDataChart.slice(-30);
+      const dailyValues = recentDays.map(entry => entry[1]).filter(v => v > 0);
+      if (dailyValues.length > 0) {
+        const avgDaily = dailyValues.reduce((a, b) => a + b, 0) / dailyValues.length;
+        annualisedRevenue = avgDaily * 365;
+      }
+    }
+  }
+
+  if (!annualisedRevenue || annualisedRevenue <= 0) {
+    console.warn('  DefiLlama: no revenue data for hyperliquid');
+    return null;
+  }
+
+  const peRatio = marketCap / annualisedRevenue;
+
+  // pctToThreshold: 100% means P/E has reached the target level
+  const pct = threshold > 0 ? (peRatio / threshold) * 100 : 0;
+
+  const summary = [
+    `Market cap: $${(marketCap / 1e9).toFixed(1)}B`,
+    `Annualised revenue: $${(annualisedRevenue / 1e6).toFixed(0)}M`,
+    `P/E ratio: ${peRatio.toFixed(1)}x (target: ${threshold}x)`,
+  ].join(' | ');
+
+  return {
+    observedValue: peRatio,
+    thresholdValue: threshold,
+    pctToThreshold: Math.round(pct * 100) / 100,
+    unit: 'ratio',
+    evidenceSummary: summary,
+  };
 }
 
 /**
