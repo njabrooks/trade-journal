@@ -321,7 +321,19 @@ async function main() {
       );
     }
 
-    console.log(`✅ Inserted ${insertedSignals.length} signals`);
+    // Log journal entry for each created signal
+    for (const sig of insertedSignals) {
+      await logToJournal({
+        objectType: 'signal',
+        objectId: sig.id,
+        objectTitle: sig.statement,
+        actionType: 'created',
+        actionDescription: `Signal created: "${sig.statement}" (type: ${sig.type}, importance: ${sig.importance})`,
+        source: 'automation',
+      });
+    }
+
+    console.log(`✅ Inserted ${insertedSignals.length} signals (with journal entries)`);
 
     // Count by type
     const confirmationCount = insertedSignals.filter((s) => s.type === 'confirmation').length;

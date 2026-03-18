@@ -25,7 +25,7 @@ import WebSocket from 'ws';
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, sql } from 'drizzle-orm';
 
-const { signals, strategies, assetTheses, underlyings, signalEntityLinks } = schema;
+const { signals, strategies, assetTheses, underlyings, signalEntityLinks, journalEntries } = schema;
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
@@ -425,6 +425,16 @@ async function main() {
             linkedClaimIds: [],
           }).returning({ id: signals.id });
           signalId = inserted.id;
+
+          // Log journal entry for newly created signal
+          await db.insert(journalEntries).values({
+            objectType: 'signal',
+            objectId: inserted.id,
+            objectTitle: buildStatement(drawing),
+            actionType: 'created',
+            actionDescription: `Signal created: "${buildStatement(drawing)}" (type: ${drawing.signalType}, importance: ${drawing.signalType === 'warning' ? 'critical' : 'significant'})`,
+            source: 'automation',
+          });
         } else {
           signalId = 'dry-run';
         }

@@ -182,7 +182,43 @@ async function checkAndTriggerSignal(
   return true;
 }
 
+const MILESTONES = [25, 50, 75, 90];
+
+/**
+ * Check if pctToThreshold has newly crossed any milestone (25%, 50%, 75%, 90%).
+ * Only fires when the threshold is newly crossed (previous was below, current is at/above).
+ */
+async function checkMilestones(
+  signal: { id: string; statement: string },
+  pctToThreshold: number,
+  previousPct: number | null,
+  dryRun: boolean
+): Promise<number> {
+  const prevPct = previousPct ?? 0;
+  let milestonesHit = 0;
+
+  for (const milestone of MILESTONES) {
+    if (pctToThreshold >= milestone && prevPct < milestone) {
+      console.log(`    📊 Milestone: ${milestone}% of threshold reached`);
+      if (!dryRun) {
+        await logToJournal({
+          objectType: 'signal',
+          objectId: signal.id,
+          objectTitle: signal.statement,
+          actionType: 'quantitative_milestone',
+          actionDescription: `Signal at ${milestone}% of threshold (${pctToThreshold.toFixed(1)}% current)`,
+          source: 'automation',
+          metadata: { milestone, pctToThreshold },
+        });
+      }
+      milestonesHit++;
+    }
+  }
+  return milestonesHit;
+}
+
 let triggeredCount = 0;
+let milestoneCount = 0;
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
@@ -230,6 +266,17 @@ async function main() {
     GROUP BY signal_id
   `);
   const lastCollectedMap = new Map(lastCollected.map(r => [r.signal_id, new Date(r.last_date)]));
+
+  // Fetch previous pct_to_threshold per signal for milestone detection
+  const prevPctRows = await db.execute<{ signal_id: string; pct: string }>(sql`
+    SELECT DISTINCT ON (signal_id) signal_id, pct_to_threshold as pct
+    FROM signal_data_snapshots
+    WHERE pct_to_threshold IS NOT NULL
+      AND data_source NOT LIKE 'price_history%'
+      AND data_source != 'thesis_monitor'
+    ORDER BY signal_id, snapshot_date DESC
+  `);
+  const prevPctMap = new Map(prevPctRows.map(r => [r.signal_id, parseFloat(r.pct)]));
 
   let collected = 0;
   let skipped = 0;
@@ -319,6 +366,12 @@ async function main() {
             })
             .onConflictDoNothing(); // Skip if snapshot already exists for this signal+date+source
         }
+
+        // Check milestone crossings
+        const hits = await checkMilestones(
+          signal, result.pctToThreshold, prevPctMap.get(signal.id) ?? null, dryRun
+        );
+        milestoneCount += hits;
 
         // Check threshold trigger (after snapshot insert, so data is persisted first)
         if (!skipTriggers) {
@@ -452,6 +505,12 @@ async function main() {
           .onConflictDoNothing();
       }
 
+      // Check milestone crossings for strategy signals
+      const hits = await checkMilestones(
+        signal, pctToThreshold, prevPctMap.get(signal.id) ?? null, dryRun
+      );
+      milestoneCount += hits;
+
       // Check threshold trigger for strategy signals too
       if (!skipTriggers) {
         const triggered = await checkAndTriggerSignal(signal, pctToThreshold, dryRun);
@@ -467,6 +526,9 @@ async function main() {
 
   console.log(`\nDone — Thesis: ${collected} collected, ${skipped} skipped, ${errors} errors`);
   console.log(`       Strategy: ${sCollected} collected, ${sSkipped} skipped, ${sErrors} errors`);
+  if (milestoneCount > 0) {
+    console.log(`       Milestones: ${milestoneCount} milestone(s) crossed`);
+  }
   if (triggeredCount > 0) {
     console.log(`       Triggered: ${triggeredCount} signal(s) reached threshold and auto-completed`);
   }

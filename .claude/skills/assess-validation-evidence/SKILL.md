@@ -277,6 +277,25 @@ Replace `{{EVIDENCES_JSON}}` with an array like:
 - Uses upsert — safe to re-run; updates assessment if the claim-signal pair already exists
 - Skip this step entirely if no claim ID is available (e.g., content was pasted inline without a research source)
 
+### Write signal/claim_evidenced journal entries
+
+After writing `claim_signal_evidences` rows, write a journal entry for each row written (skip neutral assessments):
+
+```bash
+cd /Users/home-hub/projects/trade-journal
+
+# Repeat for each (claim × signal) pair with non-neutral assessment:
+npx tsx scripts/ops/add-journal-note.ts \
+  --entity-type signal \
+  --id {{SIGNAL_ID}} \
+  --note "Claim evidenced ({{assessment}}): \"{{claim_title}}\". Source: {{content_title}}."
+```
+
+Example message:
+```
+Claim evidenced (strengthening): "Dollar debasement accelerating as reserve share falls". Source: Luke Gromen — Feb 2026 interview.
+```
+
 ---
 
 ## Step 6b: Add Journal Entry Per Signal Assessed
