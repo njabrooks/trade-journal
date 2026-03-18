@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import type { Signal } from '@/db/schema';
+import { TradingViewMiniChart } from './TradingViewMiniChart';
+import { SignalSnapshotChart } from './SignalSnapshotChart';
+import { AssessmentTimeline } from './AssessmentTimeline';
 
 interface Snapshot {
   id: string;
@@ -35,6 +38,7 @@ const SOURCE_LABELS: Record<string, string> = {
   internal_db: 'Internal',
   thesis_monitor: 'Thesis Monitor',
   derived: 'Derived',
+  strategy_price: 'Price',
 };
 
 function formatValue(value: string | null, unit: string | null): string {
@@ -46,8 +50,9 @@ function formatValue(value: string | null, unit: string | null): string {
     if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`;
     if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
     if (num >= 1e3) return `$${(num / 1e3).toFixed(0)}K`;
-    return `$${num.toFixed(0)}`;
+    return `$${num.toFixed(2)}`;
   }
+  if (unit === 'BTC_RATIO') return num.toPrecision(4);
   if (unit === '%') return `${num.toFixed(1)}%`;
   if (unit === 'status') return num === 0 ? 'Active' : 'Triggered';
   return `${num.toFixed(2)} ${unit || ''}`.trim();
@@ -99,8 +104,18 @@ export function SignalProgressCard({ signal }: SignalProgressCardProps) {
     );
   }
 
-  // Separate quantitative and qualitative snapshots
-  const quantitative = snapshots.filter(s => s.observedValue !== null);
+  // Separate quantitative and qualitative snapshots.
+  // Exclude price_history_* data sources — these are raw price backfill data
+  // used for correlation computation, not actual signal observations.
+  // Also filter to only the primary data source (the most recent one) to avoid
+  // mixing incompatible units in the chart.
+  const allQuant = snapshots.filter(s =>
+    s.observedValue !== null && !s.dataSource.startsWith('price_history')
+  );
+  const primarySource = allQuant[0]?.dataSource;
+  const quantitative = primarySource
+    ? allQuant.filter(s => s.dataSource === primarySource)
+    : allQuant;
   const qualitative = snapshots.filter(s => s.assessment !== null);
 
   const latestQuant = quantitative[0];
@@ -108,8 +123,13 @@ export function SignalProgressCard({ signal }: SignalProgressCardProps) {
 
   const hasData = quantitative.length > 0 || qualitative.length > 0;
 
+  // Determine if this is a strategy price signal with a TradingView symbol
+  const details = signal.explicitDetails as Record<string, unknown> | null;
+  const tvSymbol = details?.tvSymbol as string | undefined;
+  const isStrategyPrice = signal.entityType === 'strategy' && !!tvSymbol;
+
   return (
-    <div className="border border-border rounded-lg p-3 space-y-2">
+    <div className="border border-border rounded-lg p-3 space-y-3">
       {/* Header: data source badges */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {latestQuant && (
@@ -127,7 +147,7 @@ export function SignalProgressCard({ signal }: SignalProgressCardProps) {
         )}
       </div>
 
-      {/* Quantitative: current value → threshold with progress bar */}
+      {/* Quantitative: current value -> threshold with progress bar */}
       {latestQuant && (
         <div className="space-y-1">
           <div className="flex items-baseline justify-between gap-2">
@@ -147,8 +167,40 @@ export function SignalProgressCard({ signal }: SignalProgressCardProps) {
         </div>
       )}
 
-      {/* Qualitative: latest assessment */}
-      {latestQual && (
+      {/* Chart section: depends on signal type */}
+      {isStrategyPrice ? (
+        /* Strategy price signal: TradingView embed */
+        <TradingViewMiniChart
+          symbol={tvSymbol}
+          height={350}
+        />
+      ) : quantitative.length >= 2 ? (
+        /* Thesis quantitative: Recharts sparkline */
+        <SignalSnapshotChart
+          snapshots={quantitative.map(s => ({
+            date: s.snapshotDate,
+            observed: parseFloat(s.observedValue || '0'),
+            threshold: parseFloat(s.thresholdValue || '0'),
+          }))}
+          unit={latestQuant?.unit || ''}
+          signalType={signal.type}
+          height={140}
+        />
+      ) : null}
+
+      {/* Qualitative: assessment timeline */}
+      {qualitative.length > 0 && (
+        <AssessmentTimeline
+          assessments={qualitative.map(s => ({
+            date: s.snapshotDate,
+            assessment: s.assessment || 'no_evidence',
+            summary: s.evidenceSummary,
+          }))}
+        />
+      )}
+
+      {/* Fallback for qualitative-only signals without timeline data */}
+      {!quantitative.length && qualitative.length === 0 && latestQual && (
         <div className="space-y-1">
           {latestQual.assessment && (
             <div className="flex items-center gap-1.5">

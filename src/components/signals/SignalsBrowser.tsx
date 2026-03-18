@@ -301,7 +301,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
       </p>
 
       {/* Table */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
@@ -417,7 +417,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                   {isExpanded && (
                     <tr className="bg-muted/10">
                       <td colSpan={6} className="px-6 py-4">
-                        <div className="max-w-2xl">
+                        <div className="max-w-4xl">
                           <SignalProgressCard
                             signal={{
                               id: signal.id,

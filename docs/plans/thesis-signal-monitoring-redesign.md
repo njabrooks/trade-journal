@@ -1130,13 +1130,23 @@ The `explicit_details` on each signal has a `checkFrequency` field (`"daily"` or
 **6. Phase 4: Process-inbox signal integration**
 See Phase 4 section above. Would close the loop between research ingestion and signal tracking — new claims automatically checked against active signals.
 
-**7. Sparkline trend chart in signal expanded row**
-The signals browser expanded rows currently show `SignalProgressCard` (current value + bar). Once a few days of data accumulate (3+ snapshots per signal), add a sparkline trend chart showing trajectory toward the threshold. Data available via `GET /api/signals/[id]/snapshots?days=90`. Recharts infrastructure already in `src/components/ui/chart.tsx`.
+**7. Sparkline trend chart in signal expanded row** ← complete (2026-03-18)
+Signal expanded rows now show three chart types depending on signal:
+- **Strategy price signals**: TradingView Symbol Overview widget (free embed, interactive hover tracking)
+- **Thesis quantitative signals**: Recharts AreaChart sparkline with dashed threshold reference line
+- **Thesis qualitative signals**: Assessment timeline dots showing progression (no_evidence → emerging → partial → strong → confirmed) with trend label
+Files: `TradingViewMiniChart.tsx`, `SignalSnapshotChart.tsx`, `AssessmentTimeline.tsx`, updated `SignalProgressCard.tsx`.
 
-**8. TradingView CDP collector for economic calendar**
+**8. Signals Browser: group by underlying asset**
+Add ability to group signals by underlying ticker in the Signals Browser. For example, all BTC-related signals (macro thesis, asset thesis, strategy) grouped together so you can see the full picture for one asset. Requires resolving the underlying for macro thesis signals (which don't have a direct ticker link).
+
+**9. Centralise price data in `price_history` table**
+The `price_history` table (via `assets`) is the single source of truth for daily prices. Currently missing NASDAQ (^IXIC) and S&P 500 (^GSPC) indices. Add these as assets with Yahoo Finance daily ingestion. Then update `derived.ts` correlation collector to read from `price_history` instead of hitting Yahoo Finance API on each run. Benefits: faster collection, no external API dependency, consistent data.
+
+**10. TradingView CDP collector for economic calendar**
 Build a collector that uses CDP (Chrome Debug on port 9222) to access the TradingView economic calendar. This would feed macro thesis signals that depend on economic events (FOMC decisions, CPI releases, employment data). The CDP infrastructure exists but no collector is wired to it yet.
 
-**9. Signal trigger automation**
+**11. Signal trigger automation**
 When a quantitative signal's `pct_to_threshold` reaches 100% (or crosses the threshold), automatically:
 - Update the signal status to `triggered` or `complete`
 - Create a `thesis_triage_record` for user review
@@ -1145,13 +1155,13 @@ Currently the snapshots are passive — they record data but don't trigger actio
 
 ### Technical debt / improvements
 
-**10. Dedup logic for qualitative snapshots**
+**12. Dedup logic for qualitative snapshots**
 The `generateQualitativeSnapshots()` function in `ingest-world-monitor.ts` can match the same intelligence item to multiple signals, creating noisy snapshots. Consider improving the matching to prioritise the best-fit signal for each item.
 
-**11. HYPE P/E re-rating condition**
+**13. HYPE P/E re-rating condition**
 The HYPE completion signal's second condition (P/E re-rating to 15-20x) returns no data because it requires both CoinGecko market cap and DefiLlama revenue combined. This needs a custom derived collector that fetches both and computes the ratio.
 
-**12. Clean up test data**
+**14. Clean up test data**
 The test thesis-monitor report at `notes/intelligence/20260317-1300-thesis-monitor.md` and its associated snapshots (report_id `23fa617e...`) should be cleaned up to avoid confusion with real data.
 
 ### Key files for orientation

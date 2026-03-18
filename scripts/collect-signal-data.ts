@@ -61,6 +61,11 @@ async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const now = new Date();
 
+  // Truncate to start-of-day UTC for dedup: the unique constraint on
+  // (signal_id, snapshot_date, data_source) only works if we use a
+  // consistent date per day, not a precise timestamp per run.
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
   console.log(`Signal Data Collection — ${now.toISOString()}`);
   if (dryRun) console.log('(DRY RUN — no data will be written)\n');
 
@@ -144,7 +149,7 @@ async function main() {
             .insert(signalDataSnapshots)
             .values({
               signalId: signal.id,
-              snapshotDate: now,
+              snapshotDate: today,
               observedValue: String(result.observedValue ?? 0),
               thresholdValue: String(result.thresholdValue ?? 0),
               pctToThreshold: String(result.pctToThreshold ?? 0),
