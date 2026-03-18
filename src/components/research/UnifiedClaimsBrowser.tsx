@@ -28,6 +28,13 @@ interface LinkedView {
   mappingType: string; // 'supports' | 'refutes' | 'foundation'
 }
 
+interface LinkedSignal {
+  id: string;
+  statement: string;
+  type: string; // 'confirmation' | 'warning'
+  assessment: string; // 'neutral' | 'strengthening' | 'confirmed' | 'weakening' | 'invalidated'
+}
+
 interface ClaimWithSource {
   claim: DbMainClaim;
   insight: ResearchInsight | null;

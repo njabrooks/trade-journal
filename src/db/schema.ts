@@ -1588,6 +1588,32 @@ export const signalDataSnapshots = pgTable(
 export type SignalDataSnapshot = typeof signalDataSnapshots.$inferSelect;
 export type NewSignalDataSnapshot = typeof signalDataSnapshots.$inferInsert;
 
+// Claim-Signal Evidences - Junction table linking claims to the signals they evidence
+export const claimSignalEvidences = pgTable(
+  'claim_signal_evidences',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    claimId: uuid('claim_id')
+      .notNull()
+      .references(() => mainClaims.id, { onDelete: 'cascade' }),
+    signalId: uuid('signal_id')
+      .notNull()
+      .references(() => signals.id, { onDelete: 'cascade' }),
+    assessment: text('assessment').notNull(), // 'neutral' | 'strengthening' | 'confirmed' | 'weakening' | 'invalidated'
+    snapshotId: uuid('snapshot_id')
+      .references(() => signalDataSnapshots.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    claimIdx: index('idx_claim_signal_evidences_claim').on(table.claimId),
+    signalIdx: index('idx_claim_signal_evidences_signal').on(table.signalId),
+    uniqueClaimSignal: unique('claim_signal_evidences_unique').on(table.claimId, table.signalId),
+  })
+);
+
+export type ClaimSignalEvidence = typeof claimSignalEvidences.$inferSelect;
+export type NewClaimSignalEvidence = typeof claimSignalEvidences.$inferInsert;
+
 // Decision Audit Log - Process vs actual actions
 export const decisionAuditLog = pgTable(
   'decision_audit_log',

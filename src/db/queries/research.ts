@@ -12,6 +12,8 @@ import {
   underlyings,
   mainClaims,
   claimThesisMappings,
+  claimSignalEvidences,
+  signals,
 } from '@/db/schema';
 import { eq, desc, and, isNull, inArray, sql, count, or } from 'drizzle-orm';
 import type {
@@ -412,12 +414,39 @@ export async function getAllMainClaimsWithSources() {
   // Fetch pending suggestions for all claims
   const suggestionsByClaimId = await getSuggestionsForClaims(claimIds);
 
-  // Merge linked entities and suggestions with claims
+  // Fetch signal evidences for all claims
+  const signalEvidencesData = await db
+    .select({
+      claimId: claimSignalEvidences.claimId,
+      signalId: signals.id,
+      signalStatement: signals.statement,
+      signalType: signals.type,
+      assessment: claimSignalEvidences.assessment,
+    })
+    .from(claimSignalEvidences)
+    .innerJoin(signals, eq(claimSignalEvidences.signalId, signals.id))
+    .where(inArray(claimSignalEvidences.claimId, claimIds));
+
+  const signalsByClaimId = new Map<string, Array<{ id: string; statement: string; type: string; assessment: string }>>();
+  signalEvidencesData.forEach(row => {
+    if (!signalsByClaimId.has(row.claimId)) {
+      signalsByClaimId.set(row.claimId, []);
+    }
+    signalsByClaimId.get(row.claimId)!.push({
+      id: row.signalId,
+      statement: row.signalStatement,
+      type: row.signalType,
+      assessment: row.assessment,
+    });
+  });
+
+  // Merge linked entities, suggestions, and signal evidences with claims
   return claims.map(c => ({
     ...c,
     linkedTheses: thesesByClaimId.get(c.claim.id) || [],
     linkedViews: viewsByClaimId.get(c.claim.id) || [],
     suggestions: suggestionsByClaimId.get(c.claim.id) || [],
+    linkedSignals: signalsByClaimId.get(c.claim.id) || [],
   }));
 }
 
@@ -504,12 +533,39 @@ export async function getMainClaimsForArtifact(artifactId: string) {
   // Fetch pending suggestions for all claims
   const suggestionsByClaimId = await getSuggestionsForClaims(claimIds);
 
-  // Merge linked entities and suggestions with claims
+  // Fetch signal evidences for all claims
+  const signalEvidencesData = await db
+    .select({
+      claimId: claimSignalEvidences.claimId,
+      signalId: signals.id,
+      signalStatement: signals.statement,
+      signalType: signals.type,
+      assessment: claimSignalEvidences.assessment,
+    })
+    .from(claimSignalEvidences)
+    .innerJoin(signals, eq(claimSignalEvidences.signalId, signals.id))
+    .where(inArray(claimSignalEvidences.claimId, claimIds));
+
+  const signalsByClaimId = new Map<string, Array<{ id: string; statement: string; type: string; assessment: string }>>();
+  signalEvidencesData.forEach(row => {
+    if (!signalsByClaimId.has(row.claimId)) {
+      signalsByClaimId.set(row.claimId, []);
+    }
+    signalsByClaimId.get(row.claimId)!.push({
+      id: row.signalId,
+      statement: row.signalStatement,
+      type: row.signalType,
+      assessment: row.assessment,
+    });
+  });
+
+  // Merge linked entities, suggestions, and signal evidences with claims
   return claims.map(c => ({
     ...c,
     linkedTheses: thesesByClaimId.get(c.claim.id) || [],
     linkedViews: viewsByClaimId.get(c.claim.id) || [],
     suggestions: suggestionsByClaimId.get(c.claim.id) || [],
+    linkedSignals: signalsByClaimId.get(c.claim.id) || [],
   }));
 }
 

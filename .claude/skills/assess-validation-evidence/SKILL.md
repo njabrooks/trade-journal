@@ -226,6 +226,59 @@ Replace `{{SNAPSHOTS_JSON}}` with an array like:
 
 ---
 
+## Step 6a: Write claim_signal_evidences Links
+
+If the content being assessed originated from a **research claim** (i.e., a `main_claims` record exists for this content — check if a `claimId` was passed as context, or if the content was uploaded via `finalize-for-upload` and has a corresponding claim), write a row to `claim_signal_evidences` for each signal that received a non-neutral assessment.
+
+This creates a navigable link between the claim and the signals it provides evidence for.
+
+```bash
+cd /Users/home-hub/projects/trade-journal
+cat > scripts/tmp-claim-signal-evidences.ts << 'SCRIPT'
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+async function main() {
+  const { db, closeDb, schema } = await import('./lib/db.js');
+  const { sql } = await import('drizzle-orm');
+  const evidences = {{EVIDENCES_JSON}};
+  for (const ev of evidences) {
+    await db.insert(schema.claimSignalEvidences).values(ev)
+      .onConflictDoUpdate({
+        target: [schema.claimSignalEvidences.claimId, schema.claimSignalEvidences.signalId],
+        set: { assessment: sql`excluded.assessment`, snapshotId: sql`excluded.snapshot_id` },
+      });
+  }
+  console.log(JSON.stringify({ success: true, count: evidences.length }));
+  await closeDb();
+  process.exit(0);
+}
+main().catch(e => { console.error(e); process.exit(1); });
+SCRIPT
+npx tsx scripts/tmp-claim-signal-evidences.ts
+rm scripts/tmp-claim-signal-evidences.ts
+```
+
+Replace `{{EVIDENCES_JSON}}` with an array like:
+
+```json
+[
+  {
+    "claimId": "<main_claims uuid>",
+    "signalId": "<signal uuid>",
+    "assessment": "strengthening",
+    "snapshotId": null
+  }
+]
+```
+
+**Rules:**
+- Only write links for signals with non-neutral assessments (strengthening, confirmed, weakening, invalidated)
+- If `snapshotId` is available from the Step 6 insert (e.g., via RETURNING), include it; otherwise set to `null`
+- Uses upsert — safe to re-run; updates assessment if the claim-signal pair already exists
+- Skip this step entirely if no claim ID is available (e.g., content was pasted inline without a research source)
+
+---
+
 ## Step 6b: Add Journal Entry Per Signal Assessed
 
 After writing snapshots, write a journal entry for **each** signal that received an assessment other than `neutral`. This provides narrative traceability on each signal's Journal tab.
@@ -350,6 +403,7 @@ When invoked from `process-inbox` or another headless skill, output JSON instead
 - **Do NOT automatically update signal status** — only write snapshots and journal notes. Status changes require user review.
 - This skill can be run repeatedly against the same thesis with different content — each run adds new snapshot rows
 - `psql-query.ts` is **read-only** — use temp scripts for inserts
+- **Write `claim_signal_evidences`** links when a claim ID is available — this enables navigating from claims to signals and vice versa
 
 ## Relationship to Other Skills
 

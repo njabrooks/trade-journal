@@ -368,6 +368,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                     createdAt: signal.createdAt,
                     updatedAt: signal.updatedAt,
                   } as any}
+                  evidenceCount={signal.evidenceCount}
                 />
                 {/* Linked entities with position % */}
                 {signal.entities.length > 0 && (

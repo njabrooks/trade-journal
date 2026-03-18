@@ -53,6 +53,9 @@ export interface SignalWithContext {
   latestAssessment: string | null;
   latestEvidenceSummary: string | null;
   latestQualDate: Date | null;
+
+  // Claim evidence count
+  evidenceCount: number;
 }
 
 export interface SignalFilterCounts {
@@ -200,7 +203,18 @@ export async function getAllSignalsWithContext(): Promise<{
     ORDER BY signal_id, snapshot_date DESC
   `);
 
-  // 5. Resolve macro thesis → underlying tickers
+  // 5. Fetch claim evidence counts per signal
+  const evidenceCounts = await db.execute<{
+    signal_id: string;
+    count: string;
+  }>(sql`
+    SELECT signal_id, COUNT(*)::text as count
+    FROM claim_signal_evidences
+    GROUP BY signal_id
+  `);
+  const evidenceCountMap = new Map(evidenceCounts.map(r => [r.signal_id, parseInt(r.count, 10)]));
+
+  // 6. Resolve macro thesis → underlying tickers
   const macroUnderlyings = await db.execute<{
     macro_thesis_id: string;
     ticker: string;
@@ -221,7 +235,7 @@ export async function getAllSignalsWithContext(): Promise<{
   const quantMap = new Map(latestQuantSnapshots.map(s => [s.signal_id, s]));
   const qualMap = new Map(latestQualSnapshots.map(s => [s.signal_id, s]));
 
-  // 6. Merge
+  // 7. Merge
   const merged: SignalWithContext[] = rawSignals.map(s => {
     const quant = quantMap.get(s.id);
     const qual = qualMap.get(s.id);
@@ -260,10 +274,11 @@ export async function getAllSignalsWithContext(): Promise<{
       latestAssessment: qual?.assessment ?? null,
       latestEvidenceSummary: qual?.evidence_summary ?? null,
       latestQualDate: qual?.snapshot_date ? new Date(qual.snapshot_date) : null,
+      evidenceCount: evidenceCountMap.get(s.id) || 0,
     };
   });
 
-  // 7. Compute counts
+  // 8. Compute counts
   const counts: SignalFilterCounts = {
     total: merged.length,
     active: 0,

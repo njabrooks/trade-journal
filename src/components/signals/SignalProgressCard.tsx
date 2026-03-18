@@ -20,6 +20,7 @@ interface Snapshot {
 
 interface SignalProgressCardProps {
   signal: Signal;
+  evidenceCount?: number;
 }
 
 const ASSESSMENT_LABELS: Record<string, { label: string; color: string; emoji: string }> = {
@@ -81,7 +82,7 @@ function ProgressBar({ pct }: { pct: number }) {
   );
 }
 
-export function SignalProgressCard({ signal }: SignalProgressCardProps) {
+export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCardProps) {
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -217,6 +218,15 @@ export function SignalProgressCard({ signal }: SignalProgressCardProps) {
               {latestQual.evidenceSummary}
             </p>
           )}
+        </div>
+      )}
+
+      {/* Supporting claims badge */}
+      {evidenceCount != null && evidenceCount > 0 && (
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300">
+            {evidenceCount} supporting {evidenceCount === 1 ? 'claim' : 'claims'}
+          </span>
         </div>
       )}
 
