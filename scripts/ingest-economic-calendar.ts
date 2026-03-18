@@ -1,21 +1,21 @@
 /**
- * Economic Calendar Ingestion Script
+ * Economic Calendar Ingestion
  *
- * Fetches upcoming economic events from two sources:
- *   1. FRED releases/dates API — US data release schedule
- *   2. Finnhub economic calendar — global events with impact ratings
+ * Fetches upcoming and recent economic events from TradingView's economic
+ * calendar API (no auth needed, public endpoint with Origin header) and
+ * upserts them into the economic_events table.
  *
- * Merges both sources and upserts into the `economic_events` table.
- * Re-running updates actual values when past events have been published.
+ * Coverage:
+ *   - Past 7 days  (to capture actuals that have just been released)
+ *   - Next 30 days (to have upcoming events ready for signal queries)
+ *
+ * By default only high-impact events are stored (importance = 1 from TV).
+ * Pass --all-impact to also ingest medium (0) and low (-1) impact events.
  *
  * Usage:
- *   npx tsx scripts/ingest-economic-calendar.ts           # Next 30 days
- *   npx tsx scripts/ingest-economic-calendar.ts --days 60 # Custom range
- *
- * Environment:
- *   FRED_API_KEY    - FRED API key (required for FRED source)
- *   FINNHUB_API_KEY - Finnhub API key (required for Finnhub source)
- *   DATABASE_URL_POOLER - Database connection string
+ *   npx tsx scripts/ingest-economic-calendar.ts
+ *   npx tsx scripts/ingest-economic-calendar.ts --all-impact
+ *   npx tsx scripts/ingest-economic-calendar.ts --dry-run
  */
 
 import { db, closeDb, schema } from './lib/db.js';
@@ -27,514 +27,305 @@ const { economicEvents } = schema;
 // Configuration
 // ---------------------------------------------------------------------------
 
-const FRED_API_BASE = 'https://api.stlouisfed.org/fred';
-const FRED_API_KEY = process.env.FRED_API_KEY;
-const FRED_RATE_LIMIT_MS = 600; // ~100 req/min to stay within 120/min limit
+/**
+ * TV API endpoint — no auth needed, but requires Origin/Referer headers
+ * from the tradingview.com domain to bypass a 403.
+ */
+const TV_CALENDAR_URL = 'https://economic-calendar.tradingview.com/events';
 
-const FINNHUB_API_BASE = 'https://finnhub.io/api/v1';
-const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY;
-const FINNHUB_RATE_LIMIT_MS = 200; // 30 calls/sec free tier
+const TV_HEADERS: Record<string, string> = {
+  'Origin': 'https://www.tradingview.com',
+  'Referer': 'https://www.tradingview.com/',
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
+    '(KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+};
 
-// Maximum days per Finnhub request — we query in weekly chunks to keep
-// response sizes manageable and ensure proper date attribution.
-const FINNHUB_CHUNK_DAYS = 7;
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface FredRelease {
-  id: number;
-  name: string;
-  link?: string;
-}
-
-interface FredReleaseDate {
-  release_id: number;
-  release_name?: string;
-  date: string;
-}
+/** Countries to fetch. Add more ISO codes as needed. */
+const TARGET_COUNTRIES = ['US'];
 
 /**
- * Finnhub economic calendar event.
- * The `time` field is "HH:MM:SS" or empty string.
- * The `impact` field may be a word ("low"/"medium"/"high") or a number ("1"/"2"/"3").
- * Note: The API response may or may not include a per-event `date` field.
- * We handle both cases defensively — when missing, we query day-by-day.
+ * Event-type normalisation map.
+ *
+ * TradingView uses human-readable titles which can vary slightly across
+ * releases (e.g. "Fed Interest Rate Decision" vs "FOMC Rate Decision").
+ * We normalise to a stable key so the unique constraint on (event_type,
+ * event_date, country) works correctly across runs and years.
+ *
+ * Matching is case-insensitive against the full title string.
  */
-interface FinnhubEconomicEvent {
-  actual?: number | null;
-  country: string;
-  estimate?: number | null;
-  event: string;
-  impact: string;
-  prev?: number | null;
-  time: string;
-  unit?: string;
-  // Not in official docs but may be present in practice
-  date?: string;
-}
+const EVENT_TYPE_MAP: Array<{ pattern: RegExp; eventType: string }> = [
+  // FOMC / Fed
+  { pattern: /fed interest rate|fomc rate decision|federal funds rate/i,  eventType: 'FOMC_RATE_DECISION' },
+  { pattern: /fomc economic projections/i,                                 eventType: 'FOMC_PROJECTIONS' },
+  { pattern: /fomc minutes/i,                                              eventType: 'FOMC_MINUTES' },
+  { pattern: /fed press conference/i,                                      eventType: 'FED_PRESS_CONFERENCE' },
 
-interface EventRecord {
-  eventName: string;
-  eventDate: string;
-  eventTime: string | null;
-  category: string | null;
-  impact: string | null;
-  country: string;
-  actualValue: string | null;
-  forecastValue: string | null;
-  previousValue: string | null;
-  unit: string | null;
-  source: string;
-  sourceId: string | null;
-  notes: string | null;
-}
+  // Inflation (order matters — more specific first)
+  { pattern: /core inflation rate.*mom|core cpi.*mom/i,                    eventType: 'CORE_CPI_MM' },
+  { pattern: /core inflation rate.*yoy|core cpi.*yoy/i,                    eventType: 'CORE_CPI_YY' },
+  { pattern: /^inflation rate.*mom|^cpi.*mom/i,                            eventType: 'CPI_MM' },
+  { pattern: /^inflation rate.*yoy|^cpi.*yoy/i,                            eventType: 'CPI_YY' },
+  { pattern: /core pce price index.*mom/i,                                 eventType: 'CORE_PCE_MM' },
+  { pattern: /core pce price index.*yoy/i,                                 eventType: 'CORE_PCE_YY' },
+  { pattern: /pce price index.*mom/i,                                      eventType: 'PCE_MM' },
+  { pattern: /pce price index.*yoy/i,                                      eventType: 'PCE_YY' },
+  { pattern: /core ppi.*mom|ppi ex food.*mom/i,                            eventType: 'CORE_PPI_MM' },
+  { pattern: /^ppi.*mom/i,                                                 eventType: 'PPI_MM' },
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+  // Labour market
+  { pattern: /non.?farm payrolls/i,                                        eventType: 'NFP' },
+  { pattern: /unemployment rate/i,                                         eventType: 'UNEMPLOYMENT_RATE' },
+  { pattern: /jolts job openings/i,                                        eventType: 'JOLTS_OPENINGS' },
+  { pattern: /adp employment change/i,                                     eventType: 'ADP_EMPLOYMENT' },
+  { pattern: /average hourly earnings/i,                                   eventType: 'AVG_HOURLY_EARNINGS' },
+  { pattern: /initial jobless claims/i,                                    eventType: 'INITIAL_JOBLESS_CLAIMS' },
 
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+  // Growth / GDP
+  { pattern: /gdp growth rate.*final/i,                                    eventType: 'GDP_FINAL' },
+  { pattern: /gdp growth rate.*second/i,                                   eventType: 'GDP_SECOND' },
+  { pattern: /gdp growth rate.*adv|gdp.*advance/i,                         eventType: 'GDP_ADVANCE' },
 
-function formatDate(d: Date): string {
-  return d.toISOString().split('T')[0];
-}
+  // Consumer
+  { pattern: /retail sales.*mom/i,                                         eventType: 'RETAIL_SALES_MM' },
+  { pattern: /michigan consumer sentiment.*prel/i,                         eventType: 'MICHIGAN_SENTIMENT_PREL' },
+  { pattern: /michigan consumer sentiment.*final/i,                        eventType: 'MICHIGAN_SENTIMENT_FINAL' },
+  { pattern: /personal spending/i,                                         eventType: 'PERSONAL_SPENDING' },
+  { pattern: /personal income/i,                                           eventType: 'PERSONAL_INCOME' },
 
-/** Add N days to a date and return a new Date. */
-function addDays(d: Date, n: number): Date {
-  const result = new Date(d);
-  result.setDate(result.getDate() + n);
-  return result;
-}
+  // Business / activity
+  { pattern: /ism manufacturing pmi/i,                                     eventType: 'ISM_MANUFACTURING_PMI' },
+  { pattern: /ism services pmi/i,                                          eventType: 'ISM_SERVICES_PMI' },
+  { pattern: /s&p global.*manufacturing pmi/i,                             eventType: 'SP_GLOBAL_MANUFACTURING_PMI' },
+  { pattern: /s&p global.*services pmi/i,                                  eventType: 'SP_GLOBAL_SERVICES_PMI' },
 
-/** Map a FRED release name to a category via keyword matching. */
-function categorizeFredRelease(name: string): string {
-  const lower = name.toLowerCase();
-
-  // Interest rates / monetary policy
-  if (/fomc|federal funds|interest rate|treasury|discount rate|monetary policy/.test(lower)) {
-    return 'interest_rates';
-  }
-  // Inflation
-  if (/\bcpi\b|consumer price|pce|producer price|ppi|import.+price|export.+price|inflation/.test(lower)) {
-    return 'inflation';
-  }
-  // Labor market
-  if (/employment|nonfarm|payroll|jobless|unemployment|labor|initial claims|jolts|job openings/.test(lower)) {
-    return 'labor';
-  }
-  // Output / activity
-  if (/gdp|gross domestic|industrial production|capacity utilization|durable goods|retail sales|ism|pmi|manufacturing/.test(lower)) {
-    return 'output';
-  }
   // Housing
-  if (/housing|home.+sale|building permit|construction|mortgage|case.shiller|existing home|new home|pending home/.test(lower)) {
-    return 'housing';
-  }
-  // Consumer / sentiment
-  if (/consumer confidence|consumer sentiment|michigan/.test(lower)) {
-    return 'other';
-  }
-  // Trade
-  if (/trade balance|import|export|current account/.test(lower)) {
-    return 'other';
-  }
+  { pattern: /existing home sales/i,                                       eventType: 'EXISTING_HOME_SALES' },
+  { pattern: /new home sales/i,                                            eventType: 'NEW_HOME_SALES' },
+  { pattern: /housing starts/i,                                            eventType: 'HOUSING_STARTS' },
+];
 
-  return 'other';
+/** Map TV importance integer to our text enum */
+function importanceToLevel(importance: number): 'high' | 'medium' | 'low' {
+  if (importance >= 1) return 'high';
+  if (importance === 0) return 'medium';
+  return 'low';
 }
 
-/** Map Finnhub impact to our schema. Finnhub uses both words and numbers. */
-function mapFinnhubImpact(raw: string | undefined | null): string | null {
-  if (!raw) return null;
-  const lower = String(raw).toLowerCase();
-  if (lower === 'high' || lower === '3') return 'high';
-  if (lower === 'medium' || lower === '2') return 'medium';
-  if (lower === 'low' || lower === '1') return 'low';
+/** Derive a stable event_type key from the TV title */
+function deriveEventType(title: string): string {
+  for (const { pattern, eventType } of EVENT_TYPE_MAP) {
+    if (pattern.test(title)) return eventType;
+  }
+  // Fallback: uppercase-snake the title, strip punctuation, cap at 60 chars
+  return title
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 60);
+}
+
+/** Derive a unit string from TV's scale + unit fields */
+function deriveUnit(tvEvent: TvEvent): string | null {
+  if (tvEvent.unit) return tvEvent.unit;
+  if (tvEvent.scale) return tvEvent.scale;
+  if (tvEvent.currency) return tvEvent.currency;
   return null;
 }
 
-/** Map a Finnhub event name to a category via keyword matching. */
-function categorizeFinnhubEvent(eventName: string): string {
-  const lower = eventName.toLowerCase();
+// ---------------------------------------------------------------------------
+// TV API types
+// ---------------------------------------------------------------------------
 
-  if (/interest rate|fomc|fed fund|central bank|repo rate|base rate|bank rate|monetary policy|rate decision/.test(lower)) {
-    return 'interest_rates';
-  }
-  if (/\bcpi\b|inflation|pce|ppi|consumer price|producer price|import price/.test(lower)) {
-    return 'inflation';
-  }
-  if (/employment|nonfarm|payroll|unemployment|jobless|labor|claimant|job/.test(lower)) {
-    return 'labor';
-  }
-  if (/gdp|industrial|manufacturing|pmi|ism|retail sales|durable goods|capacity/.test(lower)) {
-    return 'output';
-  }
-  if (/housing|home sale|building permit|construction|mortgage/.test(lower)) {
-    return 'housing';
-  }
+interface TvEvent {
+  id: string;
+  title: string;
+  indicator?: string;
+  category?: string;
+  country: string;
+  date: string;           // ISO timestamp e.g. "2026-03-18T18:00:00.000Z"
+  importance: number;     // 1 = high, 0 = medium, -1 = low
+  actual: number | null;
+  forecast: number | null;
+  previous: number | null;
+  currency?: string;
+  scale?: string;         // 'K', 'M', 'B'
+  unit?: string;          // '%', etc.
+  source?: string;
+  source_url?: string;
+  period?: string;
+}
 
-  return 'other';
+interface TvResponse {
+  status: string;
+  result: TvEvent[];
 }
 
 // ---------------------------------------------------------------------------
-// FRED: fetch release dates
+// Fetch logic
 // ---------------------------------------------------------------------------
 
-/**
- * Fetches all FRED releases (paginated). Returns a map of release_id -> release.
- */
-async function fetchFredReleases(): Promise<Map<number, FredRelease>> {
-  const releases = new Map<number, FredRelease>();
-  let offset = 0;
-  const limit = 1000;
-  let hasMore = true;
+async function fetchCalendarEvents(
+  from: Date,
+  to: Date,
+  countries: string[]
+): Promise<TvEvent[]> {
+  const fromStr = from.toISOString().replace(/\.\d{3}Z$/, '.000Z');
+  const toStr   = to.toISOString().replace(/\.\d{3}Z$/, '.000Z');
 
-  while (hasMore) {
-    const url = `${FRED_API_BASE}/releases?api_key=${FRED_API_KEY}&file_type=json&limit=${limit}&offset=${offset}`;
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      console.error(`  FRED releases fetch failed (status ${resp.status})`);
-      break;
-    }
-    const data = await resp.json();
-    const items: FredRelease[] = data.releases || [];
-    for (const r of items) {
-      releases.set(r.id, r);
-    }
-    hasMore = items.length === limit;
-    offset += limit;
-    await sleep(FRED_RATE_LIMIT_MS);
+  // TV expects comma-separated country codes as a single query param value
+  const params = new URLSearchParams({
+    from: fromStr,
+    to:   toStr,
+    countries: countries.join(','),
+  });
+  const url = `${TV_CALENDAR_URL}?${params}`;
+
+  const res = await fetch(url, { headers: TV_HEADERS });
+  if (!res.ok) {
+    throw new Error(`TradingView calendar API error: ${res.status} ${res.statusText}`);
   }
 
-  return releases;
-}
-
-/**
- * Fetches upcoming FRED release dates within the given window.
- * Uses include_release_dates_with_no_data=true to get future scheduled dates.
- */
-async function fetchFredReleaseDates(
-  from: string,
-  to: string,
-): Promise<FredReleaseDate[]> {
-  const allDates: FredReleaseDate[] = [];
-  let offset = 0;
-  const limit = 1000;
-  let hasMore = true;
-
-  while (hasMore) {
-    const url =
-      `${FRED_API_BASE}/releases/dates` +
-      `?api_key=${FRED_API_KEY}` +
-      `&file_type=json` +
-      `&include_release_dates_with_no_data=true` +
-      `&realtime_start=${from}` +
-      `&realtime_end=${to}` +
-      `&limit=${limit}` +
-      `&offset=${offset}`;
-
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      console.error(`  FRED release dates fetch failed (status ${resp.status})`);
-      break;
-    }
-    const data = await resp.json();
-    const items: FredReleaseDate[] = data.release_dates || [];
-    allDates.push(...items);
-    hasMore = items.length === limit;
-    offset += limit;
-    await sleep(FRED_RATE_LIMIT_MS);
+  const data = await res.json() as TvResponse;
+  if (data.status !== 'ok') {
+    throw new Error(`Unexpected API status: ${data.status}`);
   }
 
-  return allDates;
-}
-
-/**
- * Fetch and build FRED economic event records.
- */
-async function buildFredEvents(from: string, to: string): Promise<EventRecord[]> {
-  console.log('\n--- FRED Releases ---');
-  console.log(`  Fetching releases catalog...`);
-  const releasesMap = await fetchFredReleases();
-  console.log(`  Found ${releasesMap.size} releases total`);
-
-  console.log(`  Fetching release dates ${from} to ${to}...`);
-  const releaseDates = await fetchFredReleaseDates(from, to);
-  console.log(`  Found ${releaseDates.length} release dates`);
-
-  const events: EventRecord[] = [];
-
-  for (const rd of releaseDates) {
-    const release = releasesMap.get(rd.release_id);
-    const name = release?.name || rd.release_name || `FRED Release #${rd.release_id}`;
-
-    events.push({
-      eventName: name,
-      eventDate: rd.date,
-      eventTime: null, // FRED doesn't provide times
-      category: categorizeFredRelease(name),
-      impact: null, // FRED doesn't provide impact; could be derived later
-      country: 'US',
-      actualValue: null,
-      forecastValue: null,
-      previousValue: null,
-      unit: null,
-      source: 'fred',
-      sourceId: rd.release_id.toString(),
-      notes: release?.link || null,
-    });
-  }
-
-  return events;
-}
-
-// ---------------------------------------------------------------------------
-// Finnhub: fetch economic calendar
-// ---------------------------------------------------------------------------
-
-async function fetchFinnhubEconomicCalendar(
-  from: string,
-  to: string,
-): Promise<FinnhubEconomicEvent[]> {
-  const url = `${FINNHUB_API_BASE}/calendar/economic?from=${from}&to=${to}&token=${FINNHUB_API_KEY}`;
-  const resp = await fetch(url);
-  if (!resp.ok) {
-    const body = await resp.text();
-    console.error(`  Finnhub economic calendar fetch failed (status ${resp.status}): ${body.substring(0, 200)}`);
-    return [];
-  }
-  const data = await resp.json();
-  return data.economicCalendar || [];
-}
-
-/**
- * Fetch and build Finnhub economic event records.
- *
- * Queries in weekly chunks to keep response sizes manageable.
- * If the API returns a per-event `date` field, we use it.
- * Otherwise, we fall back to single-day queries so each event
- * is correctly attributed to its date.
- */
-async function buildFinnhubEvents(from: string, to: string): Promise<EventRecord[]> {
-  console.log('\n--- Finnhub Economic Calendar ---');
-
-  const fromDate = new Date(from);
-  const toDate = new Date(to);
-  const allEvents: EventRecord[] = [];
-
-  // First, do a small probe to check if events include a date field
-  const probeEvents = await fetchFinnhubEconomicCalendar(from, from);
-  await sleep(FINNHUB_RATE_LIMIT_MS);
-  const hasDateField = probeEvents.length > 0 && typeof probeEvents[0].date === 'string';
-
-  if (hasDateField) {
-    // API provides per-event dates — query in weekly chunks
-    console.log(`  Mode: weekly chunks (API provides per-event dates)`);
-    let chunkStart = fromDate;
-
-    while (chunkStart <= toDate) {
-      const chunkEnd = new Date(Math.min(
-        addDays(chunkStart, FINNHUB_CHUNK_DAYS - 1).getTime(),
-        toDate.getTime(),
-      ));
-
-      const chunkFrom = formatDate(chunkStart);
-      const chunkTo = formatDate(chunkEnd);
-
-      const raw = await fetchFinnhubEconomicCalendar(chunkFrom, chunkTo);
-      console.log(`  ${chunkFrom} to ${chunkTo}: ${raw.length} events`);
-
-      for (const e of raw) {
-        if (!e.event) continue;
-        const eventDate = e.date || chunkFrom;
-        const eventTime = e.time && e.time.length > 0 ? e.time : null;
-
-        allEvents.push({
-          eventName: e.event,
-          eventDate,
-          eventTime,
-          category: categorizeFinnhubEvent(e.event),
-          impact: mapFinnhubImpact(e.impact),
-          country: e.country || 'US',
-          actualValue: e.actual != null ? String(e.actual) : null,
-          forecastValue: e.estimate != null ? String(e.estimate) : null,
-          previousValue: e.prev != null ? String(e.prev) : null,
-          unit: e.unit || null,
-          source: 'finnhub',
-          sourceId: null,
-          notes: null,
-        });
-      }
-
-      chunkStart = addDays(chunkEnd, 1);
-      await sleep(FINNHUB_RATE_LIMIT_MS);
-    }
-  } else {
-    // No per-event date — query day-by-day so we can attribute events correctly
-    console.log(`  Mode: day-by-day (API lacks per-event dates)`);
-    let current = fromDate;
-
-    while (current <= toDate) {
-      const dayStr = formatDate(current);
-      const raw = await fetchFinnhubEconomicCalendar(dayStr, dayStr);
-
-      if (raw.length > 0) {
-        console.log(`  ${dayStr}: ${raw.length} events`);
-      }
-
-      for (const e of raw) {
-        if (!e.event) continue;
-        const eventTime = e.time && e.time.length > 0 ? e.time : null;
-
-        allEvents.push({
-          eventName: e.event,
-          eventDate: dayStr,
-          eventTime,
-          category: categorizeFinnhubEvent(e.event),
-          impact: mapFinnhubImpact(e.impact),
-          country: e.country || 'US',
-          actualValue: e.actual != null ? String(e.actual) : null,
-          forecastValue: e.estimate != null ? String(e.estimate) : null,
-          previousValue: e.prev != null ? String(e.prev) : null,
-          unit: e.unit || null,
-          source: 'finnhub',
-          sourceId: null,
-          notes: null,
-        });
-      }
-
-      current = addDays(current, 1);
-      await sleep(FINNHUB_RATE_LIMIT_MS);
-    }
-  }
-
-  console.log(`  Finnhub total: ${allEvents.length} events`);
-  return allEvents;
-}
-
-// ---------------------------------------------------------------------------
-// Upsert to database
-// ---------------------------------------------------------------------------
-
-async function upsertEvents(records: EventRecord[]): Promise<{ upserted: number; errors: number }> {
-  let upserted = 0;
-  let errors = 0;
-
-  for (const record of records) {
-    try {
-      await db
-        .insert(economicEvents)
-        .values(record)
-        .onConflictDoUpdate({
-          target: [economicEvents.eventName, economicEvents.eventDate, economicEvents.source],
-          set: {
-            actualValue: sql`EXCLUDED.actual_value`,
-            forecastValue: sql`EXCLUDED.forecast_value`,
-            previousValue: sql`EXCLUDED.previous_value`,
-            impact: sql`EXCLUDED.impact`,
-            category: sql`EXCLUDED.category`,
-            eventTime: sql`EXCLUDED.event_time`,
-            country: sql`EXCLUDED.country`,
-            unit: sql`EXCLUDED.unit`,
-            notes: sql`EXCLUDED.notes`,
-            updatedAt: sql`NOW()`,
-          },
-        });
-      upserted++;
-    } catch (error) {
-      errors++;
-      const msg = error instanceof Error ? error.message : String(error);
-      console.error(`  Error upserting "${record.eventName}" (${record.eventDate}): ${msg}`);
-    }
-  }
-
-  return { upserted, errors };
+  return data.result ?? [];
 }
 
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
-function parseArgs(): { days: number } {
-  const args = process.argv.slice(2);
-  let days = 30;
-
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--days' && args[i + 1]) {
-      days = parseInt(args[i + 1], 10);
-      if (isNaN(days) || days < 1) {
-        console.error('--days must be a positive integer');
-        process.exit(1);
-      }
-      i++;
-    }
-  }
-
-  return { days };
-}
-
 async function main() {
-  const { days } = parseArgs();
+  const dryRun    = process.argv.includes('--dry-run');
+  const allImpact = process.argv.includes('--all-impact');
 
-  const now = new Date();
-  const from = formatDate(now);
-  const to = formatDate(addDays(now, days));
+  const now  = new Date();
+  const from = new Date(now.getTime() - 7  * 24 * 60 * 60 * 1000);  // -7 days
+  const to   = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);  // +30 days
 
-  console.log(`\nEconomic Calendar Ingestion`);
-  console.log(`  Range: ${from} to ${to} (${days} days)`);
+  console.log(`Economic Calendar Ingestion — ${now.toISOString()}`);
+  console.log(`  Window   : ${from.toISOString().slice(0, 10)} → ${to.toISOString().slice(0, 10)}`);
+  console.log(`  Countries: ${TARGET_COUNTRIES.join(', ')}`);
+  console.log(`  Impact   : ${allImpact ? 'all' : 'high only (importance=1)'}`);
+  if (dryRun) console.log('  DRY RUN  : nothing will be written');
+  console.log('');
 
-  const allEvents: EventRecord[] = [];
+  // Fetch events from TradingView API
+  const allEvents = await fetchCalendarEvents(from, to, TARGET_COUNTRIES);
+  console.log(`Fetched ${allEvents.length} total events from TradingView`);
 
-  // 1. FRED releases
-  if (FRED_API_KEY) {
+  // Filter by impact: TV importance 1 = high, 0 = medium, -1 = low
+  const minImportance = allImpact ? -1 : 1;
+  const filtered = allEvents.filter(e => e.importance >= minImportance);
+  console.log(`After impact filter: ${filtered.length} events\n`);
+
+  // Upsert
+  let upserted = 0;
+  let errors   = 0;
+
+  for (const ev of filtered) {
     try {
-      const fredEvents = await buildFredEvents(from, to);
-      allEvents.push(...fredEvents);
-      console.log(`\n  FRED: ${fredEvents.length} events collected`);
-    } catch (error) {
-      console.error('  FRED ingestion failed:', error);
+      const eventType   = deriveEventType(ev.title);
+      const impactLevel = importanceToLevel(ev.importance);
+      const unit        = deriveUnit(ev);
+      const eventDate   = new Date(ev.date);
+
+      const record = {
+        tvEventId:   ev.id,
+        eventType,
+        title:       ev.title,
+        indicator:   ev.indicator  ?? null,
+        category:    ev.category   ?? null,
+        country:     ev.country,
+        eventDate,
+        impactLevel,
+        actual:      ev.actual   != null ? String(ev.actual)   : null,
+        forecast:    ev.forecast != null ? String(ev.forecast) : null,
+        previous:    ev.previous != null ? String(ev.previous) : null,
+        unit:        unit ?? null,
+        source:      ev.source     ?? null,
+        sourceUrl:   ev.source_url ?? null,
+        period:      ev.period     ?? null,
+        updatedAt:   new Date(),
+      };
+
+      if (dryRun) {
+        const mark = ev.actual != null ? ' ✓' : '';
+        console.log(`  [${impactLevel.padEnd(6)}] ${ev.date.slice(0, 10)} ${ev.title}${mark} → ${eventType}`);
+        upserted++;
+        continue;
+      }
+
+      await db
+        .insert(economicEvents)
+        .values(record)
+        .onConflictDoUpdate({
+          target: [economicEvents.eventType, economicEvents.eventDate, economicEvents.country],
+          set: {
+            // Refresh mutable fields on re-ingestion (actuals arrive post-release)
+            tvEventId:   sql`excluded.tv_event_id`,
+            title:       sql`excluded.title`,
+            indicator:   sql`excluded.indicator`,
+            category:    sql`excluded.category`,
+            impactLevel: sql`excluded.impact_level`,
+            actual:      sql`excluded.actual`,
+            forecast:    sql`excluded.forecast`,
+            previous:    sql`excluded.previous`,
+            unit:        sql`excluded.unit`,
+            source:      sql`excluded.source`,
+            sourceUrl:   sql`excluded.source_url`,
+            period:      sql`excluded.period`,
+            updatedAt:   sql`NOW()`,
+          },
+        });
+
+      upserted++;
+    } catch (err) {
+      console.error(`  ERROR on "${ev.title}" (${ev.date}): ${err instanceof Error ? err.message : err}`);
+      errors++;
     }
-  } else {
-    console.log('  FRED: skipped (FRED_API_KEY not set)');
   }
 
-  // 2. Finnhub economic calendar
-  if (FINNHUB_API_KEY) {
-    try {
-      const finnhubEvents = await buildFinnhubEvents(from, to);
-      allEvents.push(...finnhubEvents);
-      console.log(`\n  Finnhub: ${finnhubEvents.length} events collected`);
-    } catch (error) {
-      console.error('  Finnhub ingestion failed:', error);
+  // Summary
+  console.log(`\nSummary:`);
+  console.log(`  Upserted : ${upserted}`);
+  console.log(`  Errors   : ${errors}`);
+
+  if (!dryRun) {
+    // Show upcoming high-impact events in the next 30 days
+    const upcoming = await db.execute<{
+      event_type: string;
+      title: string;
+      event_date: string;
+      impact_level: string;
+      actual: string | null;
+      forecast: string | null;
+    }>(sql`
+      SELECT event_type, title, event_date::text, impact_level, actual, forecast
+      FROM economic_events
+      WHERE event_date >= NOW()
+        AND event_date <= NOW() + interval '30 days'
+        AND impact_level = 'high'
+        AND country = 'US'
+      ORDER BY event_date ASC
+    `);
+
+    console.log(`\nUpcoming high-impact US events (next 30 days): ${upcoming.length}`);
+    for (const row of upcoming) {
+      const dateStr     = new Date(row.event_date).toISOString().slice(0, 16).replace('T', ' ');
+      const forecastStr = row.forecast != null ? ` [forecast: ${row.forecast}]` : '';
+      console.log(`  ${dateStr}  ${row.title}${forecastStr}`);
     }
-  } else {
-    console.log('  Finnhub: skipped (FINNHUB_API_KEY not set)');
-  }
-
-  if (allEvents.length === 0) {
-    console.log('\nNo events to upsert.');
-    await closeDb();
-    process.exit(0);
-  }
-
-  // 3. Upsert all events
-  console.log(`\n  Upserting ${allEvents.length} total events...`);
-  const { upserted, errors } = await upsertEvents(allEvents);
-
-  console.log(`\nDone.`);
-  console.log(`  Upserted: ${upserted}`);
-  if (errors > 0) {
-    console.log(`  Errors: ${errors}`);
   }
 
   await closeDb();
   process.exit(0);
 }
 
-main().catch((error) => {
-  console.error('Fatal error:', error);
+main().catch(e => {
+  console.error('Fatal error:', e);
   process.exit(1);
 });

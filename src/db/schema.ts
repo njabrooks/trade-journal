@@ -1990,6 +1990,57 @@ export type JournalEntry = typeof journalEntries.$inferSelect;
 export type NewJournalEntry = typeof journalEntries.$inferInsert;
 
 // ============================================================================
+// Economic Events (TradingView Economic Calendar)
+// Stores upcoming and recent economic releases for macro signal context.
+// Ingested by scripts/ingest-economic-calendar.ts
+// ============================================================================
+
+export const economicEvents = pgTable(
+  'economic_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    // Event identity
+    tvEventId: text('tv_event_id'),          // TradingView internal event ID
+    eventType: text('event_type').notNull(), // Normalised key e.g. "FOMC_RATE_DECISION", "CPI_MM"
+    title: text('title').notNull(),          // Human-readable name from TV e.g. "Fed Interest Rate Decision"
+    indicator: text('indicator'),            // TV indicator name (may differ from title)
+    category: text('category'),              // TV category code: 'cntrl' | 'lbr' | 'infl' | etc.
+    country: text('country').notNull(),      // ISO country code e.g. "US"
+
+    // Timing
+    eventDate: timestamp('event_date', { withTimezone: true }).notNull(),
+
+    // Impact
+    impactLevel: text('impact_level').notNull(), // 'high' | 'medium' | 'low'
+
+    // Values (nullable — future events have no actual yet)
+    actual: numeric('actual'),
+    forecast: numeric('forecast'),
+    previous: numeric('previous'),
+    unit: text('unit'),  // '%', 'K', 'B', etc. from TV scale/unit fields
+
+    // Source metadata
+    source: text('source'),        // Publishing body e.g. "Federal Reserve"
+    sourceUrl: text('source_url'),
+    period: text('period'),        // Reference period e.g. "Mar", "Q1"
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    // Upsert key: an economic event is uniquely identified by type + date + country
+    uniqueEventTypeDateCountry: unique().on(table.eventType, table.eventDate, table.country),
+    eventDateIdx: index('idx_economic_events_event_date').on(table.eventDate),
+    impactIdx: index('idx_economic_events_impact').on(table.impactLevel),
+    countryIdx: index('idx_economic_events_country').on(table.country),
+  })
+);
+
+export type EconomicEvent = typeof economicEvents.$inferSelect;
+export type NewEconomicEvent = typeof economicEvents.$inferInsert;
+
+// ============================================================================
 // Portfolio Accounting — Event Sourcing (TTC Migration M1)
 // ============================================================================
 
@@ -2698,41 +2749,6 @@ export const intelligenceItems = pgTable(
 
 export type IntelligenceItem = typeof intelligenceItems.$inferSelect;
 export type NewIntelligenceItem = typeof intelligenceItems.$inferInsert;
-
-// ============================================================================
-// Economic Events (FRED + Finnhub calendar)
-// ============================================================================
-
-export const economicEvents = pgTable(
-  'economic_events',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    eventName: text('event_name').notNull(),
-    eventDate: date('event_date').notNull(),
-    eventTime: text('event_time'),
-    category: text('category'),            // 'interest_rates' | 'inflation' | 'labor' | 'output' | 'housing' | 'other'
-    impact: text('impact'),                // 'high' | 'medium' | 'low'
-    country: text('country').default('US'),
-    actualValue: text('actual_value'),
-    forecastValue: text('forecast_value'),
-    previousValue: text('previous_value'),
-    unit: text('unit'),
-    source: text('source').notNull(),      // 'fred' | 'finnhub'
-    sourceId: text('source_id'),
-    notes: text('notes'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    dateIdx: index('idx_economic_events_date').on(table.eventDate),
-    categoryIdx: index('idx_economic_events_category').on(table.category),
-    impactIdx: index('idx_economic_events_impact').on(table.impact),
-    uniqueEvent: unique().on(table.eventName, table.eventDate, table.source),
-  })
-);
-
-export type EconomicEvent = typeof economicEvents.$inferSelect;
-export type NewEconomicEvent = typeof economicEvents.$inferInsert;
 
 // ============================================================================
 // Earnings Events (portfolio holdings earnings calendar)

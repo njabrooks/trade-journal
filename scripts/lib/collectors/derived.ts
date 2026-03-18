@@ -5,6 +5,8 @@
  * - BTC-NASDAQ correlation (30d and 90d rolling)
  * - HYPE P/E ratio (CoinGecko market cap / DefiLlama annualised revenue)
  * - GLXY implied valuation per MW
+ * - days_until_event: countdown to next matching economic_events entry
+ * - event_actual_vs_forecast: compares released actual vs expected value
  *
  * For correlation signals, this collector reports current correlation
  * and SPX drawdown status. Full time-series correlation requires
@@ -17,7 +19,7 @@
 
 import { fetchPrices } from './tradingview.js';
 import { db, schema } from '../db.js';
-import { eq, and, gte } from 'drizzle-orm';
+import { eq, and, gte, lte, desc } from 'drizzle-orm';
 
 export interface DerivedSnapshot {
   observedValue: number;
@@ -51,6 +53,16 @@ export async function collectDerived(
   // GLXY valuation per MW
   if (calculation === 'market_cap / helios_capacity_mw') {
     return collectValuationPerMW(explicitDetails);
+  }
+
+  // Economic calendar: days until next upcoming event
+  if (calculation === 'days_until_event') {
+    return collectDaysUntilEvent(explicitDetails);
+  }
+
+  // Economic calendar: compare actual vs forecast for the most recent release
+  if (calculation === 'event_actual_vs_forecast') {
+    return collectEventActualVsForecast(explicitDetails);
   }
 
   return null;
@@ -384,5 +396,207 @@ async function collectValuationPerMW(
     pctToThreshold: Math.round(pct * 100) / 100,
     unit: (details.thresholdUnit as string) || 'USD/MW',
     evidenceSummary: `GLXY market cap: $${(glxyData.marketCap / 1e9).toFixed(1)}B / ${currentMW} MW = $${(valuationPerMW / 1e6).toFixed(1)}MM/MW`,
+  };
+}
+
+// ============================================================================
+// Economic Calendar — days_until_event
+// ============================================================================
+
+/**
+ * Counts calendar days until the next upcoming event matching the given
+ * eventType in the economic_events table.
+ *
+ * Signal explicit_details schema:
+ * {
+ *   "dataSource": "economic_calendar",
+ *   "calculation": "days_until_event",
+ *   "eventType": "FOMC_RATE_DECISION",   // matches economic_events.event_type
+ *   "country": "US",                      // optional, defaults to "US"
+ *   "threshold": 0                        // days — 100% reached when daysUntil <= threshold
+ * }
+ *
+ * pctToThreshold = 100 when the event date has arrived (days <= threshold).
+ * For a threshold of 0 that means: event is today or in the past.
+ *
+ * Because the threshold is a days count (0 = event day), we invert the
+ * countdown so the percentage climbs toward 100 as the event approaches:
+ *   pct = ((lookAhead - daysUntil) / lookAhead) * 100
+ * where lookAhead = 30 days (configurable via lookAheadDays).
+ */
+async function collectDaysUntilEvent(
+  details: Record<string, unknown>
+): Promise<DerivedSnapshot | null> {
+  const eventType    = details.eventType as string | undefined;
+  const country      = (details.country as string | undefined) ?? 'US';
+  const threshold    = (details.threshold as number) ?? 0;
+  const lookAhead    = (details.lookAheadDays as number) ?? 30;
+
+  if (!eventType) {
+    console.warn('  [derived/days_until_event] missing eventType in explicit_details');
+    return null;
+  }
+
+  const now = new Date();
+
+  // Find the next upcoming event of this type
+  const rows = await db
+    .select({
+      eventDate: schema.economicEvents.eventDate,
+      title:     schema.economicEvents.title,
+      actual:    schema.economicEvents.actual,
+      forecast:  schema.economicEvents.forecast,
+    })
+    .from(schema.economicEvents)
+    .where(
+      and(
+        eq(schema.economicEvents.eventType, eventType),
+        eq(schema.economicEvents.country, country),
+        gte(schema.economicEvents.eventDate, now),
+      )
+    )
+    .orderBy(schema.economicEvents.eventDate)
+    .limit(1);
+
+  if (rows.length === 0) {
+    console.warn(`  [derived/days_until_event] no upcoming ${eventType} events found in economic_events`);
+    return null;
+  }
+
+  const nextEvent   = rows[0];
+  const eventDate   = new Date(nextEvent.eventDate);
+  const msUntil     = eventDate.getTime() - now.getTime();
+  const daysUntil   = Math.max(0, msUntil / (1000 * 60 * 60 * 24));
+  const daysUntilRounded = Math.round(daysUntil * 10) / 10;
+
+  // pctToThreshold climbs from 0 → 100 as days countdown to threshold
+  // When daysUntil === threshold, pct = 100 (trigger fires)
+  let pctToThreshold: number;
+  if (daysUntil <= threshold) {
+    pctToThreshold = 100;
+  } else {
+    // Scale relative to lookAhead window: further away = lower %
+    const span = Math.max(1, lookAhead - threshold);
+    const progress = (lookAhead - daysUntil) / span;
+    pctToThreshold = Math.min(100, Math.max(0, Math.round(progress * 10000) / 100));
+  }
+
+  const dateStr     = eventDate.toISOString().slice(0, 10);
+  const forecastStr = nextEvent.forecast != null ? ` forecast: ${nextEvent.forecast}` : '';
+  const summary     = `Next ${eventType} on ${dateStr} (${daysUntilRounded.toFixed(0)}d away)${forecastStr}`;
+
+  return {
+    observedValue:  daysUntilRounded,
+    thresholdValue: threshold,
+    pctToThreshold,
+    unit:           'days',
+    evidenceSummary: summary,
+  };
+}
+
+// ============================================================================
+// Economic Calendar — event_actual_vs_forecast
+// ============================================================================
+
+/**
+ * Compares the released actual value against the forecast for the most
+ * recently released event of the given eventType.
+ *
+ * Signal explicit_details schema:
+ * {
+ *   "dataSource": "economic_calendar",
+ *   "calculation": "event_actual_vs_forecast",
+ *   "eventType": "CPI_MM",       // matches economic_events.event_type
+ *   "country": "US",             // optional, defaults to "US"
+ *   "threshold": 0.1,            // surprise threshold (actual - forecast)
+ *   "direction": "above"         // "above" = hot surprise, "below" = cool surprise
+ * }
+ *
+ * observedValue = actual - forecast (the surprise)
+ * pctToThreshold = 100 when |surprise| >= threshold in the specified direction
+ */
+async function collectEventActualVsForecast(
+  details: Record<string, unknown>
+): Promise<DerivedSnapshot | null> {
+  const eventType = details.eventType as string | undefined;
+  const country   = (details.country as string | undefined) ?? 'US';
+  const threshold = (details.threshold as number) ?? 0;
+  const direction = (details.direction as 'above' | 'below' | undefined) ?? 'above';
+
+  if (!eventType) {
+    console.warn('  [derived/event_actual_vs_forecast] missing eventType in explicit_details');
+    return null;
+  }
+
+  const now = new Date();
+
+  // Find the most recently released event (actual IS NOT NULL, event in past)
+  const rows = await db
+    .select({
+      eventDate: schema.economicEvents.eventDate,
+      title:     schema.economicEvents.title,
+      actual:    schema.economicEvents.actual,
+      forecast:  schema.economicEvents.forecast,
+      previous:  schema.economicEvents.previous,
+    })
+    .from(schema.economicEvents)
+    .where(
+      and(
+        eq(schema.economicEvents.eventType, eventType),
+        eq(schema.economicEvents.country, country),
+        lte(schema.economicEvents.eventDate, now),
+      )
+    )
+    .orderBy(desc(schema.economicEvents.eventDate))
+    .limit(1);
+
+  if (rows.length === 0) {
+    console.warn(`  [derived/event_actual_vs_forecast] no past ${eventType} events found`);
+    return null;
+  }
+
+  const latest = rows[0];
+
+  if (latest.actual == null) {
+    console.warn(`  [derived/event_actual_vs_forecast] no actual value yet for latest ${eventType}`);
+    return null;
+  }
+
+  const actual   = parseFloat(String(latest.actual));
+  const forecast = latest.forecast != null ? parseFloat(String(latest.forecast)) : null;
+
+  if (forecast == null) {
+    // No forecast to compare against — report actual only
+    return {
+      observedValue:  actual,
+      thresholdValue: threshold,
+      pctToThreshold: 0,
+      unit:           '%',
+      evidenceSummary: `${eventType} actual: ${actual} (no forecast available)`,
+    };
+  }
+
+  const surprise = actual - forecast;
+
+  // Determine if the surprise is in the desired direction
+  const inDirection =
+    direction === 'above' ? surprise >= threshold :
+    direction === 'below' ? surprise <= -Math.abs(threshold) :
+    Math.abs(surprise) >= Math.abs(threshold);
+
+  const pctToThreshold = threshold !== 0
+    ? Math.min(100, Math.abs(surprise / threshold) * 100)
+    : (surprise !== 0 ? 100 : 0);
+
+  const dateStr  = new Date(latest.eventDate).toISOString().slice(0, 10);
+  const prevStr  = latest.previous != null ? ` prev: ${latest.previous}` : '';
+  const summary  = `${eventType} on ${dateStr}: actual ${actual} vs forecast ${forecast} (surprise: ${surprise > 0 ? '+' : ''}${surprise.toFixed(3)})${prevStr}${inDirection ? ' — THRESHOLD MET' : ''}`;
+
+  return {
+    observedValue:  surprise,
+    thresholdValue: threshold,
+    pctToThreshold: Math.round(pctToThreshold * 100) / 100,
+    unit:           'surprise',
+    evidenceSummary: summary,
   };
 }

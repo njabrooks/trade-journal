@@ -57,6 +57,9 @@ async function collectForSignal(
     case 'tradingview_cdp':
       return collectTradingView(details);
     case 'derived':
+    case 'economic_calendar':
+      // economic_calendar signals use calculation: 'days_until_event' or
+      // 'event_actual_vs_forecast' — both are handled by collectDerived
       return collectDerived(details);
     default:
       return null;
