@@ -512,9 +512,6 @@ DERIBIT_CLIENT_SECRET=<client-secret>
 # Solana (Helius) — supports multiple wallets with owner labels
 HELIUS_API_KEY=<api-key>
 SOLANA_WALLETS='[{"address":"<wallet-1>","label":"Owner Name 1"},{"address":"<wallet-2>","label":"Owner Name 2"}]'
-
-# TradingView Webhooks (optional - for strategy signals)
-NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-webhook
 ```
 
 ## Working with the Codebase
@@ -758,36 +755,20 @@ The research workflow follows a **local-first processing pattern** using Toulmin
 21. **Solana Integration** - Balance-only snapshot via Helius DAS API (`getAssetsByOwner`). No trade history. API key appended to RPC URL. Captures native SOL + SPL fungible tokens with USD pricing from Helius. Filters dust tokens (< $0.01) and stablecoins. Supports multiple wallets via `SOLANA_WALLETS` JSON env var with per-wallet labels. Each wallet becomes a separate account with its label set
 22. **Cash & NAV Tracking** - Cash/stablecoin/fiat balances tracked in `cash_balances` table across all sources. NAV is dual-path: authoritative from `nav_snapshots` for margin accounts (IBKR, HyperLiquid), derived as positions + cash for non-margin accounts (Coinbase, Kraken, Deribit, Solana). Portfolio page shows Market Value, Cash, NAV, Leverage (gross exposure / NAV), and Positions. Cash breakdown available via "Cash" filter tab
 
-## TradingView Webhook Integration
+## TradingView Chart Drawing Integration
 
-Strategy signals can be triggered by TradingView price alerts via Supabase Edge Function.
+Strategy price signals are created by drawing TP/SL lines on a dedicated TradingView layout, then syncing via CDP.
 
 **Setup:**
-1. Deploy Edge Function: `supabase functions deploy tv-webhook`
-2. Add env var: `NEXT_PUBLIC_TV_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/tv-webhook`
-3. In TradingView: Create alert, set webhook URL, use standard JSON payload
+1. Open TradingView in Chrome with remote debugging (`--remote-debugging-port=9222`)
+2. Draw horizontal ray lines labelled `TP1 [N%]`, `TP2 [N%]`, `TP3 [N%]`, or `SL [N%]` on the Price/BTC layout
+3. Run `npx tsx scripts/sync-tv-drawings.ts` to import drawings as signals
 
-**Payload Template (paste into TradingView alert message):**
-```json
-{
-  "ticker": "{{ticker}}",
-  "exchange": "{{exchange}}",
-  "alertName": "{{alertname}}",
-  "price": {{close}},
-  "time": "{{timenow}}",
-  "interval": "{{interval}}"
-}
-```
-
-**Matching Logic:**
-- Webhook matches signals by `tvAlertName` (case-insensitive) + strategy's `underlying_ticker`
-- On match: Signal status → `triggered`, triage record created with `recommendedAction`
-- Journal entry logged with trigger context
-
-**Files:**
-- Edge Function: `supabase/functions/tv-webhook/index.ts`
-- Signal Config UI: `src/components/signals/StrategySignalConfigForm.tsx`
-- Signal Display: `src/components/signals/StrategySignalsSection.tsx`
+**Key files:**
+- CDP sync script: `scripts/sync-tv-drawings.ts`
+- Price collector: `scripts/collect-signal-data.ts`
+- Signal display: `src/components/signals/StrategySignalsSection.tsx`
+- Junction table: `signal_entity_links` (one signal links to multiple strategies)
 
 ## Quick Navigation for Specific Features
 

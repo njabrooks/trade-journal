@@ -10,7 +10,7 @@
  */
 
 import { db, closeDb, schema } from './lib/db.js';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { collectDefiLlama } from './lib/collectors/defillama.js';
 import { collectCoinGecko } from './lib/collectors/coingecko.js';
 import { collectHypeFlows } from './lib/collectors/hypeflows.js';
@@ -87,8 +87,20 @@ async function main() {
 
   console.log(`Active thesis signals: ${activeSignals.length}\n`);
 
+  // Fetch last collection date per signal for checkFrequency enforcement
+  const lastCollected = await db.execute<{ signal_id: string; last_date: string }>(sql`
+    SELECT signal_id, max(snapshot_date)::text as last_date
+    FROM signal_data_snapshots
+    WHERE observed_value IS NOT NULL
+      AND data_source NOT LIKE 'price_history%'
+      AND data_source != 'thesis_monitor'
+    GROUP BY signal_id
+  `);
+  const lastCollectedMap = new Map(lastCollected.map(r => [r.signal_id, new Date(r.last_date)]));
+
   let collected = 0;
   let skipped = 0;
+  let frequencySkipped = 0;
   let errors = 0;
 
   for (const signal of activeSignals) {
@@ -96,6 +108,18 @@ async function main() {
     if (!details) {
       skipped++;
       continue;
+    }
+
+    // Check frequency enforcement: skip if collected within the configured window
+    const checkFrequency = (details.checkFrequency as string) || 'daily';
+    const lastDate = lastCollectedMap.get(signal.id);
+    if (lastDate) {
+      const daysSince = (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
+      const minDays = checkFrequency === 'weekly' ? 6 : 0; // weekly: skip if < 6 days, daily: always collect
+      if (daysSince < minDays) {
+        frequencySkipped++;
+        continue;
+      }
     }
 
     const topLevelSource = details.dataSource as string | undefined;
@@ -171,7 +195,7 @@ async function main() {
     }
   }
 
-  console.log(`\nThesis signals: ${collected} collected, ${skipped} skipped (qualitative), ${errors} errors`);
+  console.log(`\nThesis signals: ${collected} collected, ${skipped} skipped (qualitative), ${frequencySkipped} skipped (frequency), ${errors} errors`);
 
   // ── Strategy price signals ────────────────────────────────────────────────
   // These come from sync-tv-drawings and have denomination + tvSymbol in explicit_details.
