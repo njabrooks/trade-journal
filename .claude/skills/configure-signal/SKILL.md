@@ -124,6 +124,8 @@ Reason about what kind of monitoring this signal requires. Consider the signal s
 | **Derived** | Requires computation from multiple data sources (correlation, P/E ratio, valuation per MW) |
 | **Internal DB** | Depends on state of another thesis in the database (parent thesis invalidation) |
 
+**Economic calendar signals**: If the signal statement depends on a specific scheduled economic release (e.g. "FOMC holds rates", "CPI comes in below forecast", "NFP exceeds 200K"), classify as **Quantitative** and note `economic_calendar` as the data source. Do not classify these as `news_qualitative` — the release data is numeric and collected automatically.
+
 Present your classification reasoning, then ask:
 
 > "I'd classify this as **[category]** because [reasoning]. Does that sound right, or would you frame it differently?"
@@ -281,6 +283,59 @@ For each monitoring dimension, propose a specific data source and configuration.
   }
   ```
 
+#### `economic_calendar` — Scheduled economic release data
+- **When**: Signal criterion depends on a scheduled macro release (FOMC, CPI, NFP, PCE, GDP, etc.)
+- **Two calculation types**:
+  - `days_until_event` — countdown to next matching release. `pct_to_threshold` reaches 100% on the event date. Use when the signal is about *timing* (e.g. "FOMC decision arrives", "next NFP release").
+  - `event_actual_vs_forecast` — measures release surprise (actual minus forecast). Use when the signal is about *content* (e.g. "CPI comes in below forecast", "NFP beats by 50K+").
+
+**Discovery step — always run before proposing a config:**
+
+```bash
+cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT event_type, COUNT(*) as occurrences, MAX(event_date::date) as latest FROM economic_events GROUP BY event_type ORDER BY occurrences DESC" --format json
+```
+
+Then check upcoming events for the chosen type:
+
+```bash
+cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT event_type, title, event_date, forecast, previous, impact_level FROM economic_events WHERE event_type = 'FOMC_RATE_DECISION' AND event_date > NOW() ORDER BY event_date ASC LIMIT 5" --format json
+```
+
+Replace `FOMC_RATE_DECISION` with the chosen event type. Always confirm at least one upcoming event exists before proceeding.
+
+**explicit_details shape — days_until_event:**
+```json
+{
+  "dataSource": "economic_calendar",
+  "calculation": "days_until_event",
+  "eventType": "FOMC_RATE_DECISION",
+  "country": "US",
+  "lookAheadDays": 30,
+  "threshold": 0,
+  "thresholdUnit": "days",
+  "operator": "lte",
+  "checkFrequency": "daily"
+}
+```
+`pct_to_threshold` = `(lookAheadDays - daysUntilEvent) / lookAheadDays * 100`. Reaches 100% on the event date. `lookAheadDays` sets the ramp-up window (default 30; use 14 for short-fuse signals, 60 for slow-build signals).
+
+**explicit_details shape — event_actual_vs_forecast:**
+```json
+{
+  "dataSource": "economic_calendar",
+  "calculation": "event_actual_vs_forecast",
+  "eventType": "CPI_MM",
+  "country": "US",
+  "direction": "below_forecast",
+  "threshold": 0.1,
+  "thresholdUnit": "percentage points",
+  "checkFrequency": "daily"
+}
+```
+`direction` is `above_forecast` or `below_forecast`. `threshold` is the minimum surprise magnitude (absolute value) required — e.g. `0.1` means the release must miss/beat by at least 0.1 percentage points.
+
+Country codes: use `US` for US releases. Run `SELECT DISTINCT country FROM economic_events` to see all available.
+
 #### Multi-condition signals (compound)
 Use a top-level `conditions` array when the signal has multiple independent checks:
 
@@ -362,6 +417,26 @@ No endpoint test needed. For `internal_db`, query the parent thesis directly to 
 cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT id, title, status, confidence_level FROM macro_theses WHERE id = '<parentThesisId>'" --format json
 ```
 
+### economic_calendar test
+
+**For `days_until_event`** — confirm the next event exists and calculate days remaining:
+
+```bash
+cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT event_type, title, event_date, EXTRACT(DAY FROM event_date - NOW())::int AS days_until FROM economic_events WHERE event_type = 'FOMC_RATE_DECISION' AND country = 'US' AND event_date > NOW() ORDER BY event_date ASC LIMIT 1" --format json
+```
+
+Show: "Next [eventType]: [date] — [N] days away (lookAheadDays: [N] → [pct]% of threshold)."
+
+**For `event_actual_vs_forecast`** — confirm recent releases have both actual and forecast populated:
+
+```bash
+cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT event_type, title, event_date, actual, forecast, (actual - forecast) AS surprise FROM economic_events WHERE event_type = 'CPI_MM' AND country = 'US' AND actual IS NOT NULL ORDER BY event_date DESC LIMIT 5" --format json
+```
+
+Show recent surprises: "Last 3 releases: surprises were +X, -Y, +Z pp. Threshold: ±[N] pp [direction]."
+
+If no rows return with `actual IS NOT NULL`, the event type has no historical data yet — flag this to the user before proceeding.
+
 ### After testing
 
 Show the result clearly:
@@ -389,6 +464,8 @@ Rules for deriving the threshold:
 - If the signal says "drops below 0.3 correlation", threshold = `0.3` with `operator: "lte"`
 - If the signal has a range ("15-20x P/E"), threshold = midpoint `17.5` with `operator: "between"`
 - If qualitative (event-based), no threshold needed — skip this step
+- If `economic_calendar / days_until_event`: threshold is always `0` with `operator: lte`. The key setting is `lookAheadDays` — ask: "How far ahead should the countdown start? Default is 30 days. Use 14 for urgent short-fuse signals, 60 for slow-build preparation signals."
+- If `economic_calendar / event_actual_vs_forecast`: threshold is the minimum surprise magnitude. Ask: "How large a miss/beat should trigger this signal — 0.1pp? 0.2pp?" Direction should already be established from the signal statement.
 
 Present: "Based on the signal statement, I propose threshold = `<value>` <unit> (operator: `<gte/lte/eq/between>`). Does that match your intent?"
 
@@ -525,6 +602,35 @@ All shapes must include `checkFrequency` (`"daily"` or `"weekly"`).
   "monitorContext": "What to look for and how to assess ambiguous evidence.",
   "deadline": "YYYY-MM-DD",
   "checkFrequency": "weekly"
+}
+```
+
+### Economic calendar — countdown to release
+```json
+{
+  "dataSource": "economic_calendar",
+  "calculation": "days_until_event",
+  "eventType": "FOMC_RATE_DECISION",
+  "country": "US",
+  "lookAheadDays": 30,
+  "threshold": 0,
+  "thresholdUnit": "days",
+  "operator": "lte",
+  "checkFrequency": "daily"
+}
+```
+
+### Economic calendar — release surprise
+```json
+{
+  "dataSource": "economic_calendar",
+  "calculation": "event_actual_vs_forecast",
+  "eventType": "CPI_MM",
+  "country": "US",
+  "direction": "below_forecast",
+  "threshold": 0.1,
+  "thresholdUnit": "percentage points",
+  "checkFrequency": "daily"
 }
 ```
 
