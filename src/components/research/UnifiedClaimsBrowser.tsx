@@ -41,6 +41,7 @@ interface ClaimWithSource {
   artifact: ResearchArtifact | null;
   linkedTheses?: LinkedThesis[];
   linkedViews?: LinkedView[];
+  linkedSignals?: LinkedSignal[];
   suggestions?: ClaimSuggestion[];
 }
 
@@ -634,7 +635,7 @@ export function UnifiedClaimsBrowser({
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedClaims.map(({ claim, insight, artifact, linkedTheses = [], linkedViews = [], suggestions = [] }) => {
+                {filteredAndSortedClaims.map(({ claim, insight, artifact, linkedTheses = [], linkedViews = [], linkedSignals = [], suggestions = [] }) => {
                   const isExpanded = expandedClaim === claim.id;
                   const evidenceClaims = getEvidenceClaims({ claim, insight, artifact });
 
@@ -993,6 +994,44 @@ export function UnifiedClaimsBrowser({
                                             </Badge>
                                             {view.title} ({view.ticker})
                                             <ExternalLink className="h-3 w-3" />
+                                          </span>
+                                        </Link>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Evidences Signals */}
+                              {linkedSignals.length > 0 && (
+                                <div className="pt-2 border-t border">
+                                  <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
+                                    Evidences Signals
+                                  </h4>
+                                  <div className="space-y-2">
+                                    {linkedSignals.map((signal) => {
+                                      const assessmentEmoji: Record<string, string> = {
+                                        neutral: '⬛',
+                                        strengthening: '📈',
+                                        confirmed: '✅',
+                                        weakening: '📉',
+                                        invalidated: '❌',
+                                      };
+                                      const typeColor = signal.type === 'confirmation'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-red-100 text-red-700';
+                                      const typeLabel = signal.type === 'confirmation' ? 'Confirm' : 'Warning';
+                                      return (
+                                        <Link
+                                          key={signal.id}
+                                          href={`/signals/${signal.id}`}
+                                          className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                        >
+                                          <span className="inline-flex items-center gap-1">
+                                            <Badge className={`${typeColor} text-xs`}>{typeLabel}</Badge>
+                                            <span className="text-xs">{assessmentEmoji[signal.assessment] ?? '⬜'}</span>
+                                            <span className="line-clamp-1">{signal.statement}</span>
+                                            <ExternalLink className="h-3 w-3 shrink-0" />
                                           </span>
                                         </Link>
                                       );
