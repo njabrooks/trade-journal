@@ -4,12 +4,18 @@
  * Reads all active thesis signals with explicit_details, dispatches to
  * the appropriate data collector, and stores snapshots in signal_data_snapshots.
  *
+ * When a signal's pct_to_threshold reaches >= 100%, it is auto-completed:
+ * - Signal status updated to 'complete'
+ * - Thesis triage record created (if thesis-linked via signal_entity_links)
+ * - Journal entry logged
+ *
  * Usage:
  *   npx tsx scripts/collect-signal-data.ts              # Collect all quantitative signals
  *   npx tsx scripts/collect-signal-data.ts --dry-run     # Show what would be collected without writing
+ *   npx tsx scripts/collect-signal-data.ts --skip-triggers # Collect data but skip threshold triggers
  */
 
-import { db, closeDb, schema } from './lib/db.js';
+import { db, closeDb, schema, logToJournal } from './lib/db.js';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { collectDefiLlama } from './lib/collectors/defillama.js';
 import { collectCoinGecko } from './lib/collectors/coingecko.js';
@@ -18,7 +24,7 @@ import { collectInternalDb } from './lib/collectors/internal-db.js';
 import { collectTradingView, fetchPrices } from './lib/collectors/tradingview.js';
 import { collectDerived } from './lib/collectors/derived.js';
 
-const { signals, signalDataSnapshots, underlyings } = schema;
+const { signals, signalDataSnapshots, signalEntityLinks, thesisTriageRecords, underlyings } = schema;
 
 // Extract base ticker from a TradingView symbol (e.g. CRYPTO:HYPEHUSD → HYPE, NASDAQ:GLXY → GLXY)
 function extractBaseTicker(tvSymbol: string): string {
@@ -57,8 +63,139 @@ async function collectForSignal(
   }
 }
 
+/**
+ * Check if a signal has reached its threshold and trigger completion if so.
+ * Only triggers for active signals with pct_to_threshold >= 100.
+ *
+ * When triggered:
+ * 1. Updates signal status to 'complete'
+ * 2. Creates a thesis_triage_record if the signal is thesis-linked (via signal_entity_links)
+ * 3. Logs a journal entry on the signal
+ */
+async function checkAndTriggerSignal(
+  signal: { id: string; type: string; statement: string; status?: string },
+  pctToThreshold: number,
+  dryRun: boolean
+): Promise<boolean> {
+  // Only trigger if threshold is reached
+  if (pctToThreshold < 100) return false;
+
+  // Only trigger for active signals (prevents double-trigger)
+  if (signal.status !== 'active') return false;
+
+  const shortStatement = signal.statement.slice(0, 80);
+  console.log(`\n  >> TRIGGERED: ${shortStatement} (${pctToThreshold.toFixed(1)}% of threshold)`);
+
+  if (dryRun) {
+    console.log(`  >> (DRY RUN — would mark complete, create triage record, log journal entry)`);
+    return true;
+  }
+
+  // 1. Update signal status to 'complete'
+  await db
+    .update(signals)
+    .set({ status: 'complete' })
+    .where(eq(signals.id, signal.id));
+
+  console.log(`  >> Signal status updated to 'complete'`);
+
+  // 2. Check for thesis links via signal_entity_links and create triage records
+  const thesisLinks = await db
+    .select({
+      thesisId: signalEntityLinks.thesisId,
+      thesisType: signalEntityLinks.thesisType,
+    })
+    .from(signalEntityLinks)
+    .where(
+      and(
+        eq(signalEntityLinks.signalId, signal.id),
+        eq(signalEntityLinks.entityType, 'thesis')
+      )
+    );
+
+  // Also check the direct thesis_id on the signal itself (for thesis-type signals)
+  const directThesisLink = await db
+    .select({ thesisId: signals.thesisId, thesisType: signals.thesisType })
+    .from(signals)
+    .where(eq(signals.id, signal.id));
+
+  // Combine direct + junction links, dedup by thesisId
+  const allThesisLinks = new Map<string, { thesisId: string; thesisType: string }>();
+  for (const link of thesisLinks) {
+    if (link.thesisId && link.thesisType) {
+      allThesisLinks.set(link.thesisId, { thesisId: link.thesisId, thesisType: link.thesisType });
+    }
+  }
+  if (directThesisLink[0]?.thesisId && directThesisLink[0]?.thesisType) {
+    allThesisLinks.set(directThesisLink[0].thesisId, {
+      thesisId: directThesisLink[0].thesisId,
+      thesisType: directThesisLink[0].thesisType,
+    });
+  }
+
+  for (const { thesisId, thesisType } of allThesisLinks.values()) {
+    // Fetch thesis title for the triage record
+    let thesisTitle = 'Unknown thesis';
+    if (thesisType === 'macro') {
+      const rows = await db
+        .select({ title: schema.macroTheses.title })
+        .from(schema.macroTheses)
+        .where(eq(schema.macroTheses.id, thesisId));
+      if (rows[0]) thesisTitle = rows[0].title;
+    } else {
+      const rows = await db
+        .select({ title: schema.assetTheses.title })
+        .from(schema.assetTheses)
+        .where(eq(schema.assetTheses.id, thesisId));
+      if (rows[0]) thesisTitle = rows[0].title;
+    }
+
+    await db.insert(thesisTriageRecords).values({
+      thesisId,
+      thesisType,
+      thesisTitle,
+      triggerType: 'signal_recommendation',
+      triggerSource: 'collect-signal-data',
+      contentSummary: {
+        signalId: signal.id,
+        signalType: signal.type,
+        signalStatement: signal.statement,
+        pctToThreshold,
+      },
+      aiAnalysis: {},
+      matchedResults: [],
+      severity: signal.type === 'warning' ? 'urgent' : 'attention',
+      status: 'inbox',
+      actionRequired: `Signal triggered: ${signal.statement}`,
+      triageRule: 'REVIEW_DATA',
+    });
+
+    console.log(`  >> Thesis triage record created for ${thesisType} thesis: ${thesisTitle}`);
+  }
+
+  // 3. Log journal entry on the signal
+  await logToJournal({
+    objectType: 'signal',
+    objectId: signal.id,
+    objectTitle: signal.statement,
+    actionType: 'status_change',
+    actionDescription: `Signal auto-completed: threshold reached (${pctToThreshold.toFixed(1)}%). ${signal.type === 'warning' ? 'Warning' : 'Confirmation'} signal triggered.`,
+    previousState: { status: 'active' },
+    newState: { status: 'complete' },
+    source: 'automation',
+    metadata: { pctToThreshold, triggeredBy: 'collect-signal-data' },
+  });
+
+  console.log(`  >> Journal entry logged`);
+
+  return true;
+}
+
+let triggeredCount = 0;
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
+  const skipTriggers = process.argv.includes('--skip-triggers');
   const now = new Date();
 
   // Truncate to start-of-day UTC for dedup: the unique constraint on
@@ -67,13 +204,16 @@ async function main() {
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
   console.log(`Signal Data Collection — ${now.toISOString()}`);
-  if (dryRun) console.log('(DRY RUN — no data will be written)\n');
+  if (dryRun) console.log('(DRY RUN — no data will be written)');
+  if (skipTriggers) console.log('(SKIP TRIGGERS — threshold triggers disabled)');
+  if (dryRun || skipTriggers) console.log('');
 
   // Load all active thesis signals with explicit_details
   const activeSignals = await db
     .select({
       id: signals.id,
       type: signals.type,
+      status: signals.status,
       statement: signals.statement,
       explicitDetails: signals.explicitDetails,
     })
@@ -187,6 +327,12 @@ async function main() {
             .onConflictDoNothing(); // Skip if snapshot already exists for this signal+date+source
         }
 
+        // Check threshold trigger (after snapshot insert, so data is persisted first)
+        if (!skipTriggers) {
+          const triggered = await checkAndTriggerSignal(signal, result.pctToThreshold, dryRun);
+          if (triggered) triggeredCount++;
+        }
+
         collected++;
       } catch (err) {
         console.log(`  ✗ ${target.source} (${target.label}): ${err instanceof Error ? err.message : err}`);
@@ -204,6 +350,7 @@ async function main() {
     .select({
       id: signals.id,
       type: signals.type,
+      status: signals.status,
       statement: signals.statement,
       explicitDetails: signals.explicitDetails,
     })
@@ -309,6 +456,13 @@ async function main() {
           })
           .onConflictDoNothing();
       }
+
+      // Check threshold trigger for strategy signals too
+      if (!skipTriggers) {
+        const triggered = await checkAndTriggerSignal(signal, pctToThreshold, dryRun);
+        if (triggered) triggeredCount++;
+      }
+
       sCollected++;
     } catch (err) {
       console.log(`  ✗ snapshot insert failed: ${err instanceof Error ? err.message : err}`);
@@ -318,6 +472,9 @@ async function main() {
 
   console.log(`\nDone — Thesis: ${collected} collected, ${skipped} skipped, ${errors} errors`);
   console.log(`       Strategy: ${sCollected} collected, ${sSkipped} skipped, ${sErrors} errors`);
+  if (triggeredCount > 0) {
+    console.log(`       Triggered: ${triggeredCount} signal(s) reached threshold and auto-completed`);
+  }
 
   await closeDb();
   process.exit(0);
