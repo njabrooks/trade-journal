@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   CheckCircle2,
   AlertTriangle,
-  Target,
   ChevronDown,
   ChevronRight,
   Search,
@@ -14,7 +13,7 @@ import {
   ArrowUp,
   ArrowDown,
   TrendingUp,
-  Lightbulb,
+  Target,
   FolderKanban,
   Layers,
 } from 'lucide-react';
@@ -77,7 +76,7 @@ function statusBadgeColor(status: string) {
 function entityTypeIcon(entity: SignalEntityInfo) {
   if (entity.entityType === 'strategy') return <FolderKanban className="h-3 w-3 text-muted-foreground" />;
   if (entity.thesisType === 'macro') return <TrendingUp className="h-3 w-3 text-muted-foreground" />;
-  return <Lightbulb className="h-3 w-3 text-muted-foreground" />;
+  return <Target className="h-3 w-3 text-muted-foreground" />;
 }
 
 function entityTypeBadgeLabel(entity: SignalEntityInfo) {
@@ -101,11 +100,11 @@ function EntitiesList({ entities, compact }: { entities: SignalEntityInfo[]; com
 
   // Sort: strategies first
   const sorted = [...entities].sort((a, b) => entitySortOrder(a) - entitySortOrder(b));
-  const show = compact ? sorted.slice(0, 2) : sorted;
-  const remaining = compact ? sorted.length - 2 : 0;
+  const show = compact ? sorted.slice(0, 1) : sorted;
+  const remaining = compact ? sorted.length - 1 : 0;
 
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
+    <div className={`flex items-center gap-1.5 ${compact ? '' : 'flex-wrap'}`}>
       {show.map((entity, i) => (
         <div key={i} className="flex items-center gap-1">
           {entityTypeIcon(entity)}
@@ -120,14 +119,10 @@ function EntitiesList({ entities, compact }: { entities: SignalEntityInfo[]; com
           ) : (
             <span className="text-sm truncate max-w-[140px]">{entity.entityTitle || 'Unknown'}</span>
           )}
-          {entity.positionPct != null && (
-            <span className="text-[10px] text-muted-foreground">({entity.positionPct}%)</span>
-          )}
-          {i < show.length - 1 && <span className="text-muted-foreground text-[10px]">,</span>}
         </div>
       ))}
       {remaining > 0 && (
-        <span className="text-[10px] text-muted-foreground">+{remaining} more</span>
+        <span className="text-[10px] text-muted-foreground whitespace-nowrap">+{remaining} more</span>
       )}
     </div>
   );
