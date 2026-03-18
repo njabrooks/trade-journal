@@ -1465,6 +1465,35 @@ export const validationPoints = signals;
 export type ValidationPoint = Signal;
 export type NewValidationPoint = NewSignal;
 
+// Signal Entity Links - Many-to-many junction between signals and entities (strategies/theses)
+// Replaces the direct strategy_id/thesis_id on signals for strategy price signals,
+// allowing one signal (e.g., "BTC > $150K") to link to multiple strategies.
+export const signalEntityLinks = pgTable(
+  'signal_entity_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    signalId: uuid('signal_id')
+      .notNull()
+      .references(() => signals.id, { onDelete: 'cascade' }),
+    entityType: text('entity_type').notNull(), // 'thesis' | 'strategy'
+    strategyId: uuid('strategy_id').references(() => strategies.id, { onDelete: 'cascade' }),
+    thesisId: uuid('thesis_id'),
+    thesisType: text('thesis_type'), // 'macro' | 'asset'
+    positionPct: integer('position_pct'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    signalIdx: index('idx_signal_entity_links_signal').on(table.signalId),
+    strategyIdx: index('idx_signal_entity_links_strategy').on(table.strategyId),
+    thesisIdx: index('idx_signal_entity_links_thesis').on(table.thesisId, table.thesisType),
+    uniqueStrategy: unique('signal_entity_links_strategy_unique').on(table.signalId, table.strategyId),
+    uniqueThesis: unique('signal_entity_links_thesis_unique').on(table.signalId, table.thesisId, table.thesisType),
+  })
+);
+
+export type SignalEntityLink = typeof signalEntityLinks.$inferSelect;
+export type NewSignalEntityLink = typeof signalEntityLinks.$inferInsert;
+
 // Signal Status History - Audit trail of status changes (renamed from validation_status_history)
 export const signalStatusHistory = pgTable(
   'signal_status_history',

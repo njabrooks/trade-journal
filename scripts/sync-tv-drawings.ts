@@ -25,7 +25,7 @@ import WebSocket from 'ws';
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, sql } from 'drizzle-orm';
 
-const { signals, strategies, assetTheses, underlyings } = schema;
+const { signals, strategies, assetTheses, underlyings, signalEntityLinks } = schema;
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
@@ -294,15 +294,11 @@ async function findStrategiesForTicker(ticker: string): Promise<Array<{ id: stri
   return rows;
 }
 
-async function findExistingSignal(tvDrawingId: string, strategyId: string): Promise<{ id: string; explicitDetails: unknown } | null> {
+async function findExistingSignal(tvDrawingId: string): Promise<{ id: string; explicitDetails: unknown } | null> {
   const rows = await db
     .select({ id: signals.id, explicitDetails: signals.explicitDetails })
     .from(signals)
-    .where(and(
-      eq(signals.entityType, 'strategy'),
-      eq(signals.strategyId, strategyId),
-      sql`explicit_details->>'tvDrawingId' = ${tvDrawingId}`,
-    ))
+    .where(sql`explicit_details->>'tvDrawingId' = ${tvDrawingId}`)
     .limit(1);
   return rows[0] ?? null;
 }
@@ -315,14 +311,13 @@ function formatPrice(price: number, denomination: 'BTC' | 'USD'): string {
 }
 
 function buildStatement(drawing: ParsedDrawing): string {
-  const pctStr = drawing.positionPct ? ` (${drawing.positionPct}% of position)` : '';
   const priceStr = formatPrice(drawing.price, drawing.denomination);
   const suffix = drawing.denomination === 'USD' ? '' : '/BTC';
 
   if (drawing.signalType === 'confirmation') {
-    return `Take profit when ${drawing.baseTicker}${suffix} > ${priceStr}${pctStr}`;
+    return `Take profit when ${drawing.baseTicker}${suffix} > ${priceStr}`;
   }
-  return `Stop loss when ${drawing.baseTicker}${suffix} < ${priceStr}${pctStr}`;
+  return `Stop loss when ${drawing.baseTicker}${suffix} < ${priceStr}`;
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
@@ -370,7 +365,7 @@ async function main() {
     byTicker[d.baseTicker].push(d);
   }
 
-  let created = 0, updated = 0, skipped = 0, noStrategy = 0;
+  let created = 0, updated = 0, skipped = 0, noStrategy = 0, linksCreated = 0;
 
   for (const [ticker, drawings] of Object.entries(byTicker)) {
     console.log(`  ${ticker} (${drawings.length} drawings)`);
@@ -383,54 +378,77 @@ async function main() {
     }
 
     for (const drawing of drawings) {
-      for (const strategy of matchedStrategies) {
-        const existing = await findExistingSignal(drawing.tvDrawingId, strategy.id);
-        const explicitDetails = {
-          conditionType: drawing.conditionType,
-          price: drawing.price,
-          positionPct: drawing.positionPct,
-          tvLabel: drawing.label,
-          tvDrawingId: drawing.tvDrawingId,
-          tvSymbol: drawing.tvSymbol,
-          denomination: drawing.denomination,
-          tvLayoutId: TV_LAYOUT_ID,
-          serverUpdateTime: drawing.serverUpdateTime,
-        };
+      const denomTag = drawing.denomination === 'USD' ? ' [USD]' : ' [BTC]';
+      const priceStr = formatPrice(drawing.price, drawing.denomination);
 
-        const denomTag = drawing.denomination === 'USD' ? ' [USD]' : ' [BTC]';
+      // One signal per drawing (not per strategy)
+      const existing = await findExistingSignal(drawing.tvDrawingId);
+      const explicitDetails = {
+        conditionType: drawing.conditionType,
+        price: drawing.price,
+        tvLabel: drawing.label,
+        tvDrawingId: drawing.tvDrawingId,
+        tvSymbol: drawing.tvSymbol,
+        denomination: drawing.denomination,
+        tvLayoutId: TV_LAYOUT_ID,
+        serverUpdateTime: drawing.serverUpdateTime,
+      };
 
-        if (existing) {
-          const existingDetails = existing.explicitDetails as Record<string, unknown>;
-          const priceChanged = existingDetails.price !== drawing.price;
-          if (!priceChanged) {
-            console.log(`    · ${drawing.label}${denomTag} @ ${formatPrice(drawing.price, drawing.denomination)} — unchanged`);
-            skipped++;
-            continue;
-          }
+      let signalId: string;
 
-          console.log(`    ↑ ${drawing.label}${denomTag} @ ${formatPrice(drawing.price, drawing.denomination)} — price updated (${strategy.strategyKey})`);
+      if (existing) {
+        signalId = existing.id;
+        const existingDetails = existing.explicitDetails as Record<string, unknown>;
+        const priceChanged = existingDetails.price !== drawing.price;
+        if (!priceChanged) {
+          console.log(`    · ${drawing.label}${denomTag} @ ${priceStr} — unchanged`);
+          skipped++;
+        } else {
+          console.log(`    ↑ ${drawing.label}${denomTag} @ ${priceStr} — price updated`);
           if (!DRY_RUN) {
             await db.update(signals)
               .set({ explicitDetails, statement: buildStatement(drawing), updatedAt: new Date() })
               .where(eq(signals.id, existing.id));
           }
           updated++;
+        }
+      } else {
+        console.log(`    + ${drawing.label}${denomTag} @ ${priceStr} — creating signal`);
+        if (!DRY_RUN) {
+          const [inserted] = await db.insert(signals).values({
+            entityType: 'strategy',
+            type: drawing.signalType,
+            statement: buildStatement(drawing),
+            category: 'data_driven',
+            importance: drawing.signalType === 'warning' ? 'critical' : 'significant',
+            status: 'active',
+            explicitDetails,
+            linkedClaimIds: [],
+          }).returning({ id: signals.id });
+          signalId = inserted.id;
         } else {
-          console.log(`    + ${drawing.label}${denomTag} @ ${formatPrice(drawing.price, drawing.denomination)} — creating signal for ${strategy.strategyKey}`);
-          if (!DRY_RUN) {
-            await db.insert(signals).values({
-              entityType: 'strategy',
-              strategyId: strategy.id,
-              type: drawing.signalType,
-              statement: buildStatement(drawing),
-              category: 'data_driven',
-              importance: drawing.signalType === 'warning' ? 'critical' : 'significant',
-              status: 'active',
-              explicitDetails,
-              linkedClaimIds: [],
-            });
+          signalId = 'dry-run';
+        }
+        created++;
+      }
+
+      // Create/verify junction links for all matching strategies
+      for (const strategy of matchedStrategies) {
+        if (!DRY_RUN && signalId !== 'dry-run') {
+          const linkResult = await db.insert(signalEntityLinks).values({
+            signalId,
+            entityType: 'strategy',
+            strategyId: strategy.id,
+            positionPct: drawing.positionPct,
+          }).onConflictDoNothing();
+
+          if (linkResult.rowCount && linkResult.rowCount > 0) {
+            console.log(`      → linked to ${strategy.strategyKey}${drawing.positionPct ? ` (${drawing.positionPct}%)` : ''}`);
+            linksCreated++;
           }
-          created++;
+        } else if (DRY_RUN) {
+          console.log(`      → would link to ${strategy.strategyKey}${drawing.positionPct ? ` (${drawing.positionPct}%)` : ''}`);
+          linksCreated++;
         }
       }
     }
@@ -438,7 +456,8 @@ async function main() {
   }
 
   console.log('─'.repeat(40));
-  console.log(`  Created: ${created}  Updated: ${updated}  Skipped: ${skipped}  No strategy: ${noStrategy}`);
+  console.log(`  Signals — Created: ${created}  Updated: ${updated}  Skipped: ${skipped}  No strategy: ${noStrategy}`);
+  console.log(`  Links created: ${linksCreated}`);
   if (DRY_RUN) console.log('  (dry run — no changes written)');
 
   await closeDb();

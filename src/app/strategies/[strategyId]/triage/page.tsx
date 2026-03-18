@@ -7,7 +7,7 @@ import { UnifiedTriageBrowser } from '@/components/triage/UnifiedTriageBrowser';
 import { getCachedStrategyDetail } from '@/db/queries/cached';
 import { getUnifiedTriageQueue } from '@/db/queries/triage';
 import { db } from '@/db';
-import { signals } from '@/db/schema';
+import { signals, signalEntityLinks } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { EntityStatusBadge } from '@/components/ui/badge';
 
@@ -33,7 +33,9 @@ export default async function StrategyExecutionPage({ params }: ExecutionPagePro
     db
       .select()
       .from(signals)
-      .where(and(eq(signals.entityType, 'strategy'), eq(signals.strategyId, strategyId))),
+      .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
+      .where(and(eq(signalEntityLinks.entityType, 'strategy'), eq(signalEntityLinks.strategyId, strategyId)))
+      .then(rows => rows.map(r => r.signals)),
     // Fetch strategy-specific triage records using unified query
     getUnifiedTriageQueue({ strategyId, includeAll: true }),
   ]);

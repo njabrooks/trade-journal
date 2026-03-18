@@ -8,7 +8,7 @@ import { StrategySignalsSection } from '@/components/signals/StrategySignalsSect
 import { getCachedStrategyDetail } from '@/db/queries/cached';
 import { getTriageQueueForStrategy } from '@/db/queries/triage';
 import { db } from '@/db';
-import { signals, triageRecords } from '@/db/schema';
+import { signals, signalEntityLinks, triageRecords } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { formatCurrency } from '@/lib/formatters';
 import { EntityStatusBadge } from '@/components/ui/badge';
@@ -36,8 +36,10 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
     db
       .select()
       .from(signals)
-      .where(and(eq(signals.entityType, 'strategy'), eq(signals.strategyId, strategyId)))
-      .orderBy(signals.createdAt),
+      .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
+      .where(and(eq(signalEntityLinks.entityType, 'strategy'), eq(signalEntityLinks.strategyId, strategyId)))
+      .orderBy(signals.createdAt)
+      .then(rows => rows.map(r => r.signals)),
     db
       .select()
       .from(triageRecords)

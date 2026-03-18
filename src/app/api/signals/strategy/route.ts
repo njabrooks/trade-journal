@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signals, strategies, triageRecords } from '@/db/schema';
+import { signals, signalEntityLinks, strategies, triageRecords } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 
@@ -21,18 +21,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const strategySignals = await db
+    const rows = await db
       .select()
       .from(signals)
+      .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
       .where(
         and(
-          eq(signals.entityType, 'strategy'),
-          eq(signals.strategyId, strategyId)
+          eq(signalEntityLinks.entityType, 'strategy'),
+          eq(signalEntityLinks.strategyId, strategyId)
         )
       )
       .orderBy(signals.createdAt);
 
-    return NextResponse.json({ signals: strategySignals });
+    return NextResponse.json({ signals: rows.map(r => r.signals) });
   } catch (error) {
     console.error('Error fetching strategy signals:', error);
     return NextResponse.json(
@@ -136,6 +137,13 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // Create junction link
+    await db.insert(signalEntityLinks).values({
+      signalId: createdSignal.id,
+      entityType: 'strategy',
+      strategyId,
+    });
+
     // Log to journal
     await logToJournal({
       objectType: 'strategy',
@@ -198,14 +206,14 @@ async function checkAndResolveTriage(
       .limit(1);
 
     if (triageRecord) {
-      // Count signals for this strategy
+      // Count signals for this strategy (via junction table)
       const [{ count }] = await db
         .select({ count: sql<number>`count(*)::int` })
-        .from(signals)
+        .from(signalEntityLinks)
         .where(
           and(
-            eq(signals.entityType, 'strategy'),
-            eq(signals.strategyId, strategyId)
+            eq(signalEntityLinks.entityType, 'strategy'),
+            eq(signalEntityLinks.strategyId, strategyId)
           )
         );
 

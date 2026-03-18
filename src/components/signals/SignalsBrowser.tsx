@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SignalProgressCard } from './SignalProgressCard';
 import { SignalTrendIndicator } from './SignalTrendIndicator';
-import type { SignalWithContext, SignalFilterCounts } from '@/db/queries/signals';
+import type { SignalWithContext, SignalFilterCounts, SignalEntityInfo } from '@/db/queries/signals';
 
 type StatusFilter = 'all' | 'active' | 'complete' | 'draft' | 'rejected';
 type TypeFilter = 'all' | 'confirmation' | 'warning' | 'completion';
@@ -74,36 +74,63 @@ function statusBadgeColor(status: string) {
   }
 }
 
-function entityTypeIcon(entityType: string, thesisType: string | null) {
-  if (entityType === 'strategy') return <FolderKanban className="h-3 w-3 text-muted-foreground" />;
-  if (thesisType === 'macro') return <TrendingUp className="h-3 w-3 text-muted-foreground" />;
+function entityTypeIcon(entity: SignalEntityInfo) {
+  if (entity.entityType === 'strategy') return <FolderKanban className="h-3 w-3 text-muted-foreground" />;
+  if (entity.thesisType === 'macro') return <TrendingUp className="h-3 w-3 text-muted-foreground" />;
   return <Lightbulb className="h-3 w-3 text-muted-foreground" />;
 }
 
-function entityLink(signal: SignalWithContext): string | null {
-  if (signal.entityType === 'strategy' && signal.strategyId) {
-    return `/strategies/${signal.strategyId}`;
-  }
-  if (signal.thesisType === 'macro' && signal.thesisId) {
-    return `/macro-theses/${signal.thesisId}`;
-  }
-  if (signal.thesisType === 'asset' && signal.thesisId) {
-    return `/asset-theses/${signal.thesisId}`;
-  }
-  return null;
-}
-
-function entityTypeBadge(entityType: string, thesisType: string | null) {
-  if (entityType === 'strategy') return 'Strategy';
-  if (thesisType === 'macro') return 'Macro';
+function entityTypeBadgeLabel(entity: SignalEntityInfo) {
+  if (entity.entityType === 'strategy') return 'Strategy';
+  if (entity.thesisType === 'macro') return 'Macro';
   return 'Asset';
 }
 
-// Entity type sort order for grouped view: strategies first, then asset thesis, then macro thesis
-function entitySortOrder(s: SignalWithContext): number {
-  if (s.entityType === 'strategy') return 0;
-  if (s.thesisType === 'asset') return 1;
-  return 2; // macro
+// Entity type sort order for grouped view
+function entitySortOrder(e: SignalEntityInfo): number {
+  if (e.entityType === 'strategy') return 0;
+  if (e.thesisType === 'asset') return 1;
+  return 2;
+}
+
+// Render a compact entity list for a signal
+function EntitiesList({ entities, compact }: { entities: SignalEntityInfo[]; compact?: boolean }) {
+  if (entities.length === 0) {
+    return <span className="text-sm text-muted-foreground">No linked entities</span>;
+  }
+
+  // Sort: strategies first
+  const sorted = [...entities].sort((a, b) => entitySortOrder(a) - entitySortOrder(b));
+  const show = compact ? sorted.slice(0, 2) : sorted;
+  const remaining = compact ? sorted.length - 2 : 0;
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {show.map((entity, i) => (
+        <div key={i} className="flex items-center gap-1">
+          {entityTypeIcon(entity)}
+          {entity.entityLink ? (
+            <Link
+              href={entity.entityLink}
+              onClick={e => e.stopPropagation()}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate max-w-[140px]"
+            >
+              {entity.entityTitle || 'Unknown'}
+            </Link>
+          ) : (
+            <span className="text-sm truncate max-w-[140px]">{entity.entityTitle || 'Unknown'}</span>
+          )}
+          {entity.positionPct != null && (
+            <span className="text-[10px] text-muted-foreground">({entity.positionPct}%)</span>
+          )}
+          {i < show.length - 1 && <span className="text-muted-foreground text-[10px]">,</span>}
+        </div>
+      ))}
+      {remaining > 0 && (
+        <span className="text-[10px] text-muted-foreground">+{remaining} more</span>
+      )}
+    </div>
+  );
 }
 
 export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
@@ -147,15 +174,17 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
       result = result.filter(s => s.type === typeFilter);
     }
     if (entityFilter !== 'all') {
-      result = result.filter(s => s.entityType === entityFilter);
+      result = result.filter(s => s.entities.some(e => e.entityType === entityFilter));
     }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(s =>
         s.statement.toLowerCase().includes(q) ||
-        (s.entityTitle?.toLowerCase().includes(q)) ||
-        (s.ticker?.toLowerCase().includes(q)) ||
-        (s.strategyKey?.toLowerCase().includes(q)) ||
+        s.entities.some(e =>
+          (e.entityTitle?.toLowerCase().includes(q)) ||
+          (e.strategyKey?.toLowerCase().includes(q)) ||
+          (e.ticker?.toLowerCase().includes(q))
+        ) ||
         s.underlyingTickers.some(t => t.toLowerCase().includes(q))
       );
     }
@@ -171,7 +200,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
           cmp = a.type.localeCompare(b.type);
           break;
         case 'entity':
-          cmp = (a.entityTitle || '').localeCompare(b.entityTitle || '');
+          cmp = (a.entities[0]?.entityTitle || '').localeCompare(b.entities[0]?.entityTitle || '');
           break;
         case 'status':
           cmp = a.status.localeCompare(b.status);
@@ -205,8 +234,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
 
       for (const ticker of tickers) {
         const group = groups.get(ticker) || [];
-        // Avoid duplicates (macro thesis signals can appear in multiple groups,
-        // but within one group should only appear once)
         if (!group.some(s => s.id === signal.id)) {
           group.push(signal);
         }
@@ -214,17 +241,11 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
       }
     }
 
-    // Sort groups alphabetically, "Other" last
     const sorted = [...groups.entries()].sort(([a], [b]) => {
       if (a === 'Other') return 1;
       if (b === 'Other') return -1;
       return a.localeCompare(b);
     });
-
-    // Sort signals within each group: strategies → asset thesis → macro thesis
-    for (const [, groupSignals] of sorted) {
-      groupSignals.sort((a, b) => entitySortOrder(a) - entitySortOrder(b));
-    }
 
     return sorted;
   }, [filtered, groupByUnderlying]);
@@ -262,11 +283,10 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
     rejected: counts.rejected,
   };
 
-  // Signal row renderer (shared between grouped and flat views)
   function renderSignalRow(signal: SignalWithContext) {
     const isExpanded = expandedId === signal.id;
-    const link = entityLink(signal);
     const pct = signal.latestPctToThreshold ? parseFloat(signal.latestPctToThreshold) : null;
+    const firstLink = signal.entities.find(e => e.entityLink)?.entityLink;
 
     return (
       <Fragment key={signal.id}>
@@ -290,25 +310,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
             <p className="text-sm line-clamp-2">{signal.statement}</p>
           </td>
           <td className="px-3 py-3">
-            <div className="flex items-center gap-1.5">
-              {entityTypeIcon(signal.entityType, signal.thesisType)}
-              {link ? (
-                <Link
-                  href={link}
-                  onClick={e => e.stopPropagation()}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate max-w-[200px]"
-                >
-                  {signal.entityTitle || 'Unknown'}
-                </Link>
-              ) : (
-                <span className="text-sm truncate max-w-[200px]">{signal.entityTitle || 'Unknown'}</span>
-              )}
-              {signal.ticker && !groupByUnderlying && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0 font-mono">
-                  {signal.ticker}
-                </Badge>
-              )}
-            </div>
+            <EntitiesList entities={signal.entities} compact />
           </td>
           <td className="px-3 py-3">
             <Badge className={`text-xs font-normal ${statusBadgeColor(signal.status)}`}>
@@ -326,11 +328,11 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
         {isExpanded && (
           <tr className="bg-muted/10">
             <td colSpan={6} className="px-6 py-4">
-              <div className="max-w-4xl">
+              <div className="max-w-4xl space-y-3">
                 <SignalProgressCard
                   signal={{
                     id: signal.id,
-                    entityType: signal.entityType,
+                    entityType: signal.entities[0]?.entityType || 'thesis',
                     type: signal.type,
                     statement: signal.statement,
                     status: signal.status,
@@ -338,21 +340,20 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                     importance: signal.importance,
                     notes: signal.notes,
                     explicitDetails: signal.explicitDetails,
-                    thesisId: signal.thesisId,
-                    thesisType: signal.thesisType,
-                    strategyId: signal.strategyId,
+                    thesisId: signal.entities[0]?.thesisId || null,
+                    thesisType: signal.entities[0]?.thesisType || null,
+                    strategyId: signal.entities[0]?.strategyId || null,
                     createdAt: signal.createdAt,
                     updatedAt: signal.updatedAt,
                   } as any}
                 />
-                {link && (
-                  <div className="mt-2">
-                    <Link
-                      href={link}
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      View {entityTypeBadge(signal.entityType, signal.thesisType)} →
-                    </Link>
+                {/* Linked entities with position % */}
+                {signal.entities.length > 0 && (
+                  <div className="border border-border rounded-lg p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">
+                      Linked to {signal.entities.length} {signal.entities.length === 1 ? 'entity' : 'entities'}
+                    </p>
+                    <EntitiesList entities={signal.entities} />
                   </div>
                 )}
               </div>
@@ -473,7 +474,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
               </th>
               <th className="px-3 py-2 text-left">
                 <button onClick={() => toggleSort('entity')} className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
-                  ENTITY <SortIcon col="entity" />
+                  ENTITIES <SortIcon col="entity" />
                 </button>
               </th>
               <th className="px-3 py-2 text-left">
@@ -498,7 +499,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
             )}
 
             {groupByUnderlying && grouped ? (
-              // Grouped view
               grouped.map(([ticker, groupSignals]) => {
                 const isCollapsed = collapsedGroups.has(ticker);
                 return (
@@ -527,7 +527,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                 );
               })
             ) : (
-              // Flat view
               filtered.map(renderSignalRow)
             )}
           </tbody>

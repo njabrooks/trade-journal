@@ -11,6 +11,7 @@
 import { db } from '@/db';
 import {
   signals,
+  signalEntityLinks,
   strategies,
   strategyMetricsSnapshots,
   triageRecords,
@@ -387,16 +388,18 @@ export async function evaluateStrategySignalsForDate(
   const strategyIds = strategiesWithSignals.map((s) => s.id);
 
   // Get all non-triggered signals for these strategies
-  const activeSignals = await db
+  const activeSignalRows = await db
     .select()
     .from(signals)
+    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(
       and(
-        eq(signals.entityType, 'strategy'),
-        inArray(signals.strategyId, strategyIds),
+        eq(signalEntityLinks.entityType, 'strategy'),
+        inArray(signalEntityLinks.strategyId, strategyIds),
         eq(signals.status, 'active')
       )
     );
+  const activeSignals = activeSignalRows.map(r => r.signals);
 
   if (activeSignals.length === 0) {
     return results;
