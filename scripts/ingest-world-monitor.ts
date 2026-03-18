@@ -145,6 +145,16 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
   const snapshots: Array<typeof signalDataSnapshots.$inferInsert> = [];
   const now = new Date();
 
+  // Dedup: track which item is best-claimed by which signal (item ID → best signal + score)
+  const itemBestSignal = new Map<string, { signalId: string; score: number }>();
+  // First pass: score all signals against all items
+  const signalResults: Array<{
+    signal: typeof activeSignals[number];
+    bestMatch: typeof items[number] | null;
+    bestScore: number;
+    matchStrength: 'no_evidence' | 'emerging' | 'partial' | 'strong';
+  }> = [];
+
   for (const signal of activeSignals) {
     const details = signal.explicitDetails as Record<string, unknown> | null;
     const ticker = signal.thesisType === 'asset' && signal.thesisId
@@ -165,12 +175,19 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
       }
     }
 
-    // Find matching intelligence items
+    // Score all items against this signal, tracking the best match
     let bestMatch: typeof items[number] | null = null;
-    let matchStrength: 'no_evidence' | 'emerging' | 'partial' | 'strong' = 'no_evidence';
+    let bestScore = 0;
+
+    // No-evidence indicator patterns (⚪ emoji or phrases indicating no change)
+    const NO_EVIDENCE_PATTERNS = [
+      '⚪', 'no evidence', 'no change', 'no new', 'status quo', 'unchanged',
+      'no significant', 'no notable', 'no material',
+    ];
 
     for (const item of items) {
       const text = `${item.headline} ${item.body || ''}`.toLowerCase();
+      const rawText = `${item.headline} ${item.body || ''}`; // preserve emoji
       const itemTickers = item.relevantTickers || [];
 
       // Score this item against the signal
@@ -199,24 +216,77 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
         }
       }
 
-      if (score > 0 && (!bestMatch || score > (bestMatch as Record<string, unknown>).__score as number)) {
+      if (score > bestScore) {
         bestMatch = item;
-        (bestMatch as Record<string, unknown>).__score = score;
+        bestScore = score;
+      }
+    }
 
-        if (score >= 5) matchStrength = 'strong';
-        else if (score >= 3) matchStrength = 'partial';
-        else matchStrength = 'emerging';
+    // Determine assessment level from score
+    let matchStrength: 'no_evidence' | 'emerging' | 'partial' | 'strong' = 'no_evidence';
+
+    if (bestMatch && bestScore > 0) {
+      // Check if the matched evidence actually indicates no evidence / no change
+      const matchedText = `${bestMatch.headline} ${bestMatch.body || ''}`;
+      const matchedTextLower = matchedText.toLowerCase();
+      const hasNoEvidenceIndicator = NO_EVIDENCE_PATTERNS.some(
+        pattern => matchedText.includes(pattern) || matchedTextLower.includes(pattern)
+      );
+
+      if (hasNoEvidenceIndicator) {
+        // Evidence text explicitly signals no change — force no_evidence
+        matchStrength = 'no_evidence';
+      } else if (bestScore >= 5) {
+        matchStrength = 'strong';
+      } else if (bestScore >= 3) {
+        matchStrength = 'partial';
+      } else {
+        matchStrength = 'emerging';
+      }
+    }
+
+    // Track this signal's claim on the best-matched item for dedup
+    if (bestMatch && bestScore > 0 && matchStrength !== 'no_evidence') {
+      const itemId = bestMatch.id;
+      const existing = itemBestSignal.get(itemId);
+      if (!existing || bestScore > existing.score) {
+        itemBestSignal.set(itemId, { signalId: signal.id, score: bestScore });
+      }
+    }
+
+    signalResults.push({
+      signal,
+      bestMatch: bestMatch && bestScore > 0 ? bestMatch : null,
+      bestScore,
+      matchStrength,
+    });
+  }
+
+  // Second pass: dedup — only let each item be used by its highest-scoring signal
+  for (const result of signalResults) {
+    const { signal, bestMatch, bestScore, matchStrength } = result;
+
+    let finalMatch = bestMatch;
+    let finalAssessment = matchStrength;
+
+    // If this signal matched an item, check if another signal has a stronger claim on it
+    if (finalMatch && bestScore > 0 && finalAssessment !== 'no_evidence') {
+      const owner = itemBestSignal.get(finalMatch.id);
+      if (owner && owner.signalId !== signal.id) {
+        // Another signal has a stronger match on this item — demote to no_evidence
+        finalMatch = null;
+        finalAssessment = 'no_evidence';
       }
     }
 
     snapshots.push({
       signalId: signal.id,
       snapshotDate: now,
-      assessment: matchStrength,
-      evidenceSummary: bestMatch
-        ? `${bestMatch.headline}${bestMatch.body ? ': ' + bestMatch.body.slice(0, 200) : ''}`
+      assessment: finalAssessment,
+      evidenceSummary: finalMatch
+        ? `${finalMatch.headline}${finalMatch.body ? ': ' + finalMatch.body.slice(0, 200) : ''}`
         : null,
-      intelligenceItemId: bestMatch?.id || null,
+      intelligenceItemId: finalMatch?.id || null,
       dataSource: 'thesis_monitor',
       reportId: reportId,
     });
