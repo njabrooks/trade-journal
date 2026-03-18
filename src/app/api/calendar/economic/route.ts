@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const from = searchParams.get('from');
     const to = searchParams.get('to');
     const category = searchParams.get('category');
-    const impact = searchParams.get('impact');
+    const impact = searchParams.get('impact') ?? searchParams.get('impactLevel');
     const days = parseInt(searchParams.get('days') || '7', 10);
 
     let events;
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
         from: from || undefined,
         to: to || undefined,
         category: category || undefined,
-        impact: impact || undefined,
+        impactLevel: impact || undefined,
       });
     } else {
       events = await getUpcomingEconomicEvents(days);
