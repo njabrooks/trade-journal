@@ -2,7 +2,7 @@
 
 > Created: 2026-03-16
 > Last updated: 2026-03-18
-> Status: Phases 1–3 complete (incl. signal dedup via junction table). Phase 5 complete. Phase 2d documented. Phase 4 not started.
+> Status: Phases 1–3 complete (incl. signal dedup via junction table). Phase 5 complete. Phase 2d documented. Phase 4 not started. All quick wins (tasks 1, 2, 5, 6/7, 8, 9) complete as of 2026-03-18.
 
 ## Context
 
@@ -1125,39 +1125,34 @@ The signals browser is additive — it does **not** replace the signal sections 
 - ~~**Signal deduplication**~~ ✅ — `signal_entity_links` junction table. One signal per TradingView drawing, linked to multiple strategies. 35 → 13 signals + 35 links. `position_pct` per-link. Query layer returns `entities[]` per signal.
 - ~~**Correlation backfill**~~ ✅ — 882 daily BTC-NASDAQ correlation snapshots from mid-2024 via Yahoo Finance.
 - ~~**Clean up test data**~~ ✅ — Test thesis-monitor report removed.
+- ~~**Quick wins batch**~~ ✅ — All 6 quick-win tasks completed (see "Completed quick wins" section below).
+
+### Completed quick wins (2026-03-18)
+
+- ~~**1. Qualitative snapshot assessment accuracy**~~ ✅ — Added `NO_EVIDENCE_PATTERNS` array (`⚪`, `no evidence`, `no change`, etc.) in `ingest-world-monitor.ts`. Neutral/status-quo text now forced to `no_evidence` instead of a spurious positive/negative assessment.
+
+- ~~**2. Drop old columns from signals table**~~ ✅ — Removed `entity_type`, `strategy_id`, `thesis_id`, `thesis_type` from `signals` schema, all insert sites, and query layer. All signal ↔ entity relationships now exclusively via `signal_entity_links` junction table. Signals Browser split entity filter into macro/asset thesis sections. (`a1810ef`)
+
+- ~~**5. Centralise price data in `price_history` table**~~ ✅ — Added `^IXIC` (NASDAQ) and `^GSPC` (S&P 500) as INDEX assets. `scripts/ingest-index-prices.ts` backfills 2yr daily OHLCV from Yahoo Finance (502 data points each). `derived.ts` correlation collector now reads from `price_history` first, Yahoo Finance only as fallback. (`7aef4bf`)
+
+- ~~**6/7. Signal trigger automation**~~ ✅ — `collect-signal-data.ts` calls `checkAndTriggerSignal()` after each snapshot. When `pct_to_threshold >= 100` and `status = 'active'`: signal moved to `complete`, `thesis_triage_record` created, `journal_entries` logged. `--skip-triggers` flag available for dry runs. (`5ff3d6e`)
+
+- ~~**8. Dedup logic for qualitative snapshots**~~ ✅ — `generateQualitativeSnapshots()` restructured to two-pass dedup: score all signals against all items first, then assign each item to its highest-scoring signal only (no double-counting). (`67c7693`)
+
+- ~~**9. HYPE P/E re-rating condition**~~ ✅ — `collectPERatio()` added to `derived.ts`. Fetches market cap from CoinGecko (`/coins/hyperliquid`) and annualised revenue from DefiLlama (`total30d * 12`) in parallel. Computes P/E ratio, default threshold 17.5x. Routed via `calculation === 'market_cap / annualized_revenue'` in the collector switch.
 
 ### Immediate priorities
 
-**1. Qualitative snapshot assessment accuracy**
-The current keyword-matching in `generateQualitativeSnapshots()` (in `ingest-world-monitor.ts`) assigns assessment levels based on a scoring heuristic (ticker match + keyword overlap). Review the real thesis monitor output vs the assessments generated to see if the matching is accurate.
-
-**2. Phase 2d: `/configure-signal` skill**
+**1. Phase 2d: `/configure-signal` skill**
 The signal configuration workflow is documented but not yet packaged as a skill. Would speed up adding monitoring to new signals. The skill would: read signal statement → propose data sources → test endpoints → populate `explicit_details` → verify snapshot.
-
-**3. Drop old columns from signals table**
-Phase 2 of junction table migration: remove `entity_type`, `strategy_id`, `thesis_id`, `thesis_type` from `signals` table. All code now reads from `signal_entity_links`.
 
 ### Medium-term
 
-**4. Phase 4: Process-inbox signal integration**
+**2. Phase 4: Process-inbox signal integration**
 See Phase 4 section above. Would close the loop between research ingestion and signal tracking — new claims automatically checked against active signals.
 
-**5. Centralise price data in `price_history` table**
-The `price_history` table (via `assets`) is the single source of truth for daily prices. Currently missing NASDAQ (^IXIC) and S&P 500 (^GSPC) indices. Add these as assets with Yahoo Finance daily ingestion. Then update `derived.ts` correlation collector to read from `price_history` instead of hitting Yahoo Finance API on each run.
-
-**6. TradingView CDP collector for economic calendar**
+**3. TradingView CDP collector for economic calendar**
 Build a collector that uses CDP to access the TradingView economic calendar. Would feed macro thesis signals that depend on economic events (FOMC decisions, CPI releases, employment data).
-
-**7. Signal trigger automation**
-When a quantitative signal's `pct_to_threshold` reaches 100%, automatically: update signal status to `complete`, create a `thesis_triage_record` for user review, log a journal entry with the evidence.
-
-### Technical debt / improvements
-
-**8. Dedup logic for qualitative snapshots**
-The `generateQualitativeSnapshots()` function can match the same intelligence item to multiple signals. Consider improving the matching to prioritise the best-fit signal for each item.
-
-**9. HYPE P/E re-rating condition**
-The HYPE completion signal's second condition (P/E re-rating to 15-20x) returns no data because it requires both CoinGecko market cap and DefiLlama revenue combined. Needs a custom derived collector.
 
 ### Key files for orientation
 
