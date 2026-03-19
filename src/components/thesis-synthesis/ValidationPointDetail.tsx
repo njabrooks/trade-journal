@@ -15,7 +15,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { StatusTimeline } from './StatusTimeline';
 import { UpdateValidationStatusModal } from './UpdateValidationStatusModal';
+import { SignalCumulativeScoreChart } from '@/components/signals/SignalCumulativeScoreChart';
+import { AssessmentTimeline } from '@/components/signals/AssessmentTimeline';
+import type { DayScore } from '@/components/signals/SignalCumulativeScoreChart';
 import type { ValidationPoint, ValidationStatusHistory } from '@/db/schema';
+
+interface Snapshot {
+  snapshotDate: string;
+  assessment: string | null;
+  evidenceSummary: string | null;
+  dataSource: string;
+}
 
 interface ValidationPointDetailProps {
   validationPoint: ValidationPoint;
@@ -45,6 +55,31 @@ export function ValidationPointDetail({
   const [statusHistory, setStatusHistory] = useState<ValidationStatusHistory[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [dailyScores, setDailyScores] = useState<DayScore[]>([]);
+  const [isLoadingScores, setIsLoadingScores] = useState(true);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+
+  // Fetch daily conviction scores
+  useEffect(() => {
+    fetch(`/api/signals/${validationPoint.id}/daily-scores`)
+      .then((r) => r.json())
+      .then((data) => setDailyScores(data.scores || []))
+      .catch(() => {})
+      .finally(() => setIsLoadingScores(false));
+  }, [validationPoint.id]);
+
+  // Fetch individual observations (non-synthesis snapshots)
+  useEffect(() => {
+    fetch(`/api/signals/${validationPoint.id}/snapshots?days=90`)
+      .then((r) => r.json())
+      .then((data) => {
+        const obs = ((data.snapshots || []) as Snapshot[]).filter(
+          (s) => s.dataSource !== 'daily_synthesis'
+        );
+        setSnapshots(obs);
+      })
+      .catch(() => {});
+  }, [validationPoint.id]);
 
   // Fetch status history
   const fetchStatusHistory = async () => {
@@ -270,6 +305,47 @@ export function ValidationPointDetail({
             </p>
           </div>
         )}
+      </div>
+
+      {/* Conviction Trend */}
+      <div className="bg-card rounded-lg border border">
+        <div className="px-4 py-3 border-b border">
+          <h3 className="text-sm font-semibold text-foreground">Conviction Trend</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Daily qualitative evidence score. +1 strengthening, -1 weakening, 0 neutral.
+          </p>
+        </div>
+        <div className="p-4">
+          {isLoadingScores ? (
+            <div className="text-sm text-muted-foreground py-4">Loading...</div>
+          ) : (
+            <SignalCumulativeScoreChart scores={dailyScores} />
+          )}
+        </div>
+      </div>
+
+      {/* Signal Observations */}
+      <div className="bg-card rounded-lg border border">
+        <div className="px-4 py-3 border-b border">
+          <h3 className="text-sm font-semibold text-foreground">
+            Signal Observations
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
+              ({snapshots.length} {snapshots.length === 1 ? 'observation' : 'observations'}, last 90 days)
+            </span>
+          </h3>
+        </div>
+        <div className="p-4">
+          <AssessmentTimeline
+            assessments={snapshots.map((s) => ({
+              date:
+                typeof s.snapshotDate === 'string'
+                  ? s.snapshotDate
+                  : new Date(s.snapshotDate).toISOString(),
+              assessment: s.assessment ?? 'neutral',
+              summary: s.evidenceSummary ?? null,
+            }))}
+          />
+        </div>
       </div>
 
       {/* Status History */}
