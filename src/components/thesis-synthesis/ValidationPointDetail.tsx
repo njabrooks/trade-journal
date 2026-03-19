@@ -13,18 +13,23 @@ import {
   Archive,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { StatusTimeline } from './StatusTimeline';
 import { UpdateValidationStatusModal } from './UpdateValidationStatusModal';
 import { SignalCumulativeScoreChart } from '@/components/signals/SignalCumulativeScoreChart';
-import { AssessmentTimeline } from '@/components/signals/AssessmentTimeline';
+import { SignalLog } from '@/components/signals/SignalLog';
 import type { DayScore } from '@/components/signals/SignalCumulativeScoreChart';
-import type { ValidationPoint, ValidationStatusHistory } from '@/db/schema';
+import type { SignalLogEntry } from '@/components/signals/SignalLog';
+import type { ValidationPoint } from '@/db/schema';
 
 interface Snapshot {
+  id: string;
   snapshotDate: string;
   assessment: string | null;
   evidenceSummary: string | null;
   dataSource: string;
+  observedValue: number | null;
+  thresholdValue: number | null;
+  pctToThreshold: number | null;
+  unit: string | null;
 }
 
 interface ValidationPointDetailProps {
@@ -52,8 +57,6 @@ export function ValidationPointDetail({
   onUpdateStatus,
 }: ValidationPointDetailProps) {
   const router = useRouter();
-  const [statusHistory, setStatusHistory] = useState<ValidationStatusHistory[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [dailyScores, setDailyScores] = useState<DayScore[]>([]);
   const [isLoadingScores, setIsLoadingScores] = useState(true);
@@ -68,39 +71,12 @@ export function ValidationPointDetail({
       .finally(() => setIsLoadingScores(false));
   }, [validationPoint.id]);
 
-  // Fetch individual observations (non-synthesis snapshots)
+  // Fetch all snapshots (qualitative + quantitative + daily synthesis)
   useEffect(() => {
     fetch(`/api/signals/${validationPoint.id}/snapshots?days=90`)
       .then((r) => r.json())
-      .then((data) => {
-        const obs = ((data.snapshots || []) as Snapshot[]).filter(
-          (s) => s.dataSource !== 'daily_synthesis'
-        );
-        setSnapshots(obs);
-      })
+      .then((data) => setSnapshots((data.snapshots || []) as Snapshot[]))
       .catch(() => {});
-  }, [validationPoint.id]);
-
-  // Fetch status history
-  const fetchStatusHistory = async () => {
-    setIsLoadingHistory(true);
-    try {
-      const response = await fetch(
-        `/api/thesis-synthesis/validation-status?validationPointId=${validationPoint.id}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setStatusHistory(data.history || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch status history:', error);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchStatusHistory();
   }, [validationPoint.id]);
 
   const handleUpdateStatus = async (data: {
@@ -115,8 +91,6 @@ export function ValidationPointDetail({
   }) => {
     if (onUpdateStatus) {
       await onUpdateStatus(data);
-      // Refresh history after update
-      fetchStatusHistory();
     }
   };
 
@@ -324,43 +298,29 @@ export function ValidationPointDetail({
         </div>
       </div>
 
-      {/* Signal Observations */}
+      {/* Signal Log */}
       <div className="bg-card rounded-lg border border">
         <div className="px-4 py-3 border-b border">
           <h3 className="text-sm font-semibold text-foreground">
-            Signal Observations
+            Signal Log
             <span className="ml-2 text-xs font-normal text-muted-foreground">
-              ({snapshots.length} {snapshots.length === 1 ? 'observation' : 'observations'}, last 90 days)
+              {snapshots.length} {snapshots.length === 1 ? 'entry' : 'entries'}, last 90 days — qualitative observations, quantitative readings, and daily rollups
             </span>
           </h3>
         </div>
-        <div className="p-4">
-          <AssessmentTimeline
-            assessments={snapshots.map((s) => ({
-              date:
-                typeof s.snapshotDate === 'string'
-                  ? s.snapshotDate
-                  : new Date(s.snapshotDate).toISOString(),
-              assessment: s.assessment ?? 'neutral',
-              summary: s.evidenceSummary ?? null,
-            }))}
-          />
-        </div>
-      </div>
-
-      {/* Status History */}
-      <div className="bg-card rounded-lg border border">
-        <div className="px-4 py-3 border-b border">
-          <h3 className="text-sm font-semibold text-foreground">
-            Status History
-            <span className="ml-2 text-xs font-normal text-muted-foreground">
-              ({statusHistory.length} {statusHistory.length === 1 ? 'entry' : 'entries'})
-            </span>
-          </h3>
-        </div>
-        <div className="p-4">
-          <StatusTimeline history={statusHistory} isLoading={isLoadingHistory} />
-        </div>
+        <SignalLog
+          entries={snapshots.map((s): SignalLogEntry => ({
+            id: s.id,
+            snapshotDate: s.snapshotDate,
+            dataSource: s.dataSource,
+            assessment: s.assessment,
+            evidenceSummary: s.evidenceSummary,
+            observedValue: s.observedValue,
+            thresholdValue: s.thresholdValue,
+            pctToThreshold: s.pctToThreshold,
+            unit: s.unit,
+          }))}
+        />
       </div>
 
       {/* Update status modal */}
