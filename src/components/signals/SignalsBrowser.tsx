@@ -300,9 +300,8 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
     const isExpanded = expandedId === signal.id;
     const pct = signal.latestPctToThreshold ? parseFloat(signal.latestPctToThreshold) : null;
 
-    // Build link to signal detail page via first linked thesis
-    const thesisEntity = signal.entities.find(e => e.entityType === 'thesis');
-    const signalUrl = thesisEntity?.entityLink ? `${thesisEntity.entityLink}/signals/${signal.id}` : null;
+    // All signals link to the standalone detail page
+    const signalUrl = `/signals/${signal.id}`;
 
     return (
       <Fragment key={signal.id}>
@@ -323,17 +322,13 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
             </Badge>
           </td>
           <td className="px-3 py-3">
-            {signalUrl ? (
-              <Link
-                href={signalUrl}
-                onClick={e => e.stopPropagation()}
-                className="text-sm line-clamp-2 hover:underline text-foreground"
-              >
-                {signal.statement}
-              </Link>
-            ) : (
-              <p className="text-sm line-clamp-2">{signal.statement}</p>
-            )}
+            <Link
+              href={signalUrl}
+              onClick={e => e.stopPropagation()}
+              className="text-sm line-clamp-2 hover:underline text-foreground"
+            >
+              {signal.statement}
+            </Link>
           </td>
           <td className="px-3 py-3">
             <EntityTypeBadges entities={signal.entities} />

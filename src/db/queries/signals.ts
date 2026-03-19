@@ -1,4 +1,4 @@
-import { desc, eq, sql, and } from "drizzle-orm";
+import { desc, eq, sql, and, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   signals,
@@ -312,4 +312,175 @@ export async function getAllSignalsWithContext(): Promise<{
   }
 
   return { signals: merged, counts };
+}
+
+/**
+ * Get a single signal with its full entity context by ID.
+ * Used by the standalone /signals/[id] detail page.
+ */
+export async function getSignalWithEntitiesById(id: string): Promise<SignalWithContext | null> {
+  const [signal] = await db
+    .select({
+      id: signals.id,
+      type: signals.type,
+      statement: signals.statement,
+      status: signals.status,
+      category: signals.category,
+      importance: signals.importance,
+      notes: signals.notes,
+      explicitDetails: signals.explicitDetails,
+      createdAt: signals.createdAt,
+      updatedAt: signals.updatedAt,
+    })
+    .from(signals)
+    .where(eq(signals.id, id))
+    .limit(1);
+
+  if (!signal) return null;
+
+  // Fetch entity links
+  const entityLinks = await db.execute<{
+    signal_id: string;
+    entity_type: string;
+    strategy_id: string | null;
+    thesis_id: string | null;
+    thesis_type: string | null;
+    position_pct: number | null;
+    strategy_key: string | null;
+    strategy_status: string | null;
+    macro_title: string | null;
+    macro_status: string | null;
+    asset_title: string | null;
+    asset_status: string | null;
+    ticker: string | null;
+  }>(sql`
+    SELECT
+      sel.signal_id,
+      sel.entity_type,
+      sel.strategy_id,
+      sel.thesis_id,
+      sel.thesis_type,
+      sel.position_pct,
+      st.strategy_key,
+      st.status as strategy_status,
+      mt.title as macro_title,
+      mt.status as macro_status,
+      at.title as asset_title,
+      at.status as asset_status,
+      COALESCE(u_at.ticker, u_st.ticker) as ticker
+    FROM signal_entity_links sel
+    LEFT JOIN strategies st ON sel.strategy_id = st.id
+    LEFT JOIN asset_theses sat ON st.asset_thesis_id = sat.id
+    LEFT JOIN underlyings u_st ON sat.underlying_id = u_st.id
+    LEFT JOIN macro_theses mt ON sel.thesis_type = 'macro' AND sel.thesis_id = mt.id
+    LEFT JOIN asset_theses at ON sel.thesis_type = 'asset' AND sel.thesis_id = at.id
+    LEFT JOIN underlyings u_at ON at.underlying_id = u_at.id
+    WHERE sel.signal_id = ${id}
+    ORDER BY sel.entity_type
+  `);
+
+  const entities: SignalEntityInfo[] = entityLinks.map(link => {
+    let entityTitle: string | null = null;
+    let entityStatus: string | null = null;
+    let entityLink: string | null = null;
+
+    if (link.entity_type === 'strategy') {
+      entityTitle = link.strategy_key;
+      entityStatus = link.strategy_status;
+      if (link.strategy_id) entityLink = `/strategies/${link.strategy_id}`;
+    } else if (link.thesis_type === 'macro') {
+      entityTitle = link.macro_title;
+      entityStatus = link.macro_status;
+      if (link.thesis_id) entityLink = `/theses/${link.thesis_id}`;
+    } else if (link.thesis_type === 'asset') {
+      entityTitle = link.asset_title;
+      entityStatus = link.asset_status;
+      if (link.thesis_id) entityLink = `/asset-theses/${link.thesis_id}`;
+    }
+
+    return {
+      entityType: link.entity_type,
+      thesisId: link.thesis_id,
+      thesisType: link.thesis_type,
+      strategyId: link.strategy_id,
+      entityTitle,
+      entityStatus,
+      strategyKey: link.strategy_key,
+      positionPct: link.position_pct,
+      ticker: link.ticker,
+      entityLink,
+    };
+  });
+
+  // Resolve underlying tickers
+  const tickerSet = new Set<string>();
+  for (const e of entities) {
+    if (e.ticker) tickerSet.add(e.ticker);
+  }
+  const macroIds = entities.filter(e => e.thesisType === 'macro' && e.thesisId).map(e => e.thesisId!);
+  if (macroIds.length > 0) {
+    const macroUnderlyings = await db.execute<{ macro_thesis_id: string; ticker: string }>(sql`
+      SELECT atrm.macro_thesis_id, u.ticker
+      FROM asset_thesis_related_macro_theses atrm
+      JOIN asset_theses at ON at.id = atrm.asset_thesis_id
+      JOIN underlyings u ON u.id = at.underlying_id
+      WHERE atrm.macro_thesis_id = ANY(${macroIds})
+    `);
+    for (const r of macroUnderlyings) tickerSet.add(r.ticker);
+  }
+
+  // Latest snapshots
+  const [latestQuant] = await db.execute<{
+    observed_value: string | null;
+    threshold_value: string | null;
+    pct_to_threshold: string | null;
+    unit: string | null;
+    snapshot_date: string;
+    data_source: string;
+  }>(sql`
+    SELECT observed_value, threshold_value, pct_to_threshold, unit, snapshot_date, data_source
+    FROM signal_data_snapshots
+    WHERE signal_id = ${id} AND observed_value IS NOT NULL
+    ORDER BY snapshot_date DESC LIMIT 1
+  `);
+
+  const [latestQual] = await db.execute<{
+    assessment: string | null;
+    evidence_summary: string | null;
+    snapshot_date: string;
+  }>(sql`
+    SELECT assessment, evidence_summary, snapshot_date
+    FROM signal_data_snapshots
+    WHERE signal_id = ${id} AND assessment IS NOT NULL
+    ORDER BY snapshot_date DESC LIMIT 1
+  `);
+
+  const [evidenceCount] = await db.execute<{ count: string }>(sql`
+    SELECT COUNT(*)::text as count FROM claim_signal_evidences WHERE signal_id = ${id}
+  `);
+
+  return {
+    id: signal.id,
+    type: signal.type,
+    statement: signal.statement,
+    status: signal.status,
+    category: signal.category,
+    importance: signal.importance,
+    notes: signal.notes,
+    explicitDetails: signal.explicitDetails,
+    createdAt: signal.createdAt,
+    updatedAt: signal.updatedAt,
+    entities,
+    underlyingTickers: [...tickerSet].sort(),
+    latestObservedValue: latestQuant?.observed_value ?? null,
+    latestThresholdValue: latestQuant?.threshold_value ?? null,
+    latestPctToThreshold: latestQuant?.pct_to_threshold ?? null,
+    latestUnit: latestQuant?.unit ?? null,
+    latestQuantDate: latestQuant?.snapshot_date ? new Date(latestQuant.snapshot_date) : null,
+    latestQuantSource: latestQuant?.data_source ?? null,
+    latestAssessment: latestQual?.assessment ?? null,
+    latestEvidenceSummary: latestQual?.evidence_summary ?? null,
+    latestQualDate: latestQual?.snapshot_date ? new Date(latestQual.snapshot_date) : null,
+    evidenceCount: evidenceCount ? parseInt(evidenceCount.count, 10) : 0,
+  };
 }

@@ -10,13 +10,22 @@ Signals live in the `signals` table. They are linked to theses (macro or asset) 
 Qualitative assessments are stored as `signal_data_snapshots` rows with:
 - `data_source = 'qualitative'`
 - `assessment` = one of: `neutral` | `strengthening` | `confirmed` | `weakening` | `invalidated`
-- `evidence_summary` = 1-2 sentence human-readable summary of what was found
+- `evidence_summary` = the note shown in the Signal Log — **must clearly explain WHY the assessment is what it is** (see format requirements below)
 
 **Assessment is always relative to the signal itself:**
 - For **confirmation signals**: `strengthening` when evidence supports the condition forming; `weakening` when evidence contradicts it
-- For **warning signals**: `strengthening` when the risk described is growing; `weakening` when the risk is receding or external conditions reduce probability
+- For **invalidation/warning signals**: `strengthening` when the risk described is **growing** (bad for thesis); `weakening` when the risk is **receding** (good for thesis). Do NOT assign `strengthening` to evidence that reduces the probability of enforcement, default, or other adverse outcomes.
 - `confirmed` / `invalidated` only for definitive (not directional) outcomes
 - `neutral` when content is topically related but has no material bearing on whether the signal triggers
+
+**Evidence summary format (critical — this is the note shown to the user in the Signal Log):**
+1. State the specific finding with detail (names, numbers, quotes where available)
+2. Explicitly state direction: "This [increases/reduces] the probability that [signal condition] triggers because..."
+3. For invalidation signals specifically: state "Risk [growing/receding]: [reason]"
+4. Never use vague openers alone ("Monitoring elevated", "No direct action", "Regulatory landscape evolving") without explaining the directional implication
+
+**Bad**: `"Monitoring elevated — S&P DJI licensing is a meaningful positive counterweight today."`
+**Good**: `"S&P DJI x Hyperliquid licensing partnership brings a regulated TradFi data institution publicly on-chain. Risk receding: an institution of SPDJI's standing co-signing Hyperliquid infrastructure materially complicates a targeted enforcement action and narrows the jurisdictional argument."`
 
 The `generateQualitativeSnapshots()` function in `scripts/ingest-world-monitor.ts` is the authoritative reference for how automated qualitative scoring works. That function can only produce `neutral` or `strengthening` (it cannot determine direction). This skill applies human judgement to also assign `weakening`, `invalidated`, or `confirmed`.
 

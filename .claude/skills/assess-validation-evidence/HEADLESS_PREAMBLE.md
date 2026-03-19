@@ -72,19 +72,39 @@ For each signal, apply the scoring algorithm:
 - Each `explicit_details.conditions[].monitorKeywords` match: +1 pt per keyword
 - Each signal statement word (length > 4) found in content: +0.5 pts
 
-**Assessment thresholds:**
-- no-evidence phrases found in content (e.g., "no change", "unchanged", "no evidence") → `no_evidence`
-- score = 0 → `no_evidence`
-- score < 3 → `emerging`
-- 3 ≤ score < 5 → `partial`
-- score ≥ 5 → `strong`
-- unambiguous threshold met → `confirmed` (use conservatively)
+**Assessment — use the correct scale: `neutral | strengthening | weakening | confirmed | invalidated`**
 
-**Evidence summary** (1-2 sentences for the snapshot row): concise, factual, with specific data points.
+Step 1 — Check for no-evidence indicators (phrases like `no evidence`, `no change`, `unchanged`, `no new`, `no material`). If found: `neutral`.
+
+Step 2 — If score = 0: `neutral`.
+
+Step 3 — Determine direction relative to the **signal type**:
+
+| Signal type | `strengthening` means | `weakening` means |
+|---|---|---|
+| **confirmation** | Evidence moves the condition closer to being met | Evidence moves the condition further from being met |
+| **invalidation / warning** | The risk described in the signal is **growing** (bad) | The risk described in the signal is **receding** (good) |
+
+**Examples for invalidation signals:**
+- "Regulatory pressure on offshore perps increasing" → `strengthening` (risk growing)
+- "SEC drops investigation, clarifies HYPE is not a security" → `weakening` (risk receding)
+- "SPDJI partnership complicates targeted CFTC action" → `weakening` (risk receding, not strengthening)
+- "No regulatory news this week" → `neutral`
+
+Use `confirmed` / `invalidated` only for clear, unambiguous threshold events (e.g., actual enforcement action filed).
+
+**Evidence summary requirements — this is what appears in the signal log note column. It MUST:**
+1. State the specific finding (quote/reference the actual evidence, with numbers/names where available)
+2. Explicitly state the direction: "This [increases/reduces] the probability that [signal condition] triggers because..."
+3. For **invalidation signals**: be especially explicit — "Risk [growing/receding] because [reason]"
+4. Be 1-3 sentences. Never use vague openers like "Monitoring elevated" or "No direct action" alone.
+
+**Bad**: "Monitoring elevated — regulatory environment evolving."
+**Good**: "SPDJI x Hyperliquid data partnership co-signs regulated TradFi infrastructure on-chain, directly complicating a targeted CFTC/SEC enforcement action. Risk receding: a regulated institution's public endorsement reduces the probability of enforcement and shrinks the jurisdictional argument."
 
 ### 4. Write signal_data_snapshots for ALL signals
 
-Include `no_evidence` signals — keeps timeline complete.
+Include `neutral` signals — keeps timeline complete.
 
 ```bash
 cd /Users/home-hub/projects/trade-journal
@@ -111,8 +131,8 @@ Replace `SNAPSHOTS_PLACEHOLDER` with the actual array of snapshot objects:
   {
     "signalId": "<uuid>",
     "snapshotDate": "new Date()",
-    "assessment": "<assessment>",
-    "evidenceSummary": "<1-2 sentence summary or null>",
+    "assessment": "strengthening",
+    "evidenceSummary": "Specific finding. Direction rationale: [why this moves the signal closer to/further from triggering].",
     "intelligenceItemId": null,
     "dataSource": "qualitative",
     "reportId": null
@@ -120,21 +140,23 @@ Replace `SNAPSHOTS_PLACEHOLDER` with the actual array of snapshot objects:
 ]
 ```
 
+`assessment` must be one of: `neutral` | `strengthening` | `weakening` | `confirmed` | `invalidated`
+
 ### 5. Add journal entry per signal assessed
 
-After writing snapshots, write a journal entry for **each** signal with an assessment other than `no_evidence`. This provides narrative traceability on each signal's Journal tab.
+After writing snapshots, write a journal entry for **each** signal with an assessment other than `neutral`.
 
 ```bash
 cd /Users/home-hub/projects/trade-journal
 
-# Repeat for each assessed signal (skip no_evidence signals):
+# Repeat for each assessed signal (skip neutral signals):
 npx tsx scripts/ops/add-journal-note.ts \
   --entity-type signal \
   --id {{SIGNAL_ID}} \
   --note "Evidence assessment ({{assessment}}): {{evidence_summary}}. Source: {{contentFile basename or title}}."
 ```
 
-- Skip `no_evidence` signals
+- Skip `neutral` signals
 - Include the assessment level and evidence summary from the snapshot
 - Use `--entity-type signal`
 
@@ -155,11 +177,11 @@ Output a single JSON result as your final output:
     {
       "signalId": "<uuid>",
       "statement": "<signal statement>",
-      "type": "confirmation|warning",
+      "type": "confirmation|invalidation",
       "importance": "critical|significant|supporting",
-      "assessment": "strong|partial|emerging|no_evidence|confirmed",
+      "assessment": "neutral|strengthening|weakening|confirmed|invalidated",
       "confidence": "high|medium|low",
-      "evidenceSummary": "1-2 sentence summary",
+      "evidenceSummary": "Specific finding. Direction rationale: why this moves the signal closer to/further from triggering.",
       "findings": ["Finding 1", "Finding 2"],
       "quotes": ["Direct quote from content"],
       "recommendedAction": "Brief recommendation"
@@ -171,8 +193,10 @@ Output a single JSON result as your final output:
 
 ## Assessment Rules
 
-- Include ALL signals in output, even those with `no_evidence` assessment
-- Be conservative with `confirmed` — require clear, unambiguous evidence the threshold was met
+- Include ALL signals in output, including those with `neutral` assessment
+- Assessment scale is: `neutral | strengthening | weakening | confirmed | invalidated` — no other values
+- Be conservative with `confirmed` / `invalidated` — require clear, unambiguous evidence the threshold was definitively met/ruled out
+- For **invalidation/warning signals**: `strengthening` = risk growing (bad); `weakening` = risk receding (good). Do NOT score evidence that reduces enforcement/risk probability as `strengthening`
 - Use exact quotes from the content for the `quotes` field
 - `dataSource` must be `'qualitative'` (not `'thesis_monitor'`)
 - Do NOT automatically update signal status — only write snapshots
