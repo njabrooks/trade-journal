@@ -8,21 +8,42 @@ function formatDate(date: string | Date): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function formatValue(observed: number | null, threshold: number | null, pct: number | null, unit: string | null): string {
-  if (pct !== null) {
-    const pctStr = `${pct.toFixed(1)}%`;
-    if (observed !== null && threshold !== null) {
+// Postgres numeric fields arrive as strings over JSON — coerce safely
+function toNum(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
+function formatValue(observed: unknown, threshold: unknown, pct: unknown, unit: string | null): string {
+  const pctNum = toNum(pct);
+  if (pctNum !== null) {
+    const pctStr = `${pctNum.toFixed(1)}%`;
+    const obs = toNum(observed);
+    const thr = toNum(threshold);
+    if (obs !== null && thr !== null) {
       const fmt = (n: number) => n >= 1_000_000_000 ? `${(n / 1_000_000_000).toFixed(1)}B`
         : n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M`
         : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K`
         : n < 0.01 ? n.toFixed(6)
         : n.toFixed(2);
       const unitLabel = unit && unit !== 'USD' && unit !== 'BTC_RATIO' ? ` ${unit}` : '';
-      return `${fmt(observed)} → ${fmt(threshold)}${unitLabel} (${pctStr})`;
+      return `${fmt(obs)} → ${fmt(thr)}${unitLabel} (${pctStr})`;
     }
     return pctStr;
   }
   return '—';
+}
+
+// For thesis_monitor summaries, extract the bolded key phrase (the actual assessment verdict)
+// rather than showing the full repetitive paragraph.
+function extractNote(summary: string | null, dataSource: string): string | null {
+  if (!summary) return null;
+  if (dataSource === 'thesis_monitor') {
+    const match = summary.match(/\*\*([^*]+)\*\*/);
+    if (match) return match[1];
+  }
+  return summary;
 }
 
 const SOURCE_CONFIG: Record<string, { label: string; cls: string }> = {
@@ -130,11 +151,14 @@ export function SignalLog({ entries }: SignalLogProps) {
 
                 {/* Note */}
                 <td className="px-3 py-2 text-xs text-muted-foreground max-w-0">
-                  {entry.evidenceSummary ? (
-                    <p className="line-clamp-2 leading-relaxed">{entry.evidenceSummary}</p>
-                  ) : (
-                    <span className="text-muted-foreground/50">—</span>
-                  )}
+                  {(() => {
+                    const note = extractNote(entry.evidenceSummary, entry.dataSource);
+                    return note ? (
+                      <p className="line-clamp-2 leading-relaxed">{note}</p>
+                    ) : (
+                      <span className="text-muted-foreground/50">—</span>
+                    );
+                  })()}
                 </td>
               </tr>
             );
