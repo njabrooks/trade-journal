@@ -31,7 +31,7 @@ import { SignalConfigForm, type ExplicitDetails } from './SignalConfigForm';
 import { SignalProgressCard } from './SignalProgressCard';
 
 // Types
-type SignalType = 'confirmation' | 'warning' | 'completion';
+type SignalType = 'confirmation' | 'invalidation' | 'completion';
 type SignalCategory = 'judgment' | 'data_driven';
 type SignalStatus = 'draft' | 'active' | 'complete' | 'rejected';
 type TableMode = 'browse' | 'review';
@@ -186,7 +186,7 @@ export function UnifiedSignalsTable({
           bVal = b.statement.toLowerCase();
           break;
         case 'type':
-          const typeOrder = { confirmation: 0, warning: 1, completion: 2 };
+          const typeOrder = { confirmation: 0, invalidation: 1, completion: 2 };
           aVal = typeOrder[a.type as keyof typeof typeOrder] ?? 3;
           bVal = typeOrder[b.type as keyof typeof typeOrder] ?? 3;
           break;
@@ -455,7 +455,7 @@ export function UnifiedSignalsTable({
         return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
       case 'completion':
         return <Target className="w-4 h-4 text-blue-600" />;
-      default: // warning/invalidation
+      default: // invalidation
         return <AlertTriangle className="w-4 h-4 text-amber-600" />;
     }
   };
@@ -463,7 +463,7 @@ export function UnifiedSignalsTable({
   const typeLabel = (type: string) => {
     switch (type) {
       case 'confirmation': return 'Confirmation';
-      case 'warning': return 'Invalidation';
+      case 'invalidation': return 'Invalidation';
       case 'completion': return 'Completion';
       default: return type;
     }
@@ -472,7 +472,7 @@ export function UnifiedSignalsTable({
   const typeBadgeColor = (type: string) => {
     switch (type) {
       case 'confirmation': return 'bg-emerald-100 text-emerald-700';
-      case 'warning': return 'bg-amber-100 text-amber-700';
+      case 'invalidation': return 'bg-amber-100 text-amber-700';
       case 'completion': return 'bg-blue-100 text-blue-700';
       default: return 'bg-slate-100 text-foreground';
     }
@@ -495,7 +495,7 @@ export function UnifiedSignalsTable({
 
   // Counts for filter badges
   const confirmationCount = signals.filter((s) => s.type === 'confirmation').length;
-  const warningCount = signals.filter((s) => s.type === 'warning').length;
+  const invalidationCount = signals.filter((s) => s.type === 'invalidation').length;
   const completionCount = signals.filter((s) => s.type === 'completion').length;
 
   // Loading state
@@ -637,7 +637,7 @@ export function UnifiedSignalsTable({
               >
                 <option value="all">All Types</option>
                 <option value="confirmation">Confirmation ({confirmationCount})</option>
-                <option value="warning">Invalidation ({warningCount})</option>
+                <option value="invalidation">Invalidation ({invalidationCount})</option>
                 <option value="completion">Completion ({completionCount})</option>
               </select>
             </div>

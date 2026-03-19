@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
  * {
  *   strategyId: string;
  *   statement: string;
- *   type: 'confirmation' | 'warning';
+ *   type: 'confirmation' | 'invalidation';
  *   importance: 'critical' | 'significant' | 'supporting';
  *   notes?: string;
  *   explicitDetails: {
@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!['confirmation', 'warning'].includes(type)) {
+    if (!['confirmation', 'invalidation', 'completion'].includes(type)) {
       return NextResponse.json(
-        { error: 'type must be "confirmation" or "warning"' },
+        { error: 'type must be "confirmation", "invalidation", or "completion"' },
         { status: 400 }
       );
     }

@@ -6,7 +6,7 @@ import { X, Link2, FileText, Loader2, CheckCircle2, XCircle, AlertTriangle, Chev
 interface SignalAssessment {
   signalId: string;
   statement: string;
-  type: 'confirmation' | 'warning';
+  type: 'confirmation' | 'invalidation';
   importance: string;
   currentStatus: string;
   assessment: 'strong_confirmation' | 'weak_confirmation' | 'neutral' | 'weak_warning' | 'strong_warning';

@@ -188,7 +188,7 @@ export async function getSignalsStats(
   return {
     total: signalsList.length,
     confirmation: signalsList.filter((s) => s.type === 'confirmation').length,
-    warning: signalsList.filter((s) => s.type === 'warning').length,
+    warning: signalsList.filter((s) => s.type === 'invalidation').length,
     complete: signalsList.filter((s) => s.status === 'complete').length,
     active: signalsList.filter((s) => s.status === 'active').length,
     // Legacy aliases
@@ -199,7 +199,7 @@ export async function getSignalsStats(
     judgment: signalsList.filter((s) => s.category === 'judgment').length,
     // Legacy field names for backwards compatibility
     validation: signalsList.filter((s) => s.type === 'confirmation').length,
-    invalidation: signalsList.filter((s) => s.type === 'warning').length,
+    invalidation: signalsList.filter((s) => s.type === 'invalidation').length,
   };
 }
 

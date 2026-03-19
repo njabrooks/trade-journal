@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface SignalTrendIndicatorProps {
   pctToThreshold: number | null;
-  signalType: string; // 'confirmation' | 'warning' | 'completion'
+  signalType: string; // 'confirmation' | 'invalidation' | 'completion'
   assessment?: string | null;
 }
 
@@ -20,12 +20,12 @@ export function SignalTrendIndicator({ pctToThreshold, signalType, assessment }:
   // Quantitative: show % to threshold
   if (pctToThreshold !== null) {
     const pct = pctToThreshold;
-    const isWarning = signalType === 'warning';
+    const isInvalidation = signalType === 'invalidation';
 
     // For warning/invalidation signals, approaching threshold is bad
     let color = 'text-muted-foreground';
-    if (pct >= 80) color = isWarning ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400';
-    else if (pct >= 50) color = isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400';
+    if (pct >= 80) color = isInvalidation ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400';
+    else if (pct >= 50) color = isInvalidation ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400';
 
     const Icon = pct >= 50 ? TrendingUp : pct <= 20 ? TrendingDown : Minus;
 

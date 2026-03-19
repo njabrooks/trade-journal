@@ -288,7 +288,7 @@ export function AssetThesisDetailSections({
               {validationPoints.length > 0 && (
                 <span className="text-xs text-muted-foreground">
                   {validationPoints.filter(p => p.type === 'confirmation').length} confirmation •{' '}
-                  {validationPoints.filter(p => p.type === 'warning').length} warning
+                  {validationPoints.filter(p => p.type === 'invalidation').length} invalidation
                 </span>
               )}
             </div>

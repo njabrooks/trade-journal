@@ -307,7 +307,7 @@ export async function getAllSignalsWithContext(): Promise<{
     if (hasStrategy) counts.strategy++;
 
     if (s.type === 'confirmation') counts.confirmation++;
-    else if (s.type === 'warning') counts.invalidation++;
+    else if (s.type === 'invalidation') counts.invalidation++;
     else if (s.type === 'completion') counts.completion++;
   }
 

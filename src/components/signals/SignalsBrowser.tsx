@@ -23,7 +23,7 @@ import { SignalTrendIndicator } from './SignalTrendIndicator';
 import type { SignalWithContext, SignalFilterCounts, SignalEntityInfo } from '@/db/queries/signals';
 
 type StatusFilter = 'all' | 'active' | 'complete' | 'draft' | 'rejected';
-type TypeFilter = 'all' | 'confirmation' | 'warning' | 'completion';
+type TypeFilter = 'all' | 'confirmation' | 'invalidation' | 'completion';
 type EntityFilter = 'all' | 'macro_thesis' | 'asset_thesis' | 'strategy';
 type SortColumn = 'statement' | 'type' | 'entity' | 'status' | 'trend' | 'updatedAt';
 type SortDirection = 'asc' | 'desc';
@@ -38,7 +38,7 @@ interface SignalsBrowserProps {
 function typeLabel(type: string) {
   switch (type) {
     case 'confirmation': return 'Confirmation';
-    case 'warning': return 'Invalidation';
+    case 'invalidation': return 'Invalidation';
     case 'completion': return 'Completion';
     default: return type;
   }
@@ -47,7 +47,7 @@ function typeLabel(type: string) {
 function typeBadgeColor(type: string) {
   switch (type) {
     case 'confirmation': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300';
-    case 'warning': return 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300';
+    case 'invalidation': return 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300';
     case 'completion': return 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300';
     default: return 'bg-slate-100 text-foreground';
   }
@@ -56,7 +56,7 @@ function typeBadgeColor(type: string) {
 function typeIcon(type: string) {
   switch (type) {
     case 'confirmation': return <CheckCircle2 className="h-3 w-3" />;
-    case 'warning': return <AlertTriangle className="h-3 w-3" />;
+    case 'invalidation': return <AlertTriangle className="h-3 w-3" />;
     case 'completion': return <Target className="h-3 w-3" />;
     default: return null;
   }
@@ -448,7 +448,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
           >
             <option value="all">All Types</option>
             <option value="confirmation">Confirmation ({counts.confirmation})</option>
-            <option value="warning">Invalidation ({counts.invalidation})</option>
+            <option value="invalidation">Invalidation ({counts.invalidation})</option>
             <option value="completion">Completion ({counts.completion})</option>
           </select>
           <select

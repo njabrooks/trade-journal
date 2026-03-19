@@ -50,7 +50,7 @@ export function StrategySignalsSection({
   showDefinePrompt = false,
 }: StrategySignalsSectionProps) {
   const confirmationSignals = signals.filter((s) => s.type === 'confirmation');
-  const warningSignals = signals.filter((s) => s.type === 'warning');
+  const invalidationSignals = signals.filter((s) => s.type === 'invalidation');
 
   return (
     <>
@@ -75,7 +75,7 @@ export function StrategySignalsSection({
           Strategy Signals ({signals.length})
           {signals.length > 0 && (
             <span className="ml-2 text-xs font-normal text-muted-foreground">
-              {confirmationSignals.length} take profit • {warningSignals.length} risk
+              {confirmationSignals.length} take profit • {invalidationSignals.length} risk
             </span>
           )}
         </h3>

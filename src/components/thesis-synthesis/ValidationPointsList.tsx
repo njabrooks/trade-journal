@@ -37,7 +37,7 @@ export function ValidationPointsList({
   onConvertToExplicit,
 }: ValidationPointsListProps) {
   const [expandedPoints, setExpandedPoints] = useState<Set<string>>(new Set());
-  const [filterType, setFilterType] = useState<'all' | 'confirmation' | 'warning'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'confirmation' | 'invalidation'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'draft' | 'active' | 'complete' | 'rejected'>('all');
 
   const togglePoint = (id: string) => {
@@ -57,7 +57,7 @@ export function ValidationPointsList({
   });
 
   const confirmationCount = validationPoints.filter((p) => p.type === 'confirmation').length;
-  const warningCount = validationPoints.filter((p) => p.type === 'warning').length;
+  const invalidationCount = validationPoints.filter((p) => p.type === 'invalidation').length;
   const completeCount = validationPoints.filter((p) => p.status === 'complete').length;
   const activeCount = validationPoints.filter((p) => p.status === 'active').length;
 
@@ -114,7 +114,7 @@ export function ValidationPointsList({
             </span>
             <span className="flex items-center gap-1 text-amber-600">
               <AlertTriangle className="w-3 h-3" />
-              {warningCount} warning
+              {invalidationCount} invalidation
             </span>
             {completeCount > 0 && (
               <span className="flex items-center gap-1 text-emerald-600 font-medium">
@@ -136,7 +136,7 @@ export function ValidationPointsList({
             >
               <option value="all">All</option>
               <option value="confirmation">Confirmation</option>
-              <option value="warning">Warning</option>
+              <option value="invalidation">Invalidation</option>
             </select>
           </div>
           <div className="flex items-center gap-1">
@@ -207,7 +207,7 @@ export function ValidationPointsList({
                       ) : (
                         <AlertTriangle className="w-3 h-3" />
                       )}
-                      {point.type === 'confirmation' ? 'Confirmation' : 'Warning'}
+                      {point.type === 'confirmation' ? 'Confirmation' : 'Invalidation'}
                     </span>
 
                     {/* Importance badge */}

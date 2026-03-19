@@ -221,7 +221,7 @@ interface ParsedDrawing {
   tvSymbol: string;          // e.g. NASDAQ:GLXY
   baseTicker: string;        // e.g. GLXY
   label: string;             // e.g. TP1 40%
-  signalType: 'confirmation' | 'warning';
+  signalType: 'confirmation' | 'invalidation';
   conditionType: 'price_above' | 'price_below';
   price: number;
   positionPct: number | null;
@@ -246,7 +246,7 @@ function parseDrawing(drawing: TaggedDrawing): ParsedDrawing | null {
   if (!drawing.state?.state?.visible) return null; // skip hidden drawings
   if (drawing.state.type !== 'LineToolHorzRay') return null;
 
-  let signalType: 'confirmation' | 'warning';
+  let signalType: 'confirmation' | 'invalidation';
   let conditionType: 'price_above' | 'price_below';
   let positionPct: number | null = null;
 
@@ -258,7 +258,7 @@ function parseDrawing(drawing: TaggedDrawing): ParsedDrawing | null {
     conditionType = 'price_above';
     if (tpMatch[2]) positionPct = parseInt(tpMatch[2], 10);
   } else if (slMatch) {
-    signalType = 'warning';
+    signalType = 'invalidation';
     conditionType = 'price_below';
     if (slMatch[2]) positionPct = parseInt(slMatch[2], 10);
   } else {
@@ -419,7 +419,7 @@ async function main() {
             type: drawing.signalType,
             statement: buildStatement(drawing),
             category: 'data_driven',
-            importance: drawing.signalType === 'warning' ? 'critical' : 'significant',
+            importance: drawing.signalType === 'invalidation' ? 'critical' : 'significant',
             status: 'active',
             explicitDetails,
             linkedClaimIds: [],
@@ -432,7 +432,7 @@ async function main() {
             objectId: inserted.id,
             objectTitle: buildStatement(drawing),
             actionType: 'created',
-            actionDescription: `Signal created: "${buildStatement(drawing)}" (type: ${drawing.signalType}, importance: ${drawing.signalType === 'warning' ? 'critical' : 'significant'})`,
+            actionDescription: `Signal created: "${buildStatement(drawing)}" (type: ${drawing.signalType}, importance: ${drawing.signalType === 'invalidation' ? 'critical' : 'significant'})`,
             source: 'automation',
           });
         } else {

@@ -426,7 +426,7 @@ Sibling Asset Theses: 2
 For each parent macro thesis with `depends_on` relationship, automatically create an invalidation signal (this counts toward the max 2 invalidation signals):
 ```typescript
 {
-  type: 'warning',
+  type: 'invalidation',
   statement: '"[MACRO_THESIS_TITLE]" macro thesis is invalidated or downgraded to low confidence',
   notes: '[ASSET_THESIS] is a derivative bet on [MACRO_THESIS]; if parent fails, child assumption collapses. Action: immediate thesis re-evaluation, likely exit.',
   dependentThesisId: '[MACRO_THESIS_ID]',
@@ -448,7 +448,7 @@ Generate a small, high-quality set of signals grounded in the claims evidence. T
 | Category | DB `type` | Purpose | Max per thesis |
 |----------|-----------|---------|----------------|
 | **Confirmation** | `confirmation` | Key evidence the thesis is playing out as expected | 2 |
-| **Invalidation** | `warning` | Key evidence the thesis is wrong — triggers re-evaluation or exit | 2 |
+| **Invalidation** | `invalidation` | Key evidence the thesis is wrong — triggers re-evaluation or exit | 2 |
 | **Completion** | `completion` | The thesis has fully played out — no remaining catalysts, consider taking profits | 1 |
 
 **CRITICAL: Quality over quantity.** Only generate a signal if there is genuinely strong evidence from the linked claims to support it. Do NOT generate signals just to fill slots. A thesis with 1 confirmation and 1 invalidation signal is better than one with weak signals in every slot.
@@ -477,7 +477,7 @@ Ground every signal in the claims evidence:
 
 ```typescript
 {
-  type: 'confirmation' | 'warning' | 'completion',
+  type: 'confirmation' | 'invalidation' | 'completion',
   statement: string,      // Clear, testable criterion
   notes: string,          // Why this matters + what action to take when triggered
   linkedClaimIds: string[] // Which claims support this signal — REQUIRED
@@ -512,7 +512,7 @@ Linked Claims: [claim-uuid-for-datacenter-growth, claim-uuid-for-cuda-moat]
 
 ✅ GOOD invalidation:
 ```
-Type: warning
+Type: invalidation
 Statement: Major cloud provider ships CUDA-compatible custom chip with >50% cost savings
 Notes: CUDA lock-in is the key moat; a compatible alternative would undermine the entire thesis. Action: full thesis re-evaluation, likely exit.
 Linked Claims: [claim-uuid-for-custom-chip-threat]
@@ -775,7 +775,7 @@ Create a JSON file with the articulation data (e.g., `articulation-data.json`):
       "linkedClaimIds": ["claim-uuid-1"]
     },
     {
-      "type": "warning",
+      "type": "invalidation",
       "statement": "Major cloud provider ships CUDA-compatible custom chip with >50% cost savings",
       "notes": "CUDA lock-in is the key moat; a compatible alternative would undermine the thesis. Action: full re-evaluation, likely exit.",
       "linkedClaimIds": ["claim-uuid-2"]
@@ -1021,12 +1021,12 @@ Expected Resolution: Q4 2026
 
 **Invalidation:**
 1. **Major cloud provider ships CUDA-compatible custom chip with >50% cost savings**
-   - Type: warning
+   - Type: invalidation
    - Notes: CUDA lock-in is the key moat; a compatible alternative would undermine the entire thesis. Action: full re-evaluation, likely exit.
    - Linked Claims: [Claim 7]
 
 2. **Parent macro thesis "AI Infrastructure Build-Out" is invalidated**
-   - Type: warning (dependent)
+   - Type: invalidation (dependent)
    - Dependent Thesis: "AI Infrastructure Build-Out" (macro)
    - Condition: invalidated
    - Notes: This thesis assumes AI infrastructure spending continues. If parent fails, re-evaluate immediately.

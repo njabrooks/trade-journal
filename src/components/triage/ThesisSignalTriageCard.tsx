@@ -166,7 +166,7 @@ export function ThesisSignalTriageCard({
 
   // Determine warning vs confirmation triggered
   const triggeredSignals = signals.filter(s => triggeredSignalIds.includes(s.id));
-  const warningsTriggered = triggeredSignals.filter(s => s.type === 'warning').length;
+  const warningsTriggered = triggeredSignals.filter(s => s.type === 'invalidation').length;
   const confirmationsTriggered = triggeredSignals.filter(s => s.type === 'confirmation').length;
 
   return (

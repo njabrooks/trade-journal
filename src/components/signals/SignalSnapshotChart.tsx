@@ -17,7 +17,7 @@ interface SnapshotPoint {
 interface SignalSnapshotChartProps {
   snapshots: SnapshotPoint[];
   unit: string;
-  signalType: string; // 'confirmation' | 'warning' | 'completion'
+  signalType: string; // 'confirmation' | 'invalidation' | 'completion'
   height?: number;
 }
 
@@ -76,8 +76,8 @@ export function SignalSnapshotChart({
   }
 
   const thresholdValue = chartData[0]?.threshold;
-  const isWarning = signalType === 'warning';
-  const lineColor = isWarning ? 'oklch(0.65 0.2 25)' : 'oklch(0.63 0.2 250)';
+  const isInvalidation = signalType === 'invalidation';
+  const lineColor = isInvalidation ? 'oklch(0.65 0.2 25)' : 'oklch(0.63 0.2 250)';
   const fillId = `signalFill-${signalType}`;
 
   // Fixed Y-axis domain for binary status signals (0 = active, 1 = triggered)
@@ -140,7 +140,7 @@ export function SignalSnapshotChart({
         {/* Threshold reference line */}
         <ReferenceLine
           y={thresholdValue}
-          stroke={isWarning ? 'oklch(0.7 0.15 25)' : 'oklch(0.6 0.2 145)'}
+          stroke={isInvalidation ? 'oklch(0.7 0.15 25)' : 'oklch(0.6 0.2 145)'}
           strokeDasharray="4 3"
           strokeWidth={1.5}
           label={{

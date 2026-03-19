@@ -1403,7 +1403,7 @@ export const signals = pgTable(
     }),
 
     // Core definition
-    type: text('type').notNull(), // 'confirmation' | 'warning'
+    type: text('type').notNull(), // 'confirmation' | 'invalidation' | 'completion'
     statement: text('statement').notNull(),
     notes: text('notes'), // Free-form notes (replaces rationale, judgmentDetails, responseProtocol)
 

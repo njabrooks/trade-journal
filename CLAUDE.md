@@ -392,7 +392,7 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`thesis_news_items`** - News items archived per thesis for ongoing monitoring.
 
 ### Signals & Monitoring Tables
-- **`signals`** - Explicit confirmation/warning criteria. Fields: `id`, `articulation_id`, `type` (confirmation|warning), `statement`, `notes`, `category` (judgment|data_driven), `importance` (critical|significant|supporting), `explicit_details` (jsonb), `status` (draft|active|complete|rejected). Entity linkages live in `signal_entity_links`, not on this table.
+- **`signals`** - Explicit confirmation/invalidation criteria. Fields: `id`, `articulation_id`, `type` (confirmation|invalidation|completion), `statement`, `notes`, `category` (judgment|data_driven), `importance` (critical|significant|supporting), `explicit_details` (jsonb), `status` (draft|active|complete|rejected). Entity linkages live in `signal_entity_links`, not on this table.
 - **`signal_entity_links`** - Junction table linking signals to strategies and theses (many-to-many). Replaced direct `strategy_id`/`thesis_id` FK columns on signals.
 - **`signal_data_snapshots`** - Time-series assessments per signal. Tracks both quantitative data (`observed_value`, `threshold_value`, `pct_to_threshold`) and qualitative assessments (`assessment`: neutral|strengthening|confirmed|weakening|invalidated, `evidence_summary`). Source tracked via `data_source` and optional `report_id`.
 - **`signal_status_history`** - Audit trail of signal status transitions.

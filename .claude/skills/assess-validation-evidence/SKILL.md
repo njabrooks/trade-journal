@@ -346,7 +346,7 @@ Generate a structured markdown report. This is the output that `process-inbox` e
 ---
 
 ### Signal: [signal statement]
-**Type**: confirmation | warning
+**Type**: confirmation | invalidation
 **Importance**: critical | significant | supporting
 **Assessment**: Neutral | Strengthening | Confirmed | Weakening | Invalidated
 **Confidence**: high | medium | low
@@ -397,7 +397,7 @@ When invoked from `process-inbox` or another headless skill, output JSON instead
     {
       "signalId": "<uuid>",
       "statement": "<signal statement>",
-      "type": "confirmation|warning",
+      "type": "confirmation|invalidation",
       "importance": "critical|significant|supporting",
       "assessment": "strengthening|confirmed|weakening|invalidated|neutral",
       "confidence": "high|medium|low",

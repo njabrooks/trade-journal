@@ -74,7 +74,7 @@ interface ArticulationInput {
 }
 
 interface SignalInput {
-  type: 'confirmation' | 'warning' | 'completion' | 'validation' | 'invalidation'; // completion is new; validation/invalidation are legacy
+  type: 'confirmation' | 'invalidation' | 'completion' | 'validation' | 'warning'; // validation/warning are legacy, mapped to confirmation/invalidation
   statement: string;
   notes?: string; // Why this matters + what action to take when triggered
   rationale?: string; // @deprecated - migrated to notes
@@ -254,10 +254,10 @@ async function main() {
   // Step 3: Insert signals
   // -------------------------------------------------------------------------
   // Helper to convert old type values to new ones
-  const normalizeType = (type: string): 'confirmation' | 'warning' | 'completion' => {
+  const normalizeType = (type: string): 'confirmation' | 'invalidation' | 'completion' => {
     if (type === 'validation') return 'confirmation';
-    if (type === 'invalidation') return 'warning';
-    return type as 'confirmation' | 'warning' | 'completion';
+    if (type === 'warning') return 'invalidation';
+    return type as 'confirmation' | 'invalidation' | 'completion';
   };
 
   // Helper to normalize category - all signals start as 'judgment'
@@ -337,9 +337,9 @@ async function main() {
 
     // Count by type
     const confirmationCount = insertedSignals.filter((s) => s.type === 'confirmation').length;
-    const warningCount = insertedSignals.filter((s) => s.type === 'warning').length;
+    const invalidationCount = insertedSignals.filter((s) => s.type === 'invalidation').length;
     const completionCount = insertedSignals.filter((s) => s.type === 'completion').length;
-    console.log(`   - ${confirmationCount} confirmation, ${warningCount} invalidation, ${completionCount} completion`);
+    console.log(`   - ${confirmationCount} confirmation, ${invalidationCount} invalidation, ${completionCount} completion`);
   } else {
     console.log('ℹ️  No signals to insert');
   }
