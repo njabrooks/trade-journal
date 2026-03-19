@@ -453,33 +453,6 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                         <tr className="bg-muted border-b">
                           <td colSpan={8} className="px-4 py-4">
                             <div className="space-y-4">
-                              {/* Artifact Metadata Header */}
-                              <div className="flex items-center justify-between pb-3 border-b border">
-                                <div className="flex items-center gap-4">
-                                  {artifact.tags && artifact.tags.length > 0 && (
-                                    <div className="flex flex-wrap gap-1">
-                                      {artifact.tags.map((tag, idx) => (
-                                        <Badge key={idx} className="bg-blue-100 text-blue-700 text-xs">
-                                          {tag}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {artifact.publishedDate && (
-                                    <span className="text-xs text-muted-foreground">
-                                      Published: {new Date(artifact.publishedDate).toLocaleDateString('en-GB')}
-                                    </span>
-                                  )}
-                                </div>
-                                <Link
-                                  href={`/research/${artifact.id}`}
-                                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
-                                >
-                                  View Full Details
-                                  <ExternalLink className="h-3 w-3" />
-                                </Link>
-                              </div>
-
                               {/* Claims Browser */}
                               {artifact.hasInsight && artifact.claimCount > 0 ? (
                                 <ArtifactClaimsBrowser artifactId={artifact.id} />
