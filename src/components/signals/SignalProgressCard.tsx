@@ -134,12 +134,12 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
       {/* Header: data source badges */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {latestQuant && (
-          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300">
+          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
             {SOURCE_LABELS[latestQuant.dataSource] || latestQuant.dataSource}
           </span>
         )}
         {latestQual && (
-          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300">
+          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/15 text-purple-600 dark:text-purple-400">
             Thesis Monitor
           </span>
         )}
@@ -224,7 +224,7 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
       {/* Supporting claims badge */}
       {evidenceCount != null && evidenceCount > 0 && (
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300">
+          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-500/15 text-violet-600 dark:text-violet-400">
             {evidenceCount} supporting {evidenceCount === 1 ? 'claim' : 'claims'}
           </span>
         </div>

@@ -210,13 +210,13 @@ export function AssessEvidenceModal({
   const getAssessmentBadge = (assessment: SignalAssessment['assessment']) => {
     switch (assessment) {
       case 'strong_confirmation':
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-full"><CheckCircle2 className="w-3 h-3" />Strong Confirmation</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full"><CheckCircle2 className="w-3 h-3" />Strong Confirmation</span>;
       case 'weak_confirmation':
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-full"><CheckCircle2 className="w-3 h-3" />Weak Confirmation</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full"><CheckCircle2 className="w-3 h-3" />Weak Confirmation</span>;
       case 'strong_warning':
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded-full"><XCircle className="w-3 h-3" />Strong Warning</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-orange-500/15 text-orange-600 dark:text-orange-400 rounded-full"><XCircle className="w-3 h-3" />Strong Warning</span>;
       case 'weak_warning':
-        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 rounded-full"><XCircle className="w-3 h-3" />Weak Warning</span>;
+        return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-orange-500/15 text-orange-600 dark:text-orange-400 rounded-full"><XCircle className="w-3 h-3" />Weak Warning</span>;
       default:
         return <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded-full">Neutral</span>;
     }
@@ -225,9 +225,9 @@ export function AssessEvidenceModal({
   const getConfidenceBadge = (confidence: string) => {
     switch (confidence) {
       case 'high':
-        return <span className="px-1.5 py-0.5 text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded">High</span>;
+        return <span className="px-1.5 py-0.5 text-xs bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded">High</span>;
       case 'medium':
-        return <span className="px-1.5 py-0.5 text-xs bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 rounded">Medium</span>;
+        return <span className="px-1.5 py-0.5 text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 rounded">Medium</span>;
       default:
         return <span className="px-1.5 py-0.5 text-xs bg-muted text-muted-foreground rounded">Low</span>;
     }
@@ -340,7 +340,7 @@ export function AssessEvidenceModal({
               )}
 
               {error && (
-                <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                <div className="px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive">
                   {error}
                 </div>
               )}
@@ -424,8 +424,8 @@ export function AssessEvidenceModal({
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
                               assessment.type === 'confirmation'
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                : 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
                             }`}>
                               {assessment.type}
                             </span>
@@ -493,7 +493,7 @@ export function AssessEvidenceModal({
               )}
 
               {error && (
-                <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
+                <div className="px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive">
                   {error}
                 </div>
               )}

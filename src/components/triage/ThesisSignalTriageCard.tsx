@@ -134,9 +134,9 @@ export function ThesisSignalTriageCard({
         icon: isConfirmation
           ? <TrendingUp className="h-4 w-4 text-emerald-600" />
           : <AlertTriangle className="h-4 w-4 text-amber-600" />,
-        bgColor: isConfirmation ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-amber-50 dark:bg-amber-900/20',
-        borderColor: isConfirmation ? 'border-emerald-200 dark:border-emerald-800' : 'border-amber-200 dark:border-amber-800',
-        badgeColor: isConfirmation ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+        bgColor: isConfirmation ? 'bg-emerald-500/10' : 'bg-amber-500/10',
+        borderColor: isConfirmation ? 'border border-emerald-500/20' : 'border border-amber-500/20',
+        badgeColor: isConfirmation ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
         label: 'Triggered',
       };
     }
@@ -181,8 +181,8 @@ export function ThesisSignalTriageCard({
           <Badge
             className={`${
               warningsTriggered > 0
-                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
-                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
+                : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
             }`}
           >
             {triggeredSignalCount} of {totalSignalCount} triggered
@@ -211,8 +211,8 @@ export function ThesisSignalTriageCard({
             <span className="text-xs text-muted-foreground uppercase tracking-wide">Current Conviction</span>
             <Badge
               className={`ml-2 ${
-                currentConviction === 'high' ? 'bg-emerald-100 text-emerald-700' :
-                currentConviction === 'medium' ? 'bg-amber-100 text-amber-700' :
+                currentConviction === 'high' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+                currentConviction === 'medium' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' :
                 'bg-muted text-muted-foreground'
               }`}
             >
@@ -261,7 +261,7 @@ export function ThesisSignalTriageCard({
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5">{config.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${isTriggered ? 'text-slate-900' : 'text-foreground'}`}>
+                        <p className={`text-sm font-medium ${isTriggered ? 'text-foreground' : 'text-foreground'}`}>
                           {signal.statement}
                         </p>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -281,7 +281,7 @@ export function ThesisSignalTriageCard({
                       </div>
                       <Link
                         href={`${thesisUrl}/signals/${signal.id}`}
-                        className="text-blue-600 hover:text-blue-800 shrink-0"
+                        className="text-foreground hover:text-blue-600 transition-colors shrink-0"
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Link>
@@ -295,9 +295,9 @@ export function ThesisSignalTriageCard({
       </div>
 
       {/* Impact Assessment UI */}
-      <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 space-y-4">
-        <h4 className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">Impact Assessment</h4>
-        <p className="text-xs text-indigo-700 dark:text-indigo-300">
+      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 space-y-4">
+        <h4 className="text-sm font-semibold text-foreground">Impact Assessment</h4>
+        <p className="text-xs text-muted-foreground">
           Based on the triggered signals, how does this affect your thesis?
         </p>
 
@@ -310,7 +310,7 @@ export function ThesisSignalTriageCard({
             className={`flex-1 gap-1 ${
               selectedAssessment === 'strengthens'
                 ? 'bg-emerald-600 hover:bg-emerald-700'
-                : 'text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
+                : 'text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-500/10'
             }`}
           >
             <TrendingUp className="h-4 w-4" />
@@ -323,7 +323,7 @@ export function ThesisSignalTriageCard({
             className={`flex-1 gap-1 ${
               selectedAssessment === 'weakens'
                 ? 'bg-amber-600 hover:bg-amber-700'
-                : 'text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30'
+                : 'text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-500/10'
             }`}
           >
             <TrendingDown className="h-4 w-4" />
@@ -346,8 +346,8 @@ export function ThesisSignalTriageCard({
 
         {/* Conviction Update (optional) */}
         {selectedAssessment && selectedAssessment !== 'no_change' && (
-          <div className="pt-3 border-t border-indigo-200 dark:border-indigo-800">
-            <label className="text-xs font-medium text-indigo-700 dark:text-indigo-300 block mb-2">
+          <div className="pt-3 border-t border-blue-500/20">
+            <label className="text-xs font-medium text-muted-foreground block mb-2">
               Update Conviction? (optional)
             </label>
             <div className="flex gap-2">
@@ -382,14 +382,14 @@ export function ThesisSignalTriageCard({
         {/* Notes */}
         {selectedAssessment && (
           <div>
-            <label className="text-xs font-medium text-indigo-700 dark:text-indigo-300 block mb-2">
+            <label className="text-xs font-medium text-muted-foreground block mb-2">
               Notes (optional)
             </label>
             <textarea
               value={assessmentNotes}
               onChange={(e) => setAssessmentNotes(e.target.value)}
               placeholder="Add context about this assessment..."
-              className="w-full px-3 py-2 text-sm border border-indigo-300 dark:border-indigo-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-background text-foreground"
+              className="w-full px-3 py-2 text-sm border border-blue-500/20 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
               rows={2}
             />
           </div>

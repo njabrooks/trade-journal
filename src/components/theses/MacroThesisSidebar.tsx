@@ -81,7 +81,7 @@ export function MacroThesisSidebar({
           {thesis.sectors.slice(0, 3).map((sector) => (
             <span
               key={sector}
-              className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-md"
+              className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded-md"
             >
               {sector}
             </span>
@@ -179,11 +179,11 @@ export function MacroThesisSidebar({
 
 function StatusBadge({ status }: { status: string }) {
   const colorClass =
-    status === 'draft' ? 'bg-purple-100 text-purple-700' :
-    status === 'active' ? 'bg-blue-100 text-blue-700' :
-    status === 'complete' ? 'bg-emerald-100 text-emerald-700' :
-    status === 'rejected' ? 'bg-slate-100 text-slate-500' :
-    'bg-slate-200 text-slate-700';
+    status === 'draft' ? 'bg-muted text-muted-foreground' :
+    status === 'active' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+    status === 'complete' ? 'bg-muted text-muted-foreground' :
+    status === 'rejected' ? 'bg-destructive/15 text-destructive' :
+    'bg-muted text-muted-foreground';
 
   return (
     <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${colorClass}`}>
@@ -194,9 +194,9 @@ function StatusBadge({ status }: { status: string }) {
 
 function DirectionBadge({ direction }: { direction: string }) {
   const colorClass =
-    direction === 'bullish' ? 'bg-emerald-100 text-emerald-700' :
-    direction === 'bearish' ? 'bg-red-100 text-red-700' :
-    'bg-slate-200 text-slate-700';
+    direction === 'bullish' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+    direction === 'bearish' ? 'bg-destructive/15 text-destructive' :
+    'bg-muted text-muted-foreground';
 
   return (
     <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${colorClass}`}>

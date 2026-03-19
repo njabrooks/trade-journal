@@ -47,11 +47,11 @@ function typeLabel(type: string) {
 
 function typeBadgeColor(type: string) {
   switch (type) {
-    case 'confirmation': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300';
+    case 'confirmation': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
     case 'invalidation':
-    case 'warning':      return 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300';
-    case 'completion':   return 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300';
-    default: return 'bg-slate-100 text-foreground';
+    case 'warning':      return 'bg-orange-500/15 text-orange-600 dark:text-orange-400';
+    case 'completion':   return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
+    default: return 'bg-muted text-muted-foreground';
   }
 }
 
@@ -67,11 +67,11 @@ function typeIcon(type: string) {
 
 function statusBadgeColor(status: string) {
   switch (status) {
-    case 'active': return 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300';
-    case 'complete': return 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300';
-    case 'draft': return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
-    case 'rejected': return 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300';
-    default: return 'bg-slate-100 text-foreground';
+    case 'active': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+    case 'complete': return 'bg-muted text-muted-foreground';
+    case 'draft': return 'bg-muted text-muted-foreground';
+    case 'rejected': return 'bg-destructive/15 text-destructive';
+    default: return 'bg-muted text-muted-foreground';
   }
 }
 
@@ -82,9 +82,9 @@ function entityTypeBadgeLabel(entity: SignalEntityInfo) {
 }
 
 function entityTypeBadgeColor(entity: SignalEntityInfo) {
-  if (entity.entityType === 'strategy') return 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300';
-  if (entity.thesisType === 'macro') return 'bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300';
-  return 'bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300';
+  if (entity.entityType === 'strategy') return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
+  if (entity.thesisType === 'macro') return 'bg-violet-500/15 text-violet-600 dark:text-violet-400';
+  return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
 }
 
 // Entity type sort order for grouped view
@@ -552,17 +552,17 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                                 </span>
                                 <div className="flex items-center gap-1 ml-1">
                                   {confirmCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                                       <CheckCircle2 className="h-2.5 w-2.5" />{confirmCount}
                                     </span>
                                   )}
                                   {invalidCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400">
                                       <AlertTriangle className="h-2.5 w-2.5" />{invalidCount}
                                     </span>
                                   )}
                                   {completionCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
                                       <Target className="h-2.5 w-2.5" />{completionCount}
                                     </span>
                                   )}
@@ -614,17 +614,17 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                                 </span>
                                 <div className="flex items-center gap-1 ml-1">
                                   {confirmCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                                       <CheckCircle2 className="h-2.5 w-2.5" />{confirmCount}
                                     </span>
                                   )}
                                   {invalidCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400">
                                       <AlertTriangle className="h-2.5 w-2.5" />{invalidCount}
                                     </span>
                                   )}
                                   {completionCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
                                       <Target className="h-2.5 w-2.5" />{completionCount}
                                     </span>
                                   )}

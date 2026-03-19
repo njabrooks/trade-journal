@@ -135,14 +135,14 @@ function getStatusKey(strategy: StrategyListItem): StatusKey {
 function getStatusButtonStyles(status: string): string {
   switch (status) {
     case 'draft':
-      return 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:hover:bg-purple-900/60 dark:border-purple-700';
+      return 'bg-muted text-muted-foreground hover:bg-accent border-border';
     case 'active':
-      return 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-900/60 dark:border-blue-700';
+      return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 border-emerald-500/20';
     case 'complete':
-      return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60 dark:border-emerald-700';
+      return 'bg-muted text-muted-foreground hover:bg-accent border-border';
     case 'rejected':
     default:
-      return 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200 dark:bg-slate-800/40 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:border-slate-600';
+      return 'bg-muted text-muted-foreground hover:bg-accent border-border';
   }
 }
 

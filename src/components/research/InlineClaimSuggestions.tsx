@@ -197,7 +197,7 @@ export function InlineClaimSuggestions({
             <Sparkles className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 flex-wrap">
-                <Badge className={`${isMacro ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} text-xs`}>
+                <Badge className={`${isMacro ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400' : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'} text-xs`}>
                   {isMacro ? 'Macro' : 'Asset'}
                 </Badge>
                 <Badge className={`${badge.className} text-xs`}>
@@ -207,7 +207,7 @@ export function InlineClaimSuggestions({
                 {suggestion.ticker && (
                   <span className="text-xs text-muted-foreground">({suggestion.ticker})</span>
                 )}
-                <Badge className="bg-amber-100 text-amber-700 text-xs ml-auto shrink-0">
+                <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs ml-auto shrink-0">
                   {confidence}%
                 </Badge>
               </div>

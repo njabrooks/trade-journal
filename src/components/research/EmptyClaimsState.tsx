@@ -47,7 +47,7 @@ export function EmptyClaimsState({ rawContent, artifactId }: EmptyClaimsStatePro
           <h4 className="font-semibold text-foreground mb-4">To extract claims:</h4>
           <ol className="space-y-3 text-sm text-foreground">
             <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-semibold text-xs">
+              <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold text-xs">
                 1
               </span>
               <span>
@@ -55,7 +55,7 @@ export function EmptyClaimsState({ rawContent, artifactId }: EmptyClaimsStatePro
               </span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-semibold text-xs">
+              <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold text-xs">
                 2
               </span>
               <span>
@@ -63,7 +63,7 @@ export function EmptyClaimsState({ rawContent, artifactId }: EmptyClaimsStatePro
               </span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-semibold text-xs">
+              <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 font-semibold text-xs">
                 3
               </span>
               <span>

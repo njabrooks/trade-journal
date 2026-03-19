@@ -54,10 +54,10 @@ export function AssetThesisSidebar({
         <span
           className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
             thesis.direction === 'bullish'
-              ? 'bg-emerald-100 text-emerald-700'
+              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
               : thesis.direction === 'bearish'
-                ? 'bg-red-100 text-red-700'
-                : 'bg-slate-200 text-slate-700'
+                ? 'bg-destructive/15 text-destructive'
+                : 'bg-muted text-muted-foreground'
           }`}
         >
           {thesis.direction}
@@ -123,7 +123,7 @@ export function AssetThesisSidebar({
                   <Link
                     key={mt.id}
                     href={`/macro-theses/${mt.id}`}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-blue-600 hover:underline rounded px-2 py-1 -mx-2 transition-colors"
                   >
                     <span className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
                     <span className="truncate">{mt.title}</span>
@@ -159,7 +159,7 @@ export function AssetThesisSidebar({
                   <Link
                     key={s.id}
                     href={`/strategies/${s.id}/overview`}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-blue-600 hover:underline rounded px-2 py-1 -mx-2 transition-colors"
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
                     <span className="truncate">{s.label ?? s.strategyKey}</span>

@@ -305,15 +305,15 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
   const statusBadgeColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'draft':
-        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+        return 'bg-muted text-muted-foreground';
       case 'active':
-        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'complete':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+        return 'bg-muted text-muted-foreground';
       case 'rejected':
-        return 'bg-slate-50 text-muted-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-400 dark:border-slate-700';
+        return 'bg-destructive/15 text-destructive';
       default:
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -373,9 +373,9 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                         setExpandedAccounts(strategy.id);
                       }}
                       title={`Show all ${accounts.length} accounts:\n${accounts.slice(1).map(a => `• ${a}`).join('\n')}`}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer shrink-0 group"
+                      className="text-xs font-medium cursor-pointer shrink-0 group"
                     >
-                      <Badge className="bg-blue-50 text-blue-700 group-hover:bg-blue-100 group-hover:underline text-xs transition-colors dark:bg-blue-900/30 dark:text-blue-300 dark:group-hover:bg-blue-900/50">
+                      <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 group-hover:underline text-xs transition-colors">
                         +{remainingCount}
                       </Badge>
                     </button>
@@ -409,7 +409,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
             {strategy.assetViewTitle && strategy.assetThesisId ? (
               <Link
                 href={`/asset-theses/${strategy.assetThesisId}`}
-                className="text-blue-600 hover:text-blue-800 hover:underline text-sm line-clamp-1"
+                className="text-foreground hover:text-blue-600 transition-colors hover:underline text-sm line-clamp-1"
               >
                 {strategy.assetViewTitle}
               </Link>
@@ -478,18 +478,18 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                         <Link
                           key={lmt.id}
                           href={`/macro-theses/${lmt.id}`}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-violet-500/15 text-violet-600 dark:text-violet-400 rounded text-xs hover:bg-violet-500/25"
                         >
-                          <Badge className="bg-purple-200 text-purple-800 text-xs">Macro</Badge>
+                          <Badge className="bg-violet-500/25 text-violet-700 dark:text-violet-300 text-xs">Macro</Badge>
                           {lmt.title}
                         </Link>
                       ))}
                       {strategy.assetViewTitle && strategy.assetThesisId && (
                         <Link
                           href={`/asset-theses/${strategy.assetThesisId}`}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded text-xs hover:bg-blue-500/25"
                         >
-                          <Badge className="bg-blue-200 text-blue-800 text-xs">Asset</Badge>
+                          <Badge className="bg-blue-500/25 text-blue-700 dark:text-blue-300 text-xs">Asset</Badge>
                           {strategy.assetViewTitle}
                         </Link>
                       )}
@@ -516,7 +516,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                   <div className="col-span-2">
                     <Link
                       href={`/strategies/${strategy.id}`}
-                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      className="text-sm text-muted-foreground hover:text-blue-600 transition-colors hover:underline"
                     >
                       View Full Details →
                     </Link>

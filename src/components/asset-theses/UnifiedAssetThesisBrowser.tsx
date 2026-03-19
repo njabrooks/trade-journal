@@ -48,11 +48,11 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
   const getTimeHorizonBadge = (timeHorizon: string | null) => {
     switch (timeHorizon) {
       case 'long_term':
-        return { className: 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800', label: 'Long' };
+        return { className: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400', label: 'Long' };
       case 'medium_term':
-        return { className: 'bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800', label: 'Medium' };
+        return { className: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400', label: 'Medium' };
       case 'short_term':
-        return { className: 'bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-300 dark:border-teal-800', label: 'Short' };
+        return { className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', label: 'Short' };
       default:
         return null;
     }
@@ -243,43 +243,43 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
   const confidenceBadgeColor = (confidence: string | null) => {
     switch (confidence) {
       case 'high':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'medium':
-        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
       case 'low':
-        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       case 'exploratory':
-        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+        return 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
       default:
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
       case 'draft':
-        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+        return 'bg-muted text-muted-foreground';
       case 'active':
-        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'complete':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+        return 'bg-muted text-muted-foreground';
       case 'rejected':
-        return 'bg-slate-50 text-muted-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-400 dark:border-slate-700';
+        return 'bg-destructive/15 text-destructive';
       default:
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const directionBadgeColor = (direction: string | null) => {
     switch (direction) {
       case 'bullish':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'bearish':
-        return 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800';
+        return 'bg-destructive/15 text-destructive';
       case 'neutral':
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
       default:
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -684,19 +684,19 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
 
                               {/* Linked Claims Summary */}
                               {thesis.claimCount > 0 && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <div className="bg-blue-500/15 border border-blue-500/20 rounded-lg p-3">
                                   <div className="flex items-center justify-between">
                                     <div>
-                                      <h4 className="text-xs font-semibold text-blue-900 mb-1 uppercase tracking-wide">
+                                      <h4 className="text-xs font-semibold text-foreground mb-1 uppercase tracking-wide">
                                         Linked Claims
                                       </h4>
-                                      <p className="text-sm text-blue-800">
+                                      <p className="text-sm text-muted-foreground">
                                         {thesis.claimCount} claim{thesis.claimCount !== 1 ? 's' : ''} support this thesis
                                       </p>
                                     </div>
                                     <Link
                                       href={`/asset-theses/${thesis.id}#claims`}
-                                      className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                                      className="text-sm font-medium text-foreground hover:text-blue-600 hover:underline transition-colors flex items-center gap-1"
                                     >
                                       View Claims →
                                     </Link>
@@ -721,7 +721,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                                 <div>
                                   <Link
                                     href={`/asset-theses/${thesis.id}`}
-                                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                    className="text-sm text-foreground hover:text-blue-600 hover:underline transition-colors"
                                   >
                                     View Full Details →
                                   </Link>

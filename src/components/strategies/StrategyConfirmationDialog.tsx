@@ -647,7 +647,7 @@ export function StrategyConfirmationDialog({
 
         <div className="px-6 py-4 space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -704,7 +704,7 @@ export function StrategyConfirmationDialog({
                       <button
                         onClick={() => setEditingParent(true)}
                         disabled={savingParent}
-                        className="text-xs text-blue-600 hover:text-blue-800"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                       >
                         Change
                       </button>
@@ -722,7 +722,7 @@ export function StrategyConfirmationDialog({
                       <button
                         onClick={() => setEditingParent(true)}
                         disabled={savingParent}
-                        className="text-xs text-blue-600 hover:text-blue-800"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                       >
                         Set parent
                       </button>
@@ -748,7 +748,7 @@ export function StrategyConfirmationDialog({
               value={strategyLabel}
               onChange={(e) => setStrategyLabel(e.target.value)}
               placeholder={strategy.strategyKey}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               disabled={submitting}
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -769,7 +769,7 @@ export function StrategyConfirmationDialog({
                     value={customStrategyType}
                     onChange={(e) => setCustomStrategyType(e.target.value)}
                     placeholder="Enter new strategy type..."
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                     disabled={submitting}
                     autoFocus
                   />
@@ -805,7 +805,7 @@ export function StrategyConfirmationDialog({
                       }
                     }
                   }}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                   disabled={submitting || loadingTypes}
                 >
                   <option value="">Select a strategy type...</option>
@@ -831,7 +831,7 @@ export function StrategyConfirmationDialog({
               <select
                 value={strategyDirection}
                 onChange={(e) => setStrategyDirection(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                 disabled={submitting}
               >
                 <option value="">Select direction...</option>
@@ -862,7 +862,7 @@ export function StrategyConfirmationDialog({
                     ({relatedStrategies.length} related)
                   </span>
                   {selectedMergeIds.size > 0 && (
-                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
+                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-500/15 text-purple-600 dark:text-purple-400 rounded-full">
                       {selectedMergeIds.size} selected
                     </span>
                   )}
@@ -914,14 +914,14 @@ export function StrategyConfirmationDialog({
                               )}
                               {/* Show underlying ticker badge if different from current strategy */}
                               {rs.underlyingTicker && rs.underlyingTicker !== strategy?.underlyingTicker && (
-                                <span className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300 rounded">
+                                <span className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-orange-500/15 text-orange-600 dark:text-orange-400 rounded">
                                   {rs.underlyingTicker}
                                 </span>
                               )}
                               {/* Thesis link indicator */}
                               {rs.assetThesisId && (
                                 <span
-                                  className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded"
+                                  className="inline-flex px-1.5 py-0.5 text-xs font-medium bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded"
                                   title="Has asset thesis link"
                                 >
                                   📋 Thesis
@@ -931,9 +931,9 @@ export function StrategyConfirmationDialog({
                             <div className="flex items-center gap-2">
                               <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
                                 rs.status === 'active'
-                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                                   : rs.status === 'draft'
-                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
+                                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
                                   : 'bg-muted text-foreground'
                               }`}>
                                 {rs.status}
@@ -983,7 +983,7 @@ export function StrategyConfirmationDialog({
                         relatedStrategies.some(
                           (rs) => selectedMergeIds.has(rs.id) && rs.assetThesisId
                         ) && (
-                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-xs text-blue-700 dark:text-blue-300">
+                          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400">
                             Asset thesis link will be inherited from merged strategy.
                           </div>
                         )}
@@ -1027,7 +1027,7 @@ export function StrategyConfirmationDialog({
                       onClick={() => setMode('select')}
                       className={`px-3 py-1 text-xs rounded-full transition-colors ${
                         mode === 'select'
-                          ? 'bg-blue-100 text-blue-700'
+                          ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
                           : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
                     >
@@ -1039,7 +1039,7 @@ export function StrategyConfirmationDialog({
                       onClick={() => setMode('create')}
                       className={`px-3 py-1 text-xs rounded-full transition-colors ${
                         mode === 'create'
-                          ? 'bg-blue-100 text-blue-700'
+                          ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
                           : 'bg-muted text-muted-foreground hover:bg-accent'
                       }`}
                     >
@@ -1059,13 +1059,13 @@ export function StrategyConfirmationDialog({
                         placeholder="Search by title or ticker..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                         disabled={submitting}
                       />
                     </div>
 
                     {matchingTickerCount > 0 && strategy.underlyingTicker && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs text-blue-700">
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2 text-xs text-blue-600 dark:text-blue-400">
                         {matchingTickerCount} thesis{matchingTickerCount !== 1 ? 'es' : ''} found for {strategy.underlyingTicker}
                       </div>
                     )}
@@ -1081,7 +1081,7 @@ export function StrategyConfirmationDialog({
                         <button
                           type="button"
                           onClick={() => setMode('create')}
-                          className="text-blue-600 hover:text-blue-800 text-sm mt-2"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm mt-2"
                         >
                           Create a new one
                         </button>
@@ -1100,9 +1100,9 @@ export function StrategyConfirmationDialog({
                               disabled={submitting}
                               className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
                                 selectedThesisId === thesis.id
-                                  ? 'border-blue-500 bg-blue-50'
+                                  ? 'border-blue-500 bg-blue-500/10'
                                   : isMatchingTicker
-                                  ? 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300'
+                                  ? 'border-emerald-500/20 bg-emerald-500/10 hover:border-emerald-500/30'
                                   : 'border hover:border-muted-foreground hover:bg-muted'
                               }`}
                             >
@@ -1111,7 +1111,7 @@ export function StrategyConfirmationDialog({
                                 {thesis.underlyingTicker && (
                                   <span className={`inline-flex px-1.5 py-0.5 text-xs font-mono rounded ${
                                     isMatchingTicker
-                                      ? 'bg-emerald-100 text-emerald-800'
+                                      ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                                       : 'bg-muted text-foreground'
                                   }`}>
                                     {thesis.underlyingTicker}
@@ -1123,9 +1123,9 @@ export function StrategyConfirmationDialog({
                                   <span
                                     className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
                                       thesis.direction === 'bullish'
-                                        ? 'bg-emerald-100 text-emerald-700'
+                                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                                         : thesis.direction === 'bearish'
-                                        ? 'bg-red-100 text-red-700'
+                                        ? 'bg-destructive/15 text-destructive'
                                         : 'bg-muted text-foreground'
                                     }`}
                                   >
@@ -1133,7 +1133,7 @@ export function StrategyConfirmationDialog({
                                   </span>
                                 )}
                                 {thesis.confidenceLevel && (
-                                  <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">
+                                  <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded">
                                     {thesis.confidenceLevel}
                                   </span>
                                 )}
@@ -1177,7 +1177,7 @@ export function StrategyConfirmationDialog({
                         <select
                           value={createFormData.direction}
                           onChange={(e) => setCreateFormData({ ...createFormData, direction: e.target.value as CreateAssetThesisFormData['direction'] })}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                           disabled={submitting}
                         >
                           <option value="bullish">Bullish</option>
@@ -1193,7 +1193,7 @@ export function StrategyConfirmationDialog({
                         <select
                           value={createFormData.timeHorizon}
                           onChange={(e) => setCreateFormData({ ...createFormData, timeHorizon: e.target.value as CreateAssetThesisFormData['timeHorizon'] })}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                           disabled={submitting}
                         >
                           <option value="long_term">Long Term</option>
@@ -1209,7 +1209,7 @@ export function StrategyConfirmationDialog({
                         <select
                           value={createFormData.confidenceLevel}
                           onChange={(e) => setCreateFormData({ ...createFormData, confidenceLevel: e.target.value as CreateAssetThesisFormData['confidenceLevel'] })}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                           disabled={submitting}
                         >
                           <option value="high">High</option>
@@ -1226,7 +1226,7 @@ export function StrategyConfirmationDialog({
                         <select
                           value={createFormData.status}
                           onChange={(e) => setCreateFormData({ ...createFormData, status: e.target.value as CreateAssetThesisFormData['status'] })}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                           disabled={submitting}
                         >
                           <option value="draft">Draft</option>
@@ -1244,7 +1244,7 @@ export function StrategyConfirmationDialog({
                       <textarea
                         value={createFormData.description || ''}
                         onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
+                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
                         rows={2}
                         placeholder="Brief description of the thesis..."
                         disabled={submitting}
@@ -1273,7 +1273,7 @@ export function StrategyConfirmationDialog({
                     variant="outline"
                     onClick={handleCloseStrategy}
                     disabled={submitting || confirmingReject}
-                    className="text-amber-700 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-950"
+                    className="text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
                   >
                     {submitting && confirmingForceClose ? (
                       <>
@@ -1292,7 +1292,7 @@ export function StrategyConfirmationDialog({
                     variant="outline"
                     onClick={handleRejectStrategy}
                     disabled={submitting || confirmingForceClose}
-                    className="text-red-700 border-red-300 hover:bg-red-50 dark:text-red-400 dark:border-red-700 dark:hover:bg-red-950"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
                   >
                     {submitting && confirmingReject ? (
                       <>

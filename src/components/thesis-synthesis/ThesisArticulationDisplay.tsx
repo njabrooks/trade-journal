@@ -59,10 +59,10 @@ export function ThesisArticulationDisplay({
   const claimIdsUsed = (articulation.claimIdsUsed as string[]) || [];
 
   const confidenceColors: Record<string, string> = {
-    low: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
-    medium: 'bg-amber-100 text-amber-700 dark:text-amber-300 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-    high: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-    very_high: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+    low: 'bg-destructive/15 text-destructive',
+    medium: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    high: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+    very_high: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
   };
 
   const horizonLabels: Record<string, string> = {
@@ -107,8 +107,8 @@ export function ThesisArticulationDisplay({
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">Confidence:</span>
             <span
-              className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full border ${
-                confidenceColors[articulation.confidenceLevel] || 'bg-slate-100 text-foreground'
+              className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                confidenceColors[articulation.confidenceLevel] || 'bg-muted text-muted-foreground'
               }`}
             >
               {articulation.confidenceLevel.replace('_', ' ')}

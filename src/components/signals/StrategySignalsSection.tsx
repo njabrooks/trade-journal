@@ -14,11 +14,11 @@ interface StrategySignalsSectionProps {
 function getStatusBadge(status: string) {
   switch (status) {
     case 'active':
-      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
+      return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
     case 'complete':
-      return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300';
-    case 'rejected':
       return 'bg-muted text-muted-foreground';
+    case 'rejected':
+      return 'bg-destructive/15 text-destructive';
     default:
       return 'bg-muted text-muted-foreground';
   }

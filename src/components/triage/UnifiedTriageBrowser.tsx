@@ -830,46 +830,44 @@ function getWorkflowStatusOrder(status: string): number {
 // Severity badge colors (importance level: urgent > attention > monitor > info)
 function getSeverityBadgeColor(severity: string): string {
   const colors: Record<string, string> = {
-    urgent: 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
-    critical: 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',  // Legacy alias
-    attention: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-    high: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',  // Legacy alias
-    monitor: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-    medium: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',  // Legacy alias
-    info: 'bg-muted text-muted-foreground border border-border',
-    low: 'bg-muted text-muted-foreground border border-border',  // Legacy alias
+    urgent: 'bg-destructive/15 text-destructive',
+    critical: 'bg-destructive/15 text-destructive',  // Legacy alias
+    attention: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
+    high: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',  // Legacy alias
+    monitor: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    medium: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',  // Legacy alias
+    info: 'bg-muted text-muted-foreground',
+    low: 'bg-muted text-muted-foreground',  // Legacy alias
   };
-  return colors[severity] ?? 'bg-muted text-muted-foreground border border-border';
+  return colors[severity] ?? 'bg-muted text-muted-foreground';
 }
 
 // Status badge colors (workflow state: inbox > in_progress > done)
 function getStatusBadgeColor(status: string): string {
   const colors: Record<string, string> = {
-    inbox: 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
-    in_progress: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
-    done: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+    inbox: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    in_progress: 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
+    done: 'bg-muted text-muted-foreground',
     // Legacy values (for backwards compatibility)
-    pending: 'bg-yellow-50 text-yellow-700 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
-    in_review: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
-    complete: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-    actioned: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
-    dismissed: 'bg-muted text-muted-foreground border border-border',
+    pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+    in_review: 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
+    complete: 'bg-muted text-muted-foreground',
+    actioned: 'bg-muted text-muted-foreground',
+    dismissed: 'bg-muted text-muted-foreground',
   };
-  return colors[status] ?? 'bg-muted text-muted-foreground border border-border';
+  return colors[status] ?? 'bg-muted text-muted-foreground';
 }
 
 function getTriggerBadgeColor(_trigger: string): string {
-  // Use a consistent neutral style for triggers - they describe the action, not severity
-  // Using a cyan/teal color to differentiate from status (warm colors) and type (cool colors)
-  return 'bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800';
+  return 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400';
 }
 
 function getObjectTypeBadgeColor(objectType: TriageObjectType): string {
   const colors: Record<TriageObjectType, string> = {
-    position: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-    strategy: 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
-    asset_thesis: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
-    macro_thesis: 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
+    position: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
+    strategy: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    asset_thesis: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    macro_thesis: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
   };
   return colors[objectType];
 }

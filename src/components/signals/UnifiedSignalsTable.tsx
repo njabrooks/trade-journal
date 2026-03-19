@@ -471,25 +471,20 @@ export function UnifiedSignalsTable({
 
   const typeBadgeColor = (type: string) => {
     switch (type) {
-      case 'confirmation': return 'bg-emerald-100 text-emerald-700';
-      case 'invalidation': return 'bg-amber-100 text-amber-700';
-      case 'completion': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-slate-100 text-foreground';
+      case 'confirmation': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+      case 'invalidation': return 'bg-orange-500/15 text-orange-600 dark:text-orange-400';
+      case 'completion': return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
-      case 'draft':
-        return 'bg-purple-100 text-purple-700';
-      case 'active':
-        return 'bg-slate-100 text-foreground';
-      case 'complete':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'rejected':
-        return 'bg-slate-100 text-muted-foreground';
-      default:
-        return 'bg-slate-100 text-foreground';
+      case 'draft': return 'bg-muted text-muted-foreground';
+      case 'active': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+      case 'complete': return 'bg-muted text-muted-foreground';
+      case 'rejected': return 'bg-destructive/15 text-destructive';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 

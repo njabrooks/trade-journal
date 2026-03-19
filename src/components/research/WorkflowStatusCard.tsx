@@ -65,7 +65,7 @@ export function WorkflowStatusCard({
           </p>
         </div>
         {allConverted && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full text-sm font-medium">
             <CheckCircle2 className="h-4 w-4" />
             Complete
           </div>

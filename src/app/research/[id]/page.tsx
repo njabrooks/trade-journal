@@ -75,12 +75,12 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
                   <span
                     className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                       artifact.status === 'structured'
-                        ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                         : artifact.status === 'processing'
-                          ? 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'
+                          ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
                           : artifact.status === 'error'
-                            ? 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300'
-                            : 'bg-muted text-foreground'
+                            ? 'bg-destructive/15 text-destructive'
+                            : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {artifact.status}
@@ -115,7 +115,7 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
                       href={artifact.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 break-all line-clamp-1"
+                      className="text-foreground hover:text-blue-600 hover:underline transition-colors break-all line-clamp-1"
                       title={artifact.sourceUrl}
                     >
                       {artifact.sourceUrl}
@@ -152,7 +152,7 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
                   </p>
                 </div>
                 {draftCount === 0 && activeCount > 0 && (
-                  <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-medium">
+                  <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-medium">
                     <CheckCircle2 className="h-3 w-3" />
                     Complete
                   </div>

@@ -220,24 +220,24 @@ export function MacroThesisSelector({
               >
                 <div className="font-medium text-slate-900">{thesis.title}</div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-700 rounded">
+                  <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded">
                     {thesis.thesisType}
                   </span>
                   {thesis.direction && (
                     <span
                       className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
                         thesis.direction === 'bullish'
-                          ? 'bg-emerald-100 text-emerald-700'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                           : thesis.direction === 'bearish'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-slate-100 text-slate-700'
+                          ? 'bg-destructive/15 text-destructive'
+                          : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       {thesis.direction}
                     </span>
                   )}
                   {thesis.confidenceLevel && (
-                    <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">
+                    <span className="inline-flex px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground rounded">
                       {thesis.confidenceLevel}
                     </span>
                   )}

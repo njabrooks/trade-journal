@@ -178,15 +178,15 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
   const statusBadgeColor = (status: string) => {
     switch (status) {
       case 'structured':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'processing':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
       case 'raw':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       case 'error':
-        return 'bg-red-100 text-red-700';
+        return 'bg-destructive/15 text-destructive';
       default:
-        return 'bg-slate-100 text-foreground';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -221,7 +221,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
               placeholder="Search title, author, tags... (Press / to focus)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
@@ -234,7 +234,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Statuses</option>
                 <option value="structured">Structured</option>
@@ -252,7 +252,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
               <select
                 value={sourceTypeFilter}
                 onChange={(e) => setSourceTypeFilter(e.target.value)}
-                className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Types</option>
                 {uniqueSourceTypes.map((type) => (
@@ -375,23 +375,13 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                           >
                             {artifact.title}
                           </Link>
-                          {artifact.sourceUrl && (
-                            <a
-                              href={artifact.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-muted-foreground hover:text-blue-600 flex items-center gap-1 mt-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                              <span className="truncate max-w-[200px]">{artifact.sourceUrl}</span>
-                            </a>
-                          )}
                         </td>
 
                         {/* Source Type */}
-                        <td className="px-4 py-3 text-sm text-muted-foreground capitalize">
-                          {artifact.sourceType}
+                        <td className="px-4 py-3">
+                          <Badge className="bg-muted text-muted-foreground text-xs capitalize">
+                            {artifact.sourceType}
+                          </Badge>
                         </td>
 
                         {/* Author */}
@@ -408,15 +398,19 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
 
                         {/* Claims */}
                         <td className="px-4 py-3 text-center">
-                          <span className="text-sm text-foreground font-medium">
-                            {artifact.claimCount}
-                          </span>
+                          {artifact.claimCount > 0 ? (
+                            <Badge className="bg-muted text-muted-foreground text-xs">
+                              {artifact.claimCount}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </td>
 
                         {/* Unconfirmed Claims */}
                         <td className="px-4 py-3 text-center">
                           {artifact.unconfirmedClaimCount > 0 ? (
-                            <Badge className="bg-amber-100 text-amber-700 text-xs">
+                            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">
                               {artifact.unconfirmedClaimCount}
                             </Badge>
                           ) : (

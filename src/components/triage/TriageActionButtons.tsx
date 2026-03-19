@@ -1164,7 +1164,7 @@ export function TriageActionButtons({
                 onChange={(e) =>
                   setStrategyFormData({ ...strategyFormData, thesis: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-full rounded-md border border-border px-2 py-1.5 text-sm"
                 rows={3}
                 placeholder="Entry thesis and reasoning..."
               />
@@ -1180,7 +1180,7 @@ export function TriageActionButtons({
                   onChange={(e) =>
                     setStrategyFormData({ ...strategyFormData, profitRules: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className="mt-1 block w-full rounded-md border border-border px-2 py-1.5 text-sm"
                   rows={2}
                   placeholder="When to take profits..."
                 />
@@ -1195,7 +1195,7 @@ export function TriageActionButtons({
                   onChange={(e) =>
                     setStrategyFormData({ ...strategyFormData, defenseRules: e.target.value })
                   }
-                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                  className="mt-1 block w-full rounded-md border border-border px-2 py-1.5 text-sm"
                   rows={2}
                   placeholder="How to defend the position..."
                 />
@@ -1211,15 +1211,15 @@ export function TriageActionButtons({
                 onChange={(e) =>
                   setStrategyFormData({ ...strategyFormData, timeRules: e.target.value })
                 }
-                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                className="mt-1 block w-full rounded-md border border-border px-2 py-1.5 text-sm"
                 rows={2}
                 placeholder="Time-based exit criteria..."
               />
             </div>
 
             {error && (
-              <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-md px-3 py-2">
-                <div className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</div>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                <div className="text-xs text-destructive font-medium">{error}</div>
               </div>
             )}
 
@@ -1234,7 +1234,7 @@ export function TriageActionButtons({
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -1502,8 +1502,8 @@ export function TriageActionButtons({
             </div>
 
             {error && (
-              <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-md px-3 py-2">
-                <div className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</div>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                <div className="text-xs text-destructive font-medium">{error}</div>
               </div>
             )}
 
@@ -1518,7 +1518,7 @@ export function TriageActionButtons({
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -1594,8 +1594,8 @@ export function TriageActionButtons({
               )}
 
               {error && (
-                <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-md px-3 py-2">
-                  <div className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</div>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                  <div className="text-xs text-destructive font-medium">{error}</div>
                 </div>
               )}
 
@@ -1611,7 +1611,7 @@ export function TriageActionButtons({
                   <button
                     onClick={handleCancel}
                     disabled={loading}
-                    className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                    className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50 transition-colors"
                   >
                     Cancel
                   </button>
@@ -1655,7 +1655,7 @@ export function TriageActionButtons({
                       <button
                         type="button"
                         onClick={() => removeTradePosition(index)}
-                        className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300"
+                        className="text-xs text-destructive hover:text-destructive/80"
                       >
                         Remove
                       </button>
@@ -1664,7 +1664,7 @@ export function TriageActionButtons({
 
                   <div className="grid grid-cols-6 gap-2 items-end">
                     <div>
-                      <label className="block text-[10px] font-medium text-slate-600 mb-0.5">
+                      <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">
                         Asset Class
                       </label>
                       <select
@@ -1679,7 +1679,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-medium text-slate-600 mb-0.5">
+                      <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">
                         Quantity *
                       </label>
                       <input
@@ -1692,7 +1692,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-medium text-slate-600 mb-0.5">
+                      <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">
                         Underlying *
                       </label>
                       <input
@@ -1705,7 +1705,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
                         Expiry
                       </label>
                       <input
@@ -1718,7 +1718,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
                         Strike
                       </label>
                       <input
@@ -1732,7 +1732,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-slate-600' : 'text-slate-400'}`}>
+                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
                         P/C
                       </label>
                       <select
@@ -1815,8 +1815,8 @@ export function TriageActionButtons({
             </div>
 
             {error && (
-              <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-md px-3 py-2">
-                <div className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</div>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                <div className="text-xs text-destructive font-medium">{error}</div>
               </div>
             )}
 
@@ -1831,7 +1831,7 @@ export function TriageActionButtons({
               <button
                 onClick={handleCancel}
                 disabled={loading}
-                className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50 transition-colors"
               >
                 Cancel
               </button>
@@ -1885,8 +1885,8 @@ export function TriageActionButtons({
         </div>
 
         {error && (
-          <div className="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-md px-3 py-2">
-            <div className="text-xs text-rose-600 dark:text-rose-400 font-medium">{error}</div>
+          <div className="bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+            <div className="text-xs text-destructive font-medium">{error}</div>
           </div>
         )}
 
@@ -1901,7 +1901,7 @@ export function TriageActionButtons({
           <button
             onClick={handleCancel}
             disabled={loading}
-            className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-slate-50 disabled:opacity-50 transition-colors"
+            className="rounded-md border bg-background text-foreground px-4 py-2 text-xs font-medium text-foreground hover:bg-muted disabled:opacity-50 transition-colors"
           >
             Cancel
           </button>

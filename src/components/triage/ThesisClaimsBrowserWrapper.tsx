@@ -81,8 +81,8 @@ export function ThesisClaimsBrowserWrapper({
 
   if (isLoading) {
     return (
-      <div className={cn('rounded-lg border border-slate-200 bg-slate-50 p-4', className)}>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
+      <div className={cn('rounded-lg border border-border bg-muted/50 p-4', className)}>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Loading evidence claims...</span>
         </div>
@@ -92,8 +92,8 @@ export function ThesisClaimsBrowserWrapper({
 
   if (error) {
     return (
-      <div className={cn('rounded-lg border border-rose-200 bg-rose-50 p-4', className)}>
-        <div className="flex items-center gap-2 text-sm text-rose-600">
+      <div className={cn('rounded-lg border border-destructive/20 bg-destructive/10 p-4', className)}>
+        <div className="flex items-center gap-2 text-sm text-destructive">
           <AlertCircle className="h-4 w-4" />
           <span>{error}</span>
         </div>
@@ -104,18 +104,18 @@ export function ThesisClaimsBrowserWrapper({
   // No claims linked - show research prompt
   if (linkedClaimsCount === 0) {
     return (
-      <div className={cn('rounded-lg border border-amber-200 bg-amber-50 p-4', className)}>
+      <div className={cn('rounded-lg border border-amber-500/20 bg-amber-500/10 p-4', className)}>
         <div className="flex items-start gap-3">
           <SearchIcon className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-amber-800">No evidence claims yet</p>
-            <p className="text-xs text-amber-700 mt-1">
+            <p className="text-sm font-medium text-foreground">No evidence claims yet</p>
+            <p className="text-xs text-muted-foreground mt-1">
               This thesis needs research to build supporting evidence. Process transcripts or articles using the{' '}
-              <code className="bg-amber-100 px-1 rounded">/process-transcript</code> skill, then link the resulting claims to this thesis.
+              <code className="bg-amber-500/15 px-1 rounded">/process-transcript</code> skill, then link the resulting claims to this thesis.
             </p>
             <Link
               href="/research"
-              className="inline-flex items-center gap-1 text-xs text-amber-700 font-medium hover:underline mt-2"
+              className="inline-flex items-center gap-1 text-xs text-foreground font-medium hover:text-amber-600 hover:underline transition-colors mt-2"
             >
               Go to Research Browser
               <ExternalLinkIcon className="h-3 w-3" />
@@ -129,7 +129,7 @@ export function ThesisClaimsBrowserWrapper({
   // Show UnifiedClaimsBrowser filtered for this thesis
   return (
     <div className={cn('space-y-2', className)}>
-      <div className="text-sm text-slate-600">
+      <div className="text-sm text-muted-foreground">
         <span className="font-medium">{linkedClaimsCount}</span> claims linked to this thesis
       </div>
       <UnifiedClaimsBrowser

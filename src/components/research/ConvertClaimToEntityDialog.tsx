@@ -408,13 +408,13 @@ export function ConvertClaimToEntityDialog({
         {/* Body */}
         <div className="p-6 space-y-6">
           {/* Show claim being confirmed - compact */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-3">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-blue-900 dark:text-blue-100 truncate">{claim.title}</p>
+                <p className="text-sm font-medium text-foreground truncate">{claim.title}</p>
               </div>
               {claim.qualifier && (
-                <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs ml-3 flex-shrink-0">
+                <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-xs ml-3 flex-shrink-0">
                   {claim.qualifier}
                 </Badge>
               )}
@@ -428,7 +428,7 @@ export function ConvertClaimToEntityDialog({
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setMode('link_existing')}
-                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-500/10 transition-colors text-left"
                 >
                   <div className="font-semibold text-lg mb-2 text-foreground">Link to Existing</div>
                   <div className="text-sm text-muted-foreground">
@@ -437,7 +437,7 @@ export function ConvertClaimToEntityDialog({
                 </button>
                 <button
                   onClick={() => setMode('create_new')}
-                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-500/10 transition-colors text-left"
                 >
                   <div className="font-semibold text-lg mb-2 text-foreground">Create New</div>
                   <div className="text-sm text-muted-foreground">
@@ -530,7 +530,7 @@ export function ConvertClaimToEntityDialog({
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm text-foreground">{thesis.title}</div>
                               <div className="flex gap-2 mt-1">
-                                <Badge className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs">
+                                <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400 text-xs">
                                   {thesis.thesisType}
                                 </Badge>
                                 <Badge className="bg-muted text-muted-foreground text-xs">
@@ -557,7 +557,7 @@ export function ConvertClaimToEntityDialog({
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm text-foreground">{view.title}</div>
                               <div className="flex gap-2 mt-1">
-                                <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs">
+                                <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-xs">
                                   {view.ticker}
                                 </Badge>
                                 <Badge className="bg-muted text-muted-foreground text-xs">
@@ -625,10 +625,10 @@ export function ConvertClaimToEntityDialog({
                               <div className="flex-1 min-w-0">
                                 <div className="font-medium text-sm text-foreground">{title}</div>
                                 <div className="flex gap-2 mt-1 flex-wrap">
-                                  <Badge className={`${isMacro ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'} text-xs`}>
+                                  <Badge className={`${isMacro ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400' : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'} text-xs`}>
                                     {isMacro ? 'Macro' : suggestion.ticker || 'Asset'}
                                   </Badge>
-                                  <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs">
+                                  <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">
                                     {suggestion.mappingType} · {confidence}%
                                   </Badge>
                                 </div>
@@ -658,7 +658,7 @@ export function ConvertClaimToEntityDialog({
                           <label
                             key={thesis.id}
                             className={`flex items-start gap-3 p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0 ${
-                              selectedThesisIds.includes(thesis.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                              selectedThesisIds.includes(thesis.id) ? 'bg-blue-500/10' : ''
                             }`}
                           >
                             <input
@@ -672,7 +672,7 @@ export function ConvertClaimToEntityDialog({
                                 {thesis.title}
                               </div>
                               <div className="flex gap-2 mt-1">
-                                <Badge className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs">
+                                <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400 text-xs">
                                   {thesis.thesisType}
                                 </Badge>
                                 <Badge className="bg-muted text-muted-foreground text-xs">
@@ -701,7 +701,7 @@ export function ConvertClaimToEntityDialog({
                           <label
                             key={view.id}
                             className={`flex items-start gap-3 p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0 ${
-                              selectedViewIds.includes(view.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                              selectedViewIds.includes(view.id) ? 'bg-blue-500/10' : ''
                             }`}
                           >
                             <input
@@ -714,7 +714,7 @@ export function ConvertClaimToEntityDialog({
                                 {view.title}
                               </div>
                               <div className="flex gap-2 mt-1">
-                                <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs">
+                                <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-xs">
                                   {view.ticker}
                                 </Badge>
                                 <Badge className="bg-muted text-muted-foreground text-xs">
@@ -730,8 +730,8 @@ export function ConvertClaimToEntityDialog({
 
                   {/* Selection Summary */}
                   {(selectedThesisIds.length > 0 || selectedViewIds.length > 0) && (
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                      <p className="text-sm font-medium text-foreground">
                         {selectedThesisIds.length + selectedViewIds.length} selected · 
                         <span className="ml-1 font-normal">
                           Will be linked as <span className="font-semibold">{relationshipType}</span>
@@ -751,7 +751,7 @@ export function ConvertClaimToEntityDialog({
               <div className="grid grid-cols-2 gap-4">
                 <button
                   onClick={() => setEntityType('macro_thesis')}
-                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-500/10 transition-colors text-left"
                 >
                   <div className="font-semibold text-lg mb-2 text-foreground">Macro Thesis</div>
                   <div className="text-sm text-muted-foreground">
@@ -760,7 +760,7 @@ export function ConvertClaimToEntityDialog({
                 </button>
                 <button
                   onClick={() => setEntityType('asset_thesis')}
-                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+                  className="p-6 border-2 border rounded-lg hover:border-blue-500 hover:bg-blue-500/10 transition-colors text-left"
                 >
                   <div className="font-semibold text-lg mb-2 text-foreground">Asset Thesis</div>
                   <div className="text-sm text-muted-foreground">
@@ -869,8 +869,8 @@ export function ConvertClaimToEntityDialog({
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
         </div>

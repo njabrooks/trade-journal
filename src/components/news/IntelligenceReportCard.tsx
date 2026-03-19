@@ -72,10 +72,10 @@ export function IntelligenceReportCard({ report }: IntelligenceReportCardProps) 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <SeverityBadge label="critical" count={report.criticalCount || 0} color="bg-red-100 text-red-700" />
-            <SeverityBadge label="high" count={report.highCount || 0} color="bg-orange-100 text-orange-700" />
-            <SeverityBadge label="medium" count={report.mediumCount || 0} color="bg-yellow-100 text-yellow-700" />
-            <SeverityBadge label="info" count={report.infoCount || 0} color="bg-blue-100 text-blue-700" />
+            <SeverityBadge label="critical" count={report.criticalCount || 0} color="bg-destructive/15 text-destructive" />
+            <SeverityBadge label="high" count={report.highCount || 0} color="bg-orange-500/15 text-orange-600 dark:text-orange-400" />
+            <SeverityBadge label="medium" count={report.mediumCount || 0} color="bg-amber-500/15 text-amber-600 dark:text-amber-400" />
+            <SeverityBadge label="info" count={report.infoCount || 0} color="bg-muted text-muted-foreground" />
           </div>
         </div>
       </div>
@@ -102,7 +102,7 @@ export function IntelligenceReportCard({ report }: IntelligenceReportCardProps) 
                 <div className="flex gap-1">
                   <button
                     onClick={() => setSectorFilter(null)}
-                    className={`px-2 py-0.5 text-xs rounded-full ${!sectorFilter ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    className={`px-2 py-0.5 text-xs rounded-full ${!sectorFilter ? 'bg-slate-900 text-white' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
                   >
                     All
                   </button>
@@ -110,7 +110,7 @@ export function IntelligenceReportCard({ report }: IntelligenceReportCardProps) 
                     <button
                       key={sector}
                       onClick={() => setSectorFilter(sector)}
-                      className={`px-2 py-0.5 text-xs rounded-full capitalize ${sectorFilter === sector ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                      className={`px-2 py-0.5 text-xs rounded-full capitalize ${sectorFilter === sector ? 'bg-slate-900 text-white' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
                     >
                       {sector}
                     </button>

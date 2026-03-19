@@ -73,13 +73,13 @@ export function NewsArchiveSection({ thesisId, thesisType }: NewsArchiveSectionP
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'high':
-        return 'bg-red-100 text-red-700';
+        return 'bg-orange-500/15 text-orange-600 dark:text-orange-400';
       case 'medium':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       case 'low':
-        return 'bg-green-100 text-green-700';
+        return 'bg-muted text-muted-foreground';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 

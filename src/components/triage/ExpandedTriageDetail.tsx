@@ -370,11 +370,11 @@ function ThesisDetail({
   // Evidence type visual config
   const getEvidenceTypeConfig = (evidenceType: string) => {
     const config: Record<string, { icon: React.ReactNode; bgColor: string; textColor: string; label: string }> = {
-      strong_validation: { icon: <TrendingUp className="h-4 w-4" />, bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', label: 'Strong Validation' },
-      weak_validation: { icon: <TrendingUp className="h-4 w-4" />, bgColor: 'bg-green-50', textColor: 'text-green-600', label: 'Weak Validation' },
-      neutral: { icon: <Minus className="h-4 w-4" />, bgColor: 'bg-slate-50', textColor: 'text-muted-foreground', label: 'Neutral' },
-      weak_invalidation: { icon: <TrendingDown className="h-4 w-4" />, bgColor: 'bg-orange-50', textColor: 'text-orange-600', label: 'Weak Invalidation' },
-      strong_invalidation: { icon: <TrendingDown className="h-4 w-4" />, bgColor: 'bg-red-50', textColor: 'text-red-700', label: 'Strong Invalidation' },
+      strong_validation: { icon: <TrendingUp className="h-4 w-4" />, bgColor: 'bg-emerald-500/10', textColor: 'text-emerald-600 dark:text-emerald-400', label: 'Strong Validation' },
+      weak_validation: { icon: <TrendingUp className="h-4 w-4" />, bgColor: 'bg-green-500/10', textColor: 'text-green-600 dark:text-green-400', label: 'Weak Validation' },
+      neutral: { icon: <Minus className="h-4 w-4" />, bgColor: 'bg-muted/50', textColor: 'text-muted-foreground', label: 'Neutral' },
+      weak_invalidation: { icon: <TrendingDown className="h-4 w-4" />, bgColor: 'bg-orange-500/10', textColor: 'text-orange-600 dark:text-orange-400', label: 'Weak Invalidation' },
+      strong_invalidation: { icon: <TrendingDown className="h-4 w-4" />, bgColor: 'bg-red-500/10', textColor: 'text-red-600 dark:text-red-400', label: 'Strong Invalidation' },
     };
     return config[evidenceType] || config.neutral;
   };
@@ -433,14 +433,14 @@ function ThesisDetail({
     <div className="space-y-4">
       {/* Severity Banner - hidden for synthesis triggers */}
       {!isSynthesisTrigger && record.status === 'urgent' && (
-        <div className="rounded-lg p-3 flex items-center gap-3 bg-rose-50 border border-rose-200">
-          <Clock className="h-5 w-5 text-rose-600" />
+        <div className="rounded-lg p-3 flex items-center gap-3 bg-destructive/10 border border-destructive/20">
+          <Clock className="h-5 w-5 text-destructive" />
           <div>
-            <p className="text-sm font-semibold text-rose-800">
+            <p className="text-sm font-semibold text-destructive">
               Urgent Attention Required
             </p>
             {thesisRecord?.actionRequired && (
-              <p className="text-xs mt-1 text-rose-600">
+              <p className="text-xs mt-1 text-muted-foreground">
                 {thesisRecord.actionRequired}
               </p>
             )}
@@ -472,7 +472,7 @@ function ThesisDetail({
 
       {/* Content Summary (for monitoring triggers) */}
       {isMonitoringContent && contentSummary && (
-        <div className="bg-slate-50 border border rounded-lg p-4 space-y-3">
+        <div className="bg-muted/50 border border rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Newspaper className="h-4 w-4 text-muted-foreground" />
             <p className="text-sm font-semibold text-foreground">Content Summary</p>
@@ -502,7 +502,7 @@ function ThesisDetail({
           {contentSummary.searchQuery && (
             <div className="text-xs">
               <p className="text-muted-foreground">Search Query</p>
-              <p className="font-mono text-foreground bg-slate-100 px-2 py-1 rounded mt-1">
+              <p className="font-mono text-foreground bg-muted px-2 py-1 rounded mt-1">
                 {contentSummary.searchQuery}
               </p>
             </div>
@@ -512,17 +512,17 @@ function ThesisDetail({
 
       {/* AI Analysis */}
       {aiAnalysis && (aiAnalysis.summary || aiAnalysis.keyFindings) && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-3">
+        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-indigo-600" />
-              <p className="text-sm font-semibold text-indigo-800">AI Analysis</p>
+              <p className="text-sm font-semibold text-foreground">AI Analysis</p>
             </div>
             {aiAnalysis.relevanceScore !== undefined && (
               <Badge className={`${
-                aiAnalysis.relevanceScore >= 0.7 ? 'bg-emerald-100 text-emerald-700' :
-                aiAnalysis.relevanceScore >= 0.4 ? 'bg-amber-100 text-amber-700' :
-                'bg-slate-100 text-foreground'
+                aiAnalysis.relevanceScore >= 0.7 ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+                aiAnalysis.relevanceScore >= 0.4 ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' :
+                'bg-muted text-muted-foreground'
               }`}>
                 {Math.round(aiAnalysis.relevanceScore * 100)}% relevant
               </Badge>
@@ -530,16 +530,16 @@ function ThesisDetail({
           </div>
 
           {aiAnalysis.summary && (
-            <p className="text-sm text-indigo-900">{aiAnalysis.summary}</p>
+            <p className="text-sm text-foreground">{aiAnalysis.summary}</p>
           )}
 
           {aiAnalysis.keyFindings && aiAnalysis.keyFindings.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-indigo-700 mb-2">Key Findings:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Key Findings:</p>
               <ul className="space-y-1">
                 {aiAnalysis.keyFindings.slice(0, 5).map((finding, idx) => (
-                  <li key={idx} className="text-xs text-indigo-800 flex items-start gap-2">
-                    <span className="text-indigo-400 mt-0.5">•</span>
+                  <li key={idx} className="text-xs text-foreground flex items-start gap-2">
+                    <span className="text-muted-foreground mt-0.5">•</span>
                     {finding}
                   </li>
                 ))}
@@ -552,7 +552,7 @@ function ThesisDetail({
       {/* Validation Points Affected - V&I Point Review */}
       {aiAnalysis?.validationPointsAffected && aiAnalysis.validationPointsAffected.length > 0 && (
         <div className="bg-card border border rounded-lg overflow-hidden">
-          <div className="px-4 py-2 bg-slate-50 border-b border">
+          <div className="px-4 py-2 bg-muted/50 border-b border">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-muted-foreground" />
               <p className="text-sm font-semibold text-foreground">Validation Points Affected</p>
@@ -561,7 +561,7 @@ function ThesisDetail({
               </Badge>
             </div>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {aiAnalysis.validationPointsAffected.map((vp, idx) => {
               const config = getEvidenceTypeConfig(vp.evidenceType);
               return (
@@ -591,7 +591,7 @@ function ThesisDetail({
                     {vp.pointId && (
                       <Link
                         href={`/${isMacro ? 'macro-theses' : 'asset-theses'}/${record.objectId}/signals/${vp.pointId}`}
-                        className="text-blue-600 hover:text-blue-800 shrink-0"
+                        className="text-foreground hover:text-blue-600 transition-colors shrink-0"
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Link>
@@ -606,9 +606,9 @@ function ThesisDetail({
 
       {/* Suggested Next Steps */}
       {aiAnalysis?.suggestedNextSteps && aiAnalysis.suggestedNextSteps.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-sm font-semibold text-amber-800 mb-2">Suggested Next Steps</p>
-          <ol className="text-sm text-amber-900 space-y-1 list-decimal list-inside">
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+          <p className="text-sm font-semibold text-foreground mb-2">Suggested Next Steps</p>
+          <ol className="text-sm text-foreground space-y-1 list-decimal list-inside">
             {aiAnalysis.suggestedNextSteps.map((step, idx) => (
               <li key={idx}>{step}</li>
             ))}
@@ -619,10 +619,10 @@ function ThesisDetail({
       {/* Matched Headlines */}
       {matchedResults && matchedResults.length > 0 && (
         <div className="bg-card border border rounded-lg overflow-hidden">
-          <div className="px-4 py-2 bg-slate-50 border-b border">
+          <div className="px-4 py-2 bg-muted/50 border-b border">
             <p className="text-sm font-semibold text-foreground">Key Headlines</p>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {matchedResults.slice(0, 5).map((result, idx) => (
               <div key={idx} className="px-4 py-3">
                 <div className="flex items-start justify-between gap-2">
@@ -650,7 +650,7 @@ function ThesisDetail({
                       href={result.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800"
+                      className="text-foreground hover:text-blue-600 transition-colors"
                     >
                       <ExternalLink className="h-4 w-4" />
                     </a>
@@ -660,7 +660,7 @@ function ThesisDetail({
             ))}
           </div>
           {matchedResults.length > 5 && (
-            <div className="px-4 py-2 bg-slate-50 border-t border">
+            <div className="px-4 py-2 bg-muted/50 border-t border">
               <p className="text-xs text-muted-foreground">
                 +{matchedResults.length - 5} more results
               </p>
@@ -671,14 +671,14 @@ function ThesisDetail({
 
       {/* Lifecycle Triage Context - hidden for synthesis triggers (shown in simplified view instead) */}
       {!isSynthesisTrigger && (isNeedsArticulation || isNewClaimsAvailable) && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+        <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
           <div className="flex items-center gap-2 mb-2">
             <FileText className="h-4 w-4 text-purple-600" />
-            <p className="text-sm font-semibold text-purple-800">
+            <p className="text-sm font-semibold text-foreground">
               {isNeedsArticulation ? 'Core Argument Required' : 'New Claims Available'}
             </p>
           </div>
-          <p className="text-xs text-purple-700">
+          <p className="text-xs text-muted-foreground">
             {isNeedsArticulation
               ? 'This thesis has sufficient evidence but needs a core argument. Run the skill to generate confirmation/warning signals.'
               : 'New claims have been linked since the last core argument. Consider rebuilding to incorporate new evidence.'}
@@ -698,15 +698,15 @@ function ThesisDetail({
       {isSynthesisTrigger && (
         <>
           {/* Synthesis Action Card - above claims for visibility */}
-          <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg p-4">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
-                <p className="text-sm font-medium text-emerald-800">
+                <p className="text-sm font-medium text-foreground">
                   {isNewClaimsAvailable
                     ? 'New evidence available — update core argument'
                     : 'Ready to build core argument'}
                 </p>
-                <p className="text-xs text-emerald-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {isNewClaimsAvailable
                     ? `${dynamicNewClaimCount} new claims since last core argument. Review the claims below, then update.`
                     : `${currentLinkedClaimCount ?? synthesisContentSummary?.currentClaimCount ?? 0} claims linked. Review the claims below, then build core argument and signals.`}
@@ -781,12 +781,12 @@ function ThesisDetail({
 
       {/* Suggested Skill - hidden for synthesis triggers (integrated into simplified view) */}
       {!isSynthesisTrigger && suggestedSkill && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-emerald-800">Suggested Action</p>
+            <p className="text-sm font-semibold text-foreground">Suggested Action</p>
           </div>
           <div className="flex items-center gap-3">
-            <code className="flex-1 bg-emerald-100 px-3 py-2 rounded text-sm font-mono text-emerald-900">
+            <code className="flex-1 bg-emerald-500/15 px-3 py-2 rounded text-sm font-mono text-emerald-600 dark:text-emerald-400">
               {suggestedSkill}
             </code>
             <Button
@@ -799,7 +799,7 @@ function ThesisDetail({
               {copied ? 'Copied!' : 'Copy'}
             </Button>
           </div>
-          <p className="text-xs text-emerald-600 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             Copy and paste this command in Claude Code to run the skill.
           </p>
         </div>
@@ -807,7 +807,7 @@ function ThesisDetail({
 
       {/* User Notes */}
       {thesisRecord?.userNotes && (
-        <div className="bg-slate-100 rounded-lg p-3">
+        <div className="bg-muted rounded-lg p-3">
           <p className="text-sm font-medium text-foreground">Notes</p>
           <p className="text-sm text-muted-foreground mt-1">{thesisRecord.userNotes}</p>
         </div>
@@ -817,24 +817,24 @@ function ThesisDetail({
       {executionResult && (
         <div className={`rounded-lg p-3 flex items-start gap-3 ${
           executionResult.success
-            ? 'bg-emerald-50 border border-emerald-200'
-            : 'bg-rose-50 border border-rose-200'
+            ? 'bg-emerald-500/10 border border-emerald-500/20'
+            : 'bg-destructive/10 border border-destructive/20'
         }`}>
           {executionResult.success ? (
             <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
           ) : (
-            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
           )}
           <div>
             <p className={`text-sm font-semibold ${
-              executionResult.success ? 'text-emerald-800' : 'text-rose-800'
+              executionResult.success ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'
             }`}>
               {executionResult.success
                 ? 'Core Argument Created'
                 : 'Execution Failed'}
             </p>
             <p className={`text-xs mt-1 ${
-              executionResult.success ? 'text-emerald-600' : 'text-rose-600'
+              executionResult.success ? 'text-muted-foreground' : 'text-muted-foreground'
             }`}>
               {executionResult.success
                 ? 'The core argument and signals have been saved. Page will refresh shortly.'
@@ -952,9 +952,9 @@ function RecommendedSignalsReview({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-        <AlertCircle className="h-5 w-5 text-red-600 mx-auto mb-2" />
-        <p className="text-sm text-red-700">{error}</p>
+      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center">
+        <AlertCircle className="h-5 w-5 text-destructive mx-auto mb-2" />
+        <p className="text-sm text-destructive">{error}</p>
       </div>
     );
   }

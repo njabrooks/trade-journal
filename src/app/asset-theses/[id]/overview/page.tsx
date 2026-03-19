@@ -61,8 +61,8 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
   // Direction badge for subtitle
   const directionBadge = thesis.direction ? (
     <span className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
-      thesis.direction === 'bullish' ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300' :
-      thesis.direction === 'bearish' ? 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300' :
+      thesis.direction === 'bullish' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
+      thesis.direction === 'bearish' ? 'bg-destructive/15 text-destructive' :
       'bg-muted text-muted-foreground'
     }`}>
       {thesis.direction}

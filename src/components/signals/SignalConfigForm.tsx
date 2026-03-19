@@ -346,7 +346,7 @@ export function SignalConfigForm({
                   }}
                   className={`px-4 py-3 rounded-lg border-2 transition-colors text-left relative ${
                     dataSource === source.id
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100'
+                      ? 'border-blue-500/50 bg-blue-500/10 text-foreground'
                       : 'border bg-card text-foreground hover:border-muted-foreground'
                   }`}
                 >
@@ -452,7 +452,7 @@ export function SignalConfigForm({
 
             {/* Explanation for on_release */}
             {operator === 'on_release' && (
-              <p className="text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mt-2">
+              <p className="text-sm text-blue-600 dark:text-blue-400 bg-blue-500/10 p-3 rounded-lg mt-2">
                 📅 Triggers when new data is released (e.g., monthly PMI update), regardless of value.
                 Ideal for economic indicators with infrequent releases.
               </p>

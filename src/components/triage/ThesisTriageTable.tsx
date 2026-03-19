@@ -68,8 +68,8 @@ export function ThesisTriageTable({ thesisId, thesisType }: ThesisTriageTablePro
   if (loading) {
     return (
       <div className="py-8 text-center">
-        <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-slate-200 border-t-slate-600"></div>
-        <p className="mt-2 text-sm text-slate-500">Loading triage records...</p>
+        <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-border border-t-foreground"></div>
+        <p className="mt-2 text-sm text-muted-foreground">Loading triage records...</p>
       </div>
     );
   }
@@ -114,7 +114,7 @@ export function ThesisTriageTable({ thesisId, thesisType }: ThesisTriageTablePro
           Needs Action
         </Button>
 
-        <div className="ml-auto text-sm text-slate-600">
+        <div className="ml-auto text-sm text-muted-foreground">
           Showing {records.length} of {allRecords.length} items
         </div>
       </div>
@@ -123,8 +123,8 @@ export function ThesisTriageTable({ thesisId, thesisType }: ThesisTriageTablePro
       {showEmptyNeedsAction && (
         <div className="py-8 text-center">
           <CheckCircle className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
-          <p className="text-sm text-slate-600 font-medium">No urgent alerts</p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-sm text-muted-foreground font-medium">No urgent alerts</p>
+          <p className="text-xs text-muted-foreground mt-1">
             All high-priority triage items have been addressed.
             {allRecords.length > 0 && (
               <button
@@ -141,8 +141,8 @@ export function ThesisTriageTable({ thesisId, thesisType }: ThesisTriageTablePro
       {showEmptyAll && (
         <div className="py-8 text-center">
           <CheckCircle className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
-          <p className="text-sm text-slate-600 font-medium">No pending alerts</p>
-          <p className="text-xs text-slate-400 mt-1">All triage items have been addressed</p>
+          <p className="text-sm text-muted-foreground font-medium">No pending alerts</p>
+          <p className="text-xs text-muted-foreground mt-1">All triage items have been addressed</p>
         </div>
       )}
 
@@ -151,7 +151,7 @@ export function ThesisTriageTable({ thesisId, thesisType }: ThesisTriageTablePro
         <div className="overflow-x-auto -mx-4 -mb-4">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+              <tr className="border-b bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                 <SortableHeader column="displayTitle" className="text-left">
                   {thesisType === 'asset' ? 'Ticker' : 'Thesis'}
                 </SortableHeader>

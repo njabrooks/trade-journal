@@ -18,11 +18,11 @@ interface SecFilingsFeedProps {
 }
 
 const TYPE_STYLES: Record<string, string> = {
-  '10-K': 'bg-purple-100 text-purple-700',
-  '10-Q': 'bg-indigo-100 text-indigo-700',
-  '8-K': 'bg-red-100 text-red-700',
-  'DEF 14A': 'bg-orange-100 text-orange-700',
-  'Form 4': 'bg-slate-100 text-slate-600',
+  '10-K': 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
+  '10-Q': 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
+  '8-K': 'bg-destructive/15 text-destructive',
+  'DEF 14A': 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
+  'Form 4': 'bg-muted text-muted-foreground',
 };
 
 export function SecFilingsFeed({ filings }: SecFilingsFeedProps) {
@@ -68,7 +68,7 @@ export function SecFilingsFeed({ filings }: SecFilingsFeedProps) {
               href={filing.filingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 flex-shrink-0"
+              className="text-foreground hover:text-blue-600 transition-colors flex-shrink-0"
             >
               <ExternalLink className="w-3.5 h-3.5" />
             </a>

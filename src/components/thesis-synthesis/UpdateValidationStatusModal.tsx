@@ -131,8 +131,8 @@ export function UpdateValidationStatusModal({
             <span
               className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
                 point.type === 'validation'
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
               }`}
             >
               {point.type}
@@ -140,9 +140,9 @@ export function UpdateValidationStatusModal({
             <span
               className={`inline-flex px-1.5 py-0.5 text-xs font-medium rounded ${
                 point.importance === 'critical'
-                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                  ? 'bg-destructive/15 text-destructive'
                   : point.importance === 'significant'
-                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                  ? 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
                   : 'bg-muted text-muted-foreground'
               }`}
             >
@@ -166,7 +166,7 @@ export function UpdateValidationStatusModal({
                   onClick={() => setNewStatus(option.value)}
                   className={`flex items-start gap-2 p-2 rounded-md border text-left transition-colors ${
                     newStatus === option.value
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                      ? 'border-blue-500/50 bg-blue-500/10'
                       : 'border hover:border-muted-foreground'
                   }`}
                 >
@@ -184,11 +184,11 @@ export function UpdateValidationStatusModal({
 
           {/* Response Protocol Reminder (if triggered) */}
           {newStatus === 'triggered' && responseProtocol?.description && (
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-3">
-              <h4 className="text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wide mb-1">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-3">
+              <h4 className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-1">
                 Response Protocol Reminder
               </h4>
-              <p className="text-sm text-amber-900 dark:text-amber-100">{responseProtocol.description}</p>
+              <p className="text-sm text-foreground">{responseProtocol.description}</p>
               {responseProtocol.escalation && (
                 <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
                   Escalation: {responseProtocol.escalation.replace('_', ' ')}
@@ -253,10 +253,10 @@ export function UpdateValidationStatusModal({
                   className={`flex-1 py-2 text-sm font-medium rounded-md border transition-colors ${
                     confidence === level
                       ? level === 'low'
-                        ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                        ? 'border-destructive/50 bg-destructive/15 text-destructive'
                         : level === 'medium'
-                        ? 'border-amber-500 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                        : 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        ? 'border-amber-500/50 bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                        : 'border-emerald-500/50 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
                       : 'border text-muted-foreground hover:border-muted-foreground'
                   }`}
                 >
@@ -287,7 +287,7 @@ export function UpdateValidationStatusModal({
 
           {/* Error */}
           {error && (
-            <div className="px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-sm text-red-700 dark:text-red-300">
+            <div className="px-3 py-2 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive">
               {error}
             </div>
           )}

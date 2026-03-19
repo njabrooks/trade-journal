@@ -36,7 +36,7 @@ export function LinkedEntitiesBadges({
 }: LinkedEntitiesBadgesProps) {
   // No entities - show empty state
   if (entities.length === 0) {
-    return <span className="text-xs text-slate-400">{emptyText}</span>;
+    return <span className="text-xs text-muted-foreground">{emptyText}</span>;
   }
 
   // Determine which entities to show
@@ -48,13 +48,13 @@ export function LinkedEntitiesBadges({
   const getEntityBadgeColor = (type: LinkedEntity['type']) => {
     switch (type) {
       case 'macro':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-violet-500/15 text-violet-600 dark:text-violet-400';
       case 'asset':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
       case 'strategy':
-        return 'bg-green-100 text-green-700';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -90,13 +90,13 @@ export function LinkedEntitiesBadges({
   const getRelationshipBadgeColor = (relationshipType?: string) => {
     switch (relationshipType) {
       case 'supports':
-        return 'bg-green-100 text-green-700';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'refutes':
-        return 'bg-red-100 text-red-700';
+        return 'bg-destructive/15 text-destructive';
       case 'foundation':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       default:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -106,7 +106,7 @@ export function LinkedEntitiesBadges({
         <span key={entity.id} className={isExpanded ? "block" : "inline-flex items-center gap-1 shrink-0"}>
           <Link
             href={getDetailUrl(entity)}
-            className={`text-sm text-blue-600 hover:text-blue-800 hover:underline ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[200px]'}`}
+            className={`text-sm text-foreground hover:text-blue-600 hover:underline transition-colors ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[200px]'}`}
             title={entity.title}
           >
             {showRelationshipType && entity.relationshipType && (
@@ -116,7 +116,7 @@ export function LinkedEntitiesBadges({
             )}
             {entity.title}
           </Link>
-          {!isExpanded && index < visibleEntities.length - 1 && !showMoreBadge && <span className="text-slate-400">,</span>}
+          {!isExpanded && index < visibleEntities.length - 1 && !showMoreBadge && <span className="text-muted-foreground">,</span>}
         </span>
       ))}
 
@@ -129,9 +129,9 @@ export function LinkedEntitiesBadges({
             onExpand();
           }}
           title={`Show all ${entities.length} linked entities:\n${entities.slice(maxVisibleWhenCollapsed).map(e => `• ${e.title}`).join('\n')}`}
-          className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer shrink-0 ml-1 group"
+          className="text-xs text-muted-foreground hover:text-blue-600 font-medium cursor-pointer shrink-0 ml-1 group"
         >
-          <Badge className="bg-blue-50 text-blue-700 group-hover:bg-blue-100 group-hover:underline text-xs transition-colors">
+          <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 group-hover:underline text-xs transition-colors">
             +{remainingCount}
           </Badge>
         </button>

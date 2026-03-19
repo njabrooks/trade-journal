@@ -70,14 +70,14 @@ interface ThesisTriageTableRowProps {
 
 function SeverityTag({ severity }: { severity: string }) {
   const classNameMap: Record<string, string> = {
-    urgent: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-300 dark:border-rose-800',
-    attention: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-    monitor: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
-    info: 'bg-muted text-foreground border',
-    critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
-    high: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
-    medium: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-    low: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+    urgent: 'bg-destructive/15 text-destructive border-destructive/20',
+    attention: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20',
+    monitor: 'bg-muted text-muted-foreground border-border',
+    info: 'bg-muted text-muted-foreground border-border',
+    critical: 'bg-destructive/15 text-destructive border-destructive/20',
+    high: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20',
+    medium: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    low: 'bg-muted text-muted-foreground border-border',
   };
 
   return (
@@ -93,13 +93,13 @@ function SeverityTag({ severity }: { severity: string }) {
 function getEvidenceTypeColor(evidenceType: string) {
   switch (evidenceType) {
     case 'strong_validation':
-      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
+      return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
     case 'weak_validation':
-      return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400';
+      return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
     case 'strong_invalidation':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+      return 'bg-destructive/15 text-destructive';
     case 'weak_invalidation':
-      return 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400';
+      return 'bg-destructive/15 text-destructive';
     default:
       return 'bg-muted text-muted-foreground';
   }
@@ -186,8 +186,8 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
                 className={cn(
                   'text-xs px-1.5 py-0.5 rounded',
                   record.direction === 'bullish'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-rose-100 text-rose-700'
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-destructive/15 text-destructive'
                 )}
               >
                 {record.direction}

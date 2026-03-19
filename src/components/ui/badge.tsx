@@ -17,12 +17,12 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        // Entity status variants
-        draft: "border-transparent bg-purple-100 text-purple-700",
-        active: "border-transparent bg-blue-100 text-blue-700",
-        complete: "border-transparent bg-emerald-100 text-emerald-700",
-        rejected: "border-transparent bg-slate-100 text-slate-500",
-        merged: "border-transparent bg-orange-100 text-orange-600",
+        // Entity status variants (ui-patterns.md §4)
+        draft: "border-transparent bg-muted text-muted-foreground",
+        active: "border-transparent bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+        complete: "border-transparent bg-muted text-muted-foreground",
+        rejected: "border-transparent bg-destructive/15 text-destructive",
+        merged: "border-transparent bg-orange-500/15 text-orange-600 dark:text-orange-400",
       },
     },
     defaultVariants: {

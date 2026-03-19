@@ -119,10 +119,10 @@ export function EntitySidebar({
 
 function RelatedEntityLink({ entity }: { entity: SidebarRelatedEntity }) {
   const typeColors: Record<string, string> = {
-    'macro-thesis': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-    'asset-thesis': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    'strategy': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    'claim': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    'macro-thesis': 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+    'asset-thesis': 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    'strategy': 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    'claim': 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
   };
 
   const colorClass = entity.type ? typeColors[entity.type] : 'bg-muted text-muted-foreground';

@@ -67,8 +67,8 @@ export function CreateThesisDialog({ onClose, prefilledMainClaimIds = [] }: Crea
 
         {/* Pre-linked Claims Badge */}
         {prefilledMainClaimIds.length > 0 && (
-          <div className="px-6 py-3 border-t border bg-purple-50 dark:bg-purple-900/20">
-            <p className="text-sm text-purple-900 dark:text-purple-100">
+          <div className="px-6 py-3 border-t border bg-violet-500/10">
+            <p className="text-sm text-foreground">
               <strong>Linked Claims:</strong> {prefilledMainClaimIds.length} main claim
               {prefilledMainClaimIds.length !== 1 ? 's' : ''} will be linked to this thesis
             </p>

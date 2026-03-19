@@ -47,30 +47,30 @@ function extractNote(summary: string | null, dataSource: string): string | null 
 }
 
 const SOURCE_CONFIG: Record<string, { label: string; cls: string }> = {
-  daily_synthesis: { label: 'Daily Rollup', cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  thesis_monitor:  { label: 'Thesis Monitor', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
-  world_monitor:   { label: 'World Monitor', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
-  qualitative:     { label: 'Research', cls: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' },
-  defillama:       { label: 'DeFiLlama', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' },
-  derived:         { label: 'Derived', cls: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' },
-  economic_calendar: { label: 'Econ. Calendar', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
+  daily_synthesis: { label: 'Daily Rollup', cls: 'bg-muted text-muted-foreground' },
+  thesis_monitor:  { label: 'Thesis Monitor', cls: 'bg-violet-500/15 text-violet-600 dark:text-violet-400' },
+  world_monitor:   { label: 'World Monitor', cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' },
+  qualitative:     { label: 'Research', cls: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' },
+  defillama:       { label: 'DeFiLlama', cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
+  derived:         { label: 'Derived', cls: 'bg-muted text-muted-foreground' },
+  economic_calendar: { label: 'Econ. Calendar', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
 };
 
 function getSourceConfig(dataSource: string): { label: string; cls: string } {
   if (dataSource in SOURCE_CONFIG) return SOURCE_CONFIG[dataSource];
   if (dataSource.startsWith('price_history_')) {
     const ticker = dataSource.replace('price_history_', '').toUpperCase();
-    return { label: `Price (${ticker})`, cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' };
+    return { label: `Price (${ticker})`, cls: 'bg-orange-500/15 text-orange-600 dark:text-orange-400' };
   }
   return { label: dataSource, cls: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' };
 }
 
 const ASSESSMENT_CONFIG: Record<string, { label: string; cls: string }> = {
-  neutral:       { label: 'Neutral',       cls: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400' },
-  strengthening: { label: 'Strengthening', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
-  weakening:     { label: 'Weakening',     cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
-  confirmed:     { label: 'Confirmed',     cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' },
-  invalidated:   { label: 'Invalidated',   cls: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  neutral:       { label: 'Neutral',       cls: 'bg-muted text-muted-foreground' },
+  strengthening: { label: 'Strengthening', cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' },
+  weakening:     { label: 'Weakening',     cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
+  confirmed:     { label: 'Confirmed',     cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
+  invalidated:   { label: 'Invalidated',   cls: 'bg-destructive/15 text-destructive' },
 };
 
 export interface SignalLogEntry {

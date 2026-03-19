@@ -28,11 +28,11 @@ const STATUS_LABELS: Record<PositionReconciliation["status"], string> = {
 };
 
 const STATUS_COLORS: Record<PositionReconciliation["status"], string> = {
-  match: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  qty_mismatch: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  mv_mismatch: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  snapshot_only: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-  event_sourced_only: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  match: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  qty_mismatch: "bg-destructive/15 text-destructive",
+  mv_mismatch: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  snapshot_only: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+  event_sourced_only: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
 };
 
 const RESOLUTION_BADGES: Record<string, { label: string; classes: string }> = {

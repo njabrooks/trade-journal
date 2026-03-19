@@ -20,9 +20,9 @@ interface EconomicCalendarProps {
 }
 
 const IMPACT_STYLES: Record<string, string> = {
-  high: 'bg-red-100 text-red-700',
-  medium: 'bg-amber-100 text-amber-700',
-  low: 'bg-green-100 text-green-700',
+  high: 'bg-destructive/15 text-destructive',
+  medium: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  low: 'bg-muted text-muted-foreground',
 };
 
 function groupByDate(events: EconomicEvent[]): Record<string, EconomicEvent[]> {
@@ -80,7 +80,7 @@ export function EconomicCalendar({ events }: EconomicCalendarProps) {
               {grouped[date].map(event => (
                 <div key={event.id} className="flex items-center gap-2 text-sm">
                   {event.impact && (
-                    <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${IMPACT_STYLES[event.impact] || 'bg-slate-100 text-slate-600'}`}>
+                    <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${IMPACT_STYLES[event.impact] || 'bg-muted text-muted-foreground'}`}>
                       {event.impact.toUpperCase()}
                     </span>
                   )}

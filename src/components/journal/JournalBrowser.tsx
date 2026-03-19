@@ -369,52 +369,52 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
   const getObjectTypeBadgeColor = (objectType: string) => {
     switch (objectType) {
       case 'macro_thesis':
-        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+        return 'bg-violet-500/15 text-violet-600 dark:text-violet-400';
       case 'asset_thesis':
-        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
       case 'strategy':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
       case 'claim':
-        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
+        return 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
       case 'position':
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-teal-500/15 text-teal-600 dark:text-teal-400';
       case 'signal':
       case 'validation_point':
-        return 'bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-800';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       default:
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const getActionTypeBadgeColor = (actionType: string) => {
     if (actionType.includes('CREATED')) {
-      return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+      return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
     }
     if (actionType.includes('UPDATED') || actionType.includes('CHANGED')) {
-      return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+      return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
     }
     if (actionType.includes('DELETED')) {
-      return 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
+      return 'bg-destructive/15 text-destructive';
     }
     if (actionType.includes('LINKED')) {
-      return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+      return 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
     }
     if (actionType.includes('TRIGGERED')) {
-      return 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800';
+      return 'bg-orange-500/15 text-orange-600 dark:text-orange-400';
     }
-    return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+    return 'bg-muted text-muted-foreground';
   };
 
   const getSourceBadgeColor = (source: string) => {
     switch (source) {
       case 'user':
-        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
       case 'skill':
-        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+        return 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
       case 'automation':
-        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       default:
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -481,12 +481,12 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
                   {entry.underlyingTickers.length > 0 && (
                     <span className="flex gap-1 flex-wrap">
                       {entry.underlyingTickers.slice(0, 3).map((ticker) => (
-                        <Badge key={ticker} className="bg-slate-100 text-muted-foreground text-xs font-mono">
+                        <Badge key={ticker} className="bg-muted text-muted-foreground text-xs font-mono">
                           {ticker}
                         </Badge>
                       ))}
                       {entry.underlyingTickers.length > 3 && (
-                        <Badge className="bg-slate-100 text-muted-foreground text-xs">
+                        <Badge className="bg-muted text-muted-foreground text-xs">
                           +{entry.underlyingTickers.length - 3}
                         </Badge>
                       )}
@@ -677,18 +677,18 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
                     {summary.objectTitle}
                   </span>
                 )}
-                <Badge className="bg-blue-100 text-blue-700 text-xs">
+                <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-xs">
                   {summary.totalCount} entries
                 </Badge>
                 {summary.underlyingTickers.length > 0 && (
                   <span className="flex gap-1 flex-wrap">
                     {summary.underlyingTickers.slice(0, 2).map((ticker) => (
-                      <Badge key={ticker} className="bg-slate-100 text-muted-foreground text-xs font-mono">
+                      <Badge key={ticker} className="bg-muted text-muted-foreground text-xs font-mono">
                         {ticker}
                       </Badge>
                     ))}
                     {summary.underlyingTickers.length > 2 && (
-                      <Badge className="bg-slate-100 text-muted-foreground text-xs">
+                      <Badge className="bg-muted text-muted-foreground text-xs">
                         +{summary.underlyingTickers.length - 2}
                       </Badge>
                     )}
@@ -710,7 +710,7 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
                 </Badge>
               ))}
               {summary.actionTypes.length > 2 && (
-                <Badge className="bg-slate-100 text-muted-foreground text-xs">
+                <Badge className="bg-muted text-muted-foreground text-xs">
                   +{summary.actionTypes.length - 2}
                 </Badge>
               )}

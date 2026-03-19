@@ -269,30 +269,30 @@ export function UnifiedClaimsBrowser({
   const confidenceBadgeColor = (confidence: string | null) => {
     switch (confidence) {
       case 'high':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'medium':
-        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-blue-500/15 text-blue-600 dark:text-blue-400';
       case 'low':
-        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       case 'exploratory':
-        return 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800';
+        return 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
       default:
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'draft':
-        return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800';
+        return 'bg-muted text-muted-foreground';
       case 'complete':
-        return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800';
+        return 'bg-muted text-muted-foreground';
       case 'rejected':
-        return 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800';
+        return 'bg-destructive/15 text-destructive';
       default:
-        return 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
@@ -379,13 +379,13 @@ export function UnifiedClaimsBrowser({
   const getRelationshipBadge = (mappingType: string) => {
     switch (mappingType) {
       case 'supports':
-        return { className: 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800', label: 'Supports' };
+        return { className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', label: 'Supports' };
       case 'refutes':
-        return { className: 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800', label: 'Refutes' };
+        return { className: 'bg-destructive/15 text-destructive', label: 'Refutes' };
       case 'foundation':
-        return { className: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800', label: 'Foundation' };
+        return { className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', label: 'Foundation' };
       default:
-        return { className: 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700', label: mappingType };
+        return { className: 'bg-muted text-muted-foreground', label: mappingType };
     }
   };
 
@@ -393,11 +393,11 @@ export function UnifiedClaimsBrowser({
   const getCategoryBadge = (category: string) => {
     switch (category) {
       case 'macro':
-        return { className: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800', label: 'Macro' };
+        return { className: 'bg-violet-500/15 text-violet-600 dark:text-violet-400', label: 'Macro' };
       case 'asset_specific':
-        return { className: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800', label: 'Asset' };
+        return { className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', label: 'Asset' };
       default:
-        return { className: 'bg-slate-50 text-foreground border border-slate-200 dark:bg-slate-800/30 dark:text-slate-300 dark:border-slate-700', label: category };
+        return { className: 'bg-muted text-muted-foreground', label: category };
     }
   };
 
@@ -652,23 +652,6 @@ export function UnifiedClaimsBrowser({
                             >
                               {claim.title}
                             </Link>
-                            {claim.relevantTickers && claim.relevantTickers.length > 0 && (
-                              <div className="flex items-center gap-1">
-                                {claim.relevantTickers.slice(0, 3).map((ticker) => (
-                                  <span
-                                    key={ticker}
-                                    className="inline-flex px-1.5 py-0.5 text-xs font-mono bg-slate-100 text-foreground rounded"
-                                  >
-                                    ${ticker}
-                                  </span>
-                                ))}
-                                {claim.relevantTickers.length > 3 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    +{claim.relevantTickers.length - 3}
-                                  </span>
-                                )}
-                              </div>
-                            )}
                           </div>
                         </td>
 
@@ -717,7 +700,7 @@ export function UnifiedClaimsBrowser({
                                             </Badge>
                                             <Link
                                               href={entity.url}
-                                              className={`text-sm text-blue-600 hover:text-blue-800 hover:underline ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[150px]'}`}
+                                              className={`text-sm text-foreground hover:text-blue-600 hover:underline transition-colors ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[150px]'}`}
                                               title={entity.title}
                                             >
                                               {entity.title}
@@ -734,9 +717,9 @@ export function UnifiedClaimsBrowser({
                                             setExpandedClaim(claim.id);
                                           }}
                                           title={`Show all ${allLinked.length} linked entities:\n${allLinked.slice(1).map(e => `• ${e.title}`).join('\n')}`}
-                                          className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer shrink-0 ml-1 group"
+                                          className="text-xs text-muted-foreground hover:text-blue-600 font-medium cursor-pointer shrink-0 ml-1 group"
                                         >
-                                          <Badge className="bg-blue-50 text-blue-700 group-hover:bg-blue-100 group-hover:underline text-xs transition-colors">
+                                          <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 group-hover:bg-blue-500/25 group-hover:underline text-xs transition-colors">
                                             +{remainingCount}
                                           </Badge>
                                         </button>
@@ -755,7 +738,7 @@ export function UnifiedClaimsBrowser({
                             {artifact ? (
                               <Link
                                 href={`/research/${artifact.id}`}
-                                className="text-sm text-blue-600 hover:text-blue-800 hover:underline line-clamp-1"
+                                className="text-sm text-foreground hover:text-blue-600 hover:underline transition-colors line-clamp-1"
                                 title={artifact.title}
                               >
                                 {artifact.title}
@@ -966,10 +949,10 @@ export function UnifiedClaimsBrowser({
                                         <Link
                                           key={thesis.id}
                                           href={`/macro-theses/${thesis.id}`}
-                                          className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                          className="block text-sm text-foreground hover:text-blue-600 hover:underline transition-colors"
                                         >
                                           <span className="inline-flex items-center gap-1">
-                                            <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
+                                            <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400 text-xs">Macro</Badge>
                                             <Badge className={`${relationshipBadge.className} text-xs`}>
                                               {relationshipBadge.label}
                                             </Badge>
@@ -985,10 +968,10 @@ export function UnifiedClaimsBrowser({
                                         <Link
                                           key={view.id}
                                           href={`/asset-theses/${view.id}`}
-                                          className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                          className="block text-sm text-foreground hover:text-blue-600 hover:underline transition-colors"
                                         >
                                           <span className="inline-flex items-center gap-1">
-                                            <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
+                                            <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-xs">Asset</Badge>
                                             <Badge className={`${relationshipBadge.className} text-xs`}>
                                               {relationshipBadge.label}
                                             </Badge>
@@ -1018,14 +1001,14 @@ export function UnifiedClaimsBrowser({
                                         invalidated: '❌',
                                       };
                                       const typeColor = signal.type === 'confirmation'
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-red-100 text-red-700';
+                                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                        : 'bg-destructive/15 text-destructive';
                                       const typeLabel = signal.type === 'confirmation' ? 'Confirm' : 'Warning';
                                       return (
                                         <Link
                                           key={signal.id}
                                           href={`/signals/${signal.id}`}
-                                          className="block text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                          className="block text-sm text-foreground hover:text-blue-600 hover:underline transition-colors"
                                         >
                                           <span className="inline-flex items-center gap-1">
                                             <Badge className={`${typeColor} text-xs`}>{typeLabel}</Badge>
@@ -1045,7 +1028,7 @@ export function UnifiedClaimsBrowser({
                                 <div className="pt-2 border-t border">
                                   <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide flex items-center gap-1">
                                     <span>Suggested Linkages</span>
-                                    <Badge className="bg-amber-100 text-amber-700 text-xs">AI</Badge>
+                                    <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">AI</Badge>
                                   </h4>
                                   <InlineClaimSuggestions suggestions={suggestions} compact={false} onSuggestionActioned={onSuggestionActioned} />
                                 </div>

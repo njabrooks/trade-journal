@@ -61,43 +61,43 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
   const confidenceBadgeColor = (confidence: string | null) => {
     switch (confidence) {
       case 'high':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'medium':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       case 'low':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-muted text-muted-foreground';
       case 'exploratory':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
       default:
-        return 'bg-muted text-foreground';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const statusBadgeColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-emerald-100 text-emerald-700';
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
       case 'draft':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-muted text-muted-foreground';
       case 'complete':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-muted text-muted-foreground';
       case 'rejected':
-        return 'bg-red-100 text-red-700';
+        return 'bg-destructive/15 text-destructive';
       default:
-        return 'bg-muted text-foreground';
+        return 'bg-muted text-muted-foreground';
     }
   };
 
   const getRelationshipBadge = (mappingType: string) => {
     switch (mappingType) {
       case 'supports':
-        return { className: 'bg-emerald-100 text-emerald-700', label: 'Supports' };
+        return { className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', label: 'Supports' };
       case 'refutes':
-        return { className: 'bg-red-100 text-red-700', label: 'Refutes' };
+        return { className: 'bg-destructive/15 text-destructive', label: 'Refutes' };
       case 'foundation':
-        return { className: 'bg-amber-100 text-amber-700', label: 'Foundation' };
+        return { className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', label: 'Foundation' };
       default:
-        return { className: 'bg-muted text-foreground', label: mappingType };
+        return { className: 'bg-muted text-muted-foreground', label: mappingType };
     }
   };
 
@@ -294,7 +294,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
             <div className="space-y-2">
               <Link
                 href={`/research/${artifact.id}`}
-                className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 text-sm font-medium"
+                className="text-foreground hover:text-blue-600 hover:underline transition-colors inline-flex items-center gap-1 text-sm font-medium"
               >
                 <span>{artifact.title}</span>
                 <ExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -333,7 +333,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                       href={artifact.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 break-all"
+                      className="text-foreground hover:text-blue-600 hover:underline transition-colors break-all"
                     >
                       {artifact.sourceUrl}
                     </a>
@@ -360,11 +360,11 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                     className="block p-3 bg-muted hover:bg-muted rounded-lg transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-purple-100 text-purple-700 text-xs">Macro</Badge>
+                      <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400 text-xs">Macro</Badge>
                       <Badge className={`${relationshipBadge.className} text-xs`}>
                         {relationshipBadge.label}
                       </Badge>
-                      <span className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                      <span className="text-sm font-medium text-foreground hover:text-blue-600 transition-colors">
                         {thesis.title}
                       </span>
                       <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
@@ -392,11 +392,11 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                     className="block p-3 bg-muted hover:bg-muted rounded-lg transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <Badge className="bg-blue-100 text-blue-700 text-xs">Asset</Badge>
+                      <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-xs">Asset</Badge>
                       <Badge className={`${relationshipBadge.className} text-xs`}>
                         {relationshipBadge.label}
                       </Badge>
-                      <span className="text-sm font-medium text-blue-600 hover:text-blue-800">
+                      <span className="text-sm font-medium text-foreground hover:text-blue-600 transition-colors">
                         {view.title}
                       </span>
                       <span className="text-sm text-muted-foreground">({view.ticker})</span>
@@ -414,7 +414,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
           <div className="bg-card rounded-lg border border p-4">
             <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
               Suggested Linkages
-              <Badge className="bg-amber-100 text-amber-700 text-xs">AI</Badge>
+              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">AI</Badge>
             </h3>
             <InlineClaimSuggestions suggestions={suggestions} compact={false} />
           </div>

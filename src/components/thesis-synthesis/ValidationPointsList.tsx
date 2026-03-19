@@ -69,15 +69,15 @@ export function ValidationPointsList({
   };
 
   const statusColors: Record<string, string> = {
-    draft: 'bg-purple-100 text-purple-700 dark:text-purple-300 dark:bg-purple-900/30 dark:text-purple-300',
-    active: 'bg-blue-100 text-blue-700 dark:text-blue-300 dark:bg-blue-900/30 dark:text-blue-300',
-    complete: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    rejected: 'bg-muted text-muted-foreground',
+    draft: 'bg-muted text-muted-foreground',
+    active: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+    complete: 'bg-muted text-muted-foreground',
+    rejected: 'bg-destructive/15 text-destructive',
   };
 
   const importanceColors: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
-    significant: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
+    critical: 'bg-destructive/15 text-destructive border-destructive/20',
+    significant: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/20',
     supporting: 'bg-muted text-muted-foreground border',
   };
 
@@ -198,8 +198,8 @@ export function ValidationPointsList({
                     <span
                       className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded ${
                         point.type === 'confirmation'
-                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-orange-500/15 text-orange-600 dark:text-orange-400'
                       }`}
                     >
                       {point.type === 'confirmation' ? (
@@ -374,15 +374,15 @@ export function ValidationPointsList({
 
                   {/* Response Protocol */}
                   {responseProtocol && (
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-md p-3 border border-blue-100 dark:border-blue-800">
-                      <h5 className="text-xs font-medium text-blue-700 dark:text-blue-300 dark:text-blue-300 uppercase tracking-wide mb-2">
+                    <div className="bg-blue-500/10 rounded-md p-3 border border-blue-500/20">
+                      <h5 className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">
                         Response Protocol
                       </h5>
                       {responseProtocol.description && (
-                        <p className="text-sm text-blue-900 dark:text-blue-100">{responseProtocol.description}</p>
+                        <p className="text-sm text-foreground">{responseProtocol.description}</p>
                       )}
                       {responseProtocol.escalation && (
-                        <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+                        <p className="mt-1 text-xs text-blue-600 dark:text-blue-400">
                           <span className="font-medium">Escalation:</span>{' '}
                           {responseProtocol.escalation.replace('_', ' ')}
                         </p>
@@ -392,11 +392,11 @@ export function ValidationPointsList({
 
                   {/* Dependent Thesis */}
                   {point.dependentThesisId && (
-                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-md p-3 border border-purple-100 dark:border-purple-800">
-                      <h5 className="text-xs font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide mb-1">
+                    <div className="bg-violet-500/10 rounded-md p-3 border border-violet-500/20">
+                      <h5 className="text-xs font-medium text-violet-600 dark:text-violet-400 uppercase tracking-wide mb-1">
                         Dependent Thesis Trigger
                       </h5>
-                      <p className="text-sm text-purple-900 dark:text-purple-100">
+                      <p className="text-sm text-foreground">
                         Triggers when {point.dependentThesisType} thesis{' '}
                         <span className="font-medium">{point.dependentThesisCondition}</span>
                         {point.dependentThesisConditionDetail && (
