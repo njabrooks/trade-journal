@@ -6,7 +6,7 @@
 import type { HLClearinghouseState, HLSpotBalance, HLDelegatorSummary } from './api';
 import type { CryptoPositionInput } from '../crypto/types';
 import type { CashBalanceInput } from '../crypto/cashBalances';
-import { normalizeHyperliquidCoin } from '../crypto/pairNormalization';
+import { normalizeHyperliquidCoin, getHLSpotCanonicalTicker } from '../crypto/pairNormalization';
 
 /**
  * Normalize HyperLiquid perp positions from clearinghouse state.
@@ -73,7 +73,10 @@ export function normalizeHLSpotPositions(
     // Skip stablecoins (settlement currencies, not positions)
     if (symbol === 'USDC' || symbol === 'USDT' || symbol === 'USD') continue;
 
-    const spot = markPrices.get(symbol) ?? markPrices.get(balance.coin);
+    const canonicalTicker = getHLSpotCanonicalTicker(symbol);
+    const spot = markPrices.get(symbol)
+      ?? markPrices.get(balance.coin)
+      ?? (canonicalTicker !== symbol ? markPrices.get(canonicalTicker) : undefined);
     const entryNtl = parseFloat(balance.entryNtl);
     const avgPrice = total !== 0 ? entryNtl / total : 0;
     const currentValue = spot ? total * spot : null;

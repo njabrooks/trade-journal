@@ -22,6 +22,7 @@ import {
   fetchSpotMeta,
   buildSpotMetaMap,
 } from '../src/lib/ingestion/hyperliquid/api.js';
+import { getHLSpotCanonicalTicker } from '../src/lib/ingestion/crypto/pairNormalization.js';
 
 import { normalizeHLFill, fetchAllFillsFrom } from '../src/lib/ingestion/hyperliquid/fills.js';
 import { normalizeHLPerpPositions, normalizeHLSpotPositions, normalizeHLStakedPosition, extractHLCashBalances } from '../src/lib/ingestion/hyperliquid/positions.js';
@@ -271,10 +272,15 @@ async function main() {
 
       const allPositions = [...perpPositions, ...spotPositions, ...(stakedPosition ? [stakedPosition] : [])];
 
-      // Resolve underlyingId for each position and update spot prices
+      // Resolve underlyingId for each position and update spot prices.
+      // For spot CRYPTO positions, use canonical ticker (e.g. UZEC → ZEC) so
+      // that wrapped HL tokens are grouped under their canonical underlying.
       for (const pos of allPositions) {
+        const underlyingTicker = pos.assetClass === 'CRYPTO'
+          ? getHLSpotCanonicalTicker(pos.symbol)
+          : pos.symbol;
         const underlyingId = await ensureUnderlyingId(
-          pos.symbol,
+          underlyingTicker,
           pos.assetClass,
           'USD',
           null

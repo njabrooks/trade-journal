@@ -26,6 +26,23 @@ const KRAKEN_ASSET_MAP: Record<string, string> = {
 const KRAKEN_QUOTE_SUFFIXES = ['ZUSD', 'ZEUR', 'ZGBP', 'ZCAD', 'ZJPY', 'USD', 'EUR', 'GBP', 'CAD', 'JPY', 'USDT', 'USDC'];
 
 /**
+ * HyperLiquid uses non-standard names for some spot tokens.
+ * Maps HL spot token name → canonical underlying ticker.
+ * e.g. "UZEC" is HL's wrapped Zcash spot token, canonical underlying is "ZEC".
+ */
+export const HYPERLIQUID_SPOT_ALIASES: Record<string, string> = {
+  UZEC: 'ZEC',
+};
+
+/**
+ * Returns the canonical underlying ticker for a HyperLiquid spot coin.
+ * Falls back to the symbol itself if no alias is defined.
+ */
+export function getHLSpotCanonicalTicker(symbol: string): string {
+  return HYPERLIQUID_SPOT_ALIASES[symbol.toUpperCase()] ?? symbol.toUpperCase();
+}
+
+/**
  * Normalize HyperLiquid coin names.
  * Perps: already clean ("BTC", "ETH").
  * Spot: indexed format ("@1", "@2") requires spotMeta lookup.
