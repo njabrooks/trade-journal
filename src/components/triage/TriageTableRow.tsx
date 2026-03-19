@@ -61,7 +61,7 @@ function SeverityTag({ severity }: { severity: string | null }) {
   return (
     <Badge
       variant={variantMap[normalized] ?? "outline"}
-      className={cn("text-[11px] font-medium", classNameMap[normalized] ?? classNameMap.info)}
+      className={cn("text-xs font-medium", classNameMap[normalized] ?? classNameMap.info)}
     >
       {normalized}
     </Badge>

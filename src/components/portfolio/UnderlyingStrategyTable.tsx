@@ -515,24 +515,24 @@ function CashCurrencyRow({
         <>
           <tr className="bg-muted/30">
             <td></td>
-            <td className="py-1.5 pl-10 pr-3 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pl-10 pr-3 text-xs uppercase tracking-wide text-muted-foreground">
               Account
             </td>
-            <td className="py-1.5 pr-3 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-xs uppercase tracking-wide text-muted-foreground">
               Source
             </td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               Balance
             </td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
             </td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               USD Value
             </td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               % Total
             </td>
-            <td className="py-1.5 text-center text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 text-center text-xs uppercase tracking-wide text-muted-foreground">
               {"\u2014"}
             </td>
           </tr>
@@ -632,7 +632,7 @@ function StrategyRow({ strategy, agg, totalMarketValue, isExpanded, onToggle, ac
             </a>
             <span
               className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                "rounded px-1.5 py-0.5 text-xs font-medium",
                 strategy.status === "active"
                   ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                   : strategy.status === "draft"
@@ -671,25 +671,25 @@ function StrategyRow({ strategy, agg, totalMarketValue, isExpanded, onToggle, ac
           {/* Position sub-header */}
           <tr className="bg-muted/30">
             <td></td>
-            <td className="py-1.5 pl-10 pr-3 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pl-10 pr-3 text-xs uppercase tracking-wide text-muted-foreground">
               Symbol
             </td>
-            <td className="py-1.5 pr-3 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-xs uppercase tracking-wide text-muted-foreground">
               Account
             </td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               Qty
             </td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               Spot
             </td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               Mkt Value
             </td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               % Total
             </td>
-            <td className="py-1.5 text-center text-[10px] uppercase tracking-wide text-muted-foreground">
+            <td className="py-1.5 text-center text-xs uppercase tracking-wide text-muted-foreground">
               DTE
             </td>
           </tr>

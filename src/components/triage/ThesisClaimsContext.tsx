@@ -23,7 +23,7 @@ function MappingTypeBadge({ type }: { type: string }) {
   return (
     <Badge
       variant="outline"
-      className={cn("text-[10px]", classMap[type] ?? "bg-muted text-muted-foreground")}
+      className={cn("text-xs", classMap[type] ?? "bg-muted text-muted-foreground")}
     >
       {type}
     </Badge>

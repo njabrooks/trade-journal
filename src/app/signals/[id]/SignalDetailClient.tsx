@@ -179,7 +179,7 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
               {signal.entities.map((entity, i) => {
                 const badge = entityTypeBadge(entity);
                 return (
-                  <span key={i} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium ${badge.cls}`}>
+                  <span key={i} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${badge.cls}`}>
                     {badge.label}
                     {entity.entityTitle && (
                       <span className="font-normal opacity-80">— {entity.entityTitle}</span>

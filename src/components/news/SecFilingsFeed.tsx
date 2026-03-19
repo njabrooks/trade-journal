@@ -49,7 +49,7 @@ export function SecFilingsFeed({ filings }: SecFilingsFeedProps) {
       <div className="divide-y divide-slate-100">
         {filings.map(filing => (
           <div key={filing.id} className="px-4 py-2.5 flex items-center gap-3">
-            <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${TYPE_STYLES[filing.filingType] || 'bg-slate-100 text-slate-600'}`}>
+            <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${TYPE_STYLES[filing.filingType] || 'bg-muted text-muted-foreground'}`}>
               {filing.filingType}
             </span>
             <span className="font-mono text-sm font-semibold text-slate-900">{filing.ticker}</span>
@@ -57,7 +57,7 @@ export function SecFilingsFeed({ filings }: SecFilingsFeedProps) {
               {new Date(filing.filedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
             {filing.isMaterial && (
-              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-red-50 text-red-600 border border-red-200">
+              <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-destructive/10 text-destructive border border-destructive/20">
                 Material
               </span>
             )}

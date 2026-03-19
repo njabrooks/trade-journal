@@ -128,7 +128,7 @@ export function SignalLog({ entries }: SignalLogProps) {
 
                 {/* Source */}
                 <td className="px-3 py-2">
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium ${src.cls}`}>
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
                     {isDailySynthesis && <span className="mr-1">★</span>}
                     {src.label}
                   </span>
@@ -137,7 +137,7 @@ export function SignalLog({ entries }: SignalLogProps) {
                 {/* Assessment or quantitative value */}
                 <td className="px-3 py-2">
                   {assessment ? (
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium ${assessment.cls}`}>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${assessment.cls}`}>
                       {assessment.label}
                     </span>
                   ) : hasQuantitative ? (

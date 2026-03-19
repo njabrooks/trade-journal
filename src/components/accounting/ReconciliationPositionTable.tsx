@@ -383,7 +383,7 @@ function ResolutionBadge({ position }: { position: PositionReconciliation }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${badge.classes}`}>
+        <span className={`rounded-full px-1.5 py-0.5 text-xs font-medium ${badge.classes}`}>
           {badge.label}
         </span>
       </TooltipTrigger>

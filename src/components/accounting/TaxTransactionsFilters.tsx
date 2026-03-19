@@ -95,7 +95,7 @@ export function TaxTransactionsFilters({
           <Filter className="h-3.5 w-3.5" />
           Filters
           {hasActiveFilters && (
-            <span className="ml-1 rounded-full bg-foreground px-1.5 py-0.5 text-[10px] text-background">
+            <span className="ml-1 rounded-full bg-foreground px-1.5 py-0.5 text-xs text-background">
               {[eventType !== "all", matchType !== "all", assetTicker !== ""].filter(Boolean).length}
             </span>
           )}

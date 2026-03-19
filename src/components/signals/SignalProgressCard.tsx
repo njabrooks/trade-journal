@@ -134,17 +134,17 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
       {/* Header: data source badges */}
       <div className="flex items-center gap-1.5 flex-wrap">
         {latestQuant && (
-          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
+          <span className="inline-flex px-1.5 py-0.5 text-xs font-medium rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
             {SOURCE_LABELS[latestQuant.dataSource] || latestQuant.dataSource}
           </span>
         )}
         {latestQual && (
-          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/15 text-purple-600 dark:text-purple-400">
+          <span className="inline-flex px-1.5 py-0.5 text-xs font-medium rounded bg-purple-500/15 text-purple-600 dark:text-purple-400">
             Thesis Monitor
           </span>
         )}
         {!hasData && (
-          <span className="text-[10px] text-muted-foreground">No tracking data yet</span>
+          <span className="text-xs text-muted-foreground">No tracking data yet</span>
         )}
       </div>
 
@@ -224,7 +224,7 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
       {/* Supporting claims badge */}
       {evidenceCount != null && evidenceCount > 0 && (
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex px-1.5 py-0.5 text-[10px] font-medium rounded bg-violet-500/15 text-violet-600 dark:text-violet-400">
+          <span className="inline-flex px-1.5 py-0.5 text-xs font-medium rounded bg-violet-500/15 text-violet-600 dark:text-violet-400">
             {evidenceCount} supporting {evidenceCount === 1 ? 'claim' : 'claims'}
           </span>
         </div>
@@ -232,7 +232,7 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
 
       {/* Timestamp */}
       {hasData && (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Updated {new Date((latestQuant || latestQual)!.snapshotDate).toLocaleDateString('en-GB', {
             day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
           })}

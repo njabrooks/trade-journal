@@ -124,7 +124,7 @@ export function StrategySignalsSection({
                         {signal.status}
                       </span>
                       {denom && (
-                        <span className="text-[10px] text-muted-foreground font-mono">
+                        <span className="text-xs text-muted-foreground font-mono">
                           {denom}
                         </span>
                       )}

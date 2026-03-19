@@ -60,7 +60,7 @@ export function IntelligenceItemRow({ item, compact = false }: IntelligenceItemR
           {item.relevantTickers && item.relevantTickers.length > 0 && (
             <div className="flex gap-1 flex-wrap">
               {item.relevantTickers.map(ticker => (
-                <span key={ticker} className="px-1.5 py-0.5 text-[10px] font-mono bg-muted text-muted-foreground rounded">
+                <span key={ticker} className="px-1.5 py-0.5 text-xs font-mono bg-muted text-muted-foreground rounded">
                   {ticker}
                 </span>
               ))}

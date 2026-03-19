@@ -116,12 +116,12 @@ export function AssessmentTimeline({ assessments }: AssessmentTimelineProps) {
 
       {/* Date range + trend */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {formatDateShort(timeline[0].date)}
           {timeline.length > 1 && ` → ${formatDateShort(timeline[timeline.length - 1].date)}`}
         </span>
         {trendLabel && (
-          <span className={`text-[10px] font-medium ${
+          <span className={`text-xs font-medium ${
             last > first ? 'text-green-600 dark:text-green-400' :
             last < first ? 'text-amber-600 dark:text-amber-400' :
             'text-muted-foreground'
@@ -140,7 +140,7 @@ export function AssessmentTimeline({ assessments }: AssessmentTimelineProps) {
             <div className="flex items-center gap-1.5">
               <div className={`w-2 h-2 rounded-full ${level.color}`} />
               <span className="text-xs font-medium">{level.label}</span>
-              <span className="text-[10px] text-muted-foreground ml-auto">
+              <span className="text-xs text-muted-foreground ml-auto">
                 {formatDateShort(latest.date)}
               </span>
             </div>

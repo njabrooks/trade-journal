@@ -146,7 +146,7 @@ export function HierarchyBreadcrumb({
               >
                 {/* Level Label */}
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] uppercase tracking-wide font-medium text-muted-foreground">
+                  <span className="text-xs uppercase tracking-wide font-medium text-muted-foreground">
                     {level.label}
                   </span>
 

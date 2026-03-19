@@ -107,7 +107,7 @@ function EntityTypeBadges({ entities }: { entities: SignalEntityInfo[] }) {
   return (
     <div className="flex flex-wrap gap-1">
       {unique.map((entity, i) => (
-        <Badge key={i} className={`text-[10px] font-normal px-1.5 py-0 ${entityTypeBadgeColor(entity)}`}>
+        <Badge key={i} className={`text-xs font-normal px-1.5 py-0 ${entityTypeBadgeColor(entity)}`}>
           {entityTypeBadgeLabel(entity)}
         </Badge>
       ))}
@@ -520,7 +520,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                   <>
                     <tr className="bg-muted/60 border-b">
                       <td colSpan={6} className="px-3 py-1.5">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                           Macro Theses
                         </span>
                       </td>
@@ -552,17 +552,17 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                                 </span>
                                 <div className="flex items-center gap-1 ml-1">
                                   {confirmCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                    <span className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                                       <CheckCircle2 className="h-2.5 w-2.5" />{confirmCount}
                                     </span>
                                   )}
                                   {invalidCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400">
+                                    <span className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400">
                                       <AlertTriangle className="h-2.5 w-2.5" />{invalidCount}
                                     </span>
                                   )}
                                   {completionCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                                    <span className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
                                       <Target className="h-2.5 w-2.5" />{completionCount}
                                     </span>
                                   )}
@@ -583,7 +583,7 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                     {grouped.macroGroups.length > 0 && (
                       <tr className="bg-muted/60 border-b">
                         <td colSpan={6} className="px-3 py-1.5">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             By Underlying
                           </span>
                         </td>
@@ -614,17 +614,17 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                                 </span>
                                 <div className="flex items-center gap-1 ml-1">
                                   {confirmCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                                    <span className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                                       <CheckCircle2 className="h-2.5 w-2.5" />{confirmCount}
                                     </span>
                                   )}
                                   {invalidCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400">
+                                    <span className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-600 dark:text-orange-400">
                                       <AlertTriangle className="h-2.5 w-2.5" />{invalidCount}
                                     </span>
                                   )}
                                   {completionCount > 0 && (
-                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
+                                    <span className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400">
                                       <Target className="h-2.5 w-2.5" />{completionCount}
                                     </span>
                                   )}

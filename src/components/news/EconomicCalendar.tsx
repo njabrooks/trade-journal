@@ -80,7 +80,7 @@ export function EconomicCalendar({ events }: EconomicCalendarProps) {
               {grouped[date].map(event => (
                 <div key={event.id} className="flex items-center gap-2 text-sm">
                   {event.impact && (
-                    <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${IMPACT_STYLES[event.impact] || 'bg-muted text-muted-foreground'}`}>
+                    <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${IMPACT_STYLES[event.impact] || 'bg-muted text-muted-foreground'}`}>
                       {event.impact.toUpperCase()}
                     </span>
                   )}

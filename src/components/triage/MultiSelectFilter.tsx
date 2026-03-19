@@ -95,7 +95,7 @@ export function MultiSelectFilter({
         <span className="uppercase tracking-wide text-muted-foreground">{label}:</span>
         <span>{displayText}</span>
         {selected.length > 0 && (
-          <span className="ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
+          <span className="ml-1 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">
             {selected.length}
           </span>
         )}
@@ -166,7 +166,7 @@ export function MultiSelectFilter({
                   </div>
                   <span className="flex-1 text-xs">{option}</span>
                   {count > 0 && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                       {count}
                     </span>
                   )}

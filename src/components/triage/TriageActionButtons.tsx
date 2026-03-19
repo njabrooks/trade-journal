@@ -1664,7 +1664,7 @@ export function TriageActionButtons({
 
                   <div className="grid grid-cols-6 gap-2 items-end">
                     <div>
-                      <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">
+                      <label className="block text-xs font-medium text-muted-foreground mb-0.5">
                         Asset Class
                       </label>
                       <select
@@ -1679,7 +1679,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">
+                      <label className="block text-xs font-medium text-muted-foreground mb-0.5">
                         Quantity *
                       </label>
                       <input
@@ -1692,7 +1692,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className="block text-[10px] font-medium text-muted-foreground mb-0.5">
+                      <label className="block text-xs font-medium text-muted-foreground mb-0.5">
                         Underlying *
                       </label>
                       <input
@@ -1705,7 +1705,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
+                      <label className={`block text-xs font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
                         Expiry
                       </label>
                       <input
@@ -1718,7 +1718,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
+                      <label className={`block text-xs font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
                         Strike
                       </label>
                       <input
@@ -1732,7 +1732,7 @@ export function TriageActionButtons({
                     </div>
 
                     <div>
-                      <label className={`block text-[10px] font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
+                      <label className={`block text-xs font-medium mb-0.5 ${isOption ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
                         P/C
                       </label>
                       <select

@@ -84,7 +84,7 @@ export function EarningsCalendar({ events }: EarningsCalendarProps) {
                     {new Date(event.reportDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
                   {event.reportTime && (
-                    <span className="text-[10px] px-1 py-0.5 rounded bg-slate-200 text-slate-600 uppercase">
+                    <span className="text-xs px-1 py-0.5 rounded bg-muted text-muted-foreground uppercase">
                       {event.reportTime}
                     </span>
                   )}

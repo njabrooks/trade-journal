@@ -202,7 +202,7 @@ function StrategyGroup({ strategy, agg, totalMarketValue, isExpanded, onToggle }
               {strategy.label}
             </a>
             <span className={cn(
-              "rounded px-1.5 py-0.5 text-[10px] font-medium",
+              "rounded px-1.5 py-0.5 text-xs font-medium",
               strategy.status === "active" ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" :
               strategy.status === "draft" ? "bg-muted text-muted-foreground" :
               strategy.status === "complete" ? "bg-muted text-muted-foreground" :
@@ -235,12 +235,12 @@ function StrategyGroup({ strategy, agg, totalMarketValue, isExpanded, onToggle }
           {/* Position sub-header */}
           <tr className="bg-muted/30">
             <td></td>
-            <td className="py-1.5 pl-8 pr-3 text-[10px] uppercase tracking-wide text-muted-foreground">Symbol</td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground" colSpan={1}>Qty</td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">Mark Price</td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">Mkt Value</td>
-            <td className="py-1.5 pr-3 text-right text-[10px] uppercase tracking-wide text-muted-foreground">% Total</td>
-            <td className="py-1.5 text-center text-[10px] uppercase tracking-wide text-muted-foreground">DTE</td>
+            <td className="py-1.5 pl-8 pr-3 text-xs uppercase tracking-wide text-muted-foreground">Symbol</td>
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground" colSpan={1}>Qty</td>
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">Mark Price</td>
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">Mkt Value</td>
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">% Total</td>
+            <td className="py-1.5 text-center text-xs uppercase tracking-wide text-muted-foreground">DTE</td>
           </tr>
           {strategy.positions.map((pos) => (
             <PositionRowNested key={pos.id} position={pos} totalMarketValue={totalMarketValue} />

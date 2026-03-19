@@ -83,7 +83,7 @@ function SeverityTag({ severity }: { severity: string }) {
   return (
     <Badge
       variant="outline"
-      className={cn('text-[11px] font-medium', classNameMap[severity] ?? classNameMap.info)}
+      className={cn('text-xs font-medium', classNameMap[severity] ?? classNameMap.info)}
     >
       {severity}
     </Badge>
