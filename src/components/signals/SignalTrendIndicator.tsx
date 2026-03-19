@@ -8,19 +8,20 @@ interface SignalTrendIndicatorProps {
   assessment?: string | null;
 }
 
-const ASSESSMENT_SHORT: Record<string, { label: string; color: string }> = {
-  no_evidence: { label: 'None', color: 'text-muted-foreground' },
-  emerging: { label: 'Emerging', color: 'text-yellow-600 dark:text-yellow-400' },
-  partial: { label: 'Partial', color: 'text-amber-600 dark:text-amber-400' },
-  strong: { label: 'Strong', color: 'text-green-600 dark:text-green-400' },
-  confirmed: { label: 'Confirmed', color: 'text-emerald-600 dark:text-emerald-400' },
+const ASSESSMENT_SHORT: Record<string, { label: string; color: string; invalidationColor?: string }> = {
+  neutral:       { label: 'Neutral',       color: 'text-muted-foreground' },
+  strengthening: { label: 'Strengthening', color: 'text-blue-600 dark:text-blue-400', invalidationColor: 'text-amber-600 dark:text-amber-400' },
+  weakening:     { label: 'Weakening',     color: 'text-amber-600 dark:text-amber-400', invalidationColor: 'text-emerald-600 dark:text-emerald-400' },
+  confirmed:     { label: 'Confirmed',     color: 'text-emerald-600 dark:text-emerald-400' },
+  invalidated:   { label: 'Invalidated',   color: 'text-red-600 dark:text-red-400' },
 };
 
 export function SignalTrendIndicator({ pctToThreshold, signalType, assessment }: SignalTrendIndicatorProps) {
+  const isInvalidation = signalType === 'invalidation' || signalType === 'warning';
+
   // Quantitative: show % to threshold
   if (pctToThreshold !== null) {
     const pct = pctToThreshold;
-    const isInvalidation = signalType === 'invalidation';
 
     // For warning/invalidation signals, approaching threshold is bad
     let color = 'text-muted-foreground';
@@ -41,8 +42,9 @@ export function SignalTrendIndicator({ pctToThreshold, signalType, assessment }:
   if (assessment) {
     const info = ASSESSMENT_SHORT[assessment];
     if (info) {
+      const color = (isInvalidation && info.invalidationColor) ? info.invalidationColor : info.color;
       return (
-        <span className={`text-xs font-medium ${info.color}`}>
+        <span className={`text-xs font-medium ${color}`}>
           {info.label}
         </span>
       );

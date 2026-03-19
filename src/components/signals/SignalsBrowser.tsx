@@ -38,8 +38,9 @@ interface SignalsBrowserProps {
 function typeLabel(type: string) {
   switch (type) {
     case 'confirmation': return 'Confirmation';
-    case 'invalidation': return 'Invalidation';
-    case 'completion': return 'Completion';
+    case 'invalidation':
+    case 'warning':      return 'Invalidation';
+    case 'completion':   return 'Completion';
     default: return type;
   }
 }
@@ -47,8 +48,9 @@ function typeLabel(type: string) {
 function typeBadgeColor(type: string) {
   switch (type) {
     case 'confirmation': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300';
-    case 'invalidation': return 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300';
-    case 'completion': return 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300';
+    case 'invalidation':
+    case 'warning':      return 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300';
+    case 'completion':   return 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300';
     default: return 'bg-slate-100 text-foreground';
   }
 }
@@ -56,8 +58,9 @@ function typeBadgeColor(type: string) {
 function typeIcon(type: string) {
   switch (type) {
     case 'confirmation': return <CheckCircle2 className="h-3 w-3" />;
-    case 'invalidation': return <AlertTriangle className="h-3 w-3" />;
-    case 'completion': return <Target className="h-3 w-3" />;
+    case 'invalidation':
+    case 'warning':      return <AlertTriangle className="h-3 w-3" />;
+    case 'completion':   return <Target className="h-3 w-3" />;
     default: return null;
   }
 }
@@ -91,40 +94,23 @@ function entitySortOrder(e: SignalEntityInfo): number {
   return 2;
 }
 
-// Render a compact entity list for a signal
-function EntitiesList({ entities, compact }: { entities: SignalEntityInfo[]; compact?: boolean }) {
-  if (entities.length === 0) {
-    return <span className="text-sm text-muted-foreground">No linked entities</span>;
+// Show distinct entity-type badges only (no entity names/links)
+function EntityTypeBadges({ entities }: { entities: SignalEntityInfo[] }) {
+  if (entities.length === 0) return null;
+  // Deduplicate by label
+  const seen = new Set<string>();
+  const unique: SignalEntityInfo[] = [];
+  for (const e of entities) {
+    const label = entityTypeBadgeLabel(e);
+    if (!seen.has(label)) { seen.add(label); unique.push(e); }
   }
-
-  // Sort: strategies first
-  const sorted = [...entities].sort((a, b) => entitySortOrder(a) - entitySortOrder(b));
-  const show = compact ? sorted.slice(0, 1) : sorted;
-  const remaining = compact ? sorted.length - 1 : 0;
-
   return (
-    <div className={`flex items-center gap-1.5 ${compact ? '' : 'flex-wrap'}`}>
-      {show.map((entity, i) => (
-        <div key={i} className="flex items-center gap-1.5">
-          <Badge className={`text-[10px] font-normal px-1.5 py-0 ${entityTypeBadgeColor(entity)}`}>
-            {entityTypeBadgeLabel(entity)}
-          </Badge>
-          {entity.entityLink ? (
-            <Link
-              href={entity.entityLink}
-              onClick={e => e.stopPropagation()}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline truncate max-w-[140px]"
-            >
-              {entity.entityTitle || 'Unknown'}
-            </Link>
-          ) : (
-            <span className="text-sm truncate max-w-[140px]">{entity.entityTitle || 'Unknown'}</span>
-          )}
-        </div>
+    <div className="flex flex-wrap gap-1">
+      {unique.map((entity, i) => (
+        <Badge key={i} className={`text-[10px] font-normal px-1.5 py-0 ${entityTypeBadgeColor(entity)}`}>
+          {entityTypeBadgeLabel(entity)}
+        </Badge>
       ))}
-      {remaining > 0 && (
-        <span className="text-[10px] text-muted-foreground whitespace-nowrap">+{remaining} more</span>
-      )}
     </div>
   );
 }
@@ -314,6 +300,10 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
     const isExpanded = expandedId === signal.id;
     const pct = signal.latestPctToThreshold ? parseFloat(signal.latestPctToThreshold) : null;
 
+    // Build link to signal detail page via first linked thesis
+    const thesisEntity = signal.entities.find(e => e.entityType === 'thesis');
+    const signalUrl = thesisEntity?.entityLink ? `${thesisEntity.entityLink}/signals/${signal.id}` : null;
+
     return (
       <Fragment key={signal.id}>
         <tr
@@ -333,10 +323,20 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
             </Badge>
           </td>
           <td className="px-3 py-3">
-            <p className="text-sm line-clamp-2">{signal.statement}</p>
+            {signalUrl ? (
+              <Link
+                href={signalUrl}
+                onClick={e => e.stopPropagation()}
+                className="text-sm line-clamp-2 hover:underline text-foreground"
+              >
+                {signal.statement}
+              </Link>
+            ) : (
+              <p className="text-sm line-clamp-2">{signal.statement}</p>
+            )}
           </td>
           <td className="px-3 py-3">
-            <EntitiesList entities={signal.entities} compact />
+            <EntityTypeBadges entities={signal.entities} />
           </td>
           <td className="px-3 py-3">
             <Badge className={`text-xs font-normal ${statusBadgeColor(signal.status)}`}>
@@ -370,15 +370,6 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                   } as any}
                   evidenceCount={signal.evidenceCount}
                 />
-                {/* Linked entities with position % */}
-                {signal.entities.length > 0 && (
-                  <div className="border border-border rounded-lg p-3">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">
-                      Linked to {signal.entities.length} {signal.entities.length === 1 ? 'entity' : 'entities'}
-                    </p>
-                    <EntitiesList entities={signal.entities} />
-                  </div>
-                )}
               </div>
             </td>
           </tr>
@@ -542,6 +533,9 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                     {grouped.macroGroups.map(group => {
                       const groupKey = `macro-${group.thesisId}`;
                       const isCollapsed = collapsedGroups.has(groupKey);
+                      const confirmCount = group.signals.filter(s => s.type === 'confirmation').length;
+                      const invalidCount = group.signals.filter(s => s.type === 'invalidation' || s.type === 'warning').length;
+                      const completionCount = group.signals.filter(s => s.type === 'completion').length;
                       return (
                         <Fragment key={groupKey}>
                           <tr
@@ -561,6 +555,23 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                                 <span className="text-xs text-muted-foreground">
                                   {group.signals.length} signal{group.signals.length !== 1 ? 's' : ''}
                                 </span>
+                                <div className="flex items-center gap-1 ml-1">
+                                  {confirmCount > 0 && (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                                      <CheckCircle2 className="h-2.5 w-2.5" />{confirmCount}
+                                    </span>
+                                  )}
+                                  {invalidCount > 0 && (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+                                      <AlertTriangle className="h-2.5 w-2.5" />{invalidCount}
+                                    </span>
+                                  )}
+                                  {completionCount > 0 && (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                                      <Target className="h-2.5 w-2.5" />{completionCount}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </td>
                           </tr>
@@ -585,6 +596,9 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                     )}
                     {grouped.underlyingGroups.map(([ticker, groupSignals]) => {
                       const isCollapsed = collapsedGroups.has(ticker);
+                      const confirmCount = groupSignals.filter(s => s.type === 'confirmation').length;
+                      const invalidCount = groupSignals.filter(s => s.type === 'invalidation' || s.type === 'warning').length;
+                      const completionCount = groupSignals.filter(s => s.type === 'completion').length;
                       return (
                         <Fragment key={`group-${ticker}`}>
                           <tr
@@ -603,6 +617,23 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                                 <span className="text-xs text-muted-foreground">
                                   {groupSignals.length} signal{groupSignals.length !== 1 ? 's' : ''}
                                 </span>
+                                <div className="flex items-center gap-1 ml-1">
+                                  {confirmCount > 0 && (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                                      <CheckCircle2 className="h-2.5 w-2.5" />{confirmCount}
+                                    </span>
+                                  )}
+                                  {invalidCount > 0 && (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+                                      <AlertTriangle className="h-2.5 w-2.5" />{invalidCount}
+                                    </span>
+                                  )}
+                                  {completionCount > 0 && (
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                                      <Target className="h-2.5 w-2.5" />{completionCount}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </td>
                           </tr>

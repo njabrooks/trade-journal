@@ -3,11 +3,10 @@
 import {
   ComposedChart,
   Bar,
-  Line,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   ReferenceLine,
   ResponsiveContainer,
   Cell,
@@ -33,9 +32,9 @@ function formatDateShort(date: string): string {
 }
 
 function getDeltaColor(delta: number): string {
-  if (delta > 0) return '#10b981';
-  if (delta < 0) return '#ef4444';
-  return '#6b7280';
+  if (delta > 0) return '#10b981'; // emerald-500
+  if (delta < 0) return '#ef4444'; // red-500
+  return '#94a3b8';               // slate-400
 }
 
 function CustomTooltip({
@@ -49,7 +48,7 @@ function CustomTooltip({
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-md border bg-popover px-3 py-2 text-xs shadow-md">
+    <div className="rounded-md border bg-popover px-3 py-2 text-xs shadow-md space-y-0.5">
       <p className="font-medium text-foreground">
         {new Date(d.date).toLocaleDateString('en-GB', {
           day: 'numeric',
@@ -58,21 +57,18 @@ function CustomTooltip({
         })}
       </p>
       <p className="text-muted-foreground capitalize">
-        Assessment: {d.assessment}
-      </p>
-      <p className="text-muted-foreground">
-        Delta: {d.delta > 0 ? '+' : ''}
-        {d.delta}
+        {d.assessment}
+        {d.delta > 0 ? ' (+1)' : d.delta < 0 ? ' (−1)' : ' (0)'}
       </p>
       <p className="text-muted-foreground">
         Cumulative: {d.cumulativeScore > 0 ? '+' : ''}
         {d.cumulativeScore}
       </p>
-      <p className="text-muted-foreground">
-        Observations: {d.observationCount}
-      </p>
+      {d.observationCount > 1 && (
+        <p className="text-muted-foreground">{d.observationCount} observations</p>
+      )}
       {d.evidenceSummary && (
-        <p className="mt-1 max-w-[260px] text-muted-foreground whitespace-pre-wrap">
+        <p className="mt-1 max-w-[260px] text-muted-foreground leading-relaxed">
           {d.evidenceSummary}
         </p>
       )}
@@ -86,45 +82,50 @@ export function SignalCumulativeScoreChart({
   if (scores.length < 2) {
     return (
       <div className="text-sm text-muted-foreground text-center py-8">
-        Not enough data yet — conviction trend appears after 2+ days of
-        synthesis.
+        Not enough data yet — conviction trend appears after 2+ days of synthesis.
       </div>
     );
   }
 
+  const gradientId = 'cumulativeGradient';
+
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <ComposedChart data={scores}>
+    <ResponsiveContainer width="100%" height={200}>
+      <ComposedChart data={scores} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+          </linearGradient>
+        </defs>
         <XAxis
           dataKey="date"
           tickFormatter={formatDateShort}
-          tick={{ fontSize: 11 }}
-          stroke="hsl(var(--muted-foreground))"
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          axisLine={false}
+          tickLine={false}
         />
         <YAxis
-          tick={{ fontSize: 11 }}
-          stroke="hsl(var(--muted-foreground))"
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          axisLine={false}
+          tickLine={false}
+          allowDecimals={false}
         />
-        <Tooltip content={<CustomTooltip />} />
-        <Legend
-          wrapperStyle={{ fontSize: 11 }}
-          formatter={(value: string) => (
-            <span className="text-muted-foreground">{value}</span>
-          )}
-        />
-        <ReferenceLine y={0} stroke="#374151" strokeDasharray="3 3" />
-        <Bar dataKey="delta" name="Daily delta" barSize={16}>
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted)/0.5)' }} />
+        <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+        <Bar dataKey="delta" barSize={14} radius={[2, 2, 0, 0]}>
           {scores.map((entry, idx) => (
             <Cell key={idx} fill={getDeltaColor(entry.delta)} />
           ))}
         </Bar>
-        <Line
+        <Area
           dataKey="cumulativeScore"
-          name="Cumulative score"
           stroke="#6366f1"
           strokeWidth={2}
+          fill={`url(#${gradientId})`}
           dot={false}
           type="monotone"
+          activeDot={{ r: 3, fill: '#6366f1' }}
         />
       </ComposedChart>
     </ResponsiveContainer>
