@@ -30,8 +30,6 @@ interface ValidationPointsListProps {
 
 export function ValidationPointsList({
   validationPoints,
-  thesisId,
-  thesisType,
   onUpdateStatus,
   onViewHistory,
   onConvertToExplicit,
@@ -277,7 +275,7 @@ export function ValidationPointsList({
                     </button>
                   )}
                   <Link
-                    href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${point.id}`}
+                    href={`/signals/${point.id}`}
                     className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded"
                   >
                     <ExternalLink className="w-3 h-3" />

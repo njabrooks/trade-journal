@@ -747,7 +747,7 @@ export function UnifiedSignalsTable({
                           <div className="space-y-1">
                             {mode === 'browse' ? (
                               <Link
-                                href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${signal.id}`}
+                                href={`/signals/${signal.id}`}
                                 className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors block line-clamp-2"
                               >
                                 {signal.statement}
@@ -1026,7 +1026,7 @@ export function UnifiedSignalsTable({
                                           </Button>
                                         )}
                                         <Link
-                                          href={`/${thesisType === 'macro' ? 'macro-theses' : 'asset-theses'}/${thesisId}/signals/${signal.id}`}
+                                          href={`/signals/${signal.id}`}
                                         >
                                           <Button variant="outline" size="sm" className="gap-1">
                                             <History className="w-3 h-3" />

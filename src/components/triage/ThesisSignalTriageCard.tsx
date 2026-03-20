@@ -280,7 +280,7 @@ export function ThesisSignalTriageCard({
                         )}
                       </div>
                       <Link
-                        href={`${thesisUrl}/signals/${signal.id}`}
+                        href={`/signals/${signal.id}`}
                         className="text-foreground hover:text-blue-600 transition-colors shrink-0"
                       >
                         <ExternalLink className="h-4 w-4" />

@@ -590,7 +590,7 @@ function ThesisDetail({
                     </div>
                     {vp.pointId && (
                       <Link
-                        href={`/${isMacro ? 'macro-theses' : 'asset-theses'}/${record.objectId}/signals/${vp.pointId}`}
+                        href={`/signals/${vp.pointId}`}
                         className="text-foreground hover:text-blue-600 transition-colors shrink-0"
                       >
                         <ExternalLink className="h-4 w-4" />
