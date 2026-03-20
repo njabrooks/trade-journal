@@ -2872,3 +2872,94 @@ export const secFilings = pgTable(
 
 export type SecFiling = typeof secFilings.$inferSelect;
 export type NewSecFiling = typeof secFilings.$inferInsert;
+
+// ============================================================================
+// Analyst Actions (upgrade/downgrade rating changes from Finnhub)
+// ============================================================================
+
+export const analystActions = pgTable(
+  'analyst_actions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    underlyingId: uuid('underlying_id').references(() => underlyings.id, { onDelete: 'set null' }),
+    ticker: text('ticker').notNull(),
+    action: text('action').notNull(),          // 'up' | 'down' | 'main' | 'init' | 'reit'
+    analystFirm: text('analyst_firm').notNull(),
+    fromGrade: text('from_grade'),
+    toGrade: text('to_grade'),
+    actionDate: date('action_date').notNull(),
+    source: text('source').notNull().default('finnhub'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    tickerIdx: index('idx_analyst_actions_ticker').on(table.ticker),
+    dateIdx: index('idx_analyst_actions_date').on(table.actionDate),
+    underlyingIdx: index('idx_analyst_actions_underlying').on(table.underlyingId),
+    uniqueAction: unique().on(table.ticker, table.analystFirm, table.actionDate, table.source),
+  })
+);
+
+export type AnalystAction = typeof analystActions.$inferSelect;
+export type NewAnalystAction = typeof analystActions.$inferInsert;
+
+// ============================================================================
+// Analyst Price Targets (consensus price target snapshots from Finnhub)
+// ============================================================================
+
+export const analystPriceTargets = pgTable(
+  'analyst_price_targets',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    underlyingId: uuid('underlying_id').references(() => underlyings.id, { onDelete: 'set null' }),
+    ticker: text('ticker').notNull(),
+    targetHigh: numeric('target_high'),
+    targetLow: numeric('target_low'),
+    targetMean: numeric('target_mean'),
+    targetMedian: numeric('target_median'),
+    numberAnalysts: integer('number_analysts'),
+    snapshotDate: date('snapshot_date').notNull(),
+    source: text('source').notNull().default('finnhub'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    tickerIdx: index('idx_analyst_price_targets_ticker').on(table.ticker),
+    dateIdx: index('idx_analyst_price_targets_date').on(table.snapshotDate),
+    underlyingIdx: index('idx_analyst_price_targets_underlying').on(table.underlyingId),
+    uniqueTarget: unique().on(table.ticker, table.snapshotDate, table.source),
+  })
+);
+
+export type AnalystPriceTarget = typeof analystPriceTargets.$inferSelect;
+export type NewAnalystPriceTarget = typeof analystPriceTargets.$inferInsert;
+
+// ============================================================================
+// Insider Transactions (insider buying/selling from Finnhub)
+// ============================================================================
+
+export const insiderTransactions = pgTable(
+  'insider_transactions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    underlyingId: uuid('underlying_id').references(() => underlyings.id, { onDelete: 'set null' }),
+    ticker: text('ticker').notNull(),
+    insiderName: text('insider_name').notNull(),
+    shares: numeric('shares'),
+    change: numeric('change'),
+    transactionDate: date('transaction_date').notNull(),
+    filingDate: date('filing_date'),
+    transactionCode: text('transaction_code'),   // 'P' (purchase), 'S' (sale), etc.
+    transactionPrice: numeric('transaction_price'),
+    source: text('source').notNull().default('finnhub'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    tickerIdx: index('idx_insider_transactions_ticker').on(table.ticker),
+    dateIdx: index('idx_insider_transactions_date').on(table.transactionDate),
+    underlyingIdx: index('idx_insider_transactions_underlying').on(table.underlyingId),
+    uniqueTransaction: unique().on(table.ticker, table.insiderName, table.transactionDate, table.change, table.source),
+  })
+);
+
+export type InsiderTransaction = typeof insiderTransactions.$inferSelect;
+export type NewInsiderTransaction = typeof insiderTransactions.$inferInsert;

@@ -24,6 +24,8 @@ const SOURCE_BUTTONS: { label: string; value: FeedItemSource | 'all' }[] = [
   { label: 'SEC', value: 'sec_filing' },
   { label: 'Economic', value: 'economic_event' },
   { label: 'Earnings', value: 'earnings_event' },
+  { label: 'Analyst', value: 'analyst_action' },
+  { label: 'Insider', value: 'insider_transaction' },
   { label: 'Evidence', value: 'claim_evidence' },
   { label: 'Quant', value: 'quant_snapshot' },
 ];

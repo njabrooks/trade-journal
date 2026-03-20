@@ -14,6 +14,8 @@ import {
   ExternalLink,
   ArrowUp,
   ArrowDown,
+  Briefcase,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FeedItem, FeedItemSource } from '@/db/queries/unifiedFeed';
@@ -32,6 +34,8 @@ const SOURCE_CONFIG: Record<FeedItemSource, {
   sec_filing: { icon: FileText, label: 'SEC Filing', colour: 'text-indigo-500' },
   economic_event: { icon: Calendar, label: 'Economic', colour: 'text-amber-500' },
   earnings_event: { icon: BarChart3, label: 'Earnings', colour: 'text-green-500' },
+  analyst_action: { icon: Briefcase, label: 'Analyst', colour: 'text-rose-500' },
+  insider_transaction: { icon: UserCheck, label: 'Insider', colour: 'text-emerald-500' },
   claim_evidence: { icon: Scale, label: 'Evidence', colour: 'text-orange-500' },
   quant_snapshot: { icon: TrendingUp, label: 'Quant', colour: 'text-cyan-500' },
 };

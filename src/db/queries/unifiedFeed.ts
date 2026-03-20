@@ -5,6 +5,8 @@ import {
   secFilings,
   economicEvents,
   earningsEvents,
+  analystActions,
+  insiderTransactions,
   signalDataSnapshots,
   claimSignalEvidences,
   mainClaims,
@@ -27,6 +29,8 @@ export type FeedItemSource =
   | 'sec_filing'
   | 'economic_event'
   | 'earnings_event'
+  | 'analyst_action'
+  | 'insider_transaction'
   | 'claim_evidence'
   | 'quant_snapshot';
 
@@ -166,7 +170,8 @@ export async function getUnifiedFeed(options: UnifiedFeedOptions = {}): Promise<
 
   const allSources: FeedItemSource[] = [
     'world_monitor', 'thesis_monitor', 'sec_filing',
-    'economic_event', 'earnings_event', 'claim_evidence', 'quant_snapshot',
+    'economic_event', 'earnings_event', 'analyst_action', 'insider_transaction',
+    'claim_evidence', 'quant_snapshot',
   ];
   const activeSources = sources && sources.length > 0 ? sources : allSources;
 
@@ -195,6 +200,12 @@ export async function getUnifiedFeed(options: UnifiedFeedOptions = {}): Promise<
   }
   if (activeSources.includes('earnings_event')) {
     sourceQueries.push({ source: 'earnings_event', promise: safe('earnings_event', () => fetchPastEarningsEvents(cutoffDate, perSourceLimit, ticker)) });
+  }
+  if (activeSources.includes('analyst_action')) {
+    sourceQueries.push({ source: 'analyst_action', promise: safe('analyst_action', () => fetchAnalystActions(cutoffDate, perSourceLimit, ticker)) });
+  }
+  if (activeSources.includes('insider_transaction')) {
+    sourceQueries.push({ source: 'insider_transaction', promise: safe('insider_transaction', () => fetchInsiderTransactions(cutoffDate, perSourceLimit, ticker)) });
   }
   if (activeSources.includes('claim_evidence')) {
     sourceQueries.push({ source: 'claim_evidence', promise: safe('claim_evidence', () => fetchClaimEvidence(cutoffDate, perSourceLimit, ticker)) });
@@ -535,6 +546,83 @@ async function fetchQuantSnapshots(cutoff: Date, limit: number, ticker?: string)
   }
 
   return items;
+}
+
+async function fetchAnalystActions(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+  const conditions = [gte(analystActions.actionDate, cutoffStr)];
+  if (ticker) {
+    conditions.push(eq(sql`UPPER(${analystActions.ticker})`, sql`UPPER(${ticker})`));
+  }
+
+  const rows = await db
+    .select()
+    .from(analystActions)
+    .where(and(...conditions))
+    .orderBy(desc(analystActions.actionDate))
+    .limit(limit);
+
+  return rows.map((r) => {
+    const actionLabel =
+      r.action === 'up' ? 'Upgrade' :
+      r.action === 'down' ? 'Downgrade' :
+      r.action === 'init' ? 'Initiated' :
+      r.action === 'reit' ? 'Reiterated' :
+      r.action === 'main' ? 'Maintained' : r.action;
+    const gradeInfo = r.fromGrade && r.toGrade ? ` ${r.fromGrade} → ${r.toGrade}` : r.toGrade ? ` → ${r.toGrade}` : '';
+
+    return {
+      id: r.id,
+      source: 'analyst_action' as const,
+      timestamp: new Date(r.actionDate + 'T00:00:00Z'),
+      headline: `${r.ticker}: ${actionLabel} by ${r.analystFirm}`,
+      body: gradeInfo ? `Rating:${gradeInfo}` : undefined,
+      tickers: [r.ticker],
+      sourceRecordId: r.id,
+    };
+  });
+}
+
+async function fetchInsiderTransactions(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+  const conditions = [gte(insiderTransactions.transactionDate, cutoffStr)];
+  if (ticker) {
+    conditions.push(eq(sql`UPPER(${insiderTransactions.ticker})`, sql`UPPER(${ticker})`));
+  }
+
+  const rows = await db
+    .select()
+    .from(insiderTransactions)
+    .where(and(...conditions))
+    .orderBy(desc(insiderTransactions.transactionDate))
+    .limit(limit);
+
+  return rows.map((r) => {
+    const codeLabel =
+      r.transactionCode === 'P' ? 'Purchase' :
+      r.transactionCode === 'S' ? 'Sale' :
+      r.transactionCode === 'A' ? 'Grant' :
+      r.transactionCode === 'M' ? 'Exercise' :
+      r.transactionCode ?? 'Transaction';
+    const parts: string[] = [];
+    if (r.change) {
+      const shares = Math.abs(Number(r.change)).toLocaleString();
+      parts.push(`${Number(r.change) > 0 ? '+' : '-'}${shares} shares`);
+    }
+    if (r.transactionPrice && Number(r.transactionPrice) > 0) {
+      parts.push(`@ $${Number(r.transactionPrice).toFixed(2)}`);
+    }
+
+    return {
+      id: r.id,
+      source: 'insider_transaction' as const,
+      timestamp: new Date(r.transactionDate + 'T00:00:00Z'),
+      headline: `${r.ticker}: Insider ${codeLabel} by ${r.insiderName}`,
+      body: parts.length > 0 ? parts.join(' ') : undefined,
+      tickers: [r.ticker],
+      sourceRecordId: r.id,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

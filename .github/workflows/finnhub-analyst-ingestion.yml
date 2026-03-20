@@ -1,0 +1,33 @@
+name: Finnhub Analyst Data Ingestion
+
+on:
+  schedule:
+    # Run daily at 07:00 UTC (after earnings calendar at 05:00)
+    - cron: '0 7 * * *'
+  workflow_dispatch: # Manual trigger for testing
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Finnhub analyst data ingestion
+        env:
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: |
+          npx tsx scripts/ingest-finnhub-analyst-data.ts

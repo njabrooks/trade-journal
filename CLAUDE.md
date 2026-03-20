@@ -314,6 +314,7 @@ Feature-based component organization:
 - **`collect-signal-data.ts`** - Quantitative signal data collection (writes `signal_data_snapshots`)
 - **`ingest-world-monitor.ts`** - Runs `generateQualitativeSnapshots()`: auto-writes qualitative `signal_data_snapshots` from thesis monitor reports
 - **`ingest-economic-calendar.ts`** - TradingView economic calendar ingestion (writes `economic_events`)
+- **`ingest-finnhub-analyst-data.ts`** - Finnhub analyst data ingestion: upgrade/downgrade, price targets, insider transactions (writes `analyst_actions`, `analyst_price_targets`, `insider_transactions`). Note: upgrade/downgrade and price target endpoints require Finnhub premium; insider transactions work on free tier.
 - **`psql-query.ts`** - Read-only SQL query helper used by skills
 
 ### `/.claude/skills` - Claude Code Skills
@@ -376,6 +377,9 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`ingestion_runs`** - Process tracking for all data imports
 - **`ingestion_cursors`** - Incremental ingestion state per exchange/account (high-water mark timestamps)
 - **`economic_events`** - TradingView economic calendar data. Fields: `tv_event_id`, `event_type`, `title`, `indicator`, `category`, `country`, `event_date` (timestamp), `impact_level` (high|medium|low), `actual`, `forecast`, `previous`, `unit`, `source`, `source_url`, `period`. Ingested by `scripts/ingest-economic-calendar.ts`.
+- **`analyst_actions`** - Analyst upgrade/downgrade rating changes. Fields: `underlying_id`, `ticker`, `action` (up|down|main|init|reit), `analyst_firm`, `from_grade`, `to_grade`, `action_date`, `source`. Unique on (ticker, analyst_firm, action_date, source). Ingested by `scripts/ingest-finnhub-analyst-data.ts`.
+- **`analyst_price_targets`** - Consensus price target snapshots. Fields: `underlying_id`, `ticker`, `target_high`, `target_low`, `target_mean`, `target_median`, `number_analysts`, `snapshot_date`, `source`. Unique on (ticker, snapshot_date, source). Ingested by `scripts/ingest-finnhub-analyst-data.ts`.
+- **`insider_transactions`** - Insider buying/selling. Fields: `underlying_id`, `ticker`, `insider_name`, `shares`, `change`, `transaction_date`, `filing_date`, `transaction_code` (P=purchase, S=sale), `transaction_price`, `source`. Unique on (ticker, insider_name, transaction_date, change, source). Ingested by `scripts/ingest-finnhub-analyst-data.ts`.
 
 ### Research Tables
 - **`research_artifacts`** - Raw research content (transcripts, articles, notes) with metadata
@@ -440,6 +444,7 @@ Workflows:
 - `.github/workflows/solana-ingestion.yml` - Solana wallet balance snapshots
 - `.github/workflows/economic-calendar-ingestion.yml` - TradingView economic calendar
 - `.github/workflows/earnings-calendar-ingestion.yml` - Earnings calendar
+- `.github/workflows/finnhub-analyst-ingestion.yml` - Finnhub analyst data (upgrade/downgrade, price targets, insider transactions)
 - `.github/workflows/sec-filings-ingestion.yml` - SEC filings
 - `.github/workflows/crypto-prices.yml` - Crypto price snapshots
 - `.github/workflows/manual-snapshots.yml` - Manual data snapshots
