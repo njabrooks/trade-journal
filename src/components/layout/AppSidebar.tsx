@@ -35,6 +35,7 @@ import {
 
 const ACTIVITY_NAV = [
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
+  { href: "/signals/data-sources", label: "Data Sources", icon: Database, id: "signals-data-sources" },
   { href: "/signals", label: "Signals", icon: Zap, id: "signals" },
   { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
   { href: "/news", label: "News", icon: Newspaper, id: "news" },

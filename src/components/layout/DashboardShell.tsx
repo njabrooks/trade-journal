@@ -13,6 +13,7 @@ export type NavKey =
   | "strategies"
   | "triage"
   | "signals"
+  | "signals-data-sources"
   | "blotter"
   | "journal"
   | "news"
