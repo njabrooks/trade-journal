@@ -9,8 +9,8 @@
  *   - Past 7 days  (to capture actuals that have just been released)
  *   - Next 30 days (to have upcoming events ready for signal queries)
  *
- * By default only high-impact events are stored (importance = 1 from TV).
- * Pass --all-impact to also ingest medium (0) and low (-1) impact events.
+ * By default high and medium-impact events are stored (importance >= 0 from TV).
+ * Pass --all-impact to also ingest low (-1) impact events.
  *
  * Usage:
  *   npx tsx scripts/ingest-economic-calendar.ts
@@ -42,7 +42,7 @@ const TV_HEADERS: Record<string, string> = {
 };
 
 /** Countries to fetch. Add more ISO codes as needed. */
-const TARGET_COUNTRIES = ['US'];
+const TARGET_COUNTRIES = ['US', 'GB', 'CN', 'HK'];
 
 /**
  * Event-type normalisation map.
@@ -209,7 +209,7 @@ async function main() {
   console.log(`Economic Calendar Ingestion — ${now.toISOString()}`);
   console.log(`  Window   : ${from.toISOString().slice(0, 10)} → ${to.toISOString().slice(0, 10)}`);
   console.log(`  Countries: ${TARGET_COUNTRIES.join(', ')}`);
-  console.log(`  Impact   : ${allImpact ? 'all' : 'high only (importance=1)'}`);
+  console.log(`  Impact   : ${allImpact ? 'all' : 'high + medium (importance>=0)'}`);
   if (dryRun) console.log('  DRY RUN  : nothing will be written');
   console.log('');
 
@@ -218,7 +218,7 @@ async function main() {
   console.log(`Fetched ${allEvents.length} total events from TradingView`);
 
   // Filter by impact: TV importance 1 = high, 0 = medium, -1 = low
-  const minImportance = allImpact ? -1 : 1;
+  const minImportance = allImpact ? -1 : 0;
   const filtered = allEvents.filter(e => e.importance >= minImportance);
   console.log(`After impact filter: ${filtered.length} events\n`);
 
@@ -303,21 +303,21 @@ async function main() {
       impact_level: string;
       actual: string | null;
       forecast: string | null;
+      country: string;
     }>(sql`
-      SELECT event_type, title, event_date::text, impact_level, actual, forecast
+      SELECT event_type, title, event_date::text, impact_level, actual, forecast, country
       FROM economic_events
       WHERE event_date >= NOW()
         AND event_date <= NOW() + interval '30 days'
         AND impact_level = 'high'
-        AND country = 'US'
       ORDER BY event_date ASC
     `);
 
-    console.log(`\nUpcoming high-impact US events (next 30 days): ${upcoming.length}`);
+    console.log(`\nUpcoming high-impact events (next 30 days): ${upcoming.length}`);
     for (const row of upcoming) {
       const dateStr     = new Date(row.event_date).toISOString().slice(0, 16).replace('T', ' ');
       const forecastStr = row.forecast != null ? ` [forecast: ${row.forecast}]` : '';
-      console.log(`  ${dateStr}  ${row.title}${forecastStr}`);
+      console.log(`  ${dateStr}  [${row.country}] ${row.title}${forecastStr}`);
     }
   }
 
