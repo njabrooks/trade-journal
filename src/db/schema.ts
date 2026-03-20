@@ -1621,6 +1621,30 @@ export const claimSignalEvidences = pgTable(
 export type ClaimSignalEvidence = typeof claimSignalEvidences.$inferSelect;
 export type NewClaimSignalEvidence = typeof claimSignalEvidences.$inferInsert;
 
+// Signal Data Source Registry - Browsable library of available data sources for signal configuration
+export const signalDataSourceRegistry = pgTable('signal_data_source_registry', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: text('key').unique().notNull(),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  category: text('category').notNull(),
+  measureType: text('measure_type').notNull(),
+  availableMetrics: jsonb('available_metrics').notNull().default([]),
+  assetScope: text('asset_scope').notNull(),
+  supportedTickers: text('supported_tickers').array(),
+  ingestionMethod: text('ingestion_method').notNull(),
+  ingestionScript: text('ingestion_script'),
+  ingestionSchedule: text('ingestion_schedule'),
+  configTemplate: jsonb('config_template').notNull(),
+  configExample: jsonb('config_example'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type SignalDataSourceRegistryEntry = typeof signalDataSourceRegistry.$inferSelect;
+export type NewSignalDataSourceRegistryEntry = typeof signalDataSourceRegistry.$inferInsert;
+
 // Decision Audit Log - Process vs actual actions
 export const decisionAuditLog = pgTable(
   'decision_audit_log',

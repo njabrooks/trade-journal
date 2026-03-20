@@ -397,6 +397,7 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`signal_data_snapshots`** - Time-series assessments per signal. Tracks both quantitative data (`observed_value`, `threshold_value`, `pct_to_threshold`) and qualitative assessments (`assessment`: neutral|strengthening|confirmed|weakening|invalidated, `evidence_summary`). Source tracked via `data_source` and optional `report_id`.
 - **`signal_status_history`** - Audit trail of signal status transitions.
 - **`signal_data_tracking`** - Last observed data point per signal (used for on_release triggers).
+- **`signal_data_source_registry`** - Browsable library of available data sources for signal configuration. Fields: `key` (unique identifier), `name`, `description`, `category` (price|fundamental|economic|sentiment|qualitative|derived|internal), `measure_type` (quantitative|qualitative), `available_metrics` (jsonb), `asset_scope` (per_ticker|global|per_thesis), `supported_tickers` (text[]), `ingestion_method` (automated_cron|automated_derived|manual_skill|manual_cdp), `ingestion_script`, `ingestion_schedule`, `config_template` (jsonb), `config_example` (jsonb), `is_active`. Queried by the `configure-signal` skill to dynamically discover sources instead of hardcoded templates.
 
 ### Intelligence & Economic Data
 - **`intelligence_reports`** - World Monitor and Thesis Monitor intelligence briefings. Fields: `report_date`, `report_type` (world-monitor|thesis-monitor), `executive_summary`, `key_themes`, `full_markdown`, severity counts. Ingested by `scripts/ingest-world-monitor.ts`.

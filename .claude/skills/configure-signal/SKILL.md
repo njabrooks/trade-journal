@@ -136,160 +136,38 @@ Wait for confirmation before proceeding.
 
 ## Step 3 — IDENTIFY SOURCE
 
-For each monitoring dimension, propose a specific data source and configuration.
+Query the signal data source registry to see all available sources:
 
-### Reference: Available collectors
+```bash
+cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "
+SELECT key, name, description, category, measure_type, asset_scope,
+       available_metrics, ingestion_method, ingestion_schedule,
+       config_template, config_example
+FROM signal_data_source_registry
+WHERE is_active = true
+ORDER BY category, name
+" --format json
+```
 
-#### `defillama` — Protocol fees / revenue
-- **When**: Protocol revenue, fees, TVL metrics for DeFi/crypto protocols
-- **Endpoint pattern**: `https://api.llama.fi/summary/fees/<protocol-slug>?dataType=dailyRevenue`
-- **Useful metrics**: `total30d`, `total24h`, `total7d`
-- **Useful calculations**: `total30d * 12` (annualise from 30d)
-- **Threshold unit**: `USD`
-- **Example** (HYPE annualised revenue > $1.4B):
-  ```json
-  {
-    "dataSource": "defillama",
-    "endpoint": "https://api.llama.fi/summary/fees/hyperliquid?dataType=dailyRevenue",
-    "metric": "total30d",
-    "calculation": "total30d * 12",
-    "threshold": 1400000000,
-    "thresholdUnit": "USD",
-    "operator": "gte",
-    "checkFrequency": "daily"
-  }
-  ```
+Present the relevant sources to the user based on their signal's classification (Step 2):
+- For **quantitative** signals: show sources where `measure_type = 'quantitative'`
+- For **qualitative** signals: show sources where `measure_type = 'qualitative'`
+- For **per_ticker** sources: verify the signal's ticker is in `supported_tickers` (or `supported_tickers IS NULL` meaning all tickers)
+- For **economic** signals: show sources where `category = 'economic'`
 
-#### `coingecko` — Crypto token market data
-- **When**: Market cap, price, volume for crypto tokens
-- **Endpoint pattern**: `https://api.coingecko.com/api/v3/coins/<coin-id>`
-- **Useful metrics**: `market_data.market_cap.usd`, `market_data.current_price.usd`
-- **Threshold unit**: `USD`
-- **Example** (HYPE market cap > $40B):
-  ```json
-  {
-    "dataSource": "coingecko",
-    "endpoint": "https://api.coingecko.com/api/v3/coins/hyperliquid",
-    "metric": "market_data.market_cap.usd",
-    "threshold": 40000000000,
-    "thresholdUnit": "USD",
-    "operator": "gte",
-    "checkFrequency": "daily"
-  }
-  ```
+Use the `config_template` from the registry to build the `explicit_details` JSON. Replace `{{PLACEHOLDERS}}` with actual values determined from the signal statement and user input.
 
-#### `hypeflows` — Hyperliquid market share
-- **When**: Hyperliquid perp market share by volume
-- **Metric**: `market_share_pct`
-- **Threshold unit**: `%`
-- **Example** (HYPE global market share > 10%):
-  ```json
-  {
-    "dataSource": "hypeflows",
-    "metric": "market_share_pct",
-    "endpoint": "https://hypeflows.com/api/perp-data?metric=volume",
-    "threshold": 10,
-    "thresholdUnit": "%",
-    "operator": "gte",
-    "checkFrequency": "daily"
-  }
-  ```
+If `config_example` is available, show it to the user as a reference.
 
-#### `tradingview_cdp` — Price / market cap for stocks and crypto
-- **When**: Stock price, crypto price, or market cap via TradingView scanner
+### Special handling for specific source types
+
+#### `tradingview_cdp` — Ticker support
 - **Supported tickers** (hardcoded in `tradingview.ts`): `GLXY`, `SPX`, `NDX`, `BTCUSD`, `BTC`
-- **Metrics**: `spot` / `price` / `close` (price), `market_cap` (market cap)
-- **Note**: If you need a ticker not in the TICKER_MAP, flag it — the collector will warn. You can add it to `scripts/lib/collectors/tradingview.ts` if needed.
-- **Example** (BTC spot > $500K):
-  ```json
-  {
-    "dataSource": "tradingview_cdp",
-    "ticker": "BTCUSD",
-    "metric": "spot",
-    "threshold": 500000,
-    "thresholdUnit": "USD",
-    "operator": "gte",
-    "checkFrequency": "daily"
-  }
-  ```
-- **Example** (GLXY market cap > $40B):
-  ```json
-  {
-    "dataSource": "tradingview_cdp",
-    "ticker": "GLXY",
-    "metric": "market_cap",
-    "threshold": 40000000000,
-    "thresholdUnit": "USD",
-    "operator": "gte",
-    "checkFrequency": "daily"
-  }
-  ```
+- If you need a ticker not in the TICKER_MAP, flag it — the collector will warn. You can add it to `scripts/lib/collectors/tradingview.ts` if needed.
 
-#### `derived` — Computed metrics requiring multiple sources
-- **When**: Ratio, correlation, or other calculation from ≥2 sources
-- **Supported calculations** (as of current codebase):
-  - `market_cap / annualized_revenue` → P/E ratio (CoinGecko + DefiLlama)
-  - `30d_rolling_correlation(BTC, NASDAQ) AND spx_drawdown` → decorrelation signal
-  - `90d_rolling_correlation(BTC, NASDAQ)` → correlation persistence
-  - `market_cap / helios_capacity_mw` → valuation per MW (GLXY)
-- **Example** (HYPE P/E 15-20x):
-  ```json
-  {
-    "dataSource": "derived",
-    "calculation": "market_cap / annualized_revenue",
-    "threshold": 17.5,
-    "thresholdUnit": "ratio",
-    "operator": "between",
-    "checkFrequency": "daily"
-  }
-  ```
-- **Note**: If the signal requires a new derived calculation not in the list above, flag this to the user — a new collector function would be needed (out of scope for this skill).
+#### `economic_calendar` — Discovery step
 
-#### `internal_db` — Check parent thesis state
-- **When**: Signal triggers when a parent macro thesis is invalidated or downgraded
-- **Example** (parent macro thesis rejected or downgraded to low):
-  ```json
-  {
-    "dataSource": "internal_db",
-    "parentThesisId": "<uuid>",
-    "parentThesisTitle": "Bullish AI Infrastructure",
-    "metric": "status_or_confidence",
-    "logic": "any",
-    "conditions": [
-      { "field": "status", "label": "Parent thesis rejected", "operator": "eq", "threshold": "rejected" },
-      { "field": "confidence_level", "label": "Parent thesis confidence downgraded to low", "operator": "eq", "threshold": "low" }
-    ],
-    "checkFrequency": "daily"
-  }
-  ```
-  To find the parent thesis ID, query:
-  ```bash
-  cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT id, title FROM macro_theses WHERE title ILIKE '%<keyword>%'" --format json
-  ```
-
-#### `news_qualitative` — Qualitative / event-based monitoring (no numeric collection)
-- **When**: Event, milestone, regulatory decision, or any criterion that cannot be numerically polled
-- **Not collected** by `collect-signal-data.ts` — handled by the thesis monitor / manual review
-- **Required fields**: `monitorKeywords` (array), `monitorContext` (string explaining what to look for)
-- **Optional**: `deadline` (ISO date), `checkFrequency`
-- **Example** (Helios Phase 1 comes online):
-  ```json
-  {
-    "dataSource": "news_qualitative",
-    "monitorKeywords": ["Galaxy Digital", "Helios", "200MW", "phase 1", "online", "operational"],
-    "monitorContext": "Track Galaxy Digital press releases and earnings calls for Helios Phase 1 (200MW) going operational.",
-    "deadline": "2026-06-30",
-    "checkFrequency": "weekly"
-  }
-  ```
-
-#### `economic_calendar` — Scheduled economic release data
-- **When**: Signal criterion depends on a scheduled macro release (FOMC, CPI, NFP, PCE, GDP, etc.)
-- **Two calculation types**:
-  - `days_until_event` — countdown to next matching release. `pct_to_threshold` reaches 100% on the event date. Use when the signal is about *timing* (e.g. "FOMC decision arrives", "next NFP release").
-  - `event_actual_vs_forecast` — measures release surprise (actual minus forecast). Use when the signal is about *content* (e.g. "CPI comes in below forecast", "NFP beats by 50K+").
-
-**Discovery step — always run before proposing a config:**
+Always run before proposing a config:
 
 ```bash
 cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT event_type, COUNT(*) as occurrences, MAX(event_date::date) as latest FROM economic_events GROUP BY event_type ORDER BY occurrences DESC" --format json
@@ -298,71 +176,26 @@ cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELE
 Then check upcoming events for the chosen type:
 
 ```bash
-cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT event_type, title, event_date, forecast, previous, impact_level FROM economic_events WHERE event_type = 'FOMC_RATE_DECISION' AND event_date > NOW() ORDER BY event_date ASC LIMIT 5" --format json
+cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT event_type, title, event_date, forecast, previous, impact_level FROM economic_events WHERE event_type = '<EVENT_TYPE>' AND event_date > NOW() ORDER BY event_date ASC LIMIT 5" --format json
 ```
 
-Replace `FOMC_RATE_DECISION` with the chosen event type. Always confirm at least one upcoming event exists before proceeding.
+Always confirm at least one upcoming event exists before proceeding.
 
-**explicit_details shape — days_until_event:**
-```json
-{
-  "dataSource": "economic_calendar",
-  "calculation": "days_until_event",
-  "eventType": "FOMC_RATE_DECISION",
-  "country": "US",
-  "lookAheadDays": 30,
-  "threshold": 0,
-  "thresholdUnit": "days",
-  "operator": "lte",
-  "checkFrequency": "daily"
-}
+#### `internal_db` — Find parent thesis
+
+To find the parent thesis ID:
+```bash
+cd /Users/home-hub/projects/trade-journal && npx tsx scripts/psql-query.ts "SELECT id, title FROM macro_theses WHERE title ILIKE '%<keyword>%'" --format json
 ```
-`pct_to_threshold` = `(lookAheadDays - daysUntilEvent) / lookAheadDays * 100`. Reaches 100% on the event date. `lookAheadDays` sets the ramp-up window (default 30; use 14 for short-fuse signals, 60 for slow-build signals).
 
-**explicit_details shape — event_actual_vs_forecast:**
-```json
-{
-  "dataSource": "economic_calendar",
-  "calculation": "event_actual_vs_forecast",
-  "eventType": "CPI_MM",
-  "country": "US",
-  "direction": "below_forecast",
-  "threshold": 0.1,
-  "thresholdUnit": "percentage points",
-  "checkFrequency": "daily"
-}
-```
-`direction` is `above_forecast` or `below_forecast`. `threshold` is the minimum surprise magnitude (absolute value) required — e.g. `0.1` means the release must miss/beat by at least 0.1 percentage points.
+### When no registry source fits
 
-Country codes: use `US` for US releases. Run `SELECT DISTINCT country FROM economic_events` to see all available.
+If the signal requires a data source not in the registry, flag this to the user:
+> "No existing data source in the registry matches this signal. Options:
+> 1. Use `news_qualitative` for manual monitoring until a data source is built
+> 2. File a backlog issue to add a new data source"
 
-#### Multi-condition signals (compound)
-Use a top-level `conditions` array when the signal has multiple independent checks:
-
-```json
-{
-  "checkFrequency": "daily",
-  "conditions": [
-    {
-      "label": "BTC spot exceeds $500K",
-      "dataSource": "tradingview_cdp",
-      "ticker": "BTCUSD",
-      "metric": "spot",
-      "operator": "gte",
-      "threshold": 500000,
-      "thresholdUnit": "USD"
-    },
-    {
-      "label": "3+ G20 central banks hold BTC reserves",
-      "dataSource": "news_qualitative",
-      "threshold": 3,
-      "thresholdUnit": "nations",
-      "monitorContext": "...",
-      "monitorKeywords": ["central bank", "bitcoin reserve"]
-    }
-  ]
-}
-```
+Do not attempt to create new collector infrastructure within this skill.
 
 ### Present the proposal
 
