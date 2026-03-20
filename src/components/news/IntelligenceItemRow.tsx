@@ -15,10 +15,10 @@ interface IntelligenceItem {
 }
 
 const SEVERITY_STYLES: Record<string, { dot: string; bg: string }> = {
-  critical: { dot: 'bg-red-500', bg: 'hover:bg-red-50' },
-  high: { dot: 'bg-orange-500', bg: 'hover:bg-orange-50' },
-  medium: { dot: 'bg-yellow-500', bg: 'hover:bg-yellow-50' },
-  info: { dot: 'bg-blue-400', bg: 'hover:bg-blue-50' },
+  critical: { dot: 'bg-red-500', bg: 'hover:bg-red-500/10' },
+  high: { dot: 'bg-orange-500', bg: 'hover:bg-orange-500/10' },
+  medium: { dot: 'bg-yellow-500', bg: 'hover:bg-yellow-500/10' },
+  info: { dot: 'bg-blue-400', bg: 'hover:bg-blue-500/10' },
 };
 
 interface IntelligenceItemRowProps {
@@ -39,7 +39,7 @@ export function IntelligenceItemRow({ item, compact = false }: IntelligenceItemR
       >
         <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${styles.dot}`} />
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium text-slate-900 ${compact ? 'line-clamp-2' : ''}`}>
+          <p className={`text-sm font-medium text-foreground ${compact ? 'line-clamp-2' : ''}`}>
             {item.headline}
           </p>
           {compact && hasBody && !expanded && (
@@ -55,7 +55,7 @@ export function IntelligenceItemRow({ item, compact = false }: IntelligenceItemR
 
       {expanded && item.body && (
         <div className="mt-2 ml-4 space-y-2">
-          <p className="text-sm text-slate-700 whitespace-pre-line">{item.body}</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-line">{item.body}</p>
 
           {item.relevantTickers && item.relevantTickers.length > 0 && (
             <div className="flex gap-1 flex-wrap">
@@ -77,7 +77,7 @@ export function IntelligenceItemRow({ item, compact = false }: IntelligenceItemR
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     <ExternalLink className="w-3 h-3" />
                     {domain}

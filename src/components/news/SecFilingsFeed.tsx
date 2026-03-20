@@ -46,13 +46,13 @@ export function SecFilingsFeed({ filings }: SecFilingsFeedProps) {
           SEC Filings
         </h3>
       </div>
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-border">
         {filings.map(filing => (
           <div key={filing.id} className="px-4 py-2.5 flex items-center gap-3">
             <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${TYPE_STYLES[filing.filingType] || 'bg-muted text-muted-foreground'}`}>
               {filing.filingType}
             </span>
-            <span className="font-mono text-sm font-semibold text-slate-900">{filing.ticker}</span>
+            <span className="font-mono text-sm font-semibold text-foreground">{filing.ticker}</span>
             <span className="text-xs text-muted-foreground">
               {new Date(filing.filedDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>

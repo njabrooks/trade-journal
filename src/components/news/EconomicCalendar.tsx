@@ -72,7 +72,7 @@ export function EconomicCalendar({ events }: EconomicCalendarProps) {
           Economic Calendar
         </h3>
       </div>
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-border">
         {sortedDates.map(date => (
           <div key={date} className="px-4 py-2">
             <p className="text-xs font-medium text-muted-foreground mb-1.5">{formatDate(date)}</p>
@@ -90,7 +90,7 @@ export function EconomicCalendar({ events }: EconomicCalendarProps) {
                   )}
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {event.actualValue != null && (
-                      <span className="font-semibold text-slate-900">
+                      <span className="font-semibold text-foreground">
                         A: {event.actualValue}
                       </span>
                     )}

@@ -69,7 +69,7 @@ export function EarningsCalendar({ events }: EarningsCalendarProps) {
           Earnings Calendar
         </h3>
       </div>
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-border">
         {weeks.map(week => (
           <div key={week.label} className="px-4 py-2">
             <p className="text-xs font-medium text-muted-foreground mb-1.5">Week of {week.label}</p>
@@ -77,9 +77,9 @@ export function EarningsCalendar({ events }: EarningsCalendarProps) {
               {week.events.map(event => (
                 <div
                   key={event.id}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-50 border text-sm"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-muted border text-sm"
                 >
-                  <span className="font-mono font-semibold text-slate-900">{event.ticker}</span>
+                  <span className="font-mono font-semibold text-foreground">{event.ticker}</span>
                   <span className="text-xs text-muted-foreground">
                     {new Date(event.reportDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </span>
@@ -89,7 +89,7 @@ export function EarningsCalendar({ events }: EarningsCalendarProps) {
                     </span>
                   )}
                   {event.epsActual != null && (
-                    <span className="text-xs font-medium text-green-700">
+                    <span className="text-xs font-medium text-green-700 dark:text-green-400">
                       ${event.epsActual}
                     </span>
                   )}

@@ -102,7 +102,7 @@ export function IntelligenceReportCard({ report }: IntelligenceReportCardProps) 
                 <div className="flex gap-1">
                   <button
                     onClick={() => setSectorFilter(null)}
-                    className={`px-2 py-0.5 text-xs rounded-full ${!sectorFilter ? 'bg-slate-900 text-white' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
+                    className={`px-2 py-0.5 text-xs rounded-full ${!sectorFilter ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
                   >
                     All
                   </button>
@@ -110,7 +110,7 @@ export function IntelligenceReportCard({ report }: IntelligenceReportCardProps) 
                     <button
                       key={sector}
                       onClick={() => setSectorFilter(sector)}
-                      className={`px-2 py-0.5 text-xs rounded-full capitalize ${sectorFilter === sector ? 'bg-slate-900 text-white' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
+                      className={`px-2 py-0.5 text-xs rounded-full capitalize ${sectorFilter === sector ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
                     >
                       {sector}
                     </button>
