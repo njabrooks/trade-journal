@@ -2801,6 +2801,8 @@ export const earningsEvents = pgTable(
     revenueActual: numeric('revenue_actual'),
     quarter: text('quarter'),
     year: integer('year'),
+    surprise: numeric('surprise'),
+    surprisePercent: numeric('surprise_percent'),
     source: text('source').notNull().default('finnhub'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

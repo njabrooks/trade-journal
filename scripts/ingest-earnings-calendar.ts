@@ -1,13 +1,13 @@
 #!/usr/bin/env tsx
 /**
- * Ingest earnings calendar data from Finnhub for portfolio holdings
+ * Ingest earnings calendar data from Finnhub for all underlyings
  *
  * This script:
- * 1. Queries open positions for distinct tickers
+ * 1. Queries all underlyings (not just open positions)
  * 2. Filters to equity-like tickers (skips crypto, special chars)
- * 3. Looks up underlying_id for each ticker
- * 4. Calls Finnhub /calendar/earnings for each ticker (next N days)
- * 5. Upserts into earnings_events table
+ * 3. Calls Finnhub /calendar/earnings for each ticker
+ * 4. Upserts into earnings_events table
+ * 5. Fetches surprise % from Finnhub /stock/earnings endpoint
  * 6. Updates underlyings.next_earnings_date when new data found
  *
  * Environment variables required:
@@ -15,21 +15,22 @@
  * - DATABASE_URL_POOLER: Database connection string
  *
  * Usage:
- *   npx tsx scripts/ingest-earnings-calendar.ts           # Default 90 days
- *   npx tsx scripts/ingest-earnings-calendar.ts --days 180
+ *   npx tsx scripts/ingest-earnings-calendar.ts                # Forward 90 days
+ *   npx tsx scripts/ingest-earnings-calendar.ts --days 180     # Forward 180 days
+ *   npx tsx scripts/ingest-earnings-calendar.ts --backfill     # Past 365 days + forward 90 days
  */
 
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, sql } from 'drizzle-orm';
 
-const { earningsEvents, positions, underlyings } = schema;
+const { earningsEvents, underlyings } = schema;
 
 // ---------------------------------------------------------------------------
 // Config & CLI args
 // ---------------------------------------------------------------------------
 
 const FINNHUB_BASE = 'https://finnhub.io/api/v1';
-const RATE_LIMIT_DELAY_MS = 200; // 30 calls/sec free tier — 200ms is safe
+const RATE_LIMIT_DELAY_MS = 1100; // Free tier: 60 calls/min — 1100ms is safe
 
 function parseDaysArg(): number {
   const idx = process.argv.indexOf('--days');
@@ -71,6 +72,17 @@ interface FinnhubEarningsResponse {
   earningsCalendar: FinnhubEarningsEntry[];
 }
 
+interface FinnhubEarningResult {
+  actual: number | null;
+  estimate: number | null;
+  period: string; // YYYY-MM-DD (fiscal period end date)
+  quarter: number;
+  surprise: number | null;
+  surprisePercent: number | null;
+  symbol: string;
+  year: number;
+}
+
 // ---------------------------------------------------------------------------
 // Finnhub API
 // ---------------------------------------------------------------------------
@@ -86,11 +98,27 @@ async function fetchEarningsCalendar(
   const res = await fetch(url);
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Finnhub ${res.status}: ${body.substring(0, 200)}`);
+    throw new Error(`Finnhub calendar ${res.status}: ${body.substring(0, 200)}`);
   }
 
   const data: FinnhubEarningsResponse = await res.json();
   return data.earningsCalendar ?? [];
+}
+
+async function fetchEarningsSurprise(
+  ticker: string,
+  apiKey: string,
+): Promise<FinnhubEarningResult[]> {
+  const url = `${FINNHUB_BASE}/stock/earnings?symbol=${encodeURIComponent(ticker)}&token=${apiKey}`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Finnhub earnings ${res.status}: ${body.substring(0, 200)}`);
+  }
+
+  const data: FinnhubEarningResult[] = await res.json();
+  return data ?? [];
 }
 
 // ---------------------------------------------------------------------------
@@ -105,21 +133,25 @@ async function main() {
   }
 
   const days = parseDaysArg();
+  const backfill = process.argv.includes('--backfill');
   const now = new Date();
-  const from = formatDate(now);
+  const fromDate = new Date(now);
+  if (backfill) {
+    fromDate.setDate(fromDate.getDate() - 365);
+  }
+  const from = formatDate(fromDate);
   const toDate = new Date(now);
   toDate.setDate(toDate.getDate() + days);
   const to = formatDate(toDate);
 
-  console.log(`Earnings calendar ingestion: ${from} → ${to} (${days} days)\n`);
+  console.log(`Earnings calendar ingestion: ${from} → ${to}${backfill ? ' (backfill)' : ` (${days} days)`}\n`);
 
-  // 1. Get distinct tickers from open positions
-  const openPositions = await db
-    .selectDistinct({ ticker: positions.symbol })
-    .from(positions)
-    .where(eq(positions.isOpen, true));
+  // 1. Get all underlyings (not just open positions)
+  const underlyingRows = await db
+    .select({ id: underlyings.id, ticker: underlyings.ticker })
+    .from(underlyings);
 
-  const allTickers = openPositions.map((p) => p.ticker.toUpperCase());
+  const allTickers = [...new Set(underlyingRows.map((r) => r.ticker.toUpperCase()))];
   const tickers = allTickers.filter(isEquityTicker);
 
   const skipped = allTickers.filter((t) => !isEquityTicker(t));
@@ -136,10 +168,6 @@ async function main() {
   }
 
   // 2. Build ticker → underlying_id map
-  const underlyingRows = await db
-    .select({ id: underlyings.id, ticker: underlyings.ticker })
-    .from(underlyings);
-
   const underlyingMap = new Map<string, string>();
   for (const row of underlyingRows) {
     underlyingMap.set(row.ticker.toUpperCase(), row.id);
@@ -201,8 +229,9 @@ async function main() {
       }
 
       // Track earliest future earnings date for underlyings update
+      const today = formatDate(now);
       const futureDates = entries
-        .filter((e) => e.date && e.date >= from)
+        .filter((e) => e.date && e.date >= today)
         .map((e) => e.date)
         .sort();
 
@@ -239,10 +268,74 @@ async function main() {
     }
   }
 
-  // 5. Summary
+  // 5. Fetch historical earnings with surprise % from /stock/earnings
+  //    This endpoint returns past quarters with actuals + surprise data.
+  //    We upsert (insert or update) because the calendar endpoint only returns
+  //    future scheduled dates — historical earnings come from this endpoint.
+  console.log('\n--- Surprise data pass ---');
+  let totalSurpriseUpserted = 0;
+  for (const ticker of tickers) {
+    try {
+      const results = await fetchEarningsSurprise(ticker, FINNHUB_API_KEY);
+      if (results.length === 0) {
+        await delay(RATE_LIMIT_DELAY_MS);
+        continue;
+      }
+
+      const underlyingId = underlyingMap.get(ticker) ?? null;
+      let tickerUpserted = 0;
+
+      for (const r of results) {
+        if (!r.period) continue;
+
+        await db
+          .insert(earningsEvents)
+          .values({
+            underlyingId,
+            ticker,
+            reportDate: r.period,
+            epsEstimate: r.estimate != null ? String(r.estimate) : null,
+            epsActual: r.actual != null ? String(r.actual) : null,
+            quarter: r.quarter != null ? String(r.quarter) : null,
+            year: r.year ?? null,
+            surprise: r.surprise != null ? String(r.surprise) : null,
+            surprisePercent: r.surprisePercent != null ? String(r.surprisePercent) : null,
+            source: 'finnhub' as const,
+          })
+          .onConflictDoUpdate({
+            target: [earningsEvents.ticker, earningsEvents.reportDate, earningsEvents.source],
+            set: {
+              epsActual: sql`EXCLUDED.eps_actual`,
+              epsEstimate: sql`EXCLUDED.eps_estimate`,
+              quarter: sql`EXCLUDED.quarter`,
+              year: sql`EXCLUDED.year`,
+              surprise: sql`EXCLUDED.surprise`,
+              surprisePercent: sql`EXCLUDED.surprise_percent`,
+              underlyingId: sql`EXCLUDED.underlying_id`,
+              updatedAt: sql`NOW()`,
+            },
+          });
+
+        tickerUpserted++;
+      }
+
+      if (tickerUpserted > 0) {
+        console.log(`[${ticker}] ${tickerUpserted} historical earnings upserted`);
+        totalSurpriseUpserted += tickerUpserted;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[${ticker}] Surprise fetch error: ${msg}`);
+    }
+
+    await delay(RATE_LIMIT_DELAY_MS);
+  }
+
+  // 6. Summary
   console.log('\n--- Summary ---');
   console.log(`Tickers processed: ${tickers.length}`);
   console.log(`Earnings events upserted: ${totalUpserted}`);
+  console.log(`Historical earnings with surprise data: ${totalSurpriseUpserted}`);
   console.log(`Underlyings next_earnings_date updated: ${underlyingsUpdated}`);
   if (totalErrors > 0) {
     console.log(`Errors: ${totalErrors}`);
