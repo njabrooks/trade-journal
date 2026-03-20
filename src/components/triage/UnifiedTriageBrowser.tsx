@@ -40,7 +40,7 @@ type ObjectTypeFilter = 'all' | TriageObjectType;
 type SortColumn = 'title' | 'objectType' | 'trigger' | 'severity' | 'status' | 'date';
 type SortDirection = 'asc' | 'desc';
 type GroupBy = 'none' | 'status';
-type BaseFilter = 'all' | 'priority' | 'inbox' | 'old_triage';
+type BaseFilter = 'all' | 'priority' | 'inbox' | 'in_progress' | 'old_triage';
 type TypeFilter = 'all' | 'macro_thesis' | 'asset_thesis' | 'positions_strategies';
 
 // Severities that require priority attention (shown in "Priority" view)
@@ -140,6 +140,9 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId, sh
     } else if (baseFilter === 'inbox') {
       // Inbox: only status === inbox (not in_progress or done)
       result = result.filter((r) => r.status === 'inbox');
+    } else if (baseFilter === 'in_progress') {
+      // In Progress: only status === in_progress
+      result = result.filter((r) => r.status === 'in_progress');
     } else if (baseFilter === 'old_triage') {
       // Old Triage: status done (completed items)
       result = result.filter((r) => r.status === 'done');
@@ -518,6 +521,14 @@ export function UnifiedTriageBrowser({ records, counts, thesisId, strategyId, sh
             className="rounded-none border-r-0"
           >
             Priority
+          </Button>
+          <Button
+            variant={baseFilter === 'in_progress' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setBaseFilter('in_progress')}
+            className="rounded-none border-r-0"
+          >
+            In Progress
           </Button>
           <Button
             variant={baseFilter === 'inbox' ? 'default' : 'outline'}

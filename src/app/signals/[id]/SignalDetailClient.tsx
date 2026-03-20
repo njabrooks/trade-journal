@@ -35,43 +35,43 @@ interface Snapshot {
 const TYPE_CONFIG: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
   confirmation: {
     label: 'Confirmation',
-    cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-    icon: <CheckCircle2 className="w-4 h-4" />,
+    cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+    icon: <CheckCircle2 className="w-3 h-3" />,
   },
   invalidation: {
     label: 'Invalidation',
-    cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-    icon: <AlertTriangle className="w-4 h-4" />,
+    cls: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
+    icon: <AlertTriangle className="w-3 h-3" />,
   },
   warning: {
     label: 'Invalidation',
-    cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-    icon: <AlertTriangle className="w-4 h-4" />,
+    cls: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
+    icon: <AlertTriangle className="w-3 h-3" />,
   },
   completion: {
     label: 'Completion',
-    cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-    icon: <Target className="w-4 h-4" />,
+    cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+    icon: <Target className="w-3 h-3" />,
   },
 };
 
 const IMPORTANCE_CONFIG: Record<string, string> = {
-  critical:    'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
-  significant: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
-  supporting:  'bg-muted text-muted-foreground border',
+  critical:    'bg-destructive/15 text-destructive',
+  significant: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  supporting:  'bg-muted text-muted-foreground',
 };
 
 const STATUS_CONFIG: Record<string, { cls: string; icon: React.ReactNode }> = {
-  draft:    { cls: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300', icon: <Clock className="w-4 h-4 text-purple-400" /> },
-  active:   { cls: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300', icon: <Eye className="w-4 h-4 text-blue-500" /> },
-  complete: { cls: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300', icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" /> },
-  rejected: { cls: 'bg-muted text-muted-foreground border', icon: <Archive className="w-4 h-4 text-muted-foreground" /> },
+  draft:    { cls: 'bg-muted text-muted-foreground', icon: <Clock className="w-3 h-3" /> },
+  active:   { cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', icon: <Eye className="w-3 h-3" /> },
+  complete: { cls: 'bg-muted text-muted-foreground', icon: <CheckCircle2 className="w-3 h-3" /> },
+  rejected: { cls: 'bg-destructive/15 text-destructive', icon: <Archive className="w-3 h-3" /> },
 };
 
 function entityTypeBadge(entity: SignalWithContext['entities'][number]): { label: string; cls: string } {
-  if (entity.entityType === 'strategy') return { label: 'Strategy', cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' };
-  if (entity.thesisType === 'macro') return { label: 'Macro Thesis', cls: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' };
-  return { label: 'Asset Thesis', cls: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' };
+  if (entity.entityType === 'strategy') return { label: 'Strategy', cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' };
+  if (entity.thesisType === 'macro') return { label: 'Macro Thesis', cls: 'bg-violet-500/15 text-violet-600 dark:text-violet-400' };
+  return { label: 'Asset Thesis', cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' };
 }
 
 interface SignalDetailClientProps {
@@ -139,16 +139,16 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             {/* Badges */}
-            <div className="flex items-center gap-2 flex-wrap mb-3">
-              <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded ${typeConfig.cls}`}>
+            <div className="flex items-center gap-1.5 flex-wrap mb-3">
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeConfig.cls}`}>
                 {typeConfig.icon}
                 {typeConfig.label}
               </span>
-              <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded border ${importanceCls}`}>
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${importanceCls}`}>
                 {signal.importance}
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-1 text-sm text-muted-foreground bg-muted rounded">
-                <Scale className="w-4 h-4" />
+              <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-muted-foreground">
+                <Scale className="w-3 h-3" />
                 {signal.category.replace('_', ' ')}
               </span>
             </div>
@@ -163,10 +163,10 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
           </div>
 
           {/* Status */}
-          <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${statusConfig.cls}`}>
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusConfig.cls}`}>
             {statusConfig.icon}
-            <span className="font-medium">{signal.status}</span>
-          </div>
+            {signal.status}
+          </span>
         </div>
 
         {/* Metadata */}

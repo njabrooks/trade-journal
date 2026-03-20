@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { signalDataSnapshots } from '@/db/schema';
-import { eq, desc, and, gte } from 'drizzle-orm';
+import { eq, desc, and, gte, sql } from 'drizzle-orm';
 
 /**
  * GET /api/signals/[id]/snapshots?days=90
@@ -44,7 +44,11 @@ export async function GET(
           gte(signalDataSnapshots.snapshotDate, since)
         )
       )
-      .orderBy(desc(signalDataSnapshots.snapshotDate))
+      .orderBy(
+        desc(sql`date_trunc('day', ${signalDataSnapshots.snapshotDate})`),
+        sql`CASE WHEN ${signalDataSnapshots.dataSource} = 'daily_synthesis' THEN 0 ELSE 1 END ASC`,
+        desc(signalDataSnapshots.snapshotDate)
+      )
       .limit(500);
 
     return NextResponse.json({ snapshots });

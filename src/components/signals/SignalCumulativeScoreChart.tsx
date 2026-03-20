@@ -101,18 +101,18 @@ export function SignalCumulativeScoreChart({
         <XAxis
           dataKey="date"
           tickFormatter={formatDateShort}
-          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
           axisLine={false}
           tickLine={false}
           allowDecimals={false}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted)/0.5)' }} />
-        <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--muted)', opacity: 0.5 }} />
+        <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="3 3" />
         <Bar dataKey="delta" barSize={14} radius={[2, 2, 0, 0]}>
           {scores.map((entry, idx) => (
             <Cell key={idx} fill={getDeltaColor(entry.delta)} />

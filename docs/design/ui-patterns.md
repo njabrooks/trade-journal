@@ -15,6 +15,28 @@
 | CSS | **Tailwind 4** with CSS variables | No inline styles, no hardcoded hex values |
 | Color system | **CSS variables only** — `bg-background`, `text-foreground`, `border-border` etc. | Never use `gray-*` or `neutral-*` directly for semantic UI |
 
+### Dark mode contrast requirements
+
+The three-layer hierarchy must remain perceptible in dark mode:
+
+| Layer | Light | Dark |
+|-------|-------|------|
+| Body background (`sidebar-inset`) | `rgb(248 250 252)` slate-50 | `rgb(23 23 23)` ~oklch(0.17) |
+| Card (`--card`) | `oklch(1 0 0)` white | `oklch(0.245 0 0)` ~rgb(50,50,50) |
+| Muted surface (`--muted`) | `oklch(0.97 0 0)` | `oklch(0.31 0 0)` |
+
+Card must be at least **oklch(0.24)** in dark mode to be visually distinct from the body background. Border opacity must be at least **16%** (`oklch(1 0 0 / 16%)`) to show card edges.
+
+### Recharts CSS variables
+
+Recharts renders SVG attributes, not CSS properties. CSS variables work in SVG presentation attributes in modern browsers **when the variable resolves to a complete color value**. Tailwind 4 variables are stored as full `oklch(...)` values, so:
+
+- ✅ `fill: 'var(--muted-foreground)'` — correct
+- ❌ `fill: 'hsl(var(--muted-foreground))'` — invalid (nesting color functions)
+- ❌ `fill: 'hsl(var(--muted)/0.5)'` — invalid
+
+For opacity on a variable-based color, use a separate `opacity` prop: `cursor={{ fill: 'var(--muted)', opacity: 0.5 }}`
+
 ---
 
 ## 2. Page Layouts
@@ -164,7 +186,7 @@ Always use these exact combinations — don't invent new ones:
 | Position | `bg-teal-500/15 text-teal-600 dark:text-teal-400` |
 | Claim | `bg-purple-500/15 text-purple-600 dark:text-purple-400` |
 | Signal (confirmation) | `bg-emerald-500/15 text-emerald-600 dark:text-emerald-400` |
-| Signal (warning) | `bg-orange-500/15 text-orange-600 dark:text-orange-400` |
+| Signal (invalidation) | `bg-orange-500/15 text-orange-600 dark:text-orange-400` |
 
 **Pattern for all badges:** `rounded-full px-2 py-0.5 text-xs font-medium` on a `<span>`. Never use a bordered badge for status — always filled with transparency (`/15` opacity background).
 

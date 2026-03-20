@@ -103,7 +103,7 @@ export function SignalSnapshotChart({
           tickMargin={6}
           tickFormatter={formatDateShort}
           interval="preserveStartEnd"
-          tick={{ fontSize: 10 }}
+          tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
         />
         <YAxis
           tickLine={false}
@@ -111,7 +111,7 @@ export function SignalSnapshotChart({
           tickMargin={4}
           width={48}
           tickFormatter={(v) => formatValue(v, unit)}
-          tick={{ fontSize: 10 }}
+          tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
           domain={yDomain}
         />
         <ChartTooltip
@@ -146,7 +146,7 @@ export function SignalSnapshotChart({
           label={{
             value: `Target: ${formatValue(thresholdValue, unit)}`,
             position: 'right',
-            fill: 'oklch(0.55 0 0)',
+            fill: 'var(--muted-foreground)',
             fontSize: 9,
           }}
         />

@@ -108,8 +108,8 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
         <thead className="sticky top-0 bg-card z-10">
           <tr className="border-b border-border text-xs text-muted-foreground">
             <th className="text-left font-medium px-3 py-2 w-28">Date</th>
-            <th className="text-left font-medium px-3 py-2 w-36">Source</th>
-            <th className="text-left font-medium px-3 py-2 w-40">Assessment / Value</th>
+            <th className="text-center font-medium px-3 py-2 w-36">Source</th>
+            <th className="text-center font-medium px-3 py-2 w-40">Assessment / Value</th>
             <th className="text-left font-medium px-3 py-2">Note</th>
             {onReject && <th className="text-right font-medium px-3 py-2 w-16"></th>}
           </tr>
@@ -143,13 +143,13 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
 
                 {/* Source */}
                 <td className="px-3 py-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
+                  <div className="flex flex-col items-center gap-1">
+                    <span className={`w-full text-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
                       {isDailySynthesis && <span className="mr-1">★</span>}
                       {src.label}
                     </span>
                     {isPending && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                      <span className="w-full text-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400">
                         Pending
                       </span>
                     )}
@@ -159,7 +159,7 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
                 {/* Assessment or quantitative value */}
                 <td className="px-3 py-2">
                   {assessment ? (
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${assessment.cls}`}>
+                    <span className={`block w-full text-center px-1.5 py-0.5 rounded text-xs font-medium ${assessment.cls}`}>
                       {assessment.label}
                     </span>
                   ) : hasQuantitative ? (

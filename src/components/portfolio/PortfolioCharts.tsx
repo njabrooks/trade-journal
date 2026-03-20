@@ -185,11 +185,13 @@ export function PortfolioCharts({ dashboardData, exposureBreakdown }: PortfolioC
                   tickMargin={8}
                   tickFormatter={(value) => formatDateLabel(value)}
                   interval="preserveStartEnd"
+                  tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
                   tickMargin={4}
+                  tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                   width={48}
                   tickFormatter={formatCompactCurrency}
                 />
