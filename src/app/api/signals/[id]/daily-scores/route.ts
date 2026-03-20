@@ -4,29 +4,20 @@ import { signalDataSnapshots, signals } from '@/db/schema';
 import { eq, and, ne, asc, sql } from 'drizzle-orm';
 
 /**
- * Conviction delta is thesis-health-aware, not just signal-activity-aware.
- *
- * For confirmation/completion signals:
- *   strengthening/confirmed → +1 (thesis is being supported)
- *   weakening/invalidated   → -1 (thesis is being undermined)
- *
- * For invalidation signals, the sign is INVERTED because:
- *   strengthening = threat is growing    → thesis conviction FALLS  → -1
- *   weakening     = threat is receding   → thesis conviction RISES  → +1
- *   confirmed     = invalidation triggered → thesis conviction at minimum → -1
- *   invalidated   = threat definitively passed → thesis conviction RISES → +1
+ * Signal-centric delta: strengthening = +1, weakening = -1 regardless of signal type.
+ * The chart shows signal strength/activity. The user interprets what a rising or
+ * falling score means based on the signal type (confirmation vs invalidation).
  */
-function getDelta(assessment: string, signalType: string): number {
-  const isInvalidation = signalType === 'invalidation' || signalType === 'warning';
-  const base: Record<string, number> = {
-    strengthening: 1,
-    confirmed: 1,
-    weakening: -1,
-    invalidated: -1,
-    neutral: 0,
-  };
-  const raw = base[assessment] ?? 0;
-  return isInvalidation ? -raw : raw;
+const DELTA_MAP: Record<string, number> = {
+  strengthening: 1,
+  confirmed: 1,
+  weakening: -1,
+  invalidated: -1,
+  neutral: 0,
+};
+
+function getDelta(assessment: string, _signalType: string): number {
+  return DELTA_MAP[assessment] ?? 0;
 }
 
 /**
