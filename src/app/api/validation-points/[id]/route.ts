@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signals, signalStatusHistory } from '@/db/schema';
+import { signals, signalStatusHistory, signalEntityLinks } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 import { getMacroThesisById } from '@/db/queries/macroTheses';
@@ -109,14 +109,19 @@ export async function PATCH(
 
     const previousStatus = currentSignal.status;
 
-    // 3. Fetch context for journal (thesis or strategy)
+    // 3. Fetch context for journal via signal_entity_links
     let thesisTitle = 'Unknown';
-    if (currentSignal.entityType === 'thesis' && currentSignal.thesisId) {
-      const thesis = currentSignal.thesisType === 'macro'
-        ? await getMacroThesisById(currentSignal.thesisId)
-        : await getAssetThesisById(currentSignal.thesisId);
+    const [vpEntityLink] = await db
+      .select()
+      .from(signalEntityLinks)
+      .where(eq(signalEntityLinks.signalId, id))
+      .limit(1);
+    if (vpEntityLink?.entityType === 'thesis' && vpEntityLink.thesisId) {
+      const thesis = vpEntityLink.thesisType === 'macro'
+        ? await getMacroThesisById(vpEntityLink.thesisId)
+        : await getAssetThesisById(vpEntityLink.thesisId);
       thesisTitle = thesis?.title || 'Unknown Thesis';
-    } else if (currentSignal.entityType === 'strategy') {
+    } else if (vpEntityLink?.entityType === 'strategy') {
       thesisTitle = 'Strategy Signal';
     }
 
@@ -155,12 +160,12 @@ export async function PATCH(
       ? `${currentSignal.statement.slice(0, 50)}...`
       : currentSignal.statement;
 
-    // Log to journal (only for thesis signals with valid thesisId)
+    // Log to journal (only for thesis signals with valid entity link)
     let journalEntryId: string | undefined;
-    if (currentSignal.entityType === 'thesis' && currentSignal.thesisId && currentSignal.thesisType) {
+    if (vpEntityLink?.entityType === 'thesis' && vpEntityLink.thesisId && vpEntityLink.thesisType) {
       journalEntryId = await logToJournal({
-        objectType: currentSignal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-        objectId: currentSignal.thesisId,
+        objectType: vpEntityLink.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+        objectId: vpEntityLink.thesisId,
         objectTitle: thesisTitle,
         actionType: 'vi_status_changed',
         actionDescription: `Signal "${statementPreview}" status: ${previousStatus} → ${newStatus}`,
@@ -232,14 +237,19 @@ async function handleUpgradeToExplicit(
     );
   }
 
-  // 3. Fetch context for journal (thesis or strategy)
+  // 3. Fetch context for journal via signal_entity_links
   let thesisTitle = 'Unknown';
-  if (currentSignal.entityType === 'thesis' && currentSignal.thesisId) {
-    const thesis = currentSignal.thesisType === 'macro'
-      ? await getMacroThesisById(currentSignal.thesisId)
-      : await getAssetThesisById(currentSignal.thesisId);
+  const [upgradeEntityLink] = await db
+    .select()
+    .from(signalEntityLinks)
+    .where(eq(signalEntityLinks.signalId, id))
+    .limit(1);
+  if (upgradeEntityLink?.entityType === 'thesis' && upgradeEntityLink.thesisId) {
+    const thesis = upgradeEntityLink.thesisType === 'macro'
+      ? await getMacroThesisById(upgradeEntityLink.thesisId)
+      : await getAssetThesisById(upgradeEntityLink.thesisId);
     thesisTitle = thesis?.title || 'Unknown Thesis';
-  } else if (currentSignal.entityType === 'strategy') {
+  } else if (upgradeEntityLink?.entityType === 'strategy') {
     thesisTitle = 'Strategy Signal';
   }
 
@@ -272,10 +282,10 @@ async function handleUpgradeToExplicit(
     ? `${currentSignal.statement.slice(0, 50)}...`
     : currentSignal.statement;
 
-  if (currentSignal.entityType === 'thesis' && currentSignal.thesisId && currentSignal.thesisType) {
+  if (upgradeEntityLink?.entityType === 'thesis' && upgradeEntityLink.thesisId && upgradeEntityLink.thesisType) {
     await logToJournal({
-      objectType: currentSignal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-      objectId: currentSignal.thesisId,
+      objectType: upgradeEntityLink.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: upgradeEntityLink.thesisId,
       objectTitle: thesisTitle,
       actionType: 'signal_upgraded_to_data_driven',
       actionDescription: `Signal "${statementPreview}" upgraded from judgment to data-driven with data trigger`,

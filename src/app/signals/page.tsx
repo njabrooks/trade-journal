@@ -14,7 +14,7 @@ export default async function SignalsPage() {
     <DashboardShell
       activeNav="signals"
       title="Signals"
-      subtitle={`${counts.active} active signals across ${counts.thesis} thesis and ${counts.strategy} strategy signals`}
+      subtitle={`${counts.active} active signals across ${counts.macroThesis + counts.assetThesis} thesis and ${counts.strategy} strategy signals`}
     >
       <SignalsBrowser signals={signals} counts={counts} />
     </DashboardShell>

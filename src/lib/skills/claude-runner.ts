@@ -135,12 +135,13 @@ export async function runClaudeSkill(config: SkillRunConfig): Promise<SkillRunRe
         env: buildEnv(),
         maxBuffer: maxBufferBytes,
         timeout: timeoutMs,
-      }, (error, stdout, stderr) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any, (error: any, stdout: any, stderr: any) => {
         const timedOut = error?.killed === true;
         if (error && !timedOut) {
           console.error(`${tag} CLI error:`, error.message);
         }
-        resolve({ stdout: stdout || '', stderr: stderr || '', timedOut });
+        resolve({ stdout: String(stdout || ''), stderr: String(stderr || ''), timedOut: !!timedOut });
       });
 
       // Stream output for visibility in server logs

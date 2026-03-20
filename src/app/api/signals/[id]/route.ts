@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signals, strategies } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { signals, strategies, signalEntityLinks } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 
 /**
@@ -131,16 +131,25 @@ export async function PUT(
       .where(eq(signals.id, id))
       .returning();
 
-    // Get strategy for logging
-    let strategyTitle = 'Unknown Strategy';
-    if (existingSignal.strategyId) {
+    // Get linked entity for logging via signal_entity_links
+    let linkedEntityTitle = 'Unknown Entity';
+    let linkedEntityId = id;
+    let linkedObjectType: string = 'signal';
+    const [entityLink] = await db
+      .select()
+      .from(signalEntityLinks)
+      .where(eq(signalEntityLinks.signalId, id))
+      .limit(1);
+    if (entityLink?.strategyId) {
       const [strategy] = await db
         .select()
         .from(strategies)
-        .where(eq(strategies.id, existingSignal.strategyId))
+        .where(eq(strategies.id, entityLink.strategyId))
         .limit(1);
       if (strategy) {
-        strategyTitle = strategy.autoDerivedLabel || strategy.strategyKey;
+        linkedEntityTitle = strategy.autoDerivedLabel || strategy.strategyKey;
+        linkedEntityId = entityLink.strategyId;
+        linkedObjectType = 'strategy';
       }
     }
 
@@ -160,9 +169,9 @@ export async function PUT(
 
     // Log to journal
     await logToJournal({
-      objectType: 'strategy',
-      objectId: existingSignal.strategyId || id,
-      objectTitle: strategyTitle,
+      objectType: linkedObjectType,
+      objectId: linkedEntityId,
+      objectTitle: linkedEntityTitle,
       actionType,
       actionDescription,
       previousState: {
@@ -222,16 +231,25 @@ export async function DELETE(
       );
     }
 
-    // Get strategy for logging
-    let strategyTitle = 'Unknown Strategy';
-    if (existingSignal.strategyId) {
+    // Get linked entity for logging via signal_entity_links
+    let delLinkedTitle = 'Unknown Entity';
+    let delLinkedId = id;
+    let delObjectType: string = 'signal';
+    const [delEntityLink] = await db
+      .select()
+      .from(signalEntityLinks)
+      .where(eq(signalEntityLinks.signalId, id))
+      .limit(1);
+    if (delEntityLink?.strategyId) {
       const [strategy] = await db
         .select()
         .from(strategies)
-        .where(eq(strategies.id, existingSignal.strategyId))
+        .where(eq(strategies.id, delEntityLink.strategyId))
         .limit(1);
       if (strategy) {
-        strategyTitle = strategy.autoDerivedLabel || strategy.strategyKey;
+        delLinkedTitle = strategy.autoDerivedLabel || strategy.strategyKey;
+        delLinkedId = delEntityLink.strategyId;
+        delObjectType = 'strategy';
       }
     }
 
@@ -242,9 +260,9 @@ export async function DELETE(
 
     // Log to journal
     await logToJournal({
-      objectType: 'strategy',
-      objectId: existingSignal.strategyId || id,
-      objectTitle: strategyTitle,
+      objectType: delObjectType,
+      objectId: delLinkedId,
+      objectTitle: delLinkedTitle,
       actionType: 'signal_deleted',
       actionDescription: `Deleted ${existingSignal.type} signal: "${existingSignal.statement}"`,
       previousState: {
@@ -258,7 +276,6 @@ export async function DELETE(
       source: 'user',
       metadata: {
         signalId: id,
-        strategyId: existingSignal.strategyId,
       },
     });
 
