@@ -1,15 +1,33 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signalDataSnapshots } from '@/db/schema';
+import { signalDataSnapshots, signals } from '@/db/schema';
 import { eq, and, ne, asc, sql } from 'drizzle-orm';
 
-const DELTA_MAP: Record<string, number> = {
-  strengthening: 1,
-  confirmed: 1,
-  weakening: -1,
-  invalidated: -1,
-  neutral: 0,
-};
+/**
+ * Conviction delta is thesis-health-aware, not just signal-activity-aware.
+ *
+ * For confirmation/completion signals:
+ *   strengthening/confirmed → +1 (thesis is being supported)
+ *   weakening/invalidated   → -1 (thesis is being undermined)
+ *
+ * For invalidation signals, the sign is INVERTED because:
+ *   strengthening = threat is growing    → thesis conviction FALLS  → -1
+ *   weakening     = threat is receding   → thesis conviction RISES  → +1
+ *   confirmed     = invalidation triggered → thesis conviction at minimum → -1
+ *   invalidated   = threat definitively passed → thesis conviction RISES → +1
+ */
+function getDelta(assessment: string, signalType: string): number {
+  const isInvalidation = signalType === 'invalidation' || signalType === 'warning';
+  const base: Record<string, number> = {
+    strengthening: 1,
+    confirmed: 1,
+    weakening: -1,
+    invalidated: -1,
+    neutral: 0,
+  };
+  const raw = base[assessment] ?? 0;
+  return isInvalidation ? -raw : raw;
+}
 
 /**
  * GET /api/signals/[id]/daily-scores
@@ -22,6 +40,14 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    // 0. Fetch signal type (needed for thesis-health-aware delta)
+    const [signal] = await db
+      .select({ type: signals.type })
+      .from(signals)
+      .where(eq(signals.id, id))
+      .limit(1);
+    const signalType = signal?.type ?? 'confirmation';
 
     // 1. Fetch daily_synthesis rows for this signal, oldest first
     const synthRows = await db
@@ -60,7 +86,7 @@ export async function GET(
     let cumulative = 0;
     const scores = synthRows.map((row) => {
       const assessment = row.assessment ?? 'neutral';
-      const delta = DELTA_MAP[assessment] ?? 0;
+      const delta = getDelta(assessment, signalType);
       cumulative += delta;
       const dateStr = new Date(row.snapshotDate).toISOString().slice(0, 10);
 
