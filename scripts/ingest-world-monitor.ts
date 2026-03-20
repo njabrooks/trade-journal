@@ -291,6 +291,7 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
       intelligenceItemId: finalMatch?.id || null,
       dataSource: 'thesis_monitor',
       reportId: reportId,
+      status: 'pending',
     });
   }
 

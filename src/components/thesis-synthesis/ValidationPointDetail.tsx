@@ -30,6 +30,8 @@ interface Snapshot {
   thresholdValue: number | null;
   pctToThreshold: number | null;
   unit: string | null;
+  status?: string;
+  claimId?: string | null;
 }
 
 interface ValidationPointDetailProps {
@@ -319,6 +321,8 @@ export function ValidationPointDetail({
             thresholdValue: s.thresholdValue,
             pctToThreshold: s.pctToThreshold,
             unit: s.unit,
+            status: s.status ?? 'accepted',
+            claimId: s.claimId ?? null,
           }))}
         />
       </div>

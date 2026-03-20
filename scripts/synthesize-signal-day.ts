@@ -65,6 +65,21 @@ async function main() {
   const targetDateStr = resolveTargetDate();
   console.log(`Synthesising signal day: ${targetDateStr}`);
 
+  // Pre-pass: auto-accept any pending snapshots for this date
+  const accepted = await db
+    .update(signalDataSnapshots)
+    .set({ status: 'accepted' })
+    .where(
+      and(
+        eq(signalDataSnapshots.status, 'pending'),
+        sql`${signalDataSnapshots.snapshotDate}::date = ${targetDateStr}::date`
+      )
+    );
+  const acceptedCount = accepted.rowCount ?? 0;
+  if (acceptedCount > 0) {
+    console.log(`Pre-pass: auto-accepted ${acceptedCount} pending snapshot(s).`);
+  }
+
   // Fetch all active signals
   const activeSignals = await db
     .select({ id: signals.id, statement: signals.statement })
@@ -76,7 +91,7 @@ async function main() {
   let written = 0;
 
   for (const signal of activeSignals) {
-    // Fetch all non-synthesis snapshots for this signal on targetDate
+    // Fetch all non-synthesis, non-rejected snapshots for this signal on targetDate
     const observations = await db
       .select({ assessment: signalDataSnapshots.assessment })
       .from(signalDataSnapshots)
@@ -84,7 +99,8 @@ async function main() {
         and(
           eq(signalDataSnapshots.signalId, signal.id),
           sql`${signalDataSnapshots.snapshotDate}::date = ${targetDateStr}::date`,
-          ne(signalDataSnapshots.dataSource, 'daily_synthesis')
+          ne(signalDataSnapshots.dataSource, 'daily_synthesis'),
+          ne(signalDataSnapshots.status, 'rejected')
         )
       );
 

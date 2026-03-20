@@ -28,6 +28,8 @@ interface Snapshot {
   thresholdValue: number | null;
   pctToThreshold: number | null;
   unit: string | null;
+  status: string;
+  claimId: string | null;
 }
 
 const TYPE_CONFIG: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
@@ -263,7 +265,15 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
             thresholdValue: s.thresholdValue,
             pctToThreshold: s.pctToThreshold,
             unit: s.unit,
+            status: s.status,
+            claimId: s.claimId,
           }))}
+          onReject={async (snapshotId) => {
+            await fetch(`/api/signals/snapshots/${snapshotId}/reject`, { method: 'PATCH' });
+            setSnapshots(prev => prev.map(snap =>
+              snap.id === snapshotId ? { ...snap, status: 'rejected' } : snap
+            ));
+          }}
         />
       </div>
     </div>

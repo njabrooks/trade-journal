@@ -33,6 +33,8 @@ export async function GET(
         dataSource: signalDataSnapshots.dataSource,
         reportId: signalDataSnapshots.reportId,
         intelligenceItemId: signalDataSnapshots.intelligenceItemId,
+        status: signalDataSnapshots.status,
+        claimId: signalDataSnapshots.claimId,
         createdAt: signalDataSnapshots.createdAt,
       })
       .from(signalDataSnapshots)

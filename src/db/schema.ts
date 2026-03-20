@@ -1573,9 +1573,16 @@ export const signalDataSnapshots = pgTable(
       .references(() => intelligenceItems.id, { onDelete: 'set null' }),
 
     // Source tracking
-    dataSource: text('data_source').notNull(), // 'defillama' | 'hypeflows' | 'coingecko' | 'tradingview_cdp' | 'internal_db' | 'thesis_monitor' | 'derived'
+    dataSource: text('data_source').notNull(), // 'defillama' | 'hypeflows' | 'coingecko' | 'tradingview_cdp' | 'internal_db' | 'thesis_monitor' | 'derived' | 'research_routing'
     reportId: uuid('report_id')
       .references(() => intelligenceReports.id, { onDelete: 'set null' }),
+
+    // Pending review lifecycle: pending → accepted | rejected
+    status: text('status').notNull().default('accepted'), // 'pending' | 'accepted' | 'rejected'
+
+    // Claim provenance (populated only for data_source = 'research_routing')
+    claimId: uuid('claim_id')
+      .references(() => mainClaims.id, { onDelete: 'set null' }),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

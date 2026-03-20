@@ -51,6 +51,7 @@ const SOURCE_CONFIG: Record<string, { label: string; cls: string }> = {
   thesis_monitor:  { label: 'Thesis Monitor', cls: 'bg-violet-500/15 text-violet-600 dark:text-violet-400' },
   world_monitor:   { label: 'World Monitor', cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' },
   qualitative:     { label: 'Research', cls: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' },
+  research_routing: { label: 'Research', cls: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' },
   defillama:       { label: 'DeFiLlama', cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
   derived:         { label: 'Derived', cls: 'bg-muted text-muted-foreground' },
   economic_calendar: { label: 'Econ. Calendar', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
@@ -83,13 +84,16 @@ export interface SignalLogEntry {
   thresholdValue: number | null;
   pctToThreshold: number | null;
   unit: string | null;
+  status: string;
+  claimId: string | null;
 }
 
 interface SignalLogProps {
   entries: SignalLogEntry[];
+  onReject?: (snapshotId: string) => void;
 }
 
-export function SignalLog({ entries }: SignalLogProps) {
+export function SignalLog({ entries, onReject }: SignalLogProps) {
   if (entries.length === 0) {
     return (
       <div className="flex items-center justify-center text-xs text-muted-foreground py-8">
@@ -107,19 +111,30 @@ export function SignalLog({ entries }: SignalLogProps) {
             <th className="text-left font-medium px-3 py-2 w-36">Source</th>
             <th className="text-left font-medium px-3 py-2 w-40">Assessment / Value</th>
             <th className="text-left font-medium px-3 py-2">Note</th>
+            {onReject && <th className="text-right font-medium px-3 py-2 w-16"></th>}
           </tr>
         </thead>
         <tbody>
           {entries.map((entry, i) => {
             const src = getSourceConfig(entry.dataSource);
             const isDailySynthesis = entry.dataSource === 'daily_synthesis';
+            const isPending = entry.status === 'pending';
+            const isRejected = entry.status === 'rejected';
             const assessment = entry.assessment ? ASSESSMENT_CONFIG[entry.assessment] : null;
             const hasQuantitative = entry.pctToThreshold !== null;
 
             return (
               <tr
                 key={entry.id ?? i}
-                className={`border-b border-border/50 ${isDailySynthesis ? 'bg-slate-50/60 dark:bg-slate-900/30' : 'hover:bg-muted/30'}`}
+                className={`border-b border-border/50 ${
+                  isRejected
+                    ? 'opacity-40 line-through'
+                    : isPending
+                    ? 'border-l-2 border-l-amber-400 bg-amber-50/40 dark:bg-amber-950/20'
+                    : isDailySynthesis
+                    ? 'bg-slate-50/60 dark:bg-slate-900/30'
+                    : 'hover:bg-muted/30'
+                }`}
               >
                 {/* Date */}
                 <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
@@ -128,10 +143,17 @@ export function SignalLog({ entries }: SignalLogProps) {
 
                 {/* Source */}
                 <td className="px-3 py-2">
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
-                    {isDailySynthesis && <span className="mr-1">★</span>}
-                    {src.label}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
+                      {isDailySynthesis && <span className="mr-1">★</span>}
+                      {src.label}
+                    </span>
+                    {isPending && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                        Pending
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 {/* Assessment or quantitative value */}
@@ -160,6 +182,21 @@ export function SignalLog({ entries }: SignalLogProps) {
                     );
                   })()}
                 </td>
+
+                {/* Dismiss action */}
+                {onReject && (
+                  <td className="px-3 py-2 text-right">
+                    {isPending && (
+                      <button
+                        onClick={() => onReject(entry.id)}
+                        className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                        title="Dismiss this observation"
+                      >
+                        Dismiss
+                      </button>
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}
