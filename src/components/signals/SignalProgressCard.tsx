@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react';
 import type { Signal } from '@/db/schema';
 import { TradingViewMiniChart } from './TradingViewMiniChart';
 import { SignalSnapshotChart } from './SignalSnapshotChart';
+import { SignalMilestoneCard } from './SignalMilestoneCard';
 import { AssessmentTimeline } from './AssessmentTimeline';
+import {
+  ASSESSMENT_LEVELS,
+  SOURCE_LABELS,
+  formatSnapshotValue,
+} from './signal-constants';
 
 interface Snapshot {
   id: string;
@@ -21,42 +27,6 @@ interface Snapshot {
 interface SignalProgressCardProps {
   signal: Signal;
   evidenceCount?: number;
-}
-
-const ASSESSMENT_LABELS: Record<string, { label: string; color: string; emoji: string }> = {
-  neutral: { label: 'Neutral', color: 'text-muted-foreground', emoji: '⚪' },
-  strengthening: { label: 'Strengthening', color: 'text-blue-600 dark:text-blue-400', emoji: '🔵' },
-  confirmed: { label: 'Confirmed', color: 'text-emerald-600 dark:text-emerald-400', emoji: '✅' },
-  weakening: { label: 'Weakening', color: 'text-amber-600 dark:text-amber-400', emoji: '🟠' },
-  invalidated: { label: 'Invalidated', color: 'text-red-600 dark:text-red-400', emoji: '🔴' },
-};
-
-const SOURCE_LABELS: Record<string, string> = {
-  defillama: 'DefiLlama',
-  hypeflows: 'HypeFlows',
-  coingecko: 'CoinGecko',
-  tradingview_cdp: 'TradingView',
-  internal_db: 'Internal',
-  thesis_monitor: 'Thesis Monitor',
-  derived: 'Derived',
-  strategy_price: 'Price',
-};
-
-function formatValue(value: string | null, unit: string | null): string {
-  if (!value) return '—';
-  const num = parseFloat(value);
-  if (isNaN(num)) return value;
-
-  if (unit === 'USD') {
-    if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`;
-    if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`;
-    if (num >= 1e3) return `$${(num / 1e3).toFixed(0)}K`;
-    return `$${num.toFixed(2)}`;
-  }
-  if (unit === 'BTC_RATIO') return num.toPrecision(4);
-  if (unit === '%') return `${num.toFixed(1)}%`;
-  if (unit === 'status') return num === 0 ? 'Active' : 'Triggered';
-  return `${num.toFixed(2)} ${unit || ''}`.trim();
 }
 
 function ProgressBar({ pct }: { pct: number }) {
@@ -153,10 +123,10 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
         <div className="space-y-1">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-sm font-mono font-medium">
-              {formatValue(latestQuant.observedValue, latestQuant.unit)}
+              {formatSnapshotValue(latestQuant.observedValue, latestQuant.unit)}
             </span>
             <span className="text-xs text-muted-foreground">
-              / {formatValue(latestQuant.thresholdValue, latestQuant.unit)}
+              / {formatSnapshotValue(latestQuant.thresholdValue, latestQuant.unit)}
             </span>
           </div>
           <ProgressBar pct={parseFloat(latestQuant.pctToThreshold || '0')} />
@@ -175,8 +145,17 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
           symbol={tvSymbol}
           height={350}
         />
+      ) : latestQuant?.unit === 'status' ? (
+        /* Status/milestone signal: checklist card */
+        <SignalMilestoneCard
+          triggered={parseFloat(latestQuant.observedValue || '0') >= 1}
+          lastChecked={latestQuant.snapshotDate}
+          evidenceSummary={latestQuant.evidenceSummary || latestQual?.evidenceSummary || null}
+          latestAssessment={latestQual?.assessment || null}
+          signalType={signal.type}
+        />
       ) : quantitative.length >= 2 ? (
-        /* Thesis quantitative: Recharts sparkline */
+        /* Thesis quantitative: Recharts chart */
         <SignalSnapshotChart
           snapshots={quantitative.map(s => ({
             date: s.snapshotDate,
@@ -185,6 +164,7 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
           }))}
           unit={latestQuant?.unit || ''}
           signalType={signal.type}
+          direction={(details?.direction as 'up_to_threshold' | 'down_to_threshold' | undefined)}
           height={140}
         />
       ) : null}
@@ -205,11 +185,9 @@ export function SignalProgressCard({ signal, evidenceCount }: SignalProgressCard
         <div className="space-y-1">
           {latestQual.assessment && (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs">
-                {ASSESSMENT_LABELS[latestQual.assessment]?.emoji || '⚪'}
-              </span>
-              <span className={`text-xs font-medium ${ASSESSMENT_LABELS[latestQual.assessment]?.color || ''}`}>
-                {ASSESSMENT_LABELS[latestQual.assessment]?.label || latestQual.assessment}
+              <div className={`w-2.5 h-2.5 rounded-full ${ASSESSMENT_LEVELS[latestQual.assessment]?.dotColor || 'bg-zinc-400'}`} />
+              <span className={`text-xs font-medium ${ASSESSMENT_LEVELS[latestQual.assessment]?.textColor || ''}`}>
+                {ASSESSMENT_LEVELS[latestQual.assessment]?.label || latestQual.assessment}
               </span>
             </div>
           )}

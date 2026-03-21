@@ -103,7 +103,7 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
   }
 
   return (
-    <div className="overflow-y-auto max-h-[480px]">
+    <div>
       <table className="w-full text-sm border-collapse">
         <thead className="sticky top-0 bg-card z-10">
           <tr className="border-b border-border text-xs text-muted-foreground">
@@ -143,17 +143,10 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
 
                 {/* Source */}
                 <td className="px-3 py-2">
-                  <div className="flex flex-col items-center gap-1">
-                    <span className={`w-full text-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
-                      {isDailySynthesis && <span className="mr-1">★</span>}
-                      {src.label}
-                    </span>
-                    {isPending && (
-                      <span className="w-full text-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400">
-                        Pending
-                      </span>
-                    )}
-                  </div>
+                  <span className={`block w-full text-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
+                    {isDailySynthesis && <span className="mr-1">★</span>}
+                    {src.label}
+                  </span>
                 </td>
 
                 {/* Assessment or quantitative value */}
@@ -183,17 +176,22 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
                   })()}
                 </td>
 
-                {/* Dismiss action */}
+                {/* Status + Dismiss action */}
                 {onReject && (
                   <td className="px-3 py-2 text-right">
                     {isPending && (
-                      <button
-                        onClick={() => onReject(entry.id)}
-                        className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                        title="Dismiss this observation"
-                      >
-                        Dismiss
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                          Pending
+                        </span>
+                        <button
+                          onClick={() => onReject(entry.id)}
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                          title="Dismiss this observation"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
                     )}
                   </td>
                 )}

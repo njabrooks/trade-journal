@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function NewsPage() {
   const [upcoming, feed] = await Promise.all([
     getUpcomingCalendar(7),
-    getUnifiedFeed({ limit: 50 }),
+    getUnifiedFeed({ limit: 100 }),
   ]);
 
   return (

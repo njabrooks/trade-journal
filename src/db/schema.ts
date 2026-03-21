@@ -2793,7 +2793,8 @@ export const intelligenceItems = pgTable(
     body: text('body'),
     sourceUrls: text('source_urls').array().default(sql`'{}'`),
     relevantTickers: text('relevant_tickers').array().default(sql`'{}'`),
-    section: text('section'),              // 'executive_summary' | 'deep_dive' | 'opportunities'
+    section: text('section'),              // 'new_developments' | 'deep_dive' | 'running_stories' | 'key_themes' | 'opportunities' | 'executive_summary'
+    sortOrder: integer('sort_order'),       // Ordinal position within the source report (0-based)
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

@@ -1,6 +1,6 @@
 'use client';
 
-import { FeedItemCard } from './FeedItemCard';
+import { FeedItemRow } from './FeedItemRow';
 import type { FeedItem } from '@/db/queries/unifiedFeed';
 
 interface FeedListProps {
@@ -35,11 +35,10 @@ export function FeedList({ items, hasMore, isLoading, onLoadMore }: FeedListProp
     );
   }
 
-  // Group items by date for date headers
   let lastDateKey = '';
 
   return (
-    <div className="space-y-1.5">
+    <div className="rounded-xl border bg-card divide-y divide-border/50">
       {items.map((item) => {
         const itemDate = new Date(item.timestamp);
         const dateKey = getDateKey(itemDate);
@@ -49,24 +48,24 @@ export function FeedList({ items, hasMore, isLoading, onLoadMore }: FeedListProp
         return (
           <div key={item.id}>
             {showHeader && (
-              <div className="pt-3 pb-1 first:pt-0">
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="px-3 pt-2.5 pb-1">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {formatDateHeader(itemDate)}
                 </h4>
               </div>
             )}
-            <FeedItemCard item={item} />
+            <FeedItemRow item={item} />
           </div>
         );
       })}
 
       {/* Load more */}
       {hasMore && (
-        <div className="flex justify-center pt-2">
+        <div className="flex justify-center py-2">
           <button
             onClick={onLoadMore}
             disabled={isLoading}
-            className="rounded-md border bg-card px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+            className="rounded-md px-4 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             {isLoading ? 'Loading...' : 'Load more'}
           </button>
@@ -75,13 +74,9 @@ export function FeedList({ items, hasMore, isLoading, onLoadMore }: FeedListProp
 
       {/* Loading skeleton */}
       {isLoading && items.length === 0 && (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-lg border bg-card px-4 py-3 animate-pulse">
-              <div className="h-3 w-32 bg-accent rounded mb-2" />
-              <div className="h-4 w-3/4 bg-accent rounded mb-1.5" />
-              <div className="h-3 w-1/2 bg-accent rounded" />
-            </div>
+        <div className="p-3 space-y-1">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-8 bg-accent/50 rounded animate-pulse" />
           ))}
         </div>
       )}

@@ -11,12 +11,23 @@ import {
   Archive,
   Scale,
   ArrowLeft,
+  ExternalLink,
 } from 'lucide-react';
 import { SignalCumulativeScoreChart } from '@/components/signals/SignalCumulativeScoreChart';
+import { SignalSnapshotChart } from '@/components/signals/SignalSnapshotChart';
+import { SignalMilestoneCard } from '@/components/signals/SignalMilestoneCard';
 import { SignalLog } from '@/components/signals/SignalLog';
 import type { DayScore } from '@/components/signals/SignalCumulativeScoreChart';
 import type { SignalLogEntry } from '@/components/signals/SignalLog';
 import type { SignalWithContext } from '@/db/queries/signals';
+import {
+  SIGNAL_TYPE_COLORS,
+  IMPORTANCE_CONFIG,
+  STATUS_COLORS,
+  ASSESSMENT_LEVELS,
+  SOURCE_LABELS,
+  formatSnapshotValue,
+} from '@/components/signals/signal-constants';
 
 interface Snapshot {
   id: string;
@@ -32,40 +43,18 @@ interface Snapshot {
   claimId: string | null;
 }
 
-const TYPE_CONFIG: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
-  confirmation: {
-    label: 'Confirmation',
-    cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-    icon: <CheckCircle2 className="w-3 h-3" />,
-  },
-  invalidation: {
-    label: 'Invalidation',
-    cls: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
-    icon: <AlertTriangle className="w-3 h-3" />,
-  },
-  warning: {
-    label: 'Invalidation',
-    cls: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
-    icon: <AlertTriangle className="w-3 h-3" />,
-  },
-  completion: {
-    label: 'Completion',
-    cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
-    icon: <Target className="w-3 h-3" />,
-  },
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  confirmation: <CheckCircle2 className="w-3 h-3" />,
+  invalidation: <AlertTriangle className="w-3 h-3" />,
+  warning:      <AlertTriangle className="w-3 h-3" />,
+  completion:   <Target className="w-3 h-3" />,
 };
 
-const IMPORTANCE_CONFIG: Record<string, string> = {
-  critical:    'bg-destructive/15 text-destructive',
-  significant: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  supporting:  'bg-muted text-muted-foreground',
-};
-
-const STATUS_CONFIG: Record<string, { cls: string; icon: React.ReactNode }> = {
-  draft:    { cls: 'bg-muted text-muted-foreground', icon: <Clock className="w-3 h-3" /> },
-  active:   { cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', icon: <Eye className="w-3 h-3" /> },
-  complete: { cls: 'bg-muted text-muted-foreground', icon: <CheckCircle2 className="w-3 h-3" /> },
-  rejected: { cls: 'bg-destructive/15 text-destructive', icon: <Archive className="w-3 h-3" /> },
+const STATUS_ICONS: Record<string, React.ReactNode> = {
+  draft:    <Clock className="w-3 h-3" />,
+  active:   <Eye className="w-3 h-3" />,
+  complete: <CheckCircle2 className="w-3 h-3" />,
+  rejected: <Archive className="w-3 h-3" />,
 };
 
 function entityTypeBadge(entity: SignalWithContext['entities'][number]): { label: string; cls: string } {
@@ -98,15 +87,24 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
       .catch(() => {});
   }, [signal.id]);
 
-  const typeConfig = TYPE_CONFIG[signal.type] ?? TYPE_CONFIG.confirmation;
-  const statusConfig = STATUS_CONFIG[signal.status] ?? STATUS_CONFIG.active;
+  const typeColors = SIGNAL_TYPE_COLORS[signal.type] ?? SIGNAL_TYPE_COLORS.confirmation;
+  const typeIcon = TYPE_ICONS[signal.type] ?? TYPE_ICONS.confirmation;
+  const statusCls = STATUS_COLORS[signal.status] ?? STATUS_COLORS.active;
+  const statusIcon = STATUS_ICONS[signal.status] ?? STATUS_ICONS.active;
   const importanceCls = IMPORTANCE_CONFIG[signal.importance] ?? IMPORTANCE_CONFIG.supporting;
 
   const explicitDetails = signal.explicitDetails as {
     metric?: string;
+    metricName?: string;
     threshold?: string;
     dataSources?: string[];
     monitoringFrequency?: string;
+    dataSource?: string;
+    endpoint?: string;
+    direction?: string;
+    display_type?: string;
+    calculation?: string;
+    conditions?: Array<{ label?: string; metric?: string }>;
   } | null;
 
   const linkedEntities = signal.entities.filter(e => e.entityLink);
@@ -140,9 +138,9 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
           <div className="flex-1">
             {/* Badges */}
             <div className="flex items-center gap-1.5 flex-wrap mb-3">
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeConfig.cls}`}>
-                {typeConfig.icon}
-                {typeConfig.label}
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeColors.cls}`}>
+                {typeIcon}
+                {typeColors.label}
               </span>
               <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${importanceCls}`}>
                 {signal.importance}
@@ -163,8 +161,8 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
           </div>
 
           {/* Status */}
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusConfig.cls}`}>
-            {statusConfig.icon}
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusCls}`}>
+            {statusIcon}
             {signal.status}
           </span>
         </div>
@@ -194,52 +192,168 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
         </div>
       </div>
 
-      {/* Trigger criteria (data_driven only) */}
-      {signal.category === 'data_driven' && explicitDetails && (
-        <div className="bg-card rounded-lg border p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Trigger Criteria</h3>
-          <dl className="space-y-2 text-sm">
-            {explicitDetails.metric && (
-              <div>
-                <dt className="text-muted-foreground">Metric</dt>
-                <dd className="text-foreground font-medium">{explicitDetails.metric}</dd>
-              </div>
-            )}
-            {explicitDetails.threshold && (
-              <div>
-                <dt className="text-muted-foreground">Threshold</dt>
-                <dd className="text-foreground font-mono">{explicitDetails.threshold}</dd>
-              </div>
-            )}
-            {explicitDetails.dataSources && explicitDetails.dataSources.length > 0 && (
-              <div>
-                <dt className="text-muted-foreground">Data Sources</dt>
-                <dd className="text-foreground">{explicitDetails.dataSources.join(', ')}</dd>
-              </div>
-            )}
-            {explicitDetails.monitoringFrequency && (
-              <div>
-                <dt className="text-muted-foreground">Monitoring Frequency</dt>
-                <dd className="text-foreground">{explicitDetails.monitoringFrequency}</dd>
-              </div>
-            )}
-          </dl>
-        </div>
-      )}
 
-      {/* Conviction Trend */}
+      {/* Signal Status + Tracking */}
+      {(() => {
+        // Classify snapshot data
+        const allQuant = snapshots.filter(s =>
+          s.observedValue !== null && !s.dataSource.startsWith('price_history')
+        );
+        const primarySource = allQuant[0]?.dataSource;
+        const quantitative = primarySource
+          ? allQuant.filter(s => s.dataSource === primarySource)
+          : allQuant;
+        const latestQuant = quantitative[0];
+        const latestQual = snapshots.filter(s => s.assessment !== null)[0];
+        const latestAny = latestQuant || latestQual;
+
+        // Determine signal display mode:
+        // - 'quantitative': has numeric time-series data (unit != 'status')
+        // - 'milestone': has status-type quant data OR qualitative-only (binary event)
+        // - 'none': no data at all
+        const hasTimeSeries = quantitative.length >= 2 && latestQuant?.unit !== 'status';
+        const hasStatusQuant = latestQuant?.unit === 'status';
+        const displayMode = hasTimeSeries ? 'quantitative'
+          : (hasStatusQuant || latestAny) ? 'milestone'
+          : 'none';
+
+        if (displayMode === 'none') return null;
+
+        // Source link and metric name (for quantitative mode)
+        const sourceKey = explicitDetails?.dataSource || latestQuant?.dataSource;
+        const sourceLabel = sourceKey ? (SOURCE_LABELS[sourceKey] || sourceKey) : null;
+        const sourceUrl = explicitDetails?.endpoint || null;
+        const metricName = explicitDetails?.metricName
+          || explicitDetails?.conditions?.[0]?.label
+          || explicitDetails?.calculation
+          || null;
+
+        return (
+          <>
+            {/* === Quantitative mode: value summary + time-series chart === */}
+            {displayMode === 'quantitative' && latestQuant && (
+              <>
+                {/* Status Summary Card */}
+                <div className="bg-card rounded-lg border p-4">
+                  <div className="flex items-center gap-6 flex-wrap">
+                    <div className="flex-1 min-w-[200px] space-y-1.5">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-mono font-semibold text-foreground">
+                          {formatSnapshotValue(String(latestQuant.observedValue), latestQuant.unit)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          / {formatSnapshotValue(String(latestQuant.thresholdValue), latestQuant.unit)}
+                        </span>
+                      </div>
+                      {latestQuant.pctToThreshold != null && (
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                Number(latestQuant.pctToThreshold) >= 90 ? 'bg-emerald-500' :
+                                Number(latestQuant.pctToThreshold) >= 60 ? 'bg-blue-500' :
+                                Number(latestQuant.pctToThreshold) >= 30 ? 'bg-amber-500' :
+                                'bg-zinc-400'
+                              }`}
+                              style={{ width: `${Math.min(Math.max(Number(latestQuant.pctToThreshold), 0), 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-mono text-muted-foreground w-12 text-right">
+                            {Number(latestQuant.pctToThreshold).toFixed(0)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {latestQual?.assessment && (() => {
+                      const level = ASSESSMENT_LEVELS[latestQual.assessment];
+                      return level ? (
+                        <div className={`flex items-center gap-2 rounded-md border px-3 py-2 ${level.bgColor} ${level.borderColor}`}>
+                          <div className={`w-2.5 h-2.5 rounded-full ${level.dotColor}`} />
+                          <span className={`text-sm font-medium ${level.textColor}`}>{level.label}</span>
+                        </div>
+                      ) : null;
+                    })()}
+                    <div className="text-xs text-muted-foreground">
+                      Updated {new Date(latestAny!.snapshotDate).toLocaleDateString('en-GB', {
+                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quantitative Tracking Chart */}
+                <div className="bg-card rounded-lg border">
+                  <div className="px-4 py-3 border-b flex items-start justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Quantitative Tracking</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {metricName || 'Observed value vs. threshold over time'}
+                      </p>
+                    </div>
+                    {sourceLabel && (
+                      <div className="flex items-center gap-1.5">
+                        {sourceUrl ? (
+                          <a
+                            href={sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            {sourceLabel}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-muted text-muted-foreground">
+                            {sourceLabel}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <SignalSnapshotChart
+                      snapshots={quantitative.map(s => ({
+                        date: s.snapshotDate,
+                        observed: Number(s.observedValue) || 0,
+                        threshold: Number(s.thresholdValue) || 0,
+                      }))}
+                      unit={latestQuant.unit || ''}
+                      signalType={signal.type}
+                      direction={(signal.explicitDetails as Record<string, unknown>)?.direction as 'up_to_threshold' | 'down_to_threshold' | undefined}
+                      height={200}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* === Milestone mode: binary event status === */}
+            {displayMode === 'milestone' && (
+              <SignalMilestoneCard
+                triggered={hasStatusQuant ? Number(latestQuant!.observedValue) >= 1 : false}
+                lastChecked={latestAny!.snapshotDate}
+                evidenceSummary={latestQual?.evidenceSummary || latestQuant?.evidenceSummary || null}
+                latestAssessment={latestQual?.assessment || null}
+                signalType={signal.type}
+              />
+            )}
+          </>
+        );
+      })()}
+
+      {/* Qualitative Tracking */}
       <div className="bg-card rounded-lg border">
         <div className="px-4 py-3 border-b">
-          <h3 className="text-sm font-semibold text-foreground">Conviction Trend</h3>
+          <h3 className="text-sm font-semibold text-foreground">Qualitative Tracking</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Daily qualitative evidence score. +1 strengthening, −1 weakening, 0 neutral.
+            Cumulative conviction score from narrative evidence. +1 strengthening, −1 weakening, 0 neutral.
           </p>
         </div>
         <div className="p-4">
           {isLoadingScores ? (
             <div className="text-sm text-muted-foreground py-4">Loading...</div>
           ) : (
-            <SignalCumulativeScoreChart scores={dailyScores} />
+            <SignalCumulativeScoreChart scores={dailyScores} signalType={signal.type} />
           )}
         </div>
       </div>

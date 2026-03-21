@@ -59,10 +59,10 @@ async function ingestReport(filePath: string): Promise<{ reportId: string; itemC
     })
     .returning({ id: intelligenceReports.id });
 
-  // Insert items
+  // Insert items with sort order preserving report sequence
   if (parsed.items.length > 0) {
     await db.insert(intelligenceItems).values(
-      parsed.items.map(item => ({
+      parsed.items.map((item, idx) => ({
         reportId: report.id,
         severity: item.severity,
         sector: item.sector,
@@ -71,6 +71,7 @@ async function ingestReport(filePath: string): Promise<{ reportId: string; itemC
         sourceUrls: item.sourceUrls,
         relevantTickers: item.relevantTickers,
         section: item.section,
+        sortOrder: idx,
       }))
     );
   }

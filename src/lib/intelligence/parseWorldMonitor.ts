@@ -33,7 +33,7 @@ export interface ParsedItem {
   body: string;
   sourceUrls: string[];
   relevantTickers: string[];
-  section: 'executive_summary' | 'deep_dive' | 'opportunities';
+  section: 'executive_summary' | 'deep_dive' | 'opportunities' | 'new_developments' | 'running_stories' | 'key_themes';
 }
 
 const SEVERITY_MAP: Record<string, 'critical' | 'high' | 'medium' | 'info'> = {
@@ -60,6 +60,9 @@ const SECTOR_MAP: Record<string, string> = {
   'tech & ai': 'tech',
   'finance': 'finance',
   'finance & markets': 'finance',
+  'energy': 'energy',
+  'energy & commodities': 'energy',
+  'commodities': 'energy',
 };
 
 /**
@@ -159,7 +162,7 @@ function detectSector(sectionHeader: string): string | null {
  */
 function parseSeverityItems(
   text: string,
-  section: 'executive_summary' | 'deep_dive' | 'opportunities',
+  section: ParsedItem['section'],
   defaultSector: string | null = null,
 ): ParsedItem[] {
   const items: ParsedItem[] = [];
@@ -305,15 +308,24 @@ export function parseWorldMonitor(markdown: string): ParsedReport {
     if (!headerMatch) continue;
 
     const headerName = headerMatch[1].trim().toUpperCase();
+    const sectionContent = section.replace(/^## .+\n+/, '').trim();
 
-    if (headerName.includes('EXECUTIVE SUMMARY')) {
-      executiveSummary = section.replace(/^## .+\n+/, '').trim();
-      const items = parseSeverityItems(executiveSummary, 'executive_summary');
+    if (headerName.includes('NEW DEVELOPMENTS') || headerName.includes('EXECUTIVE SUMMARY')) {
+      // Section 1: severity-tagged atomic items with per-item source URLs
+      executiveSummary = sectionContent;
+      const items = parseSeverityItems(sectionContent, 'new_developments');
+      allItems.push(...items);
+    } else if (headerName.includes('RUNNING STORIES') || headerName.includes('STATUS UPDATE')) {
+      // Section 2: prose narrative items (no severity emojis)
+      const items = parseRunningStories(sectionContent);
       allItems.push(...items);
     } else if (headerName.includes('KEY THEMES') || headerName.includes('PATTERNS')) {
-      keyThemes = section.replace(/^## .+\n+/, '').trim();
+      // Section 3: thematic analysis — itemize each theme
+      keyThemes = sectionContent;
+      const items = parseKeyThemes(sectionContent);
+      allItems.push(...items);
     } else if (headerName.includes('DEEP-DIVE') || headerName.includes('DEEP DIVE') || headerName.includes('DOMAIN')) {
-      // Parse deep-dive subsections (### headers for sectors)
+      // Section 4: sector deep-dives with severity-tagged items
       const subSections = section.split(/(?=^### )/m);
       for (const subSection of subSections) {
         const subHeaderMatch = subSection.match(/^### (.+)/m);
@@ -323,35 +335,25 @@ export function parseWorldMonitor(markdown: string): ParsedReport {
         const items = parseSeverityItems(subContent, 'deep_dive', sector);
         allItems.push(...items);
       }
+    } else if (headerName.includes('OPPORTUNITIES') || headerName.includes('GAPS') || headerName.includes('ANGLES')) {
+      // Section 5: intelligence gaps + portfolio signals
+      const items = parseOpportunitiesAndGaps(sectionContent);
+      allItems.push(...items);
     } else if (headerName.includes('SIGNAL ASSESSMENT')) {
-      // Thesis-monitor: parse signal assessment subsections (### Thesis Name)
-      executiveSummary = section.replace(/^## .+\n+/, '').trim();
+      // Thesis-monitor: parse signal assessment subsections
+      executiveSummary = sectionContent;
       const subSections = section.split(/(?=^### )/m);
       for (const subSection of subSections) {
         const subHeaderMatch = subSection.match(/^### (.+)/m);
         if (!subHeaderMatch) continue;
-        // Extract ticker from header like "### Bullish HYPE Medium Term (asset — bullish — HYPE)"
         const subContent = subSection.replace(/^### .+\n+/, '').trim();
         const items = parseSignalAssessmentItems(subContent);
         allItems.push(...items);
       }
     } else if (headerName.includes('SIGNAL WATCH SUMMARY')) {
-      // Thesis-monitor: use signal watch summary as key themes
-      keyThemes = section.replace(/^## .+\n+/, '').trim();
-    } else if (headerName.includes('OPPORTUNITIES') || headerName.includes('ANGLES')) {
-      // Opportunities section — parse individual items
-      const content = section.replace(/^## .+\n+/, '').trim();
-      // Opportunities have different format: bold headers with analysis
-      const subSections = content.split(/(?=^###\s)/m);
-      for (const sub of subSections) {
-        const subHeader = sub.match(/^### (.+)/m);
-        if (subHeader) {
-          // Sub-categories like "Contrarian Angles", "Coverage Gaps"
-          const items = parseOpportunityItems(sub.replace(/^### .+\n+/, '').trim());
-          allItems.push(...items);
-        }
-      }
+      keyThemes = sectionContent;
     }
+    // Section 6 (SOURCE INDEX) intentionally skipped — URLs already captured per-item
   }
 
   // Deduplicate headlines (e.g., multiple "Coverage Gaps" across sectors)
@@ -387,37 +389,147 @@ export function parseWorldMonitor(markdown: string): ParsedReport {
 }
 
 /**
- * Parse opportunity items which have a different format:
- * **Bold Title**
- * - Gap: ...
- * - Opportunity: ...
- * - Risk: ...
+ * Parse Running Stories section.
+ * Format: bullet points starting with **Bold Title (context):** followed by narrative.
+ * No severity emojis — these are status updates on ongoing stories.
  */
-function parseOpportunityItems(text: string): ParsedItem[] {
+function parseRunningStories(text: string): ParsedItem[] {
   const items: ParsedItem[] = [];
-  const blocks = text.split(/(?=^\*\*[^*])/m);
+  // Split by top-level bullet points starting with bold text
+  const bullets = text.split(/(?=^- \*\*)/m);
 
-  for (const block of blocks) {
-    const trimmed = block.trim();
-    if (!trimmed) continue;
+  for (const bullet of bullets) {
+    const trimmed = bullet.trim();
+    if (!trimmed.startsWith('- **')) continue;
 
-    const titleMatch = trimmed.match(/^\*\*(.+?)\*\*/);
-    if (!titleMatch) continue;
+    const content = trimmed.slice(2).trim(); // Remove "- "
+    const headlineMatch = content.match(/^\*\*(.+?)\*\*/);
+    if (!headlineMatch) continue;
 
-    const headline = titleMatch[1].trim();
-    const body = trimmed.slice(titleMatch[0].length).trim();
-
-    if (!headline || headline.length < 5) continue;
+    const headline = headlineMatch[1].replace(/:\s*$/, '').trim();
+    const bodyStartIdx = content.indexOf('**', content.indexOf('**') + 2) + 2;
+    let body = content.slice(bodyStartIdx).trim();
+    if (body.startsWith(':')) body = body.slice(1).trim();
 
     items.push({
       severity: 'info',
       sector: null,
       headline,
-      body: body.replace(/^[\n\-—–\s]+/, ''),
+      body,
+      sourceUrls: extractUrls(bullet),
+      relevantTickers: extractTickers(bullet),
+      section: 'running_stories',
+    });
+  }
+
+  return items;
+}
+
+/**
+ * Parse Key Themes section.
+ * Format: **Theme N: Title**\n\nParagraph body
+ */
+function parseKeyThemes(text: string): ParsedItem[] {
+  const items: ParsedItem[] = [];
+  // Split by bold theme headers
+  const blocks = text.split(/(?=^\*\*Theme \d+)/m);
+
+  for (const block of blocks) {
+    const trimmed = block.trim();
+    if (!trimmed) continue;
+
+    const headlineMatch = trimmed.match(/^\*\*(?:Theme \d+:\s*)?(.+?)\*\*/);
+    if (!headlineMatch) continue;
+
+    const headline = headlineMatch[1].trim();
+    const body = trimmed.slice(headlineMatch[0].length).trim();
+
+    if (!headline || headline.length < 5) continue;
+
+    items.push({
+      severity: 'medium',
+      sector: null,
+      headline,
+      body,
       sourceUrls: extractUrls(block),
       relevantTickers: extractTickers(block),
-      section: 'opportunities',
+      section: 'key_themes',
     });
+  }
+
+  return items;
+}
+
+/**
+ * Parse Opportunities & Gaps section.
+ * Format: **Intelligence Gaps:** / **Portfolio-Relevant Signals:**
+ * followed by - **Bold item title** description text
+ */
+function parseOpportunitiesAndGaps(text: string): ParsedItem[] {
+  const items: ParsedItem[] = [];
+
+  // Split by sub-section headers like **Intelligence Gaps:** or **Portfolio-Relevant Signals:**
+  const subSections = text.split(/(?=^\*\*(?:Intelligence Gaps|Portfolio-Relevant Signals|Contrarian Angles|Coverage Gaps)[^*]*\*\*)/m);
+
+  for (const sub of subSections) {
+    const trimmed = sub.trim();
+    if (!trimmed) continue;
+
+    // Detect sub-section type
+    const headerMatch = trimmed.match(/^\*\*([^*]+)\*\*/);
+    const sectionType = headerMatch?.[1]?.trim().replace(/:$/, '') || '';
+    const isGap = sectionType.toLowerCase().includes('gap');
+
+    // Parse bullet items within this sub-section
+    const bullets = trimmed.split(/(?=^- \*\*)/m);
+    for (const bullet of bullets) {
+      const bt = bullet.trim();
+      if (!bt.startsWith('- **')) continue;
+
+      const content = bt.slice(2).trim();
+      const titleMatch = content.match(/^\*\*(.+?)\*\*/);
+      if (!titleMatch) continue;
+
+      let headline = titleMatch[1].replace(/[.:]\s*$/, '').trim();
+      const bodyStartIdx = content.indexOf('**', content.indexOf('**') + 2) + 2;
+      let body = content.slice(bodyStartIdx).trim();
+      if (body.startsWith('.') || body.startsWith(':')) body = body.slice(1).trim();
+
+      if (!headline || headline.length < 5) continue;
+
+      items.push({
+        severity: isGap ? 'info' : 'medium',
+        sector: null,
+        headline: `${sectionType}: ${headline}`,
+        body,
+        sourceUrls: extractUrls(bullet),
+        relevantTickers: extractTickers(bullet),
+        section: 'opportunities',
+      });
+    }
+  }
+
+  // Fallback: if no sub-sections found, try the old format
+  if (items.length === 0) {
+    const blocks = text.split(/(?=^\*\*[^*])/m);
+    for (const block of blocks) {
+      const trimmed = block.trim();
+      if (!trimmed) continue;
+      const titleMatch = trimmed.match(/^\*\*(.+?)\*\*/);
+      if (!titleMatch) continue;
+      const headline = titleMatch[1].trim();
+      const body = trimmed.slice(titleMatch[0].length).trim();
+      if (!headline || headline.length < 5) continue;
+      items.push({
+        severity: 'info',
+        sector: null,
+        headline,
+        body: body.replace(/^[\n\-—–\s]+/, ''),
+        sourceUrls: extractUrls(block),
+        relevantTickers: extractTickers(block),
+        section: 'opportunities',
+      });
+    }
   }
 
   return items;

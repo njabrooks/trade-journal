@@ -56,6 +56,9 @@ export interface SignalWithContext {
 
   // Claim evidence count
   evidenceCount: number;
+
+  // Recent quantitative snapshots for sparkline (newest first, max 10)
+  recentSnapshots: Array<{ date: string; value: number }>;
 }
 
 export interface SignalFilterCounts {
@@ -214,7 +217,33 @@ export async function getAllSignalsWithContext(): Promise<{
   `);
   const evidenceCountMap = new Map(evidenceCounts.map(r => [r.signal_id, parseInt(r.count, 10)]));
 
-  // 6. Resolve macro thesis → underlying tickers
+  // 6. Fetch recent quantitative snapshots for sparklines (top 10 per signal)
+  const recentSnapshotRows = await db.execute<{
+    signal_id: string;
+    snapshot_date: string;
+    observed_value: string;
+  }>(sql`
+    SELECT signal_id, snapshot_date, observed_value
+    FROM (
+      SELECT signal_id, snapshot_date::date::text as snapshot_date, observed_value,
+             ROW_NUMBER() OVER (PARTITION BY signal_id ORDER BY snapshot_date DESC) as rn
+      FROM signal_data_snapshots
+      WHERE observed_value IS NOT NULL
+        AND data_source NOT LIKE 'price_history%'
+        AND status != 'rejected'
+    ) sub
+    WHERE rn <= 10
+    ORDER BY signal_id, snapshot_date ASC
+  `);
+
+  const recentSnapshotMap = new Map<string, Array<{ date: string; value: number }>>();
+  for (const row of recentSnapshotRows) {
+    const arr = recentSnapshotMap.get(row.signal_id) || [];
+    arr.push({ date: row.snapshot_date, value: parseFloat(row.observed_value) });
+    recentSnapshotMap.set(row.signal_id, arr);
+  }
+
+  // 7. Resolve macro thesis → underlying tickers
   const macroUnderlyings = await db.execute<{
     macro_thesis_id: string;
     ticker: string;
@@ -275,10 +304,11 @@ export async function getAllSignalsWithContext(): Promise<{
       latestEvidenceSummary: qual?.evidence_summary ?? null,
       latestQualDate: qual?.snapshot_date ? new Date(qual.snapshot_date) : null,
       evidenceCount: evidenceCountMap.get(s.id) || 0,
+      recentSnapshots: recentSnapshotMap.get(s.id) || [],
     };
   });
 
-  // 8. Compute counts
+  // 9. Compute counts
   const counts: SignalFilterCounts = {
     total: merged.length,
     active: 0,
@@ -482,5 +512,6 @@ export async function getSignalWithEntitiesById(id: string): Promise<SignalWithC
     latestEvidenceSummary: latestQual?.evidence_summary ?? null,
     latestQualDate: latestQual?.snapshot_date ? new Date(latestQual.snapshot_date) : null,
     evidenceCount: evidenceCount ? parseInt(evidenceCount.count, 10) : 0,
+    recentSnapshots: [],
   };
 }

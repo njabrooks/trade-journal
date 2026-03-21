@@ -118,6 +118,7 @@ function EntityTypeBadges({ entities }: { entities: SignalEntityInfo[] }) {
 export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedSubGroups, setCollapsedSubGroups] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Filters
@@ -281,6 +282,15 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
     });
   }
 
+  function toggleSubGroup(key: string) {
+    setCollapsedSubGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   function SortIcon({ col }: { col: SortColumn }) {
     if (sortColumn !== col) return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />;
     return sortDirection === 'asc'
@@ -343,6 +353,8 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
               pctToThreshold={pct}
               signalType={signal.type}
               assessment={signal.latestAssessment}
+              recentSnapshots={signal.recentSnapshots}
+              threshold={signal.latestThresholdValue ? parseFloat(signal.latestThresholdValue) : null}
             />
           </td>
         </tr>
@@ -632,7 +644,56 @@ export function SignalsBrowser({ signals, counts }: SignalsBrowserProps) {
                               </div>
                             </td>
                           </tr>
-                          {!isCollapsed && groupSignals.map(renderSignalRow)}
+                          {!isCollapsed && (() => {
+                            // Sub-group by entity type within underlying
+                            const thesisSignals = groupSignals.filter(s =>
+                              s.entities.some(e => e.entityType === 'thesis')
+                            );
+                            const strategySignals = groupSignals.filter(s =>
+                              s.entities.some(e => e.entityType === 'strategy') &&
+                              !s.entities.some(e => e.entityType === 'thesis')
+                            );
+                            const hasMultipleTypes = thesisSignals.length > 0 && strategySignals.length > 0;
+
+                            if (!hasMultipleTypes) {
+                              return groupSignals.map(renderSignalRow);
+                            }
+
+                            const subGroups = [
+                              { key: `${ticker}-thesis`, label: 'Asset Thesis', signals: thesisSignals },
+                              { key: `${ticker}-strategy`, label: 'Strategy', signals: strategySignals },
+                            ].filter(g => g.signals.length > 0);
+
+                            return subGroups.map(sub => {
+                              const isSubCollapsed = collapsedSubGroups.has(sub.key);
+                              return (
+                                <Fragment key={sub.key}>
+                                  <tr
+                                    className="bg-muted/15 border-b cursor-pointer hover:bg-muted/25 transition-colors"
+                                    onClick={() => toggleSubGroup(sub.key)}
+                                  >
+                                    <td className="px-2 py-1.5 text-center pl-6">
+                                      {isSubCollapsed
+                                        ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+                                        : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/60" />
+                                      }
+                                    </td>
+                                    <td colSpan={5} className="px-3 py-1.5">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                                          {sub.label}
+                                        </span>
+                                        <span className="text-[11px] text-muted-foreground/50">
+                                          {sub.signals.length}
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  {!isSubCollapsed && sub.signals.map(renderSignalRow)}
+                                </Fragment>
+                              );
+                            });
+                          })()}
                         </Fragment>
                       );
                     })}

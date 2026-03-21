@@ -7,6 +7,12 @@ import {
   ChartTooltip,
   type ChartConfig,
 } from '@/components/ui/chart';
+import {
+  SIGNAL_TYPE_COLORS,
+  formatDateShort,
+  formatNumericValue,
+  type SignalDirection,
+} from './signal-constants';
 
 interface SnapshotPoint {
   date: string;
@@ -14,35 +20,12 @@ interface SnapshotPoint {
   threshold: number;
 }
 
-interface SignalSnapshotChartProps {
+export interface SignalSnapshotChartProps {
   snapshots: SnapshotPoint[];
   unit: string;
   signalType: string; // 'confirmation' | 'invalidation' | 'completion'
+  direction?: SignalDirection; // 'up_to_threshold' | 'down_to_threshold'
   height?: number;
-}
-
-const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function formatDateShort(date: string): string {
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return date;
-  return `${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;
-}
-
-function formatValue(value: number, unit: string): string {
-  if (unit === 'USD') {
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
-    return `$${value.toFixed(2)}`;
-  }
-  if (unit === '%') return `${value.toFixed(1)}%`;
-  if (unit === 'BTC_RATIO') return value.toPrecision(4);
-  if (unit === 'correlation') return value.toFixed(3);
-  if (unit === 'status') return value === 0 ? 'Active' : 'Triggered';
-  if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
-  return value.toFixed(2);
 }
 
 const chartConfig: ChartConfig = {
@@ -56,6 +39,7 @@ export function SignalSnapshotChart({
   snapshots,
   unit,
   signalType,
+  direction = 'up_to_threshold',
   height = 140,
 }: SignalSnapshotChartProps) {
   const chartData = useMemo(() => {
@@ -76,13 +60,27 @@ export function SignalSnapshotChart({
   }
 
   const thresholdValue = chartData[0]?.threshold;
-  const isInvalidation = signalType === 'invalidation';
-  const lineColor = isInvalidation ? 'oklch(0.65 0.2 25)' : 'oklch(0.63 0.2 250)';
-  const fillId = `signalFill-${signalType}`;
+  const isDownToThreshold = direction === 'down_to_threshold';
+  const typeConfig = SIGNAL_TYPE_COLORS[signalType] || SIGNAL_TYPE_COLORS.confirmation;
+  const lineColor = typeConfig.lineColor;
+  const fillId = `signalFill-${signalType}-${direction}`;
 
-  // Fixed Y-axis domain for binary status signals (0 = active, 1 = triggered)
+  // Compute Y-axis domain that always includes threshold + padding
   const isStatus = unit === 'status';
-  const yDomain: [number | string, number | string] = isStatus ? [0, 1] : ['auto', 'auto'];
+  const yDomain: [number | string, number | string] = useMemo(() => {
+    if (isStatus) return [0, 1];
+
+    const observedValues = chartData.map(d => d.observed);
+    const minObs = Math.min(...observedValues);
+    const maxObs = Math.max(...observedValues);
+    const allMin = Math.min(minObs, thresholdValue);
+    const allMax = Math.max(maxObs, thresholdValue);
+    const range = allMax - allMin || 1;
+    // Start from 0 when all values are positive and 0 is a natural floor
+    const floor = allMin >= 0 ? 0 : allMin - range * 0.1;
+    const ceiling = allMax + range * 0.1;
+    return [floor, ceiling];
+  }, [chartData, thresholdValue, isStatus]);
 
   return (
     <ChartContainer config={chartConfig} className="w-full" style={{ height }}>
@@ -109,8 +107,8 @@ export function SignalSnapshotChart({
           tickLine={false}
           axisLine={false}
           tickMargin={4}
-          width={48}
-          tickFormatter={(v) => formatValue(v, unit)}
+          width={56}
+          tickFormatter={(v) => formatNumericValue(v, unit)}
           tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
           domain={yDomain}
         />
@@ -124,13 +122,13 @@ export function SignalSnapshotChart({
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Value</span>
                   <span className="font-mono font-medium tabular-nums text-foreground">
-                    {formatValue(obs, unit)}
+                    {formatNumericValue(obs, unit)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted-foreground">Target</span>
                   <span className="font-mono text-muted-foreground tabular-nums">
-                    {formatValue(thresholdValue, unit)}
+                    {formatNumericValue(thresholdValue, unit)}
                   </span>
                 </div>
               </div>
@@ -140,14 +138,15 @@ export function SignalSnapshotChart({
         {/* Threshold reference line */}
         <ReferenceLine
           y={thresholdValue}
-          stroke={isInvalidation ? 'oklch(0.7 0.15 25)' : 'oklch(0.6 0.2 145)'}
+          stroke={signalType === 'invalidation' || signalType === 'warning' ? 'oklch(0.7 0.15 25)' : 'oklch(0.6 0.2 145)'}
           strokeDasharray="4 3"
           strokeWidth={1.5}
           label={{
-            value: `Target: ${formatValue(thresholdValue, unit)}`,
-            position: 'right',
+            value: `${isDownToThreshold ? 'Threshold' : 'Target'}: ${formatNumericValue(thresholdValue, unit)}`,
+            position: isDownToThreshold ? 'insideBottomRight' : 'insideTopRight',
             fill: 'var(--muted-foreground)',
             fontSize: 9,
+            offset: 4,
           }}
         />
         <Area

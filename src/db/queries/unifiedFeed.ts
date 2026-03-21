@@ -55,9 +55,38 @@ export interface FeedItem {
   sourceUrls?: string[];
   sector?: string;
   filingType?: string;
+  filingCategory?: string;
   impactLevel?: string;
   isMaterial?: boolean;
   sourceRecordId?: string;
+  // Economic event structured data
+  country?: string;
+  actual?: string | null;
+  forecast?: string | null;
+  previous?: string | null;
+  // Earnings structured data
+  epsActual?: string | null;
+  epsEstimate?: string | null;
+  revenueActual?: string | null;
+  revenueEstimate?: string | null;
+  quarter?: string | null;
+  year?: string | number | null;
+  reportTime?: string | null;
+  // Analyst action structured data
+  analystFirm?: string;
+  analystAction?: string;
+  fromGrade?: string | null;
+  toGrade?: string | null;
+  // Insider transaction structured data
+  insiderName?: string;
+  transactionCode?: string;
+  shareChange?: number | null;
+  transactionPrice?: number | null;
+  // Entity chain (resolved from ticker → underlying → asset_thesis → strategy)
+  linkedAssetTheses?: { id: string; title: string; direction?: string }[];
+  linkedStrategies?: { id: string; strategyKey: string }[];
+  // Intelligence report section
+  reportSection?: string;
 }
 
 export interface UnifiedFeedOptions {
@@ -253,6 +282,9 @@ export async function getUnifiedFeed(options: UnifiedFeedOptions = {}): Promise<
   const sliced = unique.slice(offset, offset + limit);
   const hasMore = unique.length > offset + limit;
 
+  // Enrich ticker-based items with entity chain
+  await enrichWithEntityChain(sliced);
+
   return { items: sliced, hasMore };
 }
 
@@ -286,25 +318,32 @@ async function fetchIntelligenceItems(
       sourceUrls: intelligenceItems.sourceUrls,
       relevantTickers: intelligenceItems.relevantTickers,
       section: intelligenceItems.section,
+      sortOrder: intelligenceItems.sortOrder,
     })
     .from(intelligenceItems)
     .innerJoin(intelligenceReports, eq(intelligenceReports.id, intelligenceItems.reportId))
     .where(and(...conditions))
-    .orderBy(desc(intelligenceReports.generatedAt))
+    .orderBy(desc(intelligenceReports.generatedAt), intelligenceItems.sortOrder, intelligenceItems.createdAt)
     .limit(limit);
 
-  return rows.map((r) => ({
-    id: r.id,
-    source: feedSource,
-    timestamp: r.generatedAt,
-    headline: r.headline,
-    body: r.body ?? undefined,
-    severity: r.severity as FeedItem['severity'],
-    tickers: r.relevantTickers ?? undefined,
-    sourceUrls: r.sourceUrls ?? undefined,
-    sector: r.sector ?? undefined,
-    sourceRecordId: r.id,
-  }));
+  return rows.map((r) => {
+    // Offset timestamp by sortOrder (in seconds) so items preserve report order in merged feed
+    const ts = new Date(r.generatedAt);
+    if (r.sortOrder != null) ts.setSeconds(ts.getSeconds() - r.sortOrder);
+    return {
+      id: r.id,
+      source: feedSource,
+      timestamp: ts,
+      headline: r.headline,
+      body: r.body ?? undefined,
+      severity: r.severity as FeedItem['severity'],
+      tickers: r.relevantTickers ?? undefined,
+      sourceUrls: r.sourceUrls ?? undefined,
+      sector: r.sector ?? undefined,
+      reportSection: r.section ?? undefined,
+      sourceRecordId: r.id,
+    };
+  });
 }
 
 async function fetchWorldMonitorItems(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
@@ -337,6 +376,7 @@ async function fetchSecFilings(cutoff: Date, limit: number, ticker?: string): Pr
     body: r.description ?? undefined,
     tickers: [r.ticker],
     filingType: r.filingType,
+    filingCategory: r.filingCategory ?? undefined,
     isMaterial: r.isMaterial ?? undefined,
     sourceUrls: [r.filingUrl],
     sourceRecordId: r.id,
@@ -364,23 +404,19 @@ async function fetchPastEconomicEvents(cutoff: Date, limit: number): Promise<Fee
     .orderBy(desc(economicEvents.eventDate))
     .limit(limit);
 
-  return rows.map((r) => {
-    const parts: string[] = [];
-    if (r.actual !== null) parts.push(`Actual: ${r.actual}${r.unit || ''}`);
-    if (r.forecast !== null) parts.push(`Forecast: ${r.forecast}${r.unit || ''}`);
-    if (r.previous !== null) parts.push(`Previous: ${r.previous}${r.unit || ''}`);
-    const body = parts.length > 0 ? parts.join(' | ') : undefined;
-
-    return {
-      id: r.id,
-      source: 'economic_event' as const,
-      timestamp: r.eventDate,
-      headline: `${r.title}${r.country ? ` (${r.country})` : ''}`,
-      body,
-      impactLevel: r.impactLevel,
-      sourceRecordId: r.id,
-    };
-  });
+  return rows.map((r) => ({
+    id: r.id,
+    source: 'economic_event' as const,
+    timestamp: r.eventDate,
+    headline: r.title,
+    impactLevel: r.impactLevel,
+    country: r.country ?? undefined,
+    actual: r.actual,
+    forecast: r.forecast,
+    previous: r.previous,
+    unit: r.unit ?? undefined,
+    sourceRecordId: r.id,
+  }));
 }
 
 async function fetchPastEarningsEvents(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
@@ -413,27 +449,21 @@ async function fetchPastEarningsEvents(cutoff: Date, limit: number, ticker?: str
     .orderBy(desc(earningsEvents.reportDate))
     .limit(limit);
 
-  return rows.map((r) => {
-    const parts: string[] = [];
-    if (r.epsActual !== null) {
-      parts.push(`EPS: ${r.epsActual}${r.epsEstimate ? ` (est. ${r.epsEstimate})` : ''}`);
-    }
-    if (r.revenueActual !== null) {
-      parts.push(`Revenue: ${r.revenueActual}${r.revenueEstimate ? ` (est. ${r.revenueEstimate})` : ''}`);
-    }
-    const body = parts.length > 0 ? parts.join(' | ') : undefined;
-    const qLabel = r.quarter && r.year ? ` ${r.quarter} ${r.year}` : '';
-
-    return {
-      id: r.id,
-      source: 'earnings_event' as const,
-      timestamp: new Date(r.reportDate + 'T00:00:00Z'),
-      headline: `${r.ticker} earnings${qLabel}`,
-      body,
-      tickers: [r.ticker],
-      sourceRecordId: r.id,
-    };
-  });
+  return rows.map((r) => ({
+    id: r.id,
+    source: 'earnings_event' as const,
+    timestamp: new Date(r.reportDate + 'T00:00:00Z'),
+    headline: `${r.ticker} earnings`,
+    tickers: [r.ticker],
+    epsActual: r.epsActual,
+    epsEstimate: r.epsEstimate,
+    revenueActual: r.revenueActual,
+    revenueEstimate: r.revenueEstimate,
+    quarter: r.quarter,
+    year: r.year,
+    reportTime: r.reportTime,
+    sourceRecordId: r.id,
+  }));
 }
 
 async function fetchClaimEvidence(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
@@ -562,25 +592,18 @@ async function fetchAnalystActions(cutoff: Date, limit: number, ticker?: string)
     .orderBy(desc(analystActions.actionDate))
     .limit(limit);
 
-  return rows.map((r) => {
-    const actionLabel =
-      r.action === 'up' ? 'Upgrade' :
-      r.action === 'down' ? 'Downgrade' :
-      r.action === 'init' ? 'Initiated' :
-      r.action === 'reit' ? 'Reiterated' :
-      r.action === 'main' ? 'Maintained' : r.action;
-    const gradeInfo = r.fromGrade && r.toGrade ? ` ${r.fromGrade} → ${r.toGrade}` : r.toGrade ? ` → ${r.toGrade}` : '';
-
-    return {
-      id: r.id,
-      source: 'analyst_action' as const,
-      timestamp: new Date(r.actionDate + 'T00:00:00Z'),
-      headline: `${r.ticker}: ${actionLabel} by ${r.analystFirm}`,
-      body: gradeInfo ? `Rating:${gradeInfo}` : undefined,
-      tickers: [r.ticker],
-      sourceRecordId: r.id,
-    };
-  });
+  return rows.map((r) => ({
+    id: r.id,
+    source: 'analyst_action' as const,
+    timestamp: new Date(r.actionDate + 'T00:00:00Z'),
+    headline: `${r.ticker} analyst action`,
+    tickers: [r.ticker],
+    analystFirm: r.analystFirm,
+    analystAction: r.action,
+    fromGrade: r.fromGrade,
+    toGrade: r.toGrade,
+    sourceRecordId: r.id,
+  }));
 }
 
 async function fetchInsiderTransactions(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
@@ -597,32 +620,96 @@ async function fetchInsiderTransactions(cutoff: Date, limit: number, ticker?: st
     .orderBy(desc(insiderTransactions.transactionDate))
     .limit(limit);
 
-  return rows.map((r) => {
-    const codeLabel =
-      r.transactionCode === 'P' ? 'Purchase' :
-      r.transactionCode === 'S' ? 'Sale' :
-      r.transactionCode === 'A' ? 'Grant' :
-      r.transactionCode === 'M' ? 'Exercise' :
-      r.transactionCode ?? 'Transaction';
-    const parts: string[] = [];
-    if (r.change) {
-      const shares = Math.abs(Number(r.change)).toLocaleString();
-      parts.push(`${Number(r.change) > 0 ? '+' : '-'}${shares} shares`);
-    }
-    if (r.transactionPrice && Number(r.transactionPrice) > 0) {
-      parts.push(`@ $${Number(r.transactionPrice).toFixed(2)}`);
-    }
+  return rows.map((r) => ({
+    id: r.id,
+    source: 'insider_transaction' as const,
+    timestamp: new Date(r.transactionDate + 'T00:00:00Z'),
+    headline: `${r.ticker} insider transaction`,
+    tickers: [r.ticker],
+    insiderName: r.insiderName,
+    transactionCode: r.transactionCode ?? undefined,
+    shareChange: r.change ? Number(r.change) : null,
+    transactionPrice: r.transactionPrice ? Number(r.transactionPrice) : null,
+    sourceRecordId: r.id,
+  }));
+}
 
-    return {
-      id: r.id,
-      source: 'insider_transaction' as const,
-      timestamp: new Date(r.transactionDate + 'T00:00:00Z'),
-      headline: `${r.ticker}: Insider ${codeLabel} by ${r.insiderName}`,
-      body: parts.length > 0 ? parts.join(' ') : undefined,
-      tickers: [r.ticker],
-      sourceRecordId: r.id,
-    };
-  });
+// ---------------------------------------------------------------------------
+// Shared helper: batch-resolve tickers → entity chain (underlying → asset_thesis → strategy)
+// ---------------------------------------------------------------------------
+
+async function enrichWithEntityChain(items: FeedItem[]): Promise<void> {
+  // Collect unique tickers from all sources that have ticker data
+  const tickerSources: FeedItemSource[] = [
+    'sec_filing', 'earnings_event', 'analyst_action', 'insider_transaction',
+    'world_monitor', 'thesis_monitor',
+    'quant_snapshot', 'claim_evidence',
+  ];
+  const allTickers = new Set<string>();
+  for (const item of items) {
+    if (tickerSources.includes(item.source) && item.tickers) {
+      for (const t of item.tickers) allTickers.add(t.toUpperCase());
+    }
+  }
+  if (allTickers.size === 0) return;
+
+  const tickerList = [...allTickers];
+
+  // Resolve tickers → underlyings → active asset theses + active strategies
+  const tickerEntities = await db
+    .select({
+      ticker: underlyings.ticker,
+      atId: assetTheses.id,
+      atTitle: assetTheses.title,
+      atDirection: assetTheses.direction,
+      atStatus: assetTheses.status,
+      sId: strategies.id,
+      sKey: strategies.strategyKey,
+      sStatus: strategies.status,
+    })
+    .from(underlyings)
+    .leftJoin(assetTheses, eq(assetTheses.underlyingId, underlyings.id))
+    .leftJoin(strategies, eq(strategies.assetThesisId, assetTheses.id))
+    .where(inArray(underlyings.ticker, tickerList));
+
+  // Build per-ticker maps
+  const tickerToTheses = new Map<string, Map<string, { id: string; title: string; direction?: string }>>();
+  const tickerToStrategies = new Map<string, Map<string, { id: string; strategyKey: string }>>();
+
+  for (const row of tickerEntities) {
+    const t = row.ticker.toUpperCase();
+    if (row.atId && row.atStatus === 'active') {
+      if (!tickerToTheses.has(t)) tickerToTheses.set(t, new Map());
+      tickerToTheses.get(t)!.set(row.atId, {
+        id: row.atId,
+        title: row.atTitle ?? '',
+        direction: row.atDirection ?? undefined,
+      });
+    }
+    if (row.sId && row.sKey && row.sStatus === 'active') {
+      if (!tickerToStrategies.has(t)) tickerToStrategies.set(t, new Map());
+      tickerToStrategies.get(t)!.set(row.sId, {
+        id: row.sId,
+        strategyKey: row.sKey,
+      });
+    }
+  }
+
+  // Apply to items
+  for (const item of items) {
+    if (!tickerSources.includes(item.source) || !item.tickers) continue;
+    const thesesMap = new Map<string, { id: string; title: string; direction?: string }>();
+    const strategiesMap = new Map<string, { id: string; strategyKey: string }>();
+    for (const t of item.tickers) {
+      const upper = t.toUpperCase();
+      const at = tickerToTheses.get(upper);
+      if (at) for (const [k, v] of at) thesesMap.set(k, v);
+      const st = tickerToStrategies.get(upper);
+      if (st) for (const [k, v] of st) strategiesMap.set(k, v);
+    }
+    if (thesesMap.size > 0) item.linkedAssetTheses = [...thesesMap.values()];
+    if (strategiesMap.size > 0) item.linkedStrategies = [...strategiesMap.values()];
+  }
 }
 
 // ---------------------------------------------------------------------------
