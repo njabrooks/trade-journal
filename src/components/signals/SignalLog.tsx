@@ -1,5 +1,8 @@
 'use client';
 
+import Link from 'next/link';
+import { FileText } from 'lucide-react';
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function formatDate(date: string | Date): string {
@@ -168,11 +171,19 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
                 <td className="px-3 py-2 text-xs text-muted-foreground max-w-0">
                   {(() => {
                     const note = extractNote(entry.evidenceSummary, entry.dataSource);
-                    return note ? (
-                      <p className="line-clamp-2 leading-relaxed">{note}</p>
-                    ) : (
-                      <span className="text-muted-foreground/50">—</span>
-                    );
+                    if (!note) return <span className="text-muted-foreground/50">—</span>;
+                    if (entry.claimId && entry.dataSource === 'research_routing') {
+                      return (
+                        <Link
+                          href={`/claims/${entry.claimId}`}
+                          className="group flex items-start gap-1.5 hover:text-foreground transition-colors"
+                        >
+                          <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0 text-indigo-500 group-hover:text-indigo-600" />
+                          <p className="line-clamp-2 leading-relaxed">{note}</p>
+                        </Link>
+                      );
+                    }
+                    return <p className="line-clamp-2 leading-relaxed">{note}</p>;
                   })()}
                 </td>
 
