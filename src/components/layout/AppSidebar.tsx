@@ -35,18 +35,21 @@ import {
 
 const ACTIVITY_NAV = [
   { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
-  { href: "/signals/data-sources", label: "Data Sources", icon: Database, id: "signals-data-sources" },
-  { href: "/signals", label: "Signals", icon: Zap, id: "signals" },
   { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
+] as const;
+
+const INTELLIGENCE_NAV = [
   { href: "/news", label: "News", icon: Newspaper, id: "news" },
+  { href: "/research", label: "Research", icon: Library, id: "research" },
+  { href: "/claims", label: "Claims", icon: Lightbulb, id: "claims" },
+  { href: "/signals", label: "Signals", icon: Zap, id: "signals" },
+  { href: "/signals/data-sources", label: "Data Sources", icon: Database, id: "signals-data-sources" },
 ] as const;
 
 const ENTITIES_NAV = [
   { href: "/strategies", label: "Strategies", icon: FolderKanban, id: "strategies" },
   { href: "/asset-theses", label: "Asset Theses", icon: Target, id: "asset-theses" },
   { href: "/macro-theses", label: "Macro Theses", icon: TrendingUp, id: "macro-theses" },
-  { href: "/claims", label: "Claims", icon: Lightbulb, id: "claims" },
-  { href: "/research", label: "Research", icon: Library, id: "research" },
 ] as const;
 
 const PORTFOLIO_NAV = [
@@ -70,7 +73,7 @@ const ADMIN_NAV = [
 export function AppSidebar() {
   const pathname = usePathname();
   
-  const ALL_NAV = [...ACTIVITY_NAV, ...ENTITIES_NAV, ...PORTFOLIO_NAV];
+  const ALL_NAV = [...ACTIVITY_NAV, ...INTELLIGENCE_NAV, ...ENTITIES_NAV, ...PORTFOLIO_NAV];
   const activeNav = ALL_NAV.find(nav => pathname.startsWith(nav.href))?.id;
   const activeAdminNav = ADMIN_NAV.find(nav => pathname.startsWith(nav.href))?.id;
 
@@ -79,6 +82,7 @@ export function AppSidebar() {
       <SidebarContent>
         {[
           { label: "Activity", items: ACTIVITY_NAV },
+          { label: "Intelligence", items: INTELLIGENCE_NAV },
           { label: "Entities", items: ENTITIES_NAV },
           { label: "Portfolio", items: PORTFOLIO_NAV },
         ].map((section) => (
