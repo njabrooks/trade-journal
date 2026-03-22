@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import type { MainClaim as DbMainClaim, ResearchInsight, ResearchArtifact } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Link2 } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Link2, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
@@ -729,6 +729,33 @@ export function UnifiedClaimsBrowser({
                                   );
                                 })()}
                               </>
+                            )}
+                            {/* Signal evidence indicator */}
+                            {linkedSignals.length > 0 && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setExpandedClaim(isExpanded ? null : claim.id);
+                                }}
+                                title={linkedSignals.map(s => {
+                                  const assessmentEmoji: Record<string, string> = {
+                                    neutral: '\u2B1B', strengthening: '\uD83D\uDCC8', confirmed: '\u2705',
+                                    weakening: '\uD83D\uDCC9', invalidated: '\u274C',
+                                  };
+                                  const typeConfig = SIGNAL_TYPE_COLORS[s.type] ?? SIGNAL_TYPE_COLORS.confirmation;
+                                  return `${assessmentEmoji[s.assessment] ?? '\u2B1C'} [${typeConfig.label}] ${s.statement}`;
+                                }).join('\n')}
+                                className="inline-flex items-center gap-1 shrink-0 group"
+                              >
+                                {!isExpanded && (linkedTheses.length > 0 || linkedViews.length > 0) && (
+                                  <span className="text-border mx-0.5">|</span>
+                                )}
+                                <Badge className="bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 group-hover:bg-cyan-500/25 text-xs transition-colors inline-flex items-center gap-0.5">
+                                  <Zap className="h-3 w-3" />
+                                  {linkedSignals.length}
+                                </Badge>
+                              </button>
                             )}
                           </div>
                         </td>
