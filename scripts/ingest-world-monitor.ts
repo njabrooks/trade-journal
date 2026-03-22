@@ -11,7 +11,7 @@
  *   DATABASE_URL_POOLER - Database connection string
  */
 
-import { db, closeDb, schema } from './lib/db.js';
+import { db, closeDb, schema, logToJournal } from './lib/db.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
@@ -277,6 +277,71 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
   // Insert all snapshots
   if (snapshots.length > 0) {
     await db.insert(signalDataSnapshots).values(snapshots);
+  }
+
+  // Journal non-neutral assessments as thesis-level events
+  const nonNeutralSnapshots = snapshots.filter(s => s.assessment !== 'neutral');
+  if (nonNeutralSnapshots.length > 0) {
+    // Build thesis title map
+    const thesisIds = new Set<string>();
+    for (const snap of nonNeutralSnapshots) {
+      const signal = activeSignalRows.find(s => s.id === snap.signalId);
+      if (signal?.thesisId) thesisIds.add(signal.thesisId);
+    }
+
+    const thesisTitleMap: Record<string, string> = {};
+    const macroIds = [...thesisIds].filter(id => {
+      const sig = activeSignalRows.find(s => s.thesisId === id);
+      return sig?.thesisType === 'macro';
+    });
+    const assetIds = [...thesisIds].filter(id => {
+      const sig = activeSignalRows.find(s => s.thesisId === id);
+      return sig?.thesisType === 'asset';
+    });
+
+    if (macroIds.length > 0) {
+      const rows = await db.select({ id: schema.macroTheses.id, title: schema.macroTheses.title })
+        .from(schema.macroTheses).where(inArray(schema.macroTheses.id, macroIds));
+      for (const r of rows) thesisTitleMap[r.id] = r.title;
+    }
+    if (assetIds.length > 0) {
+      const rows = await db.select({ id: schema.assetTheses.id, title: schema.assetTheses.title })
+        .from(schema.assetTheses).where(inArray(schema.assetTheses.id, assetIds));
+      for (const r of rows) thesisTitleMap[r.id] = r.title;
+    }
+
+    const batchId = crypto.randomUUID();
+    let journalCount = 0;
+
+    for (const snap of nonNeutralSnapshots) {
+      const signal = activeSignalRows.find(s => s.id === snap.signalId);
+      if (!signal?.thesisId || !signal.thesisType) continue;
+
+      const objectType = signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis';
+      const thesisTitle = thesisTitleMap[signal.thesisId] || 'Unknown thesis';
+      const shortStatement = signal.statement.slice(0, 80);
+
+      await logToJournal({
+        objectType,
+        objectId: signal.thesisId,
+        objectTitle: thesisTitle,
+        actionType: 'signal_evidence_received',
+        actionDescription: `Signal "${shortStatement}" received ${snap.assessment} evidence from thesis monitor`,
+        source: 'automation',
+        metadata: {
+          signalId: snap.signalId,
+          assessment: snap.assessment,
+          dataSource: 'thesis_monitor',
+          reportId,
+        },
+        batchId,
+      });
+      journalCount++;
+    }
+
+    if (journalCount > 0) {
+      console.log(`  Journal entries: ${journalCount} thesis-level signal_evidence_received entries`);
+    }
   }
 
   return snapshots.length;

@@ -80,10 +80,18 @@ export async function logToJournal(entry: {
   rationale?: string;
   source: 'user' | 'skill' | 'automation';
   metadata?: Record<string, unknown>;
+  batchId?: string;
 }): Promise<string> {
+  const now = new Date();
   const result = await db
     .insert(schema.journalEntries)
-    .values(entry)
+    .values({
+      ...entry,
+      firstDetectedAt: now,
+      lastSeenAt: now,
+      occurrenceCount: 1,
+      status: 'active',
+    })
     .returning({ id: schema.journalEntries.id });
 
   return result[0].id;

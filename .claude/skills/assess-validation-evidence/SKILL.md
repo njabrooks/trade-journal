@@ -57,6 +57,7 @@ The `generateQualitativeSnapshots()` function in `scripts/ingest-world-monitor.t
 4. **Score each signal** against content (ticker overlap + keyword overlap + statement overlap)
 5. **Assess** each signal: `neutral` | `strengthening` | `confirmed` | `weakening` | `invalidated`
 6. **Write `signal_data_snapshots` rows** for all assessed signals
+6c. **Write thesis-level `signal_evidence_received` journal entries** for non-neutral assessments
 7. **Add journal note** on the thesis summarising key findings
 8. **Output structured report**
 
@@ -326,6 +327,66 @@ npx tsx scripts/ops/add-journal-note.ts \
 - The `--note` should include the assessment level and the evidence summary you wrote to the snapshot
 - Use `--entity-type signal` (not `macro_thesis` or `asset_thesis`)
 - Source should identify the content that was assessed (file name, article title, or URL)
+
+---
+
+## Step 6c: Write Thesis-Level signal_evidence_received Journal Entries
+
+After writing signal-level journal entries, write **thesis-level** `signal_evidence_received` journal entries for each signal with a non-neutral assessment. These entries appear on the thesis Journal tab and provide the primary audit trail for evidence arriving against thesis signals.
+
+```bash
+cd /Users/home-hub/projects/trade-journal
+cat > scripts/tmp-signal-evidence-journal.ts << 'SCRIPT'
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+async function main() {
+  const { db, closeDb, schema, logToJournal } = await import('./lib/db.js');
+  const entries = {{ENTRIES_JSON}};
+  const batchId = crypto.randomUUID();
+  for (const entry of entries) {
+    await logToJournal({ ...entry, batchId });
+  }
+  console.log(JSON.stringify({ success: true, count: entries.length }));
+  await closeDb();
+  process.exit(0);
+}
+main().catch(e => { console.error(e); process.exit(1); });
+SCRIPT
+npx tsx scripts/tmp-signal-evidence-journal.ts
+rm scripts/tmp-signal-evidence-journal.ts
+```
+
+Replace `{{ENTRIES_JSON}}` with an array like:
+
+```json
+[
+  {
+    "objectType": "asset_thesis",
+    "objectId": "<thesis-uuid>",
+    "objectTitle": "Thesis Title",
+    "actionType": "signal_evidence_received",
+    "actionDescription": "Signal \"Helios reaches 300MW\" received strengthening evidence from research routing",
+    "source": "skill",
+    "metadata": {
+      "signalId": "<signal-uuid>",
+      "assessment": "strengthening",
+      "dataSource": "qualitative"
+    }
+  }
+]
+```
+
+**Rules:**
+- `objectType` = `'macro_thesis'` or `'asset_thesis'` (the parent thesis, not the signal)
+- `objectId` = the thesis ID (from Step 1)
+- `actionType` = `'signal_evidence_received'` (always this value)
+- `source` = `'skill'` (this skill is invoked by a skill or human)
+- `metadata.signalId` = the signal UUID
+- `metadata.assessment` = the assessment from the snapshot
+- `metadata.dataSource` = `'qualitative'` (matching the snapshot data_source)
+- `metadata.claimId` = include if a claim ID is available (from Step 6a)
+- Skip signals with `neutral` assessment
+- One entry per signal x thesis pair
 
 ---
 

@@ -102,45 +102,10 @@ async function checkAndTriggerSignal(
 
   console.log(`  >> Signal status updated to 'complete'`);
 
-  // 2. Check for thesis links via signal_entity_links and create triage records
-  const thesisLinks = await db
-    .select({
-      thesisId: signalEntityLinks.thesisId,
-      thesisType: signalEntityLinks.thesisType,
-    })
-    .from(signalEntityLinks)
-    .where(
-      and(
-        eq(signalEntityLinks.signalId, signal.id),
-        eq(signalEntityLinks.entityType, 'thesis')
-      )
-    );
+  // 2. Resolve thesis links and create triage records + thesis-level journal entries
+  const resolvedThesisLinks = await resolveSignalThesisLinks(signal.id);
 
-  // Build thesis links map, dedup by thesisId
-  const allThesisLinks = new Map<string, { thesisId: string; thesisType: string }>();
-  for (const link of thesisLinks) {
-    if (link.thesisId && link.thesisType) {
-      allThesisLinks.set(link.thesisId, { thesisId: link.thesisId, thesisType: link.thesisType });
-    }
-  }
-
-  for (const { thesisId, thesisType } of allThesisLinks.values()) {
-    // Fetch thesis title for the triage record
-    let thesisTitle = 'Unknown thesis';
-    if (thesisType === 'macro') {
-      const rows = await db
-        .select({ title: schema.macroTheses.title })
-        .from(schema.macroTheses)
-        .where(eq(schema.macroTheses.id, thesisId));
-      if (rows[0]) thesisTitle = rows[0].title;
-    } else {
-      const rows = await db
-        .select({ title: schema.assetTheses.title })
-        .from(schema.assetTheses)
-        .where(eq(schema.assetTheses.id, thesisId));
-      if (rows[0]) thesisTitle = rows[0].title;
-    }
-
+  for (const { thesisId, thesisType, thesisTitle } of resolvedThesisLinks) {
     await db.insert(thesisTriageRecords).values({
       thesisId,
       thesisType,
@@ -177,16 +142,77 @@ async function checkAndTriggerSignal(
     metadata: { pctToThreshold, triggeredBy: 'collect-signal-data' },
   });
 
-  console.log(`  >> Journal entry logged`);
+  // 4. Log thesis-level signal_evidence_received journal entries
+  const shortStatement = signal.statement.slice(0, 80);
+  for (const { thesisId, thesisType, thesisTitle } of resolvedThesisLinks) {
+    await logToJournal({
+      objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+      objectId: thesisId,
+      objectTitle: thesisTitle,
+      actionType: 'signal_evidence_received',
+      actionDescription: `Signal "${shortStatement}" reached threshold (${pctToThreshold.toFixed(1)}%) — ${signal.type} signal triggered`,
+      source: 'automation',
+      metadata: {
+        signalId: signal.id,
+        assessment: 'confirmed',
+        dataSource: 'collect-signal-data',
+        pctToThreshold,
+      },
+    });
+  }
+
+  console.log(`  >> Journal entries logged`);
 
   return true;
 }
 
 const MILESTONES = [25, 50, 75, 90];
 
+/** Milestones significant enough to journal at thesis level */
+const THESIS_JOURNAL_MILESTONES = [75, 90];
+
+/**
+ * Resolve thesis links for a signal via signal_entity_links.
+ * Returns array of { thesisId, thesisType, thesisTitle }.
+ */
+async function resolveSignalThesisLinks(
+  signalId: string
+): Promise<Array<{ thesisId: string; thesisType: string; thesisTitle: string }>> {
+  const links = await db
+    .select({
+      thesisId: signalEntityLinks.thesisId,
+      thesisType: signalEntityLinks.thesisType,
+    })
+    .from(signalEntityLinks)
+    .where(
+      and(
+        eq(signalEntityLinks.signalId, signalId),
+        eq(signalEntityLinks.entityType, 'thesis')
+      )
+    );
+
+  const results: Array<{ thesisId: string; thesisType: string; thesisTitle: string }> = [];
+  for (const link of links) {
+    if (!link.thesisId || !link.thesisType) continue;
+    let title = 'Unknown thesis';
+    if (link.thesisType === 'macro') {
+      const rows = await db.select({ title: schema.macroTheses.title })
+        .from(schema.macroTheses).where(eq(schema.macroTheses.id, link.thesisId));
+      if (rows[0]) title = rows[0].title;
+    } else {
+      const rows = await db.select({ title: schema.assetTheses.title })
+        .from(schema.assetTheses).where(eq(schema.assetTheses.id, link.thesisId));
+      if (rows[0]) title = rows[0].title;
+    }
+    results.push({ thesisId: link.thesisId, thesisType: link.thesisType, thesisTitle: title });
+  }
+  return results;
+}
+
 /**
  * Check if pctToThreshold has newly crossed any milestone (25%, 50%, 75%, 90%).
  * Only fires when the threshold is newly crossed (previous was below, current is at/above).
+ * At 75% and 90%, also writes thesis-level signal_evidence_received journal entries.
  */
 async function checkMilestones(
   signal: { id: string; statement: string },
@@ -210,6 +236,29 @@ async function checkMilestones(
           source: 'automation',
           metadata: { milestone, pctToThreshold },
         });
+
+        // Write thesis-level journal entries for significant milestones
+        if (THESIS_JOURNAL_MILESTONES.includes(milestone)) {
+          const thesisLinks = await resolveSignalThesisLinks(signal.id);
+          const shortStatement = signal.statement.slice(0, 80);
+          for (const { thesisId, thesisType, thesisTitle } of thesisLinks) {
+            await logToJournal({
+              objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+              objectId: thesisId,
+              objectTitle: thesisTitle,
+              actionType: 'signal_evidence_received',
+              actionDescription: `Signal "${shortStatement}" at ${milestone}% of threshold — approaching trigger`,
+              source: 'automation',
+              metadata: {
+                signalId: signal.id,
+                assessment: 'strengthening',
+                dataSource: 'collect-signal-data',
+                pctToThreshold,
+                milestone,
+              },
+            });
+          }
+        }
       }
       milestonesHit++;
     }
