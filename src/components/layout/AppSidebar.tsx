@@ -86,8 +86,8 @@ export function AppSidebar() {
           { label: "Entities", items: ENTITIES_NAV },
           { label: "Portfolio", items: PORTFOLIO_NAV },
         ].map((section) => (
-          <SidebarGroup key={section.label}>
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+          <SidebarGroup key={section.label} className="py-1 px-2">
+            <SidebarGroupLabel className="h-6">{section.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {section.items.map((item) => {
@@ -109,8 +109,8 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Admin</SidebarGroupLabel>
+        <SidebarGroup className="py-1 px-2">
+          <SidebarGroupLabel className="h-6">Admin</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {ADMIN_NAV.map((item) => {

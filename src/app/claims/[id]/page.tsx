@@ -11,6 +11,7 @@ import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
 import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } from '@/types/claims';
 import { InlineClaimSuggestions } from '@/components/research/InlineClaimSuggestions';
 import { ClaimLinkButton } from '@/components/research/ClaimLinkButton';
+import { SIGNAL_TYPE_COLORS, ASSESSMENT_LEVELS } from '@/components/signals/signal-constants';
 
 interface ClaimDetailPageProps {
   params: Promise<{ id: string }>;
@@ -34,7 +35,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
     notFound();
   }
 
-  const { claim, insight, artifact, linkedTheses, linkedViews, suggestions = [] } = claimData;
+  const { claim, insight, artifact, linkedTheses, linkedViews, linkedSignals = [], suggestions = [] } = claimData;
 
   // Get evidence claims from the audit structure if available
   const getEvidenceClaims = (): {
@@ -340,6 +341,37 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
                   </dd>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Signal Evidence */}
+        {linkedSignals.length > 0 && (
+          <div className="bg-card rounded-lg border border p-4">
+            <h3 className="text-base font-semibold mb-3">
+              Signal Evidence ({linkedSignals.length})
+            </h3>
+            <div className="space-y-2">
+              {linkedSignals.map((signal) => {
+                const typeConfig = SIGNAL_TYPE_COLORS[signal.type] ?? SIGNAL_TYPE_COLORS.confirmation;
+                const assessmentConfig = ASSESSMENT_LEVELS[signal.assessment] ?? ASSESSMENT_LEVELS.neutral;
+                return (
+                  <Link
+                    key={signal.id}
+                    href={`/signals/${signal.id}`}
+                    className="block p-3 bg-muted hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${typeConfig.cls} text-xs`}>{typeConfig.label}</Badge>
+                      <Badge className={`${assessmentConfig.cls} text-xs`}>{assessmentConfig.label}</Badge>
+                      <span className="text-sm font-medium text-foreground hover:text-blue-600 transition-colors line-clamp-1">
+                        {signal.statement}
+                      </span>
+                      <ExternalLink className="h-3 w-3 ml-auto shrink-0 text-muted-foreground" />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         )}

@@ -636,6 +636,19 @@ export async function getMainClaimById(claimId: string) {
   // Fetch pending suggestions
   const suggestionsByClaimId = await getSuggestionsForClaims([claimId]);
 
+  // Fetch signal evidence (signals this claim provides evidence for)
+  const signalEvidenceData = await db
+    .select({
+      signalId: signals.id,
+      signalStatement: signals.statement,
+      signalType: signals.type,
+      signalStatus: signals.status,
+      assessment: claimSignalEvidences.assessment,
+    })
+    .from(claimSignalEvidences)
+    .innerJoin(signals, eq(claimSignalEvidences.signalId, signals.id))
+    .where(eq(claimSignalEvidences.claimId, claimId));
+
   return {
     ...claimData,
     linkedTheses: linkedThesesData.map(row => ({
@@ -650,6 +663,13 @@ export async function getMainClaimById(claimId: string) {
       mappingType: row.mappingType,
     })),
     suggestions: suggestionsByClaimId.get(claimId) || [],
+    linkedSignals: signalEvidenceData.map(row => ({
+      id: row.signalId,
+      statement: row.signalStatement,
+      type: row.signalType,
+      status: row.signalStatus,
+      assessment: row.assessment,
+    })),
     // Keep backward compatibility with ID-only arrays if needed
     linkedMacroThesisIds: linkedThesesData.map(row => row.thesisId),
     linkedAssetThesisIds: linkedViewsData.map(row => row.assetThesisId),

@@ -1013,11 +1013,11 @@ export function UnifiedClaimsBrowser({
                                 </div>
                               )}
 
-                              {/* Evidences Signals */}
+                              {/* Signal Evidence */}
                               {linkedSignals.length > 0 && (
                                 <div className="pt-2 border-t border">
                                   <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
-                                    Evidences Signals
+                                    Signal Evidence
                                   </h4>
                                   <div className="space-y-2">
                                     {linkedSignals.map((signal) => {
