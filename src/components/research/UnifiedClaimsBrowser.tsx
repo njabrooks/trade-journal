@@ -14,6 +14,7 @@ import { ExpandableEvidenceClaim } from './ExpandableEvidenceClaim';
 import { InlineClaimSuggestions } from './InlineClaimSuggestions';
 import type { SuggestionActionResult } from './InlineClaimSuggestions';
 import type { ClaimSuggestion } from '@/db/queries/research';
+import { SIGNAL_TYPE_COLORS } from '@/components/signals/signal-constants';
 
 interface LinkedThesis {
   id: string;
@@ -1000,10 +1001,9 @@ export function UnifiedClaimsBrowser({
                                         weakening: '📉',
                                         invalidated: '❌',
                                       };
-                                      const typeColor = signal.type === 'confirmation'
-                                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                        : 'bg-destructive/15 text-destructive';
-                                      const typeLabel = signal.type === 'confirmation' ? 'Confirm' : 'Warning';
+                                      const typeConfig = SIGNAL_TYPE_COLORS[signal.type] ?? SIGNAL_TYPE_COLORS.confirmation;
+                                      const typeColor = typeConfig.cls;
+                                      const typeLabel = typeConfig.label;
                                       return (
                                         <Link
                                           key={signal.id}
