@@ -17,6 +17,7 @@
 
 import { db, closeDb, schema } from './lib/db.js';
 import { sql } from 'drizzle-orm';
+import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
 const { analystActions, analystPriceTargets, insiderTransactions, underlyings } = schema;
 
@@ -201,6 +202,10 @@ async function main() {
   let insidersUpserted = 0;
   let totalErrors = 0;
 
+  // Collect intel items for batch emission
+  const analystIntelItems: IntelItemInput[] = [];
+  const insiderIntelItems: IntelItemInput[] = [];
+
   for (const ticker of tickers) {
     const underlyingId = underlyingMap.get(ticker) ?? null;
     let tickerActions = 0;
@@ -214,7 +219,7 @@ async function main() {
         for (const u of upgrades) {
           if (!u.gradeTime || !u.company) continue;
           const actionDate = formatDate(new Date(u.gradeTime * 1000));
-          await db
+          const result = await db
             .insert(analystActions)
             .values({
               underlyingId,
@@ -226,7 +231,21 @@ async function main() {
               actionDate,
               source: 'finnhub',
             })
-            .onConflictDoNothing();
+            .onConflictDoNothing()
+            .returning({ id: analystActions.id });
+
+          if (result.length > 0) {
+            analystIntelItems.push({
+              sourceKey: 'finnhub_analyst',
+              sourceTable: 'analyst_actions',
+              sourceRecordId: result[0].id,
+              occurredAt: new Date(u.gradeTime * 1000),
+              headline: `${u.company} ${u.action || 'unknown'} ${ticker} from ${u.fromGrade || '—'} to ${u.toGrade || '—'}`,
+              severity: 'medium',
+              tickers: [ticker],
+              metadata: { action: u.action, fromGrade: u.fromGrade, toGrade: u.toGrade },
+            });
+          }
           tickerActions++;
         }
       } else {
@@ -289,7 +308,7 @@ async function main() {
       if (!DRY_RUN) {
         for (const tx of insiders) {
           if (!tx.transactionDate || !tx.name) continue;
-          await db
+          const result = await db
             .insert(insiderTransactions)
             .values({
               underlyingId,
@@ -303,7 +322,29 @@ async function main() {
               transactionPrice: tx.transactionPrice != null ? String(tx.transactionPrice) : null,
               source: 'finnhub',
             })
-            .onConflictDoNothing();
+            .onConflictDoNothing()
+            .returning({ id: insiderTransactions.id });
+
+          if (result.length > 0) {
+            const txValue = (tx.share ?? 0) * (tx.transactionPrice ?? 0);
+            const isBuy = tx.transactionCode === 'P' || (tx.change != null && tx.change > 0);
+            insiderIntelItems.push({
+              sourceKey: 'insider_transaction',
+              sourceTable: 'insider_transactions',
+              sourceRecordId: result[0].id,
+              occurredAt: new Date(tx.transactionDate),
+              headline: `${ticker} insider ${isBuy ? 'buy' : 'sell'} by ${tx.name}`,
+              severity: txValue > 1_000_000 ? 'high' : 'medium',
+              tickers: [ticker],
+              metadata: {
+                insiderName: tx.name,
+                transactionCode: tx.transactionCode,
+                shares: tx.share,
+                price: tx.transactionPrice,
+                value: txValue,
+              },
+            });
+          }
           tickerInsiders++;
         }
       } else {
@@ -325,6 +366,13 @@ async function main() {
       if (tickerInsiders > 0) parts.push(`${tickerInsiders} insider txns`);
       console.log(`[${ticker}] ${parts.join(', ')}`);
     }
+  }
+
+  // Emit intel items
+  if (!DRY_RUN) {
+    const analystEmitted = await emitIntelItems(db, analystIntelItems);
+    const insiderEmitted = await emitIntelItems(db, insiderIntelItems);
+    console.log(`\nIntel items emitted: ${analystEmitted} analyst, ${insiderEmitted} insider`);
   }
 
   // Summary

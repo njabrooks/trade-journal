@@ -15,6 +15,7 @@
 
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, sql } from 'drizzle-orm';
+import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
 const { secFilings, positions, underlyings } = schema;
 
@@ -199,6 +200,9 @@ async function main() {
   let totalInserted = 0;
   let totalSkipped = 0;
   let errors = 0;
+  const secIntelItems: IntelItemInput[] = [];
+
+  const HIGH_SEVERITY_FORMS = new Set(['8-K', '8-K/A', '4', '4/A', 'FORM 4', 'SC 13D', 'SC 13D/A', 'SC 13G', 'SC 13G/A']);
 
   for (const holding of holdings) {
     if (verbose) {
@@ -265,6 +269,17 @@ async function main() {
 
         if (result.length > 0) {
           totalInserted++;
+          const formUpper = record.filingType.toUpperCase().trim();
+          secIntelItems.push({
+            sourceKey: 'sec_edgar',
+            sourceTable: 'sec_filings',
+            sourceRecordId: result[0].id,
+            occurredAt: new Date(record.filedDate),
+            headline: `${record.ticker} ${record.filingType}: ${record.description || record.filingCategory}`,
+            severity: HIGH_SEVERITY_FORMS.has(formUpper) ? 'high' : 'medium',
+            tickers: [record.ticker],
+            metadata: { filingType: record.filingType, filingCategory: record.filingCategory, isMaterial: record.isMaterial },
+          });
           if (verbose) {
             console.log(`    Inserted: ${record.filedDate} ${record.filingType} (${record.filingCategory})`);
           }
@@ -284,7 +299,13 @@ async function main() {
     await sleep(150);
   }
 
-  // 3. Summary
+  // 3. Emit intel items
+  if (!dryRun && secIntelItems.length > 0) {
+    const emitted = await emitIntelItems(db, secIntelItems);
+    console.log(`\n  Intel items emitted: ${emitted}`);
+  }
+
+  // 4. Summary
   console.log('\n=== Summary ===');
   console.log(`  Holdings processed: ${holdings.length}`);
   console.log(`  Filings found: ${totalFilings}`);

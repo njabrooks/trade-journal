@@ -180,6 +180,8 @@ export function MacroThesisSidebar({
 function StatusBadge({ status }: { status: string }) {
   const colorClass =
     status === 'draft' ? 'bg-muted text-muted-foreground' :
+    status === 'developing' ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400' :
+    status === 'monitoring' ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400' :
     status === 'active' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' :
     status === 'complete' ? 'bg-muted text-muted-foreground' :
     status === 'rejected' ? 'bg-destructive/15 text-destructive' :

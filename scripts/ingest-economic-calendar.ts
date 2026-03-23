@@ -20,6 +20,7 @@
 
 import { db, closeDb, schema } from './lib/db.js';
 import { sql } from 'drizzle-orm';
+import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
 const { economicEvents } = schema;
 
@@ -225,6 +226,14 @@ async function main() {
   // Upsert
   let upserted = 0;
   let errors   = 0;
+  const econIntelItems: IntelItemInput[] = [];
+
+  /** Map impact_level to intel severity */
+  function impactToSeverity(level: string): 'critical' | 'high' | 'medium' | 'info' {
+    if (level === 'high') return 'high';
+    if (level === 'medium') return 'medium';
+    return 'info';
+  }
 
   for (const ev of filtered) {
     try {
@@ -259,7 +268,7 @@ async function main() {
         continue;
       }
 
-      await db
+      const result = await db
         .insert(economicEvents)
         .values(record)
         .onConflictDoUpdate({
@@ -280,13 +289,33 @@ async function main() {
             period:      sql`excluded.period`,
             updatedAt:   sql`NOW()`,
           },
+        })
+        .returning({ id: economicEvents.id });
+
+      if (result.length > 0) {
+        econIntelItems.push({
+          sourceKey: 'economic_calendar',
+          sourceTable: 'economic_events',
+          sourceRecordId: result[0].id,
+          occurredAt: eventDate,
+          headline: `${ev.country} ${ev.title || ev.indicator || eventType}`,
+          severity: impactToSeverity(impactLevel),
+          tickers: [],
+          metadata: { eventType, impactLevel, actual: ev.actual, forecast: ev.forecast, previous: ev.previous },
         });
+      }
 
       upserted++;
     } catch (err) {
       console.error(`  ERROR on "${ev.title}" (${ev.date}): ${err instanceof Error ? err.message : err}`);
       errors++;
     }
+  }
+
+  // Emit intel items
+  if (!dryRun && econIntelItems.length > 0) {
+    const emitted = await emitIntelItems(db, econIntelItems);
+    console.log(`\nIntel items emitted: ${emitted}`);
   }
 
   // Summary

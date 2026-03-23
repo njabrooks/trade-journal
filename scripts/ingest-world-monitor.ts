@@ -16,6 +16,8 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
 import { parseWorldMonitor } from '../src/lib/intelligence/parseWorldMonitor.js';
+import { findBestMatch, hasNeutralIndicators, type Assessment, type ContentForScoring, type SignalForScoring } from '../src/lib/intelligence/scoring.js';
+import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
 const { intelligenceReports, intelligenceItems, signals, signalDataSnapshots, signalEntityLinks } = schema;
 
@@ -60,8 +62,9 @@ async function ingestReport(filePath: string): Promise<{ reportId: string; itemC
     .returning({ id: intelligenceReports.id });
 
   // Insert items with sort order preserving report sequence
+  let insertedItems: { id: string }[] = [];
   if (parsed.items.length > 0) {
-    await db.insert(intelligenceItems).values(
+    insertedItems = await db.insert(intelligenceItems).values(
       parsed.items.map((item, idx) => ({
         reportId: report.id,
         severity: item.severity,
@@ -73,7 +76,27 @@ async function ingestReport(filePath: string): Promise<{ reportId: string; itemC
         section: item.section,
         sortOrder: idx,
       }))
-    );
+    ).returning({ id: intelligenceItems.id });
+  }
+
+  // Emit intel items for the inserted intelligence items
+  if (insertedItems.length > 0) {
+    const isThesisMonitor = parsed.reportType === 'thesis-monitor';
+    const intelItems: IntelItemInput[] = insertedItems.map((row, idx) => {
+      const item = parsed.items[idx];
+      return {
+        sourceKey: isThesisMonitor ? 'thesis_monitor' : 'world_monitor',
+        sourceTable: 'intelligence_items',
+        sourceRecordId: row.id,
+        occurredAt: new Date(parsed.generatedAt),
+        headline: item.headline,
+        body: item.body || null,
+        severity: item.severity as 'critical' | 'high' | 'medium' | 'info',
+        tickers: item.relevantTickers || [],
+      };
+    });
+    const emitted = await emitIntelItems(db, intelItems);
+    console.log(`  Intel items emitted: ${emitted}`);
   }
 
   // Post-ingestion hook: generate qualitative signal snapshots for thesis-monitor reports
@@ -86,7 +109,6 @@ async function ingestReport(filePath: string): Promise<{ reportId: string; itemC
 }
 
 const VALID_ASSESSMENTS = ['neutral', 'strengthening', 'confirmed', 'weakening', 'invalidated'] as const;
-type Assessment = typeof VALID_ASSESSMENTS[number];
 
 /**
  * Normalize a signal statement for fuzzy matching.
@@ -214,30 +236,33 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
   const snapshots: Array<typeof signalDataSnapshots.$inferInsert> = [];
   const now = new Date();
 
-  // No-evidence indicator patterns for heuristic fallback
-  const NO_EVIDENCE_PATTERNS = [
-    '⚪', 'no evidence', 'no change', 'no new', 'status quo', 'unchanged',
-    'no significant', 'no notable', 'no material',
-  ];
+  // Helper to convert an intelligence item to the shared ContentForScoring format
+  const itemToContent = (item: { id: string; headline: string; body: string | null; relevantTickers: string[] | null }): ContentForScoring => ({
+    text: `${item.headline} ${item.body || ''}`,
+    tickers: item.relevantTickers || [],
+  });
 
   for (const signal of activeSignalRows) {
     const normalizedStatement = normalizeStatement(signal.statement);
+    const thesisTicker = signal.thesisType === 'asset' && signal.thesisId
+      ? tickerMap[signal.thesisId] || null
+      : null;
 
     // --- Primary path: look up Score: label by signal statement ---
     const scoreEntry = scoreLabels.get(normalizedStatement);
 
     if (scoreEntry) {
       // Find the best-matching intelligence item for evidence linking
-      const bestItem = findBestMatchingItem(signal, items, tickerMap);
+      const match = findBestMatch(items, itemToContent, signal, thesisTicker);
 
       snapshots.push({
         signalId: signal.id,
         snapshotDate: now,
         assessment: scoreEntry.assessment,
-        evidenceSummary: scoreEntry.evidenceText || (bestItem
-          ? `${bestItem.headline}${bestItem.body ? ': ' + bestItem.body.slice(0, 200) : ''}`
+        evidenceSummary: scoreEntry.evidenceText || (match
+          ? `${match.item.headline}${match.item.body ? ': ' + match.item.body.slice(0, 200) : ''}`
           : null),
-        intelligenceItemId: bestItem?.id || null,
+        intelligenceItemId: match?.item.id || null,
         dataSource: 'thesis_monitor',
         reportId: reportId,
         status: 'pending',
@@ -246,16 +271,12 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
     }
 
     // --- Fallback path: heuristic keyword scoring (backwards compat) ---
-    const bestItem = findBestMatchingItem(signal, items, tickerMap);
+    const match = findBestMatch(items, itemToContent, signal, thesisTicker);
     let assessment: Assessment = 'neutral';
 
-    if (bestItem) {
-      const matchedText = `${bestItem.headline} ${bestItem.body || ''}`;
-      const matchedTextLower = matchedText.toLowerCase();
-      const hasNoEvidenceIndicator = NO_EVIDENCE_PATTERNS.some(
-        pattern => matchedText.includes(pattern) || matchedTextLower.includes(pattern)
-      );
-      if (!hasNoEvidenceIndicator) {
+    if (match) {
+      const matchedText = `${match.item.headline} ${match.item.body || ''}`;
+      if (!hasNeutralIndicators(matchedText)) {
         assessment = 'strengthening';
       }
     }
@@ -264,10 +285,10 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
       signalId: signal.id,
       snapshotDate: now,
       assessment,
-      evidenceSummary: bestItem
-        ? `${bestItem.headline}${bestItem.body ? ': ' + bestItem.body.slice(0, 200) : ''}`
+      evidenceSummary: match
+        ? `${match.item.headline}${match.item.body ? ': ' + match.item.body.slice(0, 200) : ''}`
         : null,
-      intelligenceItemId: bestItem?.id || null,
+      intelligenceItemId: match?.item.id || null,
       dataSource: 'thesis_monitor',
       reportId: reportId,
       status: 'pending',
@@ -345,64 +366,6 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
   }
 
   return snapshots.length;
-}
-
-/**
- * Find the best-matching intelligence item for a signal (by ticker + keyword scoring).
- * Used for evidence linking regardless of whether Score: labels are available.
- */
-function findBestMatchingItem(
-  signal: { statement: string; thesisId: string | null; thesisType: string | null; explicitDetails: unknown },
-  items: Array<{ id: string; headline: string; body: string | null; relevantTickers: string[] | null }>,
-  tickerMap: Record<string, string>,
-): typeof items[number] | null {
-  const details = signal.explicitDetails as Record<string, unknown> | null;
-  const ticker = signal.thesisType === 'asset' && signal.thesisId
-    ? tickerMap[signal.thesisId] || null
-    : null;
-
-  // Collect monitor keywords
-  const keywords: string[] = [];
-  if (details?.monitorKeywords && Array.isArray(details.monitorKeywords)) {
-    keywords.push(...(details.monitorKeywords as string[]));
-  }
-  if (details?.conditions && Array.isArray(details.conditions)) {
-    for (const cond of details.conditions as Record<string, unknown>[]) {
-      if (cond.monitorKeywords && Array.isArray(cond.monitorKeywords)) {
-        keywords.push(...(cond.monitorKeywords as string[]));
-      }
-    }
-  }
-
-  let bestMatch: typeof items[number] | null = null;
-  let bestScore = 0;
-
-  for (const item of items) {
-    const text = `${item.headline} ${item.body || ''}`.toLowerCase();
-    const itemTickers = item.relevantTickers || [];
-    let score = 0;
-
-    if (ticker && itemTickers.includes(ticker)) score += 3;
-
-    const lowerKeywords = keywords.map(k => k.toLowerCase());
-    for (const kw of lowerKeywords) {
-      if (text.includes(kw)) score += 1;
-    }
-
-    const statementWords = signal.statement.toLowerCase()
-      .split(/\s+/)
-      .filter(w => w.length > 4);
-    for (const word of statementWords) {
-      if (text.includes(word)) score += 0.5;
-    }
-
-    if (score > bestScore) {
-      bestMatch = item;
-      bestScore = score;
-    }
-  }
-
-  return bestScore > 0 ? bestMatch : null;
 }
 
 async function main() {

@@ -195,6 +195,7 @@ async function main() {
     .select({
       id: thesisTable.id,
       title: thesisTable.title,
+      status: thesisTable.status,
       claimsCountAtLastArticulation: thesisTable.claimsCountAtLastArticulation,
     })
     .from(thesisTable)
@@ -365,15 +366,23 @@ async function main() {
     const currentClaimCount = claimCountResult[0]?.count ?? 0;
     const previousClaimsCount = thesis.claimsCountAtLastArticulation ?? 0;
 
-    // Update thesis with current claim count
+    // Update thesis with current claim count + promote to monitoring if developing
+    const currentStatus = (thesis as any).status;
+    const updateFields: Record<string, any> = {
+      claimsCountAtLastArticulation: currentClaimCount,
+      updatedAt: new Date(),
+    };
+    if (currentStatus === 'developing') {
+      updateFields.status = 'monitoring';
+    }
     await db
       .update(thesisTable)
-      .set({
-        claimsCountAtLastArticulation: currentClaimCount,
-        updatedAt: new Date(),
-      })
+      .set(updateFields)
       .where(eq(thesisTable.id, thesisId));
     console.log(`✅ Updated ${thesisType} thesis claims count: ${previousClaimsCount} → ${currentClaimCount}`);
+    if (currentStatus === 'developing') {
+      console.log(`✅ Promoted thesis status: developing → monitoring`);
+    }
 
     // Log articulation creation to journal
     await logToJournal({

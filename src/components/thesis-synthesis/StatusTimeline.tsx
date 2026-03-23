@@ -35,6 +35,8 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
 
   const statusIcons: Record<string, React.ReactNode> = {
     draft: <Clock className="w-4 h-4 text-purple-400" />,
+    developing: <Clock className="w-4 h-4 text-amber-500" />,
+    monitoring: <Eye className="w-4 h-4 text-blue-500" />,
     active: <Eye className="w-4 h-4 text-blue-500" />,
     complete: <AlertTriangle className="w-4 h-4 text-emerald-500" />,
     rejected: <Archive className="w-4 h-4 text-slate-300" />,
@@ -42,6 +44,8 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
 
   const statusColors: Record<string, string> = {
     draft: 'border-purple-300 dark:border-purple-700 bg-purple-50 dark:bg-purple-900/20',
+    developing: 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20',
+    monitoring: 'border-blue-400 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20',
     active: 'border-blue-400 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20',
     complete: 'border-emerald-400 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20',
     rejected: 'border-border bg-muted',

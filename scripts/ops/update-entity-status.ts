@@ -38,9 +38,11 @@ const ENTITY_CONFIG: Record<string, { table: any; objectType: string }> = {
 };
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  draft: ['active', 'rejected'],
-  active: ['complete', 'rejected'],
-  complete: ['active'],  // reopen
+  draft: ['active', 'developing', 'rejected'],
+  developing: ['monitoring', 'complete', 'rejected'],
+  monitoring: ['developing', 'complete', 'rejected'],
+  active: ['complete', 'rejected'],  // for non-thesis entities (claims, signals, strategies)
+  complete: ['active', 'developing'],  // reopen
   rejected: ['draft'],   // reconsider
 };
 

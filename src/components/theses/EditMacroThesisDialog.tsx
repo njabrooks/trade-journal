@@ -244,7 +244,8 @@ export function EditMacroThesisDialog({ thesis, onClose }: EditMacroThesisDialog
               className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background text-foreground"
             >
               <option value="draft">Draft</option>
-              <option value="active">Active</option>
+              <option value="developing">Developing</option>
+              <option value="monitoring">Monitoring</option>
               <option value="complete">Complete</option>
               <option value="rejected">Rejected</option>
             </select>

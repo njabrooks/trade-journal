@@ -44,7 +44,7 @@ export function MacroThesisSelector({
   // Filters
   const [thesisTypeFilter, setThesisTypeFilter] = useState<string>('all');
   const [directionFilter, setDirectionFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('active');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Fetch theses on mount
   useEffect(() => {
@@ -175,7 +175,8 @@ export function MacroThesisSelector({
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="developing">Developing</SelectItem>
+              <SelectItem value="monitoring">Monitoring</SelectItem>
               <SelectItem value="complete">Complete</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
@@ -196,7 +197,7 @@ export function MacroThesisSelector({
               setSearchQuery('');
               setThesisTypeFilter('all');
               setDirectionFilter('all');
-              setStatusFilter('active');
+              setStatusFilter('all');
             }}
             className="text-blue-600 hover:text-blue-800 text-sm mt-2"
           >

@@ -20,7 +20,7 @@ import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
  *   thesisType: 'secular' | 'cyclical' | 'structural';
  *   timeHorizon?: 'long_term' | 'medium_term' | 'short_term';
  *   confidenceLevel?: 'high' | 'medium' | 'low' | 'exploratory';
- *   status?: 'draft' | 'active' | 'complete' | 'rejected';
+ *   status?: 'draft' | 'developing' | 'monitoring' | 'complete' | 'rejected';
  *
  *   // Position structure
  *   sectors?: string[];
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       thesisType,
       timeHorizon,
       confidenceLevel,
-      status = 'active',
+      status = 'developing',
       sectors = [],
       direction,
       positionStartDate,

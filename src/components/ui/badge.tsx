@@ -20,6 +20,8 @@ const badgeVariants = cva(
         // Entity status variants (ui-patterns.md §4)
         draft: "border-transparent bg-muted text-muted-foreground",
         active: "border-transparent bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+        developing: "border-transparent bg-amber-500/15 text-amber-600 dark:text-amber-400",
+        monitoring: "border-transparent bg-blue-500/15 text-blue-600 dark:text-blue-400",
         complete: "border-transparent bg-muted text-muted-foreground",
         rejected: "border-transparent bg-destructive/15 text-destructive",
         merged: "border-transparent bg-orange-500/15 text-orange-600 dark:text-orange-400",
@@ -50,7 +52,7 @@ function Badge({
 }
 
 // Entity status type for type-safe status badges
-type EntityStatus = 'draft' | 'active' | 'complete' | 'rejected' | 'merged';
+type EntityStatus = 'draft' | 'active' | 'developing' | 'monitoring' | 'complete' | 'rejected' | 'merged';
 
 // Helper component for entity status badges
 function EntityStatusBadge({
@@ -59,7 +61,7 @@ function EntityStatusBadge({
   ...props
 }: Omit<React.ComponentProps<"span">, 'children'> & { status: EntityStatus | string }) {
   // Map status to variant, defaulting to secondary for unknown statuses
-  const variant = ['draft', 'active', 'complete', 'rejected', 'merged'].includes(status)
+  const variant = ['draft', 'active', 'developing', 'monitoring', 'complete', 'rejected', 'merged'].includes(status)
     ? (status as EntityStatus)
     : 'secondary';
 

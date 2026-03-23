@@ -17,7 +17,7 @@ interface UnifiedAssetThesisBrowserProps {
 
 type TimeHorizonFilter = 'all' | 'long_term' | 'medium_term' | 'short_term';
 type ConfidenceFilter = 'all' | 'high' | 'medium' | 'low' | 'exploratory';
-type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
+type StatusFilter = 'all' | 'draft' | 'developing' | 'monitoring' | 'complete' | 'rejected';
 type DirectionFilter = 'all' | 'bullish' | 'bearish' | 'neutral';
 type SortColumn = 'title' | 'underlying' | 'macroThesis' | 'timeHorizon' | 'confidence' | 'status' | 'claims' | 'strategies' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -366,7 +366,8 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
               >
                 <option value="all">All Statuses</option>
                 <option value="draft">Draft</option>
-                <option value="active">Active</option>
+                <option value="developing">Developing</option>
+                <option value="monitoring">Monitoring</option>
                 <option value="complete">Complete</option>
                 <option value="rejected">Rejected</option>
               </select>

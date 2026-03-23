@@ -22,6 +22,7 @@
 
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, sql } from 'drizzle-orm';
+import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
 const { earningsEvents, underlyings } = schema;
 
@@ -177,6 +178,7 @@ async function main() {
   let totalUpserted = 0;
   let totalErrors = 0;
   const nextEarningsUpdates: Array<{ ticker: string; underlyingId: string; nextDate: string }> = [];
+  const earningsIntelItems: IntelItemInput[] = [];
 
   for (const ticker of tickers) {
     try {
@@ -207,7 +209,7 @@ async function main() {
           source: 'finnhub' as const,
         };
 
-        await db
+        const result = await db
           .insert(earningsEvents)
           .values(record)
           .onConflictDoUpdate({
@@ -223,7 +225,37 @@ async function main() {
               underlyingId: sql`EXCLUDED.underlying_id`,
               updatedAt: sql`NOW()`,
             },
+          })
+          .returning({ id: earningsEvents.id });
+
+        if (result.length > 0) {
+          const quarterLabel = entry.quarter != null && entry.year != null
+            ? `Q${entry.quarter} ${entry.year}`
+            : entry.date;
+          const epsStr = entry.epsActual != null ? ` (EPS: ${entry.epsActual})` : '';
+          const surprisePct = entry.epsActual != null && entry.epsEstimate != null && entry.epsEstimate !== 0
+            ? Math.abs((entry.epsActual - entry.epsEstimate) / entry.epsEstimate * 100)
+            : 0;
+
+          earningsIntelItems.push({
+            sourceKey: 'earnings_calendar',
+            sourceTable: 'earnings_events',
+            sourceRecordId: result[0].id,
+            occurredAt: new Date(entry.date),
+            headline: `${ticker} ${quarterLabel} Earnings${epsStr}`,
+            severity: surprisePct > 10 ? 'high' : 'medium',
+            tickers: [ticker],
+            metadata: {
+              quarter: entry.quarter,
+              year: entry.year,
+              epsEstimate: entry.epsEstimate,
+              epsActual: entry.epsActual,
+              revenueEstimate: entry.revenueEstimate,
+              revenueActual: entry.revenueActual,
+              surprisePct: surprisePct > 0 ? surprisePct : null,
+            },
           });
+        }
 
         totalUpserted++;
       }
@@ -331,7 +363,13 @@ async function main() {
     await delay(RATE_LIMIT_DELAY_MS);
   }
 
-  // 6. Summary
+  // 6. Emit intel items
+  if (earningsIntelItems.length > 0) {
+    const emitted = await emitIntelItems(db, earningsIntelItems);
+    console.log(`\nIntel items emitted: ${emitted}`);
+  }
+
+  // 7. Summary
   console.log('\n--- Summary ---');
   console.log(`Tickers processed: ${tickers.length}`);
   console.log(`Earnings events upserted: ${totalUpserted}`);

@@ -30,7 +30,7 @@ import {
   signalEntityLinks,
   NewThesisTriageRecord,
 } from '@/db/schema';
-import { eq, ne, and, desc, sql, count, isNotNull } from 'drizzle-orm';
+import { eq, ne, and, desc, sql, count, isNotNull, inArray } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 
 // Threshold for rule #2: new claims available
@@ -415,22 +415,22 @@ export async function computeThesisTriageForAll(): Promise<{
     asset: [],
   };
 
-  // Get all active macro theses
+  // Get all non-terminal macro theses (developing or monitoring)
   const activeMarcoTheses = await db
     .select({ id: macroTheses.id })
     .from(macroTheses)
-    .where(eq(macroTheses.status, 'active'));
+    .where(inArray(macroTheses.status, ['developing', 'monitoring']));
 
   for (const thesis of activeMarcoTheses) {
     const result = await computeThesisTriageForThesis(thesis.id, 'macro');
     results.macro.push(result);
   }
 
-  // Get all active asset theses
+  // Get all non-terminal asset theses (developing or monitoring)
   const activeAssetTheses = await db
     .select({ id: assetTheses.id })
     .from(assetTheses)
-    .where(eq(assetTheses.status, 'active'));
+    .where(inArray(assetTheses.status, ['developing', 'monitoring']));
 
   for (const thesis of activeAssetTheses) {
     const result = await computeThesisTriageForThesis(thesis.id, 'asset');

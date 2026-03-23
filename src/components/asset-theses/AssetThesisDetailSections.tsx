@@ -118,6 +118,8 @@ export function AssetThesisDetailSections({
                 <dd className="mt-0.5">
                   <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
                     view.status === 'draft' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
+                    view.status === 'developing' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
+                    view.status === 'monitoring' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
                     view.status === 'active' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
                     view.status === 'complete' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' :
                     view.status === 'rejected' ? 'bg-muted text-muted-foreground' :

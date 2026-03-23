@@ -21,7 +21,7 @@ import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
  *   direction?: 'bullish' | 'bearish' | 'neutral';
  *   timeHorizon?: 'long_term' | 'medium_term' | 'short_term';
  *   confidenceLevel?: 'high' | 'medium' | 'low' | 'exploratory';
- *   status?: 'draft' | 'active' | 'complete' | 'rejected';
+ *   status?: 'draft' | 'developing' | 'monitoring' | 'complete' | 'rejected';
  *   positionStartDate?: string;
  *   positionEndDate?: string;
  *   targetPrice?: string;            // Numeric string
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       direction,
       timeHorizon,
       confidenceLevel,
-      status = 'active',
+      status = 'developing',
       positionStartDate,
       positionEndDate,
       targetPrice,

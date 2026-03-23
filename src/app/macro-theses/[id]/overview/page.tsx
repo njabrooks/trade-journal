@@ -17,6 +17,7 @@ import { SignalsSection } from '@/components/signals/SignalsSection';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { EntityStatusBadge } from '@/components/ui/badge';
+import { LifecycleBadge } from '@/components/ui/lifecycle-badge';
 
 interface OverviewPageProps {
   params: Promise<{ id: string }>;
@@ -56,11 +57,18 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
   const tabs = createEntityTabs('/macro-theses', id);
 
   const statusBadge = <EntityStatusBadge status={thesis.status} />;
+  const isMonitoring = thesis.status === 'monitoring';
+  const isDeveloping = thesis.status === 'developing';
 
   return (
     <EntityDetailLayout
       title={thesis.title}
-      subtitle="Macro Thesis"
+      subtitle={
+        <span className="inline-flex items-center gap-2">
+          Macro Thesis
+          <LifecycleBadge phase={thesis.status} size="sm" />
+        </span>
+      }
       statusBadge={statusBadge}
       tabs={<EntityTabs tabs={tabs} />}
       activeNav="macro-theses"
@@ -128,34 +136,83 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
         )}
       </CollapsibleEntitySection>
 
-      {/* Claims Section */}
-      <CollapsibleEntitySection
-        title="Claims"
-        count={claimsWithSources.length}
-        defaultOpen={claimsWithSources.length > 0 && claimsWithSources.length <= 5}
-      >
-        {claimsWithSources.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No main claims linked to this thesis yet.</p>
-        ) : (
-          <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
-        )}
-      </CollapsibleEntitySection>
+      {/* --- LIFECYCLE-DRIVEN SECTION ORDER --- */}
 
-      {/* Signals Section */}
-      <CollapsibleEntitySection
-        title="Signals"
-        count={validationPoints.length}
-        defaultOpen={validationPoints.length > 0}
-      >
-        <SignalsSection
-          signals={validationPoints}
-          thesisId={id}
-          thesisType="macro"
-          thesisTitle={thesis.title}
-        />
-      </CollapsibleEntitySection>
+      {isMonitoring ? (
+        <>
+          {/* Monitoring: Signals first (primary), then Evidence (reference) */}
+          <CollapsibleEntitySection
+            title="Signals"
+            count={validationPoints.length}
+            defaultOpen={true}
+          >
+            <SignalsSection
+              signals={validationPoints}
+              thesisId={id}
+              thesisType="macro"
+              thesisTitle={thesis.title}
+            />
+          </CollapsibleEntitySection>
 
-      {/* Asset Theses Section */}
+          <CollapsibleEntitySection
+            title="Evidence"
+            count={claimsWithSources.length}
+            defaultOpen={false}
+          >
+            <p className="text-xs text-muted-foreground mb-3">
+              Claims linked during development. New intelligence is evaluated against signals above.
+            </p>
+            {claimsWithSources.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No claims linked to this thesis.</p>
+            ) : (
+              <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
+            )}
+          </CollapsibleEntitySection>
+        </>
+      ) : (
+        <>
+          {/* Developing (or draft): Evidence first (primary), then Signals */}
+          <CollapsibleEntitySection
+            title="Evidence"
+            count={claimsWithSources.length}
+            defaultOpen={claimsWithSources.length > 0 && claimsWithSources.length <= 5}
+          >
+            {claimsWithSources.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No claims linked to this thesis yet. Process research with <code className="px-1 py-0.5 bg-muted rounded font-mono text-xs">/process-inbox</code> to extract claims.</p>
+            ) : (
+              <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
+            )}
+          </CollapsibleEntitySection>
+
+          <CollapsibleEntitySection
+            title="Signals"
+            count={validationPoints.length}
+            defaultOpen={validationPoints.length > 0}
+          >
+            {validationPoints.length === 0 && isDeveloping ? (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-1">
+                  No signals yet.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Link claims as evidence, then run{' '}
+                  <code className="px-1 py-0.5 bg-muted rounded font-mono">/build-core-argument</code>
+                  {' '}to generate monitoring signals and transition to monitoring phase.
+                </p>
+              </div>
+            ) : (
+              <SignalsSection
+                signals={validationPoints}
+                thesisId={id}
+                thesisType="macro"
+                thesisTitle={thesis.title}
+              />
+            )}
+          </CollapsibleEntitySection>
+        </>
+      )}
+
+      {/* Asset Theses Section — same in both phases */}
       <CollapsibleEntitySection
         title="Asset Theses"
         count={linkedAssetTheses.length}
@@ -169,7 +226,7 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
         />
       </CollapsibleEntitySection>
 
-      {/* Linked Strategies Section */}
+      {/* Linked Strategies Section — same in both phases */}
       <CollapsibleEntitySection
         title="Linked Strategies"
         count={linkedStrategies.length}

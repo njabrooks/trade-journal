@@ -12,7 +12,7 @@ interface CreateAssetThesisFormData {
   direction: 'bullish' | 'bearish' | 'neutral';
   timeHorizon: 'long_term' | 'medium_term' | 'short_term';
   confidenceLevel: 'high' | 'medium' | 'low' | 'exploratory';
-  status: 'draft' | 'active' | 'complete' | 'rejected';
+  status: 'draft' | 'developing' | 'monitoring' | 'complete' | 'rejected';
   primaryMacroThesisId?: string;
 }
 
@@ -35,7 +35,7 @@ export function CreateAssetThesisForm({
     direction: initialData.direction || 'bullish',
     timeHorizon: initialData.timeHorizon || 'medium_term',
     confidenceLevel: initialData.confidenceLevel || 'medium',
-    status: initialData.status || 'active',
+    status: initialData.status || 'developing',
     ticker: initialData.ticker || '',
     primaryMacroThesisId: macroThesisId || initialData.primaryMacroThesisId,
     title: initialData.title,
@@ -184,7 +184,8 @@ export function CreateAssetThesisForm({
             disabled={loading}
           >
             <option value="draft">Draft</option>
-            <option value="active">Active</option>
+            <option value="developing">Developing</option>
+            <option value="monitoring">Monitoring</option>
             <option value="complete">Complete</option>
             <option value="rejected">Rejected</option>
           </select>

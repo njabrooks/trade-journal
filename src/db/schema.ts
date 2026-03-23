@@ -80,7 +80,7 @@ export const macroTheses = pgTable(
     thesisType: text('thesis_type').notNull(), // 'secular' | 'cyclical' | 'structural'
     timeHorizon: text('time_horizon'), // 'long_term' | 'medium_term' | 'short_term'
     confidenceLevel: text('confidence_level'), // 'high' | 'medium' | 'low' | 'exploratory'
-    status: text('status').notNull().default('active'), // 'draft' | 'active' | 'complete' | 'rejected'
+    status: text('status').notNull().default('developing'), // 'draft' | 'developing' | 'monitoring' | 'complete' | 'rejected'
 
     // Position structure
     sectors: text('sectors').array().default(sql`'{}'`), // e.g., ['AI hyperscalers', 'crypto alts']
@@ -134,7 +134,7 @@ export const assetTheses = pgTable(
     regimeContext: text('regime_context'),
     timeHorizon: text('time_horizon'),
     confidenceLevel: text('confidence_level'),
-    status: text('status').notNull().default('active'), // 'draft' | 'active' | 'complete' | 'rejected'
+    status: text('status').notNull().default('developing'), // 'draft' | 'developing' | 'monitoring' | 'complete' | 'rejected'
 
     // AI-generated summary (Phase 2.8)
     aiSummary: text('ai_summary'),
@@ -2964,3 +2964,39 @@ export const insiderTransactions = pgTable(
 
 export type InsiderTransaction = typeof insiderTransactions.$inferSelect;
 export type NewInsiderTransaction = typeof insiderTransactions.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// Intelligence Atoms — normalized cross-source intelligence with processing state
+// ---------------------------------------------------------------------------
+
+export const intelItems = pgTable(
+  'intel_items',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    sourceKey: text('source_key').notNull(), // 'finnhub_analyst' | 'sec_edgar' | 'world_monitor' | 'thesis_monitor' | 'economic_calendar' | 'earnings_calendar' | 'insider_transaction'
+    sourceTable: text('source_table').notNull(), // 'analyst_actions' | 'sec_filings' | 'intelligence_items' | 'economic_events' | 'earnings_events' | 'insider_transactions'
+    sourceRecordId: text('source_record_id').notNull(), // ID in the source table
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    headline: text('headline').notNull(),
+    body: text('body'),
+    severity: text('severity').notNull().default('info'), // 'critical' | 'high' | 'medium' | 'info'
+    tickers: text('tickers').array().default([]),
+    resolvedUnderlyingIds: uuid('resolved_underlying_ids').array().default([]),
+    // Processing state
+    processingStatus: text('processing_status').notNull().default('pending'), // 'pending' | 'processed' | 'skipped'
+    processingResult: text('processing_result'), // 'signal_evidence' | 'contextual' | 'claim_candidate' | null
+    processedAt: timestamp('processed_at', { withTimezone: true }),
+    metadata: jsonb('metadata').default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    sourceUnique: unique().on(table.sourceTable, table.sourceRecordId),
+    processingStatusIdx: index('idx_intel_items_processing').on(table.processingStatus),
+    occurredAtIdx: index('idx_intel_items_occurred').on(table.occurredAt),
+    tickersIdx: index('idx_intel_items_tickers').using('gin', table.tickers),
+    sourceKeyIdx: index('idx_intel_items_source').on(table.sourceKey),
+  })
+);
+
+export type IntelItem = typeof intelItems.$inferSelect;
+export type NewIntelItem = typeof intelItems.$inferInsert;
