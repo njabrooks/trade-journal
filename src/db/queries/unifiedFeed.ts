@@ -82,6 +82,8 @@ export interface FeedItem {
   transactionCode?: string;
   shareChange?: number | null;
   transactionPrice?: number | null;
+  // Claim provenance (for claim_evidence items)
+  claimId?: string;
   // Entity chain (resolved from ticker → underlying → asset_thesis → strategy)
   linkedAssetTheses?: { id: string; title: string; direction?: string }[];
   linkedStrategies?: { id: string; strategyKey: string }[];
@@ -278,6 +280,9 @@ export async function getUnifiedFeed(options: UnifiedFeedOptions = {}): Promise<
     seen.add(item.id);
     return true;
   });
+
+  // Sort the fully merged list chronologically (the concat above breaks ordering)
+  unique.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   const sliced = unique.slice(offset, offset + limit);
   const hasMore = unique.length > offset + limit;
@@ -477,6 +482,7 @@ async function fetchClaimEvidence(cutoff: Date, limit: number, ticker?: string):
       id: claimSignalEvidences.id,
       createdAt: claimSignalEvidences.createdAt,
       assessment: claimSignalEvidences.assessment,
+      claimId: claimSignalEvidences.claimId,
       claimTitle: mainClaims.title,
       claimText: mainClaims.claim,
       claimTickers: mainClaims.relevantTickers,
@@ -506,6 +512,7 @@ async function fetchClaimEvidence(cutoff: Date, limit: number, ticker?: string):
       body: r.claimText,
       assessment: r.assessment as FeedItem['assessment'],
       tickers: r.claimTickers ?? undefined,
+      claimId: r.claimId,
       signalId: r.signalId,
       signalStatement: r.signalStatement,
       thesisId: link?.thesisId ?? undefined,

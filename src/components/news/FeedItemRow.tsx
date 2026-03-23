@@ -298,8 +298,13 @@ function getEvidenceSlots(item: FeedItem): RowSlots {
   return {
     ticker: item.tickers?.[0] ? <span className="font-mono font-semibold text-foreground text-xs">{item.tickers[0]}</span> : null,
     badges: item.assessment ? <Badge text={item.assessment} style={ASSESSMENT_STYLES[item.assessment]} /> : null,
-    content: <span className="truncate">{item.headline}</span>,
-    data: null, // Entity links shown in col 7 via entity chain resolver
+    content: item.claimId ? (
+      <a href={`/claims/${item.claimId}`} onClick={(e) => e.stopPropagation()}
+        className="truncate block hover:underline">
+        {item.headline}
+      </a>
+    ) : <span className="truncate">{item.headline}</span>,
+    data: null,
   };
 }
 
@@ -454,7 +459,8 @@ export function FeedItemRow({ item }: { item: FeedItem }) {
             <p className="text-sm text-muted-foreground whitespace-pre-line">{stripSourceLines(item.body)}</p>
           )}
           {item.signalStatement && (
-            <a href="/signals"
+            <a href={item.signalId ? `/signals/${item.signalId}` : '/signals'}
+              onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center rounded-md bg-purple-500/10 px-2 py-0.5 text-[11px] font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-colors">
               Signal: {item.signalStatement.length > 60 ? item.signalStatement.slice(0, 60) + '\u2026' : item.signalStatement}
             </a>
