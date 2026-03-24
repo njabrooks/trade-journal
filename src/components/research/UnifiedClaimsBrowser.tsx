@@ -53,6 +53,8 @@ interface UnifiedClaimsBrowserProps {
   showSourceColumn?: boolean; // Optional: show the Research source column in table (default: false)
   compact?: boolean; // Optional: hide filter panel and show minimal UI (default: false)
   onSuggestionActioned?: (result: SuggestionActionResult) => void; // Callback when a suggestion is accepted/rejected
+  /** B5: suppress claim-to-thesis suggestions (monitoring-phase theses route to signals) */
+  suppressSuggestions?: boolean;
 }
 
 type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
@@ -67,6 +69,7 @@ export function UnifiedClaimsBrowser({
   initialLinkedToFilter,
   showSourceColumn = false,
   onSuggestionActioned,
+  suppressSuggestions = false,
 }: UnifiedClaimsBrowserProps) {
   const router = useRouter();
   const [expandedClaim, setExpandedClaim] = useState<string | null>(null);
@@ -660,8 +663,8 @@ export function UnifiedClaimsBrowser({
                         <td className="px-4 py-3">
                           <div className={isExpanded ? "space-y-1" : "flex items-center gap-1 overflow-hidden"}>
                             {linkedTheses.length === 0 && linkedViews.length === 0 ? (
-                              suggestions.length > 0 ? (
-                                <InlineClaimSuggestions suggestions={suggestions} compact={true} onSuggestionActioned={onSuggestionActioned} />
+                              suggestions.length > 0 && !suppressSuggestions ? (
+                                <InlineClaimSuggestions suggestions={suggestions} compact={true} onSuggestionActioned={onSuggestionActioned} suppressSuggestions={suppressSuggestions} />
                               ) : (
                                 <span className="text-xs text-muted-foreground">Not linked</span>
                               )
@@ -1050,14 +1053,14 @@ export function UnifiedClaimsBrowser({
                                 </div>
                               )}
 
-                              {/* AI Suggested Linkages */}
-                              {suggestions.length > 0 && (
+                              {/* AI Suggested Linkages (B5: suppressed for monitoring-phase theses) */}
+                              {suggestions.length > 0 && !suppressSuggestions && (
                                 <div className="pt-2 border-t border">
                                   <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide flex items-center gap-1">
                                     <span>Suggested Linkages</span>
                                     <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">AI</Badge>
                                   </h4>
-                                  <InlineClaimSuggestions suggestions={suggestions} compact={false} onSuggestionActioned={onSuggestionActioned} />
+                                  <InlineClaimSuggestions suggestions={suggestions} compact={false} onSuggestionActioned={onSuggestionActioned} suppressSuggestions={suppressSuggestions} />
                                 </div>
                               )}
 

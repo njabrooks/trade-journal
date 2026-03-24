@@ -99,7 +99,7 @@ WHERE status = 'active'
 ORDER BY created_at DESC;
 ```
 
-**Get all active macro theses**:
+**Get all non-terminal macro theses (developing or monitoring)**:
 ```sql
 SELECT
   id,
@@ -113,11 +113,11 @@ SELECT
   notes,
   created_at
 FROM macro_theses
-WHERE status = 'active'
+WHERE status IN ('developing', 'monitoring')
 ORDER BY created_at DESC;
 ```
 
-**Get all active asset views**:
+**Get all non-terminal asset views (developing or monitoring)**:
 ```sql
 SELECT
   av.id,
@@ -135,7 +135,7 @@ SELECT
 FROM asset_theses av
 LEFT JOIN underlyings u ON av.underlying_id = u.id
 LEFT JOIN macro_theses mt ON av.macro_thesis_id = mt.id
-WHERE av.status = 'active'
+WHERE av.status IN ('developing', 'monitoring')
 ORDER BY av.created_at DESC;
 ```
 

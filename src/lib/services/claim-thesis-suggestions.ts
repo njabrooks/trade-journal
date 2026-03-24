@@ -72,16 +72,19 @@ export async function generateClaimThesisSuggestions(
 
   if (claimsData.length === 0) return [];
 
-  // Fetch active theses
+  // Fetch theses in developing phase (B5: exclude monitoring-phase theses)
+  // Only suggest claim links for theses still accumulating evidence.
+  // Monitoring-phase theses route new intelligence to signals, not claims.
   const allMacroTheses = await getMacroThesesList();
   const allAssetTheses = await getAssetThesesList();
 
-  const activeMacroTheses = allMacroTheses.filter((t) => t.status === 'active');
-  const activeAssetTheses = allAssetTheses.filter((v) => v.status === 'active');
+  const developingStatuses = new Set(['draft', 'developing']);
+  const activeMacroTheses = allMacroTheses.filter((t) => developingStatuses.has(t.status));
+  const activeAssetTheses = allAssetTheses.filter((v) => developingStatuses.has(v.status));
 
   // Short-circuit if nothing to suggest against
   if (activeMacroTheses.length === 0 && activeAssetTheses.length === 0) {
-    console.log('No active theses found — skipping suggestion generation');
+    console.log('No developing-phase theses found — skipping suggestion generation');
     return [];
   }
 

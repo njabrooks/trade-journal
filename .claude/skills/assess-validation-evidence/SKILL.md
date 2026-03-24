@@ -73,7 +73,7 @@ npx tsx scripts/psql-query.ts "
 SELECT at.id, at.title, at.status, u.ticker, 'asset' as thesis_type
 FROM asset_theses at
 JOIN underlyings u ON at.underlying_id = u.id
-WHERE u.ticker = 'GLXY' AND at.status = 'active'
+WHERE u.ticker = 'GLXY' AND at.status IN ('developing', 'monitoring')
 LIMIT 1
 " --format json
 ```

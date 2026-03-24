@@ -14,6 +14,8 @@ import {
   intelItems,
   signalDataSnapshots,
   thesisTriageRecords,
+  underlyings,
+  assetTheses,
   type IntelItem,
 } from '../../db/schema.js';
 import { resolveRelevanceContext, type RelevanceContext, type ResolvedSignal } from './resolver.js';
@@ -138,12 +140,35 @@ export async function evaluatePendingIntelItems(
     .orderBy(intelItems.occurredAt)
     .limit(limit);
 
+  // Pre-load all tickers that have non-terminal asset theses
+  const trackedTickers = await d
+    .selectDistinct({ ticker: underlyings.ticker })
+    .from(underlyings)
+    .innerJoin(assetTheses, eq(assetTheses.underlyingId, underlyings.id))
+    .where(inArray(assetTheses.status, ['developing', 'monitoring']));
+
+  const trackedTickerSet = new Set(trackedTickers.map(r => r.ticker.toUpperCase()));
+
   let signalEvidenceCount = 0;
   let contextualCount = 0;
   let claimCandidateCount = 0;
   let skippedCount = 0;
+  let passedFilter = 0;
 
   for (const item of pending) {
+    // Pre-filter: skip items with no tracked tickers (avoids per-item DB query)
+    const itemTickers = (item.tickers ?? []).map(t => t.toUpperCase());
+    const hasRelevantTicker = itemTickers.some(t => trackedTickerSet.has(t));
+
+    if (!hasRelevantTicker) {
+      await d.update(intelItems)
+        .set({ processingStatus: 'skipped', processedAt: new Date() })
+        .where(eq(intelItems.id, item.id));
+      skippedCount++;
+      continue;
+    }
+
+    passedFilter++;
     const result = await evaluateIntelItem(item, d);
 
     // Write signal evidence snapshots
@@ -210,6 +235,8 @@ export async function evaluatePendingIntelItems(
 
     if (result.processingResult === 'contextual') contextualCount++;
   }
+
+  console.log(`Pre-filter: ${pending.length} items, ${passedFilter} with tracked tickers, ${pending.length - passedFilter} skipped`);
 
   return {
     processed: pending.length,

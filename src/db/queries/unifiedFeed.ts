@@ -685,7 +685,7 @@ async function enrichWithEntityChain(items: FeedItem[]): Promise<void> {
 
   for (const row of tickerEntities) {
     const t = row.ticker.toUpperCase();
-    if (row.atId && row.atStatus === 'active') {
+    if (row.atId && (row.atStatus === 'developing' || row.atStatus === 'monitoring')) {
       if (!tickerToTheses.has(t)) tickerToTheses.set(t, new Map());
       tickerToTheses.get(t)!.set(row.atId, {
         id: row.atId,

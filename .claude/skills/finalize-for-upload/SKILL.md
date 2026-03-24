@@ -252,11 +252,11 @@ After promoting claims, analyze them against the existing thesis hierarchy and g
 # Promoted claims from this upload
 npx tsx scripts/psql-query.ts "SELECT id, title, claim, category, qualifier, relevant_tickers FROM main_claims WHERE source_insight_id = '$INSIGHT_ID'" --format json
 
-# Active macro theses
-npx tsx scripts/psql-query.ts "SELECT id, title, description, direction, sectors FROM macro_theses WHERE status = 'active'" --format json
+# Non-terminal macro theses (developing or monitoring)
+npx tsx scripts/psql-query.ts "SELECT id, title, description, direction, sectors FROM macro_theses WHERE status IN ('developing', 'monitoring')" --format json
 
-# Active asset theses
-npx tsx scripts/psql-query.ts "SELECT at.id, at.title, at.description, u.ticker, at.direction FROM asset_theses at JOIN underlyings u ON at.underlying_id = u.id WHERE at.status = 'active'" --format json
+# Non-terminal asset theses (developing or monitoring)
+npx tsx scripts/psql-query.ts "SELECT at.id, at.title, at.description, u.ticker, at.direction FROM asset_theses at JOIN underlyings u ON at.underlying_id = u.id WHERE at.status IN ('developing', 'monitoring')" --format json
 ```
 
 **5b. Analyze each claim against each thesis.** For every (claim, thesis) pair, assess:
@@ -395,7 +395,7 @@ Evidence claims are NOT abbreviated - they receive complete argumentation struct
 ✅ Successfully auto-promoted 14 claims to main_claims table
    Status: draft (ready for manual review and activation)
 
-🔗 Analyzing claims against active theses...
+🔗 Analyzing claims against developing/monitoring theses...
 ✅ Generated 8 thesis linkage suggestions across 6 claims
    (pending review in Claims Browser)
 
@@ -442,10 +442,10 @@ WHERE id = $1;
 Use `/create-thesis` logic:
 
 ```sql
--- Optional: Check for similar theses
+-- Optional: Check for similar theses (non-terminal)
 SELECT id, title, description
 FROM macro_theses
-WHERE status = 'active'
+WHERE status IN ('developing', 'monitoring')
   AND (title ILIKE '%keyword%' OR description ILIKE '%keyword%')
 LIMIT 3;
 
@@ -882,7 +882,7 @@ async function main() {
 - Suggest logical next steps after each upload
 - Check for duplicates before creating theses/views
 - Support combined uploads (artifact + insight in one file)
-- Default `status` to 'active' for theses/views, 'raw' for artifacts
+- Default `status` to 'developing' for theses/views, 'raw' for artifacts
 - Automatically update artifact status to 'structured' when insight created
 - Create underlying if ticker not found (auto-provision)
 - Validate all foreign key references before inserting

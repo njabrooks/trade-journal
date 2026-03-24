@@ -26,17 +26,25 @@ interface InlineClaimSuggestionsProps {
   suggestions: ClaimSuggestion[];
   compact?: boolean; // true = table cell view, false = expanded detail view
   onSuggestionActioned?: (result: SuggestionActionResult) => void;
+  /** B5: suppress suggestions for monitoring-phase theses (evidence routes to signals instead) */
+  suppressSuggestions?: boolean;
 }
 
 export function InlineClaimSuggestions({
   suggestions,
   compact = true,
   onSuggestionActioned,
+  suppressSuggestions = false,
 }: InlineClaimSuggestionsProps) {
   const router = useRouter();
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [acceptedIds, setAcceptedIds] = useState<Set<string>>(new Set());
+
+  // B5: When thesis is in monitoring phase, suppress claim-to-thesis suggestions
+  if (suppressSuggestions) {
+    return null;
+  }
 
   const visibleSuggestions = suggestions.filter(
     (s) => !dismissedIds.has(s.id) && !acceptedIds.has(s.id)

@@ -99,7 +99,7 @@ SELECT
   direction,
   sectors
 FROM macro_theses
-WHERE status = 'active'
+WHERE status IN ('developing', 'monitoring')
   AND (title ILIKE '%keyword%' OR description ILIKE '%keyword%')
 ORDER BY created_at DESC;
 ```
@@ -120,7 +120,7 @@ FROM asset_theses av
 JOIN underlyings u ON av.underlying_id = u.id
 LEFT JOIN macro_theses mt ON av.macro_thesis_id = mt.id
 WHERE u.ticker = $1
-  AND av.status = 'active'
+  AND av.status IN ('developing', 'monitoring')
 ORDER BY av.created_at DESC;
 ```
 

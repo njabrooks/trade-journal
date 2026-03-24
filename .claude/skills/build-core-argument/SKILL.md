@@ -214,7 +214,7 @@ sibling_theses AS (
   LEFT JOIN underlyings u ON at.underlying_id = u.id
   WHERE atrm.macro_thesis_id IN (SELECT macro_thesis_id FROM parent_macro_theses)
     AND at.id != (SELECT id FROM thesis_base)
-    AND at.status = 'active'
+    AND at.status IN ('developing', 'monitoring')
 ),
 prior_articulation AS (
   SELECT ta.*
@@ -676,7 +676,7 @@ ORDER BY category, series_id;
 ```
 
 **Full FRED Indicators Reference:** See `docs/reference/fred-indicators-by-thesis.md` for:
-- Complete mapping of 100+ FRED series to all 22 active macro theses
+- Complete mapping of 100+ FRED series to all 22 developing/monitoring macro theses
 - Priority-ranked suggestions (top 5 per thesis)
 - Cross-cutting indicators that apply to multiple thesis themes
 - Category groupings (interest_rates, inflation, labor, credit, liquidity, currency, housing, fiscal, sentiment)
