@@ -139,6 +139,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   world_monitor: 'World Monitor',
   qualitative: 'Research',
   research_routing: 'Research',
+  intelligence_routing: 'Intel Route',
   economic_calendar: 'Econ. Calendar',
 };
 

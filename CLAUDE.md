@@ -112,7 +112,17 @@ React Frontend (UnifiedClaimsBrowser, ConvertClaimToEntityDialog)
 
 ### Entity State Machines
 
-All lifecycle entities use a **universal status model**:
+**Thesis lifecycle model** — theses use a two-phase lifecycle:
+
+```
+draft → developing → monitoring → complete | rejected
+```
+
+- `developing`: accumulating claims as thesis evidence. Intelligence routes as claim suggestions.
+- `monitoring`: `build-core-argument` has run, signals exist. Intelligence routes as signal evidence.
+- Transition trigger: `insert-thesis-articulation.ts` sets developing → monitoring on articulation creation.
+
+**Other entities** use a universal status model:
 
 ```
 draft ──► active ──┬──► complete
@@ -121,8 +131,8 @@ draft ──► active ──┬──► complete
 
 | Entity | Field | Values | Notes |
 |--------|-------|--------|-------|
-| MacroThesis | `status` | draft, active, complete, rejected | Single unified lifecycle |
-| AssetThesis | `status` | draft, active, complete, rejected | Single unified lifecycle |
+| MacroThesis | `status` | draft, developing, monitoring, complete, rejected | Two-phase lifecycle |
+| AssetThesis | `status` | draft, developing, monitoring, complete, rejected | Two-phase lifecycle |
 | MainClaim | `status` | draft, active, complete, rejected | Single unified lifecycle |
 | Signal | `status` | draft, active, complete, rejected | Single unified lifecycle |
 | Strategy | `status` | draft, active, complete, rejected | Auto-computed from positions |
@@ -132,7 +142,7 @@ draft ──► active ──┬──► complete
 
 **Key Transitions:**
 ```
-Universal:  draft → active → complete | rejected
+Thesis:     draft → developing → monitoring → complete | rejected (monitoring → developing for rework)
 Strategy:   draft (no positions) → active (open positions) → complete (closed) | rejected (abandoned)
 Triage:     inbox → in_progress → done (workflow), severity is independent
 ```
@@ -287,6 +297,13 @@ Contains business logic for calculating derived insights from raw data:
 - **`strategyLinking.ts`** - Trade-to-strategy matching logic
 - **`processTracking.ts`** - Ingestion run tracking/logging
 
+### `/src/lib/intelligence` - Intelligence Routing
+- **`scoring.ts`** - Shared signal-matching algorithm (ticker +3, keyword +1, statement word +0.5). Used by ingest-world-monitor.ts and intelligence routing. Includes neutral detection and keyword extraction.
+- **`resolver.ts`** - Relevance resolver: tickers → underlyings → asset theses → macro theses → signals → strategies. Returns lifecycle phase per thesis for routing decisions.
+- **`evaluate.ts`** - Core evaluation: lifecycle-aware routing of intel items. Monitoring theses → signal evidence, developing theses → claim candidates, all theses → contextual intel.
+- **`emitIntelItems.ts`** - Shared utility for writing normalized intel items from ingestion scripts.
+- **`parseWorldMonitor.ts`** - World/Thesis Monitor report markdown parser.
+
 ### `/src/lib/research` - Research Processing
 - **`parseClaimsMarkdown.ts`** (257 lines) - Parser for Toulmin framework markdown audits → JSON
   - Hierarchical claim structure (main_claims with nested evidence_claims)
@@ -380,6 +397,9 @@ Key tables (see `/src/db/schema.ts` for full schema):
 - **`analyst_actions`** - Analyst upgrade/downgrade rating changes. Fields: `underlying_id`, `ticker`, `action` (up|down|main|init|reit), `analyst_firm`, `from_grade`, `to_grade`, `action_date`, `source`. Unique on (ticker, analyst_firm, action_date, source). Ingested by `scripts/ingest-finnhub-analyst-data.ts`.
 - **`analyst_price_targets`** - Consensus price target snapshots. Fields: `underlying_id`, `ticker`, `target_high`, `target_low`, `target_mean`, `target_median`, `number_analysts`, `snapshot_date`, `source`. Unique on (ticker, snapshot_date, source). Ingested by `scripts/ingest-finnhub-analyst-data.ts`.
 - **`insider_transactions`** - Insider buying/selling. Fields: `underlying_id`, `ticker`, `insider_name`, `shares`, `change`, `transaction_date`, `filing_date`, `transaction_code` (P=purchase, S=sale), `transaction_price`, `source`. Unique on (ticker, insider_name, transaction_date, change, source). Ingested by `scripts/ingest-finnhub-analyst-data.ts`.
+
+### Intelligence Routing Tables
+- **`intel_items`** - Normalized cross-source intelligence with processing state. Every intelligence-class ingestion script emits to this table. Fields: `source_key` (finnhub_analyst|sec_edgar|economic_calendar|earnings_calendar|insider_transaction|world_monitor|thesis_monitor), `source_table`, `source_record_id`, `occurred_at`, `headline`, `body`, `severity`, `tickers` (text[]), `processing_status` (pending|processed|skipped), `processing_result` (signal_evidence|contextual|claim_candidate|null), `metadata` (jsonb). Unique on (source_table, source_record_id). Evaluated by `scripts/evaluate-intel-items.ts`.
 
 ### Research Tables
 - **`research_artifacts`** - Raw research content (transcripts, articles, notes) with metadata

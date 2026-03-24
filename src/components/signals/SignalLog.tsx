@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText } from 'lucide-react';
+import { FileText, Radio } from 'lucide-react';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -55,6 +55,7 @@ const SOURCE_CONFIG: Record<string, { label: string; cls: string }> = {
   world_monitor:   { label: 'World Monitor', cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' },
   qualitative:     { label: 'Research', cls: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' },
   research_routing: { label: 'Research', cls: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' },
+  intelligence_routing: { label: 'Intel Route', cls: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400' },
   defillama:       { label: 'DeFiLlama', cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
   derived:         { label: 'Derived', cls: 'bg-muted text-muted-foreground' },
   economic_calendar: { label: 'Econ. Calendar', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
@@ -181,6 +182,14 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
                           <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0 text-indigo-500 group-hover:text-indigo-600" />
                           <p className="line-clamp-2 leading-relaxed">{note}</p>
                         </Link>
+                      );
+                    }
+                    if (entry.dataSource === 'intelligence_routing') {
+                      return (
+                        <div className="flex items-start gap-1.5 text-cyan-600 dark:text-cyan-400">
+                          <Radio className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                          <p className="line-clamp-2 leading-relaxed">{note}</p>
+                        </div>
                       );
                     }
                     return <p className="line-clamp-2 leading-relaxed">{note}</p>;

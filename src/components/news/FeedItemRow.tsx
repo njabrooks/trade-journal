@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FeedItem, FeedItemSource } from '@/db/queries/unifiedFeed';
+import { EntityBadge } from '@/components/ui/entity-badge';
 
 // ---------------------------------------------------------------------------
 // Config & constants
@@ -423,8 +424,21 @@ export function FeedItemRow({ item }: { item: FeedItem }) {
         {/* Col 6: Data */}
         <div className="text-right whitespace-nowrap">{slots.data}</div>
 
-        {/* Col 7: Chevron */}
-        <div className="flex justify-center">
+        {/* Col 7: Chevron + signal evaluated dot */}
+        <div className="flex items-center justify-center gap-0.5">
+          {item.signalId && (
+            <span className={cn('h-1.5 w-1.5 rounded-full shrink-0',
+              item.assessment && ASSESSMENT_STYLES[item.assessment]
+                ? {
+                    strengthening: 'bg-blue-400',
+                    confirmed: 'bg-emerald-500',
+                    weakening: 'bg-amber-400',
+                    invalidated: 'bg-red-500',
+                    neutral: 'bg-zinc-400',
+                  }[item.assessment] || 'bg-purple-400'
+                : 'bg-purple-400'
+            )} title="Signal evidence" />
+          )}
           {hasExpandableContent && (
             <button onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
               className="p-0.5 text-muted-foreground/40 hover:text-foreground">
@@ -465,6 +479,23 @@ export function FeedItemRow({ item }: { item: FeedItem }) {
               Signal: {item.signalStatement.length > 60 ? item.signalStatement.slice(0, 60) + '\u2026' : item.signalStatement}
             </a>
           )}
+          {/* Processing status indicators */}
+          {item.signalId && item.assessment ? (
+            <div className="flex items-center gap-1.5">
+              <span className={cn('px-1.5 py-0.5 text-[10px] font-medium rounded', ASSESSMENT_STYLES[item.assessment] || ASSESSMENT_STYLES.neutral)}>
+                Signal Evidence: {item.assessment}
+              </span>
+            </div>
+          ) : item.linkedAssetTheses && item.linkedAssetTheses.length > 0 && !item.signalId ? (
+            <div className="flex items-center gap-1.5">
+              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                Contextual Intel
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {item.linkedAssetTheses.length} {item.linkedAssetTheses.length === 1 ? 'thesis' : 'theses'}
+              </span>
+            </div>
+          ) : null}
           {item.sourceUrls && item.sourceUrls.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {item.sourceUrls.map((url, i) => (
@@ -479,22 +510,24 @@ export function FeedItemRow({ item }: { item: FeedItem }) {
           {hasEntityLinks && (
             <div className="flex flex-wrap items-center gap-1.5">
               {item.linkedAssetTheses?.map((at) => (
-                <a key={at.id} href={`/asset-theses/${at.id}`} onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors">
-                  {at.direction && (
-                    <span className={cn('text-[9px]',
-                      at.direction === 'bullish' ? 'text-green-600 dark:text-green-400' :
-                      at.direction === 'bearish' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
-                    )}>{at.direction === 'bullish' ? '\u25B2' : at.direction === 'bearish' ? '\u25BC' : '\u25C6'}</span>
-                  )}
-                  {at.title.length > 35 ? at.title.slice(0, 35) + '\u2026' : at.title}
-                </a>
+                <EntityBadge
+                  key={at.id}
+                  entityType="asset_thesis"
+                  id={at.id}
+                  title={at.title.length > 35 ? at.title.slice(0, 35) + '\u2026' : at.title}
+                  href={`/asset-theses/${at.id}`}
+                  size="sm"
+                />
               ))}
               {item.linkedStrategies?.map((s) => (
-                <a key={s.id} href={`/strategies/${s.id}`} onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors">
-                  {s.strategyKey}
-                </a>
+                <EntityBadge
+                  key={s.id}
+                  entityType="strategy"
+                  id={s.id}
+                  title={s.strategyKey}
+                  href={`/strategies/${s.id}`}
+                  size="sm"
+                />
               ))}
             </div>
           )}
