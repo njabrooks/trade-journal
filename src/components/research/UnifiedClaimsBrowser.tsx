@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
 import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } from '@/types/claims';
 import { ConvertClaimToEntityDialog } from './ConvertClaimToEntityDialog';
+import type { LinkActionResult } from './ConvertClaimToEntityDialog';
 import { ExpandableEvidenceClaim } from './ExpandableEvidenceClaim';
 import { InlineClaimSuggestions } from './InlineClaimSuggestions';
 import type { SuggestionActionResult } from './InlineClaimSuggestions';
@@ -163,6 +164,33 @@ export function UnifiedClaimsBrowser({
     onSuggestionActioned?.(result);
 
     // Refresh server data in the background
+    router.refresh();
+  };
+
+  // Internal handler for manual link/unlink actions — optimistically updates local state
+  const handleLinkAction = (result: LinkActionResult) => {
+    setLocalClaims(prev => prev.map(c => {
+      if (c.claim.id !== result.claimId) return c;
+
+      if (result.action === 'linked') {
+        return {
+          ...c,
+          claim: { ...c.claim, status: 'active' },
+          linkedTheses: [...(c.linkedTheses || []), ...(result.newTheses || [])],
+          linkedViews: [...(c.linkedViews || []), ...(result.newViews || [])],
+        };
+      }
+
+      if (result.action === 'unlinked') {
+        if (result.unlinkedEntityType === 'macroThesis') {
+          return { ...c, linkedTheses: (c.linkedTheses || []).filter(t => t.id !== result.unlinkedEntityId) };
+        }
+        return { ...c, linkedViews: (c.linkedViews || []).filter(v => v.id !== result.unlinkedEntityId) };
+      }
+
+      return c;
+    }));
+
     router.refresh();
   };
 
@@ -1181,6 +1209,7 @@ export function UnifiedClaimsBrowser({
             setConvertDialogOpen(false);
             setClaimToConvert(null);
           }}
+          onLinked={handleLinkAction}
         />
       )}
     </div>

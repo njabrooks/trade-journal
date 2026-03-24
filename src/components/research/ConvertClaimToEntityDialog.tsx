@@ -22,10 +22,20 @@ import type { MainClaim } from '@/db/schema';
 import type { ClaimSuggestion } from '@/db/queries/research';
 import { Sparkles, Check, X as XIcon } from 'lucide-react';
 
+export interface LinkActionResult {
+  claimId: string;
+  action: 'linked' | 'unlinked';
+  newTheses?: { id: string; title: string; mappingType: string }[];
+  newViews?: { id: string; title: string; ticker: string; mappingType: string }[];
+  unlinkedEntityId?: string;
+  unlinkedEntityType?: 'macroThesis' | 'assetThesis';
+}
+
 interface ConvertClaimToEntityDialogProps {
   claim: MainClaim;
   isOpen: boolean;
   onClose: () => void;
+  onLinked?: (result: LinkActionResult) => void;
 }
 
 type Mode = 'link_existing' | 'create_new';
@@ -55,6 +65,7 @@ export function ConvertClaimToEntityDialog({
   claim,
   isOpen,
   onClose,
+  onLinked,
 }: ConvertClaimToEntityDialogProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -196,7 +207,20 @@ export function ConvertClaimToEntityDialog({
         throw new Error(data.error || 'Failed to link to entities');
       }
 
-      // Success - refresh and close
+      // Notify parent for optimistic update
+      onLinked?.({
+        claimId: claim.id,
+        action: 'linked',
+        newTheses: selectedThesisIds.map(id => {
+          const thesis = availableTheses.find(t => t.id === id);
+          return { id, title: thesis?.title || '', mappingType: relationshipType };
+        }),
+        newViews: selectedViewIds.map(id => {
+          const view = availableViews.find(v => v.id === id);
+          return { id, title: view?.title || '', ticker: view?.ticker || '', mappingType: relationshipType };
+        }),
+      });
+
       router.refresh();
       handleClose();
     } catch (err) {
@@ -232,7 +256,14 @@ export function ConvertClaimToEntityDialog({
         setLinkedViews((prev) => prev.filter((v) => v.id !== entityId));
       }
 
-      // Refresh to update the page
+      // Notify parent for optimistic update
+      onLinked?.({
+        claimId: claim.id,
+        action: 'unlinked',
+        unlinkedEntityId: entityId,
+        unlinkedEntityType: entityType,
+      });
+
       router.refresh();
     } catch (err) {
       console.error('Error unlinking entity:', err);
