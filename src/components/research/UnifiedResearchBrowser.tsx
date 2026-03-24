@@ -215,6 +215,45 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
           Filters
           {showFilters && <span className="text-xs text-muted-foreground">(ESC to close)</span>}
         </Button>
+
+        <div className="w-px h-6 bg-border" />
+
+        {/* Claims Quick Filter Button Group */}
+        <div className="inline-flex rounded-md shadow-sm">
+          <Button
+            variant={claimsFilter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setClaimsFilter('all')}
+            className="rounded-r-none border-r-0"
+          >
+            All
+          </Button>
+          <Button
+            variant={claimsFilter === 'has_unconfirmed' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setClaimsFilter('has_unconfirmed')}
+            className="rounded-none border-r-0"
+          >
+            Unconfirmed Claims
+          </Button>
+          <Button
+            variant={claimsFilter === 'all_confirmed' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setClaimsFilter('all_confirmed')}
+            className="rounded-none border-r-0"
+          >
+            All Confirmed
+          </Button>
+          <Button
+            variant={claimsFilter === 'no_claims' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setClaimsFilter('no_claims')}
+            className="rounded-l-none"
+          >
+            No Claims
+          </Button>
+        </div>
+
         <div className="text-sm text-muted-foreground">
           Showing {filteredAndSortedArtifacts.length} of {artifacts.length} artifacts
         </div>
@@ -236,7 +275,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
@@ -273,23 +312,6 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                 ))}
               </select>
             </div>
-
-            {/* Claims */}
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Claims
-              </label>
-              <select
-                value={claimsFilter}
-                onChange={(e) => setClaimsFilter(e.target.value as ClaimsFilter)}
-                className="w-full border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All</option>
-                <option value="has_unconfirmed">Has Unconfirmed</option>
-                <option value="all_confirmed">All Confirmed</option>
-                <option value="no_claims">No Claims</option>
-              </select>
-            </div>
           </div>
 
           {/* Clear Filters */}
@@ -301,7 +323,6 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                 setSearchQuery('');
                 setStatusFilter('all');
                 setSourceTypeFilter('all');
-                setClaimsFilter('all');
               }}
             >
               Clear Filters
