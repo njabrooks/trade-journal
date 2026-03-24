@@ -4,11 +4,14 @@
  * Reads TradingView chart drawings from the Price/BTC layout via Chrome CDP,
  * then upserts them as strategy price signals in the database.
  *
+ * Consolidation model: ONE signal per underlying ticker, with all TP/SL
+ * targets stored in a `targets` array inside explicit_details.
+ *
  * Drawing label convention:
- *   TP1 [N%]  → confirmation signal, price_above condition
- *   TP2 [N%]  → confirmation signal, price_above condition
- *   TP3 [N%]  → confirmation signal, price_above condition
- *   SL  [N%]  → warning signal, price_below condition
+ *   TP1 [N%]  → take-profit target (price_above)
+ *   TP2 [N%]  → take-profit target (price_above)
+ *   TP3 [N%]  → take-profit target (price_above)
+ *   SL  [N%]  → stop-loss target (price_below)
  *
  * Two drawing sources are read from the Price/BTC layout:
  *   - /layout/{uid}/sources  → indicator panel drawings (BTC-ratio prices)
@@ -281,6 +284,18 @@ function parseDrawing(drawing: TaggedDrawing): ParsedDrawing | null {
 
 // ── DB helpers ──────────────────────────────────────────────────────────────
 
+interface TargetEntry {
+  label: string;
+  price: number;
+  denomination: 'BTC' | 'USD';
+  positionPct: number | null;
+  conditionType: 'price_above' | 'price_below';
+  tvDrawingId: string;
+  tvSymbol: string;
+  serverUpdateTime: number;
+  status: 'active' | 'complete';
+}
+
 async function findStrategiesForTicker(ticker: string): Promise<Array<{ id: string; strategyKey: string }>> {
   const rows = await db
     .select({ id: strategies.id, strategyKey: strategies.strategyKey })
@@ -294,13 +309,18 @@ async function findStrategiesForTicker(ticker: string): Promise<Array<{ id: stri
   return rows;
 }
 
-async function findExistingSignal(tvDrawingId: string): Promise<{ id: string; explicitDetails: unknown } | null> {
+/** Find existing consolidated ladder signal for a ticker */
+async function findLadderSignal(ticker: string): Promise<{ id: string; explicitDetails: Record<string, unknown> } | null> {
   const rows = await db
     .select({ id: signals.id, explicitDetails: signals.explicitDetails })
     .from(signals)
-    .where(sql`explicit_details->>'tvDrawingId' = ${tvDrawingId}`)
+    .where(and(
+      sql`explicit_details->>'signalKind' = 'strategy_price_ladder'`,
+      sql`explicit_details->>'ticker' = ${ticker}`,
+      eq(signals.status, 'active'),
+    ))
     .limit(1);
-  return rows[0] ?? null;
+  return rows[0] ? { id: rows[0].id, explicitDetails: rows[0].explicitDetails as Record<string, unknown> } : null;
 }
 
 function formatPrice(price: number, denomination: 'BTC' | 'USD'): string {
@@ -310,14 +330,58 @@ function formatPrice(price: number, denomination: 'BTC' | 'USD'): string {
   return price.toPrecision(6);
 }
 
-function buildStatement(drawing: ParsedDrawing): string {
-  const priceStr = formatPrice(drawing.price, drawing.denomination);
-  const suffix = drawing.denomination === 'USD' ? '' : '/BTC';
+function buildLadderStatement(ticker: string, targets: TargetEntry[]): string {
+  const usdTargets = targets
+    .filter(t => t.denomination === 'USD' && t.conditionType === 'price_above')
+    .sort((a, b) => a.price - b.price);
+  const btcTargets = targets
+    .filter(t => t.denomination === 'BTC' && t.conditionType === 'price_above')
+    .sort((a, b) => a.price - b.price);
+  const slTargets = targets.filter(t => t.conditionType === 'price_below');
 
-  if (drawing.signalType === 'confirmation') {
-    return `Take profit when ${drawing.baseTicker}${suffix} > ${priceStr}`;
+  const parts: string[] = [];
+
+  if (usdTargets.length > 0) {
+    const prices = usdTargets.map(t => `$${t.price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
+    parts.push(prices.join(' / '));
   }
-  return `Stop loss when ${drawing.baseTicker}${suffix} < ${priceStr}`;
+
+  if (btcTargets.length > 0) {
+    const prices = btcTargets.map(t => t.price.toPrecision(4));
+    parts.push(prices.join(' / ') + ' BTC');
+  }
+
+  const base = `${ticker} take-profit ladder: ${parts.join(', ')}`;
+  if (slTargets.length > 0) {
+    const slStr = slTargets.map(t => formatPrice(t.price, t.denomination)).join(', ');
+    return `${base} (SL: ${slStr})`;
+  }
+  return base;
+}
+
+function drawingsToTargets(drawings: ParsedDrawing[]): TargetEntry[] {
+  return drawings.map(d => ({
+    label: d.label,
+    price: d.price,
+    denomination: d.denomination,
+    positionPct: d.positionPct,
+    conditionType: d.conditionType,
+    tvDrawingId: d.tvDrawingId,
+    tvSymbol: d.tvSymbol,
+    serverUpdateTime: d.serverUpdateTime,
+    status: 'active' as const,
+  }));
+}
+
+function targetsChanged(existing: TargetEntry[], incoming: TargetEntry[]): boolean {
+  if (existing.length !== incoming.length) return true;
+  // Compare by tvDrawingId + price
+  const existingMap = new Map(existing.map(t => [t.tvDrawingId, t.price]));
+  for (const t of incoming) {
+    const oldPrice = existingMap.get(t.tvDrawingId);
+    if (oldPrice === undefined || oldPrice !== t.price) return true;
+  }
+  return false;
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
@@ -358,7 +422,7 @@ async function main() {
     return;
   }
 
-  // Group by ticker for display
+  // Group by ticker — one consolidated signal per ticker
   const byTicker: Record<string, ParsedDrawing[]> = {};
   for (const d of parsed) {
     if (!byTicker[d.baseTicker]) byTicker[d.baseTicker] = [];
@@ -377,89 +441,109 @@ async function main() {
       continue;
     }
 
-    for (const drawing of drawings) {
-      const denomTag = drawing.denomination === 'USD' ? ' [USD]' : ' [BTC]';
-      const priceStr = formatPrice(drawing.price, drawing.denomination);
+    // Build targets array from all drawings for this ticker
+    const incomingTargets = drawingsToTargets(drawings);
+    // Sort: USD TP ascending, then BTC TP ascending, then SL
+    incomingTargets.sort((a, b) => {
+      if (a.conditionType !== b.conditionType) return a.conditionType === 'price_above' ? -1 : 1;
+      if (a.denomination !== b.denomination) return a.denomination === 'USD' ? -1 : 1;
+      return a.price - b.price;
+    });
 
-      // One signal per drawing (not per strategy)
-      const existing = await findExistingSignal(drawing.tvDrawingId);
-      const explicitDetails = {
-        conditionType: drawing.conditionType,
-        price: drawing.price,
-        tvLabel: drawing.label,
-        tvDrawingId: drawing.tvDrawingId,
-        tvSymbol: drawing.tvSymbol,
-        denomination: drawing.denomination,
-        tvLayoutId: TV_LAYOUT_ID,
-        serverUpdateTime: drawing.serverUpdateTime,
-      };
+    for (const t of incomingTargets) {
+      const tag = t.denomination === 'USD' ? ' [USD]' : ' [BTC]';
+      console.log(`    ${t.label}${tag} @ ${formatPrice(t.price, t.denomination)}${t.positionPct ? ` (${t.positionPct}%)` : ''}`);
+    }
 
-      let signalId: string;
+    // Find or create the consolidated signal
+    const existing = await findLadderSignal(ticker);
 
-      if (existing) {
-        signalId = existing.id;
-        const existingDetails = existing.explicitDetails as Record<string, unknown>;
-        const priceChanged = existingDetails.price !== drawing.price;
-        if (!priceChanged) {
-          console.log(`    · ${drawing.label}${denomTag} @ ${priceStr} — unchanged`);
-          skipped++;
-        } else {
-          console.log(`    ↑ ${drawing.label}${denomTag} @ ${priceStr} — price updated`);
-          if (!DRY_RUN) {
-            await db.update(signals)
-              .set({ explicitDetails, statement: buildStatement(drawing), updatedAt: new Date() })
-              .where(eq(signals.id, existing.id));
-          }
-          updated++;
-        }
-      } else {
-        console.log(`    + ${drawing.label}${denomTag} @ ${priceStr} — creating signal`);
-        if (!DRY_RUN) {
-          const [inserted] = await db.insert(signals).values({
-            type: drawing.signalType,
-            statement: buildStatement(drawing),
-            category: 'data_driven',
-            importance: drawing.signalType === 'invalidation' ? 'critical' : 'significant',
-            status: 'active',
-            explicitDetails,
-            linkedClaimIds: [],
-          }).returning({ id: signals.id });
-          signalId = inserted.id;
-
-          // Log journal entry for newly created signal
-          await db.insert(journalEntries).values({
-            objectType: 'signal',
-            objectId: inserted.id,
-            objectTitle: buildStatement(drawing),
-            actionType: 'created',
-            actionDescription: `Signal created: "${buildStatement(drawing)}" (type: ${drawing.signalType}, importance: ${drawing.signalType === 'invalidation' ? 'critical' : 'significant'})`,
-            source: 'automation',
-          });
-        } else {
-          signalId = 'dry-run';
-        }
-        created++;
+    if (existing) {
+      const oldTargets = (existing.explicitDetails.targets as TargetEntry[]) || [];
+      // Preserve per-target status from existing (e.g. if TP1 was marked 'complete')
+      for (const t of incomingTargets) {
+        const prev = oldTargets.find(o => o.tvDrawingId === t.tvDrawingId);
+        if (prev?.status === 'complete') t.status = 'complete';
       }
 
-      // Create/verify junction links for all matching strategies
+      if (!targetsChanged(oldTargets, incomingTargets)) {
+        console.log(`    · No changes to ${ticker} ladder — skipping`);
+        skipped++;
+      } else {
+        const statement = buildLadderStatement(ticker, incomingTargets);
+        const explicitDetails = {
+          ...existing.explicitDetails,
+          targets: incomingTargets,
+          tvLayoutId: TV_LAYOUT_ID,
+        };
+        console.log(`    ↑ Updating ${ticker} ladder signal`);
+        if (!DRY_RUN) {
+          await db.update(signals)
+            .set({ explicitDetails, statement, updatedAt: new Date() })
+            .where(eq(signals.id, existing.id));
+        }
+        updated++;
+      }
+
+      // Ensure strategy links exist
       for (const strategy of matchedStrategies) {
-        if (!DRY_RUN && signalId !== 'dry-run') {
+        if (!DRY_RUN) {
           const linkResult = await db.insert(signalEntityLinks).values({
-            signalId,
+            signalId: existing.id,
             entityType: 'strategy',
             strategyId: strategy.id,
-            positionPct: drawing.positionPct,
           }).onConflictDoNothing();
-
           if (linkResult.rowCount && linkResult.rowCount > 0) {
-            console.log(`      → linked to ${strategy.strategyKey}${drawing.positionPct ? ` (${drawing.positionPct}%)` : ''}`);
+            console.log(`      → linked to ${strategy.strategyKey}`);
             linksCreated++;
           }
-        } else if (DRY_RUN) {
-          console.log(`      → would link to ${strategy.strategyKey}${drawing.positionPct ? ` (${drawing.positionPct}%)` : ''}`);
-          linksCreated++;
         }
       }
+    } else {
+      // Create new consolidated signal
+      const statement = buildLadderStatement(ticker, incomingTargets);
+      const explicitDetails = {
+        signalKind: 'strategy_price_ladder',
+        ticker,
+        targets: incomingTargets,
+        tvLayoutId: TV_LAYOUT_ID,
+      };
+
+      console.log(`    + Creating ${ticker} ladder signal`);
+      if (!DRY_RUN) {
+        const [inserted] = await db.insert(signals).values({
+          type: 'confirmation',
+          statement,
+          category: 'data_driven',
+          importance: 'significant',
+          status: 'active',
+          explicitDetails,
+          linkedClaimIds: [],
+        }).returning({ id: signals.id });
+
+        await db.insert(journalEntries).values({
+          objectType: 'signal',
+          objectId: inserted.id,
+          objectTitle: statement,
+          actionType: 'created',
+          actionDescription: `Strategy price ladder created for ${ticker} with ${incomingTargets.length} targets`,
+          source: 'automation',
+        });
+
+        // Create strategy links
+        for (const strategy of matchedStrategies) {
+          const linkResult = await db.insert(signalEntityLinks).values({
+            signalId: inserted.id,
+            entityType: 'strategy',
+            strategyId: strategy.id,
+          }).onConflictDoNothing();
+          if (linkResult.rowCount && linkResult.rowCount > 0) {
+            console.log(`      → linked to ${strategy.strategyKey}`);
+            linksCreated++;
+          }
+        }
+      }
+      created++;
     }
     console.log('');
   }

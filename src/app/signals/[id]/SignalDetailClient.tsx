@@ -237,6 +237,88 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
       </div>
 
 
+      {/* Price Target Ladder (for consolidated strategy signals) */}
+      {(() => {
+        const details = signal.explicitDetails as Record<string, unknown> | null;
+        if (details?.signalKind !== 'strategy_price_ladder') return null;
+        const targets = (details.targets as Array<{
+          label: string;
+          price: number;
+          denomination: string;
+          positionPct: number | null;
+          conditionType: string;
+          status: string;
+        }>) || [];
+        if (targets.length === 0) return null;
+
+        const tpTargets = targets.filter(t => t.conditionType === 'price_above');
+        const slTargets = targets.filter(t => t.conditionType === 'price_below');
+
+        function fmtPrice(price: number, denom: string) {
+          if (denom === 'USD') return `$${price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+          return price.toPrecision(6);
+        }
+
+        return (
+          <div className="bg-card rounded-lg border overflow-hidden">
+            <div className="px-4 py-3 border-b bg-muted/30">
+              <h2 className="text-sm font-semibold">Price Target Ladder</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {tpTargets.length} take-profit{slTargets.length > 0 ? `, ${slTargets.length} stop-loss` : ''}
+              </p>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-xs text-muted-foreground">
+                  <th className="px-4 py-2 text-left font-medium">Label</th>
+                  <th className="px-4 py-2 text-left font-medium">Type</th>
+                  <th className="px-4 py-2 text-right font-medium">Price</th>
+                  <th className="px-4 py-2 text-right font-medium">Position %</th>
+                  <th className="px-4 py-2 text-left font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...tpTargets, ...slTargets].map((target, i) => (
+                  <tr key={i} className="border-b last:border-0">
+                    <td className="px-4 py-2 font-medium">{target.label}</td>
+                    <td className="px-4 py-2">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                        target.conditionType === 'price_above'
+                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                      }`}>
+                        {target.conditionType === 'price_above' ? 'TP' : 'SL'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-right font-mono">
+                      {fmtPrice(target.price, target.denomination)}
+                      {target.denomination === 'BTC' && (
+                        <span className="text-muted-foreground ml-1 text-xs">BTC</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-right text-muted-foreground">
+                      {target.positionPct ? `${target.positionPct}%` : '—'}
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`inline-flex items-center gap-1 text-xs ${
+                        target.status === 'complete'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-muted-foreground'
+                      }`}>
+                        {target.status === 'complete'
+                          ? <><CheckCircle2 className="w-3 h-3" /> Hit</>
+                          : <><Clock className="w-3 h-3" /> Active</>
+                        }
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
       {/* Setup Completeness Card */}
       {(() => {
         const hasDataSource = !!explicitDetails;

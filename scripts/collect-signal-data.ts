@@ -439,7 +439,8 @@ async function main() {
   console.log(`\nThesis signals: ${collected} collected, ${skipped} skipped (qualitative), ${frequencySkipped} skipped (frequency), ${errors} errors`);
 
   // ── Strategy price signals ────────────────────────────────────────────────
-  // These come from sync-tv-drawings and have denomination + tvSymbol in explicit_details.
+  // Consolidated model: one signal per underlying with a targets array.
+  // Also supports legacy single-target signals (pre-consolidation).
 
   const strategySignalRows = await db
     .selectDistinctOn([signals.id], {
@@ -461,9 +462,18 @@ async function main() {
   const tickerSet = new Set<string>();
   for (const s of strategySignals) {
     const d = s.explicitDetails as Record<string, unknown> | null;
-    if (!d?.tvSymbol || !d?.denomination) continue;
-    tickerSet.add(extractBaseTicker(d.tvSymbol as string).toUpperCase());
-    if (d.denomination === 'BTC') tickerSet.add('BTC');
+    if (!d) continue;
+
+    if (d.signalKind === 'strategy_price_ladder') {
+      // Consolidated ladder: ticker is top-level
+      tickerSet.add(((d.ticker as string) || '').toUpperCase());
+      const targets = (d.targets as Array<Record<string, unknown>>) || [];
+      if (targets.some(t => t.denomination === 'BTC')) tickerSet.add('BTC');
+    } else if (d.tvSymbol && d.denomination) {
+      // Legacy single-target
+      tickerSet.add(extractBaseTicker(d.tvSymbol as string).toUpperCase());
+      if (d.denomination === 'BTC') tickerSet.add('BTC');
+    }
   }
 
   const spotMap = new Map<string, number | null>();
@@ -495,80 +505,132 @@ async function main() {
 
   for (const signal of strategySignals) {
     const d = signal.explicitDetails as Record<string, unknown> | null;
-    if (!d?.tvSymbol || !d?.denomination || d?.price == null) {
-      sSkipped++;
-      continue;
-    }
-
-    const ticker = extractBaseTicker(d.tvSymbol as string).toUpperCase();
-    const denomination = d.denomination as 'BTC' | 'USD';
-    const threshold = parseFloat(String(d.price));
-    const tvLabel = (d.tvLabel as string) || signal.statement.slice(0, 40);
-
-    const assetSpot = spotMap.get(ticker);
-    if (assetSpot == null) {
-      console.log(`  ⚠ ${tvLabel}: no price data for ${ticker}`);
-      sSkipped++;
-      continue;
-    }
-
-    let observedValue: number;
-    let unit: string;
-
-    if (denomination === 'USD') {
-      observedValue = assetSpot;
-      unit = 'USD';
-    } else {
-      const btcSpot = spotMap.get('BTC');
-      if (btcSpot == null) {
-        console.log(`  ⚠ ${tvLabel}: no BTC price for ratio calculation`);
-        sSkipped++;
-        continue;
-      }
-      observedValue = assetSpot / btcSpot;
-      unit = 'BTC_RATIO';
-    }
-
-    const pct = threshold > 0 ? (observedValue / threshold) * 100 : 0;
-    const pctToThreshold = Math.round(pct * 100) / 100;
-
-    const priceStr = denomination === 'USD'
-      ? `$${observedValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
-      : observedValue.toPrecision(5);
-    console.log(`  [${signal.type}] ${tvLabel}: ${priceStr} (${pctToThreshold.toFixed(1)}% of threshold)`);
+    if (!d) { sSkipped++; continue; }
 
     try {
-      if (!dryRun) {
-        await db
-          .insert(signalDataSnapshots)
-          .values({
-            signalId: signal.id,
-            snapshotDate: now,
-            observedValue: String(observedValue),
-            thresholdValue: String(threshold),
-            pctToThreshold: String(pctToThreshold),
-            unit,
-            evidenceSummary: null,
-            dataSource: 'strategy_price',
-          })
-          .onConflictDoNothing();
+      if (d.signalKind === 'strategy_price_ladder') {
+        // ── Consolidated ladder signal ──
+        const ticker = ((d.ticker as string) || '').toUpperCase();
+        const targets = (d.targets as Array<Record<string, unknown>>) || [];
+
+        const assetSpot = spotMap.get(ticker);
+        if (assetSpot == null) {
+          console.log(`  ⚠ ${ticker}: no price data`);
+          sSkipped++;
+          continue;
+        }
+
+        // Find nearest unfulfilled USD TP target for the snapshot threshold
+        const usdTPs = targets
+          .filter(t => t.denomination === 'USD' && t.conditionType === 'price_above' && t.status !== 'complete')
+          .sort((a, b) => (a.price as number) - (b.price as number));
+
+        const nearestTarget = usdTPs[0];
+        const threshold = nearestTarget ? (nearestTarget.price as number) : null;
+
+        if (threshold) {
+          const pct = (assetSpot / threshold) * 100;
+          const pctToThreshold = Math.round(pct * 100) / 100;
+          const priceStr = `$${assetSpot.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+          const label = (nearestTarget.label as string) || 'TP';
+          console.log(`  [ladder] ${ticker}: ${priceStr} → ${label} (${pctToThreshold.toFixed(1)}%)`);
+
+          if (!dryRun) {
+            await db
+              .insert(signalDataSnapshots)
+              .values({
+                signalId: signal.id,
+                snapshotDate: now,
+                observedValue: String(assetSpot),
+                thresholdValue: String(threshold),
+                pctToThreshold: String(pctToThreshold),
+                unit: 'USD',
+                evidenceSummary: `Tracking ${label} at $${threshold.toLocaleString()}`,
+                dataSource: 'strategy_price',
+              })
+              .onConflictDoNothing();
+          }
+
+          const hits = await checkMilestones(
+            signal, pctToThreshold, prevPctMap.get(signal.id) ?? null, dryRun
+          );
+          milestoneCount += hits;
+        } else {
+          console.log(`  · ${ticker}: no unfulfilled USD targets — skipping snapshot`);
+        }
+
+        sCollected++;
+      } else if (d.tvSymbol && d.denomination && d.price != null) {
+        // ── Legacy single-target signal ──
+        const ticker = extractBaseTicker(d.tvSymbol as string).toUpperCase();
+        const denomination = d.denomination as 'BTC' | 'USD';
+        const threshold = parseFloat(String(d.price));
+        const tvLabel = (d.tvLabel as string) || signal.statement.slice(0, 40);
+
+        const assetSpot = spotMap.get(ticker);
+        if (assetSpot == null) {
+          console.log(`  ⚠ ${tvLabel}: no price data for ${ticker}`);
+          sSkipped++;
+          continue;
+        }
+
+        let observedValue: number;
+        let unit: string;
+
+        if (denomination === 'USD') {
+          observedValue = assetSpot;
+          unit = 'USD';
+        } else {
+          const btcSpot = spotMap.get('BTC');
+          if (btcSpot == null) {
+            console.log(`  ⚠ ${tvLabel}: no BTC price for ratio calculation`);
+            sSkipped++;
+            continue;
+          }
+          observedValue = assetSpot / btcSpot;
+          unit = 'BTC_RATIO';
+        }
+
+        const pct = threshold > 0 ? (observedValue / threshold) * 100 : 0;
+        const pctToThreshold = Math.round(pct * 100) / 100;
+
+        const priceStr = denomination === 'USD'
+          ? `$${observedValue.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+          : observedValue.toPrecision(5);
+        console.log(`  [${signal.type}] ${tvLabel}: ${priceStr} (${pctToThreshold.toFixed(1)}% of threshold)`);
+
+        if (!dryRun) {
+          await db
+            .insert(signalDataSnapshots)
+            .values({
+              signalId: signal.id,
+              snapshotDate: now,
+              observedValue: String(observedValue),
+              thresholdValue: String(threshold),
+              pctToThreshold: String(pctToThreshold),
+              unit,
+              evidenceSummary: null,
+              dataSource: 'strategy_price',
+            })
+            .onConflictDoNothing();
+        }
+
+        const hits = await checkMilestones(
+          signal, pctToThreshold, prevPctMap.get(signal.id) ?? null, dryRun
+        );
+        milestoneCount += hits;
+
+        if (!skipTriggers) {
+          const triggered = await checkAndTriggerSignal(signal, pctToThreshold, dryRun);
+          if (triggered) triggeredCount++;
+        }
+
+        sCollected++;
+      } else {
+        sSkipped++;
       }
-
-      // Check milestone crossings for strategy signals
-      const hits = await checkMilestones(
-        signal, pctToThreshold, prevPctMap.get(signal.id) ?? null, dryRun
-      );
-      milestoneCount += hits;
-
-      // Check threshold trigger for strategy signals too
-      if (!skipTriggers) {
-        const triggered = await checkAndTriggerSignal(signal, pctToThreshold, dryRun);
-        if (triggered) triggeredCount++;
-      }
-
-      sCollected++;
     } catch (err) {
-      console.log(`  ✗ snapshot insert failed: ${err instanceof Error ? err.message : err}`);
+      console.log(`  ✗ snapshot failed: ${err instanceof Error ? err.message : err}`);
       sErrors++;
     }
   }
