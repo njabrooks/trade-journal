@@ -287,6 +287,8 @@ async function main() {
     return parts.length > 0 ? parts.join('\n\n') : null;
   };
 
+  let signalsCreatedCount = 0;
+
   if (signals.length > 0) {
     const signalsToInsert = signals.map((sig) => ({
       articulationId: insertedArticulation.id,
@@ -340,6 +342,7 @@ async function main() {
       });
     }
 
+    signalsCreatedCount = insertedSignals.length;
     console.log(`✅ Inserted ${insertedSignals.length} signals (with journal entries)`);
 
     // Count by type
@@ -372,13 +375,15 @@ async function main() {
     const currentClaimCount = claimCountResult[0]?.count ?? 0;
     const previousClaimsCount = thesis.claimsCountAtLastArticulation ?? 0;
 
-    // Update thesis with current claim count + promote to monitoring if developing
+    // Update thesis with current claim count
+    // Only promote developing → monitoring if signals were actually created
     const currentStatus = (thesis as any).status;
     const updateFields: Record<string, any> = {
       claimsCountAtLastArticulation: currentClaimCount,
       updatedAt: new Date(),
     };
-    if (currentStatus === 'developing') {
+    const shouldPromote = currentStatus === 'developing' && signalsCreatedCount > 0;
+    if (shouldPromote) {
       updateFields.status = 'monitoring';
     }
     await db
@@ -386,8 +391,10 @@ async function main() {
       .set(updateFields)
       .where(eq(thesisTable.id, thesisId));
     console.log(`✅ Updated ${thesisType} thesis claims count: ${previousClaimsCount} → ${currentClaimCount}`);
-    if (currentStatus === 'developing') {
-      console.log(`✅ Promoted thesis status: developing → monitoring`);
+    if (shouldPromote) {
+      console.log(`✅ Promoted thesis status: developing → monitoring (${signalsCreatedCount} signals created)`);
+    } else if (currentStatus === 'developing' && signalsCreatedCount === 0) {
+      console.log(`ℹ️  Thesis remains at 'developing' — no signals created. Configure signals to promote to monitoring.`);
     }
 
     // Log articulation creation to journal

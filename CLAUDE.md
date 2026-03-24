@@ -118,9 +118,9 @@ React Frontend (UnifiedClaimsBrowser, ConvertClaimToEntityDialog)
 draft → developing → monitoring → complete | rejected
 ```
 
-- `developing`: accumulating claims as thesis evidence. Intelligence routes as claim suggestions.
-- `monitoring`: `build-core-argument` has run, signals exist. Intelligence routes as signal evidence.
-- Transition trigger: `insert-thesis-articulation.ts` sets developing → monitoring on articulation creation.
+- `developing`: accumulating claims as thesis evidence. Intelligence routes as claim suggestions. May have an articulation (core argument) but no signals yet.
+- `monitoring`: signals exist and are being monitored. Intelligence routes as signal evidence.
+- Transition trigger: `insert-thesis-articulation.ts` promotes developing → monitoring only when signals are actually created. An articulation without signals keeps the thesis at developing.
 
 **Other entities** use a universal status model:
 
