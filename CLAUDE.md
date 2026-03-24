@@ -359,6 +359,9 @@ Feature-based component organization:
 - **`pipeline-status`** - View all active pipeline ideas (stage, confidence, age, status)
 - **`advance-or-kill`** - Gate evaluation: advance, hold, or kill an idea; handles kill log
 
+**Backfill & Maintenance:**
+- **`backfill-claims`** - Reprocess existing claims for lifecycle-aware thesis linkage suggestions (draft/developing) and signal evidence evaluation (monitoring). Same logic as process-inbox but for claims already in the database.
+
 **Workflow Coordination:**
 - **`paperclip-backlog`** - Create and read Paperclip issues. Use to log follow-up work, technical debt, or feature requests.
 
