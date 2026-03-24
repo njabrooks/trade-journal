@@ -15,8 +15,11 @@ import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser
 import { SignalsSection } from '@/components/signals/SignalsSection';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
-import { EntityStatusBadge } from '@/components/ui/badge';
 import { LifecycleBadge } from '@/components/ui/lifecycle-badge';
+import { getRelationshipsForEntity } from '@/db/queries/entityRelationships';
+import { getIntelItemsForThesis } from '@/db/queries/intelItems';
+import { RelationshipPanel } from '@/components/ui/relationship-panel';
+import { IntelPanel } from '@/components/intelligence/IntelPanel';
 
 interface OverviewPageProps {
   params: Promise<{ id: string }>;
@@ -33,13 +36,15 @@ export async function generateMetadata({ params }: OverviewPageProps): Promise<M
 export default async function AssetThesisOverviewPage({ params }: OverviewPageProps) {
   const { id } = await params;
 
-  const [thesis, claimsWithSources, allMacroTheses, allStrategies, articulation, validationPoints] = await Promise.all([
+  const [thesis, claimsWithSources, allMacroTheses, allStrategies, articulation, validationPoints, relationships, intelItemsData] = await Promise.all([
     getCachedAssetThesisById(id),
     getMainClaimsWithSourcesForAssetThesis(id),
     getMacroThesesList(),
     getStrategiesForList(1000, { assetThesisId: id, includeClosedStrategies: true }),
     getLatestArticulation(id, 'asset'),
     getActiveValidationPoints(id, 'asset'),
+    getRelationshipsForEntity('asset_thesis', id),
+    getIntelItemsForThesis(id, 'asset', { limit: 20 }),
   ]);
 
   if (!thesis) {
@@ -57,7 +62,6 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
 
   const tabs = createEntityTabs('/asset-theses', id);
 
-  const statusBadge = <EntityStatusBadge status={thesis.status} />;
   const isMonitoring = thesis.status === 'monitoring';
   const isDeveloping = thesis.status === 'developing';
 
@@ -93,7 +97,6 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
           <LifecycleBadge phase={thesis.status} size="sm" />
         </span>
       }
-      statusBadge={statusBadge}
       tabs={<EntityTabs tabs={tabs} />}
       activeNav="asset-theses"
       sidebar={
@@ -301,6 +304,24 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
           linkedStrategies={linkedStrategies}
           embedded={true}
         />
+      </CollapsibleEntitySection>
+
+      {/* Relationships Section */}
+      <CollapsibleEntitySection
+        title="Relationships"
+        count={relationships.length}
+        defaultOpen={false}
+      >
+        <RelationshipPanel relationships={relationships} />
+      </CollapsibleEntitySection>
+
+      {/* Intel Section */}
+      <CollapsibleEntitySection
+        title="Intel"
+        count={intelItemsData.length}
+        defaultOpen={intelItemsData.length > 0 && intelItemsData.length <= 10}
+      >
+        <IntelPanel items={intelItemsData} />
       </CollapsibleEntitySection>
     </EntityDetailLayout>
   );

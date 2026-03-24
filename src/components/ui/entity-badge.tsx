@@ -85,7 +85,7 @@ function EntityBadge({
     >
       <span className={cn('shrink-0 rounded-full', entityDotColorMap[entityType], dotSize)} />
       <span className="shrink-0">{entityLabelMap[entityType]}</span>
-      <span className="truncate max-w-[140px]">{title}</span>
+      <span className="truncate">{title}</span>
       {status && statusDotColorMap[status] && (
         <span className={cn('shrink-0 rounded-full', statusDotColorMap[status], dotSize)} />
       )}

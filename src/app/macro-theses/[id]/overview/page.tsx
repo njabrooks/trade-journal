@@ -16,8 +16,11 @@ import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser
 import { SignalsSection } from '@/components/signals/SignalsSection';
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
-import { EntityStatusBadge } from '@/components/ui/badge';
 import { LifecycleBadge } from '@/components/ui/lifecycle-badge';
+import { getRelationshipsForEntity } from '@/db/queries/entityRelationships';
+import { getIntelItemsForThesis } from '@/db/queries/intelItems';
+import { RelationshipPanel } from '@/components/ui/relationship-panel';
+import { IntelPanel } from '@/components/intelligence/IntelPanel';
 
 interface OverviewPageProps {
   params: Promise<{ id: string }>;
@@ -34,7 +37,7 @@ export async function generateMetadata({ params }: OverviewPageProps): Promise<M
 export default async function MacroThesisOverviewPage({ params }: OverviewPageProps) {
   const { id } = await params;
 
-  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, articulation, validationPoints] = await Promise.all([
+  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, articulation, validationPoints, relationships, intelItemsData] = await Promise.all([
     getCachedMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
@@ -42,6 +45,8 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
     getAssetThesesForRelatedMacroThesis(id),
     getLatestArticulation(id, 'macro'),
     getActiveValidationPoints(id, 'macro'),
+    getRelationshipsForEntity('macro_thesis', id),
+    getIntelItemsForThesis(id, 'macro', { limit: 20 }),
   ]);
 
   if (!thesis) {
@@ -56,7 +61,6 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
 
   const tabs = createEntityTabs('/macro-theses', id);
 
-  const statusBadge = <EntityStatusBadge status={thesis.status} />;
   const isMonitoring = thesis.status === 'monitoring';
   const isDeveloping = thesis.status === 'developing';
 
@@ -69,7 +73,6 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
           <LifecycleBadge phase={thesis.status} size="sm" />
         </span>
       }
-      statusBadge={statusBadge}
       tabs={<EntityTabs tabs={tabs} />}
       activeNav="macro-theses"
       sidebar={
@@ -237,6 +240,24 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
         ) : (
           <UnifiedStrategiesBrowser strategies={linkedStrategies} />
         )}
+      </CollapsibleEntitySection>
+
+      {/* Relationships Section */}
+      <CollapsibleEntitySection
+        title="Relationships"
+        count={relationships.length}
+        defaultOpen={false}
+      >
+        <RelationshipPanel relationships={relationships} />
+      </CollapsibleEntitySection>
+
+      {/* Intel Section */}
+      <CollapsibleEntitySection
+        title="Intel"
+        count={intelItemsData.length}
+        defaultOpen={intelItemsData.length > 0 && intelItemsData.length <= 10}
+      >
+        <IntelPanel items={intelItemsData} />
       </CollapsibleEntitySection>
     </EntityDetailLayout>
   );
