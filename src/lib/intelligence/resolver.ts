@@ -10,7 +10,7 @@
  * Each thesis includes its lifecycle phase (developing/monitoring) for routing.
  */
 
-import { eq, inArray, or } from 'drizzle-orm';
+import { and, eq, inArray, notInArray, or } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import {
   underlyings,
@@ -34,6 +34,7 @@ export interface ResolvedThesis {
   direction?: string | null;
   ticker?: string | null; // only for asset theses
   sectors?: string[] | null; // only for macro theses
+  matchSource?: 'ticker' | 'sector'; // how this thesis was matched
 }
 
 export interface ResolvedSignal {
@@ -69,12 +70,16 @@ export interface RelevanceContext {
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve tickers to the full belief hierarchy.
+ * Resolve tickers (and optionally text) to the full belief hierarchy.
  * Returns all non-terminal theses (developing, monitoring) and their linked signals/strategies.
+ *
+ * When `text` is provided, also matches macro theses by sector/theme/title keywords,
+ * catching broad thematic theses that have no direct ticker linkage.
  */
 export async function resolveRelevanceContext(
   tickers: string[],
   dbInstance?: typeof db,
+  text?: string,
 ): Promise<RelevanceContext> {
   const d = dbInstance ?? db;
   const upperTickers = tickers.map(t => t.toUpperCase()).filter(Boolean);
@@ -88,41 +93,46 @@ export async function resolveRelevanceContext(
     tickerMap: {},
   };
 
-  if (upperTickers.length === 0) return empty;
+  if (upperTickers.length === 0 && !text) return empty;
 
   // Step 1: Tickers → underlyings → asset theses (non-terminal)
-  const atRows = await d
-    .select({
-      ticker: underlyings.ticker,
-      atId: assetTheses.id,
-      atTitle: assetTheses.title,
-      atStatus: assetTheses.status,
-      atDirection: assetTheses.direction,
-    })
-    .from(underlyings)
-    .innerJoin(assetTheses, eq(assetTheses.underlyingId, underlyings.id))
-    .where(inArray(underlyings.ticker, upperTickers));
-
   const resolvedAssetTheses: ResolvedThesis[] = [];
   const tickerMap: Record<string, string> = {};
   const assetThesisIds: string[] = [];
 
-  for (const row of atRows) {
-    if (!row.atId || !['developing', 'monitoring'].includes(row.atStatus ?? '')) continue;
-    resolvedAssetTheses.push({
-      id: row.atId,
-      title: row.atTitle ?? '',
-      type: 'asset',
-      status: row.atStatus ?? 'developing',
-      direction: row.atDirection,
-      ticker: row.ticker,
-    });
-    tickerMap[row.atId] = row.ticker;
-    assetThesisIds.push(row.atId);
+  if (upperTickers.length > 0) {
+    const atRows = await d
+      .select({
+        ticker: underlyings.ticker,
+        atId: assetTheses.id,
+        atTitle: assetTheses.title,
+        atStatus: assetTheses.status,
+        atDirection: assetTheses.direction,
+      })
+      .from(underlyings)
+      .innerJoin(assetTheses, eq(assetTheses.underlyingId, underlyings.id))
+      .where(inArray(underlyings.ticker, upperTickers));
+
+    for (const row of atRows) {
+      if (!row.atId || !['developing', 'monitoring'].includes(row.atStatus ?? '')) continue;
+      resolvedAssetTheses.push({
+        id: row.atId,
+        title: row.atTitle ?? '',
+        type: 'asset',
+        status: row.atStatus ?? 'developing',
+        direction: row.atDirection,
+        ticker: row.ticker,
+        matchSource: 'ticker',
+      });
+      tickerMap[row.atId] = row.ticker;
+      assetThesisIds.push(row.atId);
+    }
   }
 
   // Step 2: Asset theses → macro theses (via junction, non-terminal)
   const resolvedMacroTheses: ResolvedThesis[] = [];
+  const seenMacroIds = new Set<string>();
+
   if (assetThesisIds.length > 0) {
     const macroLinks = await d
       .select({
@@ -136,10 +146,9 @@ export async function resolveRelevanceContext(
       .innerJoin(macroTheses, eq(macroTheses.id, assetThesisRelatedMacroTheses.macroThesisId))
       .where(inArray(assetThesisRelatedMacroTheses.assetThesisId, assetThesisIds));
 
-    const seen = new Set<string>();
     for (const row of macroLinks) {
-      if (!['developing', 'monitoring'].includes(row.macroStatus ?? '') || seen.has(row.macroId)) continue;
-      seen.add(row.macroId);
+      if (!['developing', 'monitoring'].includes(row.macroStatus ?? '') || seenMacroIds.has(row.macroId)) continue;
+      seenMacroIds.add(row.macroId);
       resolvedMacroTheses.push({
         id: row.macroId,
         title: row.macroTitle ?? '',
@@ -147,7 +156,73 @@ export async function resolveRelevanceContext(
         status: row.macroStatus ?? 'developing',
         direction: row.macroDirection,
         sectors: row.macroSectors,
+        matchSource: 'ticker',
       });
+    }
+  }
+
+  // Step 2b: Text-based macro thesis matching (sector/theme/title keywords)
+  if (text) {
+    const lowerText = text.toLowerCase();
+
+    // Query all non-terminal macro theses not already found via ticker path
+    const candidateFilter = seenMacroIds.size > 0
+      ? notInArray(macroTheses.id, Array.from(seenMacroIds))
+      : undefined;
+
+    const candidates = await d
+      .select({
+        id: macroTheses.id,
+        title: macroTheses.title,
+        status: macroTheses.status,
+        direction: macroTheses.direction,
+        sectors: macroTheses.sectors,
+        themes: macroTheses.themes,
+      })
+      .from(macroTheses)
+      .where(
+        candidateFilter
+          ? and(
+              inArray(macroTheses.status, ['developing', 'monitoring']),
+              candidateFilter,
+            )
+          : inArray(macroTheses.status, ['developing', 'monitoring']),
+      );
+
+    for (const row of candidates) {
+      const matchTerms: string[] = [];
+
+      // Collect sectors
+      if (row.sectors && Array.isArray(row.sectors)) {
+        matchTerms.push(...row.sectors);
+      }
+
+      // Collect themes
+      if (row.themes && Array.isArray(row.themes)) {
+        matchTerms.push(...row.themes);
+      }
+
+      // Collect title words > 4 characters
+      if (row.title) {
+        const titleWords = row.title.split(/\s+/).filter(w => w.length > 4);
+        matchTerms.push(...titleWords);
+      }
+
+      // Check if any term appears in the text (case-insensitive)
+      const matched = matchTerms.some(term => lowerText.includes(term.toLowerCase()));
+
+      if (matched) {
+        seenMacroIds.add(row.id);
+        resolvedMacroTheses.push({
+          id: row.id,
+          title: row.title ?? '',
+          type: 'macro',
+          status: row.status ?? 'developing',
+          direction: row.direction,
+          sectors: row.sectors,
+          matchSource: 'sector',
+        });
+      }
     }
   }
 

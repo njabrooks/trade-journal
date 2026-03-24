@@ -84,6 +84,7 @@ export const macroTheses = pgTable(
 
     // Position structure
     sectors: text('sectors').array().default(sql`'{}'`), // e.g., ['AI hyperscalers', 'crypto alts']
+    themes: text('themes').array().default(sql`'{}'`), // freeform keywords beyond sectors, e.g., ['rate sensitivity', 'AI capex cycle']
     direction: text('direction'), // 'bullish' | 'bearish' | 'neutral'
     positionStartDate: date('position_start_date'),
     positionEndDate: date('position_end_date'),
@@ -1431,6 +1432,10 @@ export const signals = pgTable(
     dependentThesisType: text('dependent_thesis_type'), // 'macro' | 'asset'
     dependentThesisCondition: text('dependent_thesis_condition'), // 'invalidated' | 'confidence_drops' | 'status_changes'
     dependentThesisConditionDetail: text('dependent_thesis_condition_detail'),
+
+    // Articulation provenance — which section/driver generated this signal
+    sourceSection: text('source_section'), // 'key_driver' | 'key_assumption' | 'timeframe' | 'dependency'
+    sourceDriverIndex: integer('source_driver_index'), // zero-based index into the section array
 
     // Provenance
     linkedClaimIds: jsonb('linked_claim_ids').default([]),

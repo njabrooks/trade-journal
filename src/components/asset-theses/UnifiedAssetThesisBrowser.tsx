@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AssetThesisListItem } from '@/db/queries/assetTheses';
 import { Badge } from '@/components/ui/badge';
+import { LifecycleBadge } from '@/components/ui/lifecycle-badge';
 import { Button } from '@/components/ui/button';
 import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, Link2 } from 'lucide-react';
 import Link from 'next/link';
@@ -183,7 +184,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
           bVal = confidenceOrder[b.confidenceLevel as keyof typeof confidenceOrder] ?? -1;
           break;
         case 'status':
-          const statusOrder = { draft: 0, active: 1, complete: 2, rejected: 3 };
+          const statusOrder = { draft: 0, developing: 1, monitoring: 2, complete: 3, rejected: 4 };
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 0;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 0;
           break;
@@ -250,21 +251,6 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
         return 'bg-amber-500/15 text-amber-600 dark:text-amber-400';
       case 'exploratory':
         return 'bg-purple-500/15 text-purple-600 dark:text-purple-400';
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
-  };
-
-  const statusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-muted text-muted-foreground';
-      case 'active':
-        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
-      case 'complete':
-        return 'bg-muted text-muted-foreground';
-      case 'rejected':
-        return 'bg-destructive/15 text-destructive';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -601,9 +587,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
 
                         {/* Status */}
                         <td className="px-4 py-3 text-center">
-                          <Badge className={`${statusBadgeColor(thesis.status)} text-xs`}>
-                            {thesis.status.replace('_', ' ')}
-                          </Badge>
+                          <LifecycleBadge phase={thesis.status} size="sm" />
                         </td>
 
                         {/* Macro Theses */}

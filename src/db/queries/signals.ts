@@ -59,6 +59,10 @@ export interface SignalWithContext {
 
   // Recent quantitative snapshots for sparkline (newest first, max 10)
   recentSnapshots: Array<{ date: string; value: number }>;
+
+  // Articulation provenance
+  sourceSection: string | null;
+  sourceDriverIndex: number | null;
 }
 
 export interface SignalFilterCounts {
@@ -90,6 +94,8 @@ export async function getAllSignalsWithContext(): Promise<{
       importance: signals.importance,
       notes: signals.notes,
       explicitDetails: signals.explicitDetails,
+      sourceSection: signals.sourceSection,
+      sourceDriverIndex: signals.sourceDriverIndex,
       createdAt: signals.createdAt,
       updatedAt: signals.updatedAt,
     })
@@ -290,6 +296,8 @@ export async function getAllSignalsWithContext(): Promise<{
       importance: s.importance,
       notes: s.notes,
       explicitDetails: s.explicitDetails,
+      sourceSection: s.sourceSection,
+      sourceDriverIndex: s.sourceDriverIndex,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
       entities,
@@ -359,6 +367,8 @@ export async function getSignalWithEntitiesById(id: string): Promise<SignalWithC
       importance: signals.importance,
       notes: signals.notes,
       explicitDetails: signals.explicitDetails,
+      sourceSection: signals.sourceSection,
+      sourceDriverIndex: signals.sourceDriverIndex,
       createdAt: signals.createdAt,
       updatedAt: signals.updatedAt,
     })
@@ -498,6 +508,8 @@ export async function getSignalWithEntitiesById(id: string): Promise<SignalWithC
     importance: signal.importance,
     notes: signal.notes,
     explicitDetails: signal.explicitDetails,
+    sourceSection: signal.sourceSection,
+    sourceDriverIndex: signal.sourceDriverIndex,
     createdAt: signal.createdAt,
     updatedAt: signal.updatedAt,
     entities,

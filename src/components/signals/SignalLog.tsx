@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { FileText, Radio } from 'lucide-react';
+import { ProvenanceBadge } from '@/components/ui/provenance-badge';
+import type { ProvenanceSource } from '@/components/ui/provenance-badge';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -90,6 +92,7 @@ export interface SignalLogEntry {
   unit: string | null;
   status: string;
   claimId: string | null;
+  intelligenceItemId?: string;
 }
 
 interface SignalLogProps {
@@ -147,10 +150,16 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
 
                 {/* Source */}
                 <td className="px-3 py-2">
-                  <span className={`block w-full text-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
-                    {isDailySynthesis && <span className="mr-1">★</span>}
-                    {src.label}
-                  </span>
+                  {(['intelligence_routing', 'thesis_monitor', 'research_routing'] as const).includes(entry.dataSource as any) ? (
+                    <div className="flex justify-center">
+                      <ProvenanceBadge source={entry.dataSource as ProvenanceSource} />
+                    </div>
+                  ) : (
+                    <span className={`block w-full text-center px-1.5 py-0.5 rounded text-xs font-medium ${src.cls}`}>
+                      {isDailySynthesis && <span className="mr-1">★</span>}
+                      {src.label}
+                    </span>
+                  )}
                 </td>
 
                 {/* Assessment or quantitative value */}
@@ -185,6 +194,17 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
                       );
                     }
                     if (entry.dataSource === 'intelligence_routing') {
+                      if (entry.intelligenceItemId) {
+                        return (
+                          <Link
+                            href={`/news?highlight=${entry.intelligenceItemId}`}
+                            className="group flex items-start gap-1.5 text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors"
+                          >
+                            <Radio className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                            <p className="line-clamp-2 leading-relaxed">{note}</p>
+                          </Link>
+                        );
+                      }
                       return (
                         <div className="flex items-start gap-1.5 text-cyan-600 dark:text-cyan-400">
                           <Radio className="h-3.5 w-3.5 mt-0.5 shrink-0" />

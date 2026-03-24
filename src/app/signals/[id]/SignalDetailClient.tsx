@@ -12,7 +12,12 @@ import {
   Scale,
   ArrowLeft,
   ExternalLink,
+  Settings2,
+  Activity,
+  FileText,
+  Zap,
 } from 'lucide-react';
+import { EntityBadge } from '@/components/ui/entity-badge';
 import { SignalCumulativeScoreChart } from '@/components/signals/SignalCumulativeScoreChart';
 import { SignalSnapshotChart } from '@/components/signals/SignalSnapshotChart';
 import { SignalMilestoneCard } from '@/components/signals/SignalMilestoneCard';
@@ -41,6 +46,7 @@ interface Snapshot {
   unit: string | null;
   status: string;
   claimId: string | null;
+  intelligenceItemId?: string | null;
 }
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -57,10 +63,34 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   rejected: <Archive className="w-3 h-3" />,
 };
 
-function entityTypeBadge(entity: SignalWithContext['entities'][number]): { label: string; cls: string } {
-  if (entity.entityType === 'strategy') return { label: 'Strategy', cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' };
-  if (entity.thesisType === 'macro') return { label: 'Macro Thesis', cls: 'bg-violet-500/15 text-violet-600 dark:text-violet-400' };
-  return { label: 'Asset Thesis', cls: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' };
+/** Parse a checkFrequency string like "daily", "weekly", "4h" into milliseconds */
+function parseFrequencyMs(freq: string | undefined): number | null {
+  if (!freq) return null;
+  const lower = freq.toLowerCase().trim();
+  if (lower === 'daily' || lower === '1d') return 24 * 60 * 60 * 1000;
+  if (lower === 'weekly' || lower === '1w') return 7 * 24 * 60 * 60 * 1000;
+  if (lower === 'monthly') return 30 * 24 * 60 * 60 * 1000;
+  const match = lower.match(/^(\d+)\s*(h|d|w)$/);
+  if (match) {
+    const n = parseInt(match[1]);
+    if (match[2] === 'h') return n * 60 * 60 * 1000;
+    if (match[2] === 'd') return n * 24 * 60 * 60 * 1000;
+    if (match[2] === 'w') return n * 7 * 24 * 60 * 60 * 1000;
+  }
+  return null;
+}
+
+/** Determine data source health: green/amber/red based on snapshot freshness vs expected frequency */
+function getDataSourceHealth(
+  latestSnapshotDate: string | Date | null,
+  checkFrequency: string | undefined,
+): { color: string; dotCls: string; label: string } | null {
+  const intervalMs = parseFrequencyMs(checkFrequency);
+  if (!intervalMs || !latestSnapshotDate) return null;
+  const age = Date.now() - new Date(latestSnapshotDate).getTime();
+  if (age <= intervalMs * 1.5) return { color: 'green', dotCls: 'bg-emerald-500', label: 'Healthy' };
+  if (age <= intervalMs * 3) return { color: 'amber', dotCls: 'bg-amber-500', label: 'Overdue' };
+  return { color: 'red', dotCls: 'bg-red-500', label: 'Stale' };
 }
 
 interface SignalDetailClientProps {
@@ -177,21 +207,102 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
           {signal.entities.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
               {signal.entities.map((entity, i) => {
-                const badge = entityTypeBadge(entity);
+                const entityType = entity.entityType === 'strategy' ? 'strategy'
+                  : entity.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis';
                 return (
-                  <span key={i} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${badge.cls}`}>
-                    {badge.label}
-                    {entity.entityTitle && (
-                      <span className="font-normal opacity-80">— {entity.entityTitle}</span>
-                    )}
-                  </span>
+                  <EntityBadge
+                    key={i}
+                    entityType={entityType as 'macro_thesis' | 'asset_thesis' | 'strategy'}
+                    id={entity.thesisId || entity.strategyId || ''}
+                    title={entity.entityTitle || 'Unknown'}
+                    status={entity.entityStatus || undefined}
+                    href={entity.entityLink || undefined}
+                    size="sm"
+                  />
                 );
               })}
             </div>
           )}
+          {/* Articulation provenance */}
+          {signal.sourceSection && (
+            <span className="text-xs text-muted-foreground">
+              Derived from:{' '}
+              {signal.sourceSection === 'key_driver' && `Key Driver #${(signal.sourceDriverIndex ?? 0) + 1}`}
+              {signal.sourceSection === 'key_assumption' && `Key Assumption #${(signal.sourceDriverIndex ?? 0) + 1}`}
+              {signal.sourceSection === 'timeframe' && 'Timeframe'}
+              {signal.sourceSection === 'dependency' && `Dependency #${(signal.sourceDriverIndex ?? 0) + 1}`}
+            </span>
+          )}
         </div>
       </div>
 
+
+      {/* Setup Completeness Card */}
+      {(() => {
+        const hasDataSource = !!explicitDetails;
+        const snapshotCount = snapshots.length;
+        const lastEvaluated = snapshots[0]?.snapshotDate
+          ? new Date(snapshots[0].snapshotDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+          : null;
+        const isJudgment = signal.category === 'judgment';
+        const showSetupCard = isJudgment && !hasDataSource;
+
+        // Data source health for configured signals
+        const health = hasDataSource
+          ? getDataSourceHealth(
+              snapshots[0]?.snapshotDate || null,
+              (explicitDetails as { checkFrequency?: string })?.checkFrequency,
+            )
+          : null;
+
+        if (!showSetupCard && !health) return null;
+
+        return (
+          <div className="bg-card rounded-lg border p-4">
+            {showSetupCard && (
+              <div className="flex items-start gap-3">
+                <Settings2 className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm font-medium text-foreground">Signal setup</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Statement defined
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-muted-foreground" /> No data source
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      {snapshotCount > 0
+                        ? <><Zap className="w-3 h-3 text-amber-500" /> {snapshotCount} evidence snapshot{snapshotCount !== 1 ? 's' : ''}</>
+                        : <><Clock className="w-3 h-3 text-muted-foreground" /> No evidence yet</>
+                      }
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      {lastEvaluated
+                        ? <><Activity className="w-3 h-3 text-blue-500" /> Last: {lastEvaluated}</>
+                        : <><Clock className="w-3 h-3 text-muted-foreground" /> Never evaluated</>
+                      }
+                    </span>
+                  </div>
+                  <Link
+                    href={`/signals/${signal.id}/configure`}
+                    className="inline-flex items-center gap-1.5 mt-1 px-3 py-1.5 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    <Settings2 className="w-3 h-3" />
+                    Configure Data Source
+                  </Link>
+                </div>
+              </div>
+            )}
+            {health && (
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`w-2 h-2 rounded-full ${health.dotCls}`} />
+                <span className="text-muted-foreground">Data source: <span className="font-medium text-foreground">{health.label}</span></span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Signal Status + Tracking */}
       {(() => {
@@ -285,7 +396,18 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
                 <div className="bg-card rounded-lg border">
                   <div className="px-4 py-3 border-b flex items-start justify-between">
                     <div>
-                      <h3 className="text-sm font-semibold text-foreground">Quantitative Tracking</h3>
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        Quantitative Tracking
+                        {(() => {
+                          const h = getDataSourceHealth(
+                            latestQuant?.snapshotDate || null,
+                            (explicitDetails as { checkFrequency?: string })?.checkFrequency,
+                          );
+                          return h ? (
+                            <span className={`w-2 h-2 rounded-full ${h.dotCls}`} title={h.label} />
+                          ) : null;
+                        })()}
+                      </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {metricName || 'Observed value vs. threshold over time'}
                       </p>
@@ -381,6 +503,7 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
             unit: s.unit,
             status: s.status,
             claimId: s.claimId,
+            intelligenceItemId: s.intelligenceItemId ?? undefined,
           }))}
           onReject={async (snapshotId) => {
             await fetch(`/api/signals/snapshots/${snapshotId}/reject`, { method: 'PATCH' });

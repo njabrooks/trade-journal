@@ -6,7 +6,7 @@
  * - assess-validation-evidence skill (runtime instructions)
  * - process-inbox skill (runtime instructions)
  *
- * Canonical weights: ticker +3, keyword +1, statement word +0.5
+ * Canonical weights: ticker +3, sector/theme +2, keyword +1, statement word +0.5
  */
 
 // ---------------------------------------------------------------------------
@@ -69,6 +69,7 @@ export function extractMonitorKeywords(explicitDetails: unknown): string[] {
  *
  * Weights:
  * - Ticker match: +3
+ * - Sector/theme match: +2 (thesis matched via sector/theme, not ticker)
  * - Keyword match: +1 per keyword
  * - Statement word overlap (words > 4 chars): +0.5 per word
  */
@@ -76,6 +77,7 @@ export function scoreContentAgainstSignal(
   content: ContentForScoring,
   signal: SignalForScoring,
   thesisTicker?: string | null,
+  sectorMatched?: boolean,
 ): number {
   const text = content.text.toLowerCase();
   let score = 0;
@@ -83,6 +85,11 @@ export function scoreContentAgainstSignal(
   // Ticker match
   if (thesisTicker && content.tickers.some(t => t.toUpperCase() === thesisTicker.toUpperCase())) {
     score += 3;
+  }
+
+  // Sector/theme match (thesis was matched via sector/theme text, not via ticker)
+  if (sectorMatched) {
+    score += 2;
   }
 
   // Keyword matches

@@ -52,8 +52,9 @@ export async function evaluateIntelItem(
   const d = dbInstance ?? defaultDb;
   const tickers = item.tickers ?? [];
 
-  // 1. Resolve tickers to belief hierarchy
-  const context = await resolveRelevanceContext(tickers, d);
+  // 1. Resolve tickers (and text) to belief hierarchy
+  const itemText = `${item.headline} ${item.body ?? ''}`;
+  const context = await resolveRelevanceContext(tickers, d, itemText);
 
   if (context.allTheses.length === 0) {
     return {
@@ -85,10 +86,12 @@ export async function evaluateIntelItem(
 
   for (const signal of monitoringSignals) {
     const thesisTicker = context.tickerMap[signal.thesisId] ?? null;
-    const score = scoreContentAgainstSignal(content, signal, thesisTicker);
+    const parentThesis = context.allTheses.find(t => t.id === signal.thesisId);
+    const sectorMatched = parentThesis?.matchSource === 'sector';
+    const score = scoreContentAgainstSignal(content, signal, thesisTicker, sectorMatched);
 
     if (score > 0) {
-      const assessment = assessFromHeuristic(content.text, signal);
+      const assessment = assessFromHeuristic(item.headline, item.body, signal.type, score);
       const evidenceSummary = buildEvidenceSummary(item, signal, assessment);
 
       actions.push({
@@ -156,11 +159,13 @@ export async function evaluatePendingIntelItems(
   let passedFilter = 0;
 
   for (const item of pending) {
-    // Pre-filter: skip items with no tracked tickers (avoids per-item DB query)
+    // Pre-filter: skip items with no tracked tickers AND no headline/body text
+    // Items with text may still match macro theses via sector/theme keywords
     const itemTickers = (item.tickers ?? []).map(t => t.toUpperCase());
     const hasRelevantTicker = itemTickers.some(t => trackedTickerSet.has(t));
+    const hasText = !!(item.headline || item.body);
 
-    if (!hasRelevantTicker) {
+    if (!hasRelevantTicker && !hasText) {
       await d.update(intelItems)
         .set({ processingStatus: 'skipped', processedAt: new Date() })
         .where(eq(intelItems.id, item.id));
@@ -192,7 +197,8 @@ export async function evaluatePendingIntelItems(
     const claimActions = result.actions.filter(a => a.type === 'claim_candidate') as Array<Extract<EvaluationAction, { type: 'claim_candidate' }>>;
     if (claimActions.length > 0) {
       // Resolve thesis context for triage record metadata
-      const context = await resolveRelevanceContext(item.tickers ?? [], d);
+      const triageText = `${item.headline} ${item.body ?? ''}`;
+      const context = await resolveRelevanceContext(item.tickers ?? [], d, triageText);
       for (const action of claimActions) {
         for (const thesisId of action.thesisIds) {
           const thesis = context.allTheses.find(t => t.id === thesisId);
@@ -236,7 +242,7 @@ export async function evaluatePendingIntelItems(
     if (result.processingResult === 'contextual') contextualCount++;
   }
 
-  console.log(`Pre-filter: ${pending.length} items, ${passedFilter} with tracked tickers, ${pending.length - passedFilter} skipped`);
+  console.log(`Pre-filter: ${pending.length} items, ${passedFilter} with tracked tickers or text, ${pending.length - passedFilter} skipped`);
 
   return {
     processed: pending.length,
@@ -251,18 +257,36 @@ export async function evaluatePendingIntelItems(
 // Heuristic assessment
 // ---------------------------------------------------------------------------
 
-function assessFromHeuristic(text: string, signal: ResolvedSignal): string {
-  // For data-driven signals: would need threshold comparison (future)
-  // For judgment signals: use neutral indicator check + direction inference
+function assessFromHeuristic(
+  headline: string,
+  body: string | null | undefined,
+  signalType: string,
+  score: number,
+): string {
+  // Low-confidence match — not enough signal overlap to assert direction
+  if (score < 3) {
+    return 'neutral';
+  }
 
+  const text = `${headline} ${body ?? ''}`;
   if (hasNeutralIndicators(text)) {
     return 'neutral';
   }
 
-  // Heuristic: if signal is invalidation type and content matches,
-  // the risk is "strengthening" (growing). If confirmation type, "strengthening" (confirming).
-  // Without LLM, we can only say "strengthening" (evidence detected, direction uncertain).
-  return 'strengthening';
+  // Direction depends on signal type:
+  // - confirmation: evidence confirming thesis → strengthening
+  // - invalidation: evidence of risk materialising → weakening
+  // - completion: thesis playing out → strengthening
+  switch (signalType) {
+    case 'confirmation':
+      return 'strengthening';
+    case 'invalidation':
+      return 'weakening';
+    case 'completion':
+      return 'strengthening';
+    default:
+      return 'strengthening';
+  }
 }
 
 function buildEvidenceSummary(item: IntelItem, signal: ResolvedSignal, assessment: string): string {

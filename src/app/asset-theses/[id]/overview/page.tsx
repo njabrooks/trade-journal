@@ -131,6 +131,15 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
             articulation={articulation}
             claimCount={currentClaimCount}
             claimsAtLastArticulation={articulationClaimCount}
+            linkedSignals={validationPoints
+              .filter(s => s.sourceSection != null)
+              .map(s => ({
+                id: s.id,
+                statement: s.statement,
+                type: s.type,
+                sourceSection: s.sourceSection!,
+                sourceDriverIndex: s.sourceDriverIndex!,
+              }))}
           />
         )}
 

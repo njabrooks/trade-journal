@@ -64,7 +64,7 @@ type SortColumn = 'claim' | 'source' | 'confidence' | 'category' | 'status' | 'c
 type SortDirection = 'asc' | 'desc';
 
 export function UnifiedClaimsBrowser({
-  claimsWithSources,
+  claimsWithSources: claimsWithSourcesProp,
   filterArtifactId,
   initialLinkedToFilter,
   showSourceColumn = false,
@@ -74,6 +74,13 @@ export function UnifiedClaimsBrowser({
   const router = useRouter();
   const [expandedClaim, setExpandedClaim] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Local state for optimistic updates (status changes, suggestion actions)
+  const [localClaims, setLocalClaims] = useState<ClaimWithSource[]>(claimsWithSourcesProp);
+  useEffect(() => {
+    setLocalClaims(claimsWithSourcesProp);
+  }, [claimsWithSourcesProp]);
+  const claimsWithSources = localClaims;
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +116,55 @@ export function UnifiedClaimsBrowser({
   // Convert/Link dialog state (used by both status badge and Link button)
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [claimToConvert, setClaimToConvert] = useState<DbMainClaim | null>(null);
+
+  // Internal handler for suggestion actions — optimistically updates local state
+  const handleSuggestionActioned = (result: SuggestionActionResult) => {
+    setLocalClaims(prev => prev.map(c => {
+      if (c.claim.id !== result.claimId) return c;
+
+      // Remove the actioned suggestion
+      const updatedSuggestions = (c.suggestions || []).filter(s => s.id !== result.suggestionId);
+
+      if (result.action === 'accepted' && result.newLink) {
+        // Add the new link to the claim's linked entities
+        const updatedTheses = [...(c.linkedTheses || [])];
+        const updatedViews = [...(c.linkedViews || [])];
+
+        if (result.newLink.thesisId && result.newLink.thesisTitle) {
+          updatedTheses.push({
+            id: result.newLink.thesisId,
+            title: result.newLink.thesisTitle,
+            mappingType: result.newLink.mappingType,
+          });
+        }
+        if (result.newLink.assetThesisId && result.newLink.assetThesisTitle) {
+          updatedViews.push({
+            id: result.newLink.assetThesisId,
+            title: result.newLink.assetThesisTitle,
+            ticker: result.newLink.ticker || '',
+            mappingType: result.newLink.mappingType,
+          });
+        }
+
+        return {
+          ...c,
+          claim: result.claimStatus ? { ...c.claim, status: result.claimStatus } : c.claim,
+          linkedTheses: updatedTheses,
+          linkedViews: updatedViews,
+          suggestions: updatedSuggestions,
+        };
+      }
+
+      // Rejection — just remove the suggestion
+      return { ...c, suggestions: updatedSuggestions };
+    }));
+
+    // Notify parent if provided
+    onSuggestionActioned?.(result);
+
+    // Refresh server data in the background
+    router.refresh();
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -340,10 +396,17 @@ export function UnifiedClaimsBrowser({
 
       console.log('Status updated successfully');
 
+      // Optimistically update local state
+      setLocalClaims(prev => prev.map(c =>
+        c.claim.id === claimId
+          ? { ...c, claim: { ...c.claim, status: newStatus } }
+          : c
+      ));
+
       // Clear loading state
       setUpdatingClaimId(null);
 
-      // Notify parent to refresh data
+      // Also refresh server data in the background
       router.refresh();
 
     } catch (error) {
@@ -664,7 +727,7 @@ export function UnifiedClaimsBrowser({
                           <div className={isExpanded ? "space-y-1" : "flex items-center gap-1 overflow-hidden"}>
                             {linkedTheses.length === 0 && linkedViews.length === 0 ? (
                               suggestions.length > 0 && !suppressSuggestions ? (
-                                <InlineClaimSuggestions suggestions={suggestions} compact={true} onSuggestionActioned={onSuggestionActioned} suppressSuggestions={suppressSuggestions} />
+                                <InlineClaimSuggestions suggestions={suggestions} compact={true} onSuggestionActioned={handleSuggestionActioned} suppressSuggestions={suppressSuggestions} />
                               ) : (
                                 <span className="text-xs text-muted-foreground">Not linked</span>
                               )
@@ -1060,7 +1123,7 @@ export function UnifiedClaimsBrowser({
                                     <span>Suggested Linkages</span>
                                     <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">AI</Badge>
                                   </h4>
-                                  <InlineClaimSuggestions suggestions={suggestions} compact={false} onSuggestionActioned={onSuggestionActioned} suppressSuggestions={suppressSuggestions} />
+                                  <InlineClaimSuggestions suggestions={suggestions} compact={false} onSuggestionActioned={handleSuggestionActioned} suppressSuggestions={suppressSuggestions} />
                                 </div>
                               )}
 

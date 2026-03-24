@@ -99,8 +99,9 @@ WHERE status = 'active'
 ORDER BY created_at DESC;
 ```
 
-**Get all non-terminal macro theses (developing or monitoring)**:
+**Get all macro theses still accumulating claims (draft or developing)**:
 ```sql
+-- Monitoring theses receive evidence via signal assessment, not claim linkage
 SELECT
   id,
   title,
@@ -113,12 +114,13 @@ SELECT
   notes,
   created_at
 FROM macro_theses
-WHERE status IN ('developing', 'monitoring')
+WHERE status IN ('draft', 'developing')
 ORDER BY created_at DESC;
 ```
 
-**Get all non-terminal asset views (developing or monitoring)**:
+**Get all asset theses still accumulating claims (draft or developing)**:
 ```sql
+-- Monitoring theses receive evidence via signal assessment, not claim linkage
 SELECT
   av.id,
   av.title,
@@ -135,7 +137,7 @@ SELECT
 FROM asset_theses av
 LEFT JOIN underlyings u ON av.underlying_id = u.id
 LEFT JOIN macro_theses mt ON av.macro_thesis_id = mt.id
-WHERE av.status IN ('developing', 'monitoring')
+WHERE av.status IN ('draft', 'developing')
 ORDER BY av.created_at DESC;
 ```
 

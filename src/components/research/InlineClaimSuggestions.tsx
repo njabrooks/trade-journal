@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { EntityBadge } from '@/components/ui/entity-badge';
 import { Check, X, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { ClaimSuggestion } from '@/db/queries/research';
@@ -205,13 +206,15 @@ export function InlineClaimSuggestions({
             <Sparkles className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 flex-wrap">
-                <Badge className={`${isMacro ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400' : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'} text-xs`}>
-                  {isMacro ? 'Macro' : 'Asset'}
-                </Badge>
+                <EntityBadge
+                  entityType={isMacro ? 'macro_thesis' : 'asset_thesis'}
+                  id={(isMacro ? suggestion.thesisId : suggestion.assetThesisId) || ''}
+                  title={title}
+                  size="sm"
+                />
                 <Badge className={`${badge.className} text-xs`}>
                   {badge.label}
                 </Badge>
-                <span className="text-sm font-medium truncate">{title}</span>
                 {suggestion.ticker && (
                   <span className="text-xs text-muted-foreground">({suggestion.ticker})</span>
                 )}

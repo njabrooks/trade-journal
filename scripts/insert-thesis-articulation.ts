@@ -104,6 +104,9 @@ interface SignalInput {
   dependentThesisId?: string;
   dependentThesisType?: 'macro' | 'asset';
   dependentThesisCondition?: 'invalidated' | 'confidence_drops' | 'status_changes';
+  // Articulation provenance — which section/driver generated this signal
+  sourceSection?: 'key_driver' | 'key_assumption' | 'timeframe' | 'dependency';
+  sourceDriverIndex?: number;
 }
 
 // ============================================================================
@@ -301,6 +304,9 @@ async function main() {
       dependentThesisId: sig.dependentThesisId || null,
       dependentThesisType: sig.dependentThesisType || null,
       dependentThesisCondition: sig.dependentThesisCondition || null,
+      // Articulation provenance
+      sourceSection: sig.sourceSection || null,
+      sourceDriverIndex: sig.sourceDriverIndex ?? null,
       // Default to 'active' - focused signals go directly to monitoring (no draft review workflow)
       status: (sig.status || 'active') as 'draft' | 'active' | 'complete' | 'rejected',
     }));

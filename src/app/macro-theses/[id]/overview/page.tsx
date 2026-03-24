@@ -111,6 +111,15 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
             articulation={articulation}
             claimCount={claimsWithSources.length}
             claimsAtLastArticulation={thesis.claimsCountAtLastArticulation ?? undefined}
+            linkedSignals={validationPoints
+              .filter(s => s.sourceSection != null)
+              .map(s => ({
+                id: s.id,
+                statement: s.statement,
+                type: s.type,
+                sourceSection: s.sourceSection!,
+                sourceDriverIndex: s.sourceDriverIndex!,
+              }))}
           />
         ) : thesis.description ? (
           <div className="space-y-4">

@@ -16,6 +16,7 @@ import {
   assetTheses,
   underlyings,
   strategies,
+  intelItems,
 } from '@/db/schema';
 import { desc, gte, lte, and, eq, sql, not, inArray, isNotNull, lt } from 'drizzle-orm';
 
@@ -89,6 +90,9 @@ export interface FeedItem {
   linkedStrategies?: { id: string; strategyKey: string }[];
   // Intelligence report section
   reportSection?: string;
+  // Intelligence pipeline processing status
+  processingStatus?: 'pending' | 'processed' | 'skipped';
+  processingResult?: 'signal_evidence' | 'contextual' | 'claim_candidate' | null;
 }
 
 export interface UnifiedFeedOptions {
@@ -287,8 +291,11 @@ export async function getUnifiedFeed(options: UnifiedFeedOptions = {}): Promise<
   const sliced = unique.slice(offset, offset + limit);
   const hasMore = unique.length > offset + limit;
 
-  // Enrich ticker-based items with entity chain
-  await enrichWithEntityChain(sliced);
+  // Enrich ticker-based items with entity chain + processing status
+  await Promise.all([
+    enrichWithEntityChain(sliced),
+    enrichWithProcessingStatus(sliced),
+  ]);
 
   return { items: sliced, hasMore };
 }
@@ -639,6 +646,60 @@ async function fetchInsiderTransactions(cutoff: Date, limit: number, ticker?: st
     transactionPrice: r.transactionPrice ? Number(r.transactionPrice) : null,
     sourceRecordId: r.id,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Shared helper: batch-enrich items with intel_items processing status
+// ---------------------------------------------------------------------------
+
+const SOURCE_TABLE_MAP: Partial<Record<FeedItemSource, string>> = {
+  world_monitor: 'intelligence_items',
+  thesis_monitor: 'intelligence_items',
+  analyst_action: 'analyst_actions',
+  sec_filing: 'sec_filings',
+  economic_event: 'economic_events',
+  earnings_event: 'earnings_events',
+  insider_transaction: 'insider_transactions',
+};
+
+async function enrichWithProcessingStatus(items: FeedItem[]): Promise<void> {
+  // Group items by source_table for efficient bulk lookup
+  const lookups = new Map<string, { recordId: string; item: FeedItem }[]>();
+  for (const item of items) {
+    const sourceTable = SOURCE_TABLE_MAP[item.source];
+    if (!sourceTable || !item.sourceRecordId) continue;
+    if (!lookups.has(sourceTable)) lookups.set(sourceTable, []);
+    lookups.get(sourceTable)!.push({ recordId: item.sourceRecordId, item });
+  }
+
+  if (lookups.size === 0) return;
+
+  // Query intel_items for each source_table group
+  const queries = [...lookups.entries()].map(async ([sourceTable, entries]) => {
+    const recordIds = entries.map((e) => e.recordId);
+    const rows = await db
+      .select({
+        sourceRecordId: intelItems.sourceRecordId,
+        processingStatus: intelItems.processingStatus,
+        processingResult: intelItems.processingResult,
+      })
+      .from(intelItems)
+      .where(and(
+        eq(intelItems.sourceTable, sourceTable),
+        inArray(intelItems.sourceRecordId, recordIds),
+      ));
+
+    const statusMap = new Map(rows.map((r) => [r.sourceRecordId, r]));
+    for (const entry of entries) {
+      const status = statusMap.get(entry.recordId);
+      if (status) {
+        entry.item.processingStatus = status.processingStatus as FeedItem['processingStatus'];
+        entry.item.processingResult = status.processingResult as FeedItem['processingResult'];
+      }
+    }
+  });
+
+  await Promise.all(queries);
 }
 
 // ---------------------------------------------------------------------------

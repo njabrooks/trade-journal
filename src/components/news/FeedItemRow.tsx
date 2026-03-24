@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   Globe, Target, FileText, Calendar, BarChart3, Scale, TrendingUp,
   ChevronDown, ChevronUp, ExternalLink, ArrowUp, ArrowDown, Briefcase, UserCheck,
+  Zap, Sparkles, Clock, Circle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FeedItem, FeedItemSource } from '@/db/queries/unifiedFeed';
@@ -335,6 +336,22 @@ function getQuantSlots(item: FeedItem): RowSlots {
   };
 }
 
+function ProcessingIcon({ item }: { item: FeedItem }) {
+  if (item.processingResult === 'signal_evidence') {
+    return <span title="Signal evidence"><Zap className="h-3.5 w-3.5 text-amber-500 opacity-70" /></span>;
+  }
+  if (item.processingResult === 'claim_candidate') {
+    return <span title="Claim candidate"><Sparkles className="h-3.5 w-3.5 text-violet-500 opacity-70" /></span>;
+  }
+  if (item.processingResult === 'contextual') {
+    return <span title="Contextual"><Circle className="h-2 w-2 fill-current text-muted-foreground/40" /></span>;
+  }
+  if (item.processingStatus === 'pending') {
+    return <span title="Pending processing"><Clock className="h-3.5 w-3.5 text-muted-foreground/40" /></span>;
+  }
+  return null;
+}
+
 function getSlots(item: FeedItem): RowSlots {
   switch (item.source) {
     case 'economic_event': return getEconomicSlots(item);
@@ -415,8 +432,11 @@ export function FeedItemRow({ item }: { item: FeedItem }) {
         {/* Col 3: Ticker — clickable link to asset thesis when linked */}
         {renderTickerCell(slots.ticker, item)}
 
-        {/* Col 4: Badges */}
-        <div className="flex items-center gap-1">{slots.badges}</div>
+        {/* Col 4: Badges + processing status */}
+        <div className="flex items-center gap-1">
+          {slots.badges}
+          <ProcessingIcon item={item} />
+        </div>
 
         {/* Col 5: Content */}
         <div className="min-w-0 truncate">{slots.content}</div>

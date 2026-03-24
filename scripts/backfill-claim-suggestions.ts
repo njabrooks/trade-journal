@@ -1,15 +1,12 @@
 #!/usr/bin/env tsx
 
 /**
- * List unlinked claims that need thesis linkage suggestions.
- *
- * This script identifies claims that have no thesis links and no pending suggestions,
- * grouped by research insight. Use the output to guide Claude Code's inline analysis.
+ * Find and optionally generate thesis linkage suggestions for claims that lack them.
  *
  * Usage:
- *   npx tsx scripts/backfill-claim-suggestions.ts          # unlinked claims without suggestions
- *   npx tsx scripts/backfill-claim-suggestions.ts --all     # all claims without suggestions (even linked ones)
- *   npx tsx scripts/backfill-claim-suggestions.ts --dry-run # same as default (list only)
+ *   npx tsx scripts/backfill-claim-suggestions.ts              # list unlinked claims without suggestions
+ *   npx tsx scripts/backfill-claim-suggestions.ts --all        # include linked claims too
+ *   npx tsx scripts/backfill-claim-suggestions.ts --execute    # actually generate suggestions via API
  */
 
 // Load env vars BEFORE any @/db imports
@@ -21,17 +18,19 @@ const __dirname2 = dirname(__filename2);
 config({ path: join(__dirname2, '..', '.env.local') });
 
 async function main() {
-  // Dynamic imports — env vars must be loaded before these
   const { db } = await import('../src/db');
   const {
     mainClaims,
     claimThesisMappings,
     researchHierarchyRecommendations,
   } = await import('../src/db/schema');
-  const { eq, and, sql } = await import('drizzle-orm');
+  const { eq, and, sql, isNotNull } = await import('drizzle-orm');
 
   const args = process.argv.slice(2);
   const includeLinked = args.includes('--all');
+  const execute = args.includes('--execute');
+  const modelIdx = args.indexOf('--model');
+  const modelArg = modelIdx !== -1 ? args[modelIdx + 1] : undefined;
 
   try {
     // Subquery: claims that already have thesis links
@@ -40,10 +39,16 @@ async function main() {
       .from(claimThesisMappings);
 
     // Subquery: claims that already have pending suggestions
+    // Filter out NULL main_claim_id to avoid the SQL NOT IN + NULL trap
     const suggestedClaimIds = db
       .selectDistinct({ id: researchHierarchyRecommendations.mainClaimId })
       .from(researchHierarchyRecommendations)
-      .where(eq(researchHierarchyRecommendations.status, 'pending'));
+      .where(
+        and(
+          eq(researchHierarchyRecommendations.status, 'pending'),
+          isNotNull(researchHierarchyRecommendations.mainClaimId)
+        )
+      );
 
     let candidateClaims;
     if (includeLinked) {
@@ -59,7 +64,7 @@ async function main() {
         .from(mainClaims)
         .where(
           and(
-            sql`${mainClaims.sourceInsightId} IS NOT NULL`,
+            isNotNull(mainClaims.sourceInsightId),
             sql`${mainClaims.id} NOT IN (${suggestedClaimIds})`,
             sql`${mainClaims.status} IN ('draft', 'active')`
           )
@@ -77,7 +82,7 @@ async function main() {
         .from(mainClaims)
         .where(
           and(
-            sql`${mainClaims.sourceInsightId} IS NOT NULL`,
+            isNotNull(mainClaims.sourceInsightId),
             sql`${mainClaims.id} NOT IN (${linkedClaimIds})`,
             sql`${mainClaims.id} NOT IN (${suggestedClaimIds})`,
             sql`${mainClaims.status} IN ('draft', 'active')`
@@ -101,7 +106,7 @@ async function main() {
     }
 
     console.log(`Found ${candidateClaims.length} claims across ${claimsByInsight.size} research insights`);
-    console.log(`Mode: ${includeLinked ? 'all claims' : 'unlinked only'}\n`);
+    console.log(`Mode: ${includeLinked ? 'all claims' : 'unlinked only'}${execute ? ' [EXECUTE]' : ' [DRY RUN]'}\n`);
 
     for (const [insightId, claims] of claimsByInsight) {
       console.log(`Insight ${insightId} (${claims.length} claims):`);
@@ -111,7 +116,37 @@ async function main() {
       console.log();
     }
 
-    console.log('To generate suggestions, ask Claude Code to analyze these claims against active theses.');
+    if (!execute) {
+      console.log(`Run with --execute to generate suggestions for these ${candidateClaims.length} claims.`);
+      process.exit(0);
+    }
+
+    // Generate suggestions per insight batch
+    const { generateClaimThesisSuggestions } = await import('../src/lib/services/claim-thesis-suggestions');
+    const { getDefaultModel } = await import('../src/lib/services/ai-providers');
+    type AIModel = Parameters<typeof generateClaimThesisSuggestions>[2];
+    const model = (modelArg || getDefaultModel()) as AIModel;
+    console.log(`Using model: ${model}\n`);
+
+    let totalGenerated = 0;
+    let batchIndex = 0;
+    const totalBatches = claimsByInsight.size;
+
+    for (const [insightId, claims] of claimsByInsight) {
+      batchIndex++;
+      const claimIds = claims.map(c => c.id);
+      console.log(`[${batchIndex}/${totalBatches}] Generating suggestions for insight ${insightId} (${claimIds.length} claims)...`);
+
+      try {
+        const recommendationIds = await generateClaimThesisSuggestions(insightId, claimIds, model);
+        totalGenerated += recommendationIds.length;
+        console.log(`  → Created ${recommendationIds.length} suggestions`);
+      } catch (error) {
+        console.error(`  ✗ Failed for insight ${insightId}:`, error instanceof Error ? error.message : error);
+      }
+    }
+
+    console.log(`\nDone. Generated ${totalGenerated} suggestions across ${totalBatches} insights.`);
     process.exit(0);
   } catch (error) {
     console.error('Error:', error);

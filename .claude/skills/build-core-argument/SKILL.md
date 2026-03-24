@@ -482,6 +482,10 @@ Ground every signal in the claims evidence:
   notes: string,          // Why this matters + what action to take when triggered
   linkedClaimIds: string[] // Which claims support this signal — REQUIRED
 
+  // Articulation provenance — traces signal back to its source section
+  sourceSection: 'key_driver' | 'key_assumption' | 'timeframe' | 'dependency',
+  sourceDriverIndex: number, // zero-based index into the section array
+
   // If this signal depends on another thesis:
   dependentThesisId?: string,
   dependentThesisType?: 'macro' | 'asset',
@@ -490,6 +494,14 @@ Ground every signal in the claims evidence:
 ```
 
 All signals are generated with `status: 'active'` and `importance: 'critical'` (since we only generate the most important ones).
+
+**Provenance rules** — every signal MUST set `sourceSection` and `sourceDriverIndex`:
+- Confirmation signals from a key driver: `{ sourceSection: 'key_driver', sourceDriverIndex: N }`
+- Invalidation signals from a key assumption: `{ sourceSection: 'key_assumption', sourceDriverIndex: N }`
+- Completion signals from timeframe: `{ sourceSection: 'timeframe', sourceDriverIndex: 0 }`
+- Dependency signals: `{ sourceSection: 'dependency', sourceDriverIndex: N }`
+
+Where N is the zero-based index of the driver/assumption in its respective array from the articulation.
 
 ---
 
@@ -772,19 +784,25 @@ Create a JSON file with the articulation data (e.g., `articulation-data.json`):
       "type": "confirmation",
       "statement": "NVIDIA datacenter revenue grows >25% YoY through 2026",
       "notes": "Core thesis is dominance; sustained growth confirms TAM expansion and CUDA lock-in. Action: maintain or increase position.",
-      "linkedClaimIds": ["claim-uuid-1"]
+      "linkedClaimIds": ["claim-uuid-1"],
+      "sourceSection": "key_driver",
+      "sourceDriverIndex": 0
     },
     {
       "type": "invalidation",
       "statement": "Major cloud provider ships CUDA-compatible custom chip with >50% cost savings",
       "notes": "CUDA lock-in is the key moat; a compatible alternative would undermine the thesis. Action: full re-evaluation, likely exit.",
-      "linkedClaimIds": ["claim-uuid-2"]
+      "linkedClaimIds": ["claim-uuid-2"],
+      "sourceSection": "key_assumption",
+      "sourceDriverIndex": 1
     },
     {
       "type": "completion",
       "statement": "AI infrastructure capex plateaus with all major hyperscalers at steady-state spending",
       "notes": "Thesis is about the build-out phase; once spending normalizes, upside is priced in. Action: take profits.",
-      "linkedClaimIds": ["claim-uuid-3"]
+      "linkedClaimIds": ["claim-uuid-3"],
+      "sourceSection": "timeframe",
+      "sourceDriverIndex": 0
     }
   ]
 }

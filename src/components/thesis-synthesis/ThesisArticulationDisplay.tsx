@@ -1,9 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Clock, Target, AlertTriangle, Lightbulb, Link2 } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronDown, ChevronRight, Clock, Target, AlertTriangle, Lightbulb, Link2, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { SIGNAL_TYPE_COLORS } from '@/components/signals/signal-constants';
 import type { ThesisArticulation } from '@/db/schema';
+
+interface LinkedSignal {
+  id: string;
+  statement: string;
+  type: string;
+  sourceSection: string;
+  sourceDriverIndex: number;
+}
 
 interface ThesisArticulationDisplayProps {
   articulation: ThesisArticulation;
@@ -11,6 +21,8 @@ interface ThesisArticulationDisplayProps {
   /** Claim count at time of last articulation (from thesis.claimsCountAtLastArticulation) */
   claimsAtLastArticulation?: number;
   onViewHistory?: () => void;
+  /** Signals with articulation provenance, for inline display next to drivers/assumptions */
+  linkedSignals?: LinkedSignal[];
 }
 
 export function ThesisArticulationDisplay({
@@ -18,6 +30,7 @@ export function ThesisArticulationDisplay({
   claimCount,
   claimsAtLastArticulation,
   onViewHistory,
+  linkedSignals,
 }: ThesisArticulationDisplayProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['drivers', 'assumptions'])
@@ -164,19 +177,44 @@ export function ThesisArticulationDisplay({
             </button>
             {expandedSections.has('drivers') && (
               <ul className="mt-2 ml-6 space-y-2">
-                {keyDrivers.map((driver, idx) => (
-                  <li key={idx} className="text-sm text-foreground">
-                    <div className="flex items-start gap-2">
-                      <span className="text-emerald-500 mt-1">•</span>
-                      <div>
-                        <span className="font-medium">{driver.driver}</span>
-                        {driver.detail && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{driver.detail}</p>
-                        )}
+                {keyDrivers.map((driver, idx) => {
+                  const driverSignals = linkedSignals?.filter(
+                    s => s.sourceSection === 'key_driver' && s.sourceDriverIndex === idx
+                  ) || [];
+                  return (
+                    <li key={idx} className="text-sm text-foreground">
+                      <div className="flex items-start gap-2">
+                        <span className="text-emerald-500 mt-1">{'\u2022'}</span>
+                        <div className="flex-1">
+                          <span className="font-medium">{driver.driver}</span>
+                          {driverSignals.length > 0 ? (
+                            <span className="ml-1.5 inline-flex gap-1">
+                              {driverSignals.map(sig => {
+                                const colors = SIGNAL_TYPE_COLORS[sig.type] ?? SIGNAL_TYPE_COLORS.confirmation;
+                                return (
+                                  <Link
+                                    key={sig.id}
+                                    href={`/signals/${sig.id}`}
+                                    className={`inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] font-medium ${colors.cls} hover:opacity-80 transition-opacity`}
+                                    title={sig.statement}
+                                  >
+                                    {sig.type === 'confirmation' ? <CheckCircle2 className="w-2.5 h-2.5" /> : <AlertTriangle className="w-2.5 h-2.5" />}
+                                    {colors.label}
+                                  </Link>
+                                );
+                              })}
+                            </span>
+                          ) : linkedSignals && linkedSignals.length > 0 ? (
+                            <span className="ml-1.5 text-[10px] text-muted-foreground/50">no signal</span>
+                          ) : null}
+                          {driver.detail && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{driver.detail}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -199,19 +237,44 @@ export function ThesisArticulationDisplay({
             </button>
             {expandedSections.has('assumptions') && (
               <ul className="mt-2 ml-6 space-y-2">
-                {keyAssumptions.map((assumption, idx) => (
-                  <li key={idx} className="text-sm text-foreground">
-                    <div className="flex items-start gap-2">
-                      <span className="text-amber-500 mt-1">•</span>
-                      <div>
-                        <span className="font-medium">{assumption.assumption}</span>
-                        {assumption.detail && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{assumption.detail}</p>
-                        )}
+                {keyAssumptions.map((assumption, idx) => {
+                  const assumptionSignals = linkedSignals?.filter(
+                    s => s.sourceSection === 'key_assumption' && s.sourceDriverIndex === idx
+                  ) || [];
+                  return (
+                    <li key={idx} className="text-sm text-foreground">
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-500 mt-1">{'\u2022'}</span>
+                        <div className="flex-1">
+                          <span className="font-medium">{assumption.assumption}</span>
+                          {assumptionSignals.length > 0 ? (
+                            <span className="ml-1.5 inline-flex gap-1">
+                              {assumptionSignals.map(sig => {
+                                const colors = SIGNAL_TYPE_COLORS[sig.type] ?? SIGNAL_TYPE_COLORS.invalidation;
+                                return (
+                                  <Link
+                                    key={sig.id}
+                                    href={`/signals/${sig.id}`}
+                                    className={`inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] font-medium ${colors.cls} hover:opacity-80 transition-opacity`}
+                                    title={sig.statement}
+                                  >
+                                    {sig.type === 'invalidation' ? <AlertTriangle className="w-2.5 h-2.5" /> : <CheckCircle2 className="w-2.5 h-2.5" />}
+                                    {colors.label}
+                                  </Link>
+                                );
+                              })}
+                            </span>
+                          ) : linkedSignals && linkedSignals.length > 0 ? (
+                            <span className="ml-1.5 text-[10px] text-muted-foreground/50">no signal</span>
+                          ) : null}
+                          {assumption.detail && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{assumption.detail}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
