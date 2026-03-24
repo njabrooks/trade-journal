@@ -15,6 +15,7 @@ interface UnifiedResearchBrowserProps {
 
 type StatusFilter = 'all' | 'raw' | 'processing' | 'structured' | 'error';
 type SourceTypeFilter = 'all' | string;
+type ClaimsFilter = 'all' | 'has_unconfirmed' | 'all_confirmed' | 'no_claims';
 type SortColumn = 'title' | 'sourceType' | 'status' | 'author' | 'claims' | 'unconfirmedClaims' | 'ingestedAt' | 'publishedDate';
 type SortDirection = 'asc' | 'desc';
 
@@ -27,6 +28,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [sourceTypeFilter, setSourceTypeFilter] = useState<SourceTypeFilter>('all');
+  const [claimsFilter, setClaimsFilter] = useState<ClaimsFilter>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   // Sort states
@@ -79,6 +81,14 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
 
     if (sourceTypeFilter !== 'all') {
       filtered = filtered.filter((a) => a.sourceType === sourceTypeFilter);
+    }
+
+    if (claimsFilter === 'has_unconfirmed') {
+      filtered = filtered.filter((a) => a.unconfirmedClaimCount > 0);
+    } else if (claimsFilter === 'all_confirmed') {
+      filtered = filtered.filter((a) => a.claimCount > 0 && a.unconfirmedClaimCount === 0);
+    } else if (claimsFilter === 'no_claims') {
+      filtered = filtered.filter((a) => a.claimCount === 0);
     }
 
     // Search
@@ -152,6 +162,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
     artifacts,
     statusFilter,
     sourceTypeFilter,
+    claimsFilter,
     searchQuery,
     sortColumn,
     sortDirection,
@@ -262,6 +273,23 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                 ))}
               </select>
             </div>
+
+            {/* Claims */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Claims
+              </label>
+              <select
+                value={claimsFilter}
+                onChange={(e) => setClaimsFilter(e.target.value as ClaimsFilter)}
+                className="w-full border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All</option>
+                <option value="has_unconfirmed">Has Unconfirmed</option>
+                <option value="all_confirmed">All Confirmed</option>
+                <option value="no_claims">No Claims</option>
+              </select>
+            </div>
           </div>
 
           {/* Clear Filters */}
@@ -273,6 +301,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                 setSearchQuery('');
                 setStatusFilter('all');
                 setSourceTypeFilter('all');
+                setClaimsFilter('all');
               }}
             >
               Clear Filters
