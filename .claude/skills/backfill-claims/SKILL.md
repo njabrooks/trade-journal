@@ -39,7 +39,9 @@ Parse arguments to determine scope, then query for eligible claims.
 ```bash
 cd /Users/home-hub/projects/trade-journal
 
-# All active claims with their source context
+# All non-terminal claims (draft + active) with their source context
+# IMPORTANT: include draft claims — many claims are promoted as draft and never
+# manually moved to active, but they still need linkage and signal evaluation
 npx tsx scripts/psql-query.ts "
 SELECT
   mc.id,
@@ -57,7 +59,7 @@ SELECT
 FROM main_claims mc
 LEFT JOIN research_insights ri ON mc.source_insight_id = ri.id
 LEFT JOIN research_artifacts ra ON ri.research_artifact_id = ra.id
-WHERE mc.status = 'active'
+WHERE mc.status IN ('draft', 'active')
   {{AND mc.source_insight_id = 'INSIGHT_ID'  -- if --insight-id specified}}
   {{AND mc.id = 'CLAIM_ID'                   -- if --claim-id specified}}
 ORDER BY mc.created_at DESC
