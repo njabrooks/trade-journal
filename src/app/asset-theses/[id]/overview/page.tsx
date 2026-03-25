@@ -40,7 +40,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
     getCachedAssetThesisById(id),
     getMainClaimsWithSourcesForAssetThesis(id),
     getMacroThesesList(),
-    getStrategiesForList(1000, { assetThesisId: id, includeClosedStrategies: true }),
+    getStrategiesForList(1000, { assetThesisId: id }),
     getLatestArticulation(id, 'asset'),
     getActiveValidationPoints(id, 'asset'),
     getRelationshipsForEntity('asset_thesis', id),

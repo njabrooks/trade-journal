@@ -743,7 +743,7 @@ export function UnifiedClaimsBrowser({
                           <div className="space-y-1">
                             <Link
                               href={`/claims/${claim.id}`}
-                              className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors block line-clamp-2"
+                              className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors block line-clamp-2"
                             >
                               {claim.title}
                             </Link>
@@ -795,7 +795,7 @@ export function UnifiedClaimsBrowser({
                                             </Badge>
                                             <Link
                                               href={entity.url}
-                                              className={`text-sm text-foreground hover:text-blue-600 hover:underline transition-colors ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[150px]'}`}
+                                              className={`text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[150px]'}`}
                                               title={entity.title}
                                             >
                                               {entity.title}
@@ -812,7 +812,7 @@ export function UnifiedClaimsBrowser({
                                             setExpandedClaim(claim.id);
                                           }}
                                           title={`Show all ${allLinked.length} linked entities:\n${allLinked.slice(1).map(e => `• ${e.title}`).join('\n')}`}
-                                          className="text-xs text-muted-foreground hover:text-blue-600 font-medium cursor-pointer shrink-0 ml-1 group"
+                                          className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 font-medium cursor-pointer shrink-0 ml-1 group"
                                         >
                                           <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 group-hover:bg-blue-500/25 group-hover:underline text-xs transition-colors">
                                             +{remainingCount}
@@ -860,7 +860,7 @@ export function UnifiedClaimsBrowser({
                             {artifact ? (
                               <Link
                                 href={`/research/${artifact.id}`}
-                                className="text-sm text-foreground hover:text-blue-600 hover:underline transition-colors line-clamp-1"
+                                className="text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors line-clamp-1"
                                 title={artifact.title}
                               >
                                 {artifact.title}
@@ -1071,7 +1071,7 @@ export function UnifiedClaimsBrowser({
                                         <Link
                                           key={thesis.id}
                                           href={`/macro-theses/${thesis.id}`}
-                                          className="block text-sm text-foreground hover:text-blue-600 hover:underline transition-colors"
+                                          className="block text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
                                         >
                                           <span className="inline-flex items-center gap-1">
                                             <Badge className="bg-violet-500/15 text-violet-600 dark:text-violet-400 text-xs">Macro</Badge>
@@ -1090,7 +1090,7 @@ export function UnifiedClaimsBrowser({
                                         <Link
                                           key={view.id}
                                           href={`/asset-theses/${view.id}`}
-                                          className="block text-sm text-foreground hover:text-blue-600 hover:underline transition-colors"
+                                          className="block text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
                                         >
                                           <span className="inline-flex items-center gap-1">
                                             <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 text-xs">Asset</Badge>
@@ -1129,7 +1129,7 @@ export function UnifiedClaimsBrowser({
                                         <Link
                                           key={signal.id}
                                           href={`/signals/${signal.id}`}
-                                          className="block text-sm text-foreground hover:text-blue-600 hover:underline transition-colors"
+                                          className="block text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
                                         >
                                           <span className="inline-flex items-center gap-1">
                                             <Badge className={`${typeColor} text-xs`}>{typeLabel}</Badge>

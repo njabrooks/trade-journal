@@ -87,7 +87,7 @@ export function MacroThesisSidebar({
             </span>
           ))}
           {thesis.sectors.length > 3 && (
-            <span className="text-xs text-slate-400">+{thesis.sectors.length - 3}</span>
+            <span className="text-xs text-muted-foreground">+{thesis.sectors.length - 3}</span>
           )}
         </div>
       ),
@@ -98,15 +98,15 @@ export function MacroThesisSidebar({
   // Hierarchy accordion section
   const hierarchySection = (
     <AccordionItem value="hierarchy" className="border-b">
-      <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:no-underline">
+      <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
         Hierarchy
       </AccordionTrigger>
       <AccordionContent className="px-4 pb-4">
         <div className="space-y-3">
           {/* Current Macro Thesis */}
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-1.5">Current</p>
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-900 bg-purple-50 rounded px-2 py-1.5 -mx-2 border border-purple-200">
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Current</p>
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground bg-purple-50 dark:bg-purple-900/30 rounded px-2 py-1.5 -mx-2 border border-purple-200 dark:border-purple-800">
               <span className="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0" />
               <span className="truncate">{thesis.title}</span>
             </div>
@@ -114,50 +114,50 @@ export function MacroThesisSidebar({
 
           {/* Linked Asset Theses (downstream) */}
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-1.5">Asset Theses</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Asset Theses</p>
             {linkedAssetTheses.length > 0 ? (
               <div className="space-y-1">
                 {linkedAssetTheses.map((at) => (
                   <Link
                     key={at.id}
                     href={`/asset-theses/${at.id}`}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline rounded px-2 py-1 -mx-2 transition-colors"
                   >
                     <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
                     <span className="truncate">{at.title}</span>
                     {at.ticker && (
-                      <span className="text-xs text-slate-500 font-mono flex-shrink-0">
+                      <span className="text-xs text-muted-foreground font-mono flex-shrink-0">
                         {at.ticker}
                       </span>
                     )}
-                    <ChevronRight className="h-3 w-3 ml-auto text-slate-400 flex-shrink-0" />
+                    <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground flex-shrink-0" />
                   </Link>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 italic px-2">No linked asset theses</p>
+              <p className="text-xs text-muted-foreground italic px-2">No linked asset theses</p>
             )}
           </div>
 
           {/* Linked Strategies (downstream) */}
           <div>
-            <p className="text-xs font-medium text-slate-500 mb-1.5">Strategies</p>
+            <p className="text-xs font-medium text-muted-foreground mb-1.5">Strategies</p>
             {linkedStrategies.length > 0 ? (
               <div className="space-y-1">
                 {linkedStrategies.map((s) => (
                   <Link
                     key={s.id}
                     href={`/strategies/${s.id}/overview`}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-slate-50 rounded px-2 py-1 -mx-2 transition-colors"
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline rounded px-2 py-1 -mx-2 transition-colors"
                   >
                     <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
                     <span className="truncate">{s.label ?? s.strategyKey}</span>
-                    <ChevronRight className="h-3 w-3 ml-auto text-slate-400 flex-shrink-0" />
+                    <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground flex-shrink-0" />
                   </Link>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 italic px-2">No linked strategies</p>
+              <p className="text-xs text-muted-foreground italic px-2">No linked strategies</p>
             )}
           </div>
         </div>

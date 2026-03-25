@@ -111,7 +111,7 @@ export function StrategySidebar({
                   <Link
                     key={mt.id}
                     href={`/macro-theses/${mt.id}`}
-                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-muted rounded px-2 py-1 -mx-2 transition-colors"
+                    className="flex items-center gap-2 text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline rounded px-2 py-1 -mx-2 transition-colors"
                   >
                     <span className="w-2 h-2 rounded-full bg-purple-400 flex-shrink-0" />
                     <span className="truncate">{mt.title}</span>
@@ -130,7 +130,7 @@ export function StrategySidebar({
             {linkedAssetThesis ? (
               <Link
                 href={`/asset-theses/${linkedAssetThesis.id}`}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-muted rounded px-2 py-1 -mx-2 transition-colors"
+                className="flex items-center gap-2 text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline rounded px-2 py-1 -mx-2 transition-colors"
               >
                 <span className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
                 <span className="truncate">{linkedAssetThesis.title}</span>
@@ -166,9 +166,9 @@ export function StrategySidebar({
               <p className="text-xs font-medium text-muted-foreground mb-1.5">Positions</p>
               <Link
                 href={`/strategies/${strategy.id}/overview`}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-muted rounded px-2 py-1 -mx-2 transition-colors"
+                className="flex items-center gap-2 text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline rounded px-2 py-1 -mx-2 transition-colors"
               >
-                <span className="w-2 h-2 rounded-full bg-slate-400 flex-shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-muted-foreground flex-shrink-0" />
                 <span>{openPositionsCount} open position{openPositionsCount !== 1 ? 's' : ''}</span>
                 <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground flex-shrink-0" />
               </Link>

@@ -177,7 +177,7 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
             <Link
               href={`${thesisPath}/${record.thesisId}`}
               onClick={(e) => e.stopPropagation()}
-              className="font-medium text-foreground hover:text-blue-600 hover:underline"
+              className="font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline"
             >
               {record.displayTitle}
             </Link>
@@ -309,7 +309,7 @@ export function ThesisTriageTableRow({ record, onActionComplete }: ThesisTriageT
                         <div className="flex items-start gap-2">
                           <ExternalLink className="w-3.5 h-3.5 mt-0.5 text-muted-foreground group-hover:text-muted-foreground flex-shrink-0" />
                           <div className="min-w-0">
-                            <p className="text-sm font-medium truncate text-foreground group-hover:text-blue-600">
+                            <p className="text-sm font-medium truncate text-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400">
                               {result.title}
                             </p>
                             {result.snippet && (

@@ -591,7 +591,7 @@ function ThesisDetail({
                     {vp.pointId && (
                       <Link
                         href={`/signals/${vp.pointId}`}
-                        className="text-foreground hover:text-blue-600 transition-colors shrink-0"
+                        className="text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors shrink-0"
                       >
                         <ExternalLink className="h-4 w-4" />
                       </Link>
@@ -650,7 +650,7 @@ function ThesisDetail({
                       href={result.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-foreground hover:text-blue-600 transition-colors"
+                      className="text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                       <ExternalLink className="h-4 w-4" />
                     </a>

@@ -469,7 +469,7 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
                   {objectUrl ? (
                     <Link
                       href={objectUrl}
-                      className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
+                      className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors line-clamp-1"
                     >
                       {entry.objectTitle}
                     </Link>
@@ -493,7 +493,7 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
                     </span>
                   )}
                   {objectUrl && (
-                    <Link href={objectUrl} className="text-muted-foreground hover:text-blue-600">
+                    <Link href={objectUrl} className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400">
                       <ExternalLink className="h-3 w-3" />
                     </Link>
                   )}
@@ -667,7 +667,7 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
                 {objectUrl ? (
                   <Link
                     href={objectUrl}
-                    className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors line-clamp-1"
+                    className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors line-clamp-1"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {summary.objectTitle}

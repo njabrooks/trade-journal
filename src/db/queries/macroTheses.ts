@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { macroTheses, assetTheses, strategies, accounts, underlyings, mainClaims, claimThesisMappings, researchInsights, researchArtifacts, assetThesisRelatedMacroTheses } from '@/db/schema';
-import { eq, desc, inArray, count, sql } from 'drizzle-orm';
+import { eq, desc, inArray, and, count, sql } from 'drizzle-orm';
 import type { NewMacroThesis } from '@/db/schema';
 
 export interface MacroThesisListItem {
@@ -62,7 +62,7 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     assetViewCounts.map((c) => [c.macroThesisId, Number(c.count)])
   );
 
-  // Count strategies (via asset thesis junction)
+  // Count strategies (via asset thesis junction, active + draft only)
   const strategyCounts = await db
     .select({
       macroThesisId: assetThesisRelatedMacroTheses.macroThesisId,
@@ -71,7 +71,7 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     .from(strategies)
     .innerJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
     .innerJoin(assetThesisRelatedMacroTheses, eq(assetTheses.id, assetThesisRelatedMacroTheses.assetThesisId))
-    .where(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds))
+    .where(and(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds), inArray(strategies.status, ['active', 'draft'])))
     .groupBy(assetThesisRelatedMacroTheses.macroThesisId);
 
   const strategyMap = new Map(
@@ -105,7 +105,7 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
     .where(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds));
 
-  // Fetch all linked strategies (via asset thesis junction)
+  // Fetch all linked strategies (via asset thesis junction, active + draft only)
   const allLinkedStrategies = await db
     .select({
       macroThesisId: assetThesisRelatedMacroTheses.macroThesisId,
@@ -116,7 +116,7 @@ export async function getMacroThesesList(): Promise<MacroThesisListItem[]> {
     .from(strategies)
     .innerJoin(assetTheses, eq(strategies.assetThesisId, assetTheses.id))
     .innerJoin(assetThesisRelatedMacroTheses, eq(assetTheses.id, assetThesisRelatedMacroTheses.assetThesisId))
-    .where(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds));
+    .where(and(inArray(assetThesisRelatedMacroTheses.macroThesisId, thesisIds), inArray(strategies.status, ['active', 'draft'])));
 
   // Build maps of linked entities
   const assetThesesByThesisId = new Map<string, Array<{ id: string; title: string; ticker: string | null }>>();

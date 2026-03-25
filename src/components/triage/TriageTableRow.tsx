@@ -189,7 +189,7 @@ export function TriageTableRow({
                 <Link
                   href={`/strategies/${record.strategyId}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="text-xs font-medium text-foreground hover:text-blue-600 hover:underline transition-colors"
+                  className="text-xs font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
                 >
                   View
                 </Link>

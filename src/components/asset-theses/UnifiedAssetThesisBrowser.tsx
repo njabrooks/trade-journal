@@ -534,7 +534,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                         <td className="px-4 py-3">
                           <Link
                             href={`/asset-theses/${thesis.id}`}
-                            className="text-foreground font-medium hover:text-blue-600 truncate block"
+                            className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 truncate block"
                             title={thesis.title}
                           >
                             {thesis.title.split(/(\bbullish\b|\bbearish\b|\bneutral\b)/gi).map((part, i) => {
@@ -681,7 +681,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                                     </div>
                                     <Link
                                       href={`/asset-theses/${thesis.id}#claims`}
-                                      className="text-sm font-medium text-foreground hover:text-blue-600 hover:underline transition-colors flex items-center gap-1"
+                                      className="text-sm font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors flex items-center gap-1"
                                     >
                                       View Claims →
                                     </Link>
@@ -706,7 +706,7 @@ export function UnifiedAssetThesisBrowser({ assetTheses }: UnifiedAssetThesisBro
                                 <div>
                                   <Link
                                     href={`/asset-theses/${thesis.id}`}
-                                    className="text-sm text-foreground hover:text-blue-600 hover:underline transition-colors"
+                                    className="text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors"
                                   >
                                     View Full Details →
                                   </Link>

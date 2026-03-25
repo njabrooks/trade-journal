@@ -329,7 +329,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
           <td className="px-4 py-3">
             <Link
               href={`/strategies/${strategy.id}`}
-              className="text-foreground font-medium hover:text-blue-600 truncate block"
+              className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 truncate block"
               title={`${strategy.label} (${strategy.strategyKey})`}
             >
               <span>{strategy.label}</span>
@@ -409,7 +409,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
             {strategy.assetViewTitle && strategy.assetThesisId ? (
               <Link
                 href={`/asset-theses/${strategy.assetThesisId}`}
-                className="text-foreground hover:text-blue-600 transition-colors hover:underline text-sm line-clamp-1"
+                className="text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors hover:underline text-sm line-clamp-1"
               >
                 {strategy.assetViewTitle}
               </Link>
@@ -516,7 +516,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                   <div className="col-span-2">
                     <Link
                       href={`/strategies/${strategy.id}`}
-                      className="text-sm text-muted-foreground hover:text-blue-600 transition-colors hover:underline"
+                      className="text-sm text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors hover:underline"
                     >
                       View Full Details →
                     </Link>

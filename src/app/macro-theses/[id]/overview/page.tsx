@@ -41,7 +41,7 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
     getCachedMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
-    getStrategiesForList(1000, { macroThesisId: id, includeClosedStrategies: true }),
+    getStrategiesForList(1000, { macroThesisId: id }),
     getAssetThesesForRelatedMacroThesis(id),
     getLatestArticulation(id, 'macro'),
     getActiveValidationPoints(id, 'macro'),

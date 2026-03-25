@@ -106,7 +106,7 @@ export function LinkedEntitiesBadges({
         <span key={entity.id} className={isExpanded ? "block" : "inline-flex items-center gap-1 shrink-0"}>
           <Link
             href={getDetailUrl(entity)}
-            className={`text-sm text-foreground hover:text-blue-600 hover:underline transition-colors ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[200px]'}`}
+            className={`text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[200px]'}`}
             title={entity.title}
           >
             {showRelationshipType && entity.relationshipType && (
@@ -129,7 +129,7 @@ export function LinkedEntitiesBadges({
             onExpand();
           }}
           title={`Show all ${entities.length} linked entities:\n${entities.slice(maxVisibleWhenCollapsed).map(e => `• ${e.title}`).join('\n')}`}
-          className="text-xs text-muted-foreground hover:text-blue-600 font-medium cursor-pointer shrink-0 ml-1 group"
+          className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 font-medium cursor-pointer shrink-0 ml-1 group"
         >
           <Badge className="bg-blue-500/15 text-blue-600 dark:text-blue-400 group-hover:underline text-xs transition-colors">
             +{remainingCount}

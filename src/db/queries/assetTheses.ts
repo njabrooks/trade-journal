@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { assetTheses, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings, researchInsights, researchArtifacts, assetThesisRelatedMacroTheses } from '@/db/schema';
-import { eq, desc, inArray, count } from 'drizzle-orm';
+import { eq, desc, inArray, and, count } from 'drizzle-orm';
 import type { NewAssetThesis } from '@/db/schema';
 
 export interface AssetThesisListItem {
@@ -52,14 +52,14 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
 
   const viewIds = views.map((v) => v.id);
 
-  // Get strategy counts
+  // Get strategy counts (active + draft only)
   const strategyCounts = await db
     .select({
       assetThesisId: strategies.assetThesisId,
       count: count(),
     })
     .from(strategies)
-    .where(inArray(strategies.assetThesisId, viewIds))
+    .where(and(inArray(strategies.assetThesisId, viewIds), inArray(strategies.status, ['active', 'draft'])))
     .groupBy(strategies.assetThesisId);
 
   const strategyMap = new Map(
@@ -109,7 +109,7 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
     .where(inArray(assetThesisRelatedMacroTheses.assetThesisId, viewIds))
     .orderBy(assetThesisRelatedMacroTheses.addedAt);
 
-  // Fetch all linked strategies for all views
+  // Fetch all linked strategies for all views (active + draft only)
   const allStrategies = await db
     .select({
       assetThesisId: strategies.assetThesisId,
@@ -118,7 +118,7 @@ export async function getAssetThesesList(): Promise<AssetThesisListItem[]> {
       status: strategies.status,
     })
     .from(strategies)
-    .where(inArray(strategies.assetThesisId, viewIds));
+    .where(and(inArray(strategies.assetThesisId, viewIds), inArray(strategies.status, ['active', 'draft'])));
 
   // Build maps of linked entities
   const macroThesesByViewId = new Map<string, Array<{ id: string; title: string; thesisType: string; relationshipNote: string | null }>>();

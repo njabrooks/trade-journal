@@ -139,10 +139,10 @@ export function NewsArchiveSection({ thesisId, thesisType }: NewsArchiveSectionP
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-1.5 text-sm font-medium text-slate-900 hover:text-blue-600"
+                  className="group flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-blue-600 dark:hover:text-blue-400"
                 >
                   <span className="truncate">{item.title}</span>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 flex-shrink-0" />
+                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-blue-600 dark:group-hover:text-blue-400 flex-shrink-0" />
                 </a>
 
                 {/* Metadata row */}

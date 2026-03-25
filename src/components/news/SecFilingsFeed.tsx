@@ -68,7 +68,7 @@ export function SecFilingsFeed({ filings }: SecFilingsFeedProps) {
               href={filing.filingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-foreground hover:text-blue-600 transition-colors flex-shrink-0"
+              className="text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-shrink-0"
             >
               <ExternalLink className="w-3.5 h-3.5" />
             </a>

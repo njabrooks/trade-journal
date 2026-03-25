@@ -420,7 +420,7 @@ export function UnifiedResearchBrowser({ artifacts }: UnifiedResearchBrowserProp
                         <td className="px-4 py-3">
                           <Link
                             href={`/research/${artifact.id}`}
-                            className="text-foreground font-medium hover:text-blue-600 hover:underline block line-clamp-2"
+                            className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 hover:underline block line-clamp-2"
                             title={artifact.title}
                           >
                             {artifact.title}

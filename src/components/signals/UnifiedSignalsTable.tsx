@@ -748,7 +748,7 @@ export function UnifiedSignalsTable({
                             {mode === 'browse' ? (
                               <Link
                                 href={`/signals/${signal.id}`}
-                                className="text-foreground font-medium hover:text-blue-600 hover:underline transition-colors block line-clamp-2"
+                                className="text-foreground font-medium hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors block line-clamp-2"
                               >
                                 {signal.statement}
                               </Link>
