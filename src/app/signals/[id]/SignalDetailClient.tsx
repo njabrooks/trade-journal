@@ -111,7 +111,7 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
   }, [signal.id]);
 
   useEffect(() => {
-    fetch(`/api/signals/${signal.id}/snapshots?days=1825`)
+    fetch(`/api/signals/${signal.id}/snapshots?days=10000`)
       .then(r => r.json())
       .then(data => setSnapshots((data.snapshots || []) as Snapshot[]))
       .catch(() => {});

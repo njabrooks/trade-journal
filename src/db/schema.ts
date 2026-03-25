@@ -97,6 +97,10 @@ export const macroTheses = pgTable(
     // Track claims count when articulation was last generated (for triage rule #2)
     claimsCountAtLastArticulation: integer('claims_count_at_last_articulation').default(0),
 
+    // Pipeline provenance (TWO-228)
+    pipelineStage: integer('pipeline_stage'), // 1-5, null = not from pipeline
+    pipelineIdeaRef: text('pipeline_idea_ref'), // e.g. 'idea-007-national-resilience-investment'
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
@@ -162,6 +166,10 @@ export const assetTheses = pgTable(
     // Track claims count when articulation was last generated (for triage rule #2)
     claimsCountAtLastArticulation: integer('claims_count_at_last_articulation').default(0),
 
+    // Pipeline provenance (TWO-228)
+    pipelineStage: integer('pipeline_stage'), // 1-5, null = not from pipeline
+    pipelineIdeaRef: text('pipeline_idea_ref'), // e.g. 'idea-007-national-resilience-investment'
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     lastReviewedAt: timestamp('last_reviewed_at', { withTimezone: true }),
@@ -195,6 +203,9 @@ export const assetThesisRelatedMacroTheses = pgTable(
       .notNull()
       .references(() => macroTheses.id, { onDelete: 'cascade' }),
     
+    // Relationship semantics (TWO-228)
+    relationshipType: text('relationship_type').notNull().default('related'), // 'related' | 'gated_by'
+
     // Optional metadata
     relationshipNote: text('relationship_note'), // e.g. "provides sector context", "supports timing"
     addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
@@ -211,6 +222,35 @@ export type AssetThesisRelatedMacroThesis = typeof assetThesisRelatedMacroTheses
 export type NewAssetThesisRelatedMacroThesis = typeof assetThesisRelatedMacroTheses.$inferInsert;
 
 // ============================================================================
+// Macro Thesis Related Macro Theses (Junction Table — TWO-228)
+// ============================================================================
+
+export const macroThesisRelatedMacroTheses = pgTable(
+  'macro_thesis_related_macro_theses',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    sourceMacroThesisId: uuid('source_macro_thesis_id')
+      .notNull()
+      .references(() => macroTheses.id, { onDelete: 'cascade' }),
+    targetMacroThesisId: uuid('target_macro_thesis_id')
+      .notNull()
+      .references(() => macroTheses.id, { onDelete: 'cascade' }),
+    relationshipType: text('relationship_type').notNull(), // 'parent_of' | 'supports' | 'contradicts' | 'depends_on'
+    relationshipNote: text('relationship_note'),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+    addedBy: text('added_by'),
+  },
+  (table) => ({
+    sourceIdx: index('idx_mt_related_mt_source').on(table.sourceMacroThesisId),
+    targetIdx: index('idx_mt_related_mt_target').on(table.targetMacroThesisId),
+    uniquePair: unique().on(table.sourceMacroThesisId, table.targetMacroThesisId),
+  })
+);
+
+export type MacroThesisRelatedMacroThesis = typeof macroThesisRelatedMacroTheses.$inferSelect;
+export type NewMacroThesisRelatedMacroThesis = typeof macroThesisRelatedMacroTheses.$inferInsert;
+
+// ============================================================================
 // Relations Definitions (for Drizzle relational query builder)
 // ============================================================================
 
@@ -218,6 +258,10 @@ export type NewAssetThesisRelatedMacroThesis = typeof assetThesisRelatedMacroThe
 export const macroThesesRelations = relations(macroTheses, ({ many }) => ({
   // All macro thesis links now go through junction table
   linkedAssetTheses: many(assetThesisRelatedMacroTheses),
+  // Macro-to-macro relationships (TWO-228): where this thesis is the source
+  relatedMacroThesesAsSource: many(macroThesisRelatedMacroTheses, { relationName: 'macroSource' }),
+  // Macro-to-macro relationships (TWO-228): where this thesis is the target
+  relatedMacroThesesAsTarget: many(macroThesisRelatedMacroTheses, { relationName: 'macroTarget' }),
 }));
 
 export const assetThesesRelations = relations(assetTheses, ({ many }) => ({
@@ -237,6 +281,22 @@ export const assetThesisRelatedMacroThesesRelations = relations(
     macroThesis: one(macroTheses, {
       fields: [assetThesisRelatedMacroTheses.macroThesisId],
       references: [macroTheses.id],
+    }),
+  })
+);
+
+export const macroThesisRelatedMacroThesesRelations = relations(
+  macroThesisRelatedMacroTheses,
+  ({ one }) => ({
+    sourceMacroThesis: one(macroTheses, {
+      fields: [macroThesisRelatedMacroTheses.sourceMacroThesisId],
+      references: [macroTheses.id],
+      relationName: 'macroSource',
+    }),
+    targetMacroThesis: one(macroTheses, {
+      fields: [macroThesisRelatedMacroTheses.targetMacroThesisId],
+      references: [macroTheses.id],
+      relationName: 'macroTarget',
     }),
   })
 );
@@ -1436,6 +1496,10 @@ export const signals = pgTable(
     // Articulation provenance — which section/driver generated this signal
     sourceSection: text('source_section'), // 'key_driver' | 'key_assumption' | 'timeframe' | 'dependency'
     sourceDriverIndex: integer('source_driver_index'), // zero-based index into the section array
+
+    // Trigger action — what happens when signal fires (TWO-228)
+    // { type: 'create_triage_item' | 'suggest_asset_thesis' | 'notify_only', ... }
+    triggerAction: jsonb('trigger_action'),
 
     // Provenance
     linkedClaimIds: jsonb('linked_claim_ids').default([]),

@@ -29,6 +29,9 @@ import { collectSecEdgar } from './lib/collectors/sec-edgar.js';
 import { collectFred } from './lib/collectors/fred.js';
 import { collectDefiLlamaStablecoins } from './lib/collectors/defillama-stablecoins.js';
 import { collectHyperliquidHip3 } from './lib/collectors/hyperliquid-hip3.js';
+import { collectIMFCofer } from './lib/collectors/imf-cofer.js';
+import { collectTSMCRevenue } from './lib/collectors/tsmc-revenue.js';
+import { collectSecEdgarCapex } from './lib/collectors/sec-edgar-capex.js';
 
 const { signals, signalDataSnapshots, signalEntityLinks, thesisTriageRecords, underlyings } = schema;
 
@@ -79,6 +82,12 @@ async function collectForSignal(
       return collectDefiLlamaStablecoins(details);
     case 'hyperliquid_hip3':
       return collectHyperliquidHip3(details);
+    case 'imf_cofer':
+      return collectIMFCofer(details);
+    case 'tsmc_revenue':
+      return collectTSMCRevenue(details);
+    case 'sec_edgar_capex':
+      return collectSecEdgarCapex(details);
     default:
       return null;
   }

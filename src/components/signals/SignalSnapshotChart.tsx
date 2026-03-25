@@ -76,9 +76,13 @@ export function SignalSnapshotChart({
     const allMin = Math.min(minObs, thresholdValue);
     const allMax = Math.max(maxObs, thresholdValue);
     const range = allMax - allMin || 1;
-    // Start from 0 when all values are positive and 0 is a natural floor
-    const floor = allMin >= 0 ? 0 : allMin - range * 0.1;
-    const ceiling = allMax + range * 0.1;
+    // Use tight range when data doesn't naturally start near zero
+    // (e.g., percentages hovering at 55-72% shouldn't floor to 0)
+    const dataFarFromZero = allMin > 0 && allMin > range * 2;
+    const floor = dataFarFromZero
+      ? allMin - range * 0.15
+      : allMin >= 0 ? 0 : allMin - range * 0.1;
+    const ceiling = allMax + range * 0.15;
     return [floor, ceiling];
   }, [chartData, thresholdValue, isStatus]);
 
