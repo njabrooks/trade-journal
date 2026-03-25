@@ -178,7 +178,8 @@ const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct
 export function formatDateShort(date: string | Date): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return String(date);
-  return `${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}`;
+  const yr = d.getFullYear() % 100;
+  return `${SHORT_MONTHS[d.getMonth()]} '${yr < 10 ? '0' + yr : yr}`;
 }
 
 export function formatDateFull(date: string | Date): string {
