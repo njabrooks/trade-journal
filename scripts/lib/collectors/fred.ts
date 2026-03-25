@@ -76,9 +76,9 @@ export async function collectFred(
   const label = (explicitDetails.label as string) || seriesId;
   const direction = (explicitDetails.thresholdDirection as string) || 'above';
 
-  // Fetch enough history for YoY calculations (18 months back)
+  // Fetch 5 years of history for trend context and trailing calculations
   const endDate = new Date().toISOString().split('T')[0];
-  const startDate = new Date(Date.now() - 18 * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const startDate = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   const url = `${BASE_URL}?series_id=${seriesId}&api_key=${apiKey}&file_type=json&observation_start=${startDate}&observation_end=${endDate}&sort_order=desc`;
 
@@ -123,6 +123,32 @@ export async function collectFred(
         `Year ago: ${formatValue(yearAgo.value, seriesId)} (${yearAgo.date})`,
         `YoY growth: ${observedValue >= 0 ? '+' : ''}${observedValue.toFixed(2)}%`
       );
+
+      // Historical YoY growth rates for trend context (annual snapshots)
+      const yoyHistory: string[] = [];
+      for (let yr = 1; yr <= 4 && observations.length > yr * 12 + 12; yr++) {
+        const laterObs = observations.find(o => {
+          const d = new Date(o.date);
+          const target = new Date(latest.date);
+          target.setFullYear(target.getFullYear() - yr);
+          return Math.abs(d.getTime() - target.getTime()) < 45 * 24 * 60 * 60 * 1000;
+        });
+        const earlierObs = observations.find(o => {
+          const d = new Date(o.date);
+          const target = new Date(latest.date);
+          target.setFullYear(target.getFullYear() - yr - 1);
+          return Math.abs(d.getTime() - target.getTime()) < 45 * 24 * 60 * 60 * 1000;
+        });
+        if (laterObs && earlierObs) {
+          const histGrowth = ((laterObs.value - earlierObs.value) / earlierObs.value) * 100;
+          const yearLabel = new Date(laterObs.date).getFullYear();
+          yoyHistory.push(`${yearLabel}: ${histGrowth >= 0 ? '+' : ''}${histGrowth.toFixed(1)}%`);
+        }
+      }
+      if (yoyHistory.length >= 2) {
+        yoyHistory.push(`Now: ${observedValue >= 0 ? '+' : ''}${observedValue.toFixed(1)}%`);
+        summaryParts.push(`YoY history: ${yoyHistory.join(' → ')}`);
+      }
       break;
     }
     case 'mom_change': {
@@ -157,6 +183,42 @@ export async function collectFred(
       );
       break;
     }
+    case 'trailing_12m_sum': {
+      // Sum the most recent 12 observations (for monthly series = trailing 12-month cumulative)
+      if (observations.length < 12) {
+        console.warn(`  FRED: need 12+ observations for trailing 12m on ${seriesId}`);
+        return null;
+      }
+      const t12m = observations.slice(0, 12).reduce((sum, o) => sum + o.value, 0);
+      observedValue = t12m;
+      summaryParts.push(
+        `T12M cumulative: ${formatValue(t12m, seriesId)} (${observations[11].date} to ${latest.date})`
+      );
+
+      // Prior year T12M for YoY comparison
+      if (observations.length >= 24) {
+        const t12mPrior = observations.slice(12, 24).reduce((sum, o) => sum + o.value, 0);
+        const yoyChange = t12m - t12mPrior;
+        summaryParts.push(
+          `Prior T12M: ${formatValue(t12mPrior, seriesId)}`,
+          `YoY change: ${yoyChange >= 0 ? '+' : ''}${formatValue(yoyChange, seriesId)}`
+        );
+      }
+
+      // 3-year and 5-year T12M history for trend context
+      const historicalT12ms: Array<{ date: string; value: number }> = [];
+      for (let offset = 0; offset + 12 <= observations.length && historicalT12ms.length < 5; offset += 12) {
+        const sum = observations.slice(offset, offset + 12).reduce((s, o) => s + o.value, 0);
+        historicalT12ms.push({ date: observations[offset].date, value: sum });
+      }
+      if (historicalT12ms.length >= 2) {
+        const trend = historicalT12ms.reverse().map(h =>
+          `${h.date.slice(0, 7)}: ${formatValue(h.value, seriesId)}`
+        ).join(' → ');
+        summaryParts.push(`Annual trend: ${trend}`);
+      }
+      break;
+    }
     case 'level':
     default: {
       observedValue = latest.value;
@@ -172,17 +234,44 @@ export async function collectFred(
           `Recent trend: ${recentChange >= 0 ? '+' : ''}${formatValue(recentChange, seriesId)} since ${threeAgo.date}`
         );
       }
+
+      // 5-year history for level metrics
+      const yearlyLevels: string[] = [];
+      const seenYears = new Set<string>();
+      for (const obs of observations) {
+        const year = obs.date.slice(0, 4);
+        if (!seenYears.has(year) && yearlyLevels.length < 5) {
+          seenYears.add(year);
+          yearlyLevels.push(`${year}: ${formatValue(obs.value, seriesId)}`);
+        }
+      }
+      if (yearlyLevels.length >= 3) {
+        summaryParts.push(`History: ${yearlyLevels.reverse().join(' → ')}`);
+      }
       break;
     }
   }
 
   // Calculate pctToThreshold with direction awareness
+  // pct approaches 100% as the observed value approaches the threshold
   let pct: number;
   if (direction === 'below') {
-    // Triggers when observed FALLS TO threshold (e.g., deficit falls below 3%)
-    pct = observedValue > 0 ? (threshold / observedValue) * 100 : 0;
+    // Triggers when observed FALLS TO threshold from above
+    // E.g., M2 growth at 4.9%, threshold 2% → pct = 2/4.9 * 100 = 41%
+    // E.g., Fed BS at $6.66T, threshold $6T → pct = 6/6.66 * 100 = 90%
+    if (observedValue > 0 && threshold > 0) {
+      pct = (threshold / observedValue) * 100;
+    } else if (observedValue < 0 && threshold < 0) {
+      // Both negative (e.g., deficit): triggers when deficit improves (becomes less negative)
+      // Deficit at -1.6T, threshold -1.0T → deficit needs to improve from -1.6T to -1.0T
+      // pct = how far we've progressed from "very negative" toward "less negative threshold"
+      // Use absolute values: |threshold| / |observed| = 1.0/1.6 = 62.5%
+      pct = (Math.abs(threshold) / Math.abs(observedValue)) * 100;
+    } else {
+      pct = 0;
+    }
   } else {
-    // Triggers when observed RISES TO threshold (e.g., M2 growth exceeds 5%)
+    // Triggers when observed RISES TO threshold (default)
     pct = threshold > 0 ? (observedValue / threshold) * 100 : 0;
   }
 
