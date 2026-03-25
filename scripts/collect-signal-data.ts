@@ -24,6 +24,8 @@ import { collectInternalDb } from './lib/collectors/internal-db.js';
 import { collectTradingView, fetchPrices } from './lib/collectors/tradingview.js';
 import { collectDerived } from './lib/collectors/derived.js';
 import { collectHormuz } from './lib/collectors/hormuz.js';
+import { collectWorldBank } from './lib/collectors/worldbank.js';
+import { collectSecEdgar } from './lib/collectors/sec-edgar.js';
 
 const { signals, signalDataSnapshots, signalEntityLinks, thesisTriageRecords, underlyings } = schema;
 
@@ -64,6 +66,10 @@ async function collectForSignal(
       return collectDerived(details);
     case 'hormuz_strait':
       return collectHormuz(details);
+    case 'worldbank':
+      return collectWorldBank(details);
+    case 'sec_edgar':
+      return collectSecEdgar(details);
     default:
       return null;
   }
