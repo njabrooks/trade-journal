@@ -26,6 +26,7 @@ import { collectDerived } from './lib/collectors/derived.js';
 import { collectHormuz } from './lib/collectors/hormuz.js';
 import { collectWorldBank } from './lib/collectors/worldbank.js';
 import { collectSecEdgar } from './lib/collectors/sec-edgar.js';
+import { collectFred } from './lib/collectors/fred.js';
 
 const { signals, signalDataSnapshots, signalEntityLinks, thesisTriageRecords, underlyings } = schema;
 
@@ -70,6 +71,8 @@ async function collectForSignal(
       return collectWorldBank(details);
     case 'sec_edgar':
       return collectSecEdgar(details);
+    case 'fred':
+      return collectFred(details);
     default:
       return null;
   }
