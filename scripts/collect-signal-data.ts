@@ -28,6 +28,7 @@ import { collectWorldBank } from './lib/collectors/worldbank.js';
 import { collectSecEdgar } from './lib/collectors/sec-edgar.js';
 import { collectFred } from './lib/collectors/fred.js';
 import { collectDefiLlamaStablecoins } from './lib/collectors/defillama-stablecoins.js';
+import { collectHyperliquidHip3 } from './lib/collectors/hyperliquid-hip3.js';
 
 const { signals, signalDataSnapshots, signalEntityLinks, thesisTriageRecords, underlyings } = schema;
 
@@ -76,6 +77,8 @@ async function collectForSignal(
       return collectFred(details);
     case 'defillama_stablecoins':
       return collectDefiLlamaStablecoins(details);
+    case 'hyperliquid_hip3':
+      return collectHyperliquidHip3(details);
     default:
       return null;
   }
