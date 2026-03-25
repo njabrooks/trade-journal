@@ -212,7 +212,42 @@ created_at: "{ISO timestamp}"
 Run `/formalize-thesis pipeline/idea-{XXX}-{slug}` to proceed to Stage 2: Theme Formalisation.
 ```
 
-### Step 8: Confirm Creation
+### Step 8: Create Draft Thesis in Database
+
+Create a draft thesis entity in the Trade Journal database so the idea is visible in the UI from Stage 1.
+Determine thesis type from the claim's category (macro → macro thesis, asset_specific → asset thesis).
+
+For macro theses:
+```bash
+cd trade-journal && npx tsx scripts/ops/create-macro-thesis.ts \
+  --title "{claim title}" \
+  --description "{claim text}" \
+  --thesis-type "{secular|cyclical|structural — infer from claim}" \
+  --direction "{bullish|bearish|neutral — infer from claim}" \
+  --confidence exploratory \
+  --pipeline-stage 1 \
+  --pipeline-idea-ref "idea-{XXX}-{slug}"
+```
+
+For asset theses:
+```bash
+cd trade-journal && npx tsx scripts/ops/create-asset-thesis.ts \
+  --ticker "{ticker}" \
+  --title "{claim title}" \
+  --description "{claim text}" \
+  --direction "{bullish|bearish|neutral}" \
+  --confidence exploratory \
+  --pipeline-stage 1 \
+  --pipeline-idea-ref "idea-{XXX}-{slug}"
+```
+
+Record the returned thesis ID in `_meta.yaml` by adding a `linked_thesis_id` field:
+```yaml
+linked_thesis_id: "{returned uuid}"
+linked_thesis_type: "macro"  # or "asset"
+```
+
+### Step 9: Confirm Creation
 
 Output confirmation:
 
@@ -227,6 +262,9 @@ Idea initialized successfully!
   - _meta.yaml (tracking metadata)
   - stage-1-triage.md (claim details)
 
+  DB entity created:
+  - {macro|asset} thesis: {id} (status: draft, pipeline_stage: 1)
+
   Current stage: 1 (Signal Triage) - COMPLETE
   Confidence: {novelty_score}
 
@@ -239,3 +277,4 @@ Next step: Run `/formalize-thesis pipeline/idea-{XXX}-{slug}` to proceed to Stag
 - If the audit file doesn't have novelty_score or consensus_view fields, warn the user that the audit was created before the enhancement
 - The pipeline directory is `research-workspace/pipeline/` (project-local, not Obsidian vault)
 - Ideas can be initialized from any audit file, including older ones
+- The draft thesis entity gives the idea visibility in the UI from early stages; it will be promoted through the lifecycle as the pipeline progresses

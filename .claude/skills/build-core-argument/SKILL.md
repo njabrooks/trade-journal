@@ -274,6 +274,30 @@ Execute via:
 npx tsx scripts/psql-query.ts "<QUERY>" --format json
 ```
 
+#### Step 1b: Load Pipeline Evidence (if applicable)
+
+Check if the thesis has `pipeline_idea_ref` set (indicating it came from the research pipeline):
+
+```sql
+SELECT pipeline_idea_ref, pipeline_stage FROM macro_theses WHERE id = '[THESIS_ID]';
+```
+
+If `pipeline_idea_ref` is not null, read the pipeline research files for additional context. The deep research process (Stage 4) produces richer signal definitions than claims alone because it includes adversarial falsification with specific kill conditions.
+
+Read these files from `research-workspace/pipeline/{pipeline_idea_ref}/`:
+- `stage-2-thesis.md` — falsifiable thesis with failure modes
+- `stage-3-unknowns.md` — decision-critical unknowns with kill/conviction conditions
+- `stage-4-evidence.md` — consolidated research findings with per-unknown resolution and posterior confidence
+
+**How to use pipeline evidence**:
+- The **kill conditions** from Stage 3 unknowns should inform **invalidation signals** — they are research-validated specific conditions under which the thesis fails
+- The **conviction conditions** should inform **confirmation signals** — specific evidence that would increase confidence
+- The **evidence themes** from Stage 4 synthesis should enrich the **key drivers** and **key assumptions**
+- The **contradictions** should be reflected in the **confidence assessment** evidence gaps
+- If Stage 4 identified specific data sources or metrics for monitoring, prefer those over generic suggestions
+
+This pipeline context supplements (not replaces) the claims from the database. Use both together.
+
 ### Step 2: Generate Draft Articulation
 
 Using the loaded data, synthesize a draft articulation. Follow this structure:

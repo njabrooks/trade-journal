@@ -14,7 +14,8 @@
  *     --sectors "AI hyperscalers,cloud infrastructure"
  *
  * Required: --title, --description, --thesis-type, --direction, --confidence
- * Optional: --time-horizon, --sectors (comma-separated)
+ * Optional: --time-horizon, --sectors (comma-separated),
+ *           --status (default: draft), --pipeline-stage (1-5), --pipeline-idea-ref
  */
 
 import { db, closeDb, schema, logToJournal } from '../lib/db.js';
@@ -34,7 +35,7 @@ function parseArgs(argv: string[]): Record<string, string> {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
-  const { title, description, thesis_type, direction, confidence, time_horizon, sectors } = args;
+  const { title, description, thesis_type, direction, confidence, time_horizon, sectors, status, pipeline_stage, pipeline_idea_ref } = args;
 
   if (!title || !description || !thesis_type || !direction || !confidence) {
     console.error('Required: --title, --description, --thesis-type, --direction, --confidence');
@@ -42,6 +43,8 @@ async function main() {
   }
 
   const sectorsArray = sectors ? sectors.split(',').map(s => s.trim()) : [];
+  const thesisStatus = status || 'draft';
+  const pipelineStage = pipeline_stage ? parseInt(pipeline_stage) : null;
 
   const [inserted] = await db.insert(schema.macroTheses).values({
     title,
@@ -51,7 +54,9 @@ async function main() {
     confidenceLevel: confidence,
     timeHorizon: time_horizon || null,
     sectors: sectorsArray,
-    status: 'draft',
+    status: thesisStatus,
+    pipelineStage: pipelineStage,
+    pipelineIdeaRef: pipeline_idea_ref || null,
   }).returning({ id: schema.macroTheses.id, title: schema.macroTheses.title });
 
   await logToJournal({
@@ -59,8 +64,8 @@ async function main() {
     objectId: inserted.id,
     objectTitle: title,
     actionType: 'created',
-    actionDescription: `Created macro thesis: ${title} (${thesis_type}, ${direction}, confidence: ${confidence})`,
-    newState: { status: 'draft', thesisType: thesis_type, direction, confidence },
+    actionDescription: `Created macro thesis: ${title} (${thesis_type}, ${direction}, confidence: ${confidence})${pipeline_idea_ref ? ` from pipeline ${pipeline_idea_ref}` : ''}`,
+    newState: { status: thesisStatus, thesisType: thesis_type, direction, confidence, pipelineStage, pipelineIdeaRef: pipeline_idea_ref || null },
     source: 'user',
   });
 

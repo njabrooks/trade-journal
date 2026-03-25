@@ -1,7 +1,6 @@
 ---
 name: stage-4b-synthesize-evidence
 description: Stage 4B - Consolidate research files and synthesize findings into belief update with posterior confidence. Completes Stage 4 Evidence Resolution.
-allowed-tools: Read, Write, Glob
 ---
 
 # Synthesize Evidence (Stage 4B)
@@ -322,7 +321,31 @@ stage_history:
     note: "{Gate decision rationale}"
 ```
 
-### Step 11: Output Summary
+### Step 11: Update Database Entity (if ADVANCE or MODIFY)
+
+If the gate decision is **ADVANCE** or **MODIFY** (modify_and_advance), update the linked thesis entity in the database:
+
+1. **Read `linked_thesis_id` from `_meta.yaml`**. If not present (older pipeline idea), skip this step and note that `/graduate-pipeline-idea` should be run manually.
+
+2. **Update pipeline_stage** on the thesis:
+   ```bash
+   cd trade-journal && npx tsx scripts/psql-query.ts "UPDATE macro_theses SET pipeline_stage = 4, updated_at = now() WHERE id = '{linked_thesis_id}'" --format json
+   ```
+
+3. **Update thesis status to `developing`** (if still `draft`):
+   ```bash
+   cd trade-journal && npx tsx scripts/ops/update-entity-status.ts \
+     --entity-type macro_thesis --id "{linked_thesis_id}" \
+     --status developing --rationale "Pipeline Stage 4 evidence synthesis complete, posterior confidence: {X.XX}"
+   ```
+
+4. **If research produced well-defined signals**: The deep research often identifies specific monitoring signals with kill conditions and conviction thresholds. These should be captured as signals via `/build-core-argument` or `/graduate-pipeline-idea` in a subsequent step — do NOT create signals directly here. Instead, note in the output summary that signal creation is the next step.
+
+5. **Update `_meta.yaml`** with the pipeline_stage update confirmation.
+
+**Note**: Full thesis promotion to `monitoring` (with articulation + signals) happens via `/build-core-argument` or `/graduate-pipeline-idea`, not here. This step only advances the draft thesis to `developing` with updated pipeline_stage.
+
+### Step 12: Output Summary
 
 ```
 ## Evidence Synthesis Complete: {thesis_title}
