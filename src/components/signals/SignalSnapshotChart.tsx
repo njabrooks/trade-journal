@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Area, AreaChart, ReferenceLine, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, ReferenceArea, ReferenceLine, XAxis, YAxis } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
@@ -59,7 +59,8 @@ export function SignalSnapshotChart({
     );
   }
 
-  const thresholdValue = chartData[0]?.threshold;
+  // Use the most recent threshold (last in chronological order) — handles reconfiguration
+  const thresholdValue = chartData[chartData.length - 1]?.threshold;
   const isDownToThreshold = direction === 'down_to_threshold';
   const typeConfig = SIGNAL_TYPE_COLORS[signalType] || SIGNAL_TYPE_COLORS.confirmation;
   const lineColor = typeConfig.lineColor;
@@ -85,6 +86,17 @@ export function SignalSnapshotChart({
     const ceiling = allMax + range * 0.15;
     return [floor, ceiling];
   }, [chartData, thresholdValue, isStatus]);
+
+  // Danger zone shading: the region past the threshold where the signal would fire
+  // For invalidation + down_to_threshold: danger is BELOW threshold (value dropping toward trigger)
+  // For invalidation + up_to_threshold: danger is ABOVE threshold (value rising toward trigger)
+  // For confirmation: same logic but with a softer color
+  const isInvalidation = signalType === 'invalidation' || signalType === 'warning';
+  const dangerColor = isInvalidation ? 'oklch(0.7 0.15 25)' : 'oklch(0.6 0.15 145)';
+  // Danger zone bounds: from threshold to the edge of the chart in the trigger direction
+  const dangerY1 = thresholdValue;
+  // Use a very large/small number to extend to chart edge — Recharts clips to domain
+  const dangerY2 = isDownToThreshold ? -1e15 : 1e15;
 
   return (
     <ChartContainer config={chartConfig} className="w-full" style={{ height }}>
@@ -139,6 +151,15 @@ export function SignalSnapshotChart({
             );
           }}
         />
+        {/* Danger zone shading — region past threshold */}
+        {!isStatus && (
+          <ReferenceArea
+            y1={dangerY1}
+            y2={dangerY2}
+            fill={dangerColor}
+            fillOpacity={0.06}
+          />
+        )}
         {/* Threshold reference line */}
         <ReferenceLine
           y={thresholdValue}

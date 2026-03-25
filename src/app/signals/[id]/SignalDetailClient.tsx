@@ -22,6 +22,7 @@ import { SignalCumulativeScoreChart } from '@/components/signals/SignalCumulativ
 import { SignalSnapshotChart } from '@/components/signals/SignalSnapshotChart';
 import { SignalMilestoneCard } from '@/components/signals/SignalMilestoneCard';
 import { SignalLog } from '@/components/signals/SignalLog';
+import { ParentThesisHealthPanel } from '@/components/signals/ParentThesisHealthPanel';
 import type { DayScore } from '@/components/signals/SignalCumulativeScoreChart';
 import type { SignalLogEntry } from '@/components/signals/SignalLog';
 import type { SignalWithContext } from '@/db/queries/signals';
@@ -387,6 +388,14 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
             )}
           </div>
         );
+      })()}
+
+      {/* Parent Thesis Health Panel (for cascade signals) */}
+      {(() => {
+        const details = signal.explicitDetails as Record<string, unknown> | null;
+        const parentThesisId = details?.parentThesisId as string | undefined;
+        if (!parentThesisId || details?.dataSource !== 'internal_db') return null;
+        return <ParentThesisHealthPanel parentThesisId={parentThesisId} />;
       })()}
 
       {/* Signal Status + Tracking */}
