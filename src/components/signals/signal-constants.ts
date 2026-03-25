@@ -189,20 +189,32 @@ export function formatDateFull(date: string | Date): string {
 
 /** Format a numeric value with appropriate unit display. */
 export function formatNumericValue(value: number, unit: string): string {
-  if (unit === 'USD') {
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
-    return `$${value.toFixed(2)}`;
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+
+  // USD and dollar-denominated values
+  if (unit === 'USD' || unit === 'USD millions') {
+    // "USD millions" means the value is already in millions
+    const effectiveValue = unit === 'USD millions' ? abs * 1e6 : abs;
+    if (effectiveValue >= 1e12) return `${sign}$${(effectiveValue / 1e12).toFixed(2)}T`;
+    if (effectiveValue >= 1e9) return `${sign}$${(effectiveValue / 1e9).toFixed(1)}B`;
+    if (effectiveValue >= 1e6) return `${sign}$${(effectiveValue / 1e6).toFixed(1)}M`;
+    if (effectiveValue >= 1e3) return `${sign}$${(effectiveValue / 1e3).toFixed(0)}K`;
+    return `${sign}$${effectiveValue.toFixed(2)}`;
   }
-  if (unit === '%') return `${value.toFixed(1)}%`;
+  // Percentage variants
+  if (unit === '%' || unit === '% YoY' || unit === '% GDP') {
+    return `${value.toFixed(1)}%`;
+  }
   if (unit === 'BTC_RATIO') return value.toPrecision(4);
   if (unit === 'correlation') return value.toFixed(3);
   if (unit === 'status') return value === 0 ? 'Active' : 'Triggered';
-  if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-  if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-  if (value >= 1e3) return `${(value / 1e3).toFixed(0)}K`;
-  if (value < 0.01 && value > 0) return value.toFixed(6);
+  // Generic large number formatting (handles negatives)
+  if (abs >= 1e12) return `${sign}${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(0)}K`;
+  if (abs < 0.01 && abs > 0) return value.toFixed(6);
   return value.toFixed(2);
 }
 
