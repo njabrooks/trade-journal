@@ -9,6 +9,7 @@ import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown
 import Link from 'next/link';
 import { LinkedEntitiesBadges } from '@/components/linking/LinkedEntitiesBadges';
 import { StandardLinkDialog } from '@/components/linking/StandardLinkDialog';
+import { LifecycleBadge } from '@/components/ui/lifecycle-badge';
 
 interface UnifiedMacroThesisBrowserProps {
   theses: MacroThesisListItem[];
@@ -152,7 +153,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
           bVal = confidenceOrder[b.confidenceLevel as keyof typeof confidenceOrder] ?? -1;
           break;
         case 'status':
-          const statusOrder = { draft: 0, active: 1, complete: 2, rejected: 3 };
+          const statusOrder = { draft: 0, developing: 1, monitoring: 2, complete: 3, rejected: 4 };
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 0;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 0;
           break;
@@ -227,20 +228,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
     }
   };
 
-  const statusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-muted text-muted-foreground';
-      case 'active':
-        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
-      case 'complete':
-        return 'bg-muted text-muted-foreground';
-      case 'rejected':
-        return 'bg-destructive/15 text-destructive';
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
-  };
+  // Status badge rendering delegated to LifecycleBadge component
 
   const directionBadgeColor = (direction: string | null) => {
     switch (direction) {
@@ -562,9 +550,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
 
                         {/* Status */}
                         <td className="px-4 py-3 text-center">
-                          <Badge className={`${statusBadgeColor(thesis.status)} text-xs`}>
-                            {thesis.status.replace('_', ' ')}
-                          </Badge>
+                          <LifecycleBadge phase={thesis.status} size="sm" />
                         </td>
 
                         {/* Asset Theses */}

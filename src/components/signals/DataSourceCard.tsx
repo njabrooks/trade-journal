@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Zap, Activity, Database } from "lucide-react";
+import { Clock, Zap, Activity, Database, ExternalLink } from "lucide-react";
 
 export type DataSourceCategory = "price" | "fundamental" | "economic" | "sentiment" | "qualitative" | "derived" | "internal";
 export type MeasureType = "quantitative" | "qualitative";
@@ -26,6 +26,7 @@ export interface DataSourceRow {
   ingestionMethod: IngestionMethod;
   ingestionScript: string | null;
   ingestionSchedule: string | null;
+  sourceUrl: string | null;
   activeSignals: number;
   totalSnapshots: number;
   lastSnapshot: string | null;
@@ -63,7 +64,7 @@ function formatRelativeTime(dateStr: string): string {
   if (diffHours < 1) return "< 1h ago";
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function DataSourceCard({ source }: { source: DataSourceRow }) {
@@ -82,7 +83,21 @@ export function DataSourceCard({ source }: { source: DataSourceRow }) {
             {source.measureType}
           </Badge>
         </div>
-        <CardTitle className="text-base">{source.name}</CardTitle>
+        <CardTitle className="text-base">
+          {source.sourceUrl ? (
+            <a
+              href={source.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:underline"
+            >
+              {source.name}
+              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+            </a>
+          ) : (
+            source.name
+          )}
+        </CardTitle>
         <CardDescription>{source.description}</CardDescription>
       </CardHeader>
 

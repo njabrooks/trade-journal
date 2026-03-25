@@ -23,6 +23,7 @@ async function getDataSources(): Promise<DataSourceRow[]> {
       r.ingestion_method as "ingestionMethod",
       r.ingestion_script as "ingestionScript",
       r.ingestion_schedule as "ingestionSchedule",
+      r.source_url as "sourceUrl",
       COUNT(DISTINCT CASE WHEN s.status = 'active' THEN s.id END)::int as "activeSignals",
       COUNT(DISTINCT sds.id)::int as "totalSnapshots",
       MAX(sds.snapshot_date)::text as "lastSnapshot"

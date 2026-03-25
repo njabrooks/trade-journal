@@ -23,6 +23,7 @@ import { collectHypeFlows } from './lib/collectors/hypeflows.js';
 import { collectInternalDb } from './lib/collectors/internal-db.js';
 import { collectTradingView, fetchPrices } from './lib/collectors/tradingview.js';
 import { collectDerived } from './lib/collectors/derived.js';
+import { collectHormuz } from './lib/collectors/hormuz.js';
 
 const { signals, signalDataSnapshots, signalEntityLinks, thesisTriageRecords, underlyings } = schema;
 
@@ -61,6 +62,8 @@ async function collectForSignal(
       // economic_calendar signals use calculation: 'days_until_event' or
       // 'event_actual_vs_forecast' — both are handled by collectDerived
       return collectDerived(details);
+    case 'hormuz_strait':
+      return collectHormuz(details);
     default:
       return null;
   }
@@ -143,7 +146,6 @@ async function checkAndTriggerSignal(
   });
 
   // 4. Log thesis-level signal_evidence_received journal entries
-  const shortStatement = signal.statement.slice(0, 80);
   for (const { thesisId, thesisType, thesisTitle } of resolvedThesisLinks) {
     await logToJournal({
       objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
@@ -343,9 +345,18 @@ async function main() {
     const checkFrequency = (details.checkFrequency as string) || 'daily';
     const lastDate = lastCollectedMap.get(signal.id);
     if (lastDate) {
-      const daysSince = (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
-      const minDays = checkFrequency === 'weekly' ? 6 : 0; // weekly: skip if < 6 days, daily: always collect
-      if (daysSince < minDays) {
+      const hoursSince = (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60);
+      const intradayMatch = checkFrequency.match(/^(\d+)h$/);
+      let minHours: number;
+      if (intradayMatch) {
+        // Intraday frequencies like '4h', '6h' — enforce minimum gap (with 30min grace)
+        minHours = parseInt(intradayMatch[1], 10) - 0.5;
+      } else if (checkFrequency === 'weekly') {
+        minHours = 6 * 24; // 6 days
+      } else {
+        minHours = 0; // daily: always collect (dedup handled by snapshot_date)
+      }
+      if (hoursSince < minHours) {
         frequencySkipped++;
         continue;
       }
@@ -398,11 +409,16 @@ async function main() {
         console.log(`  ✓ ${target.source}: ${result.observedValue.toLocaleString()} ${result.unit} (${pctStr}% of threshold)`);
 
         if (!dryRun) {
+          // Intraday frequencies use actual timestamp to allow multiple readings per day;
+          // daily/weekly use start-of-day for dedup via unique constraint
+          const intradayFreq = checkFrequency.match(/^(\d+)h$/);
+          const snapshotTimestamp = intradayFreq ? now : today;
+
           await db
             .insert(signalDataSnapshots)
             .values({
               signalId: signal.id,
-              snapshotDate: today,
+              snapshotDate: snapshotTimestamp,
               observedValue: String(result.observedValue ?? 0),
               thresholdValue: String(result.thresholdValue ?? 0),
               pctToThreshold: String(result.pctToThreshold ?? 0),

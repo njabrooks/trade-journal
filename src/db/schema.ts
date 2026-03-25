@@ -1642,6 +1642,7 @@ export const signalDataSourceRegistry = pgTable('signal_data_source_registry', {
   ingestionSchedule: text('ingestion_schedule'),
   configTemplate: jsonb('config_template').notNull(),
   configExample: jsonb('config_example'),
+  sourceUrl: text('source_url'),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

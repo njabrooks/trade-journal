@@ -431,7 +431,7 @@ export async function getSignalWithEntitiesById(id: string): Promise<SignalWithC
     } else if (link.thesis_type === 'macro') {
       entityTitle = link.macro_title;
       entityStatus = link.macro_status;
-      if (link.thesis_id) entityLink = `/theses/${link.thesis_id}`;
+      if (link.thesis_id) entityLink = `/macro-theses/${link.thesis_id}`;
     } else if (link.thesis_type === 'asset') {
       entityTitle = link.asset_title;
       entityStatus = link.asset_status;
@@ -459,12 +459,13 @@ export async function getSignalWithEntitiesById(id: string): Promise<SignalWithC
   }
   const macroIds = entities.filter(e => e.thesisType === 'macro' && e.thesisId).map(e => e.thesisId!);
   if (macroIds.length > 0) {
+    const idList = sql.join(macroIds.map(id => sql`${id}`), sql`, `);
     const macroUnderlyings = await db.execute<{ macro_thesis_id: string; ticker: string }>(sql`
       SELECT atrm.macro_thesis_id, u.ticker
       FROM asset_thesis_related_macro_theses atrm
       JOIN asset_theses at ON at.id = atrm.asset_thesis_id
       JOIN underlyings u ON u.id = at.underlying_id
-      WHERE atrm.macro_thesis_id = ANY(${macroIds})
+      WHERE atrm.macro_thesis_id IN (${idList})
     `);
     for (const r of macroUnderlyings) tickerSet.add(r.ticker);
   }

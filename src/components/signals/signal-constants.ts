@@ -141,6 +141,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   research_routing: 'Research',
   intelligence_routing: 'Intel Route',
   economic_calendar: 'Econ. Calendar',
+  hormuz_strait: 'Hormuz Strait',
 };
 
 // ---------------------------------------------------------------------------

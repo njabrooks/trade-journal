@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Area, AreaChart, ReferenceLine } from 'recharts';
 import { SIGNAL_TYPE_COLORS } from './signal-constants';
 
@@ -18,7 +19,13 @@ export function SignalSparkline({
   width = 48,
   height = 20,
 }: SignalSparklineProps) {
-  if (data.length < 2) return null;
+  // Recharts generates incremental clipPath IDs via a global counter.
+  // Server and client counters diverge, causing hydration mismatch.
+  // Render only on client to avoid the SSR/client ID conflict.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted || data.length < 2) return null;
 
   const typeConfig = SIGNAL_TYPE_COLORS[signalType] || SIGNAL_TYPE_COLORS.confirmation;
   const color = typeConfig.lineColor;

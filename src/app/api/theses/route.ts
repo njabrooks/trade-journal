@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       thesisType,
       timeHorizon,
       confidenceLevel,
-      status: status ?? 'active',
+      status: status ?? 'draft',
       notes,
     });
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       objectTitle: title,
       actionType: 'THESIS_CREATED',
       actionDescription: `Created macro thesis: ${title}`,
-      newState: { title, thesisType, timeHorizon, confidenceLevel, status: status ?? 'active' },
+      newState: { title, thesisType, timeHorizon, confidenceLevel, status: status ?? 'draft' },
       source: 'user',
     });
 

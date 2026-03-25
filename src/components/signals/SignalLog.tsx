@@ -61,6 +61,7 @@ const SOURCE_CONFIG: Record<string, { label: string; cls: string }> = {
   defillama:       { label: 'DeFiLlama', cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
   derived:         { label: 'Derived', cls: 'bg-muted text-muted-foreground' },
   economic_calendar: { label: 'Econ. Calendar', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
+  hormuz_strait: { label: 'Hormuz Strait', cls: 'bg-red-500/15 text-red-600 dark:text-red-400' },
 };
 
 function getSourceConfig(dataSource: string): { label: string; cls: string } {
