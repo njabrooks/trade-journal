@@ -49,7 +49,7 @@ export async function GET(
         sql`CASE WHEN ${signalDataSnapshots.dataSource} = 'daily_synthesis' THEN 0 ELSE 1 END ASC`,
         desc(signalDataSnapshots.snapshotDate)
       )
-      .limit(500);
+      .limit(2000);
 
     return NextResponse.json({ snapshots });
   } catch (error) {

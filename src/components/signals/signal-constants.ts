@@ -142,6 +142,10 @@ export const SOURCE_LABELS: Record<string, string> = {
   intelligence_routing: 'Intel Route',
   economic_calendar: 'Econ. Calendar',
   hormuz_strait: 'Hormuz Strait',
+  fred: 'FRED',
+  worldbank: 'World Bank',
+  sec_edgar: 'SEC EDGAR',
+  defillama_stablecoins: 'DeFiLlama',
 };
 
 // ---------------------------------------------------------------------------

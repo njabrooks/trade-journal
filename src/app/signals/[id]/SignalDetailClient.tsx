@@ -111,7 +111,7 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
   }, [signal.id]);
 
   useEffect(() => {
-    fetch(`/api/signals/${signal.id}/snapshots?days=90`)
+    fetch(`/api/signals/${signal.id}/snapshots?days=1825`)
       .then(r => r.json())
       .then(data => setSnapshots((data.snapshots || []) as Snapshot[]))
       .catch(() => {});
@@ -126,15 +126,18 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
   const explicitDetails = signal.explicitDetails as {
     metric?: string;
     metricName?: string;
+    label?: string;
     threshold?: string;
     dataSources?: string[];
     monitoringFrequency?: string;
     dataSource?: string;
     endpoint?: string;
     direction?: string;
+    thresholdDirection?: string;
     display_type?: string;
     calculation?: string;
-    conditions?: Array<{ label?: string; metric?: string }>;
+    checkFrequency?: string;
+    conditions?: Array<{ label?: string; metric?: string; dataSource?: string }>;
   } | null;
 
   const linkedEntities = signal.entities.filter(e => e.entityLink);
@@ -388,23 +391,48 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
 
       {/* Signal Status + Tracking */}
       {(() => {
-        // Classify snapshot data
+        // Classify snapshot data — group by data_source for multi-condition signals
         const allQuant = snapshots.filter(s =>
           s.observedValue !== null && !s.dataSource.startsWith('price_history')
         );
-        const primarySource = allQuant[0]?.dataSource;
-        const quantitative = primarySource
-          ? allQuant.filter(s => s.dataSource === primarySource)
-          : allQuant;
-        const latestQuant = quantitative[0];
         const latestQual = snapshots.filter(s => s.assessment !== null)[0];
+
+        // Group quantitative snapshots by data_source
+        const quantGroups = new Map<string, Snapshot[]>();
+        for (const s of allQuant) {
+          const key = s.dataSource;
+          if (!quantGroups.has(key)) quantGroups.set(key, []);
+          quantGroups.get(key)!.push(s);
+        }
+        // Filter to groups that exclude thesis_monitor qualitative data
+        const quantGroupEntries = Array.from(quantGroups.entries())
+          .filter(([src]) => src !== 'thesis_monitor');
+
+        // Primary group is the one matching explicitDetails.dataSource, or the largest group
+        const primarySourceKey = explicitDetails?.dataSource;
+        const primaryGroup = primarySourceKey && quantGroups.has(primarySourceKey)
+          ? quantGroups.get(primarySourceKey)!
+          : quantGroupEntries[0]?.[1] || [];
+        const latestQuant = primaryGroup[0];
         const latestAny = latestQuant || latestQual;
 
-        // Determine signal display mode:
-        // - 'quantitative': has numeric time-series data (unit != 'status')
-        // - 'milestone': has status-type quant data OR qualitative-only (binary event)
-        // - 'none': no data at all
-        const hasTimeSeries = quantitative.length >= 2 && latestQuant?.unit !== 'status';
+        // Build label map for each data source from explicitDetails
+        const sourceLabelMap = new Map<string, string>();
+        if (explicitDetails?.label) {
+          sourceLabelMap.set(explicitDetails.dataSource || 'primary', explicitDetails.label);
+        }
+        if (explicitDetails?.conditions) {
+          for (const cond of explicitDetails.conditions) {
+            if (cond.label && cond.dataSource) {
+              // The collector appends the normalized label to the data source key
+              const normalizedLabel = cond.label.replace(/\s+/g, '_').toLowerCase().slice(0, 40);
+              sourceLabelMap.set(`${cond.dataSource}:${normalizedLabel}`, cond.label);
+            }
+          }
+        }
+
+        // Determine signal display mode
+        const hasTimeSeries = primaryGroup.length >= 2 && latestQuant?.unit !== 'status';
         const hasStatusQuant = latestQuant?.unit === 'status';
         const displayMode = hasTimeSeries ? 'quantitative'
           : (hasStatusQuant || latestAny) ? 'milestone'
@@ -416,8 +444,8 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
         const sourceKey = explicitDetails?.dataSource || latestQuant?.dataSource;
         const sourceLabel = sourceKey ? (SOURCE_LABELS[sourceKey] || sourceKey) : null;
         const sourceUrl = explicitDetails?.endpoint || null;
-        const metricName = explicitDetails?.metricName
-          || explicitDetails?.conditions?.[0]?.label
+        const metricName = explicitDetails?.label
+          || explicitDetails?.metricName
           || explicitDetails?.calculation
           || null;
 
@@ -474,60 +502,57 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
                   </div>
                 </div>
 
-                {/* Quantitative Tracking Chart */}
-                <div className="bg-card rounded-lg border">
-                  <div className="px-4 py-3 border-b flex items-start justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        Quantitative Tracking
-                        {(() => {
-                          const h = getDataSourceHealth(
-                            latestQuant?.snapshotDate || null,
-                            (explicitDetails as { checkFrequency?: string })?.checkFrequency,
-                          );
-                          return h ? (
-                            <span className={`w-2 h-2 rounded-full ${h.dotCls}`} title={h.label} />
-                          ) : null;
-                        })()}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {metricName || 'Observed value vs. threshold over time'}
-                      </p>
-                    </div>
-                    {sourceLabel && (
-                      <div className="flex items-center gap-1.5">
-                        {sourceUrl ? (
-                          <a
-                            href={sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            {sourceLabel}
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-muted text-muted-foreground">
-                            {sourceLabel}
-                          </span>
-                        )}
+                {/* Quantitative Tracking Charts — one per data source group */}
+                {quantGroupEntries.map(([groupSource, groupSnapshots]) => {
+                  const groupLabel = sourceLabelMap.get(groupSource)
+                    || SOURCE_LABELS[groupSource]
+                    || groupSource;
+                  const groupLatest = groupSnapshots[0];
+                  const thresholdDir = explicitDetails?.thresholdDirection;
+                  // Map thresholdDirection to chart direction prop
+                  const chartDirection = thresholdDir === 'below' ? 'down_to_threshold' as const
+                    : (explicitDetails as Record<string, unknown>)?.direction as 'up_to_threshold' | 'down_to_threshold' | undefined;
+
+                  return (
+                    <div key={groupSource} className="bg-card rounded-lg border">
+                      <div className="px-4 py-3 border-b flex items-start justify-between">
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                            {groupLabel}
+                            {(() => {
+                              const h = getDataSourceHealth(
+                                groupLatest?.snapshotDate || null,
+                                explicitDetails?.checkFrequency,
+                              );
+                              return h ? (
+                                <span className={`w-2 h-2 rounded-full ${h.dotCls}`} title={h.label} />
+                              ) : null;
+                            })()}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Current: {formatSnapshotValue(String(groupLatest?.observedValue), groupLatest?.unit)} — Threshold: {formatSnapshotValue(String(groupLatest?.thresholdValue), groupLatest?.unit)}
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-muted text-muted-foreground">
+                          {SOURCE_LABELS[groupSource.split(':')[0]] || groupSource.split(':')[0]}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <SignalSnapshotChart
-                      snapshots={quantitative.map(s => ({
-                        date: s.snapshotDate,
-                        observed: Number(s.observedValue) || 0,
-                        threshold: Number(s.thresholdValue) || 0,
-                      }))}
-                      unit={latestQuant.unit || ''}
-                      signalType={signal.type}
-                      direction={(signal.explicitDetails as Record<string, unknown>)?.direction as 'up_to_threshold' | 'down_to_threshold' | undefined}
-                      height={200}
-                    />
-                  </div>
-                </div>
+                      <div className="p-4">
+                        <SignalSnapshotChart
+                          snapshots={groupSnapshots.map(s => ({
+                            date: s.snapshotDate,
+                            observed: Number(s.observedValue) || 0,
+                            threshold: Number(s.thresholdValue) || 0,
+                          }))}
+                          unit={groupLatest?.unit || ''}
+                          signalType={signal.type}
+                          direction={chartDirection}
+                          height={200}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </>
             )}
 
@@ -568,7 +593,7 @@ export function SignalDetailClient({ signal }: SignalDetailClientProps) {
           <h3 className="text-sm font-semibold text-foreground">
             Signal Log
             <span className="ml-2 text-xs font-normal text-muted-foreground">
-              {snapshots.length} {snapshots.length === 1 ? 'entry' : 'entries'}, last 90 days
+              {snapshots.length} {snapshots.length === 1 ? 'entry' : 'entries'}
             </span>
           </h3>
         </div>
