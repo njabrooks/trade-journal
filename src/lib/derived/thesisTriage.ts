@@ -11,6 +11,8 @@
  * - EVALUATE_NEW_EVIDENCE: ≥3 new claims since last articulation, HAS active signals → status: 'info'
  * - REVIEW_DRAFT_SIGNALS: ≥1 signals with status='draft' → status: 'attention'
  * - SIGNAL_TRIGGERED: ≥1 explicit signals triggered for thesis → status: 'attention' (consolidates all)
+ * - CONSIDER_ASSET_EXPRESSION: macro confirmation signal fires with trigger_action suggest_asset_thesis → status: 'attention'
+ * - MACRO_THESIS_INVALIDATED: parent macro thesis rejected → cascades to gated_by asset theses and depends_on macro theses → status: 'urgent'
  *
  * Monitoring triggers (handled by scripts/daily-thesis-monitoring.ts):
  * - REVIEW_CONTENT: News/content found for thesis → status: 'attention'
@@ -28,6 +30,8 @@ import {
   claimThesisMappings,
   signals,
   signalEntityLinks,
+  assetThesisRelatedMacroTheses,
+  macroThesisRelatedMacroTheses,
   NewThesisTriageRecord,
 } from '@/db/schema';
 import { eq, ne, and, desc, sql, count, isNotNull, inArray } from 'drizzle-orm';
@@ -376,6 +380,64 @@ export async function computeThesisTriageForThesis(
     result.existingTriageResolved = true;
   }
 
+  // CONSIDER_ASSET_EXPRESSION: macro thesis confirmation signal fires with suggest_asset_thesis action
+  // Only applies to macro theses — creates triage suggesting asset thesis creation
+  if (thesisType === 'macro' && evolutionState.completeSignalCount > 0) {
+    const existingConsiderAsset = existingTriage.find(
+      (t) => t.triageRule === 'CONSIDER_ASSET_EXPRESSION'
+    );
+
+    if (!existingConsiderAsset) {
+      // Check if any completed signals have trigger_action.type === 'suggest_asset_thesis'
+      const suggestAssetSignals = await db
+        .select({
+          id: signals.id,
+          statement: signals.statement,
+          triggerAction: signals.triggerAction,
+        })
+        .from(signals)
+        .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
+        .where(
+          and(
+            eq(signalEntityLinks.thesisId, thesisId),
+            eq(signalEntityLinks.thesisType, 'macro'),
+            eq(signals.status, 'complete'),
+            sql`${signals.triggerAction}->>'type' = 'suggest_asset_thesis'`
+          )
+        );
+
+      if (suggestAssetSignals.length > 0) {
+        const triggerAction = suggestAssetSignals[0].triggerAction as {
+          suggestion?: { direction?: string; sectors?: string[]; note?: string };
+        } | null;
+
+        await createTriageRecord({
+          thesisId,
+          thesisType,
+          thesisTitle: thesis.title,
+          triageRule: 'CONSIDER_ASSET_EXPRESSION',
+          triggerType: 'signal_trigger',
+          triggerSource: 'computeThesisTriageForThesis',
+          status: 'attention',
+          lifecycleStage: 'monitoring',
+          suggestedSkill: null,
+          actionRequired: `Macro thesis confirmation signal fired. Consider creating asset thesis expression(s).`,
+          contentSummary: {
+            triggeringSignals: suggestAssetSignals.map(s => ({
+              id: s.id,
+              statement: s.statement,
+            })),
+            suggestion: triggerAction?.suggestion || null,
+            macroThesisConfidence: thesis.confidenceLevel,
+          },
+        });
+        if (!result.triageCreated) {
+          result.triageCreated = 'CONSIDER_ASSET_EXPRESSION';
+        }
+      }
+    }
+  }
+
   return result;
 }
 
@@ -514,6 +576,127 @@ export async function onArticulationCreated(
   }
 
   console.log(`onArticulationCreated: Resolved ${articulationTriage.length} triage records for ${thesisType}/${thesisId}`);
+}
+
+/**
+ * Called when a macro thesis is invalidated (status → rejected or confidence → low).
+ * Cascades MACRO_THESIS_INVALIDATED triage to:
+ * 1. Asset theses linked via gated_by relationship
+ * 2. Child macro theses linked via parent_of or depends_on relationship
+ */
+export async function onMacroThesisInvalidated(
+  macroThesisId: string
+): Promise<{ affectedAssetTheses: string[]; affectedMacroTheses: string[] }> {
+  const result: { affectedAssetTheses: string[]; affectedMacroTheses: string[] } = {
+    affectedAssetTheses: [],
+    affectedMacroTheses: [],
+  };
+
+  // Get the invalidated macro thesis for context
+  const [invalidatedThesis] = await db
+    .select({ id: macroTheses.id, title: macroTheses.title, status: macroTheses.status })
+    .from(macroTheses)
+    .where(eq(macroTheses.id, macroThesisId))
+    .limit(1);
+
+  if (!invalidatedThesis) {
+    console.warn(`onMacroThesisInvalidated: Macro thesis not found: ${macroThesisId}`);
+    return result;
+  }
+
+  // 1. Find asset theses gated by this macro thesis
+  const gatedAssetTheses = await db
+    .select({
+      assetThesisId: assetThesisRelatedMacroTheses.assetThesisId,
+      assetTitle: assetTheses.title,
+      assetStatus: assetTheses.status,
+    })
+    .from(assetThesisRelatedMacroTheses)
+    .innerJoin(assetTheses, eq(assetTheses.id, assetThesisRelatedMacroTheses.assetThesisId))
+    .where(
+      and(
+        eq(assetThesisRelatedMacroTheses.macroThesisId, macroThesisId),
+        eq(assetThesisRelatedMacroTheses.relationshipType, 'gated_by'),
+        inArray(assetTheses.status, ['developing', 'monitoring'])
+      )
+    );
+
+  for (const gated of gatedAssetTheses) {
+    // Check for existing pending triage
+    const existing = await getExistingPendingTriage(gated.assetThesisId, 'asset');
+    const alreadyFlagged = existing.find(t => t.triageRule === 'MACRO_THESIS_INVALIDATED');
+    if (alreadyFlagged) continue;
+
+    await createTriageRecord({
+      thesisId: gated.assetThesisId,
+      thesisType: 'asset',
+      thesisTitle: gated.assetTitle,
+      triageRule: 'MACRO_THESIS_INVALIDATED',
+      triggerType: 'lifecycle_transition',
+      triggerSource: 'onMacroThesisInvalidated',
+      status: 'urgent',
+      lifecycleStage: 'monitoring',
+      suggestedSkill: null,
+      actionRequired: `Parent macro thesis "${invalidatedThesis.title}" has been invalidated. Re-evaluate this asset thesis.`,
+      contentSummary: {
+        invalidatedMacroThesisId: macroThesisId,
+        invalidatedMacroThesisTitle: invalidatedThesis.title,
+        invalidatedMacroThesisStatus: invalidatedThesis.status,
+        relationshipType: 'gated_by',
+      },
+    });
+    result.affectedAssetTheses.push(gated.assetThesisId);
+  }
+
+  // 2. Find child macro theses linked via parent_of or depends_on
+  const dependentMacroTheses = await db
+    .select({
+      targetId: macroThesisRelatedMacroTheses.targetMacroThesisId,
+      targetTitle: macroTheses.title,
+      targetStatus: macroTheses.status,
+      relationshipType: macroThesisRelatedMacroTheses.relationshipType,
+    })
+    .from(macroThesisRelatedMacroTheses)
+    .innerJoin(macroTheses, eq(macroTheses.id, macroThesisRelatedMacroTheses.targetMacroThesisId))
+    .where(
+      and(
+        eq(macroThesisRelatedMacroTheses.sourceMacroThesisId, macroThesisId),
+        inArray(macroThesisRelatedMacroTheses.relationshipType, ['parent_of', 'depends_on']),
+        inArray(macroTheses.status, ['developing', 'monitoring'])
+      )
+    );
+
+  for (const dep of dependentMacroTheses) {
+    const existing = await getExistingPendingTriage(dep.targetId, 'macro');
+    const alreadyFlagged = existing.find(t => t.triageRule === 'MACRO_THESIS_INVALIDATED');
+    if (alreadyFlagged) continue;
+
+    await createTriageRecord({
+      thesisId: dep.targetId,
+      thesisType: 'macro',
+      thesisTitle: dep.targetTitle,
+      triageRule: 'MACRO_THESIS_INVALIDATED',
+      triggerType: 'lifecycle_transition',
+      triggerSource: 'onMacroThesisInvalidated',
+      status: 'urgent',
+      lifecycleStage: 'monitoring',
+      suggestedSkill: null,
+      actionRequired: `Parent macro thesis "${invalidatedThesis.title}" has been invalidated (${dep.relationshipType} relationship). Re-evaluate this macro thesis.`,
+      contentSummary: {
+        invalidatedMacroThesisId: macroThesisId,
+        invalidatedMacroThesisTitle: invalidatedThesis.title,
+        invalidatedMacroThesisStatus: invalidatedThesis.status,
+        relationshipType: dep.relationshipType,
+      },
+    });
+    result.affectedMacroTheses.push(dep.targetId);
+  }
+
+  console.log(
+    `onMacroThesisInvalidated: Cascaded to ${result.affectedAssetTheses.length} asset theses and ${result.affectedMacroTheses.length} macro theses`
+  );
+
+  return result;
 }
 
 // ============================================================================

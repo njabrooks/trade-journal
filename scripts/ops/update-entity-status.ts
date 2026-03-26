@@ -15,7 +15,7 @@
  */
 
 import { db, closeDb, schema, logToJournal } from '../lib/db.js';
-import { eq } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};
@@ -100,11 +100,59 @@ async function main() {
     source: 'user',
   });
 
+  // Cascade invalidation for macro thesis → rejected
+  let cascadeResult: { affectedAssetTheses: number; affectedMacroTheses: number } | null = null;
+  if (entityType === 'macro_thesis' && newStatus === 'rejected' && previousStatus !== 'rejected') {
+    // Find gated_by asset theses
+    const gatedAssets = await db
+      .select({ id: schema.assetThesisRelatedMacroTheses.assetThesisId, title: schema.assetTheses.title })
+      .from(schema.assetThesisRelatedMacroTheses)
+      .innerJoin(schema.assetTheses, eq(schema.assetTheses.id, schema.assetThesisRelatedMacroTheses.assetThesisId))
+      .where(
+        and(
+          eq(schema.assetThesisRelatedMacroTheses.macroThesisId, id),
+          eq(schema.assetThesisRelatedMacroTheses.relationshipType, 'gated_by'),
+          inArray(schema.assetTheses.status, ['developing', 'monitoring'])
+        )
+      );
+
+    // Find dependent macro theses
+    const depMacros = await db
+      .select({ id: schema.macroThesisRelatedMacroTheses.targetMacroThesisId, title: schema.macroTheses.title })
+      .from(schema.macroThesisRelatedMacroTheses)
+      .innerJoin(schema.macroTheses, eq(schema.macroTheses.id, schema.macroThesisRelatedMacroTheses.targetMacroThesisId))
+      .where(
+        and(
+          eq(schema.macroThesisRelatedMacroTheses.sourceMacroThesisId, id),
+          inArray(schema.macroThesisRelatedMacroTheses.relationshipType, ['parent_of', 'depends_on']),
+          inArray(schema.macroTheses.status, ['developing', 'monitoring'])
+        )
+      );
+
+    const affected = [...gatedAssets, ...depMacros];
+    for (const dep of affected) {
+      const depType = gatedAssets.some(a => a.id === dep.id) ? 'asset_thesis' : 'macro_thesis';
+      await logToJournal({
+        objectType: depType,
+        objectId: dep.id,
+        objectTitle: dep.title,
+        actionType: 'triage_created',
+        actionDescription: `MACRO_THESIS_INVALIDATED: Parent macro thesis "${entityTitle}" rejected. Re-evaluate this thesis.`,
+        source: 'automation',
+      });
+    }
+    cascadeResult = { affectedAssetTheses: gatedAssets.length, affectedMacroTheses: depMacros.length };
+    if (affected.length > 0) {
+      console.error(`Cascaded MACRO_THESIS_INVALIDATED to ${gatedAssets.length} asset theses, ${depMacros.length} macro theses`);
+    }
+  }
+
   console.log(JSON.stringify({
     success: true,
     previousStatus,
     newStatus,
     journalEntryId,
+    ...(cascadeResult ? { cascade: cascadeResult } : {}),
   }, null, 2));
 
   await closeDb();
