@@ -16,7 +16,6 @@ import {
   ArrowDown,
   Check,
   X,
-  Zap,
   History,
   Edit2,
   CheckCheck,
@@ -27,7 +26,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Signal } from '@/db/schema';
-import { SignalConfigForm, type ExplicitDetails } from './SignalConfigForm';
 import { SignalProgressCard } from './SignalProgressCard';
 
 // Types
@@ -61,7 +59,6 @@ interface UnifiedSignalsTableProps {
 
   // Browse mode callbacks
   onUpdateStatus?: (signalId: string) => void;
-  onConvertToDataDriven?: (signal: Signal) => void;
 
   // Review mode callbacks
   onComplete?: () => void;
@@ -80,7 +77,6 @@ export function UnifiedSignalsTable({
   thesisTitle,
   mode,
   onUpdateStatus,
-  onConvertToDataDriven,
   onComplete,
   isLoading = false,
   headerAction,
@@ -95,7 +91,6 @@ export function UnifiedSignalsTable({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ statement: string; notes: string }>({ statement: '', notes: '' });
   const [savingEdit, setSavingEdit] = useState(false);
-  const [configuringSignal, setConfiguringSignal] = useState<Signal | null>(null);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -402,49 +397,6 @@ export function UnifiedSignalsTable({
     const draftSignals = signals.filter((s) => s.status === 'draft');
     for (const signal of draftSignals) {
       await handleReject(signal.id);
-    }
-  };
-
-  const handleAcceptAsDataDriven = async (config: ExplicitDetails) => {
-    if (!configuringSignal) return;
-    const signalId = configuringSignal.id;
-
-    setProcessingIds((prev) => new Set(prev).add(signalId));
-    try {
-      const response = await fetch('/api/signals/batch-review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'accept',
-          signalId,
-          modifications: {
-            category: 'data_driven',
-          },
-          explicitDetails: config,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to accept signal');
-      }
-
-      setSignals((prev) => prev.filter((s) => s.id !== signalId));
-      toast.success('Signal accepted and configured as data-driven trigger');
-      setConfiguringSignal(null);
-
-      if (signals.filter((s) => s.status === 'draft').length === 1) {
-        onComplete?.();
-      }
-    } catch (error) {
-      console.error('Error accepting signal:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to accept signal');
-    } finally {
-      setProcessingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(signalId);
-        return next;
-      });
     }
   };
 
@@ -799,19 +751,9 @@ export function UnifiedSignalsTable({
                                 >
                                   <X className="w-3 h-3" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setConfiguringSignal(signal)}
-                                  disabled={isProcessing}
-                                  className="h-8 px-2 text-xs text-amber-600 hover:bg-amber-50"
-                                  title="Accept and configure as data-driven"
-                                >
-                                  <Zap className="w-3 h-3" />
-                                </Button>
                               </>
                             ) : (
-                              // Accepted signals: Update status / Configure data actions
+                              // Accepted signals: Update status action
                               <>
                                 {onUpdateStatus && signal.status !== 'rejected' && (
                                   <Button
@@ -821,18 +763,6 @@ export function UnifiedSignalsTable({
                                     className="h-8 px-2 text-xs"
                                   >
                                     Update
-                                  </Button>
-                                )}
-                                {signal.category === 'judgment' && signal.status !== 'rejected' && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setConfiguringSignal(signal)}
-                                    className="h-8 px-2 text-xs text-amber-600 hover:bg-amber-50"
-                                    title="Configure as data-driven"
-                                  >
-                                    <Zap className="w-3 h-3 mr-1" />
-                                    Data-Driven
                                   </Button>
                                 )}
                               </>
@@ -990,19 +920,9 @@ export function UnifiedSignalsTable({
                                           <X className="w-3 h-3" />
                                           Reject
                                         </Button>
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => setConfiguringSignal(signal)}
-                                          disabled={isProcessing}
-                                          className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
-                                        >
-                                          <Zap className="w-3 h-3" />
-                                          Accept as Data-Driven
-                                        </Button>
                                       </>
                                     ) : (
-                                      // Accepted signals: Update/Configure/History (no edit - locked after acceptance)
+                                      // Accepted signals: Update/History (no edit - locked after acceptance)
                                       <>
                                         {onUpdateStatus && signal.status !== 'rejected' && (
                                           <Button
@@ -1012,17 +932,6 @@ export function UnifiedSignalsTable({
                                             className="gap-1"
                                           >
                                             Update Status
-                                          </Button>
-                                        )}
-                                        {signal.category === 'judgment' && signal.status !== 'rejected' && (
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setConfiguringSignal(signal)}
-                                            className="gap-1 text-amber-600 border-amber-200 hover:bg-amber-50"
-                                          >
-                                            <Zap className="w-3 h-3" />
-                                            Make Data-Driven
                                           </Button>
                                         )}
                                         <Link
@@ -1051,16 +960,6 @@ export function UnifiedSignalsTable({
         </div>
       </section>
 
-      {/* Signal Config Form Dialog (review mode) */}
-      {configuringSignal && (
-        <SignalConfigForm
-          signal={configuringSignal}
-          isOpen={!!configuringSignal}
-          onClose={() => setConfiguringSignal(null)}
-          onSubmit={handleAcceptAsDataDriven}
-          mode="upgrade"
-        />
-      )}
     </div>
   );
 }
