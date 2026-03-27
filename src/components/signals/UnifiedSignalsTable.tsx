@@ -26,7 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Signal } from '@/db/schema';
-import { SignalProgressCard } from './SignalProgressCard';
+import { SignalExpandedCards } from './SignalExpandedCards';
 
 // Types
 type SignalType = 'confirmation' | 'invalidation' | 'completion';
@@ -830,60 +830,8 @@ export function UnifiedSignalsTable({
                               ) : (
                                 // View Mode
                                 <>
-                                  {/* Notes (simplified - replaces rationale, judgmentDetails, responseProtocol) */}
-                                  {signal.notes && (
-                                    <div>
-                                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                                        Notes
-                                      </h5>
-                                      <p className="text-sm text-foreground whitespace-pre-wrap">{signal.notes}</p>
-                                    </div>
-                                  )}
-
-                                  {/* Signal Progress Tracking */}
-                                  {signal.status === 'active' && signal.explicitDetails && (
-                                    <div>
-                                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                                        Tracking
-                                      </h5>
-                                      <SignalProgressCard signal={signal} />
-                                    </div>
-                                  )}
-
-                                  {/* Data-Driven Trigger Criteria (for configured data-driven signals) */}
-                                  {signal.category === 'data_driven' && explicitDetails && (
-                                    <div className="bg-card rounded-md p-3 border border">
-                                      <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                                        Trigger Criteria
-                                      </h5>
-                                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                                        {explicitDetails.metric && (
-                                          <>
-                                            <dt className="text-muted-foreground">Metric:</dt>
-                                            <dd className="text-foreground">{explicitDetails.metric}</dd>
-                                          </>
-                                        )}
-                                        {explicitDetails.threshold && (
-                                          <>
-                                            <dt className="text-muted-foreground">Threshold:</dt>
-                                            <dd className="text-foreground font-mono">{explicitDetails.threshold}</dd>
-                                          </>
-                                        )}
-                                        {explicitDetails.dataSources && explicitDetails.dataSources.length > 0 && (
-                                          <>
-                                            <dt className="text-muted-foreground">Sources:</dt>
-                                            <dd className="text-foreground">{explicitDetails.dataSources.join(', ')}</dd>
-                                          </>
-                                        )}
-                                        {explicitDetails.monitoringFrequency && (
-                                          <>
-                                            <dt className="text-muted-foreground">Frequency:</dt>
-                                            <dd className="text-foreground">{explicitDetails.monitoringFrequency}</dd>
-                                          </>
-                                        )}
-                                      </dl>
-                                    </div>
-                                  )}
+                                  {/* Monitoring cards: status summary + quant charts + qualitative tracking */}
+                                  <SignalExpandedCards signal={signal} />
 
                                   {/* Expanded row actions - unified based on signal status */}
                                   <div className="flex items-center gap-2 pt-2">

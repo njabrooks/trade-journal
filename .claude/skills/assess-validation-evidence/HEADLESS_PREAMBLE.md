@@ -85,10 +85,14 @@ Step 3 — Determine direction relative to the **signal type**:
 | **confirmation** | Evidence moves the condition closer to being met | Evidence moves the condition further from being met |
 | **invalidation / warning** | The risk described in the signal is **growing** (bad) | The risk described in the signal is **receding** (good) |
 
+**Critical for invalidation signals — the double inversion**: Evidence that supports the thesis (i.e., confirms the thesis is playing out) reduces the chance the invalidation condition triggers. That means `weakening`, NOT `strengthening`. Pro-thesis evidence + invalidation signal = `weakening`.
+
 **Examples for invalidation signals:**
-- "Regulatory pressure on offshore perps increasing" → `strengthening` (risk growing)
-- "SEC drops investigation, clarifies HYPE is not a security" → `weakening` (risk receding)
-- "SPDJI partnership complicates targeted CFTC action" → `weakening` (risk receding, not strengthening)
+- Signal: "USD reserve share rises above 60%". Evidence: "Central banks diversifying into gold after Russian asset freeze; structural shift away from dollar reserves" → `weakening` (invalidation risk receding — reserve share is NOT rising; the thesis is playing out)
+- Signal: "USD reserve share rises above 60%". Evidence: "EM central banks increasing UST purchases; dollar strengthening" → `strengthening` (invalidation risk growing)
+- Signal: "Regulatory enforcement against exchange". Evidence: "Regulatory pressure on offshore perps increasing" → `strengthening` (risk growing)
+- Signal: "Regulatory enforcement". Evidence: "SEC drops investigation, clarifies asset is not a security" → `weakening` (risk receding)
+- Signal: "Regulatory enforcement". Evidence: "SPDJI partnership complicates targeted CFTC action" → `weakening` (risk receding, not strengthening)
 - "No regulatory news this week" → `neutral`
 
 Use `confirmed` / `invalidated` only for clear, unambiguous threshold events (e.g., actual enforcement action filed).

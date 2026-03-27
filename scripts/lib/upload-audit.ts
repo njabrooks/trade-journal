@@ -23,8 +23,9 @@
  */
 
 import { promises as fs } from 'fs';
+import { eq } from 'drizzle-orm';
 import { db } from '../../src/db/index.js';
-import { researchArtifacts, researchInsights } from '../../src/db/schema.js';
+import { researchArtifacts, researchInsights, mainClaims } from '../../src/db/schema.js';
 import { parseClaimsMarkdown } from '../../src/lib/research/parseClaimsMarkdown.js';
 import { autoPromoteAuditClaims } from '../../src/db/queries/research.js';
 
@@ -58,6 +59,20 @@ export interface UploadAuditResult {
 }
 
 export async function uploadAudit(opts: UploadAuditOptions): Promise<UploadAuditResult> {
+  // Deduplication check: skip if an artifact with the same source_url already exists
+  if (opts.sourceUrl) {
+    const existing = await db
+      .select({ id: researchArtifacts.id })
+      .from(researchArtifacts)
+      .where(eq(researchArtifacts.sourceUrl, opts.sourceUrl))
+      .limit(1);
+    if (existing.length > 0) {
+      console.warn(`[upload-audit] Duplicate source_url detected — skipping upload. Existing artifact: ${existing[0].id}`);
+      console.warn(`[upload-audit] Source: ${opts.sourceUrl}`);
+      throw new Error(`DUPLICATE_SOURCE_URL:${existing[0].id}`);
+    }
+  }
+
   // Read and parse audit file
   const auditContent = await fs.readFile(opts.auditPath, 'utf-8');
   const claimsStructure = parseClaimsMarkdown(auditContent);
