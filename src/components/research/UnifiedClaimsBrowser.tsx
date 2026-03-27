@@ -1015,7 +1015,7 @@ export function UnifiedClaimsBrowser({
 
                               {/* Evidence Claims from Audit - Full Toulmin Framework */}
                               {(evidenceClaims.supporting.length > 0 || evidenceClaims.rebutting.length > 0) && (
-                                <div className="pt-2 border-t border">
+                                <div className="pt-2 border-t">
                                   <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Linked Evidence Claims
                                   </h4>
@@ -1060,7 +1060,7 @@ export function UnifiedClaimsBrowser({
 
                               {/* Linked Theses and Views */}
                               {(linkedTheses.length > 0 || linkedViews.length > 0) && (
-                                <div className="pt-2 border-t border">
+                                <div className="pt-2 border-t">
                                   <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Linked To
                                   </h4>
@@ -1109,7 +1109,7 @@ export function UnifiedClaimsBrowser({
 
                               {/* Signal Evidence */}
                               {linkedSignals.length > 0 && (
-                                <div className="pt-2 border-t border">
+                                <div className="pt-2 border-t">
                                   <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Signal Evidence
                                   </h4>
@@ -1146,7 +1146,7 @@ export function UnifiedClaimsBrowser({
 
                               {/* AI Suggested Linkages (B5: suppressed for monitoring-phase theses) */}
                               {suggestions.length > 0 && !suppressSuggestions && (
-                                <div className="pt-2 border-t border">
+                                <div className="pt-2 border-t">
                                   <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide flex items-center gap-1">
                                     <span>Suggested Linkages</span>
                                     <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">AI</Badge>
@@ -1157,7 +1157,7 @@ export function UnifiedClaimsBrowser({
 
                               {/* Source */}
                               {artifact && insight && (
-                                <div className="pt-2 border-t border">
+                                <div className="pt-2 border-t">
                                   <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                                     Source
                                   </h4>
@@ -1175,7 +1175,7 @@ export function UnifiedClaimsBrowser({
                               )}
 
                               {/* Metadata */}
-                              <div className="grid grid-cols-2 gap-4 pt-2 border-t border">
+                              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                                 {claim.timeHorizon && (
                                   <div>
                                     <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Time Horizon:</span>

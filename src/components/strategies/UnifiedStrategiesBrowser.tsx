@@ -498,7 +498,7 @@ export function UnifiedStrategiesBrowser({ strategies }: UnifiedStrategiesBrowse
                 )}
 
                 {/* Metadata */}
-                <div className="grid grid-cols-4 gap-4 pt-2 border-t border">
+                <div className="grid grid-cols-4 gap-4 pt-2 border-t">
                   {strategy.strategyType && (
                     <div>
                       <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Type:</span>

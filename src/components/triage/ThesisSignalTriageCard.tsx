@@ -207,7 +207,7 @@ export function ThesisSignalTriageCard({
 
         {/* Current Conviction */}
         {currentConviction && (
-          <div className="mt-3 pt-3 border-t border">
+          <div className="mt-3 pt-3 border-t">
             <span className="text-xs text-muted-foreground uppercase tracking-wide">Current Conviction</span>
             <Badge
               className={`ml-2 ${
@@ -418,7 +418,7 @@ export function ThesisSignalTriageCard({
       </div>
 
       {/* Link to thesis and strategies */}
-      <div className="flex items-center gap-2 pt-2 border-t border">
+      <div className="flex items-center gap-2 pt-2 border-t">
         <Link href={thesisUrl}>
           <Button variant="outline" size="sm" className="gap-1">
             <ExternalLink className="h-3 w-3" />

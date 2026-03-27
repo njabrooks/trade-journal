@@ -247,7 +247,7 @@ export default async function ResearchDetailPage({ params }: ResearchDetailPageP
             <ChevronDown className="h-5 w-5 text-muted-foreground group-open:hidden" />
             <ChevronUp className="h-5 w-5 text-muted-foreground hidden group-open:block" />
           </summary>
-          <div className="px-6 pb-6 pt-2 border-t border">
+          <div className="px-6 pb-6 pt-2 border-t">
             <div className="prose prose-sm max-w-none">
               <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
                 {artifact.rawContent}

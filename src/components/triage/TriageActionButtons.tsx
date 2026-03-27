@@ -1223,7 +1223,7 @@ export function TriageActionButtons({
               </div>
             )}
 
-            <div className="flex gap-2 pt-2 border-t border">
+            <div className="flex gap-2 pt-2 border-t">
               <button
                 onClick={handleConfirm}
                 disabled={loading || !strategyFormData.strategyType}
@@ -1507,7 +1507,7 @@ export function TriageActionButtons({
               </div>
             )}
 
-            <div className="flex gap-2 pt-2 border-t border">
+            <div className="flex gap-2 pt-2 border-t">
               <button
                 onClick={handleConfirm}
                 disabled={loading || !strategyFormData.strategyType}
@@ -1600,7 +1600,7 @@ export function TriageActionButtons({
               )}
 
               {hasSelectedPositions && (
-                <div className="flex gap-2 pt-2 border-t border">
+                <div className="flex gap-2 pt-2 border-t">
                   <button
                     onClick={handleConfirm}
                     disabled={loading || !tradeReason || !tradeStage}
@@ -1820,7 +1820,7 @@ export function TriageActionButtons({
               </div>
             )}
 
-            <div className="flex gap-2 pt-2 border-t border">
+            <div className="flex gap-2 pt-2 border-t">
               <button
                 onClick={handleConfirm}
                 disabled={loading || tradePositions.length === 0 || tradePositions.some(p => !p.underlyingTicker || p.quantity === 0) || !tradeReason || !tradeStage}

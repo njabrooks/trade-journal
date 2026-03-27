@@ -669,7 +669,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                               )}
 
                               {/* Metadata */}
-                              <div className="grid grid-cols-3 gap-4 pt-2 border-t border">
+                              <div className="grid grid-cols-3 gap-4 pt-2 border-t">
                                 <div>
                                   <span className="text-xs font-semibold text-foreground uppercase tracking-wide">Created:</span>
                                   <span className="ml-2 text-sm text-muted-foreground">

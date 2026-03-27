@@ -243,7 +243,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
 
             {/* Linked Evidence Claims */}
             {(evidenceClaims.supporting.length > 0 || evidenceClaims.rebutting.length > 0) && (
-              <div className="pt-2 border-t border">
+              <div className="pt-2 border-t">
                 <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">
                   Linked Evidence Claims
                 </h4>
