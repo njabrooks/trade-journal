@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import type { MainClaim as DbMainClaim, ResearchInsight, ResearchArtifact } from '@/db/schema';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Link2, Zap } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Link2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
@@ -15,7 +15,7 @@ import { ExpandableEvidenceClaim } from './ExpandableEvidenceClaim';
 import { InlineClaimSuggestions } from './InlineClaimSuggestions';
 import type { SuggestionActionResult } from './InlineClaimSuggestions';
 import type { ClaimSuggestion } from '@/db/queries/research';
-import { SIGNAL_TYPE_COLORS } from '@/components/signals/signal-constants';
+import { SIGNAL_TYPE_COLORS, ASSESSMENT_LEVELS } from '@/components/signals/signal-constants';
 
 interface LinkedThesis {
   id: string;
@@ -826,30 +826,54 @@ export function UnifiedClaimsBrowser({
                             )}
                             {/* Signal evidence indicator */}
                             {linkedSignals.length > 0 && (
-                              <button
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setExpandedClaim(isExpanded ? null : claim.id);
-                                }}
-                                title={linkedSignals.map(s => {
-                                  const assessmentEmoji: Record<string, string> = {
-                                    neutral: '\u2B1B', strengthening: '\uD83D\uDCC8', confirmed: '\u2705',
-                                    weakening: '\uD83D\uDCC9', invalidated: '\u274C',
-                                  };
-                                  const typeConfig = SIGNAL_TYPE_COLORS[s.type] ?? SIGNAL_TYPE_COLORS.confirmation;
-                                  return `${assessmentEmoji[s.assessment] ?? '\u2B1C'} [${typeConfig.label}] ${s.statement}`;
-                                }).join('\n')}
-                                className="inline-flex items-center gap-1 shrink-0 group"
-                              >
+                              <>
                                 {!isExpanded && (linkedTheses.length > 0 || linkedViews.length > 0) && (
                                   <span className="text-border mx-0.5">|</span>
                                 )}
-                                <Badge className="bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 group-hover:bg-cyan-500/25 text-xs transition-colors inline-flex items-center gap-0.5">
-                                  <Zap className="h-3 w-3" />
-                                  {linkedSignals.length}
-                                </Badge>
-                              </button>
+                                {(() => {
+                                  const visibleSignals = isExpanded ? linkedSignals : linkedSignals.slice(0, 1);
+                                  const remainingCount = linkedSignals.length - 1;
+                                  const showMoreBadge = !isExpanded && remainingCount > 0;
+
+                                  return (
+                                    <>
+                                      {visibleSignals.map((signal) => {
+                                        const typeConfig = SIGNAL_TYPE_COLORS[signal.type] ?? SIGNAL_TYPE_COLORS.confirmation;
+                                        const assessmentConfig = ASSESSMENT_LEVELS[signal.assessment] ?? ASSESSMENT_LEVELS.neutral;
+                                        return (
+                                          <Link
+                                            key={signal.id}
+                                            href={`/signals/${signal.id}`}
+                                            className={isExpanded ? "flex items-center gap-1" : "inline-flex items-center gap-1 shrink-0"}
+                                            title={signal.statement}
+                                          >
+                                            <Badge className={`${typeConfig.cls} text-xs`}>{typeConfig.label}</Badge>
+                                            <Badge className={`${assessmentConfig.cls} text-xs`}>{assessmentConfig.label}</Badge>
+                                            <span className={`text-sm text-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors ${isExpanded ? 'line-clamp-1' : 'truncate max-w-[150px]'}`}>
+                                              {signal.statement}
+                                            </span>
+                                          </Link>
+                                        );
+                                      })}
+                                      {showMoreBadge && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setExpandedClaim(claim.id);
+                                          }}
+                                          title={`Show all ${linkedSignals.length} signals:\n${linkedSignals.slice(1).map(s => `• ${s.statement}`).join('\n')}`}
+                                          className="text-xs text-muted-foreground hover:text-cyan-600 dark:hover:text-cyan-400 font-medium cursor-pointer shrink-0 ml-1 group"
+                                        >
+                                          <Badge className="bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 group-hover:bg-cyan-500/25 group-hover:underline text-xs transition-colors">
+                                            +{remainingCount}
+                                          </Badge>
+                                        </button>
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                              </>
                             )}
                           </div>
                         </td>
