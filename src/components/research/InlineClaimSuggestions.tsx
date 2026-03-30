@@ -62,7 +62,10 @@ export function InlineClaimSuggestions({
         `/api/research/claims/suggestions/${suggestion.id}/accept`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }
       );
-      if (!response.ok) throw new Error('Failed to accept');
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.details || 'Failed to accept');
+      }
       const data = await response.json();
       setAcceptedIds((prev) => new Set([...prev, suggestion.id]));
       if (onSuggestionActioned) {
@@ -97,7 +100,10 @@ export function InlineClaimSuggestions({
         `/api/research/claims/suggestions/${suggestion.id}/reject`,
         { method: 'POST' }
       );
-      if (!response.ok) throw new Error('Failed to reject');
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || err.details || 'Failed to reject');
+      }
       setDismissedIds((prev) => new Set([...prev, suggestion.id]));
       if (onSuggestionActioned) {
         onSuggestionActioned({

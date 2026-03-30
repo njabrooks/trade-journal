@@ -182,8 +182,12 @@ export async function POST(
       },
     });
 
-    // Compute thesis triage
-    await computeThesisTriageForThesis(targetObjectId, targetType);
+    // Compute thesis triage (best-effort — don't fail the accept if this errors)
+    try {
+      await computeThesisTriageForThesis(targetObjectId, targetType);
+    } catch (triageError: any) {
+      console.warn('Thesis triage computation failed (non-fatal):', triageError.message);
+    }
 
     return NextResponse.json({
       success: true,
