@@ -940,3 +940,168 @@ export async function getSuggestionsForClaims(
 
   return result;
 }
+
+// ============================================================================
+// Artifact Completeness Check & Replace-on-Failure
+// ============================================================================
+
+export interface CompletenessCheckResult {
+  isComplete: boolean;
+  artifactId: string;
+  checks: {
+    hasInsight: boolean;
+    hasValidClaimsStructure: boolean;
+    hasPromotedClaims: boolean;
+    hasLinkageSuggestions: boolean;
+    linkageSuggestionsWaived: boolean;
+  };
+  insightId: string | null;
+}
+
+/**
+ * Check if an existing artifact (found by source_url) has a complete processing chain.
+ *
+ * Completeness means:
+ * 1. Has a research_insights row linked to it
+ * 2. The insight's claims_structure JSONB is non-null and valid
+ * 3. At least one main_claims record exists with sourceInsightId matching the insight
+ * 4. At least one research_hierarchy_recommendations record exists for the promoted claims
+ *    (waived if no developing/monitoring theses existed at check time)
+ *
+ * Returns null if no artifact with the given source_url exists.
+ */
+export async function checkArtifactCompleteness(
+  sourceUrl: string
+): Promise<CompletenessCheckResult | null> {
+  // Find existing artifact by source_url
+  const [artifact] = await db
+    .select({ id: researchArtifacts.id })
+    .from(researchArtifacts)
+    .where(eq(researchArtifacts.sourceUrl, sourceUrl))
+    .limit(1);
+
+  if (!artifact) return null;
+
+  // Check 1: Has insight?
+  const [insight] = await db
+    .select({
+      id: researchInsights.id,
+      claimsStructure: researchInsights.claimsStructure,
+    })
+    .from(researchInsights)
+    .where(eq(researchInsights.researchArtifactId, artifact.id))
+    .limit(1);
+
+  const hasInsight = !!insight;
+
+  // Check 2: Has valid claims_structure?
+  const hasValidClaims = hasInsight && !!insight.claimsStructure && isValidClaimsStructure(insight.claimsStructure);
+
+  // Check 3: Has promoted claims?
+  let hasPromotedClaims = false;
+  let promotedClaimIds: string[] = [];
+  if (hasInsight) {
+    const claimRows = await db
+      .select({ id: mainClaims.id })
+      .from(mainClaims)
+      .where(eq(mainClaims.sourceInsightId, insight.id));
+    hasPromotedClaims = claimRows.length > 0;
+    promotedClaimIds = claimRows.map(c => c.id);
+  }
+
+  // Check 4: Has linkage suggestions? (waived if no developing/monitoring theses exist)
+  let hasLinkageSuggestions = false;
+  let linkageSuggestionsWaived = false;
+
+  if (hasPromotedClaims) {
+    const [suggestionCount] = await db
+      .select({ count: count() })
+      .from(researchHierarchyRecommendations)
+      .where(inArray(researchHierarchyRecommendations.mainClaimId, promotedClaimIds));
+    hasLinkageSuggestions = Number(suggestionCount.count) > 0;
+
+    if (!hasLinkageSuggestions) {
+      // Check if waiver applies: no developing/monitoring theses exist
+      const [activeThesisCount] = await db
+        .select({ count: count() })
+        .from(macroTheses)
+        .where(
+          or(
+            eq(macroTheses.status, 'active'),
+            eq(macroTheses.status, 'draft')
+          )
+        );
+      const [activeAssetThesisCount] = await db
+        .select({ count: count() })
+        .from(assetTheses)
+        .where(
+          or(
+            eq(assetTheses.status, 'active'),
+            eq(assetTheses.status, 'draft')
+          )
+        );
+
+      linkageSuggestionsWaived =
+        Number(activeThesisCount.count) === 0 && Number(activeAssetThesisCount.count) === 0;
+    }
+  }
+
+  const isComplete =
+    hasInsight &&
+    hasValidClaims &&
+    hasPromotedClaims &&
+    (hasLinkageSuggestions || linkageSuggestionsWaived);
+
+  return {
+    isComplete,
+    artifactId: artifact.id,
+    checks: {
+      hasInsight,
+      hasValidClaimsStructure: hasValidClaims,
+      hasPromotedClaims,
+      hasLinkageSuggestions,
+      linkageSuggestionsWaived,
+    },
+    insightId: insight?.id ?? null,
+  };
+}
+
+/**
+ * Replace a deficient artifact chain.
+ *
+ * Deletes: main_claims (by sourceInsightId) → artifact (cascades to insight → recommendations).
+ * Preserves: signal_data_snapshots (claimId set null via cascade on claim_signal_evidences).
+ *
+ * Returns the replaced artifact ID for provenance tracking.
+ */
+export async function replaceDeficientArtifact(artifactId: string): Promise<{
+  deletedClaimCount: number;
+  deletedInsightId: string | null;
+}> {
+  // Find linked insight
+  const [insight] = await db
+    .select({ id: researchInsights.id })
+    .from(researchInsights)
+    .where(eq(researchInsights.researchArtifactId, artifactId))
+    .limit(1);
+
+  let deletedClaimCount = 0;
+
+  if (insight) {
+    // Delete main_claims explicitly (onDelete is 'set null' not cascade, so we must clean up)
+    // This cascades to: claim_thesis_mappings, claim_signal_evidences, hierarchy_recommendations (via mainClaimId)
+    const deleted = await db
+      .delete(mainClaims)
+      .where(eq(mainClaims.sourceInsightId, insight.id))
+      .returning({ id: mainClaims.id });
+    deletedClaimCount = deleted.length;
+  }
+
+  // Delete the artifact (cascades to: insight → hierarchy_recommendations via insightId)
+  await db.delete(researchArtifacts).where(eq(researchArtifacts.id, artifactId));
+
+  return {
+    deletedClaimCount,
+    deletedInsightId: insight?.id ?? null,
+  };
+}

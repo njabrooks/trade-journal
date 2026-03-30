@@ -605,7 +605,26 @@ Options:
 3. Check the thesis ID in database
 ```
 
-**Duplicate detection**:
+**Duplicate source_url detection (audits/artifacts)**:
+```
+⚠️  Duplicate source_url detected.
+
+The upload-audit library automatically handles deduplication:
+- If the existing artifact is COMPLETE (all 4 checks pass) → skips upload, throws DUPLICATE_SOURCE_URL
+- If the existing artifact is DEFICIENT (any check fails) → replaces it and re-runs full pipeline
+
+Completeness checks:
+1. Has insight? (research_insights row linked to artifact)
+2. Has valid claims_structure? (non-null, passes isValidClaimsStructure())
+3. Has promoted claims? (main_claims with sourceInsightId)
+4. Has linkage suggestions? (research_hierarchy_recommendations for promoted claims;
+   waived if no active/draft theses exist)
+
+Replace-on-failure preserves signal_data_snapshots from the original and records
+replaced_artifact_id in the new artifact's metadata for traceability.
+```
+
+**Duplicate thesis detection**:
 ```
 ⚠️  Similar thesis found:
 
