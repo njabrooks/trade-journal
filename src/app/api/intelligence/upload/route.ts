@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         generatedAt: new Date(parsed.generatedAt),
         timeWindow: parsed.timeWindow,
         version: parsed.version,
+        reportType: parsed.reportType,
         executiveSummary: parsed.executiveSummary,
         keyThemes: parsed.keyThemes,
         fullMarkdown: parsed.fullMarkdown,

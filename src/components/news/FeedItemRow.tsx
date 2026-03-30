@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Globe, Target, FileText, Calendar, BarChart3, Scale, TrendingUp,
-  ChevronDown, ChevronUp, ExternalLink, ArrowUp, ArrowDown, Briefcase, UserCheck,
+  ChevronDown, ChevronUp, ChevronRight, ExternalLink, ArrowUp, ArrowDown, Briefcase, UserCheck,
   Zap, Sparkles, Clock, Circle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -273,6 +274,26 @@ const SECTOR_BADGE_STYLES: Record<string, string> = {
 };
 
 function getWorldThesisSlots(item: FeedItem): RowSlots {
+  // Collapsed report summary row (has reportId)
+  if (item.reportId && item.severityCounts) {
+    const counts = item.severityCounts;
+    return {
+      ticker: null,
+      badges: (
+        <div className="flex items-center gap-1">
+          {counts.critical > 0 && <Badge text={`${counts.critical} critical`} style={SEVERITY_STYLES.critical} />}
+          {counts.high > 0 && <Badge text={`${counts.high} high`} style={SEVERITY_STYLES.high} />}
+          {counts.medium > 0 && <Badge text={`${counts.medium} med`} style={SEVERITY_STYLES.medium} />}
+        </div>
+      ),
+      content: <span className="truncate">{item.headline}</span>,
+      data: item.itemCount ? (
+        <span className="text-xs text-muted-foreground">{item.itemCount} items</span>
+      ) : null,
+    };
+  }
+
+  // Legacy: individual item rows (fallback)
   const sectionInfo = item.reportSection ? SECTION_LABELS[item.reportSection] : null;
   return {
     ticker: item.tickers?.[0] ? (
@@ -306,11 +327,36 @@ function getEvidenceSlots(item: FeedItem): RowSlots {
         {item.headline}
       </a>
     ) : <span className="truncate">{item.headline}</span>,
-    data: null,
+    data: item.researchSourceTitle ? (
+      <span className="text-xs text-muted-foreground truncate max-w-[180px] block">
+        {item.researchSourceTitle.length > 40 ? item.researchSourceTitle.slice(0, 40) + '\u2026' : item.researchSourceTitle}
+      </span>
+    ) : null,
   };
 }
 
 function getQuantSlots(item: FeedItem): RowSlots {
+  // Collapsed daily summary row (has snapshotDateKey)
+  if (item.snapshotDateKey && item.assessmentCounts) {
+    const ac = item.assessmentCounts;
+    return {
+      ticker: null,
+      badges: (
+        <div className="flex items-center gap-1">
+          {ac.strengthening > 0 && <Badge text={`${ac.strengthening} strengthening`} style={ASSESSMENT_STYLES.strengthening} />}
+          {ac.confirmed > 0 && <Badge text={`${ac.confirmed} confirmed`} style={ASSESSMENT_STYLES.confirmed} />}
+          {ac.weakening > 0 && <Badge text={`${ac.weakening} weakening`} style={ASSESSMENT_STYLES.weakening} />}
+          {ac.invalidated > 0 && <Badge text={`${ac.invalidated} invalidated`} style={ASSESSMENT_STYLES.invalidated} />}
+        </div>
+      ),
+      content: <span className="truncate">{item.headline}</span>,
+      data: item.itemCount ? (
+        <span className="text-xs text-muted-foreground">{item.itemCount} signals</span>
+      ) : null,
+    };
+  }
+
+  // Individual quant snapshot row (legacy/fallback)
   return {
     ticker: item.tickers?.[0] ? <span className="font-mono font-semibold text-foreground text-xs">{item.tickers[0]}</span> : null,
     badges: item.assessment ? <Badge text={item.assessment} style={ASSESSMENT_STYLES[item.assessment]} /> : null,
@@ -401,13 +447,44 @@ export function FeedItemRow({ item }: { item: FeedItem }) {
   const Icon = config.icon;
   const slots = getSlots(item);
 
+  // Summary rows link to detail pages instead of expanding
+  const isMonitorSummary = !!(item.reportId && (item.source === 'world_monitor' || item.source === 'thesis_monitor'));
+  const isQuantSummary = !!(item.snapshotDateKey && item.source === 'quant_snapshot');
+  const isSummaryRow = isMonitorSummary || isQuantSummary;
+
   const hasEntityLinks = !!(
     (item.linkedAssetTheses && item.linkedAssetTheses.length > 0) ||
     (item.linkedStrategies && item.linkedStrategies.length > 0)
   );
-  const hasExpandableContent = !!(
+  const hasExpandableContent = !isSummaryRow && !!(
     item.body || (item.sourceUrls && item.sourceUrls.length > 0) || item.signalStatement || hasEntityLinks
   );
+
+  if (isSummaryRow) {
+    const href = isMonitorSummary
+      ? `/news/intelligence/${item.reportId}`
+      : `/news/signals/${item.snapshotDateKey}`;
+    return (
+      <Link href={href}>
+        <div
+          className={cn(GRID_STYLE, 'transition-colors text-sm cursor-pointer hover:bg-accent/50')}
+          style={{ gridTemplateColumns: GRID_COLS }}
+        >
+          <Icon className={cn('h-3.5 w-3.5', config.colour)} />
+          <span className="text-[11px] text-muted-foreground text-right font-mono">
+            {getTimeAgo(new Date(item.timestamp))}
+          </span>
+          <div />
+          <div className="flex items-center gap-1">{slots.badges}</div>
+          <div className="min-w-0 truncate">{slots.content}</div>
+          <div className="text-right whitespace-nowrap">{slots.data}</div>
+          <div className="flex items-center justify-center">
+            <ChevronRight className="h-3 w-3 text-muted-foreground/40" />
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <div>
@@ -491,6 +568,17 @@ export function FeedItemRow({ item }: { item: FeedItem }) {
           )}
           {item.body && (
             <p className="text-sm text-muted-foreground whitespace-pre-line">{stripSourceLines(item.body)}</p>
+          )}
+          {/* Research source provenance for claim evidence items */}
+          {item.source === 'claim_evidence' && item.researchSourceTitle && (
+            <a
+              href={item.researchSourceId ? `/research/${item.researchSourceId}` : '/research'}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1.5 rounded-md bg-orange-500/10 px-2 py-0.5 text-[11px] font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-500/20 transition-colors"
+            >
+              <FileText className="h-3 w-3" />
+              Source: {item.researchSourceTitle.length > 60 ? item.researchSourceTitle.slice(0, 60) + '\u2026' : item.researchSourceTitle}
+            </a>
           )}
           {item.signalStatement && (
             <a href={item.signalId ? `/signals/${item.signalId}` : '/signals'}

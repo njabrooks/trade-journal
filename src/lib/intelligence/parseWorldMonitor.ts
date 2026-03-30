@@ -41,6 +41,7 @@ const SEVERITY_MAP: Record<string, 'critical' | 'high' | 'medium' | 'info'> = {
   '🟠': 'high',
   '🟡': 'medium',
   'ℹ️': 'info',
+  '⚪': 'info',
 };
 
 // Thesis monitor uses a different emoji set for signal assessments
@@ -167,12 +168,15 @@ function parseSeverityItems(
 ): ParsedItem[] {
   const items: ParsedItem[] = [];
 
-  // Split by severity emojis at the start of a line or after a newline
-  const itemBlocks = text.split(/(?=(?:^|\n)(?:🔴|🟠|🟡|ℹ️))/);
+  // Split by severity emojis at the start of a line (with optional "- " bullet prefix)
+  const itemBlocks = text.split(/(?=(?:^|\n)-?\s*(?:🔴|🟠|🟡|ℹ️|⚪))/);
 
   for (const block of itemBlocks) {
-    const trimmed = block.trim();
+    let trimmed = block.trim();
     if (!trimmed) continue;
+
+    // Strip optional bullet prefix
+    if (trimmed.startsWith('- ')) trimmed = trimmed.slice(2).trim();
 
     // Detect severity
     let severity: 'critical' | 'high' | 'medium' | 'info' | null = null;
@@ -227,16 +231,32 @@ function parseSeverityItems(
 function parseSignalAssessmentItems(text: string): ParsedItem[] {
   const items: ParsedItem[] = [];
 
-  // Split by lines starting with - {emoji}
   const emojis = Object.keys(THESIS_MONITOR_SEVERITY_MAP);
   const emojiPattern = emojis.map(e => e.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-  const itemBlocks = text.split(new RegExp(`(?=^- (?:${emojiPattern}))`, 'm'));
 
-  for (const block of itemBlocks) {
+  // Support two formats:
+  // Old: - {emoji} **Signal statement**\n  body text
+  // New: #### {emoji} Signal statement\n- **Score:** ...\n- **Evidence:** ...
+  const bulletBlocks = text.split(new RegExp(`(?=^- (?:${emojiPattern}))`, 'm'));
+  const headerBlocks = text.split(new RegExp(`(?=^#### (?:${emojiPattern}))`, 'm'));
+
+  // Determine which format this section uses
+  const hasBulletItems = bulletBlocks.some(b => b.trim().startsWith('- '));
+  const hasHeaderItems = headerBlocks.some(b => b.trim().startsWith('####'));
+  const blocks = hasHeaderItems ? headerBlocks : bulletBlocks;
+
+  for (const block of blocks) {
     const trimmed = block.trim();
-    if (!trimmed.startsWith('- ')) continue;
 
-    const content = trimmed.slice(2).trim(); // Remove "- "
+    let content: string;
+    const isHeaderFormat = trimmed.startsWith('####');
+    if (isHeaderFormat) {
+      content = trimmed.replace(/^####\s*/, '').trim();
+    } else if (trimmed.startsWith('- ')) {
+      content = trimmed.slice(2).trim();
+    } else {
+      continue;
+    }
 
     // Detect severity from leading emoji
     let severity: 'critical' | 'high' | 'medium' | 'info' | null = null;
@@ -252,13 +272,22 @@ function parseSignalAssessmentItems(text: string): ParsedItem[] {
 
     if (!severity) continue;
 
-    // Extract headline from **bold text**
-    const headlineMatch = rest.match(/\*\*(.*?)\*\*/);
-    if (!headlineMatch) continue;
+    let headline: string;
+    let body: string;
 
-    const headline = headlineMatch[1].trim();
-    const bodyStartIdx = rest.indexOf('**', rest.indexOf('**') + 2) + 2;
-    let body = rest.slice(bodyStartIdx).trim();
+    if (isHeaderFormat) {
+      // #### format: headline is plain text up to first newline, body is structured sub-bullets
+      const newlineIdx = rest.indexOf('\n');
+      headline = (newlineIdx >= 0 ? rest.slice(0, newlineIdx) : rest).trim();
+      body = newlineIdx >= 0 ? rest.slice(newlineIdx + 1).trim() : '';
+    } else {
+      // Bullet format: headline from **bold text**
+      const headlineMatch = rest.match(/\*\*(.*?)\*\*/);
+      if (!headlineMatch) continue;
+      headline = headlineMatch[1].trim();
+      const bodyStartIdx = rest.indexOf('**', rest.indexOf('**') + 2) + 2;
+      body = rest.slice(bodyStartIdx).trim();
+    }
 
     const sourceUrls = extractUrls(block);
     const relevantTickers = extractTickers(block);
@@ -270,7 +299,7 @@ function parseSignalAssessmentItems(text: string): ParsedItem[] {
       body,
       sourceUrls,
       relevantTickers,
-      section: 'deep_dive', // Use deep_dive as the section for signal assessments
+      section: 'deep_dive',
     });
   }
 
@@ -346,10 +375,18 @@ export function parseWorldMonitor(markdown: string): ParsedReport {
       for (const subSection of subSections) {
         const subHeaderMatch = subSection.match(/^### (.+)/m);
         if (!subHeaderMatch) continue;
+        // Extract thesis name (strip parenthetical metadata)
+        const thesisName = subHeaderMatch[1].replace(/\s*\(.*$/, '').trim();
         const subContent = subSection.replace(/^### .+\n+/, '').trim();
         const items = parseSignalAssessmentItems(subContent);
+        // Set sector to thesis name so duplicate headlines get disambiguated
+        for (const item of items) item.sector = thesisName;
         allItems.push(...items);
       }
+    } else if (headerName.includes('THESIS-RELEVANT NEWS') || headerName.includes('THESIS RELEVANT NEWS')) {
+      // Thesis-monitor: severity-tagged news items relevant to monitored theses
+      const items = parseSeverityItems(sectionContent, 'new_developments');
+      allItems.push(...items);
     } else if (headerName.includes('SIGNAL WATCH SUMMARY')) {
       keyThemes = sectionContent;
     }

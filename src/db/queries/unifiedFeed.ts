@@ -17,6 +17,8 @@ import {
   underlyings,
   strategies,
   intelItems,
+  researchInsights,
+  researchArtifacts,
 } from '@/db/schema';
 import { desc, gte, lte, and, eq, sql, not, inArray, isNotNull, lt } from 'drizzle-orm';
 
@@ -42,6 +44,13 @@ export interface FeedItem {
   headline: string;
   body?: string;
   severity?: 'critical' | 'high' | 'medium' | 'info';
+  // Intelligence report summary (collapsed row)
+  reportId?: string;
+  severityCounts?: { critical: number; high: number; medium: number; info: number };
+  itemCount?: number;
+  // Quant snapshot daily summary
+  snapshotDateKey?: string; // YYYY-MM-DD for quant daily detail page
+  assessmentCounts?: { strengthening: number; confirmed: number; weakening: number; invalidated: number; neutral: number };
   assessment?: 'neutral' | 'strengthening' | 'confirmed' | 'weakening' | 'invalidated';
   observedValue?: number;
   thresholdValue?: number;
@@ -85,6 +94,9 @@ export interface FeedItem {
   transactionPrice?: number | null;
   // Claim provenance (for claim_evidence items)
   claimId?: string;
+  claimText?: string;
+  researchSourceTitle?: string;
+  researchSourceId?: string;
   // Entity chain (resolved from ticker → underlying → asset_thesis → strategy)
   linkedAssetTheses?: { id: string; title: string; direction?: string }[];
   linkedStrategies?: { id: string; strategyKey: string }[];
@@ -304,7 +316,7 @@ export async function getUnifiedFeed(options: UnifiedFeedOptions = {}): Promise<
 // Source-specific fetch functions (all use Drizzle query builder)
 // ---------------------------------------------------------------------------
 
-async function fetchIntelligenceItems(
+async function fetchIntelligenceReportSummaries(
   reportType: 'world-monitor' | 'thesis-monitor',
   feedSource: FeedItemSource,
   cutoff: Date,
@@ -315,55 +327,60 @@ async function fetchIntelligenceItems(
     eq(intelligenceReports.reportType, reportType),
     gte(intelligenceReports.generatedAt, cutoff),
   ];
+
+  // When filtering by ticker, only include reports that mention it
   if (ticker) {
-    conditions.push(sql`${ticker} = ANY(${intelligenceItems.relevantTickers})`);
+    conditions.push(
+      sql`EXISTS (SELECT 1 FROM intelligence_items ii WHERE ii.report_id = ${intelligenceReports.id} AND ${ticker} = ANY(ii.relevant_tickers))`
+    );
   }
 
   const rows = await db
     .select({
-      id: intelligenceItems.id,
+      id: intelligenceReports.id,
+      reportDate: intelligenceReports.reportDate,
       generatedAt: intelligenceReports.generatedAt,
-      severity: intelligenceItems.severity,
-      sector: intelligenceItems.sector,
-      headline: intelligenceItems.headline,
-      body: intelligenceItems.body,
-      sourceUrls: intelligenceItems.sourceUrls,
-      relevantTickers: intelligenceItems.relevantTickers,
-      section: intelligenceItems.section,
-      sortOrder: intelligenceItems.sortOrder,
+      executiveSummary: intelligenceReports.executiveSummary,
+      criticalCount: intelligenceReports.criticalCount,
+      highCount: intelligenceReports.highCount,
+      mediumCount: intelligenceReports.mediumCount,
+      infoCount: intelligenceReports.infoCount,
+      sectors: intelligenceReports.sectors,
+      itemCount: sql<number>`(SELECT COUNT(*) FROM intelligence_items ii WHERE ii.report_id = ${intelligenceReports.id})::int`,
     })
-    .from(intelligenceItems)
-    .innerJoin(intelligenceReports, eq(intelligenceReports.id, intelligenceItems.reportId))
+    .from(intelligenceReports)
     .where(and(...conditions))
-    .orderBy(desc(intelligenceReports.generatedAt), intelligenceItems.sortOrder, intelligenceItems.createdAt)
+    .orderBy(desc(intelligenceReports.generatedAt))
     .limit(limit);
 
   return rows.map((r) => {
-    // Offset timestamp by sortOrder (in seconds) so items preserve report order in merged feed
-    const ts = new Date(r.generatedAt);
-    if (r.sortOrder != null) ts.setSeconds(ts.getSeconds() - r.sortOrder);
+    const label = reportType === 'world-monitor' ? 'World Monitor' : 'Thesis Monitor';
+    const dateStr = new Date(r.reportDate + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
     return {
       id: r.id,
       source: feedSource,
-      timestamp: ts,
-      headline: r.headline,
-      body: r.body ?? undefined,
-      severity: r.severity as FeedItem['severity'],
-      tickers: r.relevantTickers ?? undefined,
-      sourceUrls: r.sourceUrls ?? undefined,
-      sector: r.sector ?? undefined,
-      reportSection: r.section ?? undefined,
-      sourceRecordId: r.id,
+      timestamp: new Date(r.generatedAt),
+      headline: `${label} — ${dateStr}`,
+      reportId: r.id,
+      severityCounts: {
+        critical: r.criticalCount ?? 0,
+        high: r.highCount ?? 0,
+        medium: r.mediumCount ?? 0,
+        info: r.infoCount ?? 0,
+      },
+      itemCount: r.itemCount,
+      sector: r.sectors?.join(', ') ?? undefined,
     };
   });
 }
 
 async function fetchWorldMonitorItems(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
-  return fetchIntelligenceItems('world-monitor', 'world_monitor', cutoff, limit, ticker);
+  return fetchIntelligenceReportSummaries('world-monitor', 'world_monitor', cutoff, limit, ticker);
 }
 
 async function fetchThesisMonitorItems(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
-  return fetchIntelligenceItems('thesis-monitor', 'thesis_monitor', cutoff, limit, ticker);
+  return fetchIntelligenceReportSummaries('thesis-monitor', 'thesis_monitor', cutoff, limit, ticker);
 }
 
 async function fetchSecFilings(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
@@ -495,10 +512,15 @@ async function fetchClaimEvidence(cutoff: Date, limit: number, ticker?: string):
       claimTickers: mainClaims.relevantTickers,
       signalId: signals.id,
       signalStatement: signals.statement,
+      // Research provenance chain: claim → insight → artifact
+      researchSourceTitle: researchArtifacts.title,
+      researchSourceId: researchArtifacts.id,
     })
     .from(claimSignalEvidences)
     .innerJoin(mainClaims, eq(mainClaims.id, claimSignalEvidences.claimId))
     .innerJoin(signals, eq(signals.id, claimSignalEvidences.signalId))
+    .leftJoin(researchInsights, eq(researchInsights.id, mainClaims.sourceInsightId))
+    .leftJoin(researchArtifacts, eq(researchArtifacts.id, researchInsights.researchArtifactId))
     .where(and(...conditions))
     .orderBy(desc(claimSignalEvidences.createdAt))
     .limit(limit);
@@ -517,6 +539,7 @@ async function fetchClaimEvidence(cutoff: Date, limit: number, ticker?: string):
       timestamp: r.createdAt,
       headline: r.claimTitle,
       body: r.claimText,
+      claimText: r.claimText,
       assessment: r.assessment as FeedItem['assessment'],
       tickers: r.claimTickers ?? undefined,
       claimId: r.claimId,
@@ -525,71 +548,78 @@ async function fetchClaimEvidence(cutoff: Date, limit: number, ticker?: string):
       thesisId: link?.thesisId ?? undefined,
       thesisType: link?.thesisType as FeedItem['thesisType'] ?? undefined,
       thesisTitle: link?.thesisTitle ?? undefined,
+      researchSourceTitle: r.researchSourceTitle ?? undefined,
+      researchSourceId: r.researchSourceId ?? undefined,
       sourceRecordId: r.id,
     };
   });
 }
 
 async function fetchQuantSnapshots(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
-  const rows = await db
-    .select({
-      id: signalDataSnapshots.id,
-      snapshotDate: signalDataSnapshots.snapshotDate,
-      observedValue: sql<string | null>`${signalDataSnapshots.observedValue}::text`,
-      thresholdValue: sql<string | null>`${signalDataSnapshots.thresholdValue}::text`,
-      pctToThreshold: sql<string | null>`${signalDataSnapshots.pctToThreshold}::text`,
-      unit: signalDataSnapshots.unit,
-      assessment: signalDataSnapshots.assessment,
-      evidenceSummary: signalDataSnapshots.evidenceSummary,
-      signalId: signals.id,
-      signalStatement: signals.statement,
-    })
-    .from(signalDataSnapshots)
-    .innerJoin(signals, eq(signals.id, signalDataSnapshots.signalId))
-    .where(and(
-      gte(signalDataSnapshots.snapshotDate, cutoff),
-      not(inArray(signalDataSnapshots.dataSource, ['thesis_monitor', 'research_routing'])),
-      isNotNull(signalDataSnapshots.observedValue),
-      eq(signalDataSnapshots.status, 'accepted'),
-    ))
-    .orderBy(desc(signalDataSnapshots.snapshotDate))
-    .limit(limit);
+  // Group quant snapshots by day, returning one summary row per date
+  const tickerFilter = ticker
+    ? sql`AND EXISTS (
+        SELECT 1 FROM signal_entity_links sel2
+        JOIN asset_theses at2 ON at2.id = sel2.thesis_id AND sel2.thesis_type = 'asset'
+        JOIN underlyings u2 ON u2.id = at2.underlying_id
+        WHERE sel2.signal_id = sds.signal_id AND UPPER(u2.ticker) = UPPER(${ticker})
+      )`
+    : sql``;
 
-  if (rows.length === 0) return [];
-
-  // Batch-resolve signal → thesis/ticker links
-  const signalIds = [...new Set(rows.map((r) => r.signalId))];
-  const thesisLinks = await resolveSignalThesisLinks(signalIds);
-
-  let items = rows.map((r) => {
-    const link = thesisLinks.get(r.signalId);
-    return {
-      id: r.id,
-      source: 'quant_snapshot' as const,
-      timestamp: r.snapshotDate,
-      headline: r.signalStatement,
-      body: r.evidenceSummary ?? undefined,
-      assessment: (r.assessment as FeedItem['assessment']) ?? undefined,
-      observedValue: r.observedValue ? Number(r.observedValue) : undefined,
-      thresholdValue: r.thresholdValue ? Number(r.thresholdValue) : undefined,
-      pctToThreshold: r.pctToThreshold ? Number(r.pctToThreshold) : undefined,
-      unit: r.unit ?? undefined,
-      tickers: link?.ticker ? [link.ticker] : undefined,
-      signalId: r.signalId,
-      signalStatement: r.signalStatement,
-      thesisId: link?.thesisId ?? undefined,
-      thesisType: link?.thesisType as FeedItem['thesisType'] ?? undefined,
-      thesisTitle: link?.thesisTitle ?? undefined,
-      sourceRecordId: r.id,
-    };
-  });
-
-  if (ticker) {
-    const upper = ticker.toUpperCase();
-    items = items.filter((i) => i.tickers?.some((t) => t.toUpperCase() === upper));
+  interface QuantDayRow {
+    snapshot_day: string;
+    latest_ts: string;
+    total_count: number;
+    strengthening_count: number;
+    confirmed_count: number;
+    weakening_count: number;
+    invalidated_count: number;
+    neutral_count: number;
   }
 
-  return items;
+  const cutoffIso = cutoff.toISOString();
+  const result = await db.execute(sql`
+    SELECT
+      DATE(sds.snapshot_date)::text AS snapshot_day,
+      MAX(sds.snapshot_date)::text AS latest_ts,
+      COUNT(*)::int AS total_count,
+      COUNT(*) FILTER (WHERE sds.assessment = 'strengthening')::int AS strengthening_count,
+      COUNT(*) FILTER (WHERE sds.assessment = 'confirmed')::int AS confirmed_count,
+      COUNT(*) FILTER (WHERE sds.assessment = 'weakening')::int AS weakening_count,
+      COUNT(*) FILTER (WHERE sds.assessment = 'invalidated')::int AS invalidated_count,
+      COUNT(*) FILTER (WHERE sds.assessment = 'neutral' OR sds.assessment IS NULL)::int AS neutral_count
+    FROM signal_data_snapshots sds
+    JOIN signals s ON s.id = sds.signal_id
+    WHERE sds.snapshot_date >= ${cutoffIso}::timestamptz
+      AND sds.data_source NOT IN ('thesis_monitor', 'research_routing')
+      AND sds.observed_value IS NOT NULL
+      AND sds.status = 'accepted'
+      ${tickerFilter}
+    GROUP BY DATE(sds.snapshot_date)
+    ORDER BY snapshot_day DESC
+    LIMIT ${limit}
+  `);
+
+  const rows = result as unknown as QuantDayRow[];
+
+  return rows.map((r) => {
+    const dateStr = new Date(r.snapshot_day + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    return {
+      id: `quant-daily-${r.snapshot_day}`,
+      source: 'quant_snapshot' as const,
+      timestamp: new Date(r.latest_ts),
+      headline: `Signal Observations — ${dateStr}`,
+      snapshotDateKey: r.snapshot_day,
+      itemCount: r.total_count,
+      assessmentCounts: {
+        strengthening: r.strengthening_count,
+        confirmed: r.confirmed_count,
+        weakening: r.weakening_count,
+        invalidated: r.invalidated_count,
+        neutral: r.neutral_count,
+      },
+    };
+  });
 }
 
 async function fetchAnalystActions(cutoff: Date, limit: number, ticker?: string): Promise<FeedItem[]> {
