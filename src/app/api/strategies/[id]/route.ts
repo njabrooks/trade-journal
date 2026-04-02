@@ -138,8 +138,10 @@ export async function PATCH(
           openDate: positions.openDate,
           underlyingId: positions.underlyingId,
           accountId: positions.accountId,
+          underlyingTicker: underlyings.ticker,
         })
         .from(positions)
+        .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
         .where(
           and(
             eq(positions.accountId, updated.accountId),
@@ -160,6 +162,7 @@ export async function PATCH(
           snapshotDate: pos.snapshotDate,
           openDate: pos.openDate,
           underlyingId: pos.underlyingId,
+          underlyingTicker: pos.underlyingTicker,
         });
         if (derivedKey === updated.strategyKey) {
           matchingPositionIds.push(pos.id);

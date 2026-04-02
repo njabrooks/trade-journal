@@ -6,7 +6,7 @@ import {
   strategyTemplates,
   underlyings,
 } from '@/db/schema';
-import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc } from 'drizzle-orm';
+import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc, inArray } from 'drizzle-orm';
 import { populateStrategyEntryContext } from '@/lib/services/strategies';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
@@ -24,6 +24,7 @@ interface PositionMinimal {
   snapshotDate: string | null;
   openDate: Date | null;
   underlyingId: string | null;
+  underlyingTicker?: string | null;
 }
 
 interface TradeMinimal {
@@ -32,6 +33,7 @@ interface TradeMinimal {
   symbol: string;
   assetClass: string | null;
   tradeDate: Date;
+  conid?: number | null;
 }
 
 function formatExpiry(expiry: string | null): string | null {
@@ -65,14 +67,23 @@ export function deriveStrategyKeyFromPosition(pos: PositionMinimal): string | nu
     // Try to match ticker (letters only) before any digits or spaces+digits
     const tickerMatch = trimmed.match(/^([A-Z]+)(?:\s+\d|\d)/);
     const ticker = tickerMatch ? tickerMatch[1] : trimmed.split(/\s+/)[0].replace(/\d.*$/, '');
-    
+
     if (!ticker || ticker.length === 0) return null;
-    
+
     const expiryCode = formatExpiry(pos.expiry);
-    
+
     if (expiryCode) {
       return `${ticker} ${expiryCode}`;
     }
+  }
+
+  // FOP/FSFOP: futures options — group under the underlying future's strategy key
+  // e.g., "LOM6 C13500" (FOP on CLM6) → "CLM6-STK"
+  if (pos.assetClass === 'FOP' || pos.assetClass === 'FSFOP') {
+    if (pos.underlyingTicker) {
+      return `${pos.underlyingTicker}-STK`;
+    }
+    return null;
   }
 
   return null;
@@ -97,6 +108,10 @@ export function deriveStrategyLabelFromPosition(pos: PositionMinimal): string | 
     }
   }
 
+  if (pos.assetClass === 'FOP' || pos.assetClass === 'FSFOP') {
+    return pos.underlyingTicker ? `${pos.underlyingTicker} Futures Options` : pos.symbol;
+  }
+
   return pos.symbol;
 }
 
@@ -108,7 +123,7 @@ function extractTickerAndExpiryFromSymbol(symbol: string): { ticker: string; exp
   return { ticker: symbol.trim() };
 }
 
-export function deriveStrategyKeyFromTrade(trade: TradeMinimal): string | null {
+export function deriveStrategyKeyFromTrade(trade: TradeMinimal, underlyingTicker?: string | null): string | null {
   if (trade.assetClass === 'STK' || trade.assetClass === 'FUT' || trade.assetClass === 'CFD') {
     return `${trade.symbol}-STK`;
   }
@@ -129,10 +144,18 @@ export function deriveStrategyKeyFromTrade(trade: TradeMinimal): string | null {
     return `${ticker} OPT`;
   }
 
+  // FOP/FSFOP: futures options — group under the underlying future's strategy key
+  if (trade.assetClass === 'FOP' || trade.assetClass === 'FSFOP') {
+    if (underlyingTicker) {
+      return `${underlyingTicker}-STK`;
+    }
+    return null;
+  }
+
   return null;
 }
 
-export function deriveStrategyLabelFromTrade(trade: TradeMinimal): string | null {
+export function deriveStrategyLabelFromTrade(trade: TradeMinimal, underlyingTicker?: string | null): string | null {
   if (trade.assetClass === 'STK' || trade.assetClass === 'FUT' || trade.assetClass === 'CFD') {
     return `${trade.symbol} Stock`;
   }
@@ -151,6 +174,10 @@ export function deriveStrategyLabelFromTrade(trade: TradeMinimal): string | null
       return `${ticker} ${expiry}`;
     }
     return `${ticker} Option`;
+  }
+
+  if (trade.assetClass === 'FOP' || trade.assetClass === 'FSFOP') {
+    return underlyingTicker ? `${underlyingTicker} Futures Options` : trade.symbol;
   }
 
   return trade.symbol;
@@ -517,10 +544,22 @@ async function findOrCreateStrategyFromTrade(
   trade: TradeMinimal,
   options?: { source?: string }
 ): Promise<{ id: string; created: boolean } | null> {
-  const derivedKey = deriveStrategyKeyFromTrade(trade);
+  // For FOP/FSFOP, resolve the underlying future's ticker via conid → position → underlying
+  let resolvedUnderlyingTicker: string | null = null;
+  if ((trade.assetClass === 'FOP' || trade.assetClass === 'FSFOP') && trade.conid) {
+    const posWithUnderlying = await db
+      .select({ ticker: underlyings.ticker })
+      .from(positions)
+      .innerJoin(underlyings, eq(positions.underlyingId, underlyings.id))
+      .where(and(eq(positions.conid, trade.conid), isNotNull(positions.underlyingId)))
+      .limit(1);
+    resolvedUnderlyingTicker = posWithUnderlying[0]?.ticker ?? null;
+  }
+
+  const derivedKey = deriveStrategyKeyFromTrade(trade, resolvedUnderlyingTicker);
   if (!derivedKey) return null;
 
-  const derivedLabel = deriveStrategyLabelFromTrade(trade);
+  const derivedLabel = deriveStrategyLabelFromTrade(trade, resolvedUnderlyingTicker);
   const { ticker } = extractTickerAndExpiryFromSymbol(trade.symbol);
 
   // Check if this underlying has a parent (e.g., CBBTC -> BTC, JITOSOL -> SOL)
@@ -800,8 +839,10 @@ export async function autoLinkPositionsToStrategies(
       openDate: positions.openDate,
       underlyingId: positions.underlyingId,
       conid: positions.conid,
+      underlyingTicker: underlyings.ticker,
     })
     .from(positions)
+    .leftJoin(underlyings, eq(positions.underlyingId, underlyings.id))
     .where(and(...whereClauses));
 
   let strategiesCreated = 0;
@@ -916,7 +957,8 @@ export async function autoLinkPositionsToStrategies(
           // If only rejected strategies exist, fall through to findOrCreate
         }
 
-        if (!strategyId && pos.underlyingId && pos.expiry && pos.assetClass === 'OPT') {
+        const isOptionLike = pos.assetClass === 'OPT' || pos.assetClass === 'FOP' || pos.assetClass === 'FSFOP';
+        if (!strategyId && pos.underlyingId && pos.expiry && isOptionLike) {
           // If no exact key match, try to find strategies that have positions with same underlying + expiry
           // This catches existing strategies where the key might have been edited
           const strategiesWithSameUnderlying = await db
@@ -929,7 +971,7 @@ export async function autoLinkPositionsToStrategies(
                 eq(positions.accountId, pos.accountId),
                 eq(positions.underlyingId, pos.underlyingId),
                 eq(positions.expiry, pos.expiry),
-                eq(positions.assetClass, 'OPT'),
+                inArray(positions.assetClass, ['OPT', 'FOP', 'FSFOP']),
                 isNotNull(positions.strategyId),
                 sql`${positions.quantity} != 0`
               )
@@ -1043,6 +1085,7 @@ export async function autoLinkTradesToStrategies(
       symbol: trades.symbol,
       assetClass: trades.assetClass,
       tradeDate: trades.tradeDate,
+      conid: trades.conid,
     })
     .from(trades)
     .where(and(...whereClauses))

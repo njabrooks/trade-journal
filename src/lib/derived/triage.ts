@@ -187,7 +187,7 @@ export async function computePositionTriageForDate(
   const whereConditions = [
     eq(positions.snapshotDate, snapshotDate),
     sql`CAST(${positions.quantity} AS DECIMAL) != 0`,
-    eq(positions.assetClass, 'OPT'),
+    inArray(positions.assetClass, ['OPT', 'FOP', 'FSFOP']),
     isNotNull(positions.expiry),
   ];
 
