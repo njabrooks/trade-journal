@@ -21,6 +21,7 @@ import { getRelationshipsForEntity } from '@/db/queries/entityRelationships';
 import { getIntelItemsForThesis } from '@/db/queries/intelItems';
 import { RelationshipPanel } from '@/components/ui/relationship-panel';
 import { IntelPanel } from '@/components/intelligence/IntelPanel';
+import { MacroThesisNotes } from '@/components/theses/MacroThesisNotes';
 
 interface OverviewPageProps {
   params: Promise<{ id: string }>;
@@ -250,6 +251,16 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
           <UnifiedStrategiesBrowser strategies={linkedStrategies} />
         )}
       </CollapsibleEntitySection>
+
+      {/* Notes Section */}
+      {thesis.notes !== null && thesis.notes !== undefined && (
+        <CollapsibleEntitySection
+          title="Notes"
+          defaultOpen={false}
+        >
+          <MacroThesisNotes notes={thesis.notes} />
+        </CollapsibleEntitySection>
+      )}
 
       {/* Relationships Section */}
       <CollapsibleEntitySection

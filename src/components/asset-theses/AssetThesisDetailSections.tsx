@@ -16,6 +16,7 @@ import { TriageAlertSection } from '@/components/asset-theses/TriageAlertSection
 import { ThesisArticulationDisplay } from '@/components/thesis-synthesis/ThesisArticulationDisplay';
 import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { SignalsSection } from '@/components/signals/SignalsSection';
+import { MarkdownDisplay, isMarkdownContent } from '@/components/ui/markdown-display';
 import type { ThesisArticulation, ValidationPoint } from '@/db/schema';
 import type { getAssetThesisById, getMainClaimsWithSourcesForAssetThesis } from '@/db/queries/assetTheses';
 import type { MacroThesisListItem } from '@/db/queries/macroTheses';
@@ -415,9 +416,13 @@ export function AssetThesisDetailSections({
               <span className="font-semibold">Notes</span>
             </AccordionTrigger>
             <AccordionContent className="px-4">
-              <pre className="text-sm text-foreground whitespace-pre-wrap">
-                {JSON.stringify(view.notes, null, 2)}
-              </pre>
+              {typeof view.notes === 'string' && isMarkdownContent(view.notes) ? (
+                <MarkdownDisplay content={view.notes} />
+              ) : (
+                <pre className="text-sm text-foreground whitespace-pre-wrap">
+                  {JSON.stringify(view.notes, null, 2)}
+                </pre>
+              )}
             </AccordionContent>
           </AccordionItem>
         )}

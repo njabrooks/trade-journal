@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { MarkdownDisplay, isMarkdownContent } from '@/components/ui/markdown-display';
 import { Search, Filter, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -551,6 +552,18 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
         {isExpanded && (
           <tr className="bg-muted border-b">
             <td colSpan={6} className="px-4 py-4">
+              {/* Annotation entries: render full description as markdown */}
+              {entry.actionType === 'annotation' && entry.actionDescription && isMarkdownContent(entry.actionDescription) ? (
+                <div className="space-y-4">
+                  <div className="bg-card rounded-lg border p-4">
+                    <MarkdownDisplay content={entry.actionDescription} />
+                  </div>
+                  <div className="flex gap-4 text-xs text-muted-foreground">
+                    <span>Entry: <code className="font-mono">{entry.id.slice(0, 8)}</code></span>
+                    <span>Object: <code className="font-mono">{entry.objectId.slice(0, 8)}</code></span>
+                  </div>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* State Changes */}
                 <div>
@@ -614,6 +627,7 @@ export function JournalBrowser({ entries, totalEntries, objectTypes, actionTypes
                   </div>
                 </div>
               </div>
+              )}
             </td>
           </tr>
         )}
