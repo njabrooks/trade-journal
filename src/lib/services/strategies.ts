@@ -248,11 +248,11 @@ export async function updateStrategy(
   if (updates.confirm) {
     updateData.isAuto = false;
     updateData.confirmedAt = new Date();
-    
-    // When confirming, determine status based on positions using the global latest snapshot date
-    // Use the recomputeStrategyStatus function to ensure consistency
-    const computedStatus = await recomputeStrategyStatus(strategyId);
-    updateData.status = computedStatus;
+
+    // When confirming, always set to active. The user is explicitly activating
+    // this strategy. Status transitions (active → complete) are handled later
+    // by recomputeStrategyStatus during ingestion recompute cycles.
+    updateData.status = 'active';
   }
 
   if (updates.strategyType !== undefined) {
