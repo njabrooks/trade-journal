@@ -38,8 +38,8 @@ const __dirname = dirname(__filename);
 config({ path: resolve(__dirname, '..', '.env.local') });
 
 import { db } from '../src/db';
-import { underlyings, optionsChainSnapshots } from '../src/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { underlyings, optionsChainSnapshots, positions } from '../src/db/schema';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { upsertIvSnapshots, fetchYahooFinanceSpot } from '../src/lib/ingestion/underlyingsIvHistory';
 import type { NewOptionsChainSnapshot } from '../src/db/schema';
 
@@ -594,6 +594,13 @@ async function storeOptionsChainSnapshot(
     const volume = option.day?.volume ?? null;
     const openInterest = option.open_interest ?? null;
 
+    // Greeks from Massive API response
+    const greeks = option.greeks;
+    const delta = greeks?.delta !== undefined ? parseFloat(String(greeks.delta)) : null;
+    const gamma = greeks?.gamma !== undefined ? parseFloat(String(greeks.gamma)) : null;
+    const theta = greeks?.theta !== undefined ? parseFloat(String(greeks.theta)) : null;
+    const vega = greeks?.vega !== undefined ? parseFloat(String(greeks.vega)) : null;
+
     // Store even if IV is null - we might want to analyze pricing without IV
     snapshotRecords.push({
       underlyingId: underlyingId ?? undefined,
@@ -611,6 +618,10 @@ async function storeOptionsChainSnapshot(
       last: last ? parseFloat(String(last)).toString() : null,
       volume: volume ? parseInt(String(volume)) : null,
       openInterest: openInterest ? parseInt(String(openInterest)) : null,
+      delta: delta !== null && !isNaN(delta) ? delta.toString() : null,
+      gamma: gamma !== null && !isNaN(gamma) ? gamma.toString() : null,
+      theta: theta !== null && !isNaN(theta) ? theta.toString() : null,
+      vega: vega !== null && !isNaN(vega) ? vega.toString() : null,
       rawData: option as any, // Store full option data for future use
     });
   }
@@ -891,6 +902,94 @@ async function ingestUnderlyingsFromMassive(date?: string, tickers?: string[]): 
         }
       }
     }
+  }
+
+  // Step 3: Fetch greeks for held option positions with expiries outside the 20-40 DTE window
+  // The main loop only fetches options near 30 DTE for IV30 calculation.
+  // To compute portfolio delta %, we need greeks for ALL held positions.
+  console.log(`\n📊 Step 3: Fetching greeks for held option positions outside standard DTE window...`);
+  try {
+    const heldOptions = await db
+      .select({
+        ticker: underlyings.ticker,
+        expiry: positions.expiry,
+        strike: positions.strike,
+        optionRight: positions.optionRight,
+      })
+      .from(positions)
+      .innerJoin(underlyings, eq(positions.underlyingId, underlyings.id))
+      .where(
+        and(
+          eq(positions.assetClass, 'OPT'),
+          sql`${positions.quantity} != 0`,
+          sql`${positions.snapshotDate} = (
+            SELECT MAX(p2.snapshot_date) FROM positions p2 WHERE p2.account_id = ${positions.accountId}
+          )`
+        )
+      );
+
+    // Group by ticker → set of unique expiry dates
+    const tickerExpiries = new Map<string, Set<string>>();
+    for (const opt of heldOptions) {
+      if (!opt.ticker || !opt.expiry) continue;
+      const expiryDate = opt.expiry.split('T')[0]!;
+      if (!tickerExpiries.has(opt.ticker)) {
+        tickerExpiries.set(opt.ticker, new Set());
+      }
+      tickerExpiries.get(opt.ticker)!.add(expiryDate);
+    }
+
+    // For each ticker, check which expiries are NOT already in options_chain_snapshots for today
+    let heldFetched = 0;
+    for (const [ticker, expiries] of tickerExpiries) {
+      for (const expiryDate of expiries) {
+        // Check if we already have this expiry in the chain for today
+        const existing = await db
+          .select({ id: optionsChainSnapshots.id })
+          .from(optionsChainSnapshots)
+          .where(
+            and(
+              eq(optionsChainSnapshots.ticker, ticker),
+              eq(optionsChainSnapshots.snapshotDate, targetDate),
+              eq(optionsChainSnapshots.expirationDate, expiryDate)
+            )
+          )
+          .limit(1);
+
+        if (existing.length > 0) {
+          console.log(`[${ticker}] Expiry ${expiryDate} already in chain — skipping`);
+          continue;
+        }
+
+        // Fetch this specific expiry from Massive
+        console.log(`[${ticker}] Fetching held expiry ${expiryDate}...`);
+        const underlyingId = underlyingMap.get(ticker) ?? null;
+        const spot = spotPrices.get(ticker) ?? null;
+
+        try {
+          const url = `https://api.massive.com/v3/snapshot/options/${ticker}?apiKey=${MASSIVE_API_KEY}&limit=250&expiration_date.gte=${expiryDate}&expiration_date.lte=${expiryDate}`;
+          const resp = await fetch(url);
+          if (!resp.ok) {
+            console.log(`[${ticker}] API error ${resp.status} for expiry ${expiryDate}`);
+            continue;
+          }
+          const data: OptionsChainSnapshot = await resp.json();
+          if (data.results && data.results.length > 0) {
+            const result = await storeOptionsChainSnapshot(ticker, targetDate, underlyingId, spot, data);
+            console.log(`[${ticker}] Stored ${result.inserted} contracts for expiry ${expiryDate}`);
+            heldFetched += result.inserted;
+          } else {
+            console.log(`[${ticker}] No options data for expiry ${expiryDate}`);
+          }
+          await new Promise(resolve => setTimeout(resolve, 300)); // Rate limit
+        } catch (err) {
+          console.log(`[${ticker}] Error fetching expiry ${expiryDate}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+    console.log(`✅ Held-position greeks: fetched ${heldFetched} additional contracts`);
+  } catch (err) {
+    console.log(`⚠️  Held-position greeks step failed: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // Upsert all snapshots

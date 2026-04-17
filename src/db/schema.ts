@@ -492,10 +492,16 @@ export const optionsChainSnapshots = pgTable(
     last: numeric('last'),
     volume: integer('volume'),
     openInterest: integer('open_interest'),
-    
+
+    // Greeks (from Massive API response)
+    delta: numeric('delta'),
+    gamma: numeric('gamma'),
+    theta: numeric('theta'),
+    vega: numeric('vega'),
+
     // Additional metadata
     rawData: jsonb('raw_data'), // Store full raw response for future use
-    
+
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
