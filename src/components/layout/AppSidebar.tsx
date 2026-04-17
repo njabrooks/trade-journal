@@ -44,6 +44,7 @@ const INTELLIGENCE_NAV = [
   { href: "/claims", label: "Claims", icon: Lightbulb, id: "claims" },
   { href: "/signals", label: "Signals", icon: Zap, id: "signals" },
   { href: "/signals/data-sources", label: "Data Sources", icon: Database, id: "signals-data-sources" },
+  { href: "/vol-curve", label: "Vol Curve", icon: Activity, id: "vol-curve" },
 ] as const;
 
 const ENTITIES_NAV = [

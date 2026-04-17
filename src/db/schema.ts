@@ -3076,3 +3076,38 @@ export const intelItems = pgTable(
 
 export type IntelItem = typeof intelItems.$inferSelect;
 export type NewIntelItem = typeof intelItems.$inferInsert;
+
+// ============================================================================
+// Vol Curve Reports
+// ============================================================================
+
+export const volCurveReports = pgTable(
+  'vol_curve_reports',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ticker: text('ticker').notNull(),
+    direction: text('direction').notNull(), // 'bullish' | 'bearish'
+    targetBase: numeric('target_base').notNull(),
+    targetHigh: numeric('target_high').notNull(),
+    horizonMonths: numeric('horizon_months').notNull(),
+    downsideFloor: numeric('downside_floor').notNull(),
+    spot: numeric('spot').notNull(),
+    iv30: numeric('iv30'),
+    rv20: numeric('rv20'),
+    ivRvRatio: numeric('iv_rv_ratio'),
+    ivRank: numeric('iv_rank'),
+    strategyCount: integer('strategy_count').notNull().default(0),
+    topStrategyLabel: text('top_strategy_label'),
+    topStrategyType: text('top_strategy_type'),
+    reportData: jsonb('report_data').notNull(), // full AnalysisOutput JSON
+    notes: text('notes'), // user/AI commentary
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    tickerIdx: index('idx_vol_curve_reports_ticker').on(table.ticker),
+    createdIdx: index('idx_vol_curve_reports_created').on(table.createdAt),
+  })
+);
+
+export type VolCurveReport = typeof volCurveReports.$inferSelect;
+export type NewVolCurveReport = typeof volCurveReports.$inferInsert;
