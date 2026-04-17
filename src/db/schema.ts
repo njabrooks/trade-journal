@@ -1293,7 +1293,7 @@ export const researchHierarchyRecommendations = pgTable(
     }),
 
     // Evidence relationship (if linking)
-    mappingType: text('mapping_type'), // 'supports' | 'refutes' | 'neutral' | 'exploratory'
+    mappingType: text('mapping_type'), // 'supports' | 'refutes' | 'neutral' | 'exploratory' | 'foundation'
     confidenceScore: numeric('confidence_score', { precision: 3, scale: 2 }), // 0.00 to 1.00
 
     // Reasoning

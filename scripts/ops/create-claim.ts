@@ -20,7 +20,8 @@
  *
  * Required: --title, --claim, --category, --qualifier
  * Optional: --tickers, --evidence, --reasoning, --backing, --rebuttal,
- *           --link-to-thesis-id, --link-to-thesis-type, --mapping-type
+ *           --link-to-thesis-id, --link-to-thesis-type, --mapping-type,
+ *           --source (default: 'user'; use 'skill' or 'automation' for non-user sources)
  */
 
 import { db, closeDb, schema, logToJournal } from '../lib/db.js';
@@ -53,7 +54,8 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   const { title, claim, category, qualifier, tickers, evidence, reasoning, backing, rebuttal,
-          link_to_thesis_id, link_to_thesis_type, mapping_type } = args;
+          link_to_thesis_id, link_to_thesis_type, mapping_type,
+          source_insight_id, source_claim_id, time_horizon, source } = args;
 
   if (!title || !claim || !category || !qualifier) {
     console.error('Required: --title, --claim, --category, --qualifier');
@@ -75,6 +77,9 @@ async function main() {
     backing: backing || null,
     rebuttal: rebuttalArray,
     status: 'draft',
+    sourceInsightId: source_insight_id || null,
+    sourceClaimId: source_claim_id || null,
+    timeHorizon: time_horizon || null,
   }).returning({ id: schema.mainClaims.id, title: schema.mainClaims.title });
 
   // Optionally link to thesis
@@ -107,7 +112,7 @@ async function main() {
     actionType: 'created',
     actionDescription: `Created claim: ${title} (${category}, qualifier: ${qualifier})${thesisLinked ? ` — linked to ${link_to_thesis_type} thesis ${thesisId}` : ''}`,
     newState: { status: 'draft', category, qualifier, thesisLinked },
-    source: 'user',
+    source: source || 'user',
   });
 
   console.log(JSON.stringify({

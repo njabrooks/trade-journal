@@ -158,7 +158,7 @@ export function getSupportingEvidence(
   if (!mainClaim) return [];
 
   return claimsStructure.evidence_claims.filter(e =>
-    mainClaim.supporting_evidence_claims.includes(e.id)
+    (mainClaim.supporting_evidence_claims ?? []).includes(e.id)
   );
 }
 
@@ -170,7 +170,7 @@ export function getRebuttingEvidence(
   if (!mainClaim) return [];
 
   return claimsStructure.evidence_claims.filter(e =>
-    mainClaim.rebutting_evidence_claims.includes(e.id)
+    (mainClaim.rebutting_evidence_claims ?? []).includes(e.id)
   );
 }
 
