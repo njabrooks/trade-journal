@@ -7,6 +7,8 @@ description: >
   register to review outstanding items.
 ---
 
+> DEPRECATED (2026-04-14) -- Paperclip is no longer the canonical backlog. Task tracking happens directly in Claude Code conversations. Kept for reference only.
+
 # Paperclip Backlog Skill
 
 Manages backlog issues in the Two Trees Capital Paperclip instance.

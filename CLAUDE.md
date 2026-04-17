@@ -362,9 +362,6 @@ Feature-based component organization:
 **Backfill & Maintenance:**
 - **`backfill-claims`** - Reprocess existing claims for lifecycle-aware thesis linkage suggestions (draft/developing) and signal evidence evaluation (monitoring). Same logic as process-inbox but for claims already in the database.
 
-**Workflow Coordination:**
-- **`paperclip-backlog`** - Create and read Paperclip issues. Use to log follow-up work, technical debt, or feature requests.
-
 **Database Access**: All database skills use `scripts/psql-query.ts` helper instead of Supabase MCP due to reliability issues. The helper loads env vars and executes SQL via psql directly.
 
 ## Database Schema (Drizzle ORM)
@@ -391,7 +388,7 @@ Key tables (see `/src/db/schema.ts` for full schema):
 
 ### Supporting Tables
 - **`underlyings_iv_history`** - Time-series IV/spot snapshots (unique on ticker + date + source)
-- **`options_chain_snapshots`** - Full options chains for IV analysis
+- **`options_chain_snapshots`** - Full options chains for IV analysis. Includes greeks (`delta`, `gamma`, `theta`, `vega`) from Massive API, populated daily. Raw API response stored in `rawData` JSONB.
 - **`strategy_templates`** - Reusable strategy patterns for auto-linking
 - **`triage_rules`** - Configurable triage logic
 - **`ingestion_runs`** - Process tracking for all data imports
@@ -524,12 +521,6 @@ SOLANA_WALLETS='[{"address":"<wallet-1>","label":"Owner Name 1"},{"address":"<wa
 
 ## Cross-Repo Workflow & Operating Model
 
-### Paperclip Workflow Model
-
-- **Claude Code** (this session) = problem-solving and scoping partner. Use it for investigation, debugging, schema work, skill execution, and scoping new issues.
-- **Paperclip agents** = execution engine for discrete engineering tasks. Once a task is scoped clearly enough that an agent could execute it with zero clarifying questions, file it in Paperclip via `/paperclip-backlog` rather than doing it here.
-- **Do not** execute multi-step engineering tasks in Claude Code that belong in Paperclip. Scope → file → let agents execute.
-
 ### Notes → Trade Journal Interface
 
 Research flows one way: notes repo → trade-journal database. The `process-inbox` skill (notes) handles the full pipeline:
@@ -572,28 +563,14 @@ Quantitative signal data:
 | New API route | `CLAUDE.md` (Key Directories section) |
 | New component | `CLAUDE.md` (Key Directories section) |
 | State field changes | `CLAUDE.md` (Entity State Machines section) |
-| New work item / technical debt | File a Paperclip issue via `/paperclip-backlog` |
-| Dead code identified / removed | Note in a journal entry or Paperclip issue |
+| New work item / technical debt | Track in conversation or TODO comments |
+| Dead code identified / removed | Note in a journal entry or remove directly |
 
 **Quick sanity check:**
 - Does `CLAUDE.md` Key Directories and Database Schema match actual file structure?
 
 **Quarterly cleanup (or when docs feel stale):**
 1. Run `grep -r "TODO\|FIXME\|DEPRECATED" src/` to find code debt
-2. Review Paperclip backlog for stale items that may no longer be relevant
-
-### When Planning Future Work
-
-All follow-up work, technical debt, and feature requests are tracked in **Paperclip** — use the `/paperclip-backlog` skill to create and read issues.
-
-**Quality bar for a Paperclip issue:** could an agent execute it with zero clarifying questions? If not, scope it further before filing.
-
-**Process:**
-1. Identify the work item during a session
-2. Run `/paperclip-backlog` to file a Paperclip issue with full context
-3. Reference the Paperclip issue ID (e.g. TWO-xxx) in any related code or notes
-
-**Do not** create entries in `docs/FUTURE_ENHANCEMENTS.md` for new work — that file is legacy and no longer maintained.
 
 ### When Modifying Data Ingestion
 - CSV ingestion uses PapaParse via `/src/lib/ingestion/flex/processCsv.ts`
@@ -791,7 +768,5 @@ Strategy price signals are created by drawing TP/SL lines on a dedicated Trading
 - **Styles** → `/src/app/globals.css` (Tailwind with custom animations)
 
 ## Future Development Context
-
-Backlog tracked in Paperclip. Use `/paperclip-backlog` to pull current issues.
 
 When implementing new features, use CLAUDE.md as the primary reference.
