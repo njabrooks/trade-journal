@@ -3,6 +3,15 @@ import { underlyings, trades } from '@/db/schema';
 import { eq, and, isNotNull, sql } from 'drizzle-orm';
 
 /**
+ * Detects names that look like IBKR option contract descriptions
+ * rather than real underlying names (e.g. "HYG 15MAY26 79 P").
+ */
+function looksLikeOptionDescription(name: string): boolean {
+  // Option descriptions follow patterns like "IBIT 20MAR26 95 C" or "HYG 15MAY26 79 P"
+  return /\d{2}[A-Z]{3}\d{2}\s+\d/.test(name);
+}
+
+/**
  * Ensures an underlying record exists for the given ticker.
  * Returns the underlying ID, or null if ticker is not provided.
  * Updates existing records with new data if provided.
@@ -36,7 +45,7 @@ export async function ensureUnderlyingId(
     if (baseCurrency && !existingRecord.baseCurrency) {
       updates.baseCurrency = baseCurrency;
     }
-    if (name && !existingRecord.name) {
+    if (name && (!existingRecord.name || looksLikeOptionDescription(existingRecord.name))) {
       updates.name = name;
     }
 

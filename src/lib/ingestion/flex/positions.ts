@@ -206,12 +206,16 @@ export async function normalizeFlexPositionRow(
   // Extract additional underlying metadata
   const currencyPrimary = getValue(row, FIELD_VARIANTS.currencyPrimary) ?? null;
   const description = getValue(row, FIELD_VARIANTS.description) ?? null;
-  
+
+  // For options, the IBKR description is the contract name (e.g. "HYG 15MAY26 79 P"),
+  // not the underlying name. Only pass description for non-option positions.
+  const underlyingName = assetClass === 'OPT' ? null : description;
+
   const underlyingId = await ensureUnderlyingId(
     underlyingTicker,
-    assetClass,
+    assetClass === 'OPT' ? 'STK' : assetClass, // underlying of an option is a stock/ETF
     currencyPrimary,
-    description
+    underlyingName
   );
 
   return {
