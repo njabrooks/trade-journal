@@ -6,8 +6,9 @@ import { formatCurrency, formatPercent, calculateDTE } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { PortfolioStrategyRow, PortfolioPositionRow, CashBreakdownRow } from "@/db/queries/portfolio";
 import type { Account } from "@/db/schema";
+import { computeDeltaPctNav } from "./PositionRow";
 
-type SortColumn = "underlying" | "strategies" | "positions" | "spot" | "marketValue" | "pctTotal" | "dte";
+type SortColumn = "underlying" | "strategies" | "positions" | "spot" | "marketValue" | "pctTotal" | "deltaPct" | "dte";
 type SortDirection = "asc" | "desc";
 
 interface CashCurrencyGroup {
@@ -53,6 +54,30 @@ function getStrategyAggregates(strategy: PortfolioStrategyRow, totalMarketValue:
   const pctTotal = totalMarketValue > 0 ? (totalMV / totalMarketValue) * 100 : null;
 
   return { totalMV, pctTotal, minDte };
+}
+
+/** Sum delta % NAV across an array of positions */
+function sumDeltaPctNav(allPositions: PortfolioPositionRow[]): number | null {
+  let total = 0;
+  let hasAny = false;
+  for (const pos of allPositions) {
+    const d = computeDeltaPctNav(pos);
+    if (d != null) {
+      total += d;
+      hasAny = true;
+    }
+  }
+  return hasAny ? total : null;
+}
+
+function formatDeltaPct(value: number | null): string {
+  if (value == null) return "\u2014";
+  return (value >= 0 ? "+" : "") + value.toFixed(1) + "%";
+}
+
+function deltaPctColor(value: number | null): string {
+  if (value == null) return "text-muted-foreground";
+  return value >= 0 ? "text-emerald-600" : "text-rose-600";
 }
 
 function DirectionIcon({ direction }: { direction: string | null }) {
@@ -235,6 +260,12 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
         case "pctTotal":
           cmp = (a.pctTotal ?? 0) - (b.pctTotal ?? 0);
           break;
+        case "deltaPct": {
+          const allPosA = a.strategies.flatMap((s) => s.positions);
+          const allPosB = b.strategies.flatMap((s) => s.positions);
+          cmp = (sumDeltaPctNav(allPosA) ?? 0) - (sumDeltaPctNav(allPosB) ?? 0);
+          break;
+        }
         case "dte":
           cmp = (a.minDte ?? 9999) - (b.minDte ?? 9999);
           break;
@@ -331,6 +362,7 @@ export function UnderlyingStrategyTable({ strategies, accounts, totalMarketValue
               {renderSortHeader("spot", "Spot", "text-right")}
               {renderSortHeader("marketValue", "Mkt Value", "text-right")}
               {renderSortHeader("pctTotal", "% Total", "text-right")}
+              {renderSortHeader("deltaPct", "Delta %", "text-right")}
               {renderSortHeader("dte", "Min DTE", "text-center")}
             </tr>
           </thead>
@@ -411,6 +443,15 @@ function UnderlyingGroup({
         <td className="py-2.5 pr-3 text-right text-sm tabular-nums text-muted-foreground">
           {group.pctTotal != null ? formatPercent(group.pctTotal) : "\u2014"}
         </td>
+        {(() => {
+          const allPos = group.strategies.flatMap((s) => s.positions);
+          const dp = sumDeltaPctNav(allPos);
+          return (
+            <td className={cn("py-2.5 pr-3 text-right text-sm tabular-nums font-medium", deltaPctColor(dp))}>
+              {formatDeltaPct(dp)}
+            </td>
+          );
+        })()}
         <td className="py-2.5 text-center text-sm tabular-nums text-muted-foreground">
           {group.minDte != null ? group.minDte : "\u2014"}
         </td>
@@ -505,6 +546,7 @@ function CashCurrencyRow({
         <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
           {pctTotal != null ? formatPercent(pctTotal) : "\u2014"}
         </td>
+        <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">{"\u2014"}</td>
         <td className="py-2 text-center text-sm tabular-nums text-muted-foreground">
           {"\u2014"}
         </td>
@@ -532,6 +574,7 @@ function CashCurrencyRow({
             <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               % Total
             </td>
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground"></td>
             <td className="py-1.5 text-center text-xs uppercase tracking-wide text-muted-foreground">
               {"\u2014"}
             </td>
@@ -589,6 +632,7 @@ function CashAccountRow({
       <td className="py-1.5 pr-3 text-right text-xs tabular-nums text-muted-foreground">
         {pctTotal != null ? formatPercent(pctTotal) : "\u2014"}
       </td>
+      <td className="py-1.5 pr-3 text-right text-xs tabular-nums text-muted-foreground">{"\u2014"}</td>
       <td className="py-1.5 text-center text-xs tabular-nums text-muted-foreground">
         {"\u2014"}
       </td>
@@ -660,6 +704,14 @@ function StrategyRow({ strategy, agg, totalMarketValue, isExpanded, onToggle, ac
         <td className="py-2 pr-3 text-right text-sm tabular-nums text-muted-foreground">
           {agg.pctTotal != null ? formatPercent(agg.pctTotal) : "\u2014"}
         </td>
+        {(() => {
+          const dp = sumDeltaPctNav(strategy.positions);
+          return (
+            <td className={cn("py-2 pr-3 text-right text-sm tabular-nums font-medium", deltaPctColor(dp))}>
+              {formatDeltaPct(dp)}
+            </td>
+          );
+        })()}
         <td className="py-2 text-center text-sm tabular-nums text-muted-foreground">
           {agg.minDte != null ? agg.minDte : "\u2014"}
         </td>
@@ -688,6 +740,9 @@ function StrategyRow({ strategy, agg, totalMarketValue, isExpanded, onToggle, ac
             </td>
             <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
               % Total
+            </td>
+            <td className="py-1.5 pr-3 text-right text-xs uppercase tracking-wide text-muted-foreground">
+              Delta %
             </td>
             <td className="py-1.5 text-center text-xs uppercase tracking-wide text-muted-foreground">
               DTE
@@ -751,6 +806,14 @@ function PositionRowNested({
       <td className="py-1.5 pr-3 text-right tabular-nums text-muted-foreground">
         {pctTotal != null ? formatPercent(pctTotal) : "\u2014"}
       </td>
+      {(() => {
+        const dp = computeDeltaPctNav(position);
+        return (
+          <td className={cn("py-1.5 pr-3 text-right tabular-nums font-medium", deltaPctColor(dp))}>
+            {formatDeltaPct(dp)}
+          </td>
+        );
+      })()}
       <td className="py-1.5 text-center tabular-nums text-muted-foreground">
         {dte != null ? dte : "\u2014"}
       </td>

@@ -5,6 +5,7 @@ import {
   accounts,
   assetTheses,
   cashBalances,
+  optionsChainSnapshots,
   portfolioSnapshots,
   positions,
   strategies,
@@ -584,6 +585,7 @@ export interface PortfolioPositionRow {
   accountId: string;
   strategyId: string | null;
   nav: number | null;
+  delta: number | null;
 }
 
 export interface PortfolioStrategyRow {
@@ -731,7 +733,68 @@ export async function getPortfolioPositionsData(
     accountId: row.accountId,
     strategyId: row.strategyId,
     nav,
+    delta: null, // Will be populated below
   }));
+
+  // Populate option deltas from options_chain_snapshots.
+  // For non-option positions, delta = sign(quantity) (stocks, crypto, futures all have delta 1).
+  const optPositions = allPositions.filter(
+    (p) => p.assetClass === "OPT" && p.strike != null && p.expiry != null && p.underlyingTicker
+  );
+
+  if (optPositions.length > 0) {
+    // Build lookup keys for all held options
+    const optTickers = [...new Set(optPositions.map((p) => p.underlyingTicker!))];
+
+    // Fetch deltas for these tickers from the latest options chain snapshot
+    const greekRows = await db
+      .select({
+        ticker: optionsChainSnapshots.ticker,
+        strike: optionsChainSnapshots.strike,
+        expirationDate: optionsChainSnapshots.expirationDate,
+        contractType: optionsChainSnapshots.contractType,
+        delta: optionsChainSnapshots.delta,
+      })
+      .from(optionsChainSnapshots)
+      .where(
+        and(
+          inArray(optionsChainSnapshots.ticker, optTickers),
+          sql`${optionsChainSnapshots.delta} IS NOT NULL`,
+          sql`${optionsChainSnapshots.snapshotDate} = (
+            SELECT MAX(ocs2.snapshot_date)
+            FROM options_chain_snapshots ocs2
+            WHERE ocs2.ticker = ${optionsChainSnapshots.ticker}
+          )`
+        )
+      );
+
+    // Build lookup map: "TICKER|STRIKE|EXPIRY|TYPE" -> delta
+    const greekMap = new Map<string, number>();
+    for (const row of greekRows) {
+      const expiry = row.expirationDate; // Already YYYY-MM-DD from date column
+      const contractType = row.contractType === "call" ? "C" : row.contractType === "put" ? "P" : row.contractType;
+      const key = `${row.ticker}|${row.strike}|${expiry}|${contractType}`;
+      const delta = toNumber(row.delta);
+      if (delta !== null) greekMap.set(key, delta);
+    }
+
+    // Match each option position to its greek
+    for (const pos of optPositions) {
+      const expiry = pos.expiry?.split("T")[0] ?? "";
+      const key = `${pos.underlyingTicker}|${pos.strike}|${expiry}|${pos.optionRight}`;
+      const delta = greekMap.get(key);
+      if (delta !== undefined) {
+        pos.delta = delta;
+      }
+    }
+  }
+
+  // Set delta for non-option positions (stocks, crypto, futures = delta 1)
+  for (const pos of allPositions) {
+    if (pos.assetClass !== "OPT" && pos.delta === null) {
+      pos.delta = pos.quantity >= 0 ? 1 : -1;
+    }
+  }
 
   // Collect unique strategy IDs
   const strategyIds = [...new Set(
