@@ -3101,13 +3101,147 @@ export const volCurveReports = pgTable(
     topStrategyType: text('top_strategy_type'),
     reportData: jsonb('report_data').notNull(), // full AnalysisOutput JSON
     notes: text('notes'), // user/AI commentary
+
+    // Phase 2: scanner integration. user-triggered reports leave these null;
+    // scanner-triggered reports carry context from the snapshot that surfaced them.
+    triggerSource: text('trigger_source').notNull().default('user'), // 'user' | 'scanner'
+    regime: text('regime'), // 'cheap' | 'rich' | 'mixed' (null for user-driven)
+    useCase: text('use_case'), // 'hedge' | 'accentuate' | 'yield_harvest' | etc.
+    scannerSnapshotId: uuid('scanner_snapshot_id'), // FK → vol_scan_ticker_snapshots.id
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     tickerIdx: index('idx_vol_curve_reports_ticker').on(table.ticker),
     createdIdx: index('idx_vol_curve_reports_created').on(table.createdAt),
+    triggerIdx: index('idx_vol_curve_reports_trigger').on(table.triggerSource),
   })
 );
 
 export type VolCurveReport = typeof volCurveReports.$inferSelect;
 export type NewVolCurveReport = typeof volCurveReports.$inferInsert;
+
+// ============================================================================
+// Options Scanner (daily cheap-options scanner)
+// ============================================================================
+
+export const watchlistEntries = pgTable(
+  'watchlist_entries',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    underlyingId: uuid('underlying_id')
+      .notNull()
+      .references(() => underlyings.id, { onDelete: 'cascade' }),
+    addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow(),
+    addedReason: text('added_reason'),
+    priority: text('priority').notNull().default('normal'), // 'high' | 'normal' | 'low'
+    isActive: boolean('is_active').notNull().default(true),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    underlyingUnique: unique('watchlist_entries_underlying_id_unique').on(table.underlyingId),
+    activeIdx: index('idx_watchlist_active').on(table.isActive),
+  })
+);
+
+export type WatchlistEntry = typeof watchlistEntries.$inferSelect;
+export type NewWatchlistEntry = typeof watchlistEntries.$inferInsert;
+
+export const volScanRuns = pgTable(
+  'vol_scan_runs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    runDate: date('run_date').notNull(),
+    universeSource: text('universe_source').notNull(), // 'watchlist' | 'positions' | 'thesis' | 'manual' | 'all'
+    universeSize: integer('universe_size').notNull().default(0),
+    ivPercentileThreshold: numeric('iv_percentile_threshold'),
+    ivRv20RatioThreshold: numeric('iv_rv20_ratio_threshold'),
+    lookbackDays: integer('lookback_days').notNull().default(252),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    status: text('status').notNull().default('running'), // 'running' | 'complete' | 'error'
+    errorText: text('error_text'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    runDateUniverseUnique: unique('vol_scan_runs_run_date_universe_unique').on(
+      table.runDate,
+      table.universeSource
+    ),
+    runDateIdx: index('idx_vol_scan_runs_run_date').on(table.runDate),
+  })
+);
+
+export type VolScanRun = typeof volScanRuns.$inferSelect;
+export type NewVolScanRun = typeof volScanRuns.$inferInsert;
+
+export const volScanTickerSnapshots = pgTable(
+  'vol_scan_ticker_snapshots',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    runId: uuid('run_id')
+      .notNull()
+      .references(() => volScanRuns.id, { onDelete: 'cascade' }),
+    ticker: text('ticker').notNull(),
+    underlyingId: uuid('underlying_id').references(() => underlyings.id, { onDelete: 'set null' }),
+
+    // Spot / volatility
+    spot: numeric('spot'),
+    iv30: numeric('iv30'),
+    rv20: numeric('rv20'),
+    rv60: numeric('rv60'),
+    ivRv20Ratio: numeric('iv_rv20_ratio'),
+    ivRank252: numeric('iv_rank_252'),
+    ivPercentile252: numeric('iv_percentile_252'),
+
+    // Term structure
+    termStructureSlope: numeric('term_structure_slope'),
+    frontMonthIv: numeric('front_month_iv'),
+    backMonthIv: numeric('back_month_iv'),
+
+    // Skew (25-delta put − 25-delta call, front expiry)
+    skew25d: numeric('skew_25d'),
+
+    // Scoring — cheap regime (long vol)
+    isCheap: boolean('is_cheap').notNull().default(false),
+    cheapnessScore: numeric('cheapness_score'),
+    gateIvPercentile: boolean('gate_iv_percentile'),
+    gateIvRvRatio: boolean('gate_iv_rv_ratio'),
+    gateTermNormal: boolean('gate_term_normal'),
+    gateBackBelowFront: boolean('gate_back_below_front'),
+
+    // Scoring — rich regime (short vol / yield harvest)
+    isRich: boolean('is_rich').notNull().default(false),
+    richnessScore: numeric('richness_score'),
+    gateIvPercentileHigh: boolean('gate_iv_percentile_high'),
+    gateIvRvRatioHigh: boolean('gate_iv_rv_ratio_high'),
+    gateTermStressed: boolean('gate_term_stressed'),
+    gateFrontAboveBack: boolean('gate_front_above_back'),
+
+    // Regime classification: 'cheap' | 'rich' | 'neutral' | 'mixed'
+    regime: text('regime'),
+
+    // Portfolio context
+    hasOpenPosition: boolean('has_open_position').notNull().default(false),
+    linkedAssetThesisIds: uuid('linked_asset_thesis_ids').array().default([]),
+
+    historyDays: integer('history_days'),
+
+    // 'ibkr' | 'massive' | 'mixed' — which chain source produced the metrics
+    dataSource: text('data_source'),
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    runTickerUnique: unique('vol_scan_snap_run_ticker_unique').on(table.runId, table.ticker),
+    runCheapIdx: index('idx_vol_scan_snap_run_cheap').on(table.runId, table.isCheap),
+    tickerDateIdx: index('idx_vol_scan_snap_ticker_date').on(table.ticker, table.createdAt),
+    underlyingIdx: index('idx_vol_scan_snap_underlying').on(table.underlyingId),
+  })
+);
+
+export type VolScanTickerSnapshot = typeof volScanTickerSnapshots.$inferSelect;
+export type NewVolScanTickerSnapshot = typeof volScanTickerSnapshots.$inferInsert;

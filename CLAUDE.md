@@ -287,12 +287,18 @@ Contains business logic for calculating derived insights from raw data:
 - **`underlyingsIvHistory.ts`** - IV history management
 
 ### `/src/lib/services` - External Integrations
-- **`ibkr/`** - IBKR Client Portal Gateway API
+- **`ibkr/`** - IBKR Client Portal Gateway API (single-contract quotes + spot only — NOT bulk options chains; for chains see Radon below)
   - `client.ts` - Main API client
   - `contracts.ts` - Contract lookup (conid resolution)
   - `historical-spot.ts` - Historical pricing
   - `iv-data.ts` - IV data fetching
   - `data-priority.ts` - Fallback logic (Yahoo Finance → IBKR Gateway → Massive)
+
+**IBKR options-chain pulls go through Radon, not this module.** The `src/lib/services/ibkr/` code uses the Client Portal HTTPS API and is built for single-contract quotes (used by `ibkr-option-quote.ts` for combo pricing) and spot/single-IV snapshots. For bulk chain enumeration with greeks (e.g., the cheap-options scanner's IBKR ingest path), Trade Journal Python scripts import Radon's `IBClient` (TWS API via ib_insync, port 4001). See:
+- Radon project: `/Users/home-hub/projects/radon/scripts/clients/ib_client.py`
+- Trade Journal users of Radon's venv: `scripts/ibkr-option-quote.py`, `scripts/pull-live-portfolio.py`, future `scripts/ingest-ibkr-chains.py`
+- IB Gateway is auto-managed by Radon's `local.ibc-gateway` launchd service; user does 2FA on phone Mon morning, then it's connected through the week.
+- Client ID range for trade-journal subprocess scripts: **20-49** (Radon reserves 0-19).
 - **`strategies.ts`** (32KB) - Strategy business logic
 - **`strategyLinking.ts`** - Trade-to-strategy matching logic
 - **`processTracking.ts`** - Ingestion run tracking/logging
