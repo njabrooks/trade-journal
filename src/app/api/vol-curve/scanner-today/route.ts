@@ -73,7 +73,9 @@ export async function GET() {
       r.id AS run_id,
       r.run_date,
       r.universe_source,
-      r.status AS run_status
+      r.status AS run_status,
+      r.started_at,
+      r.completed_at
     FROM latest_run r
     JOIN vol_scan_ticker_snapshots s ON s.run_id = r.id
     LEFT JOIN thesis_titles tt ON tt.snapshot_id = s.id
@@ -101,6 +103,8 @@ export async function GET() {
       runDate: first.run_date,
       universeSource: first.universe_source,
       status: first.run_status,
+      startedAt: first.started_at,
+      completedAt: first.completed_at,
     },
     snapshots: data.map((r) => ({
       id: r.id,

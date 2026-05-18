@@ -51,6 +51,37 @@ interface ScannerRun {
   runDate: string;
   universeSource: string;
   status: string;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+function formatRelative(iso: string | null): string {
+  if (!iso) return 'unknown';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return 'unknown';
+  const mins = Math.round((Date.now() - t) / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
+}
+
+function formatAbsolute(iso: string | null): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  // Locale-formatted "May 15, 14:45 UTC"
+  return (
+    d.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'UTC',
+    }) + ' UTC'
+  );
 }
 
 interface ScannerResponse {
@@ -143,6 +174,7 @@ export function ScannerTodayClient() {
   const [data, setData] = useState<ScannerResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState<string | null>(null);
+  const [rerunning, setRerunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'cheap' | 'rich' | 'mixed'>('all');
 
@@ -168,6 +200,23 @@ export function ScannerTodayClient() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  const onRerun = useCallback(async () => {
+    setRerunning(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/vol-curve/scanner-rerun', { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
+      }
+      await load();
+    } catch (err) {
+      setError(`Re-run failed: ${err instanceof Error ? err.message : 'Unknown'}`);
+    } finally {
+      setRerunning(false);
+    }
   }, [load]);
 
   const onAnalyze = useCallback(
@@ -247,14 +296,42 @@ export function ScannerTodayClient() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Scanner Today</CardTitle>
-          <CardDescription>
-            {data.run.runDate} · {data.run.universeSource} ·{' '}
-            <span className="text-emerald-600">{regimeCounts.cheap} cheap</span>,{' '}
-            <span className="text-rose-600">{regimeCounts.rich} rich</span>,{' '}
-            <span className="text-amber-600">{regimeCounts.mixed} mixed</span>,{' '}
-            <span className="text-slate-500">{regimeCounts.neutral} neutral</span>
-          </CardDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle>Scanner Today</CardTitle>
+              <CardDescription className="mt-1">
+                <span className="font-medium text-foreground">{data.run.runDate}</span>
+                {' · '}
+                <span className="text-foreground">{formatAbsolute(data.run.completedAt ?? data.run.startedAt)}</span>
+                {' '}
+                <span className="text-muted-foreground/80">
+                  ({formatRelative(data.run.completedAt ?? data.run.startedAt)})
+                </span>
+                {' · '}
+                {data.run.universeSource}
+                <br />
+                <span className="text-emerald-600">{regimeCounts.cheap} cheap</span>,{' '}
+                <span className="text-rose-600">{regimeCounts.rich} rich</span>,{' '}
+                <span className="text-amber-600">{regimeCounts.mixed} mixed</span>,{' '}
+                <span className="text-slate-500">{regimeCounts.neutral} neutral</span>
+                <br />
+                <span className="text-xs text-muted-foreground/70">
+                  Data: Massive (free tier — quotes ~15 min delayed during market hours).
+                  Full chain refresh requires running{' '}
+                  <code className="text-[10px]">ingest-radar-back-months.ts</code> from terminal.
+                </span>
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={rerunning}
+              onClick={onRerun}
+              className="shrink-0"
+            >
+              {rerunning ? 'Re-running…' : 'Re-run Scanner'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>

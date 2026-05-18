@@ -20,15 +20,11 @@
  *   npx tsx scripts/ingest-underlyings-massive.ts 2026-04-17 TSLA  # + specific tickers
  */
 
-import { config } from 'dotenv';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-config({ path: resolve(__dirname, '..', '.env.local') });
-
-import { db } from '../src/db';
+// IMPORTANT: db must be imported from scripts/lib/db.ts, which loads dotenv
+// BEFORE creating the postgres client. Direct import from '../src/db' fails
+// because ES-module hoisting runs the import before dotenv.config() executes,
+// leaving DATABASE_URL_POOLER undefined at client-creation time.
+import { db } from './lib/db.js';
 import { underlyings, optionsChainSnapshots, positions } from '../src/db/schema';
 import { and, eq, sql } from 'drizzle-orm';
 import { upsertIvSnapshots } from '../src/lib/ingestion/underlyingsIvHistory';

@@ -91,22 +91,37 @@ export function calculateDte(expirationDate: string, currentDate: string): numbe
 }
 
 /**
- * Determine the last US trading day.
+ * Determine the current trading day for snapshot labelling.
  *
- * - Before 21:00 UTC (16:00 ET, market close): use previous calendar day
- * - After 21:00 UTC: use today
- * - Weekends → previous Friday
+ * Rules:
+ * - Weekday, between 13:00 UTC (≈ 30 min before US open) and 23:59 UTC:
+ *   today is the live trading day. Use it whether the user runs the scanner
+ *   intraday OR after the 21:30 UTC nightly close.
+ * - Weekday, before 13:00 UTC: market hasn't opened yet, use previous trading day.
+ * - Saturday / Sunday: roll back to Friday.
  * - Does NOT handle NYSE holidays; specify date manually for holiday runs.
+ *
+ * Note: Massive's chain endpoint returns live intraday snapshots during market
+ * hours, so labelling those rows with today's date is semantically correct.
  */
 export function getLastTradingDay(now: Date = new Date()): string {
   const utcHour = now.getUTCHours();
   const day = new Date(now);
-  if (utcHour < 21) {
-    day.setUTCDate(day.getUTCDate() - 1);
-  }
   const dow = day.getUTCDay();
-  if (dow === 0) day.setUTCDate(day.getUTCDate() - 2); // Sunday → Friday
-  if (dow === 6) day.setUTCDate(day.getUTCDate() - 1); // Saturday → Friday
+
+  if (dow === 0) {
+    // Sunday → Friday (two days back)
+    day.setUTCDate(day.getUTCDate() - 2);
+  } else if (dow === 6) {
+    // Saturday → Friday
+    day.setUTCDate(day.getUTCDate() - 1);
+  } else if (utcHour < 13) {
+    // Weekday but before market open — use previous trading day
+    day.setUTCDate(day.getUTCDate() - 1);
+    const prevDow = day.getUTCDay();
+    if (prevDow === 0) day.setUTCDate(day.getUTCDate() - 2);
+    else if (prevDow === 6) day.setUTCDate(day.getUTCDate() - 1);
+  }
   return day.toISOString().split('T')[0]!;
 }
 
