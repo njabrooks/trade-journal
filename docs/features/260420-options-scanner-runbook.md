@@ -4,22 +4,51 @@ The cheap-options scanner identifies underlyings on the watchlist where options
 are historically cheap (IV percentile, IV/RV ratio) with supportive term
 structure. Phase 1 produces snapshots only; strategy synthesis is Phase 2.
 
-## Daily automation (Massive, no manual intervention)
+## Daily automation (on-device launchd, no manual intervention)
 
-GitHub Actions runs two cron entries (DST-aware) on weekdays:
+The Mac Mini home hub runs a launchd job at **14:50 Europe/London local time,
+Mon–Fri**. Because London and New York share DST transitions, London local
+stays at NYC+5h year-round — so 14:50 London = 09:50 NYC every weekday,
+20 min after the opening auction clears, with no DST cron pair needed.
 
-- `45 13 * * 1-5` (BST: 14:45 UK = 09:45 EDT)
-- `45 14 * * 1-5` (GMT: 14:45 UK = 09:45 EST)
+- Plist: `launchd/com.trade-journal.cheap-options-scanner.plist`
+- Installer: `launchd/install.sh` (or `launchctl load ~/Library/LaunchAgents/com.trade-journal.cheap-options-scanner.plist`)
+- Log: `logs/cheap-options-scanner.log`
+- Manual trigger: `launchctl start com.trade-journal.cheap-options-scanner`
+- Status: `launchctl list | grep cheap-options-scanner`
 
-Workflow: `.github/workflows/cheap-options-scanner.yml`
+Steps the job runs (sequentially, fail-fast):
+1. `git pull --ff-only` — pick up latest scanner config from main
+2. `scripts/ingest-radar-back-months.ts` — Massive monthly chains 1M–9M for radar tickers (~7 min)
+3. `scripts/scan-cheap-options.ts` — compute metrics + write `vol_scan_ticker_snapshots` (~30 sec)
 
-Steps:
-1. `scripts/ingest-radar-back-months.ts` — Massive monthly chains 1M-9M for radar tickers
-2. `scripts/scan-cheap-options.ts` — compute metrics + write `vol_scan_ticker_snapshots`
+Why on-device, not GitHub Actions: the GH Actions cron for this workflow was
+delayed by 1.5–3 hours every fire and skipped entirely on busy days (5/15:
+65 + 99 min late; 5/18: no fire at all by 15:25 UTC). Other repo workflows
+on the same shared runners fired on time, so the issue was specific to this
+slot's resource footprint hitting the shared-runner throttle. The Mac Mini
+runs the scanner predictably in <10 min with no queue contention.
 
-Daily Massive ingest (`scripts/ingest-underlyings-massive.ts`, 21:30 UTC) also
-populates `iv30`, `spot`, `rv20`, `atr20` into `underlyings_iv_history` and
-mirrors latest values into `underlyings.*` cache.
+A workflow_dispatch-only `.github/workflows/cheap-options-scanner.yml` is
+kept as a cloud fallback (use `gh workflow run cheap-options-scanner.yml`
+when the Mac Mini is offline).
+
+Daily Massive ingest (`scripts/ingest-underlyings-massive.ts`, 21:30 UTC) still
+runs on GitHub Actions and populates `iv30`, `spot`, `rv20`, `atr20` into
+`underlyings_iv_history`, mirroring latest values into the `underlyings.*` cache.
+
+### Data freshness & Massive plan tier
+
+Massive plan: **Options Starter** ($29/mo).
+- Daily option chain snapshots with greeks, IV, and open interest — what the scanner consumes
+- Minute aggregates + 2y historical (used by `ingest-radar-back-months`)
+- NBBO quotes are **15 min delayed** under this tier; the scanner does not use NBBO, so this is not a constraint
+- Real-time NBBO would require Options Developer ($79/mo) — not currently warranted
+
+When the UI displays a quoted price on a synthesised strategy, the underlying
+quote comes from Massive's chain snapshot endpoint (daily resolution). For
+intra-day live mids, the user runs the `ibkr-quote` skill which goes through
+IBKR's Client Portal API, not Massive.
 
 ## Optional: IBKR supplement (manual, when Gateway is up)
 

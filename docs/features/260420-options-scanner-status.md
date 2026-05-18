@@ -18,7 +18,7 @@ is options data quality on futures + minor UI polish.
 - ✅ `seed-watchlist.ts` (idempotent re-seed), `add-to-watchlist.ts`, `deactivate-watchlist-entry.ts`
 - ✅ `ingest-radar-back-months.ts` — Massive monthly chains 1M-9M, `--leap` for 12-24M
 - ✅ `scan-cheap-options.ts` — IV percentile, IV/RV, term slope, 25Δ skew, cheap gates
-- ✅ GitHub Actions `.github/workflows/cheap-options-scanner.yml` (13:45/14:45 UTC DST pair)
+- ✅ Mac Mini launchd `com.trade-journal.cheap-options-scanner` (14:50 London local, Mon–Fri = 09:50 NYC year-round). GH Actions workflow kept as `workflow_dispatch`-only fallback after observed cron throttling (see 2026-05-18 entry in Resolved items).
 
 ### Phase 1.5 — Dual regime
 - ✅ Rich gates mirror cheap gates (high IV pct / fat IV/RV / stressed term / front > back)
@@ -62,6 +62,29 @@ is options data quality on futures + minor UI polish.
 - ✅ Trade-journal CLAUDE.md updated with Radon IBKR integration notes
 - ✅ Cross-project CLAUDE.md adds Radon as 4th repo
 - ✅ Memory: `project_options_scanner.md`, `reference_radon_ibkr.md`, `reference_radon_leap_scan.md`
+
+---
+
+## Resolved items
+
+### 2026-05-18 — Scheduling moved off GH Actions to Mac Mini launchd
+The GH Actions scheduled crons (`45 13` / `45 14` UTC) consistently fired 1.5–3 h
+late (e.g. 5/15: 65 + 99 min late; 5/13: 84 + 136 min late) and skipped entirely
+on busy days (5/18 fired only when manually dispatched at 15:25 UTC). Other repo
+workflows on the same shared runners were on time, so the issue was specific to
+this slot's resource footprint hitting the shared cron throttle. Cut over to
+`launchd/com.trade-journal.cheap-options-scanner.plist`, scheduled at 14:50
+Europe/London local time — London/NYC share DST so 14:50 London = 09:50 NYC
+every weekday, no DST cron pair needed. `cheap-options-scanner.yml` reduced to
+`workflow_dispatch:` only as a cloud fallback.
+
+### 2026-05-18 — Massive plan-tier doc fixed
+Docs and the ScannerTodayClient UI had previously claimed "free tier ~15-min
+delayed." Confirmed via API probe (NOT_AUTHORIZED on `/v3/quotes/{option}` and
+`/v2/snapshot/.../tickers/SPY`) that the account is on **Options Starter
+($29/mo)** — daily chain greeks/IV/OI included; NBBO is 15-min delayed but the
+scanner doesn't consume NBBO, so the delay is irrelevant for this use case.
+PRD + runbook updated; live UI copy already corrected to be plan-agnostic.
 
 ---
 

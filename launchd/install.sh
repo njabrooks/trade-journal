@@ -25,6 +25,7 @@ PLISTS=(
     "com.trade-journal.signal-monitoring.plist"
     "com.trade-journal.fred-ingestion.plist"
     "com.trade-journal.push-to-remote.plist"
+    "com.trade-journal.cheap-options-scanner.plist"
 )
 
 # Colors

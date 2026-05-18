@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trade-journal.cheap-options-scanner</string>
+
+    <!--
+        Pulls Massive monthly chains 1M-9M for the radar watchlist, then runs
+        the cheap-options scan and writes vol_scan_ticker_snapshots.
+
+        Schedule: 14:50 LOCAL TIME (Europe/London), Mon-Fri.
+        London local stays at NYC+5h year-round (both observe DST together), so
+        14:50 London = 09:50 NYC every weekday — 20 min after the opening
+        auction, regardless of season. No DST cron-pair needed.
+    -->
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>cd /Users/home-hub/projects/trade-journal &amp;&amp; git pull --ff-only &amp;&amp; set -a &amp;&amp; source .env.local &amp;&amp; set +a &amp;&amp; echo "===== $(date -u +%FT%TZ) cheap-options-scanner =====" &amp;&amp; ./node_modules/.bin/tsx scripts/ingest-radar-back-months.ts &amp;&amp; ./node_modules/.bin/tsx scripts/scan-cheap-options.ts &gt;&gt; /Users/home-hub/projects/trade-journal/logs/cheap-options-scanner.log 2&gt;&amp;1</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Weekday</key>
+            <integer>1</integer>
+            <key>Hour</key>
+            <integer>14</integer>
+            <key>Minute</key>
+            <integer>50</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key>
+            <integer>2</integer>
+            <key>Hour</key>
+            <integer>14</integer>
+            <key>Minute</key>
+            <integer>50</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key>
+            <integer>3</integer>
+            <key>Hour</key>
+            <integer>14</integer>
+            <key>Minute</key>
+            <integer>50</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key>
+            <integer>4</integer>
+            <key>Hour</key>
+            <integer>14</integer>
+            <key>Minute</key>
+            <integer>50</integer>
+        </dict>
+        <dict>
+            <key>Weekday</key>
+            <integer>5</integer>
+            <key>Hour</key>
+            <integer>14</integer>
+            <key>Minute</key>
+            <integer>50</integer>
+        </dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/cheap-options-scanner.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/cheap-options-scanner.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/home-hub</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

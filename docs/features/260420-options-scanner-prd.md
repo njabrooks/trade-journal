@@ -122,7 +122,7 @@ What was missing: **a systematic way to identify when options are dislocated** (
 
 | Source | Coverage | Auth | Cadence | Notes |
 |---|---|---|---|---|
-| **Massive.com `/v3/snapshot/options`** | Equity & ETF chains, greeks, IV | API key | Daily, automated (GH Actions) | Free up to limits; broad ticker coverage |
+| **Massive.com `/v3/snapshot/options`** | Equity & ETF chains, greeks, IV, open interest | API key (Options Starter $29/mo) | Daily, automated (Mac Mini launchd, 14:50 London local) | All US options tickers; chain snapshot endpoint included in tier; 15-min delay on NBBO is irrelevant — scanner only reads daily greeks/IV |
 | **Massive `/v2/aggs/ticker/.../range/1/day`** | Daily OHLC for ATR/RV computation | Same key | Daily | Underlies rv20 + atr20 backfill and updates |
 | **Yahoo Finance** | EOD spot prices | None | Daily | Primary spot source; fallback to Massive Daily Grouped |
 | **Radon's IBClient** (`/projects/radon/scripts/clients/ib_client.py`) | IBKR options chains via TWS | IB Gateway login | Manual when Gateway connected | Higher quality than Massive; covers futures (FOP) where Massive is sparse |
@@ -293,7 +293,7 @@ User-triggered ad-hoc analysis form — same as today. The user form path remain
 ## 9. Daily Workflow
 
 1. **04:00–14:00 UTC** — IBKR Flex ingestion (positions, trades) keeps portfolio current.
-2. **13:45 / 14:45 UTC** (DST-aware pair) — `cheap-options-scanner.yml` GH Action runs:
+2. **14:50 London local time** (= 09:50 NYC year-round, since London/NYC share DST transitions) — Mac Mini launchd job `com.trade-journal.cheap-options-scanner` runs:
    - `ingest-radar-back-months.ts` — Massive monthly chains 1M–9M for 50 watchlist tickers (Phase 2: extends to 24M for cheap-regime tickers)
    - `scan-cheap-options.ts` — compute regime classifications, write `vol_scan_ticker_snapshots`
    - `synthesize-strategy-candidates.ts` (Phase 2) — for non-neutral snapshots, run `analyzeTicker()` and write `vol_curve_reports` rows with `trigger_source='scanner'`

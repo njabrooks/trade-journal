@@ -1,17 +1,18 @@
 name: Cheap Options Scanner
 
-# Runs the radar back-month chain ingest + daily cheap-options scan on the
-# watchlist universe. Two cron entries absorb the DST offset:
-#   - 13:45 UTC = 14:45 BST (summer, EDT = 09:45 ET)
-#   - 14:45 UTC = 14:45 GMT (winter, EST = 09:45 ET)
-# Runs ~15 min after NYC open so the opening auction has cleared.
-# Idempotent: the scanner upserts on (run_date, universe_source); the
-# chain ingest upserts on the composite uniqueness key of options_chain_snapshots.
+# Primary schedule lives on the Mac Mini home hub as a launchd job
+# (`launchd/com.trade-journal.cheap-options-scanner.plist`, 14:50 London local
+# = 09:50 NYC year-round). The launchd cron replaced the GitHub Actions
+# schedule because GH Actions cron consistently delayed this slot by 1.5-3h
+# and skipped it entirely on busy days — see status.md (2026-05-18 entry).
+#
+# This workflow is kept as a manual fallback only: trigger via `gh workflow
+# run cheap-options-scanner.yml` (or the Actions UI) when the Mac Mini is
+# offline or you need a clean cloud rerun.
+# Idempotent: scanner upserts on (run_date, universe_source); chain ingest
+# upserts on the options_chain_snapshots composite uniqueness key.
 
 on:
-  schedule:
-    - cron: '45 13 * * 1-5'
-    - cron: '45 14 * * 1-5'
   workflow_dispatch:
 
 jobs:
