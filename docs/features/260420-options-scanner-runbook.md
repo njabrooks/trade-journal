@@ -23,23 +23,47 @@ stays at NYC+5h year-round — so 14:50 London = 09:50 NYC every weekday,
 
 Steps the job runs (sequentially, fail-fast):
 1. `git pull --ff-only` — pick up latest scanner config from main
-2. `scripts/ingest-radar-back-months.ts` — Massive monthly chains 1M–9M for radar tickers (~7 min)
-3. `scripts/scan-cheap-options.ts` — compute metrics + write `vol_scan_ticker_snapshots` (~30 sec)
+2. `scripts/ingest-underlyings-massive.ts` — Massive DTE 20–40 chains + iv30/rv20/atr20 cache (~3 min). Provides the front-month chain rows the scanner needs for iv_pct, term slope, and 25Δ skew.
+3. **60-second pause** — lets Massive's per-minute rate-limit budget drain before Stage 3 adds load.
+4. `scripts/ingest-radar-back-months.ts` — Massive monthlies 1M–9M for back-month leg of term-structure slope (~5 min).
+5. `scripts/scan-cheap-options.ts` — compute regime metrics + write `vol_scan_ticker_snapshots` (~30 sec).
+
+The 21:30 UTC `massive-ingestion.yml` GH Actions cron remains and runs `ingest-underlyings-massive.ts` a second time as the post-close authoritative pass (EOD iv30 is more stable than the ~14:00 UTC intraday value the wrapper grabs). Both runs are idempotent; the evening pass simply overwrites the morning's row with the post-close value.
 
 Why on-device, not GitHub Actions: the GH Actions cron for this workflow was
 delayed by 1.5–3 hours every fire and skipped entirely on busy days (5/15:
 65 + 99 min late; 5/18: no fire at all by 15:25 UTC). Other repo workflows
 on the same shared runners fired on time, so the issue was specific to this
 slot's resource footprint hitting the shared-runner throttle. The Mac Mini
-runs the scanner predictably in <10 min with no queue contention.
+runs the scanner predictably in ~10 min with no queue contention.
 
 A workflow_dispatch-only `.github/workflows/options-scanner.yml` is
 kept as a cloud fallback (use `gh workflow run options-scanner.yml`
 when the Mac Mini is offline).
 
-Daily Massive ingest (`scripts/ingest-underlyings-massive.ts`, 21:30 UTC) still
-runs on GitHub Actions and populates `iv30`, `spot`, `rv20`, `atr20` into
-`underlyings_iv_history`, mirroring latest values into the `underlyings.*` cache.
+### Rate limits
+
+Massive Options Starter has a per-minute ceiling around 5 req/s (~300/min) on
+top of the "unlimited" daily quota. The wrapper deliberately spaces Stages 2
+and 3 with a 60s pause for this reason. If a future change adds another
+ingest step or grows the watchlist much past 50, also consider relaxing the
+in-script per-call pacing in `ingest-underlyings-massive.ts` (the vol-metrics
+loop at 150ms is tight) and `ingest-radar-back-months.ts` (250ms).
+
+### Known holiday-shift expiries
+
+The radar back-months script asks Massive for chains expiring on the standard
+3rd-Friday of each forward month. When the 3rd Friday is an NYSE-closed day
+(Juneteenth on a Friday; Good Friday occasionally), the OCC shifts the
+monthly expiry to the preceding Thursday and Massive returns no contracts
+for the 3rd-Friday date. `scripts/ingest-radar-back-months.ts:thirdFriday()`
+carries a small `MARKET_HOLIDAYS_ON_THIRD_FRIDAY` table covering 2026-2033
+and shifts to Thursday when matched. Extend the table past 2035 from a real
+NYSE holiday calendar.
+
+Diagnostic for catching this regression early: if today's run produces snapshots
+with iv_pct=null and slope=null across the whole watchlist, check the radar
+log for "no contracts" on the front-month expiry — that's the symptom.
 
 ### Data freshness & Massive plan tier
 

@@ -38,20 +38,48 @@ function checkEnv() {
 }
 
 /**
+ * NYSE market holidays where the 3rd Friday is closed → standard monthly
+ * options expiry shifts to the preceding Thursday (per OCC convention).
+ *
+ * Only 3rd-Friday-only holidays matter here. Most NYSE holidays fall on
+ * non-3rd-Friday days (or non-Fridays) and don't affect monthly expiry.
+ * Cases that DO hit a 3rd Friday:
+ *   - Juneteenth (Jun 19) when Jun 1 is a Fri → Jun 19 is 3rd Fri
+ *   - Good Friday occasionally lands on a 3rd Friday (Apr)
+ *
+ * When extending past 2035, regenerate from a holiday calendar that knows
+ * NYSE's actual closures.
+ */
+const MARKET_HOLIDAYS_ON_THIRD_FRIDAY: ReadonlySet<string> = new Set([
+  '2026-06-19', // Juneteenth (this is the one that bit us 2026-05-18)
+  '2030-04-19', // Good Friday
+  '2032-06-18', // Juneteenth observed (Jun 19 is Saturday → observed Fri 18; 3rd Fri is also 18 → SAME DAY edge case)
+  '2033-04-15', // Good Friday
+]);
+
+/**
  * Return the 3rd-Friday date of a given (year, month) as YYYY-MM-DD (UTC).
- * month is 0-indexed (0 = January).
+ * month is 0-indexed (0 = January). If the 3rd Friday is an NYSE holiday,
+ * shifts to the preceding Thursday per OCC convention (e.g. Jun 2026 →
+ * 2026-06-18 instead of Juneteenth 2026-06-19).
  */
 function thirdFriday(year: number, month: number): string {
   const first = new Date(Date.UTC(year, month, 1));
   const firstDow = first.getUTCDay(); // 0=Sun..5=Fri..6=Sat
   const offsetToFirstFriday = (5 - firstDow + 7) % 7;
   const day = 1 + offsetToFirstFriday + 14;
-  return new Date(Date.UTC(year, month, day)).toISOString().split('T')[0]!;
+  const friday = new Date(Date.UTC(year, month, day));
+  const fridayIso = friday.toISOString().split('T')[0]!;
+  if (MARKET_HOLIDAYS_ON_THIRD_FRIDAY.has(fridayIso)) {
+    const thursday = new Date(friday.getTime() - 24 * 60 * 60 * 1000);
+    return thursday.toISOString().split('T')[0]!;
+  }
+  return fridayIso;
 }
 
 /**
- * Return monthly-expiry ISO dates (3rd Fridays) starting from the next
- * monthly after today.
+ * Return monthly-expiry ISO dates (3rd Fridays, with Thursday shift on
+ * holiday Fridays) starting from the next monthly after today.
  *
  * Default: 9 monthlies (1M-9M). With --leap, includes 12M, 15M, 18M, 24M
  * for cheap-vol thesis exposure (matches Radon leap_iv_scanner cadence).

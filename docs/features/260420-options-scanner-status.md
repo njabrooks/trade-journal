@@ -67,6 +67,19 @@ is options data quality on futures + minor UI polish.
 
 ## Resolved items
 
+### 2026-05-18 — Front-month chain data + Juneteenth regression (today's scan was empty)
+Symptom: today's first scheduled scan produced 50 snapshots with 0 rows having iv_percentile_252, term_structure_slope, or skew_25d (only iv/rv ratio survived, from the underlyings.iv30/rv20 cache). 26 tickers got non-neutral classifications from the permissive structural-gate fallback, but those verdicts weren't trustworthy.
+
+Two compounding root causes:
+
+**A. Juneteenth (Jun 19 2026 = Fri = NYSE holiday).** `thirdFriday(2026, 5)` returned `2026-06-19`, but per OCC convention the June 2026 standard monthly expiry shifts to Thursday `2026-06-18` (preceding the holiday Friday). Massive returned 0 contracts for the requested `2026-06-19` expiry across the entire watchlist. The other 8 monthlies (Jul through Feb '27) were fine. Fix: added `MARKET_HOLIDAYS_ON_THIRD_FRIDAY` set in `scripts/ingest-radar-back-months.ts` covering known 3rd-Friday holidays through 2033 (next Juneteenth-Friday: 2026; next Good Friday on 3rd Friday: 2030); when matched, `thirdFriday()` returns the preceding Thursday.
+
+**B. Scanner depends on a chain-ingest path that hadn't run yet today.** `calculateIvMetrics` (for iv_pct) and `computeTermAndSkew` (for term slope + 25Δ skew) both read DTE 20-40 chain rows for today's snapshot_date. That window is populated by the daily massive ingest (`ingest-underlyings-massive.ts`, uses DTE-range fetch, picks up weeklies + non-3rd-Fri monthlies). It runs at 21:30 UTC; the new launchd scanner runs at ~13:50 UTC. So on any day, the scanner would read today's chains before the daily ingest had written them. Fix: added the daily massive ingest as Stage 2 of `scripts/cron/options-scanner.sh`, with a 60s pause before Stage 3 (radar back-months) to avoid Massive's per-minute rate ceiling. The 21:30 UTC GH Actions schedule for massive-ingestion stays as a post-close authoritative second pass.
+
+Why the regression wasn't visible on prior workdays: last Friday's snapshot_date=2026-05-15 had 12,849 DTE 20-40 chain rows written at the radar's 16:00 UTC slot (NOT by the radar script — most of those expiries weren't 3rd Fridays). Some now-unknown side-channel (manual rerun? prior workflow variant?) was populating the front-month data at 16:00 UTC and is no longer running. With that side-channel gone and Juneteenth zeroing out the radar's only contribution to the DTE 20-40 window, today's scan had nothing to compute from.
+
+Manual repair: triggered `ingest-underlyings-massive.ts` immediately + re-ran `scan-cheap-options.ts`. Today's row updated to 23 Cheap / 9 Rich / 2 Mixed / 16 Neutral with full iv_pct, slope, skew (futures CLM6/CLQ6/MNQ/SBN6/SO3U6/SOFR3/SOI/ZC/ZCZ6/ZW/ZWN6 still n/a as expected — Massive doesn't cover futures options; see the futures-coverage line under Open items).
+
 ### 2026-05-18 — Scheduling moved off GH Actions to Mac Mini launchd
 The GH Actions scheduled crons (`45 13` / `45 14` UTC) consistently fired 1.5–3 h
 late (e.g. 5/15: 65 + 99 min late; 5/13: 84 + 136 min late) and skipped entirely

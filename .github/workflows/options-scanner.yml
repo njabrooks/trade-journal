@@ -1,16 +1,20 @@
-name: Cheap Options Scanner
+name: Options Scanner
 
 # Primary schedule lives on the Mac Mini home hub as a launchd job
-# (`launchd/com.trade-journal.cheap-options-scanner.plist`, 14:50 London local
-# = 09:50 NYC year-round). The launchd cron replaced the GitHub Actions
+# (`launchd/com.trade-journal.options-scanner.plist`, 14:50 London local =
+# 09:50 NYC year-round). The launchd cron replaced the GitHub Actions
 # schedule because GH Actions cron consistently delayed this slot by 1.5-3h
 # and skipped it entirely on busy days — see status.md (2026-05-18 entry).
 #
 # This workflow is kept as a manual fallback only: trigger via `gh workflow
-# run cheap-options-scanner.yml` (or the Actions UI) when the Mac Mini is
-# offline or you need a clean cloud rerun.
+# run options-scanner.yml` (or the Actions UI) when the Mac Mini is offline
+# or you need a clean cloud rerun.
 # Idempotent: scanner upserts on (run_date, universe_source); chain ingest
 # upserts on the options_chain_snapshots composite uniqueness key.
+#
+# (The TS script retains the legacy `scan-cheap-options.ts` filename even
+# though it screens both cheap and rich regimes; renaming was scoped out of
+# the 2026-05-18 cleanup to limit blast radius.)
 
 on:
   workflow_dispatch:
@@ -41,7 +45,7 @@ jobs:
           MASSIVE_API_BASE_URL: ${{ secrets.MASSIVE_API_BASE_URL }}
         run: npx tsx scripts/ingest-radar-back-months.ts
 
-      - name: Scan for cheap options
+      - name: Scan options (cheap + rich regimes)
         env:
           DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
           DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
