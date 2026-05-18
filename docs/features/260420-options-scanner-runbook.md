@@ -1,8 +1,12 @@
 # Options Scanner — Operations Runbook
 
-The cheap-options scanner identifies underlyings on the watchlist where options
-are historically cheap (IV percentile, IV/RV ratio) with supportive term
-structure. Phase 1 produces snapshots only; strategy synthesis is Phase 2.
+The options scanner runs daily against the IBKR-tradable watchlist and
+classifies each underlying's vol regime — `cheap` (long-vol candidates),
+`rich` (short-vol / yield-harvest candidates), `mixed`, or `neutral` — using
+IV percentile, IV/RV ratio, term structure, and 25Δ skew. Phase 1 produces
+snapshots only; strategy synthesis (Phase 2) generates concrete candidates
+on the non-neutral side. (Historical note: this was called the
+"cheap-options scanner" pre-Phase 1.5, before rich gates were added.)
 
 ## Daily automation (on-device launchd, no manual intervention)
 
@@ -11,11 +15,11 @@ Mon–Fri**. Because London and New York share DST transitions, London local
 stays at NYC+5h year-round — so 14:50 London = 09:50 NYC every weekday,
 20 min after the opening auction clears, with no DST cron pair needed.
 
-- Plist: `launchd/com.trade-journal.cheap-options-scanner.plist`
-- Installer: `launchd/install.sh` (or `launchctl load ~/Library/LaunchAgents/com.trade-journal.cheap-options-scanner.plist`)
-- Log: `logs/cheap-options-scanner.log`
-- Manual trigger: `launchctl start com.trade-journal.cheap-options-scanner`
-- Status: `launchctl list | grep cheap-options-scanner`
+- Plist: `launchd/com.trade-journal.options-scanner.plist`
+- Installer: `launchd/install.sh` (or `launchctl load ~/Library/LaunchAgents/com.trade-journal.options-scanner.plist`)
+- Log: `logs/options-scanner.log`
+- Manual trigger: `launchctl start com.trade-journal.options-scanner`
+- Status: `launchctl list | grep options-scanner`
 
 Steps the job runs (sequentially, fail-fast):
 1. `git pull --ff-only` — pick up latest scanner config from main
@@ -29,8 +33,8 @@ on the same shared runners fired on time, so the issue was specific to this
 slot's resource footprint hitting the shared-runner throttle. The Mac Mini
 runs the scanner predictably in <10 min with no queue contention.
 
-A workflow_dispatch-only `.github/workflows/cheap-options-scanner.yml` is
-kept as a cloud fallback (use `gh workflow run cheap-options-scanner.yml`
+A workflow_dispatch-only `.github/workflows/options-scanner.yml` is
+kept as a cloud fallback (use `gh workflow run options-scanner.yml`
 when the Mac Mini is offline).
 
 Daily Massive ingest (`scripts/ingest-underlyings-massive.ts`, 21:30 UTC) still

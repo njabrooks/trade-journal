@@ -3,23 +3,25 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.trade-journal.cheap-options-scanner</string>
+    <string>com.trade-journal.options-scanner</string>
 
     <!--
-        Pulls Massive monthly chains 1M-9M for the radar watchlist, then runs
-        the cheap-options scan and writes vol_scan_ticker_snapshots.
+        Daily dual-regime (cheap + rich) options scanner.
 
         Schedule: 14:50 LOCAL TIME (Europe/London), Mon-Fri.
-        London local stays at NYC+5h year-round (both observe DST together), so
+        London stays at NYC+5h year-round (both observe DST together), so
         14:50 London = 09:50 NYC every weekday — 20 min after the opening
         auction, regardless of season. No DST cron-pair needed.
+
+        Orchestration lives in scripts/cron/options-scanner.sh (lockfile,
+        timestamped logging, stage markers) per the convention documented
+        in launchd/README.md.
     -->
 
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>-c</string>
-        <string>cd /Users/home-hub/projects/trade-journal &amp;&amp; git pull --ff-only &amp;&amp; set -a &amp;&amp; source .env.local &amp;&amp; set +a &amp;&amp; echo "===== $(date -u +%FT%TZ) cheap-options-scanner =====" &amp;&amp; ./node_modules/.bin/tsx scripts/ingest-radar-back-months.ts &amp;&amp; ./node_modules/.bin/tsx scripts/scan-cheap-options.ts &gt;&gt; /Users/home-hub/projects/trade-journal/logs/cheap-options-scanner.log 2&gt;&amp;1</string>
+        <string>/Users/home-hub/projects/trade-journal/scripts/cron/options-scanner.sh</string>
     </array>
 
     <key>StartCalendarInterval</key>
@@ -67,10 +69,10 @@
     </array>
 
     <key>StandardOutPath</key>
-    <string>/Users/home-hub/projects/trade-journal/logs/cheap-options-scanner.log</string>
+    <string>/Users/home-hub/projects/trade-journal/logs/options-scanner.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/home-hub/projects/trade-journal/logs/cheap-options-scanner.log</string>
+    <string>/Users/home-hub/projects/trade-journal/logs/options-scanner.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>

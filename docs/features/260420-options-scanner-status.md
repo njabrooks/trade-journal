@@ -18,7 +18,7 @@ is options data quality on futures + minor UI polish.
 - ✅ `seed-watchlist.ts` (idempotent re-seed), `add-to-watchlist.ts`, `deactivate-watchlist-entry.ts`
 - ✅ `ingest-radar-back-months.ts` — Massive monthly chains 1M-9M, `--leap` for 12-24M
 - ✅ `scan-cheap-options.ts` — IV percentile, IV/RV, term slope, 25Δ skew, cheap gates
-- ✅ Mac Mini launchd `com.trade-journal.cheap-options-scanner` (14:50 London local, Mon–Fri = 09:50 NYC year-round). GH Actions workflow kept as `workflow_dispatch`-only fallback after observed cron throttling (see 2026-05-18 entry in Resolved items).
+- ✅ Mac Mini launchd `com.trade-journal.options-scanner` (14:50 London local, Mon–Fri = 09:50 NYC year-round). GH Actions workflow kept as `workflow_dispatch`-only fallback after observed cron throttling (see 2026-05-18 entry in Resolved items).
 
 ### Phase 1.5 — Dual regime
 - ✅ Rich gates mirror cheap gates (high IV pct / fat IV/RV / stressed term / front > back)
@@ -73,9 +73,9 @@ late (e.g. 5/15: 65 + 99 min late; 5/13: 84 + 136 min late) and skipped entirely
 on busy days (5/18 fired only when manually dispatched at 15:25 UTC). Other repo
 workflows on the same shared runners were on time, so the issue was specific to
 this slot's resource footprint hitting the shared cron throttle. Cut over to
-`launchd/com.trade-journal.cheap-options-scanner.plist`, scheduled at 14:50
+`launchd/com.trade-journal.options-scanner.plist`, scheduled at 14:50
 Europe/London local time — London/NYC share DST so 14:50 London = 09:50 NYC
-every weekday, no DST cron pair needed. `cheap-options-scanner.yml` reduced to
+every weekday, no DST cron pair needed. `options-scanner.yml` reduced to
 `workflow_dispatch:` only as a cloud fallback.
 
 ### 2026-05-18 — Massive plan-tier doc fixed
@@ -104,7 +104,7 @@ PRD + runbook updated; live UI copy already corrected to be plan-agnostic.
 
 ### LEAP workflow
 - `--leap` flag added to `ingest-radar-back-months.ts` (pulls 12M/15M/18M/24M expiries)
-- **NOT wired into the daily GH Action** (`cheap-options-scanner.yml`) — currently only pulls 1M-9M
+- **NOT wired into the daily GH Action** (`options-scanner.yml`) — currently only pulls 1M-9M
 - Decision needed: always pull LEAPs (more API calls), or only on weekly cadence, or only for cheap-regime tickers
 - When wired, the synthesis layer (`analyzeTicker`) already generates long-call/long-put with extended `horizonMonths` → produces LEAP candidates organically
 
@@ -171,7 +171,7 @@ npx tsx scripts/backfill-rv20-atr20.ts --years 2
 | Scanner Today UI | `src/app/vol-curve/ScannerTodayClient.tsx` |
 | Vol curve page (tabs) | `src/app/vol-curve/page.tsx` |
 | Ops scripts | `scripts/seed-watchlist.ts`, `scripts/ops/add-to-watchlist.ts`, `scripts/ops/deactivate-watchlist-entry.ts` |
-| GH Actions | `.github/workflows/cheap-options-scanner.yml` |
+| GH Actions | `.github/workflows/options-scanner.yml` |
 | Migrations | `migrations/20260419_add_options_scanner_tables.sql`, `migrations/20260420_*.sql` |
 
 ---

@@ -478,6 +478,25 @@ Workflows:
 
 Manual trigger available from GitHub UI for testing.
 
+### On-Device launchd Jobs (Mac Mini home hub)
+
+A small set of jobs run on-device via launchd rather than GitHub Actions —
+typically when a GH Actions cron slot has been observed to throttle or when
+the job needs local-only resources (IB Gateway, persistent Chrome profile).
+
+Currently active:
+- **Options Scanner** (`com.trade-journal.options-scanner`) — 14:50
+  Europe/London Mon-Fri (= 09:50 NYC year-round; London and NYC share DST).
+  Wrapper at `scripts/cron/options-scanner.sh`, plist at
+  `launchd/com.trade-journal.options-scanner.plist`. Moved off GH Actions
+  on 2026-05-18 after observed 1.5–3 h cron delays.
+
+**Adding a new on-device job:** read [`launchd/README.md`](launchd/README.md)
+first. It documents the wrapper+plist file convention, the schedule pattern
+that avoids DST handling, and the install / inspect / reload incantations.
+The older `launchd/archive/` plists use a deprecated inline-bash style — do
+not copy them as a starting template.
+
 ## Environment Variables
 
 Required in `.env.local`:

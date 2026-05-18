@@ -293,7 +293,7 @@ User-triggered ad-hoc analysis form — same as today. The user form path remain
 ## 9. Daily Workflow
 
 1. **04:00–14:00 UTC** — IBKR Flex ingestion (positions, trades) keeps portfolio current.
-2. **14:50 London local time** (= 09:50 NYC year-round, since London/NYC share DST transitions) — Mac Mini launchd job `com.trade-journal.cheap-options-scanner` runs:
+2. **14:50 London local time** (= 09:50 NYC year-round, since London/NYC share DST transitions) — Mac Mini launchd job `com.trade-journal.options-scanner` runs:
    - `ingest-radar-back-months.ts` — Massive monthly chains 1M–9M for 50 watchlist tickers (Phase 2: extends to 24M for cheap-regime tickers)
    - `scan-cheap-options.ts` — compute regime classifications, write `vol_scan_ticker_snapshots`
    - `synthesize-strategy-candidates.ts` (Phase 2) — for non-neutral snapshots, run `analyzeTicker()` and write `vol_curve_reports` rows with `trigger_source='scanner'`
