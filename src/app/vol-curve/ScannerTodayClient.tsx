@@ -316,9 +316,12 @@ export function ScannerTodayClient() {
                 <span className="text-slate-500">{regimeCounts.neutral} neutral</span>
                 <br />
                 <span className="text-xs text-muted-foreground/70">
-                  Data: Massive (free tier — quotes ~15 min delayed during market hours).
-                  Full chain refresh requires running{' '}
-                  <code className="text-[10px]">ingest-radar-back-months.ts</code> from terminal.
+                  Data: Massive options chains + Yahoo Finance spot. Quote freshness
+                  depends on the active Massive plan (real-time on paid options tiers,
+                  ~15 min delayed otherwise). The "Re-run Scanner" button recomputes
+                  metrics from already-ingested chains; a full chain refresh requires
+                  <code className="text-[10px] mx-1">ingest-radar-back-months.ts</code>
+                  from terminal.
                 </span>
               </CardDescription>
             </div>
