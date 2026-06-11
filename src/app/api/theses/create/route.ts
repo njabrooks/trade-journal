@@ -3,7 +3,6 @@ import { db } from '@/db';
 import { macroTheses, claimThesisMappings, mainClaims } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateMacroThesisTitle } from '@/lib/utils/title-generation';
-import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
 
 /**
  * POST /api/theses/create
@@ -148,9 +147,6 @@ export async function POST(request: NextRequest) {
           .where(eq(mainClaims.id, mainClaimId));
       }
     }
-
-    // Compute triage for the new thesis
-    await computeThesisTriageForThesis(createdThesis.id, 'macro');
 
     return NextResponse.json({
       success: true,

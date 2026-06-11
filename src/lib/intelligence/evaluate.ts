@@ -5,7 +5,7 @@
  * 1. Resolve tickers to belief hierarchy
  * 2. For ALL matched theses: write contextual intel link
  * 3. For MONITORING theses: score against signals → write signal evidence
- * 4. For DEVELOPING theses with rich content: flag as claim candidate via triage
+ * 4. For DEVELOPING theses with rich content: log claim candidate to the journal
  */
 
 import { eq, and, inArray } from 'drizzle-orm';
@@ -13,7 +13,7 @@ import { db as defaultDb } from '../../db/index.js';
 import {
   intelItems,
   signalDataSnapshots,
-  thesisTriageRecords,
+  journalEntries,
   underlyings,
   assetTheses,
   type IntelItem,
@@ -193,31 +193,26 @@ export async function evaluatePendingIntelItems(
       signalEvidenceCount += signalActions.length;
     }
 
-    // Write claim candidate triage records (Tier 3 — requires user review)
+    // Log claim candidates to the journal (Tier 3 — discoverable for user review)
     const claimActions = result.actions.filter(a => a.type === 'claim_candidate') as Array<Extract<EvaluationAction, { type: 'claim_candidate' }>>;
     if (claimActions.length > 0) {
-      // Resolve thesis context for triage record metadata
-      const triageText = `${item.headline} ${item.body ?? ''}`;
-      const context = await resolveRelevanceContext(item.tickers ?? [], d, triageText);
+      // Resolve thesis context for journal entry metadata
+      const contextText = `${item.headline} ${item.body ?? ''}`;
+      const context = await resolveRelevanceContext(item.tickers ?? [], d, contextText);
       for (const action of claimActions) {
         for (const thesisId of action.thesisIds) {
           const thesis = context.allTheses.find(t => t.id === thesisId);
           if (!thesis) continue;
 
-          await d.insert(thesisTriageRecords).values({
-            thesisId,
-            thesisType: thesis.type,
-            thesisTitle: thesis.title,
-            triggerType: 'filing_alert',
-            triggerSource: 'intelligence_routing',
-            contentSummary: { intelItemId: item.id, headline: item.headline, sourceKey: item.sourceKey },
-            aiAnalysis: {},
-            matchedResults: [],
-            severity: 'info',
-            status: 'inbox',
-            triageRule: 'TAXONOMY_REVIEW',
-            actionRequired: `Intel item may contain claim material: "${item.headline}"`,
-          }).onConflictDoNothing();
+          await d.insert(journalEntries).values({
+            objectType: thesis.type === 'macro' ? 'macro_thesis' : 'asset_thesis',
+            objectId: thesisId,
+            objectTitle: thesis.title,
+            actionType: 'claim_candidate_identified',
+            actionDescription: `Intel item may contain claim material for "${thesis.title}": "${item.headline}"`,
+            source: 'automation',
+            metadata: { intelItemId: item.id, headline: item.headline, sourceKey: item.sourceKey },
+          });
           claimCandidateCount++;
         }
       }

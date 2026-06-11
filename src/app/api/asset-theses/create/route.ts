@@ -3,7 +3,6 @@ import { db } from '@/db';
 import { assetTheses, claimThesisMappings, underlyings, mainClaims, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateAssetThesisTitle } from '@/lib/utils/title-generation';
-import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
 
 /**
  * POST /api/asset-theses/create
@@ -207,9 +206,6 @@ export async function POST(request: NextRequest) {
         .set({ notes })
         .where(eq(assetTheses.id, createdView.id));
     }
-
-    // Compute triage for the new thesis
-    await computeThesisTriageForThesis(createdView.id, 'asset');
 
     return NextResponse.json({
       success: true,

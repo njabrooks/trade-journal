@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signals, signalStatusHistory, signalEntityLinks, thesisTriageRecords } from '@/db/schema';
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { signals, signalStatusHistory, signalEntityLinks } from '@/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 import { getMacroThesisById } from '@/db/queries/macroTheses';
 import { getAssetThesisById } from '@/db/queries/assetTheses';
@@ -191,9 +191,6 @@ export async function POST(request: NextRequest) {
             source: 'user',
             batchId: signal.articulationId || undefined,
           });
-
-          // Check if any recommended signals remain and resolve triage if not
-          await checkAndResolveTriage(signalThesisId, signalThesisType, signal.articulationId);
         }
 
         return NextResponse.json({
@@ -220,9 +217,6 @@ export async function POST(request: NextRequest) {
             source: 'user',
             batchId: signal.articulationId || undefined,
           });
-
-          // Check if any recommended signals remain and resolve triage if not
-          await checkAndResolveTriage(signalThesisId, signalThesisType, signal.articulationId);
         }
 
         return NextResponse.json({
@@ -331,10 +325,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Resolve triage since no more recommended signals
-      // Use articulation_id from first signal for batch grouping
-      await checkAndResolveTriage(thesisId, thesisType, recommendedSignals[0]?.articulationId);
-
       return NextResponse.json({
         success: true,
         action: action,
@@ -353,75 +343,6 @@ export async function POST(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  }
-}
-
-/**
- * Helper to check if any recommended signals remain and resolve triage if not.
- * articulationId is used as batchId to group the triage_resolved journal entry with signal reviews.
- */
-async function checkAndResolveTriage(
-  thesisId: string,
-  thesisType: 'macro' | 'asset',
-  articulationId?: string | null
-) {
-  // Count remaining recommended signals (via junction table)
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(signals)
-    .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
-    .where(
-      and(
-        eq(signalEntityLinks.thesisId, thesisId),
-        eq(signalEntityLinks.thesisType, thesisType),
-        eq(signals.status, 'draft')
-      )
-    );
-
-  if (count === 0) {
-    // No more recommended signals - resolve the triage record
-    // Note: Check both rule names for backwards compatibility
-    // - REVIEW_DRAFT_SIGNALS: Created by computeThesisTriageForThesis() in thesisTriage.ts
-    // - REVIEW_RECOMMENDED_SIGNALS: Created by insert-thesis-articulation.ts (legacy)
-    const [triageRecord] = await db
-      .select()
-      .from(thesisTriageRecords)
-      .where(
-        and(
-          eq(thesisTriageRecords.thesisId, thesisId),
-          eq(thesisTriageRecords.thesisType, thesisType),
-          sql`${thesisTriageRecords.triageRule} IN ('REVIEW_RECOMMENDED_SIGNALS', 'REVIEW_DRAFT_SIGNALS')`,
-          sql`${thesisTriageRecords.status} != 'done'`
-        )
-      )
-      .limit(1);
-
-    if (triageRecord) {
-      await db
-        .update(thesisTriageRecords)
-        .set({
-          status: 'done',
-          completedAt: new Date(),
-          completedBy: 'user',
-          userNotes: 'All recommended signals reviewed',
-          updatedAt: new Date(),
-        })
-        .where(eq(thesisTriageRecords.id, triageRecord.id));
-
-      // Log resolution - use articulationId as batchId to group with signal reviews
-      await logToJournal({
-        objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-        objectId: thesisId,
-        objectTitle: triageRecord.thesisTitle,
-        actionType: 'triage_resolved',
-        actionDescription: `${triageRecord.triageRule} triage resolved - all signals reviewed`,
-        triageRecordId: triageRecord.id,
-        previousState: { status: triageRecord.status },
-        newState: { status: 'done' },
-        source: 'user',
-        batchId: articulationId || undefined,
-      });
-    }
   }
 }
 

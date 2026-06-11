@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMacroThesisById, deleteMacroThesis, updateMacroThesis } from '@/db/queries/macroTheses';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
-import { onMacroThesisInvalidated } from '@/lib/derived/thesisTriage';
 
 export async function PATCH(
   request: NextRequest,
@@ -32,11 +31,6 @@ export async function PATCH(
       newState: body,
       source: 'user',
     });
-
-    // Cascade invalidation if status changed to rejected
-    if (body.status === 'rejected' && existing.status !== 'rejected') {
-      await onMacroThesisInvalidated(thesisId);
-    }
 
     // Return updated thesis
     const updated = await getMacroThesisById(thesisId);

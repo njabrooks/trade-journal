@@ -6,8 +6,7 @@
  *
  * When a signal's pct_to_threshold reaches >= 100%, it is auto-completed:
  * - Signal status updated to 'complete'
- * - Thesis triage record created (if thesis-linked via signal_entity_links)
- * - Journal entry logged
+ * - Journal entries logged (signal-level + thesis-level via signal_entity_links)
  *
  * Usage:
  *   npx tsx scripts/collect-signal-data.ts              # Collect all quantitative signals
@@ -33,7 +32,7 @@ import { collectIMFCofer } from './lib/collectors/imf-cofer.js';
 import { collectTSMCRevenue } from './lib/collectors/tsmc-revenue.js';
 import { collectSecEdgarCapex } from './lib/collectors/sec-edgar-capex.js';
 
-const { signals, signalDataSnapshots, signalEntityLinks, thesisTriageRecords, underlyings } = schema;
+const { signals, signalDataSnapshots, signalEntityLinks, underlyings } = schema;
 
 // Extract base ticker from a TradingView symbol (e.g. CRYPTO:HYPEHUSD → HYPE, NASDAQ:GLXY → GLXY)
 function extractBaseTicker(tvSymbol: string): string {
@@ -99,8 +98,8 @@ async function collectForSignal(
  *
  * When triggered:
  * 1. Updates signal status to 'complete'
- * 2. Creates a thesis_triage_record if the signal is thesis-linked (via signal_entity_links)
- * 3. Logs a journal entry on the signal
+ * 2. Logs a journal entry on the signal
+ * 3. Logs thesis-level journal entries for linked theses (via signal_entity_links)
  */
 async function checkAndTriggerSignal(
   signal: { id: string; type: string; statement: string; status?: string },
@@ -117,7 +116,7 @@ async function checkAndTriggerSignal(
   console.log(`\n  >> TRIGGERED: ${shortStatement} (${pctToThreshold.toFixed(1)}% of threshold)`);
 
   if (dryRun) {
-    console.log(`  >> (DRY RUN — would mark complete, create triage record, log journal entry)`);
+    console.log(`  >> (DRY RUN — would mark complete, log journal entries)`);
     return true;
   }
 
@@ -129,32 +128,8 @@ async function checkAndTriggerSignal(
 
   console.log(`  >> Signal status updated to 'complete'`);
 
-  // 2. Resolve thesis links and create triage records + thesis-level journal entries
+  // 2. Resolve thesis links for thesis-level journal entries
   const resolvedThesisLinks = await resolveSignalThesisLinks(signal.id);
-
-  for (const { thesisId, thesisType, thesisTitle } of resolvedThesisLinks) {
-    await db.insert(thesisTriageRecords).values({
-      thesisId,
-      thesisType,
-      thesisTitle,
-      triggerType: 'signal_recommendation',
-      triggerSource: 'collect-signal-data',
-      contentSummary: {
-        signalId: signal.id,
-        signalType: signal.type,
-        signalStatement: signal.statement,
-        pctToThreshold,
-      },
-      aiAnalysis: {},
-      matchedResults: [],
-      severity: signal.type === 'invalidation' ? 'urgent' : 'attention',
-      status: 'inbox',
-      actionRequired: `Signal triggered: ${signal.statement}`,
-      triageRule: 'REVIEW_DATA',
-    });
-
-    console.log(`  >> Thesis triage record created for ${thesisType} thesis: ${thesisTitle}`);
-  }
 
   // 3. Log journal entry on the signal
   await logToJournal({

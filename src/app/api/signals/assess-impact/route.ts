@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { signals, signalEntityLinks, macroTheses, assetTheses, thesisTriageRecords, signalStatusHistory } from '@/db/schema';
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { signals, signalEntityLinks, macroTheses, assetTheses, signalStatusHistory } from '@/db/schema';
+import { eq, inArray } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow';
 
 /**
@@ -138,41 +138,6 @@ export async function POST(request: NextRequest) {
         .where(inArray(signals.id, triggeredSignalIds));
     }
 
-    // Find and resolve the SIGNAL_TRIGGERED triage record
-    const [triageRecord] = await db
-      .select()
-      .from(thesisTriageRecords)
-      .where(
-        and(
-          eq(thesisTriageRecords.thesisId, thesisId),
-          eq(thesisTriageRecords.thesisType, thesisType),
-          eq(thesisTriageRecords.triageRule, 'SIGNAL_TRIGGERED'),
-          sql`${thesisTriageRecords.status} != 'done'`
-        )
-      )
-      .limit(1);
-
-    if (triageRecord) {
-      await db
-        .update(thesisTriageRecords)
-        .set({
-          status: 'done', // thesis_triage_records uses inbox/in_progress/done
-          completedAt: new Date(),
-          completedBy: 'user',
-          userNotes: notes || `Assessment: ${assessment}`,
-          aiAnalysis: {
-            ...(triageRecord.aiAnalysis as object || {}),
-            userAssessment: assessment,
-            confidenceChange: newConfidence !== previousConfidence ? {
-              from: previousConfidence,
-              to: newConfidence,
-            } : null,
-          },
-          updatedAt: new Date(),
-        })
-        .where(eq(thesisTriageRecords.id, triageRecord.id));
-    }
-
     // Log to journal
     await logToJournal({
       objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
@@ -180,7 +145,6 @@ export async function POST(request: NextRequest) {
       objectTitle: thesis.title,
       actionType: 'signal_impact_assessed',
       actionDescription: `Impact assessment: ${assessment}${convictionUpdate && convictionUpdate !== 'maintain' ? `. Confidence ${convictionUpdate}d` : ''}`,
-      triageRecordId: triageRecord?.id,
       previousState: {
         confidence: previousConfidence,
         triggeredSignalCount: triggeredSignalIds?.length || 0,
@@ -205,7 +169,6 @@ export async function POST(request: NextRequest) {
       previousConfidence,
       newConfidence,
       signalsAcknowledged: triggeredSignalIds?.length || 0,
-      triageResolved: !!triageRecord,
     });
 
   } catch (error) {

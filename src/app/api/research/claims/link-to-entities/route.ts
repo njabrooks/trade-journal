@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { claimThesisMappings, mainClaims, macroTheses, assetTheses } from '@/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
-import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
 import { logToJournal } from '@/lib/workflow';
 
 /**
@@ -166,14 +165,6 @@ export async function POST(request: NextRequest) {
           },
         });
       }
-    }
-
-    // Compute triage for all linked theses/views
-    for (const thesisId of thesisIds) {
-      await computeThesisTriageForThesis(thesisId, 'macro');
-    }
-    for (const viewId of viewIds) {
-      await computeThesisTriageForThesis(viewId, 'asset');
     }
 
     return NextResponse.json({

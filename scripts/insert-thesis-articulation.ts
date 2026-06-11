@@ -27,7 +27,6 @@ const {
   signals: signalsTable,
   macroTheses,
   assetTheses,
-  thesisTriageRecords,
   claimThesisMappings,
   signalEntityLinks,
 } = schema;
@@ -355,9 +354,9 @@ async function main() {
   }
 
   // -------------------------------------------------------------------------
-  // Step 4: Update thesis and resolve triage (inline implementation)
+  // Step 4: Update thesis (inline implementation)
   // -------------------------------------------------------------------------
-  console.log('\nUpdating thesis and resolving triage...');
+  console.log('\nUpdating thesis...');
 
   // thesis was already queried earlier (after Step 2)
   if (!thesis) {
@@ -417,53 +416,6 @@ async function main() {
     console.log('✅ Journal entry created');
   }
 
-  // Resolve any attention/info articulation-related triage records
-  const pendingTriage = await db
-    .select()
-    .from(thesisTriageRecords)
-    .where(
-      and(
-        eq(thesisTriageRecords.thesisId, thesisId),
-        eq(thesisTriageRecords.thesisType, thesisType),
-        sql`${thesisTriageRecords.status} IN ('inbox', 'in_progress')`
-      )
-    );
-
-  const articulationTriage = pendingTriage.filter(
-    (t) =>
-      t.triageRule === 'UPDATE_CORE_ARGUMENT' ||
-      t.triageRule === 'PRODUCE_CORE_ARGUMENT' ||
-      t.triageRule === 'NEEDS_RESEARCH' ||
-      t.triageRule === 'thesis_new_claims_available' ||
-      t.triageRule === 'thesis_needs_articulation'
-  );
-
-  for (const triage of articulationTriage) {
-    await db
-      .update(thesisTriageRecords)
-      .set({
-        status: 'done',
-        completedAt: new Date(),
-        completedBy: 'articulation_created',
-      })
-      .where(eq(thesisTriageRecords.id, triage.id));
-
-    // Log triage resolution
-    await logToJournal({
-      objectType: triage.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
-      objectId: triage.thesisId,
-      objectTitle: thesis?.title,
-      actionType: 'triage_resolved',
-      actionDescription: `Triage record resolved: ${triage.triageRule}`,
-      triageRecordId: triage.id,
-      skillInvoked: '/build-core-argument',
-      previousState: { status: triage.status },
-      newState: { status: 'done', completedBy: 'articulation_created' },
-      source: 'skill',
-    });
-  }
-  console.log(`✅ Resolved ${articulationTriage.length} triage records`);
-
   // Note: REVIEW_RECOMMENDED_SIGNALS triage creation removed.
   // Focused signals (max 5 per thesis) go directly to 'active' status.
 
@@ -476,7 +428,6 @@ async function main() {
   console.log(`   Articulation ID: ${insertedArticulation.id}`);
   console.log(`   Version: ${nextVersion}`);
   console.log(`   Signals: ${signals.length}`);
-  console.log(`   Triage Records Resolved: ${articulationTriage.length}`);
 
   process.exit(0);
 }

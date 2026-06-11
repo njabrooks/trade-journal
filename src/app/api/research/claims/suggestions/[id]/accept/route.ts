@@ -8,7 +8,6 @@ import {
   assetTheses,
 } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { computeThesisTriageForThesis } from '@/lib/derived/thesisTriage';
 import { logToJournal } from '@/lib/workflow';
 
 /**
@@ -181,13 +180,6 @@ export async function POST(
         aiModel: recommendation.aiModel,
       },
     });
-
-    // Compute thesis triage (best-effort — don't fail the accept if this errors)
-    try {
-      await computeThesisTriageForThesis(targetObjectId, targetType);
-    } catch (triageError: any) {
-      console.warn('Thesis triage computation failed (non-fatal):', triageError.message);
-    }
 
     return NextResponse.json({
       success: true,
