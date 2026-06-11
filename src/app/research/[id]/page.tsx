@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getResearchArtifactById, getResearchInsightByArtifactId, getMainClaimsForArtifact } from '@/db/queries/research';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { notFound } from 'next/navigation';
+import { isUuid } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { WorkflowStatusCard } from '@/components/research/WorkflowStatusCard';
@@ -17,6 +18,7 @@ interface ResearchDetailPageProps {
 
 export async function generateMetadata({ params }: ResearchDetailPageProps): Promise<Metadata> {
   const { id } = await params;
+  if (!isUuid(id)) return { title: 'Research' };
   const artifact = await getResearchArtifactById(id);
 
   return {
@@ -26,6 +28,7 @@ export async function generateMetadata({ params }: ResearchDetailPageProps): Pro
 
 export default async function ResearchDetailPage({ params }: ResearchDetailPageProps) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const artifact = await getResearchArtifactById(id);
 
   if (!artifact) {

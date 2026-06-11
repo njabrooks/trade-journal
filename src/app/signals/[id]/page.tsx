@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { getSignalWithEntitiesById } from '@/db/queries/signals';
+import { isUuid } from '@/lib/utils';
 import { SignalDetailClient } from './SignalDetailClient';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
+  if (!isUuid(id)) return { title: 'Signal' };
   const signal = await getSignalWithEntitiesById(id);
   const title = signal
     ? `${signal.statement.slice(0, 60)}${signal.statement.length > 60 ? '…' : ''}`
@@ -19,6 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SignalDetailPage({ params }: Props) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const signal = await getSignalWithEntitiesById(id);
   if (!signal) notFound();
 
