@@ -926,6 +926,13 @@ export const strategyMetricsSnapshots = pgTable(
     numOpenPositions: integer('num_open_positions'),
     minDte: integer('min_dte'),
     maxDte: integer('max_dte'),
+    // W4 realized PnL engine (docs/v2/05-w4-realized-pnl-design.md)
+    realizedPnlToDate: numeric('realized_pnl_to_date'),
+    cumulativePnl: numeric('cumulative_pnl'),
+    // 'full' | 'partial_history' | 'no_trades' — quantity-reconciliation
+    // confidence; partial_history = linked trade history incomplete, realized
+    // is a partial view, not the truth
+    realizedConfidence: text('realized_confidence'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
   },

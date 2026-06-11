@@ -6,6 +6,7 @@ import {
   NewStrategyMetricsSnapshot,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, gte, lte } from 'drizzle-orm';
+import { computeStrategyRealizedToDate } from './realizedPnl';
 
 export interface StrategyMetricsInput {
   accountId: string;
@@ -145,6 +146,17 @@ export async function computeStrategyMetrics(
     }
   }
 
+  // 8. Realized PnL through this date (W4 — flow-based average cost over
+  // linked trades; see src/lib/derived/realizedPnl.ts)
+  const realized = await computeStrategyRealizedToDate(accountId, strategyId, snapshotDate);
+  const realizedPnlToDate =
+    realized.confidence === 'no_trades' ? null : realized.realizedPnlToDate.toFixed(2);
+  const cumulativePnl =
+    realizedPnlToDate !== null || totalUnrealizedPnl !== null
+      ? ((realizedPnlToDate ? parseFloat(realizedPnlToDate) : 0) +
+          (totalUnrealizedPnl ? parseFloat(totalUnrealizedPnl) : 0)).toFixed(2)
+      : null;
+
   return {
     accountId,
     strategyId,
@@ -156,6 +168,9 @@ export async function computeStrategyMetrics(
     numOpenPositions: numOpenPositions > 0 ? numOpenPositions : null,
     minDte,
     maxDte,
+    realizedPnlToDate,
+    cumulativePnl,
+    realizedConfidence: realized.confidence,
   };
 }
 
@@ -182,6 +197,9 @@ export async function upsertStrategyMetrics(
         numOpenPositions: metrics.numOpenPositions,
         minDte: metrics.minDte,
         maxDte: metrics.maxDte,
+        realizedPnlToDate: metrics.realizedPnlToDate,
+        cumulativePnl: metrics.cumulativePnl,
+        realizedConfidence: metrics.realizedConfidence,
         updatedAt: new Date(),
       },
     });
