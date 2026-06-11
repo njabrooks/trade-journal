@@ -23,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SortableHeader } from "@/components/triage/SortableHeader";
+import { SortableHeader } from "@/components/ui/SortableHeader";
 import { HelpCircle } from "lucide-react";
 
 interface ScannerSnapshot {

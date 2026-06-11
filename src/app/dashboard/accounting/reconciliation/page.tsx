@@ -9,8 +9,6 @@ import {
 } from "@/components/accounting/ReconciliationNavChart";
 import { ReconciliationOwnerTable } from "@/components/accounting/ReconciliationOwnerTable";
 import { ReconciliationPositionTable } from "@/components/accounting/ReconciliationPositionTable";
-import { ReconciliationCheckpointBanner } from "@/components/accounting/ReconciliationCheckpointBanner";
-import { ReconciliationCheckpointHistory } from "@/components/accounting/ReconciliationCheckpointHistory";
 import type { ReconciliationData } from "@/db/queries/reconciliation";
 import type { NavComparisonPoint } from "@/db/queries/reconciliation";
 
@@ -20,7 +18,6 @@ export default function ReconciliationPage() {
   const [navData, setNavData] = useState<NavComparisonPoint[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [checkpointRefreshKey, setCheckpointRefreshKey] = useState(0);
 
   const fetchData = useCallback(async () => {
     try {
@@ -35,11 +32,6 @@ export default function ReconciliationPage() {
       setIsLoading(false);
     }
   }, []);
-
-  const handleCheckpointCreated = useCallback(() => {
-    fetchData();
-    setCheckpointRefreshKey((k) => k + 1);
-  }, [fetchData]);
 
   // Fetch main reconciliation data once on mount
   useEffect(() => {
@@ -88,12 +80,6 @@ export default function ReconciliationPage() {
             bottleneck={data.bottleneck}
           />
 
-          <ReconciliationCheckpointBanner
-            summary={data.summary}
-            lastCheckpoint={data.lastCheckpoint}
-            onCheckpointCreated={handleCheckpointCreated}
-          />
-
           {navData && (
             <ReconciliationNavChart
               data={navData}
@@ -108,8 +94,6 @@ export default function ReconciliationPage() {
             positions={data.positions}
             onResolutionAction={fetchData}
           />
-
-          <ReconciliationCheckpointHistory refreshKey={checkpointRefreshKey} />
         </>
       )}
     </DashboardShell>
