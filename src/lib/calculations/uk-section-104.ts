@@ -61,7 +61,7 @@ interface EventForS104 {
   realizedGainGbp: string | null;
 }
 
-interface EventMetadata {
+export interface EventMetadata {
   commission?: number;
   ibkrAssetClass?: string;
   activityCode?: string;
@@ -72,7 +72,7 @@ interface EventMetadata {
 }
 
 /** Parsed event ready for S104 processing */
-interface S104Event {
+export interface S104Event {
   id: string;
   userId: string;
   assetId: string;
@@ -106,7 +106,7 @@ interface DisposalMatchState {
 // Metadata Parsing
 // ============================================================================
 
-function parseEventMetadata(metadata: unknown): EventMetadata {
+export function parseEventMetadata(metadata: unknown): EventMetadata {
   if (!metadata || typeof metadata !== "object") return {};
   const m = metadata as Record<string, unknown>;
   return {
@@ -121,7 +121,7 @@ function parseEventMetadata(metadata: unknown): EventMetadata {
 }
 
 /** Check if event is a special type that bypasses normal S104 matching */
-function isSpecialEvent(eventType: string, meta: EventMetadata, source: string | null): boolean {
+export function isSpecialEvent(eventType: string, meta: EventMetadata, source: string | null): boolean {
   // Transaction fees — these should be folded into the parent transaction's cost basis,
   // not treated as separate disposals. Koinly handles fees this way; treating them as
   // disposals inflates match count and creates "ours_only" noise in reconciliation.
@@ -143,11 +143,11 @@ function isSpecialEvent(eventType: string, meta: EventMetadata, source: string |
 // Date Helpers
 // ============================================================================
 
-function formatDate(d: Date): string {
+export function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function addDays(dateStr: string, days: number): string {
+export function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00Z");
   d.setUTCDate(d.getUTCDate() + days);
   return formatDate(d);
@@ -339,14 +339,14 @@ export async function computeUkSection104(ctx: CalcContext): Promise<CalcResult>
 // Scope Processing — Two-Pass Algorithm
 // ============================================================================
 
-interface ScopeResult {
+export interface ScopeResult {
   calcUpdates: UpsertEventCalculationData[];
   matches: S104MatchRecord[];
   finalPool: S104PoolState;
   lastEventId: string | null;
 }
 
-function processScope(scopeEvents: S104Event[]): ScopeResult {
+export function processScope(scopeEvents: S104Event[]): ScopeResult {
   const calcUpdates: UpsertEventCalculationData[] = [];
   const allMatches: S104MatchRecord[] = [];
   const pool: S104PoolState = {

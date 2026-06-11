@@ -31,7 +31,7 @@ import { ACQUISITION_EVENT_TYPES, DISPOSAL_EVENT_TYPES, isAcquisition, isDisposa
 
 type LotType = "long" | "short";
 
-interface LotCreationEvent {
+export interface LotCreationEvent {
   id: string;
   userId: string;
   assetId: string;
@@ -45,7 +45,7 @@ interface LotCreationEvent {
   runningQuantity: string | null; // From event_calculations table
 }
 
-interface LotInsertData {
+export interface LotInsertData {
   userId: string;
   assetId: string;
   owner: string;
@@ -253,7 +253,7 @@ async function findEventsWithoutLots(
  *
  * Returns null if the event doesn't create a lot (e.g., SELL just closes long, BUY just covers short)
  */
-function createLotDataFromEvent(event: LotCreationEvent): LotInsertData | null {
+export function createLotDataFromEvent(event: LotCreationEvent): LotInsertData | null {
   const quantity = parseFloat(event.quantity);
   const totalValue = parseFloat(event.totalValue);
 

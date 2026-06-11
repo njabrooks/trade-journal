@@ -32,6 +32,7 @@ Position triage + thesis triage (entire subsystem: pages, queues, engines, table
 npm run dev        # Dev server (port 3000 — note: a squatter process may push it to 3002)
 npm run build      # Production build (the gate for any structural change)
 npm run lint
+npm test           # vitest — golden tests on the money-math (src/lib/calculations etc.); run before touching accounting code
 
 npx tsx scripts/<script>.ts                     # Run any script (from repo root)
 npx tsx scripts/psql-query.ts "SELECT ..." --format json   # Read-only SQL helper (wraps in row_to_json; cannot mutate)
@@ -118,7 +119,7 @@ GitHub Actions (UTC): flex hourly 04–14 · massive 21:30 · hyperliquid/coinba
 
 On-device launchd: `com.trade-journal.options-scanner` Mon–Fri 14:50 Europe/London (wrapper `scripts/cron/options-scanner.sh`; read [launchd/README.md](launchd/README.md) before adding jobs).
 
-**Known issues:** Solana ingestion is flaky (W0 fix pending). IBKR Flex API refuses statement generation mid-US-market-day (`ErrorCode 1001`) — failures outside the 04–14 UTC window are usually IBKR-side, not code.
+**Known issues:** IBKR Flex API refuses statement generation mid-US-market-day (`ErrorCode 1001`) — failures outside the 04–14 UTC window are usually IBKR-side, not code. (Solana flakiness was the triage engine erroring on crypto positions; resolved by the prune, verified 2026-06-11.)
 
 **IBKR access beyond Flex goes through Radon** (`/Users/home-hub/projects/radon`): bulk options chains, contract qualification, live quotes via `scripts/clients/ib_client.py` (TWS API, IB Gateway auto-managed by Radon's launchd; Mon 2FA). Trade-journal Python scripts use client_id range **20–49**.
 
@@ -142,8 +143,8 @@ Active: pull-portfolio, portfolio-and-options-mcp, ibkr-quote, analyze-vol-curve
 |---|---|
 | W1 prune sweep | **DONE** 2026-06-11 ([report](docs/v2/04-prune-report.md)) |
 | W2 docs regen | DONE (this file) |
-| W0 ops: Solana fix; accounting catch-up Mar→Jun + reconcile | pending |
-| W3 vitest + golden tests on money-math | pending |
+| W0 ops: Solana fix (DONE — was triage-engine errors, resolved by prune); accounting catch-up Mar→Jun + reconcile | partial |
+| W3 vitest + golden tests on money-math | in progress |
 | W4 realized PnL engine + attribution rollups | pending (anchor prerequisite) |
 | W5 performance section UI · W6 morning screen + live-pricing overlay (D14) | pending |
 | W7 portfolio-aware options advisor (D11: hedge / income / put-entry / opportunistic) | pending |

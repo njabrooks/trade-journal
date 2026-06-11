@@ -36,7 +36,7 @@ const LONG_TERM_DAYS = 365;
 // Types
 // ============================================================================
 
-interface EventForAverageCost {
+export interface EventForAverageCost {
   id: string;
   userId: string;
   assetId: string;
@@ -945,7 +945,7 @@ export async function recalculateAverageCost(
  * Result of pure (in-memory) event computation.
  * Contains the new position state and the event_calculation data to persist.
  */
-interface AvgCostComputeResult {
+export interface AvgCostComputeResult {
   newPosition: AverageCostState;
   eventCalcData: UpsertEventCalculationData;
 }
@@ -954,7 +954,7 @@ interface AvgCostComputeResult {
  * Pure computation for acquisition events — no DB writes.
  * Replicates all the logic from processAcquisition but returns data instead of writing.
  */
-function computeAcquisitionPure(
+export function computeAcquisitionPure(
   position: AverageCostState,
   event: EventForAverageCost
 ): AvgCostComputeResult {
@@ -1058,7 +1058,7 @@ function computeAcquisitionPure(
  * Pure computation for disposal events — no DB writes.
  * Replicates all the logic from processDisposal but returns data instead of writing.
  */
-function computeDisposalPure(
+export function computeDisposalPure(
   position: AverageCostState,
   event: EventForAverageCost
 ): AvgCostComputeResult {

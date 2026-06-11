@@ -57,7 +57,7 @@ interface GbpConversionStats {
 }
 
 // Helper types for metadata parsing
-interface EventMetadata {
+export interface EventMetadata {
   commission?: number;
   ibkrAssetClass?: string;
   activityCode?: string;
@@ -71,7 +71,7 @@ interface EventMetadata {
   baseCurrencyDivisor?: number;
 }
 
-function parseEventMetadata(metadata: unknown): EventMetadata {
+export function parseEventMetadata(metadata: unknown): EventMetadata {
   if (!metadata || typeof metadata !== "object") return {};
   const m = metadata as Record<string, unknown>;
   return {
@@ -104,7 +104,7 @@ const EPSILON = 0.00000001;
  *
  * Returns true if recovery is possible, with the effective USD→GBP rate to use.
  */
-function canRecoverOriginalGbp(meta: EventMetadata): boolean {
+export function canRecoverOriginalGbp(meta: EventMetadata): boolean {
   return (
     meta.originalCurrency === "GBP" &&
     meta.fxRateToBase !== undefined &&
@@ -120,7 +120,7 @@ function canRecoverOriginalGbp(meta: EventMetadata): boolean {
  *
  * Also returns the effective USD→GBP rate used (for audit trail storage).
  */
-function usdToGbp(
+export function usdToGbp(
   usdAmount: number,
   fxRateUsdToGbp: number,
   meta: EventMetadata,
