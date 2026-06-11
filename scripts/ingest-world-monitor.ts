@@ -1,7 +1,13 @@
 /**
  * Intelligence Report Ingestion Script
  *
- * Ingests World Monitor and Thesis Monitor markdown reports into the database.
+ * Ingests World Monitor and Thesis Monitor markdown reports.
+ *
+ * v2 (2026-06): the intelligence_reports / intelligence_items tables were dropped
+ * in the v2 prune. Reports are no longer stored — instead each report item is
+ * emitted directly to intel_items (with a deterministic source_record_id for
+ * idempotency), and thesis-monitor reports generate qualitative
+ * signal_data_snapshots straight from the parsed markdown.
  *
  * Usage:
  *   npx tsx scripts/ingest-world-monitor.ts --file <path>        # Ingest a single report
@@ -15,100 +21,58 @@ import { db, closeDb, schema, logToJournal } from './lib/db.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
-import { parseWorldMonitor } from '../src/lib/intelligence/parseWorldMonitor.js';
+import { parseWorldMonitor, type ParsedReport } from '../src/lib/intelligence/parseWorldMonitor.js';
 import { findBestMatch, hasNeutralIndicators, type Assessment, type ContentForScoring, type SignalForScoring } from '../src/lib/intelligence/scoring.js';
 import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
-const { intelligenceReports, intelligenceItems, signals, signalDataSnapshots, signalEntityLinks } = schema;
+const { signals, signalDataSnapshots, signalEntityLinks } = schema;
 
-async function ingestReport(filePath: string): Promise<{ reportId: string; itemCount: number; skipped: boolean }> {
+// Virtual source table name for intel_items emitted from monitor reports.
+// (Pre-v2 rows used 'intelligence_items' with the now-dropped table's row uuids.)
+const SOURCE_TABLE = 'world_monitor_report';
+
+async function ingestReport(filePath: string): Promise<{ itemCount: number; emitted: number; skipped: boolean }> {
   const markdown = readFileSync(filePath, 'utf-8');
   const parsed = parseWorldMonitor(markdown);
 
-  // Check for existing report
-  const existing = await db
-    .select({ id: intelligenceReports.id })
-    .from(intelligenceReports)
-    .where(
-      and(
-        eq(intelligenceReports.reportDate, parsed.reportDate),
-        eq(intelligenceReports.generatedAt, new Date(parsed.generatedAt))
-      )
-    )
-    .limit(1);
+  const isThesisMonitor = parsed.reportType === 'thesis-monitor';
 
-  if (existing.length > 0) {
-    return { reportId: existing[0].id, itemCount: 0, skipped: true };
-  }
-
-  // Insert report
-  const [report] = await db
-    .insert(intelligenceReports)
-    .values({
-      reportDate: parsed.reportDate,
-      generatedAt: new Date(parsed.generatedAt),
-      timeWindow: parsed.timeWindow,
-      version: parsed.version,
-      reportType: parsed.reportType,
-      executiveSummary: parsed.executiveSummary,
-      keyThemes: parsed.keyThemes,
-      fullMarkdown: parsed.fullMarkdown,
-      criticalCount: parsed.items.filter(i => i.severity === 'critical').length,
-      highCount: parsed.items.filter(i => i.severity === 'high').length,
-      mediumCount: parsed.items.filter(i => i.severity === 'medium').length,
-      infoCount: parsed.items.filter(i => i.severity === 'info').length,
-      sectors: parsed.sectors,
-    })
-    .returning({ id: intelligenceReports.id });
-
-  // Insert items with sort order preserving report sequence
-  let insertedItems: { id: string }[] = [];
+  // Emit intel items with deterministic record ids — (source_table, source_record_id)
+  // uniqueness makes re-ingestion of the same report a no-op.
+  let emitted = 0;
   if (parsed.items.length > 0) {
-    insertedItems = await db.insert(intelligenceItems).values(
-      parsed.items.map((item, idx) => ({
-        reportId: report.id,
-        severity: item.severity,
-        sector: item.sector,
-        headline: item.headline,
-        body: item.body,
-        sourceUrls: item.sourceUrls,
-        relevantTickers: item.relevantTickers,
+    const intelItems: IntelItemInput[] = parsed.items.map((item, idx) => ({
+      sourceKey: isThesisMonitor ? 'thesis_monitor' : 'world_monitor',
+      sourceTable: SOURCE_TABLE,
+      sourceRecordId: `${parsed.reportType}:${parsed.reportDate}:${parsed.generatedAt}:${idx}`,
+      occurredAt: new Date(parsed.generatedAt),
+      headline: item.headline,
+      body: item.body || null,
+      severity: item.severity,
+      tickers: item.relevantTickers || [],
+      metadata: {
+        reportType: parsed.reportType,
+        reportDate: parsed.reportDate,
         section: item.section,
-        sortOrder: idx,
-      }))
-    ).returning({ id: intelligenceItems.id });
-  }
-
-  // Emit intel items for the inserted intelligence items
-  if (insertedItems.length > 0) {
-    const isThesisMonitor = parsed.reportType === 'thesis-monitor';
-    const intelItems: IntelItemInput[] = insertedItems.map((row, idx) => {
-      const item = parsed.items[idx];
-      return {
-        sourceKey: isThesisMonitor ? 'thesis_monitor' : 'world_monitor',
-        sourceTable: 'intelligence_items',
-        sourceRecordId: row.id,
-        occurredAt: new Date(parsed.generatedAt),
-        headline: item.headline,
-        body: item.body || null,
-        severity: item.severity as 'critical' | 'high' | 'medium' | 'info',
-        tickers: item.relevantTickers || [],
-      };
-    });
-    const emitted = await emitIntelItems(db, intelItems);
+        sector: item.sector,
+        sourceUrls: item.sourceUrls,
+      },
+    }));
+    emitted = await emitIntelItems(db, intelItems);
     console.log(`  Intel items emitted: ${emitted}`);
   }
 
+  // If nothing was newly emitted, the report was already ingested — skip snapshots.
+  const skipped = parsed.items.length > 0 && emitted === 0;
+
   // Post-ingestion hook: generate qualitative signal snapshots for thesis-monitor reports
-  if (parsed.reportType === 'thesis-monitor') {
-    const snapshotCount = await generateQualitativeSnapshots(report.id);
+  if (isThesisMonitor && !skipped) {
+    const snapshotCount = await generateQualitativeSnapshots(parsed);
     console.log(`  Signal snapshots: ${snapshotCount} generated`);
   }
 
-  return { reportId: report.id, itemCount: parsed.items.length, skipped: false };
+  return { itemCount: parsed.items.length, emitted, skipped };
 }
-
-const VALID_ASSESSMENTS = ['neutral', 'strengthening', 'confirmed', 'weakening', 'invalidated'] as const;
 
 /**
  * Normalize a signal statement for fuzzy matching.
@@ -156,24 +120,17 @@ function parseScoreLabels(markdown: string): Map<string, { assessment: Assessmen
 }
 
 /**
- * Generate qualitative signal data snapshots from a thesis-monitor report.
+ * Generate qualitative signal data snapshots from a parsed thesis-monitor report.
  *
  * Primary path: parses explicit Score: labels from the report markdown.
  * Fallback path: heuristic keyword matching (for reports without Score: labels).
  * Creates a snapshot per signal — even "neutral" entries so the timeline is complete.
  */
-async function generateQualitativeSnapshots(reportId: string): Promise<number> {
-  // Load the report markdown for Score: label parsing
-  const [report] = await db
-    .select({ fullMarkdown: intelligenceReports.fullMarkdown })
-    .from(intelligenceReports)
-    .where(eq(intelligenceReports.id, reportId))
-    .limit(1);
-
-  if (!report?.fullMarkdown) return 0;
+async function generateQualitativeSnapshots(parsed: ParsedReport): Promise<number> {
+  if (!parsed.fullMarkdown) return 0;
 
   // Parse Score: labels from report markdown (primary path)
-  const scoreLabels = parseScoreLabels(report.fullMarkdown);
+  const scoreLabels = parseScoreLabels(parsed.fullMarkdown);
   const hasScoreLabels = scoreLabels.size > 0;
 
   if (hasScoreLabels) {
@@ -182,11 +139,8 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
     console.log(`  No Score: labels found — using heuristic fallback`);
   }
 
-  // Load the report's intelligence items (needed for evidence linking + fallback)
-  const items = await db
-    .select()
-    .from(intelligenceItems)
-    .where(eq(intelligenceItems.reportId, reportId));
+  // Report items (in memory — give each an index id for findBestMatch)
+  const items = parsed.items.map((item, idx) => ({ id: String(idx), ...item }));
 
   if (items.length === 0) return 0;
 
@@ -236,7 +190,7 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
   const snapshots: Array<typeof signalDataSnapshots.$inferInsert> = [];
   const now = new Date();
 
-  // Helper to convert an intelligence item to the shared ContentForScoring format
+  // Helper to convert a report item to the shared ContentForScoring format
   const itemToContent = (item: { id: string; headline: string; body: string | null; relevantTickers: string[] | null }): ContentForScoring => ({
     text: `${item.headline} ${item.body || ''}`,
     tickers: item.relevantTickers || [],
@@ -252,7 +206,7 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
     const scoreEntry = scoreLabels.get(normalizedStatement);
 
     if (scoreEntry) {
-      // Find the best-matching intelligence item for evidence linking
+      // Find the best-matching report item for evidence context
       const match = findBestMatch(items, itemToContent, signal, thesisTicker);
 
       snapshots.push({
@@ -262,9 +216,7 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
         evidenceSummary: scoreEntry.evidenceText || (match
           ? `${match.item.headline}${match.item.body ? ': ' + match.item.body.slice(0, 200) : ''}`
           : null),
-        intelligenceItemId: match?.item.id || null,
         dataSource: 'thesis_monitor',
-        reportId: reportId,
         status: 'pending',
       });
       continue;
@@ -288,9 +240,7 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
       evidenceSummary: match
         ? `${match.item.headline}${match.item.body ? ': ' + match.item.body.slice(0, 200) : ''}`
         : null,
-      intelligenceItemId: match?.item.id || null,
       dataSource: 'thesis_monitor',
-      reportId: reportId,
       status: 'pending',
     });
   }
@@ -353,7 +303,8 @@ async function generateQualitativeSnapshots(reportId: string): Promise<number> {
           signalId: snap.signalId,
           assessment: snap.assessment,
           dataSource: 'thesis_monitor',
-          reportId,
+          reportDate: parsed.reportDate,
+          reportGeneratedAt: parsed.generatedAt,
         },
         batchId,
       });
@@ -383,9 +334,8 @@ async function main() {
     console.log(`Ingesting: ${filePath}`);
     const result = await ingestReport(filePath);
     if (result.skipped) {
-      console.log(`  Skipped (already exists): ${result.reportId}`);
+      console.log(`  Skipped (already ingested)`);
     } else {
-      console.log(`  Report ID: ${result.reportId}`);
       console.log(`  Items: ${result.itemCount}`);
     }
   }
@@ -408,10 +358,9 @@ async function main() {
       try {
         const result = await ingestReport(filePath);
         if (result.skipped) {
-          console.log(`  Skipped (already exists)`);
+          console.log(`  Skipped (already ingested)`);
           skipped++;
         } else {
-          console.log(`  Report ID: ${result.reportId}`);
           console.log(`  Items: ${result.itemCount}`);
           ingested++;
         }

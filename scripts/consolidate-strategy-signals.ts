@@ -22,7 +22,7 @@
 import { db, closeDb, schema } from './lib/db.js';
 import { eq, and, sql, inArray } from 'drizzle-orm';
 
-const { signals, signalEntityLinks, signalDataSnapshots, signalStatusHistory, signalDataTracking, journalEntries } = schema;
+const { signals, signalEntityLinks, signalDataSnapshots, signalStatusHistory, journalEntries } = schema;
 
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -246,11 +246,7 @@ async function main() {
         console.log(`    ✓ Deleted ${deletedCount} duplicate snapshots`);
       }
 
-      // 5e. Delete signal_data_tracking for old signals
-      await db.execute(sql`
-        DELETE FROM signal_data_tracking
-        WHERE signal_id = ANY(${uuidArray(oldSignalIds)})
-      `);
+      // 5e. (removed) signal_data_tracking cleanup — table dropped 2026-06 (v2 prune)
 
       // 5f. Delete old entity links
       await db.execute(sql`

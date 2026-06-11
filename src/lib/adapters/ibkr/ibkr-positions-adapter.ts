@@ -7,13 +7,11 @@
  * Purpose:
  * - Import IBKR's reported positions as reference snapshots
  * - Enable reconciliation between calculated positions and IBKR's view
- * - Populate daily_snapshots table with authoritative data
  *
  * Ported from twotreescap-app/services/event-sourcing/adapters/ibkr/ibkr-positions-adapter.ts
  */
 
 import type { ParseResult, ParseError, AdapterValidationResult } from "@/types/event-sourcing";
-import type { NewDailySnapshot } from "@/db/schema";
 import {
   BaseSpecializedAdapter,
   type SpecializedTransformContext,
@@ -111,8 +109,26 @@ const HEADER_MAPPING: Record<string, keyof IbkrPositionsRaw> = {
 
 /**
  * Extended snapshot output with metadata for asset resolution
+ *
+ * Snapshot fields were formerly derived from the daily_snapshots insert type
+ * (table dropped 2026-06, v2 prune) — the row shape is now defined inline.
  */
-export interface PositionsSnapshotOutput extends Omit<NewDailySnapshot, "assetId"> {
+export interface PositionsSnapshotOutput {
+  id?: string;
+  userId: string;
+  snapshotDate: string;
+  owner: string;
+  account: string;
+  quantity: string;
+  costBasis: string;
+  pricePerUnit?: string | null;
+  marketValue?: string | null;
+  unrealizedGain?: string | null;
+  unrealizedGainPercent?: string | null;
+  dailyPnl?: string | null;
+  dailyPnlPercent?: string | null;
+  isCalculated?: boolean | null;
+  calculatedAt?: Date | null;
   /** Asset ID - resolved by pipeline */
   assetId: string;
   /** Ticker for asset resolution */

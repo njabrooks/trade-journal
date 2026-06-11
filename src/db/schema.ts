@@ -846,79 +846,6 @@ export type FxRate = typeof fxRates.$inferSelect;
 export type NewFxRate = typeof fxRates.$inferInsert;
 
 // ============================================================================
-// Triage Records
-// ============================================================================
-
-export const triageRecords = pgTable(
-  'triage_records',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    snapshotDate: date('snapshot_date').notNull(),
-    accountId: uuid('account_id')
-      .notNull()
-      .references(() => accounts.id, { onDelete: 'cascade' }),
-    contextLevel: text('context_level').notNull(), // 'position' | 'strategy' | 'underlying' | 'account'
-    positionId: uuid('position_id').references(() => positions.id, {
-      onDelete: 'cascade',
-    }),
-    strategyId: uuid('strategy_id').references(() => strategies.id, {
-      onDelete: 'set null',
-    }),
-    underlyingId: uuid('underlying_id').references(() => underlyings.id, {
-      onDelete: 'set null',
-    }),
-    symbol: text('symbol').notNull(),
-    assetClass: text('asset_class'),
-    dte: integer('dte'),
-    dteBucket: text('dte_bucket'),
-    flagDteShort: boolean('flag_dte_short'),
-    flagDteLong: boolean('flag_dte_long'),
-    isItm: boolean('is_itm'),
-    sigmaToStrike: numeric('sigma_to_strike'),
-    flagSigma05: boolean('flag_sigma_0_5'),
-    flagSigma10: boolean('flag_sigma_1_0'),
-    flagAssignment: boolean('flag_assignment'),
-    unrealizedPnl: numeric('unrealized_pnl'),
-    absNotional: numeric('abs_notional'),
-    pctNavAbsNotional: numeric('pct_nav_abs_notional'),
-    // Severity: importance/priority level (how urgent is this?)
-    // Values: 'urgent' | 'attention' | 'monitor' | 'info'
-    severity: text('severity'),
-    // Status: workflow state (where is this in the triage workflow?)
-    // Values: 'inbox' | 'in_progress' | 'done'
-    status: text('status').default('inbox'),
-    direction: text('direction'), // 'bullish' | 'bearish' | 'neutral' - net direction of position(s)
-    recommendedAction: text('recommended_action'),
-    notes: text('notes'),
-    ruleSet: text('rule_set'), // e.g. 'options_v1'
-    unmatchedTradeExecutions: jsonb('unmatched_trade_executions'), // JSONB array of unmatched trade blotter entry details (for QUANTITY_CHANGE)
-    // Override tracking - persists user DISMISS/MONITOR actions across triage recomputes
-    overrideSource: text('override_source'), // 'user_dismiss' | 'user_monitor' | null (no override)
-    overrideExpiresDate: date('override_expires_date'), // When override expires (null = permanent)
-    overrideAt: timestamp('override_at', { withTimezone: true }), // When override was set
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-  },
-  (table) => ({
-    snapshotActionIdx: index('idx_triage_snapshot_action').on(
-      table.snapshotDate,
-      table.recommendedAction
-    ),
-    strategySnapshotIdx: index('idx_triage_strategy_snapshot').on(
-      table.strategyId,
-      table.snapshotDate
-    ),
-    positionSnapshotIdx: index('idx_triage_position_snapshot').on(
-      table.positionId,
-      table.snapshotDate
-    ),
-    statusIdx: index('idx_triage_status').on(table.status),
-    severityIdx: index('idx_triage_severity').on(table.severity),
-    overrideSourceIdx: index('idx_triage_override_source').on(table.overrideSource),
-  })
-);
-
-// ============================================================================
 // Playbook Items - DEPRECATED and REMOVED (2026-01-16)
 // Replaced by Signals system. See docs/CLEANUP_PLAN.md
 // ============================================================================
@@ -1062,9 +989,6 @@ export type NewNavSnapshot = typeof navSnapshots.$inferInsert;
 
 export type CashBalance = typeof cashBalances.$inferSelect;
 export type NewCashBalance = typeof cashBalances.$inferInsert;
-
-export type TriageRecord = typeof triageRecords.$inferSelect;
-export type NewTriageRecord = typeof triageRecords.$inferInsert;
 
 // BlotterAction types removed - table deprecated (2026-01-16)
 
@@ -1368,52 +1292,6 @@ export const researchProcessingRuns = pgTable(
 export type ResearchProcessingRun = typeof researchProcessingRuns.$inferSelect;
 export type NewResearchProcessingRun = typeof researchProcessingRuns.$inferInsert;
 
-// AI Prompts - Editable prompts for AI research processing
-export const aiPrompts = pgTable(
-  'ai_prompts',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-
-    // Prompt identification
-    promptType: text('prompt_type').notNull(), // 'insight_extraction' | 'hierarchy_analysis' | 'recommendation_generation'
-    name: text('name').notNull(), // User-friendly name
-    description: text('description'), // What this prompt does
-
-    // Prompt content
-    content: text('content').notNull(), // The actual prompt template
-    variables: text('variables').array(), // Available template variables
-
-    // Versioning
-    version: integer('version').notNull().default(1),
-    parentVersionId: uuid('parent_version_id'), // Previous version (self-reference handled in migration)
-
-    // Status
-    status: text('status').notNull().default('draft'), // 'active' | 'draft' | 'archived'
-    isDefault: boolean('is_default').notNull().default(false), // System default prompt
-
-    // Metadata
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-    createdBy: text('created_by'), // User ID (nullable for system prompts)
-
-    // Usage tracking
-    usageCount: integer('usage_count').default(0), // How many times this prompt has been used
-    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
-  },
-  (table) => ({
-    typeStatusIdx: index('idx_prompts_type_status').on(table.promptType, table.status),
-    defaultIdx: index('idx_prompts_default').on(table.promptType, table.isDefault).where(
-      sql`is_default = true`
-    ),
-    activeIdx: index('idx_prompts_active').on(table.promptType, table.status).where(
-      sql`status = 'active'`
-    ),
-  })
-);
-
-export type AIPrompt = typeof aiPrompts.$inferSelect;
-export type NewAIPrompt = typeof aiPrompts.$inferInsert;
-
 // ============================================================================
 // Phase 3.1: Thesis Synthesis & Monitoring System
 // ============================================================================
@@ -1595,36 +1473,6 @@ export const validationStatusHistory = signalStatusHistory;
 export type ValidationStatusHistory = SignalStatusHistory;
 export type NewValidationStatusHistory = NewSignalStatusHistory;
 
-// Signal Data Tracking - Tracks last observed data for on_release trigger detection
-export const signalDataTracking = pgTable(
-  'signal_data_tracking',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    signalId: uuid('signal_id')
-      .notNull()
-      .references(() => signals.id, { onDelete: 'cascade' })
-      .unique(), // One tracking record per signal
-
-    // Last observed data point
-    lastObservedDate: text('last_observed_date'), // Date string from data source (e.g., '2025-01-01')
-    lastObservedValue: numeric('last_observed_value', { precision: 18, scale: 6 }),
-    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
-
-    // Metadata
-    dataSource: text('data_source').notNull(), // 'fred' | 'iv_data' | 'price_feed'
-    metric: text('metric').notNull(), // Series ID or metric name
-
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    signalIdx: index('idx_signal_data_tracking_signal').on(table.signalId),
-  })
-);
-
-export type SignalDataTracking = typeof signalDataTracking.$inferSelect;
-export type NewSignalDataTracking = typeof signalDataTracking.$inferInsert;
-
 // Signal Data Snapshots - Time-series tracking for all signal types (quantitative + qualitative)
 export const signalDataSnapshots = pgTable(
   'signal_data_snapshots',
@@ -1644,13 +1492,11 @@ export const signalDataSnapshots = pgTable(
     // Qualitative data (for thesis monitor assessments)
     assessment: text('assessment'), // 'neutral' | 'strengthening' | 'confirmed' | 'weakening' | 'invalidated'
     evidenceSummary: text('evidence_summary'),
-    intelligenceItemId: uuid('intelligence_item_id')
-      .references(() => intelligenceItems.id, { onDelete: 'set null' }),
+    intelligenceItemId: uuid('intelligence_item_id'), // provenance only — intelligence_items table dropped 2026-06 (v2 prune)
 
     // Source tracking
     dataSource: text('data_source').notNull(), // 'defillama' | 'hypeflows' | 'coingecko' | 'tradingview_cdp' | 'internal_db' | 'thesis_monitor' | 'derived' | 'research_routing'
-    reportId: uuid('report_id')
-      .references(() => intelligenceReports.id, { onDelete: 'set null' }),
+    reportId: uuid('report_id'), // provenance only — intelligence_reports table dropped 2026-06 (v2 prune)
 
     // Pending review lifecycle: pending → accepted | rejected
     status: text('status').notNull().default('accepted'), // 'pending' | 'accepted' | 'rejected'
@@ -1721,347 +1567,6 @@ export const signalDataSourceRegistry = pgTable('signal_data_source_registry', {
 export type SignalDataSourceRegistryEntry = typeof signalDataSourceRegistry.$inferSelect;
 export type NewSignalDataSourceRegistryEntry = typeof signalDataSourceRegistry.$inferInsert;
 
-// Decision Audit Log - Process vs actual actions
-export const decisionAuditLog = pgTable(
-  'decision_audit_log',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    timestamp: timestamp('timestamp', { withTimezone: true }).notNull().defaultNow(),
-
-    // Context
-    thesisId: uuid('thesis_id'),
-    thesisType: text('thesis_type'), // 'macro' | 'asset'
-    strategyId: uuid('strategy_id'),
-    signalId: uuid('signal_id').references(() => signals.id, {
-      onDelete: 'set null',
-    }),
-
-    // Trigger
-    triggerType: text('trigger_type').notNull(), // 'signal' | 'playbook' | 'user_discretion' | 'other'
-    triggerDescription: text('trigger_description').notNull(),
-
-    // Process vs. actual
-    statedProcessResponse: text('stated_process_response').notNull(),
-    actualActionTaken: text('actual_action_taken').notNull(),
-    rationale: text('rationale'),
-    divergenceAcknowledged: boolean('divergence_acknowledged').default(false),
-
-    // Outcome (updated later)
-    outcome: jsonb('outcome'), // { timestamp, result, retrospectiveNotes? }
-  },
-  (table) => ({
-    thesisIdx: index('idx_decision_audit_thesis').on(table.thesisId, table.thesisType),
-    strategyIdx: index('idx_decision_audit_strategy').on(table.strategyId),
-    timestampIdx: index('idx_decision_audit_timestamp').on(table.timestamp),
-  })
-);
-
-export type DecisionAuditLog = typeof decisionAuditLog.$inferSelect;
-export type NewDecisionAuditLog = typeof decisionAuditLog.$inferInsert;
-
-// ============================================================================
-// Thesis Triage Records
-// Monitoring inbox for thesis-level alerts (Layer 3: Monitoring & Accountability)
-// ============================================================================
-
-export const thesisTriageRecords = pgTable(
-  'thesis_triage_records',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-
-    // Thesis context
-    thesisId: uuid('thesis_id').notNull(),
-    thesisType: text('thesis_type').notNull(),  // 'macro' | 'asset'
-    thesisTitle: text('thesis_title').notNull(),
-
-    // Trigger source
-    triggerType: text('trigger_type').notNull(),  // 'scheduled_monitoring' | 'filing_alert' | 'data_release' | 'manual' | 'lifecycle_transition' | 'signal_recommendation'
-    triggerSource: text('trigger_source').notNull(),  // e.g., "daily_news_scan"
-
-    // Aggregated content summary
-    contentSummary: jsonb('content_summary').notNull().default({}),
-
-    // AI analysis results
-    aiAnalysis: jsonb('ai_analysis').notNull().default({}),
-
-    // Raw matched results (for audit)
-    matchedResults: jsonb('matched_results').notNull().default([]),
-
-    // Triage classification (standardized pattern - see docs/CLEANUP_PLAN.md #ENH-047)
-    // Severity: importance/priority level (how urgent is this?)
-    // Values: 'urgent' | 'attention' | 'monitor' | 'info'
-    severity: text('severity').notNull(),
-    // Status: workflow state (where is this in the triage workflow?)
-    // Values: 'inbox' | 'in_progress' | 'done'
-    status: text('status').notNull().default('inbox'),
-    userNotes: text('user_notes'),
-    actionsTaken: jsonb('actions_taken').default([]),
-
-    // Link to full assessment report
-    assessmentReportPath: text('assessment_report_path'),
-
-    // Lifecycle orchestration fields
-    lifecycleStage: text('lifecycle_stage'),  // 'synthesis' | 'monitoring' | etc.
-    suggestedSkill: text('suggested_skill'),  // e.g., '/build-core-argument', '/assess-validation-evidence'
-    actionRequired: text('action_required'),  // Human-readable action description
-
-    // Triage rule that created this record (for filtering and analytics)
-    // Uses UPPER_SNAKE_CASE to match position/strategy triage patterns
-    triageRule: text('triage_rule'),  // 'NEEDS_RESEARCH' | 'PRODUCE_CORE_ARGUMENT' | 'UPDATE_CORE_ARGUMENT' | 'REVIEW_CONTENT' | 'REVIEW_DATA'
-
-    // Completion tracking
-    completedAt: timestamp('completed_at', { withTimezone: true }),
-    completedBy: text('completed_by'),  // 'user' or skill name
-  },
-  (table) => ({
-    thesisIdx: index('idx_thesis_triage_thesis').on(table.thesisId, table.thesisType),
-    statusIdx: index('idx_thesis_triage_status').on(table.status),
-    severityIdx: index('idx_thesis_triage_severity').on(table.severity),
-    createdIdx: index('idx_thesis_triage_created').on(table.createdAt),
-    lifecycleIdx: index('idx_thesis_triage_lifecycle').on(table.lifecycleStage),
-  })
-);
-
-export type ThesisTriageRecord = typeof thesisTriageRecords.$inferSelect;
-export type NewThesisTriageRecord = typeof thesisTriageRecords.$inferInsert;
-
-// ============================================================================
-// Thesis News Items (News Archive)
-// Historical archive of news items fetched by monitoring script for each thesis
-// ============================================================================
-
-export const thesisNewsItems = pgTable(
-  'thesis_news_items',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-
-    // Thesis linkage
-    thesisId: uuid('thesis_id').notNull(),
-    thesisType: text('thesis_type').notNull(),  // 'macro' | 'asset'
-
-    // News item data
-    url: text('url').notNull(),
-    title: text('title').notNull(),
-    snippet: text('snippet'),
-    sourceDomain: text('source_domain'),
-    publishedDate: date('published_date'),
-
-    // Fetch metadata
-    fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow().notNull(),
-    matchScore: integer('match_score'),
-    matchedKeywords: text('matched_keywords').array(),
-    queryType: text('query_type'),  // 'wide' | 'narrow'
-
-    // Optional link to triage record (if analysis created one)
-    triageRecordId: uuid('triage_record_id').references(() => thesisTriageRecords.id, { onDelete: 'set null' }),
-  },
-  (table) => ({
-    thesisIdx: index('idx_thesis_news_items_thesis').on(table.thesisId, table.thesisType),
-    fetchedAtIdx: index('idx_thesis_news_items_fetched_at').on(table.fetchedAt),
-    publishedDateIdx: index('idx_thesis_news_items_published_date').on(table.publishedDate),
-    // Unique constraint handled by database migration
-  })
-);
-
-export type ThesisNewsItem = typeof thesisNewsItems.$inferSelect;
-export type NewThesisNewsItem = typeof thesisNewsItems.$inferInsert;
-
-// ============================================================================
-// FRED Series Metadata (Reference Table)
-// Stores metadata about FRED series for display and validation
-// ============================================================================
-
-export const fredSeriesMetadata = pgTable('fred_series_metadata', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  seriesId: text('series_id').notNull().unique(),    // FRED series ID (e.g., 'DGS10', 'UNRATE')
-  title: text('title').notNull(),                     // Full series title from FRED
-  frequency: text('frequency'),                       // 'daily' | 'weekly' | 'monthly' | 'quarterly'
-  units: text('units'),                               // 'percent', 'billions_of_dollars', etc.
-  seasonalAdjustment: text('seasonal_adjustment'),    // 'sa' | 'nsa' | 'saar'
-  lastUpdated: timestamp('last_updated', { withTimezone: true }),
-  observationStart: date('observation_start'),        // Earliest available observation
-  observationEnd: date('observation_end'),            // Latest available observation
-  notes: text('notes'),                               // FRED series notes/description
-  category: text('category'),                         // 'interest_rates' | 'inflation' | 'labor' | etc.
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
-export type FredSeriesMetadata = typeof fredSeriesMetadata.$inferSelect;
-export type NewFredSeriesMetadata = typeof fredSeriesMetadata.$inferInsert;
-
-// ============================================================================
-// FRED Observations (Historical Data)
-// Stores historical time-series data from FRED API
-// ============================================================================
-
-export const fredObservations = pgTable(
-  'fred_observations',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    seriesId: text('series_id').notNull(),            // FRED series ID (e.g., 'DGS10')
-    observationDate: date('observation_date').notNull(),
-    value: numeric('value'),                          // NULL for missing data marked as '.'
-
-    // Computed fields for threshold logic
-    value1dChange: numeric('value_1d_change'),        // 1-day change
-    value1dPctChange: numeric('value_1d_pct_change'), // 1-day percent change
-    value5dChange: numeric('value_5d_change'),        // 5-day change
-    value20dChange: numeric('value_20d_change'),      // 20-day change
-
-    // Data quality
-    isPreliminary: boolean('is_preliminary').default(false),
-
-    // Fetch metadata
-    fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    uniqueSeriesDate: unique().on(table.seriesId, table.observationDate),
-    seriesIdx: index('idx_fred_obs_series').on(table.seriesId),
-    dateIdx: index('idx_fred_obs_date').on(table.observationDate),
-  })
-);
-
-export type FredObservation = typeof fredObservations.$inferSelect;
-export type NewFredObservation = typeof fredObservations.$inferInsert;
-
-// ============================================================================
-// Thesis FRED Indicators (Linkage Table)
-// Links theses to relevant FRED indicators with threshold configurations
-// ============================================================================
-
-export const thesisFredIndicators = pgTable(
-  'thesis_fred_indicators',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-
-    // Thesis linkage (polymorphic)
-    thesisId: uuid('thesis_id').notNull(),
-    thesisType: text('thesis_type').notNull(),        // 'macro' | 'asset'
-
-    // FRED series linkage
-    seriesId: text('series_id').notNull(),
-
-    // Indicator configuration
-    priority: integer('priority').notNull().default(5),  // 1-5, lower = more important
-    relevanceNotes: text('relevance_notes'),
-
-    // Simple threshold config
-    thresholdOperator: text('threshold_operator'),    // '>' | '>=' | '<' | '<=' | '=' | 'between' | 'outside'
-    thresholdValue: numeric('threshold_value'),
-    thresholdValueUpper: numeric('threshold_value_upper'),
-
-    // Enhanced threshold: Trend-based
-    trendPeriodDays: integer('trend_period_days'),
-    trendChangeThreshold: numeric('trend_change_threshold'),
-    trendPctChangeThreshold: numeric('trend_pct_change_threshold'),
-
-    // Enhanced threshold: Velocity/acceleration
-    velocityThreshold: numeric('velocity_threshold'),
-    accelerationThreshold: numeric('acceleration_threshold'),
-
-    // Enhanced threshold: Composite (multi-series)
-    compositeConfig: jsonb('composite_config'),       // { conditions: [...], logic: 'AND|OR' }
-
-    // Threshold breach behavior
-    breachSeverity: text('breach_severity').default('medium'),
-    breachMessageTemplate: text('breach_message_template'),
-
-    // Link to signal
-    linkedSignalId: uuid('linked_signal_id'),
-    linkedSignalType: text('linked_signal_type'),
-    autoUpdateSignalStatus: boolean('auto_update_vi_status').default(false), // Note: column name kept for backwards compat
-
-    // Status
-    enabled: boolean('enabled').notNull().default(true),
-    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
-    lastBreachAt: timestamp('last_breach_at', { withTimezone: true }),
-    lastBreachValue: numeric('last_breach_value'),
-    consecutiveBreachDays: integer('consecutive_breach_days').default(0),
-
-    // Timestamps
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    uniqueThesisSeries: unique().on(table.thesisId, table.thesisType, table.seriesId),
-    thesisIdx: index('idx_thesis_fred_thesis').on(table.thesisId, table.thesisType),
-    seriesIdx: index('idx_thesis_fred_series').on(table.seriesId),
-    enabledIdx: index('idx_thesis_fred_enabled').on(table.enabled),
-  })
-);
-
-export type ThesisFredIndicator = typeof thesisFredIndicators.$inferSelect;
-export type NewThesisFredIndicator = typeof thesisFredIndicators.$inferInsert;
-
-// TypeScript interface for composite config JSONB
-export interface FredCompositeCondition {
-  seriesId: string;
-  operator: '>' | '>=' | '<' | '<=' | '=' | 'between' | 'outside';
-  value: number;
-  valueUpper?: number;
-}
-
-export interface FredCompositeConfig {
-  conditions: FredCompositeCondition[];
-  logic: 'AND' | 'OR';
-}
-
-// ============================================================================
-// FRED Threshold Breaches (Audit Trail)
-// Records all threshold breaches for audit and pattern analysis
-// ============================================================================
-
-export const fredThresholdBreaches = pgTable(
-  'fred_threshold_breaches',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-
-    // Link to indicator config
-    indicatorId: uuid('indicator_id').notNull().references(() => thesisFredIndicators.id, { onDelete: 'cascade' }),
-
-    // Thesis context (denormalized)
-    thesisId: uuid('thesis_id').notNull(),
-    thesisType: text('thesis_type').notNull(),
-    seriesId: text('series_id').notNull(),
-
-    // Breach details
-    breachDate: date('breach_date').notNull(),
-    breachValue: numeric('breach_value').notNull(),
-    thresholdConfig: jsonb('threshold_config').notNull(),  // Snapshot at breach time
-    breachType: text('breach_type').notNull(),             // 'simple' | 'trend' | 'velocity' | 'composite'
-
-    // Impact
-    severity: text('severity').notNull(),
-    breachMessage: text('breach_message'),
-
-    // Action taken
-    autoUpdatedViStatus: boolean('auto_updated_vi_status').default(false),
-    viPointId: uuid('vi_point_id'),
-    viStatusBefore: text('vi_status_before'),
-    viStatusAfter: text('vi_status_after'),
-
-    // Linkage to triage
-    triageRecordId: uuid('triage_record_id'),
-
-    // Timestamps
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    indicatorIdx: index('idx_fred_breach_indicator').on(table.indicatorId),
-    thesisIdx: index('idx_fred_breach_thesis').on(table.thesisId, table.thesisType),
-    dateIdx: index('idx_fred_breach_date').on(table.breachDate),
-  })
-);
-
-export type FredThresholdBreach = typeof fredThresholdBreaches.$inferSelect;
-export type NewFredThresholdBreach = typeof fredThresholdBreaches.$inferInsert;
-
 // ============================================================================
 // Journal Entries (Decision Log)
 // Comprehensive audit trail of all actions across all object types
@@ -2084,7 +1589,7 @@ export const journalEntries = pgTable(
     actionDescription: text('action_description').notNull(),
 
     // Linkage to other entities
-    triageRecordId: uuid('triage_record_id'),  // References thesis_triage_records or triage_records
+    triageRecordId: uuid('triage_record_id'),  // Historical provenance — triage tables dropped 2026-06 (v2 prune)
     skillInvoked: text('skill_invoked'),  // e.g., '/build-core-argument'
 
     // State change tracking
@@ -2584,40 +2089,6 @@ export const portfolioDailyBalances = pgTable('portfolio_daily_balances', {
 export type PortfolioDailyBalance = typeof portfolioDailyBalances.$inferSelect;
 export type NewPortfolioDailyBalance = typeof portfolioDailyBalances.$inferInsert;
 
-// --- Daily Snapshots (point-in-time portfolio state from tax lots) ---
-
-export const dailySnapshots = pgTable('daily_snapshots', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  userId: text('user_id').notNull(),
-  snapshotDate: date('snapshot_date').notNull(),
-  assetId: uuid('asset_id').notNull().references(() => assets.id),
-  owner: text('owner').notNull(),
-  account: text('account').notNull(),
-  quantity: numeric('quantity').notNull(),
-  costBasis: numeric('cost_basis').notNull(),
-  pricePerUnit: numeric('price_per_unit'),
-  marketValue: numeric('market_value'),
-  unrealizedGain: numeric('unrealized_gain'),
-  unrealizedGainPercent: numeric('unrealized_gain_percent'),
-  dailyPnl: numeric('daily_pnl'),
-  dailyPnlPercent: numeric('daily_pnl_percent'),
-  isCalculated: boolean('is_calculated').default(true),
-  calculatedAt: timestamp('calculated_at', { withTimezone: true }).defaultNow(),
-}, (table) => ({
-  uniqueSnapshot: unique('unique_daily_snapshot').on(
-    table.snapshotDate, table.userId, table.assetId, table.owner, table.account,
-  ),
-  idxSnapshotsDateRange: index('idx_snapshots_date_range').on(table.userId, table.snapshotDate),
-  idxSnapshotsAsset: index('idx_snapshots_asset').on(table.userId, table.assetId, table.snapshotDate),
-  idxSnapshotsOwner: index('idx_snapshots_owner').on(
-    table.userId, table.owner, table.account, table.snapshotDate,
-  ),
-  snapshotPositiveQty: check('snapshot_positive_qty', sql`quantity >= 0`),
-}));
-
-export type DailySnapshot = typeof dailySnapshots.$inferSelect;
-export type NewDailySnapshot = typeof dailySnapshots.$inferInsert;
-
 // --- Price History (OHLCV with multi-source priority) ---
 
 export const priceHistory = pgTable('price_history', {
@@ -2787,103 +2258,6 @@ export const reconciliationResolutions = pgTable(
 export type ReconciliationResolution = typeof reconciliationResolutions.$inferSelect;
 export type NewReconciliationResolution = typeof reconciliationResolutions.$inferInsert;
 
-// --- Reconciliation Checkpoints ---
-
-export const reconciliationCheckpoints = pgTable(
-  'reconciliation_checkpoints',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    comparisonDate: date('comparison_date').notNull(),
-    snapshotNav: numeric('snapshot_nav').notNull(),
-    eventSourcedNav: numeric('event_sourced_nav').notNull(),
-    navDelta: numeric('nav_delta').notNull(),
-    navDeltaPct: numeric('nav_delta_pct').notNull(),
-    totalPositions: integer('total_positions').notNull(),
-    matchedPositions: integer('matched_positions').notNull(),
-    discrepancyCount: integer('discrepancy_count').notNull(),
-    acceptedCount: integer('accepted_count').notNull(),
-    flaggedCount: integer('flagged_count').notNull(),
-    resolvedCount: integer('resolved_count').notNull(),
-    unresolvedCount: integer('unresolved_count').notNull(),
-    eventSourceFreshness: jsonb('event_source_freshness').notNull(),
-    positionSnapshot: jsonb('position_snapshot').notNull(),
-    notes: text('notes'),
-    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => ({
-    comparisonDateIdx: index('idx_recon_checkpoint_date').on(table.comparisonDate),
-    createdAtIdx: index('idx_recon_checkpoint_created').on(table.createdAt),
-  })
-);
-
-export type ReconciliationCheckpoint = typeof reconciliationCheckpoints.$inferSelect;
-export type NewReconciliationCheckpoint = typeof reconciliationCheckpoints.$inferInsert;
-
-// ============================================================================
-// Intelligence Reports (World Monitor)
-// Stores full World Monitor intelligence briefings from Arbor
-// ============================================================================
-
-export const intelligenceReports = pgTable(
-  'intelligence_reports',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    reportDate: date('report_date').notNull(),
-    generatedAt: timestamp('generated_at', { withTimezone: true }).notNull(),
-    timeWindow: text('time_window'),
-    version: integer('version').default(1),
-    executiveSummary: text('executive_summary'),
-    keyThemes: text('key_themes'),
-    fullMarkdown: text('full_markdown').notNull(),
-    criticalCount: integer('critical_count').default(0),
-    highCount: integer('high_count').default(0),
-    mediumCount: integer('medium_count').default(0),
-    infoCount: integer('info_count').default(0),
-    sectors: text('sectors').array().default(sql`'{}'`),
-    reportType: text('report_type').default('world-monitor'), // 'world-monitor' | 'thesis-monitor'
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    reportDateIdx: index('idx_intelligence_reports_date').on(table.reportDate),
-    createdAtIdx: index('idx_intelligence_reports_created').on(table.createdAt),
-    uniqueReportDateGenerated: unique().on(table.reportDate, table.generatedAt),
-  })
-);
-
-export type IntelligenceReport = typeof intelligenceReports.$inferSelect;
-export type NewIntelligenceReport = typeof intelligenceReports.$inferInsert;
-
-// ============================================================================
-// Intelligence Items (individual stories from World Monitor reports)
-// ============================================================================
-
-export const intelligenceItems = pgTable(
-  'intelligence_items',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    reportId: uuid('report_id').notNull().references(() => intelligenceReports.id, { onDelete: 'cascade' }),
-    severity: text('severity').notNull(),  // 'critical' | 'high' | 'medium' | 'info'
-    sector: text('sector'),                // 'geopolitics' | 'tech' | 'finance'
-    headline: text('headline').notNull(),
-    body: text('body'),
-    sourceUrls: text('source_urls').array().default(sql`'{}'`),
-    relevantTickers: text('relevant_tickers').array().default(sql`'{}'`),
-    section: text('section'),              // 'new_developments' | 'deep_dive' | 'running_stories' | 'key_themes' | 'opportunities' | 'executive_summary'
-    sortOrder: integer('sort_order'),       // Ordinal position within the source report (0-based)
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    reportIdx: index('idx_intelligence_items_report').on(table.reportId),
-    severityIdx: index('idx_intelligence_items_severity').on(table.severity),
-    sectorIdx: index('idx_intelligence_items_sector').on(table.sector),
-    uniqueReportHeadline: unique().on(table.reportId, table.headline),
-  })
-);
-
-export type IntelligenceItem = typeof intelligenceItems.$inferSelect;
-export type NewIntelligenceItem = typeof intelligenceItems.$inferInsert;
-
 // ============================================================================
 // Earnings Events (portfolio holdings earnings calendar)
 // ============================================================================
@@ -2951,66 +2325,6 @@ export type SecFiling = typeof secFilings.$inferSelect;
 export type NewSecFiling = typeof secFilings.$inferInsert;
 
 // ============================================================================
-// Analyst Actions (upgrade/downgrade rating changes from Finnhub)
-// ============================================================================
-
-export const analystActions = pgTable(
-  'analyst_actions',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    underlyingId: uuid('underlying_id').references(() => underlyings.id, { onDelete: 'set null' }),
-    ticker: text('ticker').notNull(),
-    action: text('action').notNull(),          // 'up' | 'down' | 'main' | 'init' | 'reit'
-    analystFirm: text('analyst_firm').notNull(),
-    fromGrade: text('from_grade'),
-    toGrade: text('to_grade'),
-    actionDate: date('action_date').notNull(),
-    source: text('source').notNull().default('finnhub'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    tickerIdx: index('idx_analyst_actions_ticker').on(table.ticker),
-    dateIdx: index('idx_analyst_actions_date').on(table.actionDate),
-    underlyingIdx: index('idx_analyst_actions_underlying').on(table.underlyingId),
-    uniqueAction: unique().on(table.ticker, table.analystFirm, table.actionDate, table.source),
-  })
-);
-
-export type AnalystAction = typeof analystActions.$inferSelect;
-export type NewAnalystAction = typeof analystActions.$inferInsert;
-
-// ============================================================================
-// Analyst Price Targets (consensus price target snapshots from Finnhub)
-// ============================================================================
-
-export const analystPriceTargets = pgTable(
-  'analyst_price_targets',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    underlyingId: uuid('underlying_id').references(() => underlyings.id, { onDelete: 'set null' }),
-    ticker: text('ticker').notNull(),
-    targetHigh: numeric('target_high'),
-    targetLow: numeric('target_low'),
-    targetMean: numeric('target_mean'),
-    targetMedian: numeric('target_median'),
-    numberAnalysts: integer('number_analysts'),
-    snapshotDate: date('snapshot_date').notNull(),
-    source: text('source').notNull().default('finnhub'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    tickerIdx: index('idx_analyst_price_targets_ticker').on(table.ticker),
-    dateIdx: index('idx_analyst_price_targets_date').on(table.snapshotDate),
-    underlyingIdx: index('idx_analyst_price_targets_underlying').on(table.underlyingId),
-    uniqueTarget: unique().on(table.ticker, table.snapshotDate, table.source),
-  })
-);
-
-export type AnalystPriceTarget = typeof analystPriceTargets.$inferSelect;
-export type NewAnalystPriceTarget = typeof analystPriceTargets.$inferInsert;
-
-// ============================================================================
 // Insider Transactions (insider buying/selling from Finnhub)
 // ============================================================================
 
@@ -3050,7 +2364,7 @@ export const intelItems = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     sourceKey: text('source_key').notNull(), // 'finnhub_analyst' | 'sec_edgar' | 'world_monitor' | 'thesis_monitor' | 'economic_calendar' | 'earnings_calendar' | 'insider_transaction'
-    sourceTable: text('source_table').notNull(), // 'analyst_actions' | 'sec_filings' | 'intelligence_items' | 'economic_events' | 'earnings_events' | 'insider_transactions'
+    sourceTable: text('source_table').notNull(), // 'world_monitor_report' | 'sec_filings' | 'economic_events' | 'earnings_events' | 'insider_transactions' (historical rows: 'analyst_actions' | 'intelligence_items' — source tables dropped 2026-06)
     sourceRecordId: text('source_record_id').notNull(), // ID in the source table
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
     headline: text('headline').notNull(),

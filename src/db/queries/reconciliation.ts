@@ -1,13 +1,10 @@
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
-import { eq, ne } from "drizzle-orm";
+import { ne } from "drizzle-orm";
 import { toNumber } from "@/lib/numbers";
-import { desc } from "drizzle-orm";
 import {
   reconciliationResolutions,
-  reconciliationCheckpoints,
   type ReconciliationResolution,
-  type ReconciliationCheckpoint,
   type ResolutionStatus,
   type DiscrepancyNature,
 } from "@/db/schema";
@@ -109,29 +106,10 @@ export interface BottleneckInfo {
   leadingDate: string;
 }
 
-export interface CheckpointSummary {
-  id: string;
-  comparisonDate: string;
-  snapshotNav: number;
-  eventSourcedNav: number;
-  navDelta: number;
-  navDeltaPct: number;
-  totalPositions: number;
-  matchedPositions: number;
-  discrepancyCount: number;
-  acceptedCount: number;
-  flaggedCount: number;
-  resolvedCount: number;
-  unresolvedCount: number;
-  notes: string | null;
-  createdAt: string;
-}
-
 export interface ReconciliationData {
   summary: ReconciliationSummaryData;
   ownerBreakdown: OwnerNavComparison[];
   positions: PositionReconciliation[];
-  lastCheckpoint: CheckpointSummary | null;
   bottleneck: BottleneckInfo | null;
 }
 
@@ -903,78 +881,6 @@ function sourceLabel(source: string): string {
   return SOURCE_LABELS[source] ?? source;
 }
 
-function toCheckpointSummary(r: ReconciliationCheckpoint): CheckpointSummary {
-  return {
-    id: r.id,
-    comparisonDate: r.comparisonDate,
-    snapshotNav: Number(r.snapshotNav),
-    eventSourcedNav: Number(r.eventSourcedNav),
-    navDelta: Number(r.navDelta),
-    navDeltaPct: Number(r.navDeltaPct),
-    totalPositions: r.totalPositions,
-    matchedPositions: r.matchedPositions,
-    discrepancyCount: r.discrepancyCount,
-    acceptedCount: r.acceptedCount,
-    flaggedCount: r.flaggedCount,
-    resolvedCount: r.resolvedCount,
-    unresolvedCount: r.unresolvedCount,
-    notes: r.notes,
-    createdAt: r.createdAt.toISOString(),
-  };
-}
-
-export async function createCheckpoint(params: {
-  reconciliationData: ReconciliationData;
-  notes?: string;
-}): Promise<ReconciliationCheckpoint> {
-  const { summary, positions } = params.reconciliationData;
-
-  const result = await db
-    .insert(reconciliationCheckpoints)
-    .values({
-      comparisonDate: summary.comparisonDate,
-      snapshotNav: summary.snapshotNav.toString(),
-      eventSourcedNav: summary.eventSourcedNav.toString(),
-      navDelta: summary.navDelta.toString(),
-      navDeltaPct: summary.navDeltaPct.toString(),
-      totalPositions: summary.totalPositions,
-      matchedPositions: summary.matchedPositions,
-      discrepancyCount:
-        summary.mismatchedPositions +
-        summary.snapshotOnlyPositions +
-        summary.eventSourcedOnlyPositions,
-      acceptedCount: summary.acceptedCount,
-      flaggedCount: summary.flaggedCount,
-      resolvedCount: summary.resolvedCount,
-      unresolvedCount: summary.unresolvedCount,
-      eventSourceFreshness: summary.eventSourceFreshness,
-      positionSnapshot: positions,
-      notes: params.notes ?? null,
-    })
-    .returning();
-
-  return result[0];
-}
-
-export async function getLatestCheckpoint(): Promise<CheckpointSummary | null> {
-  const rows = await db
-    .select()
-    .from(reconciliationCheckpoints)
-    .orderBy(desc(reconciliationCheckpoints.createdAt))
-    .limit(1);
-
-  return rows[0] ? toCheckpointSummary(rows[0]) : null;
-}
-
-export async function getCheckpoints(): Promise<CheckpointSummary[]> {
-  const rows = await db
-    .select()
-    .from(reconciliationCheckpoints)
-    .orderBy(desc(reconciliationCheckpoints.createdAt));
-
-  return rows.map(toCheckpointSummary);
-}
-
 function computeBottleneck(
   sources: EventSourceFreshness[]
 ): BottleneckInfo | null {
@@ -1024,12 +930,11 @@ export async function getReconciliation(): Promise<ReconciliationData> {
     await getLastCompleteEventDate();
 
   // 2. Run comparisons anchored to that date
-  const [ownerBreakdown, positions, resolutionsMap, lastCheckpoint] =
+  const [ownerBreakdown, positions, resolutionsMap] =
     await Promise.all([
       getOwnerAccountNavComparison(comparisonDate),
       getPositionReconciliation(comparisonDate),
       getResolutionsMap(),
-      getLatestCheckpoint(),
     ]);
 
   // 3. Compute bottleneck from source freshness
@@ -1126,7 +1031,6 @@ export async function getReconciliation(): Promise<ReconciliationData> {
     },
     ownerBreakdown,
     positions,
-    lastCheckpoint,
     bottleneck,
   };
 }
