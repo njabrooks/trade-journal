@@ -145,7 +145,7 @@ Active: pull-portfolio, portfolio-and-options-mcp, ibkr-quote, analyze-vol-curve
 | W2 docs regen | DONE (this file) |
 | W0 ops: Solana fix (DONE — was triage-engine errors, resolved by prune); accounting catch-up Mar→Jun + reconcile | partial |
 | W3 vitest + golden tests on money-math | **DONE** 2026-06-11 — 79 tests; found+fixed Kraken XTZ bug; two S104 findings await user decision (same-day rule diverges from TCGA92 s105 aggregation; overselling silently swallowed — see test NOTEs in uk-section-104.test.ts) |
-| W4 realized PnL engine + attribution rollups | pending (anchor prerequisite) |
+| W4 realized PnL engine + attribution rollups | **session 1 DONE** — engine (`src/lib/derived/realizedPnl.ts`), schema cols, daily maintenance, backfill executed (8,259 rows; design: docs/v2/05). Session 2: thesis attribution queries |
 | W5 performance section UI · W6 morning screen + live-pricing overlay (D14) | pending |
 | W7 portfolio-aware options advisor (D11: hedge / income / put-entry / opportunistic) | pending |
 | W8 research redesign (Tana-aware, anticipatory; absorbs all deferred items above) | pending |
