@@ -1,9 +1,7 @@
 #!/usr/bin/env tsx
 /**
- * Ingest analyst data from Finnhub for all equity underlyings:
- * 1. Upgrade/Downgrade rating changes → analyst_actions
- * 2. Price targets → analyst_price_targets
- * 3. Insider transactions → insider_transactions
+ * Ingest insider-transaction data from Finnhub for all equity underlyings:
+ * - Insider transactions → insider_transactions
  *
  * Environment variables required:
  * - FINNHUB_API_KEY: Finnhub API key
@@ -16,17 +14,16 @@
  */
 
 import { db, closeDb, schema } from './lib/db.js';
-import { sql } from 'drizzle-orm';
 import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
-const { analystActions, analystPriceTargets, insiderTransactions, underlyings } = schema;
+const { insiderTransactions, underlyings } = schema;
 
 // ---------------------------------------------------------------------------
 // Config & CLI args
 // ---------------------------------------------------------------------------
 
 const FINNHUB_BASE = 'https://finnhub.io/api/v1';
-const RATE_LIMIT_DELAY_MS = 200; // 3 endpoints per ticker, but total ~90 calls ≪ 60/min limit
+const RATE_LIMIT_DELAY_MS = 200; // 1 endpoint per ticker, total ~30 calls ≪ 60/min limit
 
 function parseDaysArg(): number {
   const idx = process.argv.indexOf('--days');
@@ -59,25 +56,6 @@ function delay(ms: number): Promise<void> {
 // Finnhub API types
 // ---------------------------------------------------------------------------
 
-interface FinnhubUpgradeDowngrade {
-  action: string;      // 'up' | 'down' | 'main' | 'init' | 'reit'
-  company: string;     // analyst firm name
-  fromGrade: string;
-  toGrade: string;
-  gradeTime: number;   // unix timestamp
-  symbol: string;
-}
-
-interface FinnhubPriceTarget {
-  lastUpdated: string;
-  symbol: string;
-  targetHigh: number;
-  targetLow: number;
-  targetMean: number;
-  targetMedian: number;
-  numberAnalysts: number;
-}
-
 interface FinnhubInsiderTransaction {
   name: string;
   share: number;
@@ -97,40 +75,6 @@ interface FinnhubInsiderResponse {
 // ---------------------------------------------------------------------------
 // Finnhub API calls
 // ---------------------------------------------------------------------------
-
-async function fetchUpgradeDowngrade(
-  ticker: string,
-  from: string,
-  to: string,
-  apiKey: string,
-): Promise<FinnhubUpgradeDowngrade[]> {
-  const url = `${FINNHUB_BASE}/stock/upgrade-downgrade?symbol=${encodeURIComponent(ticker)}&from=${from}&to=${to}&token=${apiKey}`;
-  const res = await fetch(url);
-  if (res.status === 403) return []; // Premium endpoint — skip silently
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Finnhub upgrade-downgrade ${res.status}: ${body.substring(0, 200)}`);
-  }
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
-
-async function fetchPriceTarget(
-  ticker: string,
-  apiKey: string,
-): Promise<FinnhubPriceTarget | null> {
-  const url = `${FINNHUB_BASE}/stock/price-target?symbol=${encodeURIComponent(ticker)}&token=${apiKey}`;
-  const res = await fetch(url);
-  if (res.status === 403) return null; // Premium endpoint — skip silently
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Finnhub price-target ${res.status}: ${body.substring(0, 200)}`);
-  }
-  const data: FinnhubPriceTarget = await res.json();
-  // API returns empty object with symbol when no data
-  if (!data.targetMean && !data.targetMedian && !data.numberAnalysts) return null;
-  return data;
-}
 
 async function fetchInsiderTxns(
   ticker: string,
@@ -167,7 +111,7 @@ async function main() {
   const from = formatDate(fromDate);
   const to = formatDate(now);
 
-  console.log(`Finnhub analyst data ingestion: ${from} → ${to} (${days} days)${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
+  console.log(`Finnhub insider-transaction ingestion: ${from} → ${to} (${days} days)${DRY_RUN ? ' [DRY RUN]' : ''}\n`);
 
   // 1. Get all underlyings
   const underlyingRows = await db
@@ -197,110 +141,15 @@ async function main() {
   }
 
   // Counters
-  let actionsUpserted = 0;
-  let targetsUpserted = 0;
   let insidersUpserted = 0;
   let totalErrors = 0;
 
   // Collect intel items for batch emission
-  const analystIntelItems: IntelItemInput[] = [];
   const insiderIntelItems: IntelItemInput[] = [];
 
   for (const ticker of tickers) {
     const underlyingId = underlyingMap.get(ticker) ?? null;
-    let tickerActions = 0;
     let tickerInsiders = 0;
-    let tickerTargets = 0;
-
-    // --- Upgrade/Downgrade ---
-    try {
-      const upgrades = await fetchUpgradeDowngrade(ticker, from, to, FINNHUB_API_KEY);
-      if (!DRY_RUN) {
-        for (const u of upgrades) {
-          if (!u.gradeTime || !u.company) continue;
-          const actionDate = formatDate(new Date(u.gradeTime * 1000));
-          const result = await db
-            .insert(analystActions)
-            .values({
-              underlyingId,
-              ticker,
-              action: u.action || 'unknown',
-              analystFirm: u.company,
-              fromGrade: u.fromGrade || null,
-              toGrade: u.toGrade || null,
-              actionDate,
-              source: 'finnhub',
-            })
-            .onConflictDoNothing()
-            .returning({ id: analystActions.id });
-
-          if (result.length > 0) {
-            analystIntelItems.push({
-              sourceKey: 'finnhub_analyst',
-              sourceTable: 'analyst_actions',
-              sourceRecordId: result[0].id,
-              occurredAt: new Date(u.gradeTime * 1000),
-              headline: `${u.company} ${u.action || 'unknown'} ${ticker} from ${u.fromGrade || '—'} to ${u.toGrade || '—'}`,
-              severity: 'medium',
-              tickers: [ticker],
-              metadata: { action: u.action, fromGrade: u.fromGrade, toGrade: u.toGrade },
-            });
-          }
-          tickerActions++;
-        }
-      } else {
-        tickerActions = upgrades.length;
-      }
-      actionsUpserted += tickerActions;
-    } catch (err) {
-      totalErrors++;
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[${ticker}] Upgrade/Downgrade error: ${msg}`);
-    }
-    await delay(RATE_LIMIT_DELAY_MS);
-
-    // --- Price Target ---
-    try {
-      const pt = await fetchPriceTarget(ticker, FINNHUB_API_KEY);
-      if (pt) {
-        if (!DRY_RUN) {
-          await db
-            .insert(analystPriceTargets)
-            .values({
-              underlyingId,
-              ticker,
-              targetHigh: pt.targetHigh != null ? String(pt.targetHigh) : null,
-              targetLow: pt.targetLow != null ? String(pt.targetLow) : null,
-              targetMean: pt.targetMean != null ? String(pt.targetMean) : null,
-              targetMedian: pt.targetMedian != null ? String(pt.targetMedian) : null,
-              numberAnalysts: pt.numberAnalysts ?? null,
-              snapshotDate: to,
-              source: 'finnhub',
-            })
-            .onConflictDoUpdate({
-              target: [analystPriceTargets.ticker, analystPriceTargets.snapshotDate, analystPriceTargets.source],
-              set: {
-                targetHigh: sql`EXCLUDED.target_high`,
-                targetLow: sql`EXCLUDED.target_low`,
-                targetMean: sql`EXCLUDED.target_mean`,
-                targetMedian: sql`EXCLUDED.target_median`,
-                numberAnalysts: sql`EXCLUDED.number_analysts`,
-                underlyingId: sql`EXCLUDED.underlying_id`,
-                updatedAt: sql`NOW()`,
-              },
-            });
-          tickerTargets = 1;
-        } else {
-          tickerTargets = 1;
-        }
-        targetsUpserted += tickerTargets;
-      }
-    } catch (err) {
-      totalErrors++;
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`[${ticker}] Price target error: ${msg}`);
-    }
-    await delay(RATE_LIMIT_DELAY_MS);
 
     // --- Insider Transactions ---
     try {
@@ -359,27 +208,20 @@ async function main() {
     await delay(RATE_LIMIT_DELAY_MS);
 
     // Log per-ticker summary
-    if (tickerActions > 0 || tickerTargets > 0 || tickerInsiders > 0) {
-      const parts: string[] = [];
-      if (tickerActions > 0) parts.push(`${tickerActions} ratings`);
-      if (tickerTargets > 0) parts.push(`PT`);
-      if (tickerInsiders > 0) parts.push(`${tickerInsiders} insider txns`);
-      console.log(`[${ticker}] ${parts.join(', ')}`);
+    if (tickerInsiders > 0) {
+      console.log(`[${ticker}] ${tickerInsiders} insider txns`);
     }
   }
 
   // Emit intel items
   if (!DRY_RUN) {
-    const analystEmitted = await emitIntelItems(db, analystIntelItems);
     const insiderEmitted = await emitIntelItems(db, insiderIntelItems);
-    console.log(`\nIntel items emitted: ${analystEmitted} analyst, ${insiderEmitted} insider`);
+    console.log(`\nIntel items emitted: ${insiderEmitted} insider`);
   }
 
   // Summary
   console.log('\n--- Summary ---');
   console.log(`Tickers processed: ${tickers.length}`);
-  console.log(`Analyst actions upserted: ${actionsUpserted}`);
-  console.log(`Price targets upserted: ${targetsUpserted}`);
   console.log(`Insider transactions upserted: ${insidersUpserted}`);
   if (totalErrors > 0) {
     console.log(`Errors: ${totalErrors}`);

@@ -2,7 +2,6 @@ import { db } from '@/db';
 import { positions, trades, strategies } from '@/db/schema';
 import { eq, and, isNull, sql, isNotNull } from 'drizzle-orm';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
-import { computeTriageForDate } from '@/lib/derived/triage';
 // REMOVED: blotter imports - blotter system deprecated, replaced by journal
 
 /**
@@ -222,10 +221,6 @@ export async function linkPositionToStrategy(
         snapshotDate,
         snapshotDate
       );
-      
-      // Trigger targeted triage recompute for this strategy and date
-      // Clean first to ensure stale records are removed (e.g., if underlying data changed)
-      await computeTriageForDate(snapshotDate, accountId, strategyId, true);
     } catch (error) {
       console.error(
         `Failed to auto-recompute after linking position ${positionId} to strategy ${strategyId} on ${snapshotDate}:`,
@@ -283,10 +278,6 @@ export async function linkTradeToStrategy(tradeId: string, strategyId: string): 
         snapshotDate,
         snapshotDate
       );
-
-      // Trigger targeted triage recompute for this strategy and date
-      // Clean first to ensure stale records are removed (e.g., if underlying data changed)
-      await computeTriageForDate(snapshotDate, accountId, strategyId, true);
     } catch (error) {
       console.error(
         `Failed to auto-recompute after linking trade ${tradeId} to strategy ${strategyId} on ${snapshotDate}:`,

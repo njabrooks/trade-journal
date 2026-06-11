@@ -127,7 +127,6 @@ export default async function StrategyJournalPage({ params }: JournalPageProps) 
             assetThesisId: strategy.assetThesisId,
           }}
           openPositionsCount={detail.openPositions.length}
-          triageCount={detail.triageFlags.length}
           signalsCount={0}
           linkedMacroTheses={strategy.linkedMacroTheses.map((mt) => ({ id: mt.id, title: mt.title }))}
           linkedAssetThesis={strategy.assetThesisId ? { id: strategy.assetThesisId, title: strategy.assetViewTitle || 'Asset Thesis', ticker: strategy.underlyingTicker } : null}

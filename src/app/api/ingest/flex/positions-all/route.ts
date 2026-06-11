@@ -27,7 +27,6 @@ import {
 } from '@/lib/ingestion/flex/mtm';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { and, eq, ne, sql, lt, isNotNull } from 'drizzle-orm';
-import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
@@ -508,19 +507,6 @@ export async function POST(request: NextRequest) {
           }
           }
 
-        // Compute triage for each snapshot date
-        // Process each date individually to avoid stopping on errors
-        for (const date of snapshotDates) {
-          try {
-            await computeTriageForDate(date, accountId);
-            
-            // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
-            // REMOVED: createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
-          } catch (error) {
-            console.error(`Failed to compute triage for ${date}:`, error);
-            // Continue processing other dates even if one fails
-          }
-        }
       } catch (error) {
         console.error('Recompute error:', error);
         // Don't fail the upload if recompute fails
@@ -595,16 +581,6 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Compute triage for each snapshot date
-        // Process each date individually to avoid stopping on errors
-        for (const date of snapshotDates) {
-          try {
-            await computeTriageForDate(date, accountId);
-          } catch (error) {
-            console.error(`Failed to compute triage for ${date}:`, error);
-            // Continue processing other dates even if one fails
-          }
-        }
       } catch (error) {
         console.error('Recompute error:', error);
         // Don't fail the upload if recompute fails

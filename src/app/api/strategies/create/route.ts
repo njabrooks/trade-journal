@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
-import { strategies, triageRecords, accounts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { strategies, accounts } from '@/db/schema';
 
 /**
  * POST /api/strategies/create
@@ -96,29 +95,12 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // Create DEFINE_SIGNALS triage record to prompt user to configure signals
-    if (defaultAccount) {
-      const today = new Date().toISOString().split('T')[0];
-      await db.insert(triageRecords).values({
-        snapshotDate: today,
-        accountId: defaultAccount.id,
-        contextLevel: 'strategy',
-        strategyId: createdStrategy.id,
-        symbol: strategyKey.split('-')[0] || strategyKey, // Extract ticker from strategy key
-        severity: 'attention',
-        recommendedAction: 'DEFINE_SIGNALS',
-        notes: `New strategy created. Configure signals to define trigger conditions for take profit, stop loss, and other alerts.`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
-
     return NextResponse.json({
       success: true,
       id: createdStrategy.id,
       strategyKey: createdStrategy.strategyKey,
       label: createdStrategy.autoDerivedLabel,
-      message: 'Strategy created successfully. DEFINE_SIGNALS triage record created.',
+      message: 'Strategy created successfully.',
     });
   } catch (error: any) {
     console.error('Error creating strategy:', error);

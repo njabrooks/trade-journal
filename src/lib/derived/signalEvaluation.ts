@@ -14,7 +14,6 @@ import {
   signalEntityLinks,
   strategies,
   strategyMetricsSnapshots,
-  triageRecords,
   journalEntries,
   Signal,
 } from '@/db/schema';
@@ -273,19 +272,15 @@ function evaluateSignalConditions(
 }
 
 /**
- * Triggers a signal: updates status, creates triage record, logs to journal.
+ * Triggers a signal: updates status, logs to journal.
  */
 async function triggerSignal(
   signal: Signal,
   strategy: { id: string; strategyKey: string; autoDerivedLabel: string | null },
   snapshotDate: string,
   conditionsMet: string[],
-  metrics: PositionMetrics,
-  accountId: string
+  metrics: PositionMetrics
 ): Promise<void> {
-  const config = signal.explicitDetails as SignalConfig | null;
-  const recommendedAction = config?.recommendedAction || 'REVIEW_SIGNAL';
-
   // 1. Update signal status to 'complete' (triggered = complete in standardized status)
   await db
     .update(signals)
@@ -295,36 +290,7 @@ async function triggerSignal(
     })
     .where(eq(signals.id, signal.id));
 
-  // 2. Create triage record
-  // Use strategyKey as symbol (typically contains underlying, e.g., "SPY 2025-01-17 P600")
-  const triageRecord = {
-    snapshotDate,
-    accountId,
-    symbol: strategy.strategyKey,
-    strategyId: strategy.id,
-    contextLevel: 'strategy' as const,
-    severity:
-      signal.importance === 'critical'
-        ? 'urgent'
-        : signal.importance === 'significant'
-          ? 'attention'
-          : ('info' as const),
-    recommendedAction,
-    notes: [
-      `Signal triggered: ${signal.statement}`,
-      `Conditions met: ${conditionsMet.join(', ')}`,
-      config?.actionNotes ? `Notes: ${config.actionNotes}` : null,
-    ]
-      .filter(Boolean)
-      .join(' | '),
-  };
-
-  const newTriage = await db
-    .insert(triageRecords)
-    .values(triageRecord)
-    .returning({ id: triageRecords.id });
-
-  // 3. Log to journal
+  // 2. Log to journal
   const journalEntry = {
     objectType: 'strategy' as const,
     objectId: strategy.id,
@@ -335,7 +301,6 @@ async function triggerSignal(
     newState: {
       status: 'complete',
       triggeredAt: new Date().toISOString(),
-      triageRecordId: newTriage[0]?.id,
       metrics: {
         minDte: metrics.minDte,
         maxDte: metrics.maxDte,
@@ -361,7 +326,7 @@ async function triggerSignal(
 
 /**
  * Main function: Evaluates all strategy signals for a given account and snapshot date.
- * Called after triage computation during ingestion.
+ * Called during post-ingestion recompute.
  */
 export async function evaluateStrategySignalsForDate(
   accountId: string,
@@ -450,8 +415,7 @@ export async function evaluateStrategySignalsForDate(
             strategy,
             snapshotDate,
             conditionsMet,
-            metrics,
-            accountId
+            metrics
           );
         } catch (error) {
           console.error(`Failed to trigger signal ${signal.id}:`, error);

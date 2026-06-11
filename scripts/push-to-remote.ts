@@ -59,7 +59,6 @@ const ALL_TABLES = [
   'strategy_templates',
   'playbook_items',
   'flex_query_configs',
-  'ai_prompts',
 
   // Thesis hierarchy
   'macro_theses',
@@ -71,8 +70,6 @@ const ALL_TABLES = [
   'research_artifacts',
   'research_insights',
   'research_mappings',
-  'research_hierarchy_recommendations',
-  'research_processing_runs',
 
   // Claims
   'main_claims',
@@ -82,17 +79,11 @@ const ALL_TABLES = [
   // Validation & Monitoring
   'validation_points',
   'validation_status_history',
-  'monitoring_specs',
-  'monitoring_events',
-  'thesis_triage_records',
-  'decision_audit_log',
 
   // Trading data
   'strategies',
   'trades',
   'positions',
-  'raw_flex_positions',
-  'raw_flex_trades',
 
   // Market data
   'underlyings_iv_history',
@@ -105,7 +96,6 @@ const ALL_TABLES = [
   'strategy_metrics_snapshots',
 
   // Derived/computed
-  'triage_records',
   'blotter_actions',
   'journal_entries',
 

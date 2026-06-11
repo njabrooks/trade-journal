@@ -18,7 +18,6 @@ interface RecomputeResult {
       | { error: string };
     portfolio?: { account: number; underlying: number } | { error: string };
     strategyMetrics?: { count: number } | { error: string };
-    triage?: { position: number; strategy: number; quantityChange?: number } | { error: string };
     datesProcessed?: number;
   };
   dateRange?: { startDate: string; endDate: string };
@@ -132,7 +131,7 @@ export default function RecomputePage() {
     <DashboardShell
       activeNav="admin-recompute"
       title="Recompute Derived Data"
-      subtitle="Trigger recomputation of portfolio snapshots, strategy metrics, and triage records"
+      subtitle="Trigger recomputation of portfolio snapshots and strategy metrics"
     >
 
       <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded p-4 mb-6 text-blue-800 dark:text-blue-200 text-sm">
@@ -145,17 +144,13 @@ export default function RecomputePage() {
           <li>
             <strong>Strategy Metrics:</strong> Per-strategy aggregates (exposure, PnL, DTE, etc.)
           </li>
-          <li>
-            <strong>Triage Records:</strong> Position and strategy-level flags (DTE, ITM, sigma,
-            assignment risk, size warnings, quantity changes)
-          </li>
         </ul>
         <p className="mt-2">
           <strong>Note:</strong> Make sure you've uploaded all raw data files (trades, positions,
           NAV, MTM) for the date(s) before recomputing.
         </p>
         <p className="mt-2 text-xs">
-          <strong>What's recomputed:</strong> Auto-strategy linking, Portfolio snapshots, Strategy metrics, and Triage records (including QUANTITY_CHANGE).
+          <strong>What's recomputed:</strong> Auto-strategy linking, Portfolio snapshots, and Strategy metrics.
         </p>
       </div>
 
@@ -348,21 +343,6 @@ export default function RecomputePage() {
                   <p className="text-sm text-muted-foreground">
                     {result.results.strategyMetrics?.count ?? 0} strategy-date combinations
                   </p>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Triage Records</h3>
-                {result.results.triage && 'error' in result.results.triage ? (
-                  <p className="text-red-600 text-sm">{result.results.triage.error}</p>
-                ) : (
-                  <div className="text-sm text-muted-foreground">
-                    <p>Position-level: {result.results.triage?.position ?? 0} records</p>
-                    <p>Strategy-level: {result.results.triage?.strategy ?? 0} records</p>
-                    {typeof result.results.triage?.quantityChange === 'number' && (
-                      <p>Quantity change: {result.results.triage.quantityChange} records</p>
-                    )}
-                  </div>
                 )}
               </div>
 

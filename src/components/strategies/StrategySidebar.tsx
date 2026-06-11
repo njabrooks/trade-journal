@@ -40,7 +40,6 @@ interface StrategySidebarProps {
   };
   /** Counts for related entities */
   openPositionsCount?: number;
-  triageCount?: number;
   signalsCount?: number;
   /** Linked macro theses for hierarchy display */
   linkedMacroTheses?: LinkedMacroThesis[];
@@ -51,7 +50,6 @@ interface StrategySidebarProps {
 export function StrategySidebar({
   strategy,
   openPositionsCount,
-  triageCount,
   signalsCount,
   linkedMacroTheses = [],
   linkedAssetThesis,

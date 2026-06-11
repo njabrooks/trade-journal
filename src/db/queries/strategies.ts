@@ -17,7 +17,6 @@ import {
   strategies,
   strategyTemplates,
   trades,
-  triageRecords,
   underlyings,
 } from "@/db/schema";
 import { toNumber } from "@/lib/numbers";
@@ -342,15 +341,6 @@ export interface StrategyDetail {
     snapshotDate: string | null;
     accountLabel: string | null;
   }[];
-  triageFlags: {
-    id: string;
-    severity: string | null;
-    recommendedAction: string | null;
-    snapshotDate: string;
-    dte: number | null;
-    symbol: string;
-    pctNavAbsNotional: number | null;
-  }[];
   trades: {
     tradeDate: string;
     accountLabel: string | null;
@@ -413,7 +403,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       hasPositionsResult,
       linkedMacroThesesResult,
       positionTimelineRows,
-      triageRows,
       tradesRows,
       navResult,
     ] = await Promise.all([
@@ -458,23 +447,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         .groupBy(positions.snapshotDate)
         .orderBy(asc(positions.snapshotDate)),
 
-      // 4. Triage records
-      db
-        .select({
-          id: triageRecords.id,
-          severity: triageRecords.severity,
-          recommendedAction: triageRecords.recommendedAction,
-          snapshotDate: triageRecords.snapshotDate,
-          dte: triageRecords.dte,
-          symbol: triageRecords.symbol,
-          pctNavAbsNotional: triageRecords.pctNavAbsNotional,
-        })
-        .from(triageRecords)
-        .where(eq(triageRecords.strategyId, strategyId))
-        .orderBy(desc(triageRecords.snapshotDate))
-        .limit(25),
-
-      // 5. Trades aggregated by day + account + side + symbol
+      // 4. Trades aggregated by day + account + side + symbol
       db
         .select({
           tradeDate: tradeDateCol,
@@ -492,7 +465,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
         .groupBy(tradeDateCol, accounts.label, trades.side, trades.symbol)
         .orderBy(desc(tradeDateCol)),
 
-      // 6. NAV from portfolio_snapshots (for % NAV calculation)
+      // 5. NAV from portfolio_snapshots (for % NAV calculation)
       db
         .select({
           totalNav: sql<string>`SUM(CAST(COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot}) AS NUMERIC))`,
@@ -585,16 +558,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       spot: toNumber(row.spot),
     }));
 
-    const triageFlags = triageRows.map((row) => ({
-      id: row.id,
-      severity: row.severity,
-      recommendedAction: row.recommendedAction,
-      snapshotDate: row.snapshotDate,
-      dte: row.dte,
-      symbol: row.symbol,
-      pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
-    }));
-
     const aggregatedTrades = tradesRows.map((row) => ({
       tradeDate: row.tradeDate ? new Date(row.tradeDate).toISOString().slice(0, 10) : '',
       accountLabel: row.accountLabel,
@@ -669,7 +632,6 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
       },
       metricsTimeline,
       openPositions,
-      triageFlags,
       trades: aggregatedTrades,
       liveMetrics,
     };

@@ -6,9 +6,8 @@ import { StrategySidebar } from '@/components/strategies/StrategySidebar';
 import { StrategyOverviewCharts } from '@/components/strategies/StrategyOverviewCharts';
 import { StrategySignalsSection } from '@/components/signals/StrategySignalsSection';
 import { getCachedStrategyDetail } from '@/db/queries/cached';
-import { getTriageQueueForStrategy } from '@/db/queries/triage';
 import { db } from '@/db';
-import { signals, signalEntityLinks, triageRecords } from '@/db/schema';
+import { signals, signalEntityLinks } from '@/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { formatCurrency } from '@/lib/formatters';
 import { EntityStatusBadge } from '@/components/ui/badge';
@@ -30,9 +29,8 @@ export async function generateMetadata({ params }: OverviewPageProps): Promise<M
 export default async function StrategyOverviewPage({ params }: OverviewPageProps) {
   const { strategyId } = await params;
 
-  const [detail, triageData, strategySignals, pendingDefineSignals] = await Promise.all([
+  const [detail, strategySignals] = await Promise.all([
     getCachedStrategyDetail(strategyId),
-    getTriageQueueForStrategy(strategyId, {}),
     db
       .select()
       .from(signals)
@@ -40,16 +38,6 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
       .where(and(eq(signalEntityLinks.entityType, 'strategy'), eq(signalEntityLinks.strategyId, strategyId)))
       .orderBy(signals.createdAt)
       .then(rows => rows.map(r => r.signals)),
-    db
-      .select()
-      .from(triageRecords)
-      .where(
-        and(
-          eq(triageRecords.strategyId, strategyId),
-          eq(triageRecords.recommendedAction, 'DEFINE_SIGNALS')
-        )
-      )
-      .limit(1),
   ]);
 
   if (!detail) {
@@ -58,8 +46,6 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
 
   const { strategy, liveMetrics } = detail;
   const openPositionCount = liveMetrics.openPositionsCount;
-  const showDefinePrompt =
-    pendingDefineSignals.length > 0 && pendingDefineSignals[0].status !== 'done';
 
   const statusBadge = <EntityStatusBadge status={strategy.status} />;
 
@@ -93,7 +79,6 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
             assetThesisId: strategy.assetThesisId,
           }}
           openPositionsCount={openPositionCount}
-          triageCount={triageData.records.length}
           signalsCount={strategySignals.length}
           linkedMacroTheses={strategy.linkedMacroTheses.map((mt) => ({ id: mt.id, title: mt.title }))}
           linkedAssetThesis={strategy.assetThesisId ? { id: strategy.assetThesisId, title: strategy.assetViewTitle || 'Asset Thesis', ticker: strategy.underlyingTicker } : null}
@@ -248,7 +233,6 @@ export default async function StrategyOverviewPage({ params }: OverviewPageProps
           strategyKey={strategy.strategyKey}
           underlyingTicker={strategy.underlyingTicker || undefined}
           signals={strategySignals}
-          showDefinePrompt={showDefinePrompt}
         />
       </EntitySection>
     </EntityDetailLayout>

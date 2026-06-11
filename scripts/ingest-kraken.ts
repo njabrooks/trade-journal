@@ -27,7 +27,6 @@ import { ensureUnderlyingId } from '../src/lib/ingestion/flex/underlyings.js';
 import { createTradeIngestionRecords } from '../src/lib/ingestion/flex/processCsv.js';
 import { trackProcess } from '../src/lib/services/processTracking.js';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '../src/lib/derived/strategyAuto.js';
-import { computeTriageForDate } from '../src/lib/derived/triage.js';
 import { computePortfolioSnapshotsForDateRange } from '../src/lib/derived/portfolio.js';
 import { computeStrategyMetricsForDateRange } from '../src/lib/derived/strategyMetrics.js';
 import { evaluateStrategySignalsForDate } from '../src/lib/derived/signalEvaluation.js';
@@ -333,10 +332,6 @@ async function ingestAccount(
         await computeStrategyMetricsForDateRange(accountId, strategy.id, snapshotDate, snapshotDate);
       }
       console.log(`${tag} Strategy metrics: computed for ${accountStrategies.length} strategies`);
-
-      // Compute triage
-      const triageResult = await computeTriageForDate(snapshotDate, accountId, undefined, true);
-      console.log(`${tag} Triage: ${triageResult.position} position, ${triageResult.strategy} strategy records`);
 
       // Evaluate signals
       const signalResults = await evaluateStrategySignalsForDate(accountId, snapshotDate);

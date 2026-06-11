@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
-import { computeTriageForDate, deleteTriageRecordsForDateRange } from '@/lib/derived/triage';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 // REMOVED: blotter imports - blotter system deprecated, replaced by journal
 import { db } from '@/db';
@@ -190,15 +189,6 @@ export async function POST(request: NextRequest) {
         results.strategyMetrics = { error: error instanceof Error ? error.message : 'Failed' };
       }
 
-      // Triage
-      // Clean all triage records for this date first to ensure stale records are removed
-      try {
-        const triageCounts = await computeTriageForDate(snapshotDate, accountId, undefined, true);
-        results.triage = triageCounts;
-      } catch (error) {
-        results.triage = { error: error instanceof Error ? error.message : 'Failed' };
-      }
-
           // REMOVED: Trade blotter entries - blotter system deprecated, replaced by journal
 
           return {
@@ -237,7 +227,6 @@ export async function POST(request: NextRequest) {
         datesProcessed: dates.length,
         portfolio: { account: 0, underlying: 0 },
         strategyMetrics: { count: 0 },
-        triage: { position: 0, strategy: 0, quantityChange: 0 },
         // REMOVED: blotter - deprecated, replaced by journal
       };
 
@@ -313,25 +302,6 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         results.strategyMetrics = { error: error instanceof Error ? error.message : 'Failed' };
-      }
-
-      // Triage (process each date)
-      // Clean all triage records for the date range first to ensure stale records are removed
-      try {
-        await deleteTriageRecordsForDateRange(startDate, endDate, accountId);
-        
-        let totalPosition = 0;
-        let totalStrategy = 0;
-        let totalQuantityChange = 0;
-        for (const date of dates) {
-          const counts = await computeTriageForDate(date, accountId);
-          totalPosition += counts.position;
-          totalStrategy += counts.strategy;
-          totalQuantityChange += counts.quantityChange;
-        }
-        results.triage = { position: totalPosition, strategy: totalStrategy, quantityChange: totalQuantityChange };
-      } catch (error) {
-        results.triage = { error: error instanceof Error ? error.message : 'Failed' };
       }
 
           // REMOVED: Trade blotter entries - blotter system deprecated, replaced by journal

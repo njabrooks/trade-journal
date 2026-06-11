@@ -7,7 +7,6 @@ import {
   positions,
   trades,
   strategyMetricsSnapshots,
-  triageRecords,
   underlyingsIvHistory,
   NewStrategy,
   NewStrategyTemplate,
@@ -15,7 +14,6 @@ import {
 import { eq, and, sql, inArray, isNotNull, desc, gte, lte, or } from 'drizzle-orm';
 import { toNumber } from '@/lib/utils';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
-import { computeTriageForDate } from '@/lib/derived/triage';
 // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 import { resolveOrCreateStrategyType } from '@/lib/services/strategyTypes';
@@ -278,23 +276,7 @@ export async function updateStrategy(
 
   await db.update(strategies).set(updateData).where(eq(strategies.id, strategyId));
 
-  // If strategy was confirmed, resolve all CONFIRM_STRATEGY triage records
   if (updates.confirm) {
-    // Resolve all CONFIRM_STRATEGY triage records for this strategy
-    // Set status to 'done' (workflow complete), leave severity unchanged (historical importance)
-    await db
-      .update(triageRecords)
-      .set({
-        status: 'done',
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(triageRecords.strategyId, strategyId),
-          eq(triageRecords.recommendedAction, 'CONFIRM_STRATEGY')
-        )
-      );
-
     // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
     // Trade context is now captured via journal entries when trades are recorded
 
@@ -302,22 +284,6 @@ export async function updateStrategy(
     populateStrategyEntryContext(strategyId).catch((error) => {
       console.error(`Failed to populate entry context for strategy ${strategyId} after confirmation:`, error);
     });
-  }
-
-  // If thesis was linked, resolve all LINK_STRATEGY_TO_THESIS triage records
-  if ((updates as any).assetThesisId) {
-    await db
-      .update(triageRecords)
-      .set({
-        status: 'done',
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(triageRecords.strategyId, strategyId),
-          eq(triageRecords.recommendedAction, 'LINK_STRATEGY_TO_THESIS')
-        )
-      );
   }
 
   // REMOVED: State code computation - replaced by signals system
@@ -581,8 +547,6 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
     .delete(strategyMetricsSnapshots)
     .where(inArray(strategyMetricsSnapshots.strategyId, sourceIds));
 
-  await db.delete(triageRecords).where(inArray(triageRecords.strategyId, sourceIds));
-
   await db
     .update(strategies)
     .set({
@@ -634,7 +598,6 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
   // 1. Get ALL positions for the strategy (regardless of account)
   // 2. Get all distinct accounts from those positions
   // 3. Compute metrics for each account separately
-  // 4. Compute triage without account filter
   const snapshotDates = await db
     .selectDistinct({ snapshotDate: positions.snapshotDate })
     .from(positions)
@@ -690,32 +653,12 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
             await computeStrategyMetricsForDateRange(accountId, targetId, minDate, maxDate);
           }
 
-          // Trigger targeted triage recompute for target strategy on affected dates
-          // Clean first to ensure stale records are removed (e.g., if underlying data changed)
-          // Pass undefined for accountId to handle ALL accounts' positions for this strategy
-          let triageCount = 0;
-          for (const date of dates) {
-            if (date) {
-              try {
-                await computeTriageForDate(date, undefined, targetId, true);
-                triageCount++;
-              } catch (error) {
-                console.error(
-                  `Failed to auto-recompute triage after merge for strategy ${targetId} on ${date}:`,
-                  error
-                );
-                // Continue with other dates
-              }
-            }
-          }
-
           // Complete the background process tracking
           if (backgroundProcessId) {
             await completeProcess(backgroundProcessId, {
               success: true,
               datesProcessed: dates.length,
               accountsProcessed: accountIds.length,
-              triageRecordsCreated: triageCount,
               message: `Background recompute completed for merged strategy ${targetId} (${accountIds.length} accounts)`,
             });
           }
@@ -731,7 +674,7 @@ export async function mergeStrategies(input: MergeStrategiesInput): Promise<{
             Notification.permission === 'granted'
           ) {
             new Notification('Recompute Complete', {
-              body: `Strategy metrics and triage recomputed for ${dates.length} date(s) across ${accountIds.length} account(s)`,
+              body: `Strategy metrics recomputed for ${dates.length} date(s) across ${accountIds.length} account(s)`,
               icon: '/favicon.ico',
               tag: `recompute-${targetId}`,
             });

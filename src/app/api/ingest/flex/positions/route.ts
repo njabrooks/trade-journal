@@ -10,7 +10,6 @@ import {
 } from '@/lib/ingestion/flex/positions';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { and, eq, ne, sql, lt, isNotNull } from 'drizzle-orm';
-import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
@@ -346,9 +345,6 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Triage
-          await computeTriageForDate(snapshotDate, accountId);
-          
           // If strategies were created or positions were linked, also link trades and create trade blotter entries
           // This ensures that when positions are ingested first, trades get linked and QUANTITY_CHANGE records are created
           if (autoLinkResult.strategiesCreated > 0 || autoLinkResult.positionsLinked > 0) {

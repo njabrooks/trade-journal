@@ -35,7 +35,6 @@ import { ensureUnderlyingId } from '../src/lib/ingestion/flex/underlyings.js';
 import { createTradeIngestionRecords } from '../src/lib/ingestion/flex/processCsv.js';
 import { trackProcess } from '../src/lib/services/processTracking.js';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '../src/lib/derived/strategyAuto.js';
-import { computeTriageForDate } from '../src/lib/derived/triage.js';
 import { computePortfolioSnapshotsForDateRange } from '../src/lib/derived/portfolio.js';
 import { computeStrategyMetricsForDateRange } from '../src/lib/derived/strategyMetrics.js';
 import { evaluateStrategySignalsForDate } from '../src/lib/derived/signalEvaluation.js';
@@ -332,7 +331,7 @@ async function main() {
           snapshotDate: tradeDate,
         });
         totalTradesLinked += result.tradesLinked;
-        // Create TRADE_INGESTION triage records for linked trades
+        // Create trade-ingestion journal entries for linked trades
         await createTradeIngestionRecords(accountId, tradeDate);
       }
       console.log(`[HL] Trade auto-link: ${totalTradesLinked} linked across ${tradeDates.size} dates`);
@@ -355,10 +354,6 @@ async function main() {
         await computeStrategyMetricsForDateRange(accountId, strategy.id, snapshotDate, snapshotDate);
       }
       console.log(`[HL] Strategy metrics: computed for ${accountStrategies.length} strategies`);
-
-      // Compute triage
-      const triageResult = await computeTriageForDate(snapshotDate, accountId, undefined, true);
-      console.log(`[HL] Triage: ${triageResult.position} position, ${triageResult.strategy} strategy records`);
 
       // Evaluate signals
       const signalResults = await evaluateStrategySignalsForDate(accountId, snapshotDate);

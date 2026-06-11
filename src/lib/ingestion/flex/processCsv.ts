@@ -31,12 +31,11 @@ import {
 } from '@/lib/ingestion/flex/trades';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
 import { and, eq, ne, sql, lt, isNotNull } from 'drizzle-orm';
-import { computeTriageForDate } from '@/lib/derived/triage';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
 import { autoLinkPositionsToStrategies, autoLinkTradesToStrategies } from '@/lib/derived/strategyAuto';
 import { evaluateStrategySignalsForDate } from '@/lib/derived/signalEvaluation';
-import { strategies, triageRecords, strategyTemplates } from '@/db/schema';
+import { strategies, strategyTemplates } from '@/db/schema';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 
@@ -1164,22 +1163,13 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
           }
         }
 
-        // Compute triage for each snapshot date
+        // Evaluate strategy signals for each snapshot date
         for (const date of snapshotDates) {
+          // Evaluate strategy signals (DTE, sigma, PnL% conditions)
           try {
-            await computeTriageForDate(date, recomputeAccountId);
-
-            // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
-            // REMOVED: createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
-
-            // Evaluate strategy signals (DTE, sigma, PnL% conditions)
-            try {
-              await evaluateStrategySignalsForDate(recomputeAccountId, date);
-            } catch (error) {
-              console.error(`Failed to evaluate strategy signals for ${recomputeAccountId} on ${date}:`, error);
-            }
+            await evaluateStrategySignalsForDate(recomputeAccountId, date);
           } catch (error) {
-            console.error(`Failed to compute triage for ${date} (account ${recomputeAccountId}):`, error);
+            console.error(`Failed to evaluate strategy signals for ${recomputeAccountId} on ${date}:`, error);
           }
         }
       } catch (error) {
@@ -1216,13 +1206,12 @@ export interface ProcessTradesResult {
 }
 
 /**
- * Creates journal entries and triage records for newly ingested trades.
- * Groups trades by strategy + date and creates:
- * 1. A `trade_ingested` journal entry with trade details
- * 2. A triage record for the user to capture trade metadata (stage, reason, notes)
+ * Creates journal entries for newly ingested trades.
+ * Groups trades by strategy + date and creates a `trade_ingested` journal
+ * entry with trade details.
  *
- * This function is also used by crypto ingestion scripts to create TRADE_INGESTION
- * triage records for trades that have been linked to strategies.
+ * This function is also used by crypto ingestion scripts for trades that
+ * have been linked to strategies.
  */
 export async function createTradeIngestionRecords(
   accountId: string,
@@ -1262,14 +1251,13 @@ export async function createTradeIngestionRecords(
     tradesByStrategy.get(trade.strategyId)!.push(trade);
   }
 
-  // For each strategy, create journal entry and triage record
+  // For each strategy, create a journal entry
   for (const [strategyId, strategyTrades] of tradesByStrategy.entries()) {
-    // Get strategy info including direction and status for triage display
+    // Get strategy info including status
     const [strategyInfo] = await db
       .select({
         strategyKey: strategies.strategyKey,
         templateLabel: strategyTemplates.label,
-        direction: strategies.direction,
         status: strategies.status,
       })
       .from(strategies)
@@ -1279,7 +1267,7 @@ export async function createTradeIngestionRecords(
 
     if (!strategyInfo) continue;
 
-    // Skip rejected and complete strategies - they're closed and shouldn't generate triage records
+    // Skip rejected and complete strategies - they're closed and shouldn't generate journal noise
     // New activity on these underlyings should create new strategies rather than trigger on closed ones
     if (strategyInfo.status === 'rejected' || strategyInfo.status === 'complete') continue;
 
@@ -1291,94 +1279,6 @@ export async function createTradeIngestionRecords(
     const primaryConid = strategyTrades[0]?.conid;
     const side = totalQty >= 0 ? 'BUY' : 'SELL';
 
-    // Build unmatchedTradeExecutions for triage record (grouped by conid/symbol)
-    const tradesByPosition = new Map<string, { conid: number | null; ticker: string; tradeIds: string[]; qtyChange: number }>();
-    for (const trade of strategyTrades) {
-      const key = trade.conid ? `conid:${trade.conid}` : `symbol:${trade.symbol}`;
-      if (!tradesByPosition.has(key)) {
-        tradesByPosition.set(key, {
-          conid: trade.conid,
-          ticker: trade.symbol,
-          tradeIds: [],
-          qtyChange: 0,
-        });
-      }
-      const entry = tradesByPosition.get(key)!;
-      entry.tradeIds.push(trade.id);
-      // quantity is already signed in the database (negative for SELL)
-      entry.qtyChange += Number(trade.quantity) || 0;
-    }
-    const unmatchedTradeExecutions = Array.from(tradesByPosition.values());
-
-    // Check if we already have a triage record for this strategy + date + rule_set
-    const existingTriage = await db
-      .select({ id: triageRecords.id })
-      .from(triageRecords)
-      .where(
-        and(
-          eq(triageRecords.strategyId, strategyId),
-          eq(triageRecords.snapshotDate, tradeDate),
-          eq(triageRecords.ruleSet, 'trade_ingestion_v1')
-        )
-      )
-      .limit(1);
-
-    // Build notes with trade details (similar to QUANTITY_CHANGE pattern)
-    const notesData = {
-      side,
-      totalQty,
-      totalPremium,
-      tradeCount: strategyTrades.length,
-      executions: unmatchedTradeExecutions,
-    };
-
-    if (existingTriage.length > 0) {
-      // Update existing triage record with new trade IDs
-      await db
-        .update(triageRecords)
-        .set({
-          unmatchedTradeExecutions,
-          notes: JSON.stringify(notesData),
-          updatedAt: new Date(),
-        })
-        .where(eq(triageRecords.id, existingTriage[0].id));
-      continue;
-    }
-
-    // Delete any existing quantity_change_v1 records for this strategy + date
-    // This handles the race condition where positions are processed before trades,
-    // creating QUANTITY_CHANGE records that should be superseded by TRADE_INGESTION
-    await db
-      .delete(triageRecords)
-      .where(
-        and(
-          eq(triageRecords.strategyId, strategyId),
-          eq(triageRecords.snapshotDate, tradeDate),
-          eq(triageRecords.ruleSet, 'quantity_change_v1')
-        )
-      );
-
-    // Create triage record
-    // Use TRADE_INGESTION as recommendedAction (like QUANTITY_CHANGE) for UI compatibility
-    const [triageRecord] = await db
-      .insert(triageRecords)
-      .values({
-        snapshotDate: tradeDate,
-        accountId,
-        strategyId,
-        positionId: null,
-        contextLevel: 'strategy',
-        ruleSet: 'trade_ingestion_v1',
-        symbol: primarySymbol,
-        severity: 'urgent', // Trades require immediate attention to capture metadata
-        status: 'inbox',
-        direction: strategyInfo.direction,
-        recommendedAction: 'TRADE_INGESTION',
-        notes: JSON.stringify(notesData),
-        unmatchedTradeExecutions,
-      })
-      .returning({ id: triageRecords.id });
-
     // Create journal entry
     await logToJournal({
       objectType: 'strategy',
@@ -1386,7 +1286,6 @@ export async function createTradeIngestionRecords(
       objectTitle: strategyInfo.strategyKey,
       actionType: 'trade_ingested',
       actionDescription: `Trade ingested: ${side} ${Math.abs(totalQty)} ${primarySymbol} (${strategyTrades.length} execution${strategyTrades.length > 1 ? 's' : ''})`,
-      triageRecordId: triageRecord.id,
       source: 'automation',
       newState: {
         conid: primaryConid,
@@ -1397,7 +1296,6 @@ export async function createTradeIngestionRecords(
       metadata: {
         tradeIds: strategyTrades.map(t => t.id),
         tradeDate,
-        triageRecordId: triageRecord.id,
       },
     });
   }
@@ -1522,7 +1420,7 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
           // Auto-link trades to strategies
           await autoLinkTradesToStrategies(accountId, { snapshotDate: tradeDate });
 
-          // Create trade ingestion journal entries and triage records
+          // Create trade ingestion journal entries
           // This must happen after auto-linking so trades have strategy IDs
           await createTradeIngestionRecords(accountId, tradeDate);
 
@@ -1546,13 +1444,6 @@ export async function processTradesCsv(csvText: string, processRunId?: string | 
               tradeDate
             );
           }
-
-          // REMOVED: computeTradeBlotterEntriesForDate - blotter system deprecated, replaced by journal
-
-          // Triage
-          await computeTriageForDate(tradeDate, accountId);
-
-          // REMOVED: createQuantityChangeTriageForUnmatchedTrades - blotter system deprecated, replaced by journal
 
           // Evaluate strategy signals (DTE, sigma, PnL% conditions)
           try {
