@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import {
   Tabs,
@@ -21,7 +22,9 @@ export default function VolCurvePage() {
           <TabsTrigger value="form">Run Analysis</TabsTrigger>
         </TabsList>
         <TabsContent value="scanner" className="mt-4">
-          <ScannerTodayClient />
+          <Suspense>
+            <ScannerTodayClient />
+          </Suspense>
         </TabsContent>
         <TabsContent value="form" className="mt-4">
           <VolCurveClient />
