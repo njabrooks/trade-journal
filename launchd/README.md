@@ -121,7 +121,7 @@ once you're done — the repo file is the source of truth.)
 ## archive/
 
 `launchd/archive/` holds the previous generation of TJ launchd jobs
-(`flex-ingestion`, `massive-ingestion`, `fred-ingestion`, `signal-monitoring`,
+(`flex-ingestion`, `massive-ingestion`, `signal-monitoring`,
 `push-to-remote`, `supabase-start`). They are kept for historical reference —
 they still encode what the on-device cron schedule used to be — but they are
 **not installable as-is**:
