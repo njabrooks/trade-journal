@@ -6,5 +6,5 @@ interface ExecutionPageProps {
 
 export default async function StrategyExecutionPage({ params }: ExecutionPageProps) {
   const { strategyId } = await params;
-  redirect(`/strategies/${strategyId}/triage`);
+  redirect(`/strategies/${strategyId}/overview`);
 }

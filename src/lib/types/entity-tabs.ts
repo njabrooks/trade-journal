@@ -19,7 +19,6 @@ export function createEntityTabs(
 ): EntityTab[] {
   return [
     { id: 'overview', label: 'Overview', href: `${basePath}/${entityId}/overview` },
-    { id: 'triage', label: 'Triage', href: `${basePath}/${entityId}/triage` },
     { id: 'journal', label: 'Journal', href: `${basePath}/${entityId}/journal` },
   ];
 }

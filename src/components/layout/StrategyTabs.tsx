@@ -17,7 +17,6 @@ interface StrategyTabsProps {
 function createStrategyTabs(strategyId: string): EntityTab[] {
   return [
     { id: 'overview', label: 'Overview', href: `/strategies/${strategyId}/overview` },
-    { id: 'triage', label: 'Triage', href: `/strategies/${strategyId}/triage` },
     { id: 'journal', label: 'Journal', href: `/strategies/${strategyId}/journal` },
   ];
 }

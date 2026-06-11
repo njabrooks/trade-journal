@@ -2,8 +2,6 @@ import { Metadata } from 'next';
 import { getAllMainClaimsWithSources } from '@/db/queries/research';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { UnifiedClaimsBrowser } from '@/components/research/UnifiedClaimsBrowser';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
   title: 'Claims',
@@ -69,9 +67,6 @@ export default async function ClaimsBrowserPage() {
             <p className="text-sm text-muted-foreground mb-6">
               Upload research and process it with the <code className="bg-muted px-2 py-1 rounded">/process-transcript</code> skill to extract claims.
             </p>
-            <Link href="/research/upload">
-              <Button>Upload Research</Button>
-            </Link>
           </div>
         )}
       </div>

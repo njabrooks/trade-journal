@@ -195,17 +195,6 @@ export function SignalLog({ entries, onReject }: SignalLogProps) {
                       );
                     }
                     if (entry.dataSource === 'intelligence_routing') {
-                      if (entry.intelligenceItemId) {
-                        return (
-                          <Link
-                            href={`/news?highlight=${entry.intelligenceItemId}`}
-                            className="group flex items-start gap-1.5 text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors"
-                          >
-                            <Radio className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                            <p className="line-clamp-2 leading-relaxed">{note}</p>
-                          </Link>
-                        );
-                      }
                       return (
                         <div className="flex items-start gap-1.5 text-cyan-600 dark:text-cyan-400">
                           <Radio className="h-3.5 w-3.5 mt-0.5 shrink-0" />

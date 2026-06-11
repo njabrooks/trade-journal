@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   FolderKanban,
-  AlertTriangle,
   Settings,
   Database,
   Users,
@@ -14,12 +13,10 @@ import {
   TrendingUp,
   Target,
   Library,
-  Sparkles,
   RefreshCw,
   Lightbulb,
   ScrollText,
   Calculator,
-  Newspaper,
   Zap,
 } from "lucide-react";
 import {
@@ -34,16 +31,13 @@ import {
 } from "@/components/ui/sidebar";
 
 const ACTIVITY_NAV = [
-  { href: "/triage", label: "Triage", icon: AlertTriangle, id: "triage" },
   { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
 ] as const;
 
 const INTELLIGENCE_NAV = [
-  { href: "/news", label: "News", icon: Newspaper, id: "news" },
   { href: "/research", label: "Research", icon: Library, id: "research" },
   { href: "/claims", label: "Claims", icon: Lightbulb, id: "claims" },
   { href: "/signals", label: "Signals", icon: Zap, id: "signals" },
-  { href: "/signals/data-sources", label: "Data Sources", icon: Database, id: "signals-data-sources" },
   { href: "/vol-curve", label: "Vol Curve", icon: Activity, id: "vol-curve" },
 ] as const;
 
@@ -63,10 +57,8 @@ const PORTFOLIO_NAV = [
 const ADMIN_NAV = [
   { href: "/admin/strategies", label: "Strategy Types", icon: FolderKanban, id: "admin-strategies" },
   // REMOVED: Playbook - deprecated, replaced by Signals system
-  { href: "/admin/triage", label: "Triage Rules", icon: AlertTriangle, id: "admin-triage" },
   { href: "/admin/accounts", label: "Accounts", icon: Users, id: "admin-accounts" },
   { href: "/admin/ingestion/flex", label: "Ingestion", icon: Database, id: "admin-ingestion" },
-  { href: "/admin/prompts", label: "AI Prompts", icon: Sparkles, id: "admin-prompts" },
   { href: "/admin/recompute", label: "Recompute", icon: Settings, id: "admin-recompute" },
   { href: "/admin/processes", label: "Processes", icon: Activity, id: "admin-processes" },
 ] as const;
