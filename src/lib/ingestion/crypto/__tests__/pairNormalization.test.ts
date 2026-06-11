@@ -46,12 +46,17 @@ describe("normalizeKrakenPair", () => {
     expect(normalizeKrakenPair("XRPEUR")).toBe("XRP");
   });
 
-  it("mis-normalizes Tezos: longest-match suffix strip eats the Z of XTZ", () => {
-    // NOTE: actual behavior (likely a latent bug) — for "XTZUSD" the quote
-    // stripper matches the 4-char suffix "ZUSD" before the 3-char "USD",
-    // leaving base "XT" instead of "XTZ". Tezos therefore normalizes to "XT".
-    // Flagged in test report; logic intentionally left unchanged.
-    expect(normalizeKrakenPair("XTZUSD")).toBe("XT");
+  it("normalizes Tezos correctly: Z-suffix only accepted for mapped legacy bases", () => {
+    // Regression test for a latent bug found when this suite was written:
+    // the quote stripper used to match the 4-char "ZUSD" before "USD",
+    // truncating "XTZUSD" to base "XT". Z-prefixed quotes are now only
+    // accepted when the remaining base resolves in KRAKEN_ASSET_MAP, so
+    // Tezos parses as XTZ + USD.
+    expect(normalizeKrakenPair("XTZUSD")).toBe("XTZ");
+    expect(normalizeKrakenPair("XTZEUR")).toBe("XTZ");
+    // Legacy mapped bases still take the Z-suffix path:
+    expect(normalizeKrakenPair("XXBTZUSD")).toBe("BTC");
+    expect(normalizeKrakenPair("XETHZEUR")).toBe("ETH");
   });
 });
 

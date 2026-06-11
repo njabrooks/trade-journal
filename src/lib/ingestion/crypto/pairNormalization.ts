@@ -107,11 +107,20 @@ export function normalizeSolanaTokenSymbol(symbol: string): string {
 }
 
 export function normalizeKrakenPair(pair: string): string {
-  // Strip quote currency suffix (try longest match first)
+  // Strip quote currency suffix (try longest match first).
+  // Z-prefixed quotes (ZUSD, ZEUR, ...) belong to Kraken's legacy pair
+  // convention, where the base is also X-prefixed and lives in
+  // KRAKEN_ASSET_MAP. Only accept a Z-suffix match when the remainder
+  // resolves in the map — otherwise tickers ending in Z get truncated
+  // (XTZUSD must parse as XTZ + USD, not XT + ZUSD).
   let base = pair;
-  for (const suffix of KRAKEN_QUOTE_SUFFIXES.sort((a, b) => b.length - a.length)) {
+  for (const suffix of [...KRAKEN_QUOTE_SUFFIXES].sort((a, b) => b.length - a.length)) {
     if (base.endsWith(suffix)) {
-      base = base.slice(0, -suffix.length);
+      const candidate = base.slice(0, -suffix.length);
+      if (suffix.startsWith('Z') && !KRAKEN_ASSET_MAP[candidate]) {
+        continue;
+      }
+      base = candidate;
       break;
     }
   }
