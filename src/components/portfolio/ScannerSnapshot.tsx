@@ -36,18 +36,40 @@ interface AdvisorRecommendation {
   exposureUsd: number | null;
   pctNav: number | null;
   structure: { type: string; legs: AdvisorLeg[] };
-  metrics: { costPct?: number; protectionLevel?: number; dte?: number };
+  metrics: {
+    costPct?: number;
+    premiumYieldPct?: number;
+    yieldOnCollateralPct?: number;
+    protectionLevel?: number;
+    dte?: number;
+  };
   rationale: string;
 }
+
+const STRUCTURE_LABELS: Record<string, string> = {
+  protective_put: "put",
+  put_spread: "put spread",
+  covered_call: "covered call",
+  cash_secured_put: "cash-secured put",
+};
+
+const SCENARIO_LABELS: Record<string, string> = {
+  hedge: "Hedge",
+  income: "Income",
+  put_entry: "Put entry",
+  opportunistic: "Opportunistic",
+};
 
 function describeStructure(rec: AdvisorRecommendation): string {
   const legs = rec.structure?.legs ?? [];
   const expiry = legs[0]?.expiry ? formatDateShort(legs[0].expiry) : "";
   const strikes = legs.map((l) => l.strike).join("/");
-  const kind = rec.structure?.type === "put_spread" ? "put spread" : "put";
-  const cost =
-    rec.metrics?.costPct != null ? ` · ${(rec.metrics.costPct * 100).toFixed(1)}%` : "";
-  return `${strikes} ${kind} ${expiry}${cost}`;
+  const kind = STRUCTURE_LABELS[rec.structure?.type] ?? rec.structure?.type ?? "";
+  // one headline number per scenario: cost (hedge) or yield (income/put-entry)
+  const pct =
+    rec.metrics?.costPct ?? rec.metrics?.premiumYieldPct ?? rec.metrics?.yieldOnCollateralPct;
+  const pctLabel = pct != null ? ` · ${(pct * 100).toFixed(1)}%` : "";
+  return `${strikes} ${kind} ${expiry}${pctLabel}`;
 }
 
 const TOP_N = 5;
@@ -103,35 +125,43 @@ export function ScannerSnapshot() {
         </Link>
       </div>
 
-      {/* Advisor recommendations (D11 — hedge scenario first) */}
+      {/* Advisor recommendations (D11), grouped by scenario */}
       {recs.length > 0 && (
-        <div className="mb-4 space-y-2 border-b pb-4">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Advisor — {recs[0].scenario}
-            </span>
-          </div>
-          {recs.map((rec) => (
-            <div key={rec.id} className="flex items-start gap-2 text-sm">
-              <span className="w-14 shrink-0 font-mono text-xs font-medium">{rec.ticker}</span>
-              <div className="min-w-0 flex-1">
-                <span title={rec.rationale}>{describeStructure(rec)}</span>
-                {rec.exposureUsd !== null && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    on {formatCurrency(rec.exposureUsd)}
-                    {rec.pctNav !== null && ` (${(rec.pctNav * 100).toFixed(1)}% NAV)`}
-                  </span>
-                )}
+        <div className="mb-4 space-y-3 border-b pb-4">
+          {[...new Set(recs.map((r) => r.scenario))].map((scenario) => (
+            <div key={scenario} className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Advisor — {SCENARIO_LABELS[scenario] ?? scenario}
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={() => dismissRec(rec.id)}
-                className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                title="Dismiss"
-              >
-                <X className="h-3 w-3" />
-              </button>
+              {recs
+                .filter((r) => r.scenario === scenario)
+                .map((rec) => (
+                  <div key={rec.id} className="flex items-start gap-2 text-sm">
+                    <span className="w-14 shrink-0 font-mono text-xs font-medium">
+                      {rec.ticker}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span title={rec.rationale}>{describeStructure(rec)}</span>
+                      {rec.exposureUsd !== null && rec.exposureUsd > 0 && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          on {formatCurrency(rec.exposureUsd)}
+                          {rec.pctNav !== null && ` (${(rec.pctNav * 100).toFixed(1)}% NAV)`}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => dismissRec(rec.id)}
+                      className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      title="Dismiss"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
             </div>
           ))}
         </div>
