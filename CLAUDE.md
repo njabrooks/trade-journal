@@ -29,7 +29,7 @@ Position triage + thesis triage (entire subsystem: pages, queues, engines, table
 ## Common Commands
 
 ```bash
-npm run dev        # Dev server. A PERSISTENT instance already runs on localhost:3001, exposed via Tailscale serve at https://njb-m2-mac-mini.tailcfacb3.ts.net:3000 — don't start a second copy to "show" the user something; it picks up source changes itself. For throwaway smoke tests use PORT=3111.
+npm run dev        # Dev server. A PERSISTENT instance (launchd: com.tradej, PORT=3001 pinned in its plist) serves localhost:3001, exposed via Tailscale serve at https://njb-m2-mac-mini.tailcfacb3.ts.net:3000 — don't start a second copy to "show" the user something; it picks up source changes itself. For throwaway smoke tests use PORT=3111. After `npm run build`, restart it (`launchctl kickstart -k gui/$UID/com.tradej`) — the build rewrites .next under the live dev server and corrupts its route cache (incident 2026-06-12: 500s with ENOENT app-paths-manifest).
 npm run build      # Production build (the gate for any structural change)
 npm run lint
 npm test           # vitest — golden tests on the money-math (src/lib/calculations etc.); run before touching accounting code
