@@ -2566,3 +2566,52 @@ export const volScanTickerSnapshots = pgTable(
 
 export type VolScanTickerSnapshot = typeof volScanTickerSnapshots.$inferSelect;
 export type NewVolScanTickerSnapshot = typeof volScanTickerSnapshots.$inferInsert;
+
+// ============================================================================
+// Advisor Recommendations (W7 / D11 — portfolio-aware options advisor)
+// ============================================================================
+
+export const advisorRecommendations = pgTable(
+  'advisor_recommendations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    // One advisor run shares a batch_id; a new run supersedes prior actives
+    batchId: uuid('batch_id').notNull(),
+    scenario: text('scenario').notNull(), // 'hedge' | 'income' | 'put_entry' | 'opportunistic'
+
+    ticker: text('ticker').notNull(),
+    underlyingId: uuid('underlying_id').references(() => underlyings.id, {
+      onDelete: 'set null',
+    }),
+
+    // Position context at generation time
+    exposureUsd: numeric('exposure_usd'),
+    pctNav: numeric('pct_nav'),
+
+    // The recommended structure: { type: 'put'|'put_spread'|..., legs: [{action, right, strike, expiry, mid, delta}] }
+    structure: jsonb('structure').notNull(),
+    // Cost/protection metrics: { costPct, annualizedCostPct, protectionLevel, maxLossPct, dte, ... }
+    metrics: jsonb('metrics').notNull(),
+    // Vol regime context from the latest scan: { regime, ivPercentile252, iv30, ivRv20Ratio }
+    volContext: jsonb('vol_context'),
+
+    // Claude's judgment — why this structure for this position
+    rationale: text('rationale').notNull(),
+
+    status: text('status').notNull().default('active'), // 'active' | 'dismissed' | 'acted' | 'expired' | 'superseded'
+    source: text('source').notNull().default('skill'), // 'skill' | 'automation'
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    // Recommendations go stale with the vol surface — default horizon ~1 week
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+  },
+  (table) => ({
+    statusIdx: index('idx_advisor_recs_status').on(table.status, table.createdAt),
+    batchIdx: index('idx_advisor_recs_batch').on(table.batchId),
+    tickerIdx: index('idx_advisor_recs_ticker').on(table.ticker),
+  })
+);
+
+export type AdvisorRecommendation = typeof advisorRecommendations.$inferSelect;
+export type NewAdvisorRecommendation = typeof advisorRecommendations.$inferInsert;

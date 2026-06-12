@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Activity } from "lucide-react";
-import { formatDateShort } from "@/lib/formatters";
+import { Activity, ShieldCheck, X } from "lucide-react";
+import { formatCurrency, formatDateShort } from "@/lib/formatters";
 
 interface ScannerSnapshotRow {
   id: string;
@@ -22,6 +22,34 @@ interface ScannerTodayData {
   snapshots: ScannerSnapshotRow[];
 }
 
+interface AdvisorLeg {
+  action: string;
+  strike: number;
+  expiry: string;
+  mid: number;
+}
+
+interface AdvisorRecommendation {
+  id: string;
+  scenario: string;
+  ticker: string;
+  exposureUsd: number | null;
+  pctNav: number | null;
+  structure: { type: string; legs: AdvisorLeg[] };
+  metrics: { costPct?: number; protectionLevel?: number; dte?: number };
+  rationale: string;
+}
+
+function describeStructure(rec: AdvisorRecommendation): string {
+  const legs = rec.structure?.legs ?? [];
+  const expiry = legs[0]?.expiry ? formatDateShort(legs[0].expiry) : "";
+  const strikes = legs.map((l) => l.strike).join("/");
+  const kind = rec.structure?.type === "put_spread" ? "put spread" : "put";
+  const cost =
+    rec.metrics?.costPct != null ? ` · ${(rec.metrics.costPct * 100).toFixed(1)}%` : "";
+  return `${strikes} ${kind} ${expiry}${cost}`;
+}
+
 const TOP_N = 5;
 
 /**
@@ -30,12 +58,26 @@ const TOP_N = 5;
  */
 export function ScannerSnapshot() {
   const [data, setData] = useState<ScannerTodayData | null>(null);
+  const [recs, setRecs] = useState<AdvisorRecommendation[]>([]);
 
   useEffect(() => {
     fetch("/api/vol-curve/scanner-today")
       .then((res) => (res.ok ? res.json() : null))
       .then(setData)
       .catch(() => {});
+    fetch("/api/advisor/recommendations")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => setRecs(d?.recommendations ?? []))
+      .catch(() => {});
+  }, []);
+
+  const dismissRec = useCallback(async (id: string) => {
+    setRecs((prev) => prev.filter((r) => r.id !== id));
+    await fetch("/api/advisor/recommendations", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status: "dismissed" }),
+    }).catch(() => {});
   }, []);
 
   if (!data?.run || data.snapshots.length === 0) return null;
@@ -60,6 +102,40 @@ export function ScannerSnapshot() {
           Full scan →
         </Link>
       </div>
+
+      {/* Advisor recommendations (D11 — hedge scenario first) */}
+      {recs.length > 0 && (
+        <div className="mb-4 space-y-2 border-b pb-4">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Advisor — {recs[0].scenario}
+            </span>
+          </div>
+          {recs.map((rec) => (
+            <div key={rec.id} className="flex items-start gap-2 text-sm">
+              <span className="w-14 shrink-0 font-mono text-xs font-medium">{rec.ticker}</span>
+              <div className="min-w-0 flex-1">
+                <span title={rec.rationale}>{describeStructure(rec)}</span>
+                {rec.exposureUsd !== null && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    on {formatCurrency(rec.exposureUsd)}
+                    {rec.pctNav !== null && ` (${(rec.pctNav * 100).toFixed(1)}% NAV)`}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => dismissRec(rec.id)}
+                className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title="Dismiss"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {cheapHits.length === 0 ? (
         <p className="text-sm text-muted-foreground">
