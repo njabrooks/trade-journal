@@ -126,6 +126,7 @@ On-device launchd: `com.trade-journal.options-scanner` Mon–Fri 14:50 Europe/Lo
 ## Working Conventions
 
 - **Scripts:** `.ts` not `.mts`; wrap body in `async function main()` (no top-level await); import DB from `scripts/lib/db.ts`
+- **Dependencies:** after ANY package.json/package-lock change, verify `npx -y npm@10 ci --dry-run` exits 0 — GH runners use npm 10, whose lock validation is stricter than local npm 11 (a desync here takes down every cron; incident 2026-06-12)
 - **Migrations:** update `src/db/schema.ts` first → SQL file in `/migrations/` → **run immediately yourself** via `/opt/homebrew/opt/postgresql@16/bin/psql "$DATABASE_URL_POOLER" -f migrations/...` (never ask the user to run it) → verify. Supabase MCP is unreliable for this; use psql.
 - **Shell DB access:** `source .env.local && psql "$DATABASE_URL_POOLER" -c "..."`
 - **Commits:** template at [docs/archive/commit_message_template.md](docs/archive/commit_message_template.md) — `<type>(<scope>): <subject>` + Problem/Solution/Impact/Files Changed sections
