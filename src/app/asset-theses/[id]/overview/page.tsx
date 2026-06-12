@@ -18,6 +18,8 @@ import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { LifecycleBadge } from '@/components/ui/lifecycle-badge';
 import { getRelationshipsForEntity } from '@/db/queries/entityRelationships';
 import { getIntelItemsForThesis } from '@/db/queries/intelItems';
+import { getAssetThesisPerformance } from '@/db/queries/thesisPerformance';
+import { ThesisPerformanceChart } from '@/components/performance/ThesisPerformanceChart';
 import { RelationshipPanel } from '@/components/ui/relationship-panel';
 import { IntelPanel } from '@/components/intelligence/IntelPanel';
 
@@ -36,7 +38,7 @@ export async function generateMetadata({ params }: OverviewPageProps): Promise<M
 export default async function AssetThesisOverviewPage({ params }: OverviewPageProps) {
   const { id } = await params;
 
-  const [thesis, claimsWithSources, allMacroTheses, allStrategies, articulation, validationPoints, relationships, intelItemsData] = await Promise.all([
+  const [thesis, claimsWithSources, allMacroTheses, allStrategies, articulation, validationPoints, relationships, intelItemsData, performance] = await Promise.all([
     getCachedAssetThesisById(id),
     getMainClaimsWithSourcesForAssetThesis(id),
     getMacroThesesList(),
@@ -45,6 +47,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
     getActiveValidationPoints(id, 'asset'),
     getRelationshipsForEntity('asset_thesis', id),
     getIntelItemsForThesis(id, 'asset', { limit: 20 }),
+    getAssetThesisPerformance(id),
   ]);
 
   if (!thesis) {
@@ -210,6 +213,17 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
           </div>
         )}
       </CollapsibleEntitySection>
+
+      {/* Performance Section (W5 — D8 attribution) */}
+      {performance.strategies.length > 0 && (
+        <CollapsibleEntitySection
+          title="Performance"
+          count={performance.strategies.length}
+          defaultOpen={true}
+        >
+          <ThesisPerformanceChart performance={performance} />
+        </CollapsibleEntitySection>
+      )}
 
       {/* --- LIFECYCLE-DRIVEN SECTION ORDER --- */}
 

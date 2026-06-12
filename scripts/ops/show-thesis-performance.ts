@@ -4,17 +4,45 @@
  * Usage:
  *   npx tsx scripts/ops/show-thesis-performance.ts --asset-thesis <uuid>
  *   npx tsx scripts/ops/show-thesis-performance.ts --macro-thesis <uuid>
+ *   npx tsx scripts/ops/show-thesis-performance.ts --overview
  */
 import '../lib/db'; // loads .env.local before any src import touches @/db
 import {
   getAssetThesisPerformance,
   getMacroThesisPerformance,
+  getPerformanceOverview,
 } from '../../src/db/queries/thesisPerformance';
 
 async function main() {
   const args = process.argv.slice(2);
   const assetIdx = args.indexOf('--asset-thesis');
   const macroIdx = args.indexOf('--macro-thesis');
+
+  if (args.includes('--overview')) {
+    const overview = await getPerformanceOverview();
+    console.log(JSON.stringify({
+      assetTheses: overview.assetTheses.map((t) => ({
+        ticker: t.ticker,
+        title: t.title,
+        status: t.status,
+        strategies: t.strategyCount,
+        cumulative: t.latestCumulative,
+        realized: t.latestRealized,
+        unrealized: t.latestUnrealized,
+        confidence: t.confidence,
+      })),
+      macroTheses: overview.macroTheses.map((t) => ({
+        title: t.title,
+        status: t.status,
+        assetTheses: t.assetThesisCount,
+        strategies: t.strategyCount,
+        cumulative: t.latestCumulative,
+        confidence: t.confidence,
+      })),
+      retrospectives: overview.retrospectives.length,
+    }, null, 2));
+    process.exit(0);
+  }
 
   if (assetIdx >= 0) {
     const perf = await getAssetThesisPerformance(args[assetIdx + 1]);

@@ -18,6 +18,7 @@ import {
   ScrollText,
   Calculator,
   Zap,
+  ChartLine,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const ENTITIES_NAV = [
 
 const PORTFOLIO_NAV = [
   { href: "/dashboard/portfolio", label: "Portfolio", icon: LayoutDashboard, id: "portfolio" },
+  { href: "/performance", label: "Performance", icon: ChartLine, id: "performance" },
   { href: "/dashboard/accounting", label: "NAV Tracker", icon: Calculator, id: "accounting" },
   { href: "/dashboard/accounting/reconciliation", label: "Reconciliation", icon: RefreshCw, id: "accounting-reconciliation" },
   { href: "/dashboard/accounting/transactions", label: "Transactions", icon: FileText, id: "accounting-transactions" },

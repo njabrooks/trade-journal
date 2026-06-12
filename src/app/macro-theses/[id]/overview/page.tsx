@@ -19,6 +19,9 @@ import { SynthesizeButton } from '@/components/thesis/SynthesizeButton';
 import { LifecycleBadge } from '@/components/ui/lifecycle-badge';
 import { getRelationshipsForEntity } from '@/db/queries/entityRelationships';
 import { getIntelItemsForThesis } from '@/db/queries/intelItems';
+import { getMacroThesisPerformance } from '@/db/queries/thesisPerformance';
+import { ThesisPerformanceChart } from '@/components/performance/ThesisPerformanceChart';
+import { MacroAssetBreakdownTable } from '@/components/performance/MacroAssetBreakdownTable';
 import { RelationshipPanel } from '@/components/ui/relationship-panel';
 import { IntelPanel } from '@/components/intelligence/IntelPanel';
 import { MacroThesisNotes } from '@/components/theses/MacroThesisNotes';
@@ -38,7 +41,7 @@ export async function generateMetadata({ params }: OverviewPageProps): Promise<M
 export default async function MacroThesisOverviewPage({ params }: OverviewPageProps) {
   const { id } = await params;
 
-  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, articulation, validationPoints, relationships, intelItemsData] = await Promise.all([
+  const [thesis, claimsWithSources, allAssetTheses, allStrategies, relatedAssetThesisLinks, articulation, validationPoints, relationships, intelItemsData, performance] = await Promise.all([
     getCachedMacroThesisById(id),
     getMainClaimsWithSourcesForThesis(id),
     getAssetThesesList(),
@@ -48,6 +51,7 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
     getActiveValidationPoints(id, 'macro'),
     getRelationshipsForEntity('macro_thesis', id),
     getIntelItemsForThesis(id, 'macro', { limit: 20 }),
+    getMacroThesisPerformance(id),
   ]);
 
   if (!thesis) {
@@ -148,6 +152,20 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
           </div>
         )}
       </CollapsibleEntitySection>
+
+      {/* Performance Section (W5 — D8 full-credit exposure view) */}
+      {performance.strategies.length > 0 && (
+        <CollapsibleEntitySection
+          title="Performance"
+          count={performance.strategies.length}
+          defaultOpen={true}
+        >
+          <div className="space-y-4">
+            <ThesisPerformanceChart performance={performance} exposureView />
+            <MacroAssetBreakdownTable assetTheses={performance.assetTheses} />
+          </div>
+        </CollapsibleEntitySection>
+      )}
 
       {/* --- LIFECYCLE-DRIVEN SECTION ORDER --- */}
 
