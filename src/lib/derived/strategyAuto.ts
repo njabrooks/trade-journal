@@ -7,7 +7,7 @@ import {
   underlyings,
 } from '@/db/schema';
 import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc, inArray } from 'drizzle-orm';
-import { populateStrategyEntryContext } from '@/lib/services/strategies';
+import { populateStrategyEntryContext, recomputeStrategyStatus } from '@/lib/services/strategies';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 
 type DateRangeOptions =
@@ -1062,7 +1062,55 @@ export async function autoLinkPositionsToStrategies(
     positionsLinked++;
   }
 
+  // Recompute status for ALL of this account's strategies — not just the ones
+  // touched above. A strategy whose positions vanished from the latest
+  // snapshot (close-out, expiry) appears in NO ingestion batch, so this sweep
+  // is the only automated path that flips it active → complete. (Bug found
+  // 2026-06: strategies stayed 'active' forever once their positions
+  // disappeared; status recompute only existed in legacy upload routes.)
+  await recomputeAccountStrategyStatuses(accountId);
+
   return { strategiesCreated, positionsLinked, skipped };
+}
+
+/** Derive status from positions for every recomputable strategy on the account. */
+async function recomputeAccountStrategyStatuses(accountId: string): Promise<void> {
+  const accountStrategies = await db
+    .select({ id: strategies.id, status: strategies.status, strategyKey: strategies.strategyKey })
+    .from(strategies)
+    .where(
+      and(
+        eq(strategies.accountId, accountId),
+        ne(strategies.status, 'rejected'),
+        ne(strategies.status, 'merged'),
+        isNull(strategies.closedAt)
+      )
+    );
+
+  for (const strategy of accountStrategies) {
+    try {
+      const newStatus = await recomputeStrategyStatus(strategy.id);
+      if (newStatus === strategy.status) continue;
+
+      await db
+        .update(strategies)
+        .set({ status: newStatus, updatedAt: new Date() })
+        .where(eq(strategies.id, strategy.id));
+
+      await logToJournal({
+        objectType: 'strategy',
+        objectId: strategy.id,
+        objectTitle: strategy.strategyKey,
+        actionType: 'status_change',
+        actionDescription: `Status recomputed from positions: ${strategy.status} → ${newStatus}`,
+        previousState: { status: strategy.status },
+        newState: { status: newStatus },
+        source: 'automation',
+      });
+    } catch (error) {
+      console.error(`Failed to recompute status for strategy ${strategy.strategyKey}:`, error);
+    }
+  }
 }
 
 export async function autoLinkTradesToStrategies(
