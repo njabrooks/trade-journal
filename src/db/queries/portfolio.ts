@@ -64,6 +64,17 @@ export interface OwnerNavTimeSeriesPoint {
   nav: number;
 }
 
+export interface AccountNavBreakdownRow {
+  accountId: string;
+  owner: string;
+  label: string | null;
+  brokerName: string;
+  brokerAccountId: string;
+  nav: number;
+  cashUsd: number;
+  snapshotDate: string;
+}
+
 export interface PortfolioDashboardData {
   navTrend: NavTrendPoint[];
   accountSnapshots: PortfolioTrendPoint[];
@@ -72,6 +83,7 @@ export interface PortfolioDashboardData {
   cashBreakdown: CashBreakdownRow[];
   ownerBreakdown: OwnerBreakdownRow[];
   ownerNavTimeSeries: OwnerNavTimeSeriesPoint[];
+  accountNavBreakdown: AccountNavBreakdownRow[];
 }
 
 export async function getPortfolioDashboardData(
@@ -192,9 +204,14 @@ export async function getPortfolioDashboardData(
     accountId: row.accountId,
   }));
 
-  // For single account, fetch owner from account record
+  // For single account, fetch owner + display fields
   const accountRecord = await db
-    .select({ owner: accounts.owner })
+    .select({
+      owner: accounts.owner,
+      label: accounts.label,
+      brokerName: accounts.brokerName,
+      brokerAccountId: accounts.brokerAccountId,
+    })
     .from(accounts)
     .where(eq(accounts.id, accountId))
     .limit(1);
@@ -209,6 +226,27 @@ export async function getPortfolioDashboardData(
     .filter((s) => s.navAtSnapshot !== null)
     .map((s) => ({ date: s.date, owner, nav: s.navAtSnapshot! }));
 
+  // Single-account NAV breakdown row
+  const cashUsdForAccount = cashBreakdown.reduce(
+    (sum, row) => sum + (row.balanceUsd ?? 0),
+    0
+  );
+  const accountNavBreakdown: AccountNavBreakdownRow[] =
+    latestAccountSnapshot?.navAtSnapshot && accountRecord[0]
+      ? [
+          {
+            accountId,
+            owner,
+            label: accountRecord[0].label,
+            brokerName: accountRecord[0].brokerName,
+            brokerAccountId: accountRecord[0].brokerAccountId,
+            nav: latestAccountSnapshot.navAtSnapshot,
+            cashUsd: cashUsdForAccount,
+            snapshotDate: latestAccountSnapshot.date,
+          },
+        ]
+      : [];
+
   return {
     navTrend,
     accountSnapshots,
@@ -217,6 +255,7 @@ export async function getPortfolioDashboardData(
     cashBreakdown,
     ownerBreakdown,
     ownerNavTimeSeries,
+    accountNavBreakdown,
   };
 }
 
@@ -237,6 +276,7 @@ export async function getPortfolioDashboardDataMultiAccount(
       cashBreakdown: [],
       ownerBreakdown: [],
       ownerNavTimeSeries: [],
+      accountNavBreakdown: [],
     };
   }
 
@@ -544,6 +584,70 @@ export async function getPortfolioDashboardDataMultiAccount(
     }
   }
 
+  // --- Per-account NAV breakdown (owner > account hierarchy) ---
+  // Latest snapshot per account joined with account display fields.
+  const accountNavRows = await db
+    .select({
+      accountId: portfolioSnapshots.accountId,
+      owner: accounts.owner,
+      label: accounts.label,
+      brokerName: accounts.brokerName,
+      brokerAccountId: accounts.brokerAccountId,
+      nav: sql<string>`COALESCE(${portfolioSnapshots.navAtSnapshotUsd}, ${portfolioSnapshots.navAtSnapshot})`,
+      snapshotDate: portfolioSnapshots.snapshotDate,
+    })
+    .from(portfolioSnapshots)
+    .innerJoin(accounts, eq(portfolioSnapshots.accountId, accounts.id))
+    .where(
+      and(
+        inArray(portfolioSnapshots.accountId, accountIds),
+        eq(portfolioSnapshots.level, "account"),
+        sql`${portfolioSnapshots.snapshotDate} = (
+          SELECT MAX(ps2.snapshot_date)
+          FROM portfolio_snapshots ps2
+          WHERE ps2.account_id = ${portfolioSnapshots.accountId}
+            AND ps2.level = 'account'
+        )`
+      )
+    );
+
+  // Sum cash per account at each account's latest cash snapshot date.
+  const cashPerAccountRows = await db
+    .select({
+      accountId: cashBalances.accountId,
+      cashUsd: sql<string>`SUM(CAST(${cashBalances.balanceUsd} AS NUMERIC))`,
+    })
+    .from(cashBalances)
+    .where(
+      and(
+        inArray(cashBalances.accountId, accountIds),
+        sql`${cashBalances.snapshotDate} = (
+          SELECT MAX(cb2.snapshot_date)
+          FROM cash_balances cb2
+          WHERE cb2.account_id = ${cashBalances.accountId}
+        )`
+      )
+    )
+    .groupBy(cashBalances.accountId);
+
+  const cashPerAccount = new Map<string, number>();
+  for (const row of cashPerAccountRows) {
+    cashPerAccount.set(row.accountId, parseFloat(row.cashUsd) || 0);
+  }
+
+  const accountNavBreakdown: AccountNavBreakdownRow[] = accountNavRows
+    .map((row) => ({
+      accountId: row.accountId,
+      owner: row.owner ?? "Unknown",
+      label: row.label,
+      brokerName: row.brokerName,
+      brokerAccountId: row.brokerAccountId,
+      nav: toNumber(row.nav) ?? 0,
+      cashUsd: cashPerAccount.get(row.accountId) ?? 0,
+      snapshotDate: row.snapshotDate,
+    }))
+    .sort((a, b) => b.nav - a.nav);
+
   return {
     navTrend,
     accountSnapshots,
@@ -552,6 +656,7 @@ export async function getPortfolioDashboardDataMultiAccount(
     cashBreakdown,
     ownerBreakdown,
     ownerNavTimeSeries,
+    accountNavBreakdown,
   };
 }
 

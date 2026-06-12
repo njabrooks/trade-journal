@@ -14,7 +14,9 @@ import {
 } from "@/components/portfolio/PortfolioUnifiedFilterBar";
 import { UnderlyingStrategyTable } from "@/components/portfolio/UnderlyingStrategyTable";
 import { UnlinkedPositionsTable } from "@/components/portfolio/UnlinkedPositionsTable";
+import { AccountNavTable } from "@/components/portfolio/AccountNavTable";
 import { PortfolioCharts } from "@/components/portfolio/PortfolioCharts";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateShort } from "@/lib/formatters";
 import type { Account } from "@/db/schema";
 import { formatCurrency } from "@/lib/formatters";
@@ -440,54 +442,63 @@ function PortfolioDashboardContent() {
         />
       )}
 
-      {/* Filter bar */}
+      {/* View tabs: Underlying exposure vs Account NAV */}
       {positionsData && (
-        <PortfolioUnifiedFilterBar
-          accounts={accounts}
-          selectedAccountIds={effectiveSelectedIds}
-          onAccountSelectionChange={handleAccountSelectionChange}
-          assetClassFilter={assetClassFilter}
-          onAssetClassFilterChange={setAssetClassFilter}
-          ownerFilter={ownerFilter}
-          onOwnerFilterChange={setOwnerFilter}
-          sourceFilter={sourceFilter}
-          onSourceFilterChange={setSourceFilter}
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-          positionCount={filteredCounts.positionCount}
-          strategyCount={filteredCounts.strategyCount}
-        />
-      )}
+        <Tabs defaultValue="underlying" className="gap-4">
+          <TabsList>
+            <TabsTrigger value="underlying">Underlying exposure</TabsTrigger>
+            <TabsTrigger value="account-nav">Account NAV</TabsTrigger>
+          </TabsList>
 
-      {/* Strategies table (grouped by underlying) */}
-      {(filteredData.strategies.length > 0 || filteredCashRows.length > 0) && (
-        <UnderlyingStrategyTable
-          strategies={filteredData.strategies}
-          accounts={accounts}
-          totalMarketValue={totals.marketValue}
-          cashRows={filteredCashRows}
-        />
-      )}
+          <TabsContent value="underlying" className="flex flex-col gap-4">
+            <PortfolioUnifiedFilterBar
+              accounts={accounts}
+              selectedAccountIds={effectiveSelectedIds}
+              onAccountSelectionChange={handleAccountSelectionChange}
+              assetClassFilter={assetClassFilter}
+              onAssetClassFilterChange={setAssetClassFilter}
+              ownerFilter={ownerFilter}
+              onOwnerFilterChange={setOwnerFilter}
+              sourceFilter={sourceFilter}
+              onSourceFilterChange={setSourceFilter}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              positionCount={filteredCounts.positionCount}
+              strategyCount={filteredCounts.strategyCount}
+            />
 
-      {/* Unlinked positions */}
-      {filteredData.unlinkedPositions.length > 0 && (
-        <UnlinkedPositionsTable
-          positions={filteredData.unlinkedPositions}
-          totalMarketValue={totals.marketValue}
-        />
-      )}
+            {(filteredData.strategies.length > 0 || filteredCashRows.length > 0) && (
+              <UnderlyingStrategyTable
+                strategies={filteredData.strategies}
+                accounts={accounts}
+                totalMarketValue={totals.marketValue}
+                cashRows={filteredCashRows}
+              />
+            )}
 
-      {/* Empty state */}
-      {positionsData &&
-        filteredData.strategies.length === 0 &&
-        filteredData.unlinkedPositions.length === 0 &&
-        filteredCashRows.length === 0 && (
-          <div className="rounded-2xl border border-dashed bg-card p-10 text-center text-muted-foreground">
-            {searchQuery || assetClassFilter !== "all"
-              ? "No positions match the current filters."
-              : "No open positions found. Run position ingestion to populate data."}
-          </div>
-        )}
+            {filteredData.unlinkedPositions.length > 0 && (
+              <UnlinkedPositionsTable
+                positions={filteredData.unlinkedPositions}
+                totalMarketValue={totals.marketValue}
+              />
+            )}
+
+            {filteredData.strategies.length === 0 &&
+              filteredData.unlinkedPositions.length === 0 &&
+              filteredCashRows.length === 0 && (
+                <div className="rounded-2xl border border-dashed bg-card p-10 text-center text-muted-foreground">
+                  {searchQuery || assetClassFilter !== "all"
+                    ? "No positions match the current filters."
+                    : "No open positions found. Run position ingestion to populate data."}
+                </div>
+              )}
+          </TabsContent>
+
+          <TabsContent value="account-nav">
+            <AccountNavTable rows={dashboardData?.accountNavBreakdown ?? []} />
+          </TabsContent>
+        </Tabs>
+      )}
     </DashboardShell>
   );
 }
