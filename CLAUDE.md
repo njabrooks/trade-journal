@@ -29,7 +29,7 @@ Position triage + thesis triage (entire subsystem: pages, queues, engines, table
 ## Common Commands
 
 ```bash
-npm run dev        # Dev server (port 3000 — note: a squatter process may push it to 3002)
+npm run dev        # Dev server. A PERSISTENT instance already runs on localhost:3001, exposed via Tailscale serve at https://njb-m2-mac-mini.tailcfacb3.ts.net:3000 — don't start a second copy to "show" the user something; it picks up source changes itself. For throwaway smoke tests use PORT=3111.
 npm run build      # Production build (the gate for any structural change)
 npm run lint
 npm test           # vitest — golden tests on the money-math (src/lib/calculations etc.); run before touching accounting code
