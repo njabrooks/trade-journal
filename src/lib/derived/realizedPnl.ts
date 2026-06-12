@@ -1,6 +1,6 @@
 import { db } from '@/db';
 import { trades, positions } from '@/db/schema';
-import { and, eq, lte, sql } from 'drizzle-orm';
+import { and, eq, inArray, lte, sql } from 'drizzle-orm';
 
 /**
  * Per-strategy realized PnL engine (W4 — docs/v2/05-w4-realized-pnl-design.md).
@@ -12,8 +12,15 @@ import { and, eq, lte, sql } from 'drizzle-orm';
  * strategy-level attribution wants average-cost, not lot matching.
  *
  * Source semantics (verified against live data, see design doc):
- * - IBKR rows (OPT/STK/FUT/FOP/FSFOP/CASH…): net_amount is signed cash flow,
+ * - IBKR rows (OPT/STK/FOP/FSFOP/CASH…): net_amount is signed cash flow,
  *   fee-net, multiplier-inclusive. Quantity is signed (sells negative).
+ * - FUTURES (FUT) are the exception: IBKR margins them daily, so trade-row
+ *   net_amount only carries the trade-day variation vs that day's settlement
+ *   (verified 2026-06 against ESM6: short round trip net_amounts summed to
+ *   +1.5K while the true P&L was −50.5K). Realized P&L must instead come from
+ *   price-based synthetic flows: −signedQty × price × multiplier − fees.
+ *   The multiplier comes from the positions table; a FUT row without one is
+ *   skipped (flags partial_history) rather than priced wrongly.
  * - Crypto rows (CRYPTO/PERP): net_amount is gross − fees regardless of side,
  *   always positive; quantity is positive with side carrying direction. True
  *   cash flow must be reconstructed: SELL → gross − fees, BUY → −(gross + fees).
@@ -21,6 +28,10 @@ import { and, eq, lte, sql } from 'drizzle-orm';
  */
 
 const CRYPTO_CLASSES = new Set(['CRYPTO', 'PERP']);
+/** Futures-style margined classes where net_amount ≠ economics. FOP/FSFOP stay
+ * on net_amount (premium-style); revisit if a margined options product shows
+ * the same divergence. */
+const MARGINED_CLASSES = new Set(['FUT']);
 
 export interface TradeForRealizedPnl {
   symbol: string;
@@ -34,6 +45,8 @@ export interface TradeForRealizedPnl {
   fees: string | number | null;
   fxRateToBase: string | number | null;
   tradeDate: Date | string;
+  /** contract multiplier — required for FUT rows (sourced from positions) */
+  multiplier?: string | number | null;
 }
 
 export interface NormalizedFlow {
@@ -81,6 +94,22 @@ export function normalizeTradeFlow(t: TradeForRealizedPnl): NormalizedFlow | nul
       date: toDateStr(t.tradeDate),
       signedQty: isSell ? -qty : qty,
       cashFlowUsd: cashFlow * fx,
+    };
+  }
+
+  if (MARGINED_CLASSES.has((t.assetClass ?? '').toUpperCase())) {
+    // Futures: net_amount only carries trade-day variation vs settlement.
+    // Synthesize the economic flow from price × multiplier instead.
+    const price = num(t.price);
+    const mult = num(t.multiplier);
+    if (isNaN(price) || isNaN(mult) || mult <= 0) return null;
+    const signedQty = isSell && qtyRaw > 0 ? -qtyRaw : qtyRaw;
+    const fees = Math.abs(num(t.fees)) || 0;
+    return {
+      symbol: t.symbol,
+      date: toDateStr(t.tradeDate),
+      signedQty,
+      cashFlowUsd: (-signedQty * price * mult - fees) * fx,
     };
   }
 
@@ -230,6 +259,31 @@ export interface StrategyRealizedResult {
 }
 
 /**
+ * Contract multipliers for futures symbols, sourced from position rows
+ * (trades don't carry one). Account-scoped; latest non-null value wins.
+ */
+export async function fetchFuturesMultipliers(
+  accountId: string,
+  symbols: string[]
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const unique = [...new Set(symbols)];
+  if (unique.length === 0) return out;
+  const rows = await db
+    .select({
+      symbol: positions.symbol,
+      multiplier: sql<string | null>`MAX(${positions.multiplier})`,
+    })
+    .from(positions)
+    .where(and(eq(positions.accountId, accountId), inArray(positions.symbol, unique)))
+    .groupBy(positions.symbol);
+  for (const row of rows) {
+    if (row.multiplier !== null) out.set(row.symbol, row.multiplier);
+  }
+  return out;
+}
+
+/**
  * DB wrapper: realized PnL for (account, strategy) through end of snapshotDate,
  * with coverage assessed against that date's positions.
  */
@@ -263,11 +317,17 @@ export async function computeStrategyRealizedToDate(
     return { realizedPnlToDate: 0, confidence: 'no_trades' };
   }
 
+  const multipliers = await fetchFuturesMultipliers(
+    accountId,
+    tradeRows.filter((r) => MARGINED_CLASSES.has((r.assetClass ?? '').toUpperCase())).map((r) => r.symbol)
+  );
+
   const series = computeRealizedSeries(
     tradeRows.map((r) => ({
       ...r,
       quantity: r.quantity ?? '0',
       tradeDate: r.tradeDate ?? snapshotDate,
+      multiplier: multipliers.get(r.symbol) ?? null,
     }))
   );
 

@@ -179,6 +179,67 @@ describe('computeRealizedSeries', () => {
   });
 });
 
+describe('futures flows (FUT — margined, net_amount is NOT economics)', () => {
+  // Live-data case (ESM6 short, 2026-03→04): net_amount per trade row only
+  // carries trade-day variation vs settlement; summing those gave +1,503.50
+  // while the true round-trip P&L was ≈ −50,534. Price×multiplier flows must
+  // be used instead.
+  const fut = (over: Partial<TradeForRealizedPnl>): TradeForRealizedPnl => ({
+    symbol: 'ESM6',
+    assetClass: 'FUT',
+    side: 'SELL',
+    quantity: -1,
+    price: 6663.25,
+    netAmount: 160.25, // trade-day variation — must be IGNORED
+    fees: -2.25,
+    fxRateToBase: 1,
+    tradeDate: '2026-03-19',
+    multiplier: 50,
+    ...over,
+  });
+
+  it('normalizes FUT from price × multiplier, not net_amount', () => {
+    const f = normalizeTradeFlow(fut({}));
+    expect(f).not.toBeNull();
+    // SELL 1 @ 6663.25 × 50 → +333,162.50 cash in, minus 2.25 fees
+    expect(f!.signedQty).toBe(-1);
+    expect(f!.cashFlowUsd).toBeCloseTo(333160.25, 2);
+  });
+
+  it('ESM6 short round trip realizes the true loss (regression for the live bug)', () => {
+    const series = computeRealizedSeries([
+      fut({}), // SELL 1 @ 6663.25
+      fut({ quantity: -1, price: 6515.25, netAmount: -5352.25, tradeDate: '2026-04-02' }),
+      fut({
+        side: 'BUY',
+        quantity: 2,
+        price: 7094.5,
+        netAmount: 6695.5,
+        fees: -4.5,
+        tradeDate: '2026-04-17',
+      }),
+    ]);
+    // (6663.25 + 6515.25 − 2×7094.5) × 50 − 9 fees = −50,534.00
+    expect(series.totalRealized).toBeCloseTo(-50534.0, 2);
+    expect(series.netQtyBySymbol.get('ESM6')).toBe(0);
+    expect(series.skippedTrades).toBe(0);
+  });
+
+  it('skips FUT rows without a multiplier (partial view beats a wrong number)', () => {
+    const series = computeRealizedSeries([fut({ multiplier: null })]);
+    expect(series.skippedTrades).toBe(1);
+    expect(series.totalRealized).toBe(0);
+  });
+
+  it('FOP stays on net_amount (premium-style until proven otherwise)', () => {
+    const f = normalizeTradeFlow(
+      fut({ assetClass: 'FOP', symbol: 'OZWN6 C0710', netAmount: -125, multiplier: null })
+    );
+    expect(f).not.toBeNull();
+    expect(f!.cashFlowUsd).toBeCloseTo(-125, 2);
+  });
+});
+
 describe('assessCoverage', () => {
   it('full when net traded quantity matches held positions', () => {
     const c = assessCoverage(new Map([['AAA', 10]]), [{ symbol: 'AAA', quantity: 10 }], 0);

@@ -3,6 +3,7 @@ import {
   positions,
   portfolioSnapshots,
   strategyMetricsSnapshots,
+  trades,
   NewStrategyMetricsSnapshot,
 } from '@/db/schema';
 import { and, eq, sql, isNotNull, gte, lte } from 'drizzle-orm';
@@ -241,6 +242,97 @@ export async function computeStrategyMetricsForDateRange(
     count++;
   }
 
+  // A strategy whose positions vanished produces no dated rows above, so the
+  // close-day realized PnL would never land anywhere and the series would end
+  // frozen on the last unrealized mark. Write the terminal snapshot.
+  count += await writeClosingSnapshotIfNeeded(accountId, strategyId);
+
   return count;
+}
+
+/**
+ * If the strategy's positions have vanished from the account's snapshots,
+ * write one terminal metrics row on the close date: unrealized 0, realized
+ * through that date, cumulative = realized. Idempotent (keyed upsert).
+ * Returns 1 if a closing row was written, 0 otherwise.
+ */
+export async function writeClosingSnapshotIfNeeded(
+  accountId: string,
+  strategyId: string
+): Promise<number> {
+  // Strategy's last day with open positions
+  const lastPosResult = await db
+    .select({ last: sql<string | null>`MAX(${positions.snapshotDate})` })
+    .from(positions)
+    .where(
+      and(
+        eq(positions.accountId, accountId),
+        eq(positions.strategyId, strategyId),
+        sql`${positions.quantity} != 0`
+      )
+    );
+  const lastPosDate = lastPosResult[0]?.last;
+  if (!lastPosDate) return 0; // never had positions
+
+  // Does the account's position data extend past that day? If not, we can't
+  // distinguish "closed" from "not ingested yet".
+  const nextAcctSnapResult = await db
+    .select({ next: sql<string | null>`MIN(${positions.snapshotDate})` })
+    .from(positions)
+    .where(
+      and(
+        eq(positions.accountId, accountId),
+        sql`${positions.snapshotDate} > ${lastPosDate}`,
+        sql`${positions.quantity} != 0`
+      )
+    );
+  const nextAcctSnapDate = nextAcctSnapResult[0]?.next;
+  if (!nextAcctSnapDate) return 0; // strategy still open (or account stale)
+
+  // Close date: the closing trade's date when we have it (it post-dates the
+  // last position snapshot), else the account's next snapshot day.
+  const lastTradeResult = await db
+    .select({ last: sql<string | null>`MAX(${trades.tradeDate}::date)::text` })
+    .from(trades)
+    .where(and(eq(trades.accountId, accountId), eq(trades.strategyId, strategyId)));
+  const lastTradeDate = lastTradeResult[0]?.last;
+  const closeDate =
+    lastTradeDate && lastTradeDate > lastPosDate ? lastTradeDate : nextAcctSnapDate;
+
+  // Already terminal? (idempotency — also covers re-runs after reopen)
+  const existing = await db
+    .select({ id: strategyMetricsSnapshots.id })
+    .from(strategyMetricsSnapshots)
+    .where(
+      and(
+        eq(strategyMetricsSnapshots.accountId, accountId),
+        eq(strategyMetricsSnapshots.strategyId, strategyId),
+        eq(strategyMetricsSnapshots.snapshotDate, closeDate),
+        eq(strategyMetricsSnapshots.totalUnrealizedPnl, '0')
+      )
+    )
+    .limit(1);
+  if (existing.length > 0) return 0;
+
+  const realized = await computeStrategyRealizedToDate(accountId, strategyId, closeDate);
+  const realizedPnlToDate =
+    realized.confidence === 'no_trades' ? null : realized.realizedPnlToDate.toFixed(2);
+
+  await upsertStrategyMetrics({
+    accountId,
+    strategyId,
+    snapshotDate: closeDate,
+    totalAbsNotional: '0',
+    totalUnrealizedPnl: '0',
+    navAtSnapshot: null,
+    pctNavAbsNotional: null,
+    numOpenPositions: null,
+    minDte: null,
+    maxDte: null,
+    realizedPnlToDate,
+    cumulativePnl: realizedPnlToDate,
+    realizedConfidence: realized.confidence,
+  });
+  return 1;
 }
 

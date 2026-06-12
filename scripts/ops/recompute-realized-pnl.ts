@@ -21,8 +21,10 @@ import { and, eq, sql } from 'drizzle-orm';
 import {
   computeRealizedSeries,
   assessCoverage,
+  fetchFuturesMultipliers,
   type TradeForRealizedPnl,
 } from '../../src/lib/derived/realizedPnl';
+import { writeClosingSnapshotIfNeeded } from '../../src/lib/derived/strategyMetrics';
 
 const { strategyMetricsSnapshots, trades, positions } = schema;
 
@@ -62,6 +64,12 @@ async function main() {
         and(eq(trades.accountId, scope.accountId), eq(trades.strategyId, scope.strategyId))
       );
 
+    // Terminal row first: a strategy whose positions vanished needs its
+    // close-date snapshot (unrealized 0, realized lands) before the walk below.
+    if (!dryRun) {
+      await writeClosingSnapshotIfNeeded(scope.accountId, scope.strategyId);
+    }
+
     const snapshotRows = await db
       .select({
         id: strategyMetricsSnapshots.id,
@@ -83,11 +91,16 @@ async function main() {
     const cumulativeByDate = new Map<string, number>();
 
     if (tradeRows.length > 0) {
+      const multipliers = await fetchFuturesMultipliers(
+        scope.accountId,
+        tradeRows.filter((r) => (r.assetClass ?? '').toUpperCase() === 'FUT').map((r) => r.symbol)
+      );
       const series = computeRealizedSeries(
         tradeRows.map((r): TradeForRealizedPnl => ({
           ...r,
           quantity: r.quantity ?? '0',
           tradeDate: r.tradeDate ?? '1970-01-01',
+          multiplier: multipliers.get(r.symbol) ?? null,
         }))
       );
 
