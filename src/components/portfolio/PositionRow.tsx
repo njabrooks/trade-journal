@@ -9,6 +9,7 @@ import {
 } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { PortfolioPositionRow } from "@/db/queries/portfolio";
+import type { OverlaidPositionRow } from "@/lib/livePricingOverlay";
 
 interface PositionRowProps {
   position: PortfolioPositionRow;
@@ -53,7 +54,15 @@ export function PositionRow({ position, isNested = false }: PositionRowProps) {
         {costBasis != null ? formatCurrency(costBasis) : "—"}
       </td>
       <td className="py-2 pr-3 text-right tabular-nums text-muted-foreground">
-        {position.spot != null ? formatCurrency(position.spot, position.currency ?? 'USD', 2) : "—"}
+        <span className="inline-flex items-center gap-1.5">
+          {(position as OverlaidPositionRow).livePriced && (
+            <span
+              className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+              title={`Live price (${(position as OverlaidPositionRow).liveSource})`}
+            />
+          )}
+          {position.spot != null ? formatCurrency(position.spot, position.currency ?? 'USD', 2) : "—"}
+        </span>
       </td>
       <td className="py-2 pr-3 text-right tabular-nums font-medium text-foreground">
         {formatCurrency(Math.abs(position.marketValueUsd ?? position.absNotional ?? 0))}

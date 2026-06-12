@@ -15,17 +15,26 @@ import {
 import { UnderlyingStrategyTable } from "@/components/portfolio/UnderlyingStrategyTable";
 import { UnlinkedPositionsTable } from "@/components/portfolio/UnlinkedPositionsTable";
 import { AccountNavTable } from "@/components/portfolio/AccountNavTable";
+import { StrategyLensTable } from "@/components/portfolio/StrategyLensTable";
+import { PnlLensTable } from "@/components/portfolio/PnlLensTable";
+import { DecisionStrip } from "@/components/portfolio/DecisionStrip";
+import { PerformanceSnapshot } from "@/components/portfolio/PerformanceSnapshot";
+import { ScannerSnapshot } from "@/components/portfolio/ScannerSnapshot";
 import { PortfolioCharts } from "@/components/portfolio/PortfolioCharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDateShort } from "@/lib/formatters";
 import type { Account } from "@/db/schema";
-import { formatCurrency } from "@/lib/formatters";
 import type {
   PortfolioDashboardData,
   PortfolioPositionsData,
   PortfolioPositionRow,
   PortfolioStrategyRow,
 } from "@/db/queries/portfolio";
+import {
+  applyLiveOverlay,
+  collectOverlayTickers,
+} from "@/lib/livePricingOverlay";
+import type { LiveQuote } from "@/lib/services/livePrices";
 
 export default function PortfolioDashboardPage() {
   return (
@@ -53,6 +62,10 @@ function PortfolioDashboardContent() {
   const [positionsData, setPositionsData] = useState<PortfolioPositionsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // D14 live-pricing overlay: quotes fetched after the base snapshot load
+  const [liveQuotes, setLiveQuotes] = useState<Record<string, LiveQuote> | null>(null);
+  const [liveFetchedAt, setLiveFetchedAt] = useState<number | null>(null);
 
   // Filter state
   const [assetClassFilter, setAssetClassFilter] = useState<AssetClassFilter>("all");
@@ -139,6 +152,43 @@ function PortfolioDashboardContent() {
     fetchData();
   }, [accounts, effectiveSelectedIds, accountsLoaded, selectedAccountIdsFromUrl]);
 
+  // Fetch live prices once the base positions snapshot is in (D14 overlay).
+  // Failures leave the snapshot view untouched — overlay is best-effort.
+  useEffect(() => {
+    if (!positionsData) {
+      setLiveQuotes(null);
+      setLiveFetchedAt(null);
+      return;
+    }
+    const { stk, crypto } = collectOverlayTickers(positionsData);
+    if (stk.length === 0 && crypto.length === 0) return;
+
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (stk.length > 0) params.set("stk", stk.join(","));
+    if (crypto.length > 0) params.set("crypto", crypto.join(","));
+
+    fetch(`/api/dashboard/portfolio/live-prices?${params.toString()}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.quotes) return;
+        setLiveQuotes(data.quotes);
+        setLiveFetchedAt(data.fetchedAt ?? Date.now());
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [positionsData]);
+
+  // Apply the overlay before any downstream aggregation
+  const overlay = useMemo(() => {
+    if (!positionsData || !liveQuotes) return null;
+    return applyLiveOverlay(positionsData, liveQuotes);
+  }, [positionsData, liveQuotes]);
+  const effectivePositionsData = overlay?.data ?? positionsData;
+
   // Update URL when selection changes - but not on initial load
   const handleAccountSelectionChange = useCallback(
     (newSelection: string[]) => {
@@ -200,9 +250,9 @@ function PortfolioDashboardContent() {
     accounts,
   ]);
 
-  // Apply filters to positions data
+  // Apply filters to positions data (live-overlaid when quotes are in)
   const filteredData = useMemo(() => {
-    if (!positionsData) return { strategies: [], unlinkedPositions: [] };
+    if (!effectivePositionsData) return { strategies: [], unlinkedPositions: [] };
 
     const filterPositions = (positions: PortfolioPositionRow[]) => {
       let filtered = positions;
@@ -237,7 +287,7 @@ function PortfolioDashboardContent() {
 
     // Filter strategies - keep strategy if any position matches
     const filteredStrategies: PortfolioStrategyRow[] = [];
-    for (const strategy of positionsData.strategies) {
+    for (const strategy of effectivePositionsData.strategies) {
       // Check if strategy label matches search
       const strategyMatchesSearch = searchQuery
         ? strategy.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -265,18 +315,18 @@ function PortfolioDashboardContent() {
 
     return {
       strategies: filteredStrategies.filter((s) => s.positions.length > 0),
-      unlinkedPositions: filterPositions(positionsData.unlinkedPositions),
+      unlinkedPositions: filterPositions(effectivePositionsData.unlinkedPositions),
     };
-  }, [positionsData, assetClassFilter, searchQuery]);
+  }, [effectivePositionsData, assetClassFilter, searchQuery]);
 
   // Compute totals from tradeable positions only (excludes cash and REAL_ESTATE)
   const totals = useMemo(() => {
-    if (!positionsData)
+    if (!effectivePositionsData)
       return { marketValue: 0, positionCount: 0, underlyingCount: 0 };
 
     const allPositions = [
-      ...positionsData.strategies.flatMap((s) => s.positions),
-      ...positionsData.unlinkedPositions,
+      ...effectivePositionsData.strategies.flatMap((s) => s.positions),
+      ...effectivePositionsData.unlinkedPositions,
     ];
 
     let marketValue = 0;
@@ -293,16 +343,16 @@ function PortfolioDashboardContent() {
       positionCount: allPositions.length,
       underlyingCount: underlyingIds.size,
     };
-  }, [positionsData]);
+  }, [effectivePositionsData]);
 
   // Compute exposure breakdown by asset class from positions
   const exposureBreakdown = useMemo(() => {
-    if (!positionsData)
+    if (!effectivePositionsData)
       return { equities: 0, options: 0, cryptoSpot: 0, perpetuals: 0, cash: 0 };
 
     const allPositions = [
-      ...positionsData.strategies.flatMap((s) => s.positions),
-      ...positionsData.unlinkedPositions,
+      ...effectivePositionsData.strategies.flatMap((s) => s.positions),
+      ...effectivePositionsData.unlinkedPositions,
     ];
 
     let equities = 0;
@@ -318,10 +368,10 @@ function PortfolioDashboardContent() {
       else if (pos.assetClass === "PERP") perpetuals += notional;
     }
 
-    const cash = positionsData.totalCashUsd ?? 0;
+    const cash = effectivePositionsData.totalCashUsd ?? 0;
 
     return { equities, options, cryptoSpot, perpetuals, cash };
-  }, [positionsData]);
+  }, [effectivePositionsData]);
 
   // Determine which cash rows to show based on filters
   const filteredCashRows = useMemo(() => {
@@ -400,11 +450,23 @@ function PortfolioDashboardContent() {
 
   return (
     <DashboardShell activeNav="portfolio" title="Portfolio" subtitle={subtitle}>
+      {/* Needs-decision strip — renders nothing until a review job emits items */}
+      <DecisionStrip />
+
       {/* Top info bar */}
       <div className="flex flex-wrap items-center gap-3">
         {positionsData && positionsData.snapshotDate && (
           <span className="rounded-full border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
-            {formatDateShort(positionsData.snapshotDate)}
+            Snapshot {formatDateShort(positionsData.snapshotDate)}
+          </span>
+        )}
+        {overlay && overlay.status.liveUnderlyings > 0 && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Live pricing · {overlay.status.liveUnderlyings}/
+            {overlay.status.overlayableUnderlyings} underlyings
+            {liveFetchedAt &&
+              ` · ${new Date(liveFetchedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
           </span>
         )}
         {isLoading && (
@@ -432,7 +494,18 @@ function PortfolioDashboardContent() {
         }
         positionCount={totals.positionCount}
         snapshotDate={positionsData?.snapshotDate ?? null}
+        liveLabel={
+          overlay && overlay.status.liveUnderlyings > 0 && liveFetchedAt
+            ? `Live (${overlay.status.liveUnderlyings}/${overlay.status.overlayableUnderlyings} underlyings) · stale legs as of ${positionsData?.snapshotDate ?? "—"}`
+            : null
+        }
       />
+
+      {/* Morning-screen modules: performance snapshot + scanner top hits */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <PerformanceSnapshot />
+        <ScannerSnapshot />
+      </section>
 
       {/* Charts */}
       {dashboardData && (
@@ -442,12 +515,14 @@ function PortfolioDashboardContent() {
         />
       )}
 
-      {/* View tabs: Underlying exposure vs Account NAV */}
+      {/* D12 lens switcher: underlying / strategy / account / unrealized P&L */}
       {positionsData && (
         <Tabs defaultValue="underlying" className="gap-4">
           <TabsList>
             <TabsTrigger value="underlying">Underlying exposure</TabsTrigger>
+            <TabsTrigger value="strategy">Strategy</TabsTrigger>
             <TabsTrigger value="account-nav">Account NAV</TabsTrigger>
+            <TabsTrigger value="pnl">Unrealized P&amp;L</TabsTrigger>
           </TabsList>
 
           <TabsContent value="underlying" className="flex flex-col gap-4">
@@ -494,8 +569,18 @@ function PortfolioDashboardContent() {
               )}
           </TabsContent>
 
+          <TabsContent value="strategy">
+            {effectivePositionsData && (
+              <StrategyLensTable data={effectivePositionsData} />
+            )}
+          </TabsContent>
+
           <TabsContent value="account-nav">
             <AccountNavTable rows={dashboardData?.accountNavBreakdown ?? []} />
+          </TabsContent>
+
+          <TabsContent value="pnl">
+            {effectivePositionsData && <PnlLensTable data={effectivePositionsData} />}
           </TabsContent>
         </Tabs>
       )}

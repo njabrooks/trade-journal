@@ -25,6 +25,8 @@ interface PortfolioMetricsRowProps {
   leverageRatio: number | null;
   positionCount: number;
   snapshotDate: string | null;
+  /** D14: replaces the as-of subtitle when the live overlay is applied */
+  liveLabel?: string | null;
 }
 
 export function PortfolioMetricsRow({
@@ -34,13 +36,14 @@ export function PortfolioMetricsRow({
   leverageRatio,
   positionCount,
   snapshotDate,
+  liveLabel,
 }: PortfolioMetricsRowProps) {
   return (
     <section className="grid gap-4 sm:grid-cols-5">
       <MetricCard
         label="Market Value"
         value={formatCurrency(totalMarketValue)}
-        subtitle={snapshotDate ? `As of ${snapshotDate}` : undefined}
+        subtitle={liveLabel ?? (snapshotDate ? `As of ${snapshotDate}` : undefined)}
       />
       <MetricCard
         label="Cash"
