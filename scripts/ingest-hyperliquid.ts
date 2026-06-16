@@ -21,6 +21,8 @@ import {
   fetchAllMids,
   fetchSpotMeta,
   buildSpotMetaMap,
+  fetchPortfolio,
+  latestAccountValue,
 } from '../src/lib/ingestion/hyperliquid/api.js';
 import { getHLSpotCanonicalTicker } from '../src/lib/ingestion/crypto/pairNormalization.js';
 
@@ -39,7 +41,7 @@ import { computePortfolioSnapshotsForDateRange } from '../src/lib/derived/portfo
 import { computeStrategyMetricsForDateRange } from '../src/lib/derived/strategyMetrics.js';
 import { evaluateStrategySignalsForDate } from '../src/lib/derived/signalEvaluation.js';
 
-const { trades, positions, underlyings, ingestionCursors, strategies } = schema;
+const { trades, positions, underlyings, ingestionCursors, strategies, navSnapshots } = schema;
 
 // ── Cursor helpers (inline to avoid @/ import in scripts) ──────────
 
@@ -228,23 +230,44 @@ async function main() {
       );
       console.log(`[HL] Spot positions: ${spotPositions.length} active`);
 
-      // ── Step 4a: Store NAV snapshot + cash balances ───────────
+      // ── Step 4a: Store authoritative NAV + cash balances ──────
       {
-        const accountValue = perpState.marginSummary.accountValue;
-        const withdrawable = perpState.withdrawable;
-        // Compute total cash: withdrawable + stablecoin spot balances
+        // Cash = spot stablecoin balances ONLY. HyperLiquid `withdrawable` is free margin
+        // derived from the unified USDC collateral (which already embeds perp uPnL); counting
+        // it as cash double-counts perp equity, so it is excluded (see extractHLCashBalances).
         const cashInputs = extractHLCashBalances(
           spotState.balances,
-          withdrawable,
           accountId,
           spotMeta,
           snapshotDate
         );
         const totalCashUsd = cashInputs.reduce((sum, c) => sum + (c.balanceUsd ? parseFloat(c.balanceUsd) : 0), 0);
 
-        // NAV is derived during portfolio computation as positions + cash
-        // (marginSummary.accountValue only covers perp margin equity, not spot)
-        console.log(`[HL] Perp margin equity: $${parseFloat(accountValue).toFixed(0)} (cash: $${totalCashUsd.toFixed(0)})`);
+        // Authoritative NAV. HyperLiquid is unified cross-margin: perp uPnL is already embedded
+        // in the spot USDC balance, so reconstructing NAV as (positions + cash) double-counts
+        // perp gains. Instead, mirror the IBKR authoritative-NAV path — write the broker's own
+        // account value (spot incl. unified perp equity + staking, the "Account Value" HL shows)
+        // to nav_snapshots, so computeAccountLevelSnapshot uses it directly rather than deriving.
+        // Verified against HL's reported Account Value to the dollar.
+        const accountValue = latestAccountValue(await fetchPortfolio(walletAddress));
+        if (accountValue > 0) {
+          await db
+            .insert(navSnapshots)
+            .values({
+              accountId,
+              reportDate: snapshotDate,
+              currency: 'USD',
+              total: accountValue.toString(),
+              cash: totalCashUsd.toString(),
+            })
+            .onConflictDoUpdate({
+              target: [navSnapshots.accountId, navSnapshots.reportDate],
+              set: { total: accountValue.toString(), cash: totalCashUsd.toString() },
+            });
+          console.log(`[HL] Authoritative NAV: $${accountValue.toFixed(0)} (cash: $${totalCashUsd.toFixed(0)})`);
+        } else {
+          console.warn(`[HL] portfolio endpoint returned no account value — nav_snapshots NOT written (would fall back to derived NAV)`);
+        }
 
         // Upsert cash balances
         const cashInserted = await upsertCashBalances(cashInputs);

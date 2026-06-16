@@ -107,28 +107,21 @@ export function normalizeHLSpotPositions(
 
 /**
  * Extract stablecoin balances from HyperLiquid spot state as cash.
+ *
+ * NOTE: HyperLiquid `withdrawable` is intentionally NOT included here. Under HL's
+ * unified cross-margin, `withdrawable` is free margin DERIVED from the USDC collateral
+ * (which already embeds perp unrealized PnL) — it is not a separate asset. Counting it
+ * as a cash row double-counts perp equity (it inflated NAV alongside the perp-uPnL term
+ * in the derived NAV path). Cash = spot stablecoin balances only; NAV is taken from the
+ * broker's authoritative account value written to nav_snapshots during ingestion.
  */
 export function extractHLCashBalances(
   balances: HLSpotBalance[],
-  withdrawable: string,
   accountId: string,
   spotMeta: Map<string, string>,
   snapshotDate: string
 ): CashBalanceInput[] {
   const results: CashBalanceInput[] = [];
-
-  // Withdrawable margin cash (USD-denominated)
-  const withdrawableAmount = parseFloat(withdrawable);
-  if (withdrawableAmount > 0) {
-    results.push({
-      accountId,
-      snapshotDate,
-      currency: 'USD',
-      balance: withdrawableAmount.toString(),
-      balanceUsd: withdrawableAmount.toString(),
-      source: 'hyperliquid',
-    });
-  }
 
   // Stablecoin spot balances
   for (const balance of balances) {

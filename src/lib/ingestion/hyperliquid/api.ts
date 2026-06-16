@@ -268,3 +268,69 @@ export function buildSpotMetaMap(spotMeta: HLSpotMetaResponse): Map<string, stri
   }
   return map;
 }
+
+// ── Portfolio (authoritative account value) ─────────────────────────
+
+export interface HLPortfolioPeriod {
+  accountValueHistory: Array<[number, string]>; // [unixMs, valueUsd]
+  pnlHistory: Array<[number, string]>;
+  vlm: string;
+}
+
+/**
+ * Fetch the portfolio summary — HyperLiquid's own account-value history.
+ * Returns periods as [["day", {...}], ["week", {...}], ["month", {...}],
+ * ["allTime", {...}], ["perpDay", {...}], ...]. The NON-perp periods carry the
+ * COMBINED account value (spot incl. unified perp equity + staking) — i.e. the
+ * "Account Value" the HyperLiquid UI shows. The "perp*" periods are perp-only.
+ */
+export async function fetchPortfolio(
+  user: string
+): Promise<Array<[string, HLPortfolioPeriod]>> {
+  return hlPost<Array<[string, HLPortfolioPeriod]>>({
+    type: 'portfolio',
+    user,
+  });
+}
+
+// Combined (whole-account) periods — excludes the perp-only "perp*" series.
+const HL_COMBINED_PERIODS = new Set(['day', 'week', 'month', 'allTime']);
+
+/**
+ * Extract the latest authoritative account value (USD) from a portfolio response.
+ * Scans only the combined (non-perp) periods and returns the most-recent point.
+ * Returns 0 if unavailable (caller should fall back rather than write a zero NAV).
+ */
+export function latestAccountValue(
+  portfolio: Array<[string, HLPortfolioPeriod]>
+): number {
+  let best: [number, string] | null = null;
+  for (const [key, period] of portfolio) {
+    if (!HL_COMBINED_PERIODS.has(key)) continue;
+    const history = period?.accountValueHistory ?? [];
+    const last = history[history.length - 1];
+    if (last && (!best || last[0] > best[0])) best = last;
+  }
+  return best ? parseFloat(best[1]) : 0;
+}
+
+/**
+ * Build a date (YYYY-MM-DD, UTC) → account value map from a portfolio response,
+ * for historical backfill. Merges all combined (non-perp) series so coverage is
+ * daily for ~the last 30 days ("month"/"week"/"day") and ~weekly before ("allTime").
+ * Series are merged coarse→fine so the denser recent series win on shared days, and
+ * within a day the latest point wins (end-of-day value).
+ */
+export function accountValueByDate(
+  portfolio: Array<[string, HLPortfolioPeriod]>
+): Map<string, number> {
+  const byDate = new Map<string, number>();
+  for (const key of ['allTime', 'month', 'week', 'day']) {
+    const period = portfolio.find(([k]) => k === key)?.[1];
+    for (const [ts, val] of period?.accountValueHistory ?? []) {
+      const day = new Date(ts).toISOString().slice(0, 10);
+      byDate.set(day, parseFloat(val));
+    }
+  }
+  return byDate;
+}
