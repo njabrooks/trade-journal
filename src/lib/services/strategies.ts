@@ -17,6 +17,10 @@ import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetric
 // REMOVED: backfillTradeBlotterForStrategy - blotter system deprecated, replaced by journal
 import { startProcess, completeProcess, failProcess } from '@/lib/services/processTracking';
 import { resolveOrCreateStrategyType } from '@/lib/services/strategyTypes';
+import {
+  deriveStrategyStatusFromSnapshots,
+  STRATEGY_RECENCY_WINDOW_DAYS,
+} from '@/lib/services/strategyStatus';
 
 export interface CreateStrategyInput {
   strategyKey: string;
@@ -773,61 +777,35 @@ export async function recomputeStrategyStatus(strategyId: string): Promise<'acti
     return 'complete';
   }
 
-  // Get the accounts that have positions for this strategy
-  const strategyAccounts = await db
-    .selectDistinct({ accountId: positions.accountId })
+  // The strategy's OWN history: did it ever have positions, and when did it last
+  // hold an open (quantity != 0) position? Judging from the strategy's own latest
+  // open snapshot (not the account's global latest) avoids mis-closing a held
+  // instrument just because something else in the account snapshotted more recently.
+  const own = await db
+    .select({
+      everCount: sql<number>`count(*)`,
+      latestOpen: sql<string | null>`max(${positions.snapshotDate}) filter (where ${positions.quantity} != 0)`,
+    })
     .from(positions)
     .where(eq(positions.strategyId, strategyId));
 
-  if (strategyAccounts.length === 0) {
-    return 'draft'; // Never had any positions
-  }
+  const hadPositions = Number(own[0]?.everCount ?? 0) > 0;
+  const latestOpenRaw = own[0]?.latestOpen ?? null;
 
-  const accountIds = strategyAccounts.map(a => a.accountId).filter(Boolean) as string[];
+  // Reference "current book" date = latest snapshot across the whole book. Using a
+  // global reference (rather than now()) keeps the recency window correct even if
+  // all ingestion is paused for a stretch.
+  const globalLatest = await db
+    .select({ d: sql<string | null>`max(${positions.snapshotDate})` })
+    .from(positions);
+  const asOfRaw = globalLatest[0]?.d ?? null;
 
-  if (accountIds.length === 0) {
-    return 'draft';
-  }
-
-  // For each account, get the latest snapshot date where that account has ANY open positions
-  // (not just for this strategy — we need to know the latest ingestion date per account)
-  for (const accountId of accountIds) {
-    const latestAccountSnapshot = await db
-      .select({ snapshotDate: positions.snapshotDate })
-      .from(positions)
-      .where(
-        and(
-          eq(positions.accountId, accountId),
-          sql`${positions.quantity} != 0`
-        )
-      )
-      .orderBy(desc(positions.snapshotDate))
-      .limit(1);
-
-    const latestDate = latestAccountSnapshot[0]?.snapshotDate;
-    if (!latestDate) continue;
-
-    // Check if THIS strategy has open positions on this account's latest snapshot date
-    const hasOpenPositions = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(positions)
-      .where(
-        and(
-          eq(positions.strategyId, strategyId),
-          eq(positions.accountId, accountId),
-          eq(positions.snapshotDate, latestDate),
-          sql`${positions.quantity} != 0`
-        )
-      )
-      .limit(1);
-
-    if (Number(hasOpenPositions[0]?.count ?? 0) > 0) {
-      return 'active'; // Has open positions on at least one account's latest snapshot
-    }
-  }
-
-  // No open positions on any account's latest snapshot — strategy is complete
-  return 'complete';
+  return deriveStrategyStatusFromSnapshots({
+    hadPositions,
+    latestOpenSnapshot: latestOpenRaw ? new Date(latestOpenRaw) : null,
+    asOf: asOfRaw ? new Date(asOfRaw) : new Date(0),
+    windowDays: STRATEGY_RECENCY_WINDOW_DAYS,
+  });
 }
 
 /**
