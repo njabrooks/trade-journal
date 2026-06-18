@@ -1113,12 +1113,13 @@ async function recomputeAccountStrategyStatuses(accountId: string): Promise<void
     }
   }
 
-  // W8/B2: cascade settled strategy status up to asset/macro theses
+  // W8: cascade settled strategy status up to asset/macro theses
   // (expression-driven monitoring — docs/v2/07 §3). Global + idempotent, so it's
-  // safe to fire from this per-account hook. Gated default-OFF until the
-  // supervised first re-status (B3) validates the held developing→monitoring
-  // batch; flip THESIS_CASCADE_ENABLED=1 to switch on ongoing maintenance.
-  if (process.env.THESIS_CASCADE_ENABLED === '1' || process.env.THESIS_CASCADE_ENABLED === 'true') {
+  // safe to fire from this per-account hook. LIVE BY DEFAULT as of B5 — the B3
+  // supervised first re-status validated it and B5a decoupled promotion from
+  // signals, so the cascade is now the standard way thesis status is maintained.
+  // Kill-switch: set THESIS_CASCADE_ENABLED=0 (or 'false') to disable.
+  if (process.env.THESIS_CASCADE_ENABLED !== '0' && process.env.THESIS_CASCADE_ENABLED !== 'false') {
     try {
       await cascadeThesisStatuses({ source: 'automation' });
     } catch (error) {
