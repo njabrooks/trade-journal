@@ -374,27 +374,21 @@ async function main() {
     const currentClaimCount = claimCountResult[0]?.count ?? 0;
     const previousClaimsCount = thesis.claimsCountAtLastArticulation ?? 0;
 
-    // Update thesis with current claim count
-    // Only promote developing → monitoring if signals were actually created
-    const currentStatus = (thesis as any).status;
-    const updateFields: Record<string, any> = {
-      claimsCountAtLastArticulation: currentClaimCount,
-      updatedAt: new Date(),
-    };
-    const shouldPromote = currentStatus === 'developing' && signalsCreatedCount > 0;
-    if (shouldPromote) {
-      updateFields.status = 'monitoring';
-    }
+    // Update thesis claim count only. Status is NOT touched here.
+    //
+    // W8/B5 decouple: the expression-driven lifecycle cascade
+    // (src/lib/derived/thesisCascade.ts) owns thesis status now — a thesis is
+    // `monitoring` because it has live expression (an active strategy), not
+    // because an articulation produced signals. Pre-W8 this promoted
+    // developing→monitoring when signalsCreatedCount > 0; that signal gate is
+    // removed so articulation (digest + signal synthesis) is purely additive and
+    // can run at any lifecycle stage without moving the thesis.
     await db
       .update(thesisTable)
-      .set(updateFields)
+      .set({ claimsCountAtLastArticulation: currentClaimCount, updatedAt: new Date() })
       .where(eq(thesisTable.id, thesisId));
     console.log(`✅ Updated ${thesisType} thesis claims count: ${previousClaimsCount} → ${currentClaimCount}`);
-    if (shouldPromote) {
-      console.log(`✅ Promoted thesis status: developing → monitoring (${signalsCreatedCount} signals created)`);
-    } else if (currentStatus === 'developing' && signalsCreatedCount === 0) {
-      console.log(`ℹ️  Thesis remains at 'developing' — no signals created. Configure signals to promote to monitoring.`);
-    }
+    console.log(`ℹ️  Thesis status unchanged (lifecycle cascade owns status; ${signalsCreatedCount} signal(s) created this run)`);
 
     // Log articulation creation to journal
     await logToJournal({

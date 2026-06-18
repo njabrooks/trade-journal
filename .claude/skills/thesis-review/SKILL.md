@@ -11,12 +11,19 @@ The automated job that keeps the belief layer current with no manual curation
 (docs/v2/07 §4). It is triggered by the deterministic cascade and by claim
 accumulation; the user is involved only at genuine decision points.
 
-**This skill currently implements one mode — B4 digest refresh.** Future modes
-extend the same skill:
-- **B5** — qualitative signal derivation on promotion + the monitoring thesis-health pass.
+**Modes implemented:**
+- **Digest refresh (B4, §4a)** — re-synthesize the supporting digest for *developing*
+  theses that have accumulated new claims. Digest only, no signals.
+- **Signal derivation (B5, §4b)** — derive a *monitoring* thesis's qualitative
+  signals (the invalidation/confirmation/completion digest) from its claims.
+
+Future modes extend the same skill:
+- **B5c** — the monitoring thesis-health pass (re-assess signals vs evidence).
 - **B7** — retrospective on close.
 
-Do **not** implement B5/B7 behaviour here yet (no signals, no status changes).
+The two implemented modes are partitioned by thesis status and never overlap:
+digest mode acts on `developing`, signal mode on `monitoring`. Neither changes
+thesis status — the expression-driven cascade owns status.
 
 ## Mode: Digest refresh (B4, §4a)
 
@@ -113,9 +120,91 @@ Because `signals: []`, no signals are superseded and the thesis is **not** promo
 
 **Step 5 — Report** a one-line summary per thesis: `title — v{n} written ({claimCount} claims)`.
 
-### Common mistakes
-1. ❌ Generating signals (that's B5). `signals` must be `[]`.
+### Common mistakes (digest mode)
+1. ❌ Generating signals (that's signal mode). In digest mode `signals` must be `[]`.
 2. ❌ Promoting/creating status changes (the cascade owns status).
-3. ❌ Processing a `monitoring` thesis (worklist is developing-only; never override).
+3. ❌ Processing a `monitoring` thesis (the digest worklist is developing-only; never override).
 4. ❌ Plain strings for keyDrivers/keyAssumptions — they are objects.
 5. ❌ Inventing evidence not in the claims, or dropping refuting claims instead of folding them into `evidenceGaps`.
+
+---
+
+## Mode: Signal derivation (B5, §4b)
+
+A `monitoring` thesis has a live position, so it needs its **signals** — the
+qualitative criteria the agent judges incoming evidence against. Expression-driven
+promotion means a thesis can reach `monitoring` (via the cascade) before it has any
+signals; this mode fills that gap. Signals are **qualitative and agent-operable**:
+plain-language, falsifiable criteria — `category` defaults to judgment and
+`explicit_details` stays null (quantitative wiring is a rare opt-in via
+`/configure-signal`, never the default). Qualitative ≠ vague: each signal must be
+specific enough to render `strengthening / weakening / invalidated` against evidence.
+
+### Scope rules
+
+1. **Monitoring theses only**, and only those with **no active signals** — the
+   worklist already enforces this. Do not re-derive signals for a thesis that has
+   them (refresh is the health pass, B5c).
+2. **Never fabricate signals for a thin thesis.** If the worklist marks a thesis
+   `thin` (no claims), do NOT invent signals — it's a research gap (B6/§4e). Skip it.
+3. **Status is the cascade's** — the writer no longer promotes; derivation is purely additive.
+4. **Auto, no confirm** — maintenance. (Surface only genuinely low-confidence signals to the user, if any.)
+
+### Workflow
+
+**Step 1 — Worklist**
+```bash
+npx tsx scripts/ops/find-signalless-theses.ts --json
+```
+Process the `ready` array; ignore `thin` (report it as a research-gap count).
+
+**Step 2 — Bundle** (digest context + parent macros for compositional invalidation)
+```bash
+npx tsx scripts/ops/find-signalless-theses.ts --context <thesisId> --type <asset|macro> --compact
+```
+Returns `{ thesis, parentMacros[], supportingClaims[], refutingClaims[], latestArticulation }`.
+
+**Step 3 — Synthesize the full articulation: digest + signals.** Produce the same
+digest fields as digest mode (coreArgument, keyDrivers, keyAssumptions, timeframe,
+confidenceLevel, confidenceRationale, evidenceGaps, claimIdsUsed) AND a small,
+high-quality `signals` array:
+
+- **confirmation** (≤2) — the single most important thing you'd see in the world if
+  the thesis is right. Derive from `keyDrivers` / foundation claims.
+- **invalidation** (≤2) — what would make you abandon the thesis. Derive from
+  inverted `keyAssumptions`, refuting claims and their rebuttals.
+- **completion** (≤1) — the end-state where the thesis has fully played out (take
+  profits). Derive from `timeframe`.
+- **Compositional invalidation** — for each `parentMacros` entry with
+  `relationshipType` `gated_by`/`depends_on`, add an invalidation signal:
+  `{ type:'invalidation', statement:'"<macro title>" macro thesis is invalidated or downgraded', dependentThesisId:<macroThesisId>, dependentThesisType:'macro', dependentThesisCondition:'invalidated', sourceSection:'dependency', sourceDriverIndex:0 }`.
+
+Each signal needs: `type`, `statement` (specific, testable), `notes` (why it matters
++ what action to take when triggered), `linkedClaimIds` (REQUIRED — the claim UUIDs
+grounding it), and provenance `sourceSection` (`key_driver|key_assumption|timeframe|dependency`)
++ `sourceDriverIndex` (0-based index into that section). Omit `category`/`explicit_details`
+(the writer defaults them to judgment/null). **Quality over quantity** — only emit a
+signal grounded in real claim evidence; 1 strong invalidation beats 3 weak slots.
+
+**Step 4 — Write** the full articulation (digest + signals) via the writer:
+```json
+{ "thesisId":"<id>", "thesisType":"<type>",
+  "articulation": { coreArgument, keyDrivers, keyAssumptions, timeframe, confidenceLevel, confidenceRationale, evidenceGaps, claimIdsUsed, referencedTheses:[] },
+  "signals": [ { "type":"invalidation", "statement":"...", "notes":"...", "linkedClaimIds":["<id>"], "sourceSection":"key_assumption", "sourceDriverIndex":0 } ]
+}
+```
+```bash
+echo '<json>' | npx tsx scripts/insert-thesis-articulation.ts --stdin
+```
+The writer versions the digest, inserts the signals (status active, category judgment,
+linked via `signal_entity_links`), supersedes any stale signals, and leaves status alone.
+
+**Step 5 — Report** per thesis: `title — v{n}, {N} signals ({c} confirmation / {i} invalidation / {x} completion)`.
+
+### Common mistakes (signal mode)
+1. ❌ Quantitative signals — do NOT set `explicit_details`; signals are qualitative judgment criteria.
+2. ❌ Vague signals ("competition increases") — must be specific enough to judge strengthening/weakening/invalidated.
+3. ❌ Fabricating signals for a `thin` thesis — skip it; that's a research gap.
+4. ❌ Missing `linkedClaimIds` or provenance (`sourceSection`/`sourceDriverIndex`) on a signal.
+5. ❌ Forgetting the compositional invalidation signal when the thesis has a `gated_by`/`depends_on` parent macro.
+6. ❌ Changing thesis status, or processing a developing/closed thesis (signal mode is monitoring-only).
