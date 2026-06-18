@@ -22,15 +22,15 @@ accumulation; the user is involved only at genuine decision points.
 - **Research-gap bridge (B6, §4e)** — for a *monitoring* thesis that is under-researched
   (live position opened before the belief exists), pull Tana first and, if still thin,
   surface a DecisionStrip item proposing sources to develop it.
-
-Future modes extend the same skill:
-- **B7** — retrospective on close.
+- **Retrospective (B7, §4d)** — when a thesis *resolves* (closed/complete/rejected),
+  write a one-off "was I right, did it pay" retrospective from the final P&L + trail.
 
 The modes are partitioned by thesis status / research state and never overlap:
 digest mode acts on `developing`; signal mode on `monitoring` with no signals yet;
 health mode on `monitoring` that already has signals; research-gap mode on
-`monitoring` that is under-researched (gap/thin completeness). None change thesis
-status — the expression-driven cascade owns status.
+`monitoring` that is under-researched; retrospective mode on resolved
+(closed/complete/rejected) theses. None change thesis status — the expression-driven
+cascade owns status. (This is the full belief-maintenance loop B0–B7.)
 
 ## Mode: Digest refresh (B4, §4a)
 
@@ -346,3 +346,56 @@ won't pile up duplicate strip items.
 3. ✅ Proposed sources must be **specific** to the ticker/theme (named articles, feeds, search queries), not "do more research".
 4. ❌ Don't change thesis status (the cascade owns it); a bridged thesis develops naturally once claims land.
 5. ✅ One decision per thesis (the writer dedupes); keep the strip uncluttered.
+
+---
+
+## Mode: Retrospective (B7, §4d)
+
+When a thesis resolves — `closed` (was expressed, now flat), `complete`, or
+`rejected` — write a one-off **"was I right, did it pay"** retrospective. This closes
+the loop: it records what the belief was, what happened, and what it earned/cost,
+and it ends the thesis's monitoring. Auto, no confirm.
+
+### Workflow
+
+**Step 1 — Worklist**
+```bash
+npx tsx scripts/ops/find-theses-needing-retrospective.ts --json
+```
+
+**Step 2 — Inputs**
+```bash
+npx tsx scripts/ops/find-theses-needing-retrospective.ts --context <thesisId> --type <asset|macro>
+```
+Returns the thesis (direction, status, outcome, opened/closed, durationDays), the
+final `performance` (latestCumulative / realized / unrealized P&L + confidence),
+the `coreArgument` (the belief at the end), the final `signalsByStatus` tally, and
+the `journalEntryCount`.
+
+**Step 3 — Write the retrospective.** A tight narrative covering:
+- **Was I right?** Did the core argument play out? Use `outcome` ∈
+  `validated | invalidated | partial` (for a `rejected` thesis it's usually
+  `invalidated`; for `closed` after a held run, judge from P&L + what happened).
+- **Did it pay?** Cite `latestCumulative` (realized vs unrealized split). Mind the
+  `confidence` — if not `full`, hedge the P&L claim (see `ConfidenceBadge` rule).
+- **What the trail shows** — duration, how the signals ended, key turns.
+- **Lesson** — one line on what to repeat or avoid.
+Honour the W4/W5 realized-confidence caveat: never assert exact P&L as fact when
+`confidence !== 'full'`.
+
+**Step 4 — Record:**
+```bash
+echo '{"thesisId":"<id>","thesisType":"<type>","outcome":"validated|invalidated|partial","headline":"<one-line verdict + P&L>","narrative":"<the writeup>"}' \
+  | npx tsx scripts/record-retrospective.ts --stdin
+```
+The writer appends the `retrospective` journal entry, sets `outcome`/`outcome_notes`
+(surfaced by the `/performance` RetrospectiveCard) + `actual_outcome_date`, and
+supersedes any still-active signals → `complete` (monitoring is over).
+
+**Step 5 — Report:** `title — <outcome>, <P&L> over <Nd>; N signals closed`.
+
+### Common mistakes (retrospective mode)
+1. ❌ Asserting exact P&L when `confidence !== 'full'` — hedge it.
+2. ❌ Re-writing a retrospective that already exists (the worklist already excludes those).
+3. ❌ Changing thesis status (it's already resolved; leave it).
+4. ❌ A generic writeup — ground it in this thesis's actual core argument, P&L, and trail.
