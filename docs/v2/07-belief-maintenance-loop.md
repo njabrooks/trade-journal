@@ -182,7 +182,7 @@ Only once strategy status reliably reflects the current book do we switch the as
 | B1 | `closed` status: UI badge + transitions + docs | S | B0 | **DONE** 2026-06-18 |
 | B2 | Deterministic asset/macro cascade in the recompute (§3) | M | B0 | **DONE** 2026-06-18 (gated off — see below) |
 | B3 | One-time supervised re-status of held `developing`→`monitoring` (dry-run) | S | B2 | **DONE** 2026-06-18 (43 applied) |
-| B4 | Auto digest synthesis (4a) — automate build-core-argument, delta-triggered | M | B2 | pending |
+| B4 | Auto digest synthesis (4a) — automate build-core-argument, delta-triggered | M | B2 | **DONE** 2026-06-18 |
 | B5 | Auto **qualitative** signal derivation on promotion (4b); decouple promotion from signals in insert-thesis-articulation; thesis-health pass (4c) | M | B4 | pending |
 | B6 | Research-gap detection + bridge (4e): thesis-completeness score, Tana-first pull, DecisionStrip source suggestions | M | B2, B4 | pending |
 | B7 | Retrospective on close (4d) | S/M | B2, W4 | pending |
@@ -209,3 +209,9 @@ Recommended: B0 → B1 → B2 → B3, validate, then B4/B5, then B6/B7; B8 anyti
 Applied **43 transitions** (31 asset `developing→monitoring`, 1 asset `closed→monitoring` [ZEC], 10 macro `developing→monitoring`, 1 macro `monitoring→closed` [Bearish US Equities — 3 linked shorts all closed]), each logged to `journal_entries` (`source=automation`). Post-apply: asset monitoring 3→35, macro monitoring 8→17.
 
 **Flag remains OFF after B3.** `THESIS_CASCADE_ENABLED` stays unset until **B5** (auto qualitative-signal derivation on promotion) lands — otherwise ongoing ingestion would keep promoting theses to `monitoring` with no signals to receive evidence. The ~41 now-monitoring theses sit signal-less in the interim (expected; the §7 fallback keeps claim-links working and relate-research is not yet the live path).
+
+**B4 — auto digest synthesis (2026-06-18).** The delta-trigger spine: pure rule `needsDigestRefresh` (`src/lib/derived/digestTriggerRules.ts`, DB-free, 9 unit tests; K=3 default — open decision #5) + DB layer `src/lib/derived/digestSynthesis.ts` (`findThesesNeedingDigestRefresh` worklist + `gatherDigestContext` bundle) + ops script `scripts/ops/find-stale-digests.ts` (`--json`, `--context <id> --type`). The synthesis itself is the new **`/thesis-review` skill** (the doc's §4 job; B4 implements its digest-refresh mode — B5/B7 extend it). It loads the worklist, synthesizes each digest from the thesis's Toulmin claims, and writes via `insert-thesis-articulation` with **`signals: []`** (digest only — no signal derivation, no promotion).
+- **Scope = developing only.** A digest refresh on a monitoring thesis would trip `insert-thesis-articulation`'s signal supersession (Step 2b) and destroy the monitoring picture; the coherent monitoring digest+signal refresh is B5. Trigger rule enforces this.
+- **Trigger:** first digest once a developing thesis crosses K linked claims; thereafter when (current − `claims_count_at_last_articulation`) ≥ K. Writing the digest updates that counter, clearing the delta so the thesis drops off the worklist.
+- **Impl note:** Drizzle correlated subqueries that reference the outer table don't correlate inside a `select` (silently return 0/null) — claim counts and latest versions are computed with grouped queries joined in JS, the same pattern as thesisCascade.
+- **Validated end-to-end (2026-06-18):** worklist surfaced 11 developing theses; synthesized + wrote the digest for "Bearish Private Credit" (v1, 3 claims, signals=[], stayed developing) — it then dropped off the worklist (10 remain). Remaining 10 process on demand via `/thesis-review`.

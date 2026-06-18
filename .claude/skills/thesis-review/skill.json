@@ -1,0 +1,5 @@
+{
+  "name": "thesis-review",
+  "description": "Auto-maintain the belief layer (W8 belief-maintenance loop). Currently implements digest refresh (B4): re-synthesizes the supporting digest (thesis_articulations) for developing theses that have accumulated new linked claims, delta-triggered. Digest only — no signals, no status promotion (those are B5). Use when asked to 'refresh thesis digests', 'run thesis-review', 'resynthesize articulations', or to process the digest worklist.",
+  "instructions": "SKILL.md"
+}
