@@ -7,6 +7,7 @@ import {
   Eye,
   CheckCircle2,
   Archive,
+  PauseCircle,
   ExternalLink,
   User,
   Bot,
@@ -38,6 +39,7 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
     developing: <Clock className="w-4 h-4 text-amber-500" />,
     monitoring: <Eye className="w-4 h-4 text-blue-500" />,
     active: <Eye className="w-4 h-4 text-blue-500" />,
+    closed: <PauseCircle className="w-4 h-4 text-slate-400" />,
     complete: <AlertTriangle className="w-4 h-4 text-emerald-500" />,
     rejected: <Archive className="w-4 h-4 text-slate-300" />,
   };
@@ -47,6 +49,7 @@ export function StatusTimeline({ history, isLoading }: StatusTimelineProps) {
     developing: 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20',
     monitoring: 'border-blue-400 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20',
     active: 'border-blue-400 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20',
+    closed: 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/20',
     complete: 'border-emerald-400 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20',
     rejected: 'border-border bg-muted',
   };

@@ -47,6 +47,7 @@ const statusDotColorMap: Record<string, string> = {
   monitoring: 'bg-blue-400',
   active: 'bg-green-400',
   draft: 'bg-gray-400',
+  closed: 'bg-slate-400',
   complete: 'bg-emerald-500',
   rejected: 'bg-red-400',
 }

@@ -39,8 +39,9 @@ const ENTITY_CONFIG: Record<string, { table: any; objectType: string }> = {
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   draft: ['active', 'developing', 'rejected'],
-  developing: ['monitoring', 'complete', 'rejected'],
-  monitoring: ['developing', 'complete', 'rejected'],
+  developing: ['monitoring', 'closed', 'complete', 'rejected'],
+  monitoring: ['developing', 'closed', 'complete', 'rejected'],
+  closed: ['monitoring', 'developing', 'complete', 'rejected'],  // re-express (→monitoring) or resolve; W8 expression-driven lifecycle
   active: ['complete', 'rejected'],  // for non-thesis entities (claims, signals, strategies)
   complete: ['active', 'developing'],  // reopen
   rejected: ['draft'],   // reconsider

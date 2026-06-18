@@ -9,6 +9,7 @@ import {
 import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc, inArray } from 'drizzle-orm';
 import { populateStrategyEntryContext, recomputeStrategyStatus } from '@/lib/services/strategies';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
+import { cascadeThesisStatuses } from '@/lib/derived/thesisCascade';
 
 type DateRangeOptions =
   | { snapshotDate: string; startDate?: never; endDate?: never }
@@ -1109,6 +1110,19 @@ async function recomputeAccountStrategyStatuses(accountId: string): Promise<void
       });
     } catch (error) {
       console.error(`Failed to recompute status for strategy ${strategy.strategyKey}:`, error);
+    }
+  }
+
+  // W8/B2: cascade settled strategy status up to asset/macro theses
+  // (expression-driven monitoring — docs/v2/07 §3). Global + idempotent, so it's
+  // safe to fire from this per-account hook. Gated default-OFF until the
+  // supervised first re-status (B3) validates the held developing→monitoring
+  // batch; flip THESIS_CASCADE_ENABLED=1 to switch on ongoing maintenance.
+  if (process.env.THESIS_CASCADE_ENABLED === '1' || process.env.THESIS_CASCADE_ENABLED === 'true') {
+    try {
+      await cascadeThesisStatuses({ source: 'automation' });
+    } catch (error) {
+      console.error('Thesis status cascade failed:', error);
     }
   }
 }

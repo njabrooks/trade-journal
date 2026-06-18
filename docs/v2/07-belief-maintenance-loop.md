@@ -176,16 +176,28 @@ Only once strategy status reliably reflects the current book do we switch the as
 
 ## 9. Build sequence
 
-| # | Step | Size | Gate |
-|---|---|---|---|
-| B0 | Strategy-status hygiene fix + coverage report (§6) | M | — (foundation) |
-| B1 | `closed` status: UI badge + transitions + docs | S | B0 |
-| B2 | Deterministic asset/macro cascade in the recompute (§3) | M | B0 |
-| B3 | One-time supervised re-status of held `developing`→`monitoring` (dry-run) | S | B2 |
-| B4 | Auto digest synthesis (4a) — automate build-core-argument, delta-triggered | M | B2 |
-| B5 | Auto **qualitative** signal derivation on promotion (4b); decouple promotion from signals in insert-thesis-articulation; thesis-health pass (4c) | M | B4 |
-| B6 | Research-gap detection + bridge (4e): thesis-completeness score, Tana-first pull, DecisionStrip source suggestions | M | B2, B4 |
-| B7 | Retrospective on close (4d) | S/M | B2, W4 |
-| B8 | Notes-repo flip (relate-research becomes the live path) | S | — (independent; user go) |
+| # | Step | Size | Gate | Status |
+|---|---|---|---|---|
+| B0 | Strategy-status hygiene fix + coverage report (§6) | M | — (foundation) | **DONE** 2026-06-18 (`7e040c2`) |
+| B1 | `closed` status: UI badge + transitions + docs | S | B0 | **DONE** 2026-06-18 |
+| B2 | Deterministic asset/macro cascade in the recompute (§3) | M | B0 | **DONE** 2026-06-18 (gated off — see below) |
+| B3 | One-time supervised re-status of held `developing`→`monitoring` (dry-run) | S | B2 | next |
+| B4 | Auto digest synthesis (4a) — automate build-core-argument, delta-triggered | M | B2 | pending |
+| B5 | Auto **qualitative** signal derivation on promotion (4b); decouple promotion from signals in insert-thesis-articulation; thesis-health pass (4c) | M | B4 | pending |
+| B6 | Research-gap detection + bridge (4e): thesis-completeness score, Tana-first pull, DecisionStrip source suggestions | M | B2, B4 | pending |
+| B7 | Retrospective on close (4d) | S/M | B2, W4 | pending |
+| B8 | Notes-repo flip (relate-research becomes the live path) | S | — (independent; user go) | pending |
 
 Recommended: B0 → B1 → B2 → B3, validate, then B4/B5, then B6/B7; B8 anytime after user go.
+
+### B1 + B2 build notes (2026-06-18)
+
+**B1 — `closed` status.** Free-text column (no migration). UI support added to `LifecycleBadge`, `EntityBadge`, `Badge`/`EntityStatusBadge`, `MacroThesisSidebar`, `StatusTimeline`, and both thesis browsers (filter + sort order: draft→developing→monitoring→closed→complete→rejected). Transitions added to `update-entity-status.ts` `VALID_TRANSITIONS`: `developing↔closed`, `monitoring↔closed`, and `closed → {monitoring, developing, complete, rejected}` (re-express or resolve). relate-research catalog already excludes `closed` (`ACTIVE = ['developing','monitoring']`). Note: **16 asset theses already carried `status='closed'`** in the live DB and were rendering via the badge fallback — B1 gives them proper styling.
+
+**B2 — deterministic cascade.** Pure rules in `src/lib/derived/thesisCascadeRules.ts` (DB-free, 16 unit tests); DB orchestration `cascadeThesisStatuses({ dryRun, source })` in `src/lib/derived/thesisCascade.ts`. Wired into `recomputeAccountStrategyStatuses` (`strategyAuto.ts`) — the single chokepoint all 8 ingestion paths (flex + 5 crypto) funnel through. Idempotent + flap-safe (reads the global picture, writes only genuine transitions), so firing from the per-account hook is correct despite the cascade being global.
+
+- **Gated default-OFF** behind `THESIS_CASCADE_ENABLED` (set to `1`/`true` to enable). This honours the B2→B3 sequence: B2 ships the engine wired-but-dormant so the next cron ingestion can't auto-fire the ~30 held re-statuses before B3's supervised run. Flip the flag on **after** B3 validates, for ongoing maintenance.
+- **Monitoring requires an *active* strategy, not active/draft** (a deviation from the literal §3 wording, aligning with §2 "live position on" — draft strategies have no positions, so promoting on draft would start the signal machinery for a non-existent position). See `deriveAssetThesisStatus` doc comment.
+- **"Was expressed" is read from current status** (`monitoring`|`closed`), not historical strategy counts — so the cascade never mass-closes legacy `developing` theses that were held under v1's signal gate; those go through B3/the cull. A `developing` thesis with no active strategy stays developing.
+- **Open decision #6 resolved:** a single live linked asset flips a macro to monitoring (no linked-exposure threshold).
+- **Validated dry-run (2026-06-18):** 61 eligible asset theses + 39 macro; **44 transitions** would apply — 31 asset `developing→monitoring`, 1 `closed→monitoring` (re-expression), 10 macro `developing→monitoring`, 2 macro `monitoring→closed`. Matches the §7 ripple prediction. These 44 are exactly what **B3** reviews and applies supervised.

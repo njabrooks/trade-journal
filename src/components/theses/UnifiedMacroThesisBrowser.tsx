@@ -18,7 +18,7 @@ interface UnifiedMacroThesisBrowserProps {
 type ThesisTypeFilter = 'all' | 'secular' | 'cyclical' | 'structural';
 type TimeHorizonFilter = 'all' | 'long_term' | 'medium_term' | 'short_term';
 type ConfidenceFilter = 'all' | 'high' | 'medium' | 'low' | 'exploratory';
-type StatusFilter = 'all' | 'draft' | 'developing' | 'monitoring' | 'complete' | 'rejected';
+type StatusFilter = 'all' | 'draft' | 'developing' | 'monitoring' | 'closed' | 'complete' | 'rejected';
 type DirectionFilter = 'all' | 'bullish' | 'bearish' | 'neutral';
 type SortColumn = 'title' | 'thesisType' | 'timeHorizon' | 'confidence' | 'status' | 'assetTheses' | 'claims' | 'strategies' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -153,7 +153,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
           bVal = confidenceOrder[b.confidenceLevel as keyof typeof confidenceOrder] ?? -1;
           break;
         case 'status':
-          const statusOrder = { draft: 0, developing: 1, monitoring: 2, complete: 3, rejected: 4 };
+          const statusOrder = { draft: 0, developing: 1, monitoring: 2, closed: 3, complete: 4, rejected: 5 };
           aVal = statusOrder[a.status as keyof typeof statusOrder] ?? 0;
           bVal = statusOrder[b.status as keyof typeof statusOrder] ?? 0;
           break;
@@ -358,6 +358,7 @@ export function UnifiedMacroThesisBrowser({ theses }: UnifiedMacroThesisBrowserP
                 <option value="draft">Draft</option>
                 <option value="developing">Developing</option>
                 <option value="monitoring">Monitoring</option>
+                <option value="closed">Closed</option>
                 <option value="complete">Complete</option>
                 <option value="rejected">Rejected</option>
               </select>

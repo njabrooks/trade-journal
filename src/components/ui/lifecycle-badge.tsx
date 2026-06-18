@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from './tooltip'
 
-export type LifecyclePhase = 'draft' | 'developing' | 'monitoring' | 'complete' | 'rejected'
+export type LifecyclePhase = 'draft' | 'developing' | 'monitoring' | 'closed' | 'complete' | 'rejected'
 
 interface LifecycleBadgeProps {
   phase: string
@@ -29,6 +29,12 @@ const phaseConfig: Record<LifecyclePhase, { label: string; classes: string; dotC
     classes: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
     dotClass: 'bg-blue-400',
     tooltip: 'Tracking signals. Intelligence is evaluated against active signals.',
+  },
+  closed: {
+    label: 'Closed',
+    classes: 'bg-slate-200 text-slate-600 dark:bg-slate-800/60 dark:text-slate-300',
+    dotClass: 'bg-slate-400',
+    tooltip: 'Was expressed, now flat. Retained for journal/analysis; reopens automatically if a position is re-established.',
   },
   complete: {
     label: 'Complete',
