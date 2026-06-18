@@ -19,14 +19,18 @@ accumulation; the user is involved only at genuine decision points.
 - **Health pass (B5c, §4c)** — re-assess a *monitoring* thesis's existing signals
   against the latest routed evidence + price context; surface a decision only on
   weakening/invalidation.
+- **Research-gap bridge (B6, §4e)** — for a *monitoring* thesis that is under-researched
+  (live position opened before the belief exists), pull Tana first and, if still thin,
+  surface a DecisionStrip item proposing sources to develop it.
 
 Future modes extend the same skill:
 - **B7** — retrospective on close.
 
-The modes are partitioned by thesis status / signal state and never overlap:
+The modes are partitioned by thesis status / research state and never overlap:
 digest mode acts on `developing`; signal mode on `monitoring` with no signals yet;
-health mode on `monitoring` that already has signals. None change thesis status —
-the expression-driven cascade owns status.
+health mode on `monitoring` that already has signals; research-gap mode on
+`monitoring` that is under-researched (gap/thin completeness). None change thesis
+status — the expression-driven cascade owns status.
 
 ## Mode: Digest refresh (B4, §4a)
 
@@ -282,3 +286,63 @@ Omit `decision` entirely for a healthy/neutral pass.
 3. ❌ Inventing evidence — with nothing new, the verdict is `neutral`, not a guess.
 4. ❌ Changing thesis status or signal records (health mode only reads signals + writes snapshots/decisions).
 5. ❌ Re-deriving or editing the signals themselves (that's signal mode); health mode assesses them as-is.
+
+---
+
+## Mode: Research-gap bridge (B6, §4e)
+
+Expression-driven monitoring means a position can open **before** the research
+exists, leaving a live thesis that can't ground a digest or signals. This mode
+detects those gaps and **bridges them by sourcing real research — never by
+fabricating belief.** It is the position→backfill inversion of the normal
+capture→thesis→position flow, and it is a **genuine decision point**: the agent
+proposes, the user decides what to capture / research.
+
+### Workflow
+
+**Step 1 — Worklist**
+```bash
+npx tsx scripts/ops/find-research-gaps.ts --json
+```
+`gaps[]` are monitoring theses with band `gap` (0 claims) or `thin` (1–2 claims),
+each with `ticker`, `reasons`, and a completeness `score`. Prioritise `gap`.
+
+**Step 2 — Context**
+```bash
+npx tsx scripts/ops/find-research-gaps.ts --context <thesisId> --type <asset|macro>
+```
+Returns the thesis (title, ticker, direction, description, sectors/themes) +
+`existingClaimTitles` (what little is already linked) + the completeness reasons.
+
+**Step 3 — Tana FIRST.** Tana is the source of truth for everything read. Before
+declaring a gap, search Tana for the underlying/theme:
+```
+mcp__tana-local__search_nodes  (query: the ticker, company/theme name, sectors)
+```
+- If relevant `#content`/`#claim` material already exists in Tana → it should flow
+  through the normal claim-gen → **relate-research** path (run `/relate-research`,
+  or capture/queue the nodes). Linking that existing research may itself close the
+  gap — prefer this over asking the user for new sources.
+- Only if Tana genuinely lacks material do you proceed to Step 4.
+
+**Step 4 — Bridge (the decision).** If the thesis is still thin after the Tana
+pull, surface ONE DecisionStrip item proposing how to develop it — specific
+candidate sources/searches to capture via `/tana-inbox` (which flow back through
+claim-gen → relate-research → digest → signals), and optionally a `deep-research`
+pass. Be concrete (named articles/feeds/queries for that ticker/theme), not generic.
+```bash
+npx tsx scripts/ops/raise-decision.ts --object-type <asset_thesis|macro_thesis> --id <thesisId> \
+  --title "Live position on <TICKER>, thin thesis — develop it" \
+  --description "No/low research in Tana for <theme>. Proposed sources to capture via /tana-inbox: <specific list>. Optionally run deep-research on <question>."
+```
+The writer dedupes against an existing active decision for the thesis, so re-runs
+won't pile up duplicate strip items.
+
+**Step 5 — Report** per thesis: `title (ticker) — Tana: <found N / none>; <linked M claims | decision raised | already flagged>`.
+
+### Rules
+1. ❌ **Never fabricate claims/signals** to fill a gap — bridge with real sourced research only.
+2. ✅ **Tana first**, always — link existing research before asking for new.
+3. ✅ Proposed sources must be **specific** to the ticker/theme (named articles, feeds, search queries), not "do more research".
+4. ❌ Don't change thesis status (the cascade owns it); a bridged thesis develops naturally once claims land.
+5. ✅ One decision per thesis (the writer dedupes); keep the strip uncluttered.
