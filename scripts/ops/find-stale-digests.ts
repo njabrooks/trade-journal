@@ -41,10 +41,41 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   // --context mode: dump the synthesis bundle for one thesis.
+  // --compact trims the heavy fields (reasoning/backing, evidence past the first 3)
+  // so a batch synthesis run stays cheap — keeps the claim assertion, qualifier,
+  // top evidence and rebuttals (rebuttals feed evidence_gaps).
   if (args.context) {
     const thesisType = (args.type as string) === 'macro' ? 'macro' : 'asset';
     const ctx = await gatherDigestContext(args.context as string, thesisType);
-    console.log(JSON.stringify(ctx, null, 2));
+    if (ctx && args.compact) {
+      const trim = (c: typeof ctx.supportingClaims[number]) => ({
+        id: c.id,
+        title: c.title,
+        claim: c.claim,
+        qualifier: c.qualifier,
+        mappingType: c.mappingType,
+        relevantTickers: c.relevantTickers,
+        evidence: (c.evidence ?? []).slice(0, 3),
+        evidenceTotal: (c.evidence ?? []).length,
+        rebuttal: c.rebuttal,
+      });
+      console.log(
+        JSON.stringify(
+          {
+            thesis: ctx.thesis,
+            supportingClaims: ctx.supportingClaims.map(trim),
+            refutingClaims: ctx.refutingClaims.map(trim),
+            latestArticulation: ctx.latestArticulation
+              ? { version: ctx.latestArticulation.version, coreArgument: ctx.latestArticulation.coreArgument }
+              : null,
+          },
+          null,
+          2,
+        ),
+      );
+    } else {
+      console.log(JSON.stringify(ctx, null, 2));
+    }
     await closeDb();
     process.exit(0);
   }
