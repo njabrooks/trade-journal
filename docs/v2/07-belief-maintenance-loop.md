@@ -181,7 +181,7 @@ Only once strategy status reliably reflects the current book do we switch the as
 | B0 | Strategy-status hygiene fix + coverage report (§6) | M | — (foundation) | **DONE** 2026-06-18 (`7e040c2`) |
 | B1 | `closed` status: UI badge + transitions + docs | S | B0 | **DONE** 2026-06-18 |
 | B2 | Deterministic asset/macro cascade in the recompute (§3) | M | B0 | **DONE** 2026-06-18 (gated off — see below) |
-| B3 | One-time supervised re-status of held `developing`→`monitoring` (dry-run) | S | B2 | next |
+| B3 | One-time supervised re-status of held `developing`→`monitoring` (dry-run) | S | B2 | **DONE** 2026-06-18 (43 applied) |
 | B4 | Auto digest synthesis (4a) — automate build-core-argument, delta-triggered | M | B2 | pending |
 | B5 | Auto **qualitative** signal derivation on promotion (4b); decouple promotion from signals in insert-thesis-articulation; thesis-health pass (4c) | M | B4 | pending |
 | B6 | Research-gap detection + bridge (4e): thesis-completeness score, Tana-first pull, DecisionStrip source suggestions | M | B2, B4 | pending |
@@ -200,4 +200,12 @@ Recommended: B0 → B1 → B2 → B3, validate, then B4/B5, then B6/B7; B8 anyti
 - **Monitoring requires an *active* strategy, not active/draft** (a deviation from the literal §3 wording, aligning with §2 "live position on" — draft strategies have no positions, so promoting on draft would start the signal machinery for a non-existent position). See `deriveAssetThesisStatus` doc comment.
 - **"Was expressed" is read from current status** (`monitoring`|`closed`), not historical strategy counts — so the cascade never mass-closes legacy `developing` theses that were held under v1's signal gate; those go through B3/the cull. A `developing` thesis with no active strategy stays developing.
 - **Open decision #6 resolved:** a single live linked asset flips a macro to monitoring (no linked-exposure threshold).
-- **Validated dry-run (2026-06-18):** 61 eligible asset theses + 39 macro; **44 transitions** would apply — 31 asset `developing→monitoring`, 1 `closed→monitoring` (re-expression), 10 macro `developing→monitoring`, 2 macro `monitoring→closed`. Matches the §7 ripple prediction. These 44 are exactly what **B3** reviews and applies supervised.
+- **Validated dry-run (2026-06-18):** 61 eligible asset theses + 39 macro; **44 transitions** initially — refined to **43** during B3 (see below).
+
+**B3 — supervised first re-status (applied 2026-06-18).** Ops script `scripts/ops/cascade-thesis-status.ts` (dry-run by default, `--apply` to write, `--json` for machine output; invokes `cascadeThesisStatuses` directly, bypassing the env gate). Reviewing the dry-run surfaced two edges that were validated before applying:
+- **Dust positions:** DOGE/ETH carry sub-dollar dust on the latest snapshot but their crypto strategies have `closed_at` set (deliberate close 2026-03-05), so `recomputeStrategyStatus` keeps them `complete` — their theses correctly do **not** promote. SNDK is flat. None are the B0 stale-cadence bug.
+- **Pure top-down macro fix:** the initial rule would have closed "Bullish National Resilience Investment" (currently `monitoring`, **zero linked asset theses**). A macro with no expression pathway is judgment-driven (§3: "can sit in developing indefinitely"), so `deriveMacroThesisStatus` now returns null when `hasLinkedAssets` is false — the cascade leaves pure top-down macros untouched. This dropped the plan 44→43.
+
+Applied **43 transitions** (31 asset `developing→monitoring`, 1 asset `closed→monitoring` [ZEC], 10 macro `developing→monitoring`, 1 macro `monitoring→closed` [Bearish US Equities — 3 linked shorts all closed]), each logged to `journal_entries` (`source=automation`). Post-apply: asset monitoring 3→35, macro monitoring 8→17.
+
+**Flag remains OFF after B3.** `THESIS_CASCADE_ENABLED` stays unset until **B5** (auto qualitative-signal derivation on promotion) lands — otherwise ongoing ingestion would keep promoting theses to `monitoring` with no signals to receive evidence. The ~41 now-monitoring theses sit signal-less in the interim (expected; the §7 fallback keeps claim-links working and relate-research is not yet the live path).

@@ -48,32 +48,40 @@ describe('deriveAssetThesisStatus', () => {
 
 describe('deriveMacroThesisStatus', () => {
   it('promotes developing → monitoring when any linked asset is monitoring', () => {
-    expect(deriveMacroThesisStatus({ current: 'developing', anyLinkedAssetMonitoring: true })).toBe('monitoring');
+    expect(deriveMacroThesisStatus({ current: 'developing', hasLinkedAssets: true, anyLinkedAssetMonitoring: true })).toBe('monitoring');
   });
 
   it('a single live linked asset is enough to flip the macro to monitoring', () => {
-    expect(deriveMacroThesisStatus({ current: 'developing', anyLinkedAssetMonitoring: true })).toBe('monitoring');
+    expect(deriveMacroThesisStatus({ current: 'developing', hasLinkedAssets: true, anyLinkedAssetMonitoring: true })).toBe('monitoring');
   });
 
-  it('closes a monitoring macro when no linked asset is live anymore', () => {
-    expect(deriveMacroThesisStatus({ current: 'monitoring', anyLinkedAssetMonitoring: false })).toBe('closed');
+  it('closes a monitoring macro when its linked assets have all gone flat', () => {
+    expect(deriveMacroThesisStatus({ current: 'monitoring', hasLinkedAssets: true, anyLinkedAssetMonitoring: false })).toBe('closed');
   });
 
   it('re-expresses a closed macro (closed → monitoring) when a linked asset goes live', () => {
-    expect(deriveMacroThesisStatus({ current: 'closed', anyLinkedAssetMonitoring: true })).toBe('monitoring');
+    expect(deriveMacroThesisStatus({ current: 'closed', hasLinkedAssets: true, anyLinkedAssetMonitoring: true })).toBe('monitoring');
   });
 
   it('keeps a closed macro closed while no linked asset is live', () => {
-    expect(deriveMacroThesisStatus({ current: 'closed', anyLinkedAssetMonitoring: false })).toBe('closed');
+    expect(deriveMacroThesisStatus({ current: 'closed', hasLinkedAssets: true, anyLinkedAssetMonitoring: false })).toBe('closed');
   });
 
-  it('leaves a developing macro developing when no linked asset is live (e.g. pure top-down belief)', () => {
-    expect(deriveMacroThesisStatus({ current: 'developing', anyLinkedAssetMonitoring: false })).toBe('developing');
+  it('leaves a developing macro developing when linked assets exist but none are live', () => {
+    expect(deriveMacroThesisStatus({ current: 'developing', hasLinkedAssets: true, anyLinkedAssetMonitoring: false })).toBe('developing');
+  });
+
+  it('does NOT touch a pure top-down macro with no linked assets (judgment-driven)', () => {
+    // Even a currently-monitoring macro with zero linked asset theses is left
+    // alone — closing it would falsely assert an expression ended.
+    for (const s of ['developing', 'monitoring', 'closed']) {
+      expect(deriveMacroThesisStatus({ current: s, hasLinkedAssets: false, anyLinkedAssetMonitoring: false })).toBeNull();
+    }
   });
 
   it('returns null (leave unchanged) for non-cascade-eligible statuses', () => {
     for (const s of ['draft', 'active', 'complete', 'rejected']) {
-      expect(deriveMacroThesisStatus({ current: s, anyLinkedAssetMonitoring: true })).toBeNull();
+      expect(deriveMacroThesisStatus({ current: s, hasLinkedAssets: true, anyLinkedAssetMonitoring: true })).toBeNull();
     }
   });
 });

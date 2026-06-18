@@ -174,7 +174,9 @@ export async function cascadeThesisStatuses(opts: CascadeOptions = {}): Promise<
     .innerJoin(assetTheses, eq(assetTheses.id, assetThesisRelatedMacroTheses.assetThesisId));
 
   const monitoringByMacro = new Map<string, boolean>();
+  const macrosWithLinks = new Set<string>();
   for (const l of links) {
+    macrosWithLinks.add(l.macroId);
     const eff = effectiveAssetStatus.get(l.assetId) ?? l.assetStatus;
     if (eff === 'monitoring') monitoringByMacro.set(l.macroId, true);
   }
@@ -182,6 +184,7 @@ export async function cascadeThesisStatuses(opts: CascadeOptions = {}): Promise<
   for (const m of macroRows) {
     const target = deriveMacroThesisStatus({
       current: m.status,
+      hasLinkedAssets: macrosWithLinks.has(m.id),
       anyLinkedAssetMonitoring: monitoringByMacro.get(m.id) ?? false,
     });
     if (target && target !== m.status) {

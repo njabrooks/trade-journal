@@ -49,17 +49,26 @@ export function deriveAssetThesisStatus(i: AssetThesisStatusInputs): CascadeStat
 
 export interface MacroThesisStatusInputs {
   current: string;
+  /** True if the macro has ≥1 linked asset thesis (any status). */
+  hasLinkedAssets: boolean;
   /** True if any asset thesis linked to this macro resolves to 'monitoring'. */
   anyLinkedAssetMonitoring: boolean;
 }
 
 /**
  * Macro thesis target status from its linked asset theses.
- * Returns null when not cascade-eligible.
+ * Returns null (leave unchanged) when not cascade-eligible OR when the macro has
+ * no linked asset theses.
  *
+ *   no linked assets                  → null (pure top-down belief — judgment-driven)
  *   any linked asset monitoring       → monitoring
  *   none monitoring, was monitoring    → closed
  *   none monitoring, never reached it  → developing
+ *
+ * A macro with no asset theses is a pure top-down belief with no expression
+ * pathway, so expression-driven status does not apply — the cascade leaves it to
+ * judgment (docs/v2/07 §3: "A macro with no asset theses can sit in developing
+ * indefinitely"). Closing it would falsely assert that an expression ended.
  *
  * A single live linked asset flips the macro to monitoring (docs/v2/07 §3 "any
  * linked asset thesis is monitoring"; open decision #6 resolved to single, not a
@@ -67,6 +76,7 @@ export interface MacroThesisStatusInputs {
  */
 export function deriveMacroThesisStatus(i: MacroThesisStatusInputs): CascadeStatus | null {
   if (!CASCADE_ELIGIBLE.includes(i.current)) return null;
+  if (!i.hasLinkedAssets) return null;
   if (i.anyLinkedAssetMonitoring) return 'monitoring';
   if (i.current === 'monitoring' || i.current === 'closed') return 'closed';
   return 'developing';
