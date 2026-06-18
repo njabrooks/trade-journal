@@ -14,16 +14,19 @@ accumulation; the user is involved only at genuine decision points.
 **Modes implemented:**
 - **Digest refresh (B4, §4a)** — re-synthesize the supporting digest for *developing*
   theses that have accumulated new claims. Digest only, no signals.
-- **Signal derivation (B5, §4b)** — derive a *monitoring* thesis's qualitative
+- **Signal derivation (B5b, §4b)** — derive a *monitoring* thesis's qualitative
   signals (the invalidation/confirmation/completion digest) from its claims.
+- **Health pass (B5c, §4c)** — re-assess a *monitoring* thesis's existing signals
+  against the latest routed evidence + price context; surface a decision only on
+  weakening/invalidation.
 
 Future modes extend the same skill:
-- **B5c** — the monitoring thesis-health pass (re-assess signals vs evidence).
 - **B7** — retrospective on close.
 
-The two implemented modes are partitioned by thesis status and never overlap:
-digest mode acts on `developing`, signal mode on `monitoring`. Neither changes
-thesis status — the expression-driven cascade owns status.
+The modes are partitioned by thesis status / signal state and never overlap:
+digest mode acts on `developing`; signal mode on `monitoring` with no signals yet;
+health mode on `monitoring` that already has signals. None change thesis status —
+the expression-driven cascade owns status.
 
 ## Mode: Digest refresh (B4, §4a)
 
@@ -208,3 +211,74 @@ linked via `signal_entity_links`), supersedes any stale signals, and leaves stat
 4. ❌ Missing `linkedClaimIds` or provenance (`sourceSection`/`sourceDriverIndex`) on a signal.
 5. ❌ Forgetting the compositional invalidation signal when the thesis has a `gated_by`/`depends_on` parent macro.
 6. ❌ Changing thesis status, or processing a developing/closed thesis (signal mode is monitoring-only).
+
+---
+
+## Mode: Health pass (B5c, §4c)
+
+Re-assess a monitoring thesis's **existing** signals against the latest routed
+evidence and price context, render a current verdict per signal, and surface a
+decision **only when the thesis is weakening**. This is the loop that keeps live
+beliefs honest. Two hard policies (do not violate):
+
+- **Change-only:** a `thesis_health` snapshot is written only for a signal whose
+  verdict *changed* since its last health verdict. The writer enforces this via the
+  `materialChange` flag — set it truthfully.
+- **Decision-only-on-weakening:** raise a DecisionStrip item *only* when ≥1 signal
+  is `weakening` or `invalidated`. Never raise a "still fine" decision — a healthy
+  pass produces snapshots (maybe) and an updated review clock, nothing the user sees.
+
+### Workflow
+
+**Step 1 — Worklist** (due = new evidence since last review, or weekly floor)
+```bash
+npx tsx scripts/ops/find-theses-due-health.ts --json
+```
+
+**Step 2 — Bundle** per thesis
+```bash
+npx tsx scripts/ops/find-theses-due-health.ts --context <thesisId> --type <asset|macro>
+```
+Returns `{ thesis (incl. ticker/spot for assets), signals[] }`. Each signal carries
+its `statement`, `notes`, `linkedClaimIds`, `lastHealthAssessment` (the prior verdict,
+for change detection), and `recentEvidence[]` (routed `signal_data_snapshots`, newest
+first, with `assessment` + `evidenceSummary` + `dataSource`).
+
+**Step 3 — Render a verdict per signal.** For each signal, judge its `statement`
+against `recentEvidence` + the thesis/price context:
+- `confirmed` / `strengthening` — evidence supports the signal (confirmation playing
+  out, or invalidation criterion looking less likely).
+- `neutral` — no material evidence either way.
+- `weakening` — evidence is moving against the thesis (a confirmation faltering, or
+  an invalidation criterion getting closer).
+- `invalidated` — an invalidation criterion has essentially triggered.
+Set `materialChange: true` iff the verdict differs from `lastHealthAssessment`
+(treat a first-ever verdict that is anything other than `neutral` as material; a
+first `neutral` is not worth a snapshot). Write a one-line `evidenceSummary` citing
+what drove the verdict (the evidence item / price move). **Do not invent evidence** —
+if there's nothing new, the honest verdict is usually `neutral`/unchanged.
+
+**Step 4 — Roll up + decide.** The thesis is weakening if any signal is
+`weakening`/`invalidated`. Only then build a `decision` (concise title + a
+description naming which signal(s) weakened, the evidence, and a suggested action).
+
+**Step 5 — Record** (the writer enforces change-only, stamps `last_reviewed_at`,
+and dedupes the decision against an existing active one):
+```json
+{ "thesisId":"<id>", "thesisType":"<type>",
+  "verdicts":[ { "signalId":"<id>", "assessment":"neutral", "evidenceSummary":"...", "materialChange":false } ],
+  "decision": { "title":"<thesis> weakening — <signal>", "description":"..." } }
+```
+```bash
+echo '<json>' | npx tsx scripts/record-thesis-health.ts --stdin
+```
+Omit `decision` entirely for a healthy/neutral pass.
+
+**Step 6 — Report** per thesis: `title — {n} signals assessed, {m} changed, decision: yes/no`.
+
+### Common mistakes (health mode)
+1. ❌ Raising a decision when nothing is weakening (the strip is for deterioration only).
+2. ❌ `materialChange: true` on an unchanged verdict — floods the snapshot history.
+3. ❌ Inventing evidence — with nothing new, the verdict is `neutral`, not a guess.
+4. ❌ Changing thesis status or signal records (health mode only reads signals + writes snapshots/decisions).
+5. ❌ Re-deriving or editing the signals themselves (that's signal mode); health mode assesses them as-is.
