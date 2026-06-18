@@ -346,6 +346,12 @@ export const mainClaims = pgTable(
     statusIdx: index('idx_main_claims_status').on(table.status),
     tickersIdx: index('idx_main_claims_tickers').on(table.relevantTickers),
     sourceInsightIdx: index('idx_main_claims_source_insight').on(table.sourceInsightId),
+    // Atomic upsert key for relate-research promoteClaim. NULLS DISTINCT (PG default)
+    // leaves manually-created, null-provenance claims unaffected.
+    sourceProvenanceUnique: uniqueIndex('main_claims_source_provenance_unique').on(
+      table.sourceInsightId,
+      table.sourceClaimId,
+    ),
   })
 );
 
@@ -1517,6 +1523,11 @@ export const signalDataSnapshots = pgTable(
   (table) => ({
     signalIdx: index('idx_signal_data_snapshots_signal').on(table.signalId, table.snapshotDate),
     reportIdx: index('idx_signal_data_snapshots_report').on(table.reportId),
+    // One research_routing evidence snapshot per (signal, claim) — backs relate-research
+    // recordSignalEvidence dedup so re-runs heal rather than duplicate.
+    researchRoutingUnique: uniqueIndex('signal_data_snapshots_research_routing_unique')
+      .on(table.signalId, table.claimId)
+      .where(sql`data_source = 'research_routing'`),
   })
 );
 

@@ -10,7 +10,7 @@
  * Each thesis includes its lifecycle phase (developing/monitoring) for routing.
  */
 
-import { and, eq, inArray, notInArray, or } from 'drizzle-orm';
+import { and, eq, inArray, notInArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import {
   underlyings,
@@ -246,9 +246,10 @@ export async function resolveRelevanceContext(
       .from(signals)
       .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
       .where(
-        or(
+        and(
+          eq(signals.status, 'active'),
           inArray(signalEntityLinks.thesisId, allThesisIds),
-        )
+        ),
       );
 
     for (const row of signalRows) {
