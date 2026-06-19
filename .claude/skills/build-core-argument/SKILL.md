@@ -66,6 +66,14 @@ set -a && source .env.local && set +a
 
 ### Step 1 — Load context
 
+> **Completeness pre-check FIRST (standardized).** Synthesis reads only *linked* claims, so before
+> loading, confirm the linked set is complete: run `npx tsx scripts/ops/thesis-snapshot.ts --ticker
+> <T>` (or `--id`) and check **`thin.unlinkedTickerClaims`**. If **> 0**, there are claims tagged with
+> this ticker not yet linked — **relate them first** (`/relate-research` or `link-claim-to-thesis`) so you
+> don't underwrite a silently-incomplete/lopsided set. (Ticker-only backstop: no-ticker/macro claims and
+> un-promoted Tana content still rely on relate-research having run.) When invoked from `/thesis`
+> re-underwrite this is already handled upstream.
+
 **Prefer the query helpers** — they resolve multi-source provenance (including the new
 `conversation` / `deep_research` / `agent_research` artifacts) automatically:
 

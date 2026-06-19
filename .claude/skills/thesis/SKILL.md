@@ -61,6 +61,10 @@ Then `Read` the JSON it prints. Shape (the surface you answer from):
   flag).
 - `strategies`, `performance` (realized + attribution; macro = full-credit exposure view), `allocation`
   (per-strategy pct-of-NAV + `sumPctNav`), `thin` (deterministic gap flags).
+- `unlinkedByTicker` — **the completeness backstop**: claims tagged with the thesis's ticker that are
+  **not yet linked** to it (count mirrored in `thin.unlinkedTickerClaims`). Non-zero = un-incorporated
+  evidence. Ticker-only (asset theses) — does not catch no-ticker/macro claims or un-promoted Tana
+  content, so it's a backstop, not a guarantee.
 
 If `thesis-snapshot` returns `{error, candidates}`, show the candidates and ask which one (or take an
 `--id`).
@@ -79,14 +83,25 @@ If `thesis-snapshot` returns `{error, candidates}`, show the candidates and ask 
 - **"what's thin / unresolved?"** → read the `thin` block: missing articulation
   (`monitoringWithoutArticulation` = a live position with no underwriting — the stranding case),
   `evidenceGaps`, sparse-Toulmin observations (`hasReasoning`/`hasBacking` false), low claim count, refuting
-  evidence accumulating. Name the specific gaps and offer a move.
+  evidence accumulating, and **`unlinkedTickerClaims` > 0 = un-incorporated evidence not yet on the
+  thesis**. Name the specific gaps and offer a move.
 - **"what's changed since I looked?"** → Step 3's delta.
 
 Present conversationally and decision-first — a digest, not a form dump.
 
 ## Step 3 — Synthesis verbs (writes, via existing scripts)
 
-**Re-underwrite ("re-underwrite X", "underwrite X", "rebuild the case"):** invoke **`/build-core-argument`**
+**Re-underwrite ("re-underwrite X", "underwrite X", "rebuild the case"):**
+
+> **Completeness pre-check (do this FIRST — standardized, not optional).** Synthesis reads only *linked*
+> claims, so before building, check the snapshot's **`thin.unlinkedTickerClaims`**. If it's **> 0**, there
+> is un-incorporated evidence tagged with this ticker — **relate it first** (`/relate-research` over those
+> claims, or `link-claim-to-thesis` for clearly-on-thesis ones) so the underwriting isn't built on a
+> silently-incomplete (and possibly lopsided) set. Surface the count + a bull/bear read and let the user
+> choose scope before synthesizing. (Caveat: ticker-only — no-ticker/macro claims and un-promoted Tana
+> content still rely on relate-research having run; mention that the check is a backstop.)
+
+Then invoke **`/build-core-argument`**
 for `{thesisId, thesisType}`. It reads all linked claims (including conversation/research observations),
 derives the resolution section from the claims' rebuttals + inverted assumptions with zero manual input,
 and writes a **new articulation version** (superseding the prior version's signals). The version series is

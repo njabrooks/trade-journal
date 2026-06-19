@@ -23,8 +23,8 @@
  */
 
 import { db } from '@/db';
-import { macroTheses, assetTheses, underlyings, strategyMetricsSnapshots } from '@/db/schema';
-import { eq, and, ilike, inArray, desc } from 'drizzle-orm';
+import { macroTheses, assetTheses, underlyings, strategyMetricsSnapshots, mainClaims, claimThesisMappings } from '@/db/schema';
+import { eq, and, ilike, inArray, desc, sql } from 'drizzle-orm';
 import { getLatestArticulation, getArticulationHistory, getActiveSignals } from '@/db/queries/thesisSynthesis';
 import { getMainClaimsWithSourcesForThesis, getLinkedStrategiesForThesis } from '@/db/queries/macroTheses';
 import { getMainClaimsWithSourcesForAssetThesis, getLinkedStrategiesForAssetThesis } from '@/db/queries/assetTheses';
@@ -123,6 +123,28 @@ async function allocation(strategyIds: string[]) {
   };
 }
 
+/**
+ * Standardized completeness pre-check (asset theses): main_claims tagged with the
+ * thesis's ticker that are NOT yet linked to this thesis. Surfaces the "un-incorporated
+ * evidence" gap by default so re-underwrite never synthesizes on a silently-incomplete set.
+ * Ticker-only: catches DB claims with a matching ticker; does NOT catch no-ticker/macro
+ * claims or un-promoted Tana content (relate-research remains the primary mechanism).
+ */
+async function unlinkedByTicker(ticker: string | null, thesisId: string) {
+  if (!ticker) return [];
+  const tagged = await db
+    .select({ id: mainClaims.id, title: mainClaims.title, qualifier: mainClaims.qualifier, status: mainClaims.status })
+    .from(mainClaims)
+    .where(sql`${ticker} = ANY(${mainClaims.relevantTickers})`);
+  if (tagged.length === 0) return [];
+  const linkedRows = await db
+    .select({ id: claimThesisMappings.mainClaimId })
+    .from(claimThesisMappings)
+    .where(eq(claimThesisMappings.assetThesisId, thesisId));
+  const linked = new Set(linkedRows.map((r) => r.id));
+  return tagged.filter((t) => !linked.has(t.id));
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const r = await resolve(args);
@@ -152,6 +174,9 @@ async function main() {
   }
 
   const alloc = await allocation(strategies.map((s: { id: string }) => s.id));
+
+  // Standardized completeness pre-check (asset theses only — ticker-based).
+  const unlinked = r.type === 'asset' ? await unlinkedByTicker(r.ticker, r.id) : [];
 
   // Shape claims for the surface: the case-bearing fields + source type + the falsification view.
   const claims = claimsRaw.map((c) => ({
@@ -188,6 +213,9 @@ async function main() {
     rebuttalsAvailable: claims.filter((c) => (c.rebuttal?.length ?? 0) > 0).length,
     evidenceGaps: (articulation?.evidenceGaps as string[] | undefined) ?? [],
     monitoringWithoutArticulation: r.status === 'monitoring' && history.length === 0,
+    // Un-incorporated evidence backstop (asset, ticker-based): claims tagged with this
+    // ticker not yet linked. Non-zero ⇒ relate them before re-underwriting.
+    unlinkedTickerClaims: unlinked.length,
   };
 
   console.log(JSON.stringify({
@@ -211,6 +239,7 @@ async function main() {
     versionHistory: history.map((h) => ({ version: h.version, confidenceLevel: h.confidenceLevel, createdAt: h.createdAt })),
     resolution: sigByType,
     claims,
+    unlinkedByTicker: unlinked,
     strategies,
     performance,
     allocation: alloc,
