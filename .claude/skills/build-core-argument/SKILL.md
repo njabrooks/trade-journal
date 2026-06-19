@@ -68,10 +68,11 @@ set -a && source .env.local && set +a
 
 > **Completeness pre-check FIRST (standardized).** Synthesis reads only *linked* claims, so before
 > loading, confirm the linked set is complete: run `npx tsx scripts/ops/thesis-snapshot.ts --ticker
-> <T>` (or `--id`) and check **`thin.unlinkedTickerClaims`**. If **> 0**, there are claims tagged with
-> this ticker not yet linked — **relate them first** (`/relate-research` or `link-claim-to-thesis`) so you
-> don't underwrite a silently-incomplete/lopsided set. (Ticker-only backstop: no-ticker/macro claims and
-> un-promoted Tana content still rely on relate-research having run.) When invoked from `/thesis`
+> <T>` (or `--id`) and check **`thin.unlinkedClaimCount`**. If **> 0**, there are claims that bear on the
+> thesis but aren't linked (asset = tagged with the ticker; macro = on a child asset thesis but not the
+> macro) — **relate them first** (`/relate-research` or `link-claim-to-thesis`) so you don't underwrite a
+> silently-incomplete/lopsided set. (Backstop only: won't catch no-ticker claims unrelated to a child
+> asset, or un-promoted Tana content — relate-research stays primary.) When invoked from `/thesis`
 > re-underwrite this is already handled upstream.
 
 **Prefer the query helpers** — they resolve multi-source provenance (including the new

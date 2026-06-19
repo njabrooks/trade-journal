@@ -28,7 +28,8 @@ export type DecisionType =
   | 'classify_macro_link'
   | 'weakening_signal_action'
   | 'run_deep_dive'
-  | 'link_strategy_to_thesis';
+  | 'link_strategy_to_thesis'
+  | 're_underwrite_due';
 
 /** Object types a decision can reference (journal_entries.object_type + graph nodes). */
 export type DecisionObjectType =
@@ -102,6 +103,7 @@ export const DECISION_RUNBOOKS: Record<DecisionType, string> = {
   weakening_signal_action: '/thesis-review health',
   run_deep_dive: 'stage-1…5 → graduate-pipeline-idea',
   link_strategy_to_thesis: 'link-strategies-to-theses',
+  re_underwrite_due: '/thesis <X> re-underwrite (new evidence since last version)',
 };
 
 /** Short human label for the decision_type chip in the strip. */
@@ -117,6 +119,7 @@ export const DECISION_TYPE_LABELS: Record<DecisionType, string> = {
   weakening_signal_action: 'Weakening',
   run_deep_dive: 'Deep dive?',
   link_strategy_to_thesis: 'Link strategy',
+  re_underwrite_due: 'Re-underwrite due',
 };
 
 /**

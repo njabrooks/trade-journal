@@ -61,10 +61,12 @@ Then `Read` the JSON it prints. Shape (the surface you answer from):
   flag).
 - `strategies`, `performance` (realized + attribution; macro = full-credit exposure view), `allocation`
   (per-strategy pct-of-NAV + `sumPctNav`), `thin` (deterministic gap flags).
-- `unlinkedByTicker` — **the completeness backstop**: claims tagged with the thesis's ticker that are
-  **not yet linked** to it (count mirrored in `thin.unlinkedTickerClaims`). Non-zero = un-incorporated
-  evidence. Ticker-only (asset theses) — does not catch no-ticker/macro claims or un-promoted Tana
-  content, so it's a backstop, not a guarantee.
+- `unlinkedClaims` / `unlinkedMethod` — **the completeness backstop**: claims that bear on the thesis but
+  aren't linked yet (count mirrored in `thin.unlinkedClaimCount`). For **assets** = claims tagged with the
+  ticker (`unlinkedMethod: 'ticker'`); for **macros** = claims on the macro's child asset theses not yet on
+  the macro (`unlinkedMethod: 'child_assets'`). Non-zero = un-incorporated evidence. Still a backstop, not a
+  guarantee — it won't catch no-ticker claims unrelated to a child asset, or un-promoted Tana content
+  (relate-research remains the primary mechanism).
 
 If `thesis-snapshot` returns `{error, candidates}`, show the candidates and ask which one (or take an
 `--id`).
@@ -83,7 +85,7 @@ If `thesis-snapshot` returns `{error, candidates}`, show the candidates and ask 
 - **"what's thin / unresolved?"** → read the `thin` block: missing articulation
   (`monitoringWithoutArticulation` = a live position with no underwriting — the stranding case),
   `evidenceGaps`, sparse-Toulmin observations (`hasReasoning`/`hasBacking` false), low claim count, refuting
-  evidence accumulating, and **`unlinkedTickerClaims` > 0 = un-incorporated evidence not yet on the
+  evidence accumulating, and **`unlinkedClaimCount` > 0 = un-incorporated evidence not yet on the
   thesis**. Name the specific gaps and offer a move.
 - **"what's changed since I looked?"** → Step 3's delta.
 
@@ -94,12 +96,13 @@ Present conversationally and decision-first — a digest, not a form dump.
 **Re-underwrite ("re-underwrite X", "underwrite X", "rebuild the case"):**
 
 > **Completeness pre-check (do this FIRST — standardized, not optional).** Synthesis reads only *linked*
-> claims, so before building, check the snapshot's **`thin.unlinkedTickerClaims`**. If it's **> 0**, there
-> is un-incorporated evidence tagged with this ticker — **relate it first** (`/relate-research` over those
-> claims, or `link-claim-to-thesis` for clearly-on-thesis ones) so the underwriting isn't built on a
-> silently-incomplete (and possibly lopsided) set. Surface the count + a bull/bear read and let the user
-> choose scope before synthesizing. (Caveat: ticker-only — no-ticker/macro claims and un-promoted Tana
-> content still rely on relate-research having run; mention that the check is a backstop.)
+> claims, so before building, check the snapshot's **`thin.unlinkedClaimCount`** (and `unlinkedClaims` /
+> `unlinkedMethod`). If it's **> 0**, there is un-incorporated evidence — for an asset, claims tagged with
+> the ticker; for a macro, claims on its child asset theses not yet propagated up — **relate it first**
+> (`/relate-research` over those claims, or `link-claim-to-thesis` for clearly-on-thesis ones) so the
+> underwriting isn't built on a silently-incomplete (and possibly lopsided) set. Surface the count + a
+> bull/bear read and let the user choose scope before synthesizing. (Caveat: it's a backstop — won't catch
+> no-ticker claims unrelated to a child asset, or un-promoted Tana content; relate-research stays primary.)
 
 Then invoke **`/build-core-argument`**
 for `{thesisId, thesisType}`. It reads all linked claims (including conversation/research observations),

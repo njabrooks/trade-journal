@@ -23,7 +23,7 @@
  */
 
 import { db } from '@/db';
-import { macroTheses, assetTheses, underlyings, strategyMetricsSnapshots, mainClaims, claimThesisMappings } from '@/db/schema';
+import { macroTheses, assetTheses, underlyings, strategyMetricsSnapshots, mainClaims, claimThesisMappings, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq, and, ilike, inArray, desc, sql } from 'drizzle-orm';
 import { getLatestArticulation, getArticulationHistory, getActiveSignals } from '@/db/queries/thesisSynthesis';
 import { getMainClaimsWithSourcesForThesis, getLinkedStrategiesForThesis } from '@/db/queries/macroTheses';
@@ -145,6 +145,39 @@ async function unlinkedByTicker(ticker: string | null, thesisId: string) {
   return tagged.filter((t) => !linked.has(t.id));
 }
 
+/**
+ * Macro completeness backstop: claims linked to the macro's CHILD asset theses but not
+ * to the macro itself. The sector-free analogue of unlinkedByTicker — a claim that bears
+ * on an asset under a macro often bears on the macro, so this surfaces evidence that
+ * reached the assets but never propagated up. Deterministic; covers the macro side that
+ * the ticker check can't.
+ */
+async function unlinkedViaChildAssets(macroId: string) {
+  const children = await db
+    .select({ id: assetThesisRelatedMacroTheses.assetThesisId })
+    .from(assetThesisRelatedMacroTheses)
+    .where(eq(assetThesisRelatedMacroTheses.macroThesisId, macroId));
+  const childIds = children.map((c) => c.id).filter((x): x is string => !!x);
+  if (childIds.length === 0) return [];
+  const onChildren = await db
+    .select({ id: claimThesisMappings.mainClaimId })
+    .from(claimThesisMappings)
+    .where(inArray(claimThesisMappings.assetThesisId, childIds));
+  const childClaimIds = [...new Set(onChildren.map((c) => c.id).filter((x): x is string => !!x))];
+  if (childClaimIds.length === 0) return [];
+  const onMacro = await db
+    .select({ id: claimThesisMappings.mainClaimId })
+    .from(claimThesisMappings)
+    .where(eq(claimThesisMappings.macroThesisId, macroId));
+  const macroSet = new Set(onMacro.map((c) => c.id));
+  const missingIds = childClaimIds.filter((id) => !macroSet.has(id));
+  if (missingIds.length === 0) return [];
+  return db
+    .select({ id: mainClaims.id, title: mainClaims.title, qualifier: mainClaims.qualifier, status: mainClaims.status })
+    .from(mainClaims)
+    .where(inArray(mainClaims.id, missingIds));
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const r = await resolve(args);
@@ -175,8 +208,9 @@ async function main() {
 
   const alloc = await allocation(strategies.map((s: { id: string }) => s.id));
 
-  // Standardized completeness pre-check (asset theses only — ticker-based).
-  const unlinked = r.type === 'asset' ? await unlinkedByTicker(r.ticker, r.id) : [];
+  // Standardized completeness pre-check: ticker-based for assets, child-asset-based for macros.
+  const unlinked = r.type === 'asset' ? await unlinkedByTicker(r.ticker, r.id) : await unlinkedViaChildAssets(r.id);
+  const unlinkedMethod = r.type === 'asset' ? 'ticker' : 'child_assets';
 
   // Shape claims for the surface: the case-bearing fields + source type + the falsification view.
   const claims = claimsRaw.map((c) => ({
@@ -213,9 +247,10 @@ async function main() {
     rebuttalsAvailable: claims.filter((c) => (c.rebuttal?.length ?? 0) > 0).length,
     evidenceGaps: (articulation?.evidenceGaps as string[] | undefined) ?? [],
     monitoringWithoutArticulation: r.status === 'monitoring' && history.length === 0,
-    // Un-incorporated evidence backstop (asset, ticker-based): claims tagged with this
-    // ticker not yet linked. Non-zero ⇒ relate them before re-underwriting.
-    unlinkedTickerClaims: unlinked.length,
+    // Un-incorporated evidence backstop: asset = claims tagged with this ticker not yet
+    // linked; macro = claims on child asset theses not yet on the macro. Non-zero ⇒ relate
+    // them before re-underwriting. (See unlinkedMethod for which heuristic applied.)
+    unlinkedClaimCount: unlinked.length,
   };
 
   console.log(JSON.stringify({
@@ -239,7 +274,8 @@ async function main() {
     versionHistory: history.map((h) => ({ version: h.version, confidenceLevel: h.confidenceLevel, createdAt: h.createdAt })),
     resolution: sigByType,
     claims,
-    unlinkedByTicker: unlinked,
+    unlinkedClaims: unlinked,
+    unlinkedMethod,
     strategies,
     performance,
     allocation: alloc,
