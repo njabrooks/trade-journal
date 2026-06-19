@@ -136,12 +136,22 @@ Sequence and depth decided when we pick this up; D1–D2 are the enabling backen
 
 ---
 
-## 11. Decisions for sign-off
+## 11. Decisions for sign-off — RESOLVED (built in D1–D5, 2026-06-19)
 
-1. **Resolution criteria storage** — keep auto-derived `signals` rows (never configured) for a queryable/diffable anchor, or fold them entirely into the articulation JSON? *Lean: keep thin rows (they give the "where each stands" view + the what's-changed delta something to compare), but never user-configured.*
-2. **Conviction representation** — is the `confidence_level` enum enough, or add a finer numeric strength score (sharpens the allocation-vs-conviction query)? *Lean: start with the enum + articulation rationale; add a score only if the calibration query needs it.*
-3. **Conversation capture** — reuse relaxed `main_claims` for conversation observations, or a tiny dedicated `thesis_notes`? *Lean: reuse `main_claims`; add a table only if it proves awkward.*
-4. **Surface** — how much of the conversational query lives as in-app UI vs is just Claude Code over the data? *Lean: Claude Code first (zero build), add in-app affordances only where they earn it.*
+All four leans adopted as-is (they were minimal and self-consistent):
+
+1. **Resolution criteria storage** — **keep thin auto-derived `signals` rows** (never user-configured), tied to each articulation version via the existing supersede+insert plumbing in `scripts/insert-thesis-articulation.ts`. They give the "where each stands" view + an anchor for the what's-changed delta. *Not* folded into JSON.
+2. **Conviction representation** — **`confidence_level` enum + articulation rationale**. No numeric score (the allocation-vs-conviction query maps the enum to an ordinal on the fly; add a score only if that proves too coarse).
+3. **Conversation capture** — **reuse relaxed `main_claims`** + one additive provenance column `main_claims.source_artifact_id` (so a lightweight observation cites its artifact without a synthetic `research_insight`). No `thesis_notes` table.
+4. **Surface** — **Claude Code skill first** (`/thesis`), zero in-app build. Add in-app affordances only where they earn it.
+
+### Build outcome (D1–D5)
+
+- **D1** — `migrations/loose-agent-source-types-and-claim-provenance.sql` (widened `research_artifacts.source_type` CHECK + `conversation`/`deep_research`/`agent_research`; added `main_claims.source_artifact_id`). Canonical source-type list: `src/lib/research/sourceTypes.ts`. Both claim-with-sources query helpers (`getMainClaimsWithSourcesForThesis` / `…ForAssetThesis`) now coalesce the direct-artifact provenance so conversation observations are visible to synthesis + the surface.
+- **D2** — the `developing`-vs-`monitoring` info-gate is dropped in `src/lib/intelligence/relateResearch.ts` (`applyJudgedPlan` now accepts links to any *active* thesis; only non-active are rejected — this un-strands ENTG). `/relate-research` and `/build-core-argument` skills rewritten to the loose model: synthesis reads multi-source observations and **derives the resolution section from the claims' own rebuttals**; the metric-signal machinery (FRED / `explicit_details` / `/configure-signal` / auto-trigger) is retired from the synthesis path.
+- **D3** — `/thesis` skill (`.claude/skills/thesis/`) + read-only `scripts/ops/thesis-snapshot.ts` data surface. The pull/curious foreground; `/maintenance` stays the background freshness-keeper.
+- **D4** — `scripts/ops/capture-observation.ts`: one-shot artifact (`source_type=conversation`) → lightweight `main_claim` (provenance via `source_artifact_id`) → optional thesis link.
+- **D5** — allocation-vs-conviction and the other example queries live as recipes inside `/thesis` (over `confidence_level` × `strategy_metrics_snapshots` × the graph; macro via W5 full-credit) — not features.
 
 ---
 

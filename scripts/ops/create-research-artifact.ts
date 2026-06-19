@@ -34,6 +34,7 @@
 
 import { db, closeDb, schema } from '../lib/db.js';
 import { eq, sql } from 'drizzle-orm';
+import { RESEARCH_SOURCE_TYPES } from '@/lib/research/sourceTypes';
 
 function parseArgs(argv: string[]): Record<string, string> {
   const args: Record<string, string> = {};
@@ -85,7 +86,7 @@ async function main() {
     x: 'article',
     twitter: 'article',
   };
-  const validSourceTypes = ['article', 'transcript', 'note', 'report', 'video', 'manual'];
+  const validSourceTypes: readonly string[] = RESEARCH_SOURCE_TYPES;
   const normalisedSourceType = SOURCE_TYPE_MAP[source_type] ?? (validSourceTypes.includes(source_type) ? source_type : 'article');
 
   // Dedup: if tana_content_node_id provided, check for existing artifact

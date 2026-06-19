@@ -82,18 +82,20 @@ Worked example — "Q3 datacenter capex guidance cut 10%" vs *Bullish AI
 Infrastructure*: related and negative, but one quarter isn't decisive →
 `refutes`, ~0.5. It links and raises a decision.
 
-**Link developing theses only.** Catalog entries with `status: "monitoring"` are
-shown for **context** — a monitoring thesis is one you're actively tracking, so a
-claim that *challenges* it matters — but do **not** put monitoring theses in the
-link plan (the engine rejects them as a lifecycle violation). Monitoring theses
-receive evidence through the **signal route**, not claim links. If a claim
-genuinely confirms or challenges a *monitoring* thesis, **note it in the digest**
-for the user rather than linking it.
+**Link any active thesis — developing OR monitoring.** Judge *bearing*, not
+lifecycle. `monitoring` means you have live capital on the thesis; it is a position
+flag, **not** an information gate (docs/v2/10 §7). A claim that confirms or
+challenges a monitoring thesis is exactly as relevant as one bearing on a
+developing thesis, so link it the same way — this is what feeds the thesis's living
+underwriting and dissolves the old stranding (a monitoring thesis with claims but
+nowhere for new evidence to attach). The engine accepts links to any active thesis
+and rejects only **non-active** ones (draft / closed / complete / rejected) — a
+killed or archived thesis can't accrue new evidence.
 
-**Be conservative.** Most claims relate to **0 or 1** developing theses. A claim
-linked to 3+ theses is usually topical overlap, not genuine relevance — tighten
-it. Claims that relate to **no** active thesis are correct to drop: they stay in
-Tana. Never force a link to "use" a claim.
+**Be conservative.** Most claims relate to **0 or 1** active theses. A claim linked
+to 3+ theses is usually topical overlap, not genuine relevance — tighten it. Claims
+that relate to **no** active thesis are correct to drop: they stay in Tana. Never
+force a link to "use" a claim.
 
 **New-thesis clusters.** If several dropped claims share a clear theme/ticker with
 no active thesis, **note it in the digest** for the user to consider opening a
@@ -123,8 +125,12 @@ cat /tmp/relate-plan.json | npx tsx scripts/relate-research.ts --apply -
 
 ## Step 4 — Deterministic signal route (optional)
 
+This is **additive** to Step 2, not a substitute: a claim bearing on a monitoring
+thesis should be linked in Step 2 (that feeds the thesis's underwriting). The signal
+route is a separate, deterministic evidence path that also records the claim against
+the thesis's auto-derived resolution signals for the signal-evaluation machinery.
 For claims whose ticker matches a **monitoring** asset thesis, the engine can
-record signal evidence with no judgment needed (high-precision ticker match only):
+record that signal evidence with no judgment needed (high-precision ticker match only):
 
 ```bash
 npx tsx scripts/relate-research.ts --since 2026-06-10 --limit 30 --apply-signals --dry-run
@@ -149,7 +155,8 @@ Summarise, decision-first (this is the whole point — a digest, not a queue):
 - **Left in Tana** (related to nothing active): count.
 - **New-thesis clusters** worth the user's attention, if any.
 - **Dropped links** the engine rejected (`droppedLinks` in the summary): surface any
-  `non-developing` drops — they may mean a thesis was promoted out from under a link.
+  `non-active` drops — they mean the link targeted a draft/closed/complete/rejected
+  thesis (e.g. a thesis was closed out from under a link).
 
 The dashboard **DecisionStrip shows at most 5** decisions (newest first). A wide
 pre-cull run can emit more — so **your chat digest is the authoritative full list**,

@@ -9,11 +9,15 @@
 
 import { createResearchArtifact } from '@/db/queries/research';
 import type { NewResearchArtifact } from '@/db/schema';
+import { RESEARCH_SOURCE_TYPES, type ResearchSourceType } from '@/lib/research/sourceTypes';
+
+// Re-export the canonical source-type list so existing importers can reach it here.
+export { RESEARCH_SOURCE_TYPES, type ResearchSourceType };
 
 export interface IngestTextOptions {
   title: string;
   content: string;
-  sourceType: 'article' | 'transcript' | 'note' | 'report' | 'video' | 'manual' | 'thread';
+  sourceType: ResearchSourceType | 'thread';
   sourceUrl?: string;
   author?: string;
   publishedDate?: string;
@@ -182,7 +186,7 @@ export function validateResearchData(data: Partial<IngestTextOptions>): string[]
   if (!data.sourceType) {
     errors.push('Source type is required');
   } else {
-    const validSourceTypes = ['article', 'transcript', 'note', 'report', 'video', 'manual', 'thread'];
+    const validSourceTypes = [...RESEARCH_SOURCE_TYPES, 'thread'];
     if (!validSourceTypes.includes(data.sourceType)) {
       errors.push(`Invalid source type. Must be one of: ${validSourceTypes.join(', ')}`);
     }

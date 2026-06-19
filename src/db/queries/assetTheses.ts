@@ -1,6 +1,7 @@
 import { db } from '@/db';
 import { assetTheses, macroTheses, underlyings, strategies, accounts, mainClaims, claimThesisMappings, researchInsights, researchArtifacts, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq, desc, inArray, and, count } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type { NewAssetThesis } from '@/db/schema';
 
 export interface AssetThesisListItem {
@@ -261,17 +262,23 @@ export async function getLinkedMainClaimsForAssetThesis(assetThesisId: string) {
 }
 
 export async function getMainClaimsWithSourcesForAssetThesis(assetThesisId: string) {
+  // Direct artifact provenance (D1) — observations cite their artifact via
+  // main_claims.source_artifact_id with no research_insight row. Coalesced below.
+  const directArtifact = alias(researchArtifacts, 'direct_artifact');
+
   // Get claims linked to this asset thesis with their source information
   const claimsData = await db
     .select({
       claim: mainClaims,
       insight: researchInsights,
       artifact: researchArtifacts,
+      directArtifact: directArtifact,
     })
     .from(claimThesisMappings)
     .innerJoin(mainClaims, eq(claimThesisMappings.mainClaimId, mainClaims.id))
     .leftJoin(researchInsights, eq(mainClaims.sourceInsightId, researchInsights.id))
     .leftJoin(researchArtifacts, eq(researchInsights.researchArtifactId, researchArtifacts.id))
+    .leftJoin(directArtifact, eq(mainClaims.sourceArtifactId, directArtifact.id))
     .where(eq(claimThesisMappings.assetThesisId, assetThesisId))
     .orderBy(desc(mainClaims.createdAt));
 
@@ -334,7 +341,7 @@ export async function getMainClaimsWithSourcesForAssetThesis(assetThesisId: stri
   return claimsData.map((row) => ({
     claim: row.claim,
     insight: row.insight,
-    artifact: row.artifact,
+    artifact: row.artifact ?? row.directArtifact,
     linkedTheses: linkedThesesMap.get(row.claim.id) || [],
     linkedViews: linkedViewsMap.get(row.claim.id) || [],
   }));

@@ -6,6 +6,13 @@ allowed-tools: Bash, Read, Write
 
 # Configure Signal Skill
 
+> **⚠️ RETIRED (docs/v2/10 §6/§9, 2026-06-19).** The loose-agent model removes manual
+> signal configuration: signals are now the **synthesized resolution section** of a thesis's
+> living underwriting, auto-derived by `/build-core-argument` from the linked claims' own
+> rebuttals — never hand-wired to a metric/threshold. Do **not** invoke this skill for new
+> work; `explicit_details` is no longer populated. Kept only as historical reference for the
+> handful of legacy signals that still carry a metric config.
+
 ## Purpose
 
 Wire up `explicit_details` on a signal that came out of `/build-core-argument` with `explicit_details: null`. Every signal needs a monitoring configuration before `collect-signal-data.ts` can track it. This skill guides you through that configuration interactively — asking questions, proposing sources, testing endpoints live, and only writing to the DB once you confirm.

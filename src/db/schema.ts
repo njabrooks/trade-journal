@@ -335,6 +335,10 @@ export const mainClaims = pgTable(
     // Source tracking (for auto-promoted audit claims)
     sourceInsightId: uuid('source_insight_id').references(() => researchInsights.id, { onDelete: 'set null' }),
     sourceClaimId: text('source_claim_id'), // The claim ID from the audit JSONB (e.g., "claim-1")
+    // Direct artifact provenance (D1, docs/v2/10 §5) — a lightweight observation
+    // (conversation/deep_research/agent_research) cites its source artifact without
+    // a synthetic research_insight row. Null for insight-routed and manual claims.
+    sourceArtifactId: uuid('source_artifact_id').references(() => researchArtifacts.id, { onDelete: 'set null' }),
 
     // Timestamps
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -346,6 +350,7 @@ export const mainClaims = pgTable(
     statusIdx: index('idx_main_claims_status').on(table.status),
     tickersIdx: index('idx_main_claims_tickers').on(table.relevantTickers),
     sourceInsightIdx: index('idx_main_claims_source_insight').on(table.sourceInsightId),
+    sourceArtifactIdx: index('idx_main_claims_source_artifact').on(table.sourceArtifactId),
     // Atomic upsert key for relate-research promoteClaim. NULLS DISTINCT (PG default)
     // leaves manually-created, null-provenance claims unaffected.
     sourceProvenanceUnique: uniqueIndex('main_claims_source_provenance_unique').on(

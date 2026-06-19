@@ -11,8 +11,8 @@ confirmation at any point. Make sensible default choices for all decisions.
 ## Behavioural Overrides
 
 1. **Skip Step 5** (Interactive refinement) — proceed directly with your draft.
-2. **Skip Step 6** (Specificity dialogue) — make your best judgment on observable
-   proxies. Prefer measurable criteria where possible.
+2. **Skip Step 6** (Falsifiability dialogue) — make your best judgment. Prefer crisp,
+   falsifiable resolution statements (qualitative — never metric thresholds).
 3. **Do not pause or ask questions** — if information is ambiguous, state your
    assumption and continue.
 

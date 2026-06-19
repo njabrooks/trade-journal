@@ -130,15 +130,15 @@ export interface ApplySummary {
   decisionsEmitted: number;
   signalEvidence: number;
   belowFloor: number;
-  /** Links the skill proposed against non-developing theses — rejected (lifecycle law). */
-  skippedNonDeveloping: number;
+  /** Links the skill proposed against non-active theses (draft/closed/complete/rejected) — rejected. */
+  skippedNonActive: number;
   /** Detail on every dropped link so the operator can tell expected noise from real loss. */
   droppedLinks: Array<{
     insightId: string;
     sourceClaimId: string;
     thesisId: string;
     thesisTitle: string;
-    reason: 'unknown-claim' | 'non-developing';
+    reason: 'unknown-claim' | 'non-active';
   }>;
 }
 
@@ -730,7 +730,7 @@ export async function applyJudgedPlan(
     decisionsEmitted: 0,
     signalEvidence: 0,
     belowFloor: 0,
-    skippedNonDeveloping: 0,
+    skippedNonActive: 0,
     droppedLinks: [],
   };
 
@@ -739,12 +739,16 @@ export async function applyJudgedPlan(
   const claims = await loadCandidateClaimsFromInsights(insightIds, d);
   const claimByKey = new Map(claims.map((c) => [`${c.insightId}:${c.sourceClaimId}`, c]));
 
-  // Lifecycle law: claim links target DEVELOPING theses only. Monitoring theses receive
-  // evidence via the signal route, not claim links (B5). Enforce here so a mis-judged plan
-  // can't violate it. (Sequential queries — the script pool caps at 1 connection.)
-  const devMacro = await d.select({ id: macroTheses.id }).from(macroTheses).where(eq(macroTheses.status, 'developing'));
-  const devAsset = await d.select({ id: assetTheses.id }).from(assetTheses).where(eq(assetTheses.status, 'developing'));
-  const developingIds = new Set([...devMacro, ...devAsset].map((r) => r.id));
+  // Active-thesis law (docs/v2/10 §7): claim links target ACTIVE theses — developing
+  // OR monitoring. `monitoring` is a position flag, not an information gate; info attaches
+  // by bearing regardless of whether you currently hold the position (this dissolves the
+  // ENTG-style stranding). Reject only NON-active theses (draft/closed/complete/rejected)
+  // so a killed/archived thesis can't accrue new evidence. Enforced here so a mis-judged
+  // plan can't violate it. (Sequential queries — the script pool caps at 1 connection.)
+  const ACTIVE_STATUSES = ['developing', 'monitoring'];
+  const actMacro = await d.select({ id: macroTheses.id }).from(macroTheses).where(inArray(macroTheses.status, ACTIVE_STATUSES));
+  const actAsset = await d.select({ id: assetTheses.id }).from(assetTheses).where(inArray(assetTheses.status, ACTIVE_STATUSES));
+  const activeIds = new Set([...actMacro, ...actAsset].map((r) => r.id));
 
   const idByKey = new Map<string, string | null>(); // claimKey → mainClaims.id (or null if not yet in DB)
   const countedClaims = new Set<string>();
@@ -761,9 +765,9 @@ export async function applyJudgedPlan(
       summary.droppedLinks.push({ insightId: link.insightId, sourceClaimId: link.sourceClaimId, thesisId: link.thesisId, thesisTitle: link.thesisTitle, reason: 'unknown-claim' });
       continue;
     }
-    if (!developingIds.has(link.thesisId)) {
-      summary.skippedNonDeveloping += 1;
-      summary.droppedLinks.push({ insightId: link.insightId, sourceClaimId: link.sourceClaimId, thesisId: link.thesisId, thesisTitle: link.thesisTitle, reason: 'non-developing' });
+    if (!activeIds.has(link.thesisId)) {
+      summary.skippedNonActive += 1;
+      summary.droppedLinks.push({ insightId: link.insightId, sourceClaimId: link.sourceClaimId, thesisId: link.thesisId, thesisTitle: link.thesisTitle, reason: 'non-active' });
       continue;
     }
 

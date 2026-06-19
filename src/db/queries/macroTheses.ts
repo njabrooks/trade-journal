@@ -1,6 +1,7 @@
 import { db } from '@/db';
 import { macroTheses, assetTheses, strategies, accounts, underlyings, mainClaims, claimThesisMappings, researchInsights, researchArtifacts, assetThesisRelatedMacroTheses } from '@/db/schema';
 import { eq, desc, inArray, and, count, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import type { NewMacroThesis } from '@/db/schema';
 
 export interface MacroThesisListItem {
@@ -260,17 +261,24 @@ export async function getLinkedMainClaimsForThesis(thesisId: string) {
 }
 
 export async function getMainClaimsWithSourcesForThesis(thesisId: string) {
+  // Direct artifact provenance (D1) — observations (conversation/deep_research/
+  // agent_research) cite their artifact via main_claims.source_artifact_id, with no
+  // research_insight row. Coalesced below so they surface like insight-routed claims.
+  const directArtifact = alias(researchArtifacts, 'direct_artifact');
+
   // Get claims linked to this thesis with their source information
   const claimsData = await db
     .select({
       claim: mainClaims,
       insight: researchInsights,
       artifact: researchArtifacts,
+      directArtifact: directArtifact,
     })
     .from(claimThesisMappings)
     .innerJoin(mainClaims, eq(claimThesisMappings.mainClaimId, mainClaims.id))
     .leftJoin(researchInsights, eq(mainClaims.sourceInsightId, researchInsights.id))
     .leftJoin(researchArtifacts, eq(researchInsights.researchArtifactId, researchArtifacts.id))
+    .leftJoin(directArtifact, eq(mainClaims.sourceArtifactId, directArtifact.id))
     .where(eq(claimThesisMappings.macroThesisId, thesisId))
     .orderBy(desc(mainClaims.createdAt));
 
@@ -333,7 +341,7 @@ export async function getMainClaimsWithSourcesForThesis(thesisId: string) {
   return claimsData.map((row) => ({
     claim: row.claim,
     insight: row.insight,
-    artifact: row.artifact,
+    artifact: row.artifact ?? row.directArtifact,
     linkedTheses: linkedThesesMap.get(row.claim.id) || [],
     linkedViews: linkedViewsMap.get(row.claim.id) || [],
   }));
