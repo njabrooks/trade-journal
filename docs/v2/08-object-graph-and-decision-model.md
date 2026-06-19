@@ -1,11 +1,7 @@
 # Trade Journal v2 — Claim/Signal Propagation Operating Model (handoff + design backbone)
 
 **Date:** 2026-06-19
-**Status:** handoff for the next design phase. v2's belief-maintenance *build* is done
-(W8 B0–B7 + strategy auto-link, all on `main`); the meaningful unresolved work is **not
-another feature** — it is a **design doc + implementation plan for the claim/signal
-propagation operating model**: the state/event matrix, agent routines, decision types,
-and exact handling for *all orderings* of content / thesis / strategy arrival.
+**Status:** handoff — **delivered.** The design doc + implementation plan this seed calls for is now [09-claim-signal-propagation-operating-model.md](09-claim-signal-propagation-operating-model.md): the four matrices, the Decision Item schema, the order-independence playbook, and the C0–C8 build plan. This doc remains the backbone/rationale; **09 is the contract to build against.**
 **Builds on:** [03-v2-spec.md](03-v2-spec.md), [07-belief-maintenance-loop.md](07-belief-maintenance-loop.md).
 
 ---
@@ -160,7 +156,7 @@ refuting evidence changes or just complicates a thesis; weakening signal → rev
 
 ## 6. Outstanding work queue
 
-1. **Write the operating-model design doc + implementation plan** (this doc is the seed): the four matrices (§4), event taxonomy, lifecycle rules, decision types, and exact handling for all content/thesis/strategy orderings.
+1. ~~**Write the operating-model design doc + implementation plan**~~ — **DONE 2026-06-19** → [09](09-claim-signal-propagation-operating-model.md): the four matrices (§4–§7), event taxonomy, lifecycle rules, decision types, the order-independence playbook, and the C0–C8 plan.
 2. **Decision Item model** (§3.6) — extend `decision_required` into the packet; schema + `/api/dashboard/decisions` surface + a `resolve-decision` agent path. The primitive everything hangs off.
 3. **Recurring agent↔user maintenance routine** (§3.7) — scheduled, incremental, cursor-based; emits decision packets, not silent writes. (Billed cloud routine — user go.)
 4. **Asset→Macro framing automation** — agent-suggested `related` vs `gated_by` as decisions.
