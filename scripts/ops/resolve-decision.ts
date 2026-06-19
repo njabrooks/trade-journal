@@ -31,8 +31,9 @@
 import { db, closeDb, schema, logToJournal } from '../lib/db.js';
 import { and, eq } from 'drizzle-orm';
 import { getDecisionPacket, type DecisionResolution, type DecisionPacket } from '@/lib/types/decisions';
+import { linkAssetMacro, unlinkAssetMacro } from '../lib/linkAssetMacro.js';
 
-const { journalEntries, assetThesisRelatedMacroTheses, strategies, underlyings } = schema;
+const { journalEntries, strategies, underlyings } = schema;
 
 type GraphWrite = { table: string; op: 'insert' | 'update' | 'delete'; ids: string[] };
 
@@ -126,22 +127,12 @@ async function runHandler(
       throw new Error('framing needs assetThesisId (primary object or --asset-id) and macroThesisId (--macro-id or a related macro_thesis)');
     }
     if (action === 'unlink') {
-      if (!input.dryRun) {
-        await db.delete(assetThesisRelatedMacroTheses).where(and(
-          eq(assetThesisRelatedMacroTheses.assetThesisId, assetThesisId),
-          eq(assetThesisRelatedMacroTheses.macroThesisId, macroThesisId),
-        ));
-      }
+      if (!input.dryRun) await unlinkAssetMacro(assetThesisId, macroThesisId);
       return [{ table: 'asset_thesis_related_macro_theses', op: 'delete', ids: [assetThesisId, macroThesisId] }];
     }
     const relationshipType = action === 'set_gated_by' ? 'gated_by' : 'related';
     if (!input.dryRun) {
-      await db.insert(assetThesisRelatedMacroTheses)
-        .values({ assetThesisId, macroThesisId, relationshipType, addedBy: 'decision' })
-        .onConflictDoUpdate({
-          target: [assetThesisRelatedMacroTheses.assetThesisId, assetThesisRelatedMacroTheses.macroThesisId],
-          set: { relationshipType },
-        });
+      await linkAssetMacro({ assetThesisId, macroThesisId, relationshipType, addedBy: input.by === 'user' ? 'user' : 'automation' });
     }
     return [{ table: 'asset_thesis_related_macro_theses', op: 'insert', ids: [assetThesisId, macroThesisId] }];
   }

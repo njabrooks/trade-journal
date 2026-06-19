@@ -24,13 +24,17 @@ accumulation; the user is involved only at genuine decision points.
   surface a DecisionStrip item proposing sources to develop it.
 - **Retrospective (B7, §4d)** — when a thesis *resolves* (closed/complete/rejected),
   write a one-off "was I right, did it pay" retrospective from the final P&L + trail.
+- **Framing (C5a, docs/v2/09 §7)** — for a live *asset* thesis with no macro link,
+  judge which macro (if any) frames it: a high-confidence `related` auto-links silently;
+  `gated_by` or an uncertain match raises a `classify_macro_link` decision.
 
 The modes are partitioned by thesis status / research state and never overlap:
 digest mode acts on `developing`; signal mode on `monitoring` with no signals yet;
 health mode on `monitoring` that already has signals; research-gap mode on
 `monitoring` that is under-researched; retrospective mode on resolved
-(closed/complete/rejected) theses. None change thesis status — the expression-driven
-cascade owns status. (This is the full belief-maintenance loop B0–B7.)
+(closed/complete/rejected) theses; framing mode on `developing`/`monitoring` asset
+theses with no macro link. None change thesis status — the expression-driven cascade
+owns status.
 
 ## Mode: Digest refresh (B4, §4a)
 
@@ -412,3 +416,76 @@ supersedes any still-active signals → `complete` (monitoring is over).
 2. ❌ Re-writing a retrospective that already exists (the worklist already excludes those).
 3. ❌ Changing thesis status (it's already resolved; leave it).
 4. ❌ A generic writeup — ground it in this thesis's actual core argument, P&L, and trail.
+
+---
+
+## Mode: Framing (C5a, docs/v2/09 §7)
+
+A live **asset** thesis with no macro link is a coverage gap (Matrix 1: "asset thesis
+w/ no macro"). This mode judges which macro thesis (if any) genuinely frames it, and
+**captures the user's framing decision back into the graph** via the asset↔macro
+junction. The §12 #4 + #7 sign-off governs the auto-vs-decision split:
+
+- **`related`, high confidence (≥0.7)** → **auto-link silently** (no decision). `related`
+  is contextual; it's safe to create automatically when the match is clear.
+- **`gated_by` (ANY confidence)** → **always a decision**. `gated_by` wires compositional
+  invalidation (the macro flipping invalid cascades to the asset), so the user confirms it.
+- **`related`, 0.4–0.7** → a decision (you weren't sure).
+- **no genuine macro / <0.4** → **skip**. An asset thesis may legitimately stand alone —
+  never force a framing.
+
+### Scope rules
+1. **Asset theses only**, developing/monitoring, with **zero** macro links — the worklist enforces this.
+2. **Be sparing** — most assets relate to 0–1 macros; the strip caps at 5. Quality over coverage.
+3. **Never change thesis status** (the cascade owns it). Framing only writes the junction.
+
+### Workflow
+
+**Step 1 — Worklist**
+```bash
+npx tsx scripts/ops/find-theses-needing-framing.ts --json
+```
+
+**Step 2 — Context** (the asset thesis + the macro catalog to judge against)
+```bash
+npx tsx scripts/ops/find-theses-needing-framing.ts --context <assetThesisId>
+```
+Returns `{ thesis (title/description/narrative/direction/ticker), existingClaimTitles[], macroCatalog[] }`.
+
+**Step 3 — Judge.** For the asset thesis, scan `macroCatalog` and decide which macro
+(if any) it sits under, the relationship (`related` | `gated_by`), and a confidence
+(0–1). Genuine framing, not topical overlap: a single-name bull thesis on an AI
+hyperscaler sits **under** "Bullish AI Infrastructure" (`related`), and is `gated_by`
+it only if the asset case *depends on* the macro holding. Most are `related`; reserve
+`gated_by` for true dependency.
+
+**Step 4 — Apply** (per the disposition above):
+```bash
+# high-confidence related → auto-link (silent):
+npx tsx scripts/ops/link-asset-macro.ts --asset-id <id> --macro-id <id> --type related
+
+# gated_by, or related at 0.4–0.7 → raise a decision:
+echo '{
+  "objectType": "asset_thesis", "objectId": "<assetThesisId>", "objectTitle": "<asset title>",
+  "title": "Frame <ASSET> under \"<macro title>\" — related or gated_by?",
+  "decisionType": "classify_macro_link",
+  "whyRaised": "<why this macro frames the asset, and why gated_by/uncertain>",
+  "relatedObjects": [{"type": "macro_thesis", "id": "<macroThesisId>", "title": "<macro title>", "role": "parent_macro"}],
+  "recommendedActions": [
+    {"action": "set_related", "label": "Link as related"},
+    {"action": "set_gated_by", "label": "Link as gated_by (compositional invalidation)"},
+    {"action": "stand_alone", "label": "Leave unframed"}
+  ],
+  "defaultRecommendation": {"action": "set_related", "confidence": "medium"}
+}' | npx tsx scripts/ops/raise-decision.ts --stdin
+```
+The decision is resolved later by `resolve-decision.ts` (`--action set_related|set_gated_by`,
+`--macro-id <id>`), which writes the junction. Skip (no command) when nothing frames it.
+
+**Step 5 — Report** per thesis: `title (ticker) — auto-linked related to "<macro>" | decision raised (gated_by) | stood alone`.
+
+### Common mistakes (framing mode)
+1. ❌ Auto-linking `gated_by` — it must ALWAYS be a decision (compositional invalidation).
+2. ❌ Forcing a framing for topical overlap — an asset thesis may stand alone; skip it.
+3. ❌ Raising a decision for a clear high-confidence `related` — just auto-link it.
+4. ❌ Changing thesis status or touching claims/signals (framing only writes the asset↔macro junction).

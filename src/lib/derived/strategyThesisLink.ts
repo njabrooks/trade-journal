@@ -147,6 +147,8 @@ export async function ensureAssetThesesForStrategies(opts: EnsureOptions = {}): 
             status: 'developing',
             confidenceLevel: 'exploratory',
             timeHorizon: 'medium_term',
+            // Marker for the classify_exposure detector (C5b): is this a belief or a tactical hedge?
+            notes: { auto_placeholder: true, sourceStrategyKey: s.strategyKey },
           })
           .returning({ id: assetTheses.id });
         thesisId = created.id;
