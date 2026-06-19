@@ -312,8 +312,8 @@ Phase "C" (the operating-model *contract*, after W8's B0–B7). The matrices (§
 | **C2** | **Surface** — `GET`/`PATCH /api/dashboard/decisions` return/accept the packet, snooze (+ self-heal wake), resolution; DecisionStrip renders `decision_type` chip + `recommended_actions` + runbook hint + snooze. | M | C1 | route + `DecisionStrip.tsx` + migration | ✅ DONE |
 | **C3** | **`resolve-decision.ts`** agent path — generic close (status + resolution + audit) for any type; built-in mechanical writes for framing / strategy-link / proxy-underlying; status changes delegate to `update-entity-status`. | M | C1 | `scripts/ops/resolve-decision.ts` | ✅ DONE |
 | **C4** | **Upgrade emitters** — relate-research (`confirm_claim_link`/`review_refuting_claim`), `record-thesis-health` (`weakening_signal_action`), strategy auto-link (`resolve_proxy_underlying`), `/thesis-review` research-gap (`develop_thin_thesis`) emit **typed packets** via `buildDecisionPacket`. | S/M | C1 | edits to existing emitters | ✅ DONE |
-| **C5** | **New decision types** not yet emitted — `frame_asset_under_macro` + `classify_macro_link` (asset→macro framing automation, 08 outstanding #4) and `classify_exposure` (tactical-vs-belief on a placeholder). Agent-suggested → decision. (Resolver branches already built in C3.) | M | C4 | detector + emitter | pending |
-| **C6** | **Maintenance routine** — scheduled, incremental, cursor-based (§10); wraps relate-research + thesis-review modes; token-aware; emits packets. Billed cloud routine — **user go**. | M/L | C4 | routine + `automation_cursors` | pending |
+| **C5** | **New decision types** not yet emitted — `frame_asset_under_macro` + `classify_macro_link` (asset→macro framing automation, 08 outstanding #4) and `classify_exposure` (tactical-vs-belief on a placeholder). Agent-suggested → decision. (Resolver branches already built in C3.) | M | C4 | detector + emitter | ✅ DONE |
+| **C6** | **Maintenance routine** — incremental, cursor-based (§10); wraps relate-research + thesis-review modes + C5 detectors; token-aware; emits packets. **Machinery built; billed cloud SCHEDULE is user-go.** | M/L | C4 | routine + `automation_cursors` | ✅ DONE (machinery) |
 | **C7** | **Drain backlogs** via C6 — ~30 signalless monitoring theses, ~16 retrospectives, research-gaps (incl. the 6 placeholders SOI/HLIT/NEAR/NBIS/VVV/MAX). | ongoing | C6 | none | pending |
 | **C8** | **B8 notes-repo flip** — relate-research becomes the live capture path. Independent — **user go**. | S | — | notes repo | pending |
 
@@ -331,6 +331,40 @@ The packet-plumbing increment shipped on branch `feat/v2-decision-item-packet`. 
 - **C4.** Four emitters now produce typed packets (`relateResearch.ts` keeps its flat dedup keys + adds the packet; `strategyThesisLink.ts`; `record-thesis-health.ts`; the research-gap SKILL command). `link-strategies-to-theses` delegates to `strategyThesisLink`, so it inherited the upgrade.
 - **Hygiene:** `scripts/lib/db.ts` now loads dotenv with `quiet: true` so every ops script emits **clean JSON on stdout** (the C6 routine will parse it).
 - **Gates:** `tsc --noEmit` 0 errors · eslint clean · `npm run build` ✅ (dev server kickstarted) · vitest 177/177.
+
+### C5–C6 build notes (2026-06-19)
+
+**C5 — framing + classify_exposure** (commit after C1–C4). All 11 decision types now
+have an emitter; the resolver branches already existed (C3).
+- **C5a framing:** `framingRules.ts` (`needsFraming` + `framingDisposition` — encodes
+  §12 #4/#7: `related` ≥0.7 auto-links, `gated_by` always decides) + `framing.ts` (DB:
+  worklist + macro catalog) + `scripts/lib/linkAssetMacro.ts` (canonical asset→macro
+  junction writer, shared with resolve-decision — replaces its inline upsert) +
+  `find-theses-needing-framing.ts` + a `/thesis-review` framing mode. Live: 21 asset
+  theses flagged; `linkAssetMacro` writes `related|automation` + journal.
+- **C5b classify_exposure:** placeholders marked (`notes.auto_placeholder`) at creation;
+  `exposureClassificationRules.ts` (size bar, §12 #3, default $1000; notional from
+  `strategy_metrics_snapshots.total_abs_notional` latest — not raw `positions`) +
+  `exposureClassification.ts` + `find-unclassified-exposures.ts` (deterministic
+  detect-and-raise; `--apply`). Live: flagged 5 placeholders (NEAR/NBIS/HLIT/SOI/VVV);
+  `--apply` + the already-classified guard prevent re-asking. 16 new unit tests.
+
+**C6 — maintenance routine machinery** (the billed cloud *schedule* is deliberately NOT
+activated — §12 #5, user-go).
+- `automation_cursors` table (migration applied) + `scripts/lib/automationCursor.ts`
+  (get/set) — only relate-research needs a cursor; the worklists are self-clearing.
+- `scripts/ops/maintenance-status.ts` — one dashboard over every worklist + the cursor +
+  new-insight count (sequential loaders — single-connection pool). Live: **108 actionable
+  items** (290 new insights, 30 signal, 13 health, 24 gap, 15 retrospective, 21 framing,
+  5 exposure); cursor round-trips.
+- `/maintenance` skill — the routine playbook: read dashboard → relate-research over new
+  insights + advance cursor → drain ≤5 of each worklist (sonnet derivation / Opus
+  judgment) → C5 detectors → report. Emits packets, never silent decisions.
+- **Gates:** tsc 0 · eslint clean · `npm run build` ✅ (kickstarted) · vitest 193/193.
+
+**Status:** C0–C6 shipped on `feat/v2-decision-item-packet` (commits `9820c42`, `8020b6f`,
+`9ad4f0b`, `77c4a75`). Remaining: C7 (drain backlogs via the routine — a deliberate run)
+and C8 (notes-repo flip) — both user-go.
 
 ---
 
