@@ -25,9 +25,13 @@ activate a billed schedule yourself.
 - **Incremental, not a full sweep.** Process a bounded slice per run (default **≤5 items
   per mode**). The worklists are self-clearing/idempotent, so repeated runs converge;
   leftovers are picked up next run. Always report what remains.
-- **Token-aware.** Use **sonnet** for mechanical derivation (digest, signal) and **Opus**
-  for judgment (relate-research relevance, framing, research-gap, retrospective). When
-  fanning out to sub-agents, pass `model:'sonnet'` for derivation.
+- **Model & effort — Opus throughout, never Sonnet.** Every mode here is interpretive
+  (even digest/signal synthesis is judging *how claims support a thesis*), so do NOT drop
+  to Sonnet — its quality on this evaluative work isn't trusted. Control cost by tuning
+  **effort** (lower/medium for the more mechanical synthesis — digest, signal; higher for
+  relevance/framing/research-gap/retrospective judgment) and by keeping batches bounded
+  (≤5/mode), not by downgrading the model. When fanning out to sub-agents, pass
+  `model:'opus'` and set `effort` per the task.
 - **Cursor-based.** Only relate-research has a cursor (`automation_cursors`); the
   `/thesis-review` worklists are self-clearing, so they need none.
 - **Decisions are packets.** Anything surfaced to the user goes through `raise-decision`
@@ -65,14 +69,14 @@ is safe — the engine dedups — so erring slightly early is fine.)
 
 **Step 3 — Drain the `/thesis-review` worklists (≤5 each, in this order)**
 Run each via its `/thesis-review` mode; stop each at the per-run cap and note leftovers:
-1. **digest refresh** (developing) — `find-stale-digests.ts --json` → digest mode (sonnet).
-2. **signal derivation** (monitoring, no signals) — `find-signalless-theses.ts --json` → signal mode (sonnet). Skip `thin` (research-gap).
-3. **health pass** (monitoring, due) — `find-theses-due-health.ts --json` → health mode (Opus). Raises `weakening_signal_action` packets only on deterioration.
-4. **research-gap bridge** (monitoring, thin) — `find-research-gaps.ts --json` → research-gap mode (Opus). Tana-first; raises `develop_thin_thesis` packets.
-5. **retrospective** (resolved) — `find-theses-needing-retrospective.ts --json` → retrospective mode (Opus).
+1. **digest refresh** (developing) — `find-stale-digests.ts --json` → digest mode (Opus, medium effort).
+2. **signal derivation** (monitoring, no signals) — `find-signalless-theses.ts --json` → signal mode (Opus, medium effort). Skip `thin` (research-gap).
+3. **health pass** (monitoring, due) — `find-theses-due-health.ts --json` → health mode (Opus, high effort). Raises `weakening_signal_action` packets only on deterioration.
+4. **research-gap bridge** (monitoring, thin) — `find-research-gaps.ts --json` → research-gap mode (Opus, high effort). Tana-first; raises `develop_thin_thesis` packets.
+5. **retrospective** (resolved) — `find-theses-needing-retrospective.ts --json` → retrospective mode (Opus, high effort).
 
 **Step 4 — Decision detectors (C5)**
-6. **framing** — `find-theses-needing-framing.ts --json` → `/thesis-review` framing mode (Opus): auto-link clear `related`, raise `classify_macro_link` for `gated_by`/uncertain. ≤5 judged per run; be sparing.
+6. **framing** — `find-theses-needing-framing.ts --json` → `/thesis-review` framing mode (Opus, high effort): auto-link clear `related`, raise `classify_macro_link` for `gated_by`/uncertain. ≤5 judged per run; be sparing.
 7. **classify_exposure** — deterministic, no judgment to ASK:
 ```bash
 npx tsx scripts/ops/find-unclassified-exposures.ts --apply
@@ -93,5 +97,5 @@ a **weekly floor** is the recommended cadence (§10). Until then, run on demand.
 1. ❌ Running a full sweep — cap each mode at ~5 per run; converge over runs.
 2. ❌ Forgetting to advance the relate-research cursor after applying links (next run re-scans the whole window — wasteful, though safe).
 3. ❌ Writing a judgment change silently — surface it as a decision packet.
-4. ❌ Using Opus for mechanical digest/signal derivation — use sonnet there; reserve Opus for judgment.
+4. ❌ Dropping to Sonnet for the "mechanical" digest/signal modes — it's all interpretive judgment; stay on Opus and control cost via effort + batch size.
 5. ❌ Activating a billed schedule without the user's go.

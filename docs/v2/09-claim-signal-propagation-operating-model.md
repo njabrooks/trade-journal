@@ -297,7 +297,7 @@ Each of the six valid orderings (§1), walked through the matrices — proof the
 
 **Cursor design.** The elegant result: **four of five `/thesis-review` modes are cursor-free** because their worklists are self-clearing (the state lives on the thesis/articulation/decision). The only routine needing an explicit cursor is `relate-research` (an insight-date high-water-mark). Recommendation (§12 #6): a minimal single-row store (a tiny `automation_cursors(key, cursor_value, updated_at)` table, or a `metadata` marker on a sentinel journal entry) — **not** `ingestion_cursors` (that's account-FK-bound to exchanges). The maintenance routine (§11 C6) advances this one cursor; everything else reads its self-clearing worklist.
 
-The routine is **token-aware**: sonnet for mechanical derivation, Opus for judgment (08 §3.7); it processes a few items per run so per-run cost stays bounded, and it **emits Decision Items, never silent writes** at escalation points.
+The routine is **token-aware**: **Opus throughout** (every mode is interpretive — even digest/signal synthesis judges *how claims support a thesis* — so Sonnet quality isn't trusted on it; decided 2026-06-19, superseding 08 §3.7's sonnet-for-derivation), with **effort** tuned per mode (lower/medium for synthesis, higher for relevance/framing/retrospective judgment) and bounded batches (≤5/mode) to control cost. It **emits Decision Items, never silent writes** at escalation points.
 
 ---
 
@@ -358,8 +358,9 @@ activated — §12 #5, user-go).
   items** (290 new insights, 30 signal, 13 health, 24 gap, 15 retrospective, 21 framing,
   5 exposure); cursor round-trips.
 - `/maintenance` skill — the routine playbook: read dashboard → relate-research over new
-  insights + advance cursor → drain ≤5 of each worklist (sonnet derivation / Opus
-  judgment) → C5 detectors → report. Emits packets, never silent decisions.
+  insights + advance cursor → drain ≤5 of each worklist (Opus throughout, effort tuned
+  per mode — Sonnet is not used for this evaluative work) → C5 detectors → report. Emits
+  packets, never silent decisions.
 - **Gates:** tsc 0 · eslint clean · `npm run build` ✅ (kickstarted) · vitest 193/193.
 
 **Status:** C0–C6 shipped on `feat/v2-decision-item-packet` (commits `9820c42`, `8020b6f`,
