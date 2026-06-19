@@ -10,6 +10,7 @@ import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc, inArray } from 'dr
 import { populateStrategyEntryContext, recomputeStrategyStatus } from '@/lib/services/strategies';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 import { cascadeThesisStatuses } from '@/lib/derived/thesisCascade';
+import { ensureAssetThesesForStrategies } from '@/lib/derived/strategyThesisLink';
 
 type DateRangeOptions =
   | { snapshotDate: string; startDate?: never; endDate?: never }
@@ -1120,6 +1121,16 @@ async function recomputeAccountStrategyStatuses(accountId: string): Promise<void
   // signals, so the cascade is now the standard way thesis status is maintained.
   // Kill-switch: set THESIS_CASCADE_ENABLED=0 (or 'false') to disable.
   if (process.env.THESIS_CASCADE_ENABLED !== '0' && process.env.THESIS_CASCADE_ENABLED !== 'false') {
+    // Every active strategy belongs to an asset thesis (hedges/tactical included).
+    // Auto-link to the canonical underlying's thesis (parent-chain resolved, e.g.
+    // IBIT→BTC) or create a placeholder; unresolvable proxies (e.g. an option whose
+    // real underlying isn't mapped) raise a DecisionStrip item. Runs BEFORE the
+    // cascade so new links/placeholders get promoted to monitoring in the same pass.
+    try {
+      await ensureAssetThesesForStrategies({ accountId, raiseDecisions: true });
+    } catch (error) {
+      console.error('Strategy→thesis auto-link failed:', error);
+    }
     try {
       await cascadeThesisStatuses({ source: 'automation' });
     } catch (error) {
