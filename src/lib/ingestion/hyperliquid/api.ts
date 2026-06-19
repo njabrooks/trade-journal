@@ -107,6 +107,13 @@ export interface HLClearinghouseState {
   time: number;
 }
 
+export interface HLPerpDex {
+  name: string;
+  fullName?: string;
+  deployer?: string;
+  [key: string]: unknown;
+}
+
 export interface HLSpotBalance {
   coin: string;
   total: string;
@@ -176,12 +183,15 @@ export async function fetchUserFills(
  * Fetch perpetual positions (clearinghouse state).
  */
 export async function fetchClearinghouseState(
-  user: string
+  user: string,
+  dex?: string
 ): Promise<HLClearinghouseState> {
-  return hlPost<HLClearinghouseState>({
+  const body: Record<string, unknown> = {
     type: 'clearinghouseState',
     user,
-  });
+  };
+  if (dex) body.dex = dex;
+  return hlPost<HLClearinghouseState>(body);
 }
 
 /**
@@ -236,10 +246,23 @@ export async function fetchDelegatorSummary(user: string): Promise<HLDelegatorSu
  * Fetch mid prices for all listed assets.
  * Returns a map of coin → mid price string.
  */
-export async function fetchAllMids(): Promise<Record<string, string>> {
-  return hlPost<Record<string, string>>({
+export async function fetchAllMids(dex?: string): Promise<Record<string, string>> {
+  const body: Record<string, unknown> = {
     type: 'allMids',
+  };
+  if (dex) body.dex = dex;
+  return hlPost<Record<string, string>>(body);
+}
+
+/**
+ * Fetch registered HIP-3 / perp-dex deployments.
+ * HyperLiquid returns a leading null for the main dex; filter that out.
+ */
+export async function fetchPerpDexs(): Promise<HLPerpDex[]> {
+  const dexes = await hlPost<Array<HLPerpDex | null>>({
+    type: 'perpDexs',
   });
+  return dexes.filter((dex): dex is HLPerpDex => Boolean(dex?.name));
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   fetchSpotClearinghouseState,
   fetchDelegatorSummary,
   fetchAllMids,
+  fetchPerpDexs,
   fetchSpotMeta,
   buildSpotMetaMap,
   fetchPortfolio,
@@ -110,20 +111,39 @@ async function main() {
       // ── Step 1: Fetch reference data ───────────────────────────
       console.log('\n[HL] Fetching spot metadata and mark prices...');
 
-      const [spotMetaRaw, allMids] = await Promise.all([
+      const [spotMetaRaw, allMids, perpDexes] = await Promise.all([
         fetchSpotMeta(),
         fetchAllMids(),
+        fetchPerpDexs(),
       ]);
 
       const spotMeta = buildSpotMetaMap(spotMetaRaw);
       console.log(`[HL] Spot meta: ${spotMeta.size} tokens mapped`);
+      console.log(`[HL] Perp dexes: ${perpDexes.map((d) => d.name).join(', ') || 'none'}`);
 
       // Build mark price map (string → number)
       const markPrices = new Map<string, number>();
-      for (const [coin, midPrice] of Object.entries(allMids)) {
-        const price = parseFloat(midPrice);
-        if (!isNaN(price)) {
-          markPrices.set(coin.toUpperCase(), price);
+      const addMarkPrices = (mids: Record<string, string>) => {
+        for (const [coin, midPrice] of Object.entries(mids)) {
+          const price = parseFloat(midPrice);
+          if (!isNaN(price)) {
+            markPrices.set(coin.toUpperCase(), price);
+          }
+        }
+      };
+      addMarkPrices(allMids);
+
+      const dexMidResults = await Promise.allSettled(
+        perpDexes.map(async (dex) => ({
+          dex,
+          mids: await fetchAllMids(dex.name),
+        }))
+      );
+      for (const result of dexMidResults) {
+        if (result.status === 'fulfilled') {
+          addMarkPrices(result.value.mids);
+        } else {
+          console.warn(`[HL] Failed to fetch perp-dex mark prices: ${result.reason}`);
         }
       }
       console.log(`[HL] Mark prices: ${markPrices.size} assets`);
@@ -216,6 +236,29 @@ async function main() {
         markPrices,
         snapshotDate
       );
+
+      const dexPerpResults = await Promise.allSettled(
+        perpDexes.map(async (dex) => ({
+          dex,
+          state: await fetchClearinghouseState(walletAddress, dex.name),
+        }))
+      );
+      for (const result of dexPerpResults) {
+        if (result.status === 'fulfilled') {
+          const dexPositions = normalizeHLPerpPositions(
+            result.value.state,
+            accountId,
+            markPrices,
+            snapshotDate
+          );
+          if (dexPositions.length > 0) {
+            console.log(`[HL] Perp dex ${result.value.dex.name}: ${dexPositions.length} active`);
+            perpPositions.push(...dexPositions);
+          }
+        } else {
+          console.warn(`[HL] Failed to fetch perp-dex positions: ${result.reason}`);
+        }
+      }
       console.log(`[HL] Perp positions: ${perpPositions.length} active`);
 
       // ── Step 4: Fetch spot positions ───────────────────────────
@@ -360,7 +403,7 @@ async function main() {
       console.log(`[HL] Trade auto-link: ${totalTradesLinked} linked across ${tradeDates.size} dates`);
 
       // Compute portfolio snapshots
-      await computePortfolioSnapshotsForDateRange(accountId, snapshotDate, snapshotDate);
+      await computePortfolioSnapshotsForDateRange(accountId, snapshotDate, snapshotDate, true);
 
       // Compute strategy metrics for all active strategies on this account
       const accountStrategies = await db

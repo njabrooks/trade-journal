@@ -25,7 +25,8 @@ export function normalizeHLPerpPositions(
 
     const side = szi >= 0 ? 'LONG' as const : 'SHORT' as const;
     const absQty = Math.abs(szi);
-    const spot = markPrices.get(pos.coin);
+    const symbol = pos.coin.toUpperCase();
+    const spot = markPrices.get(symbol) ?? markPrices.get(pos.coin);
     const entryPx = parseFloat(pos.entryPx);
     const costBasis = entryPx * absQty;
 
@@ -33,7 +34,7 @@ export function normalizeHLPerpPositions(
       accountId,
       underlyingId: null, // Resolved later via ensureUnderlyingId
       assetClass: 'PERP',
-      symbol: pos.coin.toUpperCase(),
+      symbol,
       multiplier: '1',
       side,
       quantity: szi.toString(), // Signed
