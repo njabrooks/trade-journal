@@ -1,187 +1,181 @@
-# Trade Journal v2 — Object Relationship Graph & Decision Model (handoff + design backbone)
+# Trade Journal v2 — Claim/Signal Propagation Operating Model (handoff + design backbone)
 
 **Date:** 2026-06-19
-**Status:** handoff for the next design phase. Captures what v2 has shipped and the
-design problem that remains: making the **object relationship graph** first-class and
-replacing the thin `decision_required` strip with a real **Decision Item** model.
+**Status:** handoff for the next design phase. v2's belief-maintenance *build* is done
+(W8 B0–B7 + strategy auto-link, all on `main`); the meaningful unresolved work is **not
+another feature** — it is a **design doc + implementation plan for the claim/signal
+propagation operating model**: the state/event matrix, agent routines, decision types,
+and exact handling for *all orderings* of content / thesis / strategy arrival.
 **Builds on:** [03-v2-spec.md](03-v2-spec.md), [07-belief-maintenance-loop.md](07-belief-maintenance-loop.md).
 
 ---
 
-## 1. The core idea
+## 1. The core design problem: order independence
 
-Claims/signals propagation and the user↔agent maintenance loop can't be designed
-cleanly unless the **object relationship graph is explicit and first-class**:
+The system must treat the object relationship graph as **first-class**, and treat every
+arrival order as a **valid state, not an exception**:
 
 ```
-Position / Trade
-  → Strategy
-    → Asset Thesis
-      → Macro Thesis(es)        (many-to-many)
-
-Claim   → Asset Thesis | Macro Thesis
-Signal  → Asset Thesis | Macro Thesis | (sometimes) Strategy   (via signal_entity_links)
+Position / Trade → Strategy → Asset Thesis → Macro Thesis(es)   (many-to-many)
+Claim  → Asset Thesis | Macro Thesis
+Signal → Asset Thesis | Macro Thesis | (sometimes) Strategy      (via signal_entity_links)
 ```
 
-The graph is **allowed to be incomplete, provisional, and repaired over time** — that
-is the reality of investing:
-- sometimes the **trade comes first** and the belief catches up (position→backfill);
-- sometimes the **belief sits for months** before any expression;
-- sometimes **research creates a thesis candidate** with no position.
+Valid, expected states the system must route work for (never panic over):
+- Content can arrive **before** a thesis exists.
+- A thesis can exist **before** a strategy exists.
+- A strategy/position can exist **before** a thesis is refined (position→backfill).
+- A macro thesis can exist **without** asset expressions.
+- An asset thesis can be **live but thin**.
+- Signals can exist **before** new evidence arrives, or need to be **derived after** a thesis becomes live.
 
-The system should not panic about an incomplete graph; it should **notice the shape and
-route the right work** — automate the mechanical/high-confidence edges, and turn genuine
-ambiguity into decisions the user resolves *with an agent*.
-
----
-
-## 2. What v2 has shipped (DONE)
-
-**Foundation (W1–W7):** prune sweep; docs regen; vitest golden money-math; realized-PnL
-engine + attribution; `/performance` UI; morning-screen dashboard + live-pricing overlay;
-portfolio-aware options advisor. (See [03-v2-spec.md](03-v2-spec.md) roadmap table.)
-
-**W8 belief-maintenance loop — B0–B7 complete & on `main`** (see [07](07-belief-maintenance-loop.md)):
-- **Expression-driven status cascade** (`src/lib/derived/thesisCascade.ts`) — **LIVE** (default-on; kill-switch `THESIS_CASCADE_ENABLED=0`). Strategy status → asset status → macro status, every ingestion.
-- **`closed` thesis status**; promotion decoupled from signals (`insert-thesis-articulation` no longer changes status).
-- **`/thesis-review` skill, five modes**, each = pure rule (unit-tested) + deterministic detector/worklist + writer:
-  - digest refresh (B4) · signal derivation (B5b) · health pass (B5c) · research-gap bridge (B6) · retrospective on close (B7).
-- Worklists: `find-stale-digests`, `find-signalless-theses`, `find-theses-due-health`, `find-research-gaps`, `find-theses-needing-retrospective`.
-
-**Strategy→thesis auto-link + hygiene (this session)** — `src/lib/derived/strategyThesisLink.ts`,
-wired into the recompute before the cascade: every active strategy resolves its canonical
-underlying (via `parent_underlying_id`, e.g. IBIT→BTC) and links to a thesis, creates a
-placeholder (`developing`), or flags an unresolvable proxy. `flag-corrupted-strategies.ts`
-rejects junk (homoglyph tickers, unresolved `@nnn` HL ids).
-
-**relate-research (W8/D2, shipped)** — claim→thesis is agent-judged: high-confidence links
-auto-applied; refuting/ambiguous become decisions.
-
-**DecisionStrip (current, thin)** — `decision_required` journal entries surfaced at
-`/api/dashboard/decisions` (hard-capped 5, newest first; PATCH to dismiss/resolve).
+The graph is allowed to be **incomplete, provisional, and repaired over time**. The job
+is to **notice the shape and route the right work**: automate the mechanical/high-confidence
+edges, escalate genuine ambiguity into decisions the user resolves *with an agent*.
 
 ---
 
-## 3. Current state of each graph edge
+## 2. What v2 has shipped (DONE, on `origin/main`)
 
-| Edge | Today | Creation method |
-|---|---|---|
-| Position/Trade → Strategy | automated (ingestion derives strategy keys; links by conid/symbol/expiry/account/key, merge chains; creates draft strategies) | **deterministic** |
-| Strategy → Asset Thesis (same canonical underlying) | automated (sweep; parent-chain resolution) | **deterministic** |
-| Strategy → placeholder Asset Thesis (live exposure, no thesis) | automated (placeholder `developing`, marked thin) | **deterministic** |
-| Asset Thesis status (from active linked strategies) | automated (cascade) | **deterministic** |
-| Macro Thesis status (from linked monitoring asset theses) | automated (cascade) | **deterministic** |
-| Asset Thesis → Macro Thesis(es) | **manual/agent** (junction supports `related`/`gated_by`; framing is judgment) | **agent-suggested / user-confirmed** |
-| Claim → Thesis | agent-judged relevance; clear links auto, else decision | **agent-suggested → auto on high confidence** |
-| Signal → Thesis | auto-derived from articulation once enough claims (via `signal_entity_links`) | **automatic** |
-| Gap detection (thin thesis, signalless, research gap) | automated | **automatic** |
+**W1–W7:** prune; docs; vitest money-math; realized-PnL engine + attribution; `/performance`
+UI; morning-screen dashboard + live-pricing overlay; portfolio-aware options advisor.
 
----
+**W8 belief-maintenance loop B0–B7** (see [07](07-belief-maintenance-loop.md)):
+- **Expression-driven status cascade** (`thesisCascade.ts`) — **LIVE** (kill-switch `THESIS_CASCADE_ENABLED=0`): strategy→asset→macro status, every ingestion.
+- `closed` status; promotion decoupled from signals.
+- **`/thesis-review` skill, five modes** (pure rule + detector/worklist + writer each): digest (B4), signal derivation (B5b), health pass (B5c), research-gap bridge (B6), retrospective (B7). Worklists: `find-stale-digests`, `find-signalless-theses`, `find-theses-due-health`, `find-research-gaps`, `find-theses-needing-retrospective`.
 
-## 4. The automation boundary
-
-**Automate when the evidence is structural or mechanically obvious:**
-- Position/trade → strategy (deterministic).
-- Strategy → existing asset thesis for the same canonical underlying (deterministic).
-- Strategy → placeholder asset thesis when live exposure exists and none does (deterministic; mark thin/developing).
-- Asset thesis status from active linked strategies; macro status from linked monitoring asset theses (deterministic cascade).
-- Claim → thesis link **after** agent relevance judgment at high confidence (auto-apply).
-- Signal generation from a monitoring thesis's claims/articulation (automatic).
-- Gap detection (automatic).
-
-**Keep agent/user-mediated — these become *decision packets*, not silent automation:**
-- Is this live strategy tactical, a hedge, or thesis-backed?
-- Which economic underlying does this proxy/option/ETF really express? (e.g. PURR→HYPE)
-- Should a placeholder thesis be developed, merged, or rejected?
-- Which macro thesis genuinely frames an asset thesis?
-- Is a macro link merely `related`, or is the asset thesis actually `gated_by` it?
-- Does a cluster of unlinked claims deserve a new thesis?
-- Should a research gap trigger source capture, a lightweight agent pass, or a full deep dive?
-- Has refuting evidence changed the thesis or just complicated it?
-- Should a weakening signal lead to thesis revision, strategy action, or no action?
-
-**The boundary:** automate mechanics and high-confidence propagation; collaborate on meaning.
+**Strategy→thesis auto-link + hygiene** (`strategyThesisLink.ts`, in the recompute before the
+cascade): canonical-underlying resolution (IBIT→BTC), placeholder creation, proxy flag;
+`flag-corrupted-strategies.ts` rejects junk. **relate-research** (claim→thesis, agent-judged).
+**DecisionStrip** (current, thin): `decision_required` journal entries at `/api/dashboard/decisions`.
 
 ---
 
-## 5. The missing primitive — a richer Decision Item model
+## 3. The eight things to design (the operating model)
 
-Today `decision_required` is just a journal entry in the strip. Too thin. It should become
-a **decision packet**:
+### 3.1 Event taxonomy
+The events that should trigger propagation:
+`new Tana content` · `new claim extracted` · `claim linked` · `thesis created` ·
+`strategy opened` · `strategy linked` · `thesis promoted to monitoring` ·
+`signal evidence received` · `position closed` · `thesis thin/gap detected`.
 
+### 3.2 Lifecycle rules (what each state means + allowed automation)
+- `developing` → gets claims + digest refreshes (B4).
+- `monitoring` → gets signal evidence + health checks (B5b/B5c).
+- `closed` → gets a retrospective (B7).
+- **no thesis but live position** → a **decision**: tactical exposure or thesis-backed belief?
+  (Today: strategy auto-link creates a placeholder `developing` thesis by default; the
+  tactical/hedge classification is the open decision.)
+
+### 3.3 Propagation matrix (route each claim/evidence item by thesis state)
+- **No relevant thesis** → leave in Tana; maybe cluster as a candidate.
+- **Developing thesis** → promote/link the claim.
+- **Monitoring thesis** → route as signal evidence.
+- **Thin monitoring thesis** → trigger the research-gap bridge.
+- **No thesis but live strategy** → raise "create thesis or mark tactical" decision.
+
+### 3.4 Research-gap workflow (first-class)
+Detect thin/gap live theses → **search Tana first** → if Tana has material, run claim/link
+propagation → if Tana lacks material, propose sources or trigger deep research → after new
+research lands, run digest + signal derivation. (B6 builds detection + the Tana-first bridge;
+this formalizes the full cycle.)
+
+### 3.5 Deep-dive integration (escalation, not default)
+The five-stage research pipeline (`stage-1…5`) is an **escalation path**, not a replacement
+for the lightweight propagation loop:
+- use it when a gap is **important, ambiguous, or position-relevant**;
+- let it **graduate** into thesis updates, claims, signals, or strategy expression;
+- **do not** auto-launch deep research for every thin thesis.
+
+### 3.6 Agent collaboration contract — the Decision Item model
+Today `decision_required` is just a journal entry — too thin. It must become a **decision
+packet**:
 ```
 decision_type          link_strategy_to_thesis | develop_thin_thesis |
-                       resolve_proxy_underlying | review_refuting_claim |
-                       run_deep_dive | frame_asset_under_macro | classify_macro_link |
+                       resolve_proxy_underlying | review_refuting_claim | run_deep_dive |
+                       frame_asset_under_macro | classify_macro_link (related vs gated_by) |
                        cluster_claims_to_thesis | weakening_signal_action | ...
 primary_object         strategy | thesis | claim | signal
 related_objects        candidate links, claims, signals, positions
 why_raised             concise rationale
-recommended_actions    bounded options
+evidence_context       source/provenance
+recommended_actions    bounded options — one of: ask agent · run deep dive · capture sources ·
+                       create thesis · dismiss as tactical · change/close position · link objects
 agent_runbook          which skill/routine handles it (e.g. /thesis-review <mode>)
 default_recommendation optional, with confidence
 status                 active | resolved | dismissed | snoozed
 resolution             what happened and why
 ```
+The app shows the packet + reference data; the **work happens with an agent** (reads packet,
+pulls DB/Tana context, proposes, confirms when needed, writes, journals, resolves).
 
-**Interaction model:** the app stays simple — it shows the packet + reference data. The
-*work* happens with an agent: "resolve this decision," "develop this thesis," "run deep
-dive," "link these objects." The agent reads the packet, pulls DB/Tana context, proposes
-the action, gets confirmation when needed, writes the changes, journals the outcome, and
-resolves the item. This is the **recurring user↔agent decision/maintenance routine** that
-turns the five `/thesis-review` modes + the auto-link flags into a steady cadence instead
-of manual runs.
+### 3.7 Scheduled routines (cadence + cursors)
+- Tana claim extraction — already scheduled.
+- `relate-research` — run routinely after new insights land.
+- `thesis-review` — run **incrementally** across digests / signals / health / gaps / retrospectives (token-aware: sonnet for derivation, Opus for judgment).
+- research-gap bridge — weekly, or event-triggered from new live exposure.
+- deep research — **user-approved**, not fully automatic.
+Each needs a real **cursor** (what's been processed) so runs are incremental, not full sweeps.
 
----
-
-## 6. The three matrices to design (the deliverable)
-
-A dedicated design pass should produce three matrices that form the formal contract for
-*when the system acts, when the agent proposes, and how the user's decision is captured
-back into the graph*.
-
-**6a. Relationship Matrix** — for each edge:
-source object · target object · allowed cardinality · creation method (deterministic /
-agent-suggested / user-confirmed) · confidence threshold · what happens when missing ·
-what happens when contradicted.
-
-**6b. Workflow Matrix** — for each event:
-trigger · automation response · agent response · user decision (if any) · resulting writes.
-*Example:* `active strategy with no asset thesis` → resolve canonical underlying → link
-existing thesis or create placeholder → if proxy ambiguous, raise decision → agent asks
-user whether to map / link / create / reject.
-
-**6c. Decision Taxonomy** — every `decision_type` and its expected action path:
-relationship decisions · research-gap decisions · thesis-health decisions ·
-claim/refutation decisions · strategy confirmation decisions · deep-dive escalation decisions.
+### 3.8 UI role
+Show **state, provenance, and outcomes** — never force manual curation:
+- thesis/strategy pages as reference views;
+- decision-detail context when an item is clicked;
+- clear lifecycle/provenance panels;
+- minimal buttons: dismiss · resolve · ask agent / run workflow.
 
 ---
 
-## 7. Outstanding (the work queue)
+## 4. The three (four) matrices — the formal contract to produce
 
-1. **Decision Item model** — extend `decision_required` into the packet of §5 (schema +
-   the `/api/dashboard/decisions` surface + a `resolve-decision` agent path). This is the
-   product primitive everything else hangs off.
-2. **The three matrices (§6)** — the formal contract. Write as the next v2 doc; several
-   automations already exist, so this is mostly making the implicit explicit.
-3. **Recurring decision/maintenance routine** — schedule the `/thesis-review` worklists to
-   drain a few-per-run (token-aware; consider `sonnet` for derivation, Opus for judgment),
-   emitting decision packets rather than silent writes. (Billed cloud routine — needs user go.)
-4. **Asset→Macro framing automation** — agent-suggested `related` vs `gated_by` links, as
-   decision packets (currently fully manual).
-5. **Backlogs to drain** via the routine: ~30 signalless monitoring theses; ~16
-   retrospectives; research-gap bridges (incl. the 6 new placeholders SOI/HLIT/NEAR/NBIS/VVV/MAX).
-6. **B8** — notes-repo flip (relate-research becomes the live capture path).
-7. **W9** — intel-router quality audit (routed-evidence `assessment` labels are inverted for
-   invalidation signals; the health pass corrects them, but the source needs fixing).
-8. **Thesis cull** — [02-thesis-cull-checklist.md](02-thesis-cull-checklist.md) still awaits markup; legacy `active`-status rows remain.
+The design doc should crystallize §3 into matrices specifying *when the system acts, when
+the agent proposes, and how the user's decision is captured back into the graph*:
+
+1. **Relationship Matrix** — per edge: source · target · cardinality · creation method
+   (deterministic / agent-suggested / user-confirmed) · confidence threshold · what happens
+   when missing · what happens when contradicted.
+2. **Propagation Matrix** — per claim/evidence item: routing by thesis state (§3.3).
+3. **Workflow Matrix** — per event (§3.1): trigger · automation response · agent response ·
+   user decision (if any) · resulting writes.
+4. **Decision Taxonomy** — every `decision_type` and its action path (relationship,
+   research-gap, thesis-health, claim/refutation, strategy-confirmation, deep-dive escalation).
 
 ---
 
-## 8. Why we're close
+## 5. The automation boundary (reference)
 
-The database graph and several automations already exist (positions→strategies,
-strategies→theses, the status cascade, claim→thesis judgment, signal derivation, gap
-detection). What's missing is the **formal contract** (the matrices) and the **decision
-packet** that captures the user's judgment back into the graph. Build those two and the
-loop becomes a coherent, low-touch, self-repairing system rather than a set of scripts.
+**Automate (structural / high-confidence):** position/trade→strategy; strategy→existing
+asset thesis (canonical underlying); strategy→placeholder thesis on live exposure;
+asset/macro status cascade; claim→thesis after agent judgment at high confidence; signal
+generation from a monitoring thesis's articulation; gap detection.
+
+**Agent/user-mediated (judgment → decision packets):** tactical vs hedge vs thesis-backed;
+which economic underlying a proxy/ETF/option expresses (PURR→HYPE); develop vs merge vs
+reject a placeholder; which macro frames an asset thesis; `related` vs `gated_by`; whether a
+claim cluster deserves a new thesis; gap → source-capture vs light pass vs deep dive; whether
+refuting evidence changes or just complicates a thesis; weakening signal → revise / act / hold.
+
+---
+
+## 6. Outstanding work queue
+
+1. **Write the operating-model design doc + implementation plan** (this doc is the seed): the four matrices (§4), event taxonomy, lifecycle rules, decision types, and exact handling for all content/thesis/strategy orderings.
+2. **Decision Item model** (§3.6) — extend `decision_required` into the packet; schema + `/api/dashboard/decisions` surface + a `resolve-decision` agent path. The primitive everything hangs off.
+3. **Recurring agent↔user maintenance routine** (§3.7) — scheduled, incremental, cursor-based; emits decision packets, not silent writes. (Billed cloud routine — user go.)
+4. **Asset→Macro framing automation** — agent-suggested `related` vs `gated_by` as decisions.
+5. **Drain backlogs** via the routine: ~30 signalless monitoring theses; ~16 retrospectives; research-gap bridges (incl. the 6 new placeholders SOI/HLIT/NEAR/NBIS/VVV/MAX).
+6. **B8** notes-repo flip (relate-research becomes the live capture path).
+7. **W9** intel-router quality audit (routed `assessment` labels inverted for invalidation signals — health pass corrects, source needs fixing).
+8. **Thesis cull** ([02](02-thesis-cull-checklist.md)) — still awaiting markup; legacy `active`-status rows remain.
+
+---
+
+## 7. Why we're close
+
+The database graph and most propagation automations already exist
+(positions→strategies, strategies→theses, the status cascade, claim→thesis judgment, signal
+derivation, gap detection). What's missing is the **formal contract** (the matrices) and the
+**decision packet** that captures the user's judgment back into the graph. Build those two,
+schedule the routines with cursors, and the loop becomes a coherent, low-touch, self-repairing
+operating model rather than a set of scripts.
