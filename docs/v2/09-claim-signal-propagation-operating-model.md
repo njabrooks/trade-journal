@@ -1,7 +1,7 @@
 # Trade Journal v2 — Claim/Signal Propagation Operating Model
 
 **Date:** 2026-06-19
-**Status:** design — for sign-off before build. This is the doc [08](08-object-graph-and-decision-model.md) §6.1 calls for.
+**Status:** design — for sign-off before build. This is the doc [08](08-object-graph-and-decision-model.md) §6.1 calls for. **The matrices + Decision Item primitive stand; the discrete-signal model here is superseded by [10](10-thesis-underwriting-loose-agent-model.md)** — signals become the resolution section of a living underwriting, and `monitoring` becomes a position flag, not an info gate.
 **Builds on:** [03-v2-spec.md](03-v2-spec.md), [07-belief-maintenance-loop.md](07-belief-maintenance-loop.md), [08-object-graph-and-decision-model.md](08-object-graph-and-decision-model.md) (the seed), the shipped `relate-research` + `/thesis-review` skills.
 **Governing principle:** the system (with Claude inside) does the relating, synthesizing, and reviewing; Nick only touches genuine decisions. No review queues, no curation UIs.
 
