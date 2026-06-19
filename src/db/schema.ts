@@ -1065,6 +1065,25 @@ export type IngestionCursor = typeof ingestionCursors.$inferSelect;
 export type NewIngestionCursor = typeof ingestionCursors.$inferInsert;
 
 // ============================================================================
+// Automation Cursors (C6 — docs/v2/09 §10)
+// Key-value high-water-marks for the belief-maintenance routine. Distinct from
+// ingestion_cursors (which are account+exchange bound). Only relate-research needs
+// one (an insight-date high-water-mark) — the /thesis-review worklists are
+// self-clearing, so they need no cursor.
+// ============================================================================
+
+export const automationCursors = pgTable('automation_cursors', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  key: text('key').unique().notNull(), // e.g. 'relate_research_insights'
+  cursorValue: text('cursor_value').notNull(), // ISO timestamp / opaque marker
+  metadata: jsonb('metadata'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type AutomationCursor = typeof automationCursors.$inferSelect;
+export type NewAutomationCursor = typeof automationCursors.$inferInsert;
+
+// ============================================================================
 // Flex Query Configs
 // ============================================================================
 
