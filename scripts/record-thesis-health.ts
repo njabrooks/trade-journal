@@ -25,6 +25,7 @@
 import * as fs from 'fs';
 import { db, closeDb, schema, logToJournal } from './lib/db.js';
 import { and, eq } from 'drizzle-orm';
+import { buildDecisionPacket } from '@/lib/types/decisions';
 
 const { signalDataSnapshots, journalEntries, macroTheses, assetTheses } = schema;
 
@@ -102,6 +103,7 @@ async function main() {
       .where(and(eq(journalEntries.objectId, thesisId), eq(journalEntries.actionType, 'decision_required'), eq(journalEntries.status, 'active')))
       .limit(1);
     if (existing.length === 0) {
+      const weakening = verdicts.filter((v) => v.assessment === 'weakening' || v.assessment === 'invalidated');
       await logToJournal({
         objectType, objectId: thesisId, objectTitle: thesis.title,
         actionType: 'decision_required',
@@ -109,6 +111,22 @@ async function main() {
         rationale: input.decision.description,
         skillInvoked: '/thesis-review',
         source: 'automation',
+        metadata: {
+          decision: buildDecisionPacket({
+            decision_type: 'weakening_signal_action',
+            why_raised: input.decision.description,
+            related_objects: weakening.map((v) => ({ type: 'signal' as const, id: v.signalId, role: v.assessment })),
+            evidence_context: {
+              weakeningSignals: weakening.map((v) => ({ signalId: v.signalId, assessment: v.assessment, evidenceSummary: v.evidenceSummary })),
+            },
+            recommended_actions: [
+              { action: 'review_position', label: 'Review / adjust the position' },
+              { action: 'revise_signal', label: 'Revise the signal' },
+              { action: 'hold', label: 'Hold — keep monitoring' },
+            ],
+            default_recommendation: { action: 'review_position', confidence: 'medium' },
+          }),
+        },
       });
       decisionRaised = true;
     }

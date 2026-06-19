@@ -1630,7 +1630,7 @@ export const journalEntries = pgTable(
     firstDetectedAt: timestamp('first_detected_at', { withTimezone: true }),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
     occurrenceCount: integer('occurrence_count').default(1),
-    status: text('status').default('active'), // 'active' | 'resolved' | 'dismissed' | 'superseded'
+    status: text('status').default('active'), // 'active' | 'resolved' | 'dismissed' | 'snoozed' | 'superseded' (DB CHECK constraint journal_entries_status_check enforces this set)
   },
   (table) => ({
     objectIdx: index('idx_journal_object').on(table.objectType, table.objectId),

@@ -25,8 +25,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, '..', '..');
 
-// Load dotenv FIRST - before any other imports that might need env vars
-config({ path: join(projectRoot, '.env.local') });
+// Load dotenv FIRST - before any other imports that might need env vars.
+// quiet: true suppresses the v17 startup banner — ops scripts (raise-decision,
+// resolve-decision, the find-* worklists) emit JSON on stdout for programmatic
+// consumption (the C6 maintenance routine parses it), so stdout must stay clean.
+config({ path: join(projectRoot, '.env.local'), quiet: true });
 
 // Now safe to import postgres and drizzle
 import { drizzle } from 'drizzle-orm/postgres-js';

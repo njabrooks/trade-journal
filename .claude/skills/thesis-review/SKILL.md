@@ -330,13 +330,26 @@ pull, surface ONE DecisionStrip item proposing how to develop it — specific
 candidate sources/searches to capture via `/tana-inbox` (which flow back through
 claim-gen → relate-research → digest → signals), and optionally a `deep-research`
 pass. Be concrete (named articles/feeds/queries for that ticker/theme), not generic.
+Emit it as a **typed `develop_thin_thesis` packet** (docs/v2/09 §8) so the strip shows
+the decision_type chip + your proposed sources as actions, and `resolve-decision.ts`
+can close it:
 ```bash
-npx tsx scripts/ops/raise-decision.ts --object-type <asset_thesis|macro_thesis> --id <thesisId> \
-  --title "Live position on <TICKER>, thin thesis — develop it" \
-  --description "No/low research in Tana for <theme>. Proposed sources to capture via /tana-inbox: <specific list>. Optionally run deep-research on <question>."
+echo '{
+  "objectType": "<asset_thesis|macro_thesis>", "objectId": "<thesisId>", "objectTitle": "<thesis title>",
+  "title": "Live position on <TICKER>, thin thesis — develop it",
+  "decisionType": "develop_thin_thesis",
+  "whyRaised": "Expression opened before the research exists; Tana has <none|N stale> for <theme>.",
+  "recommendedActions": [
+    {"action": "capture_sources", "label": "Capture via /tana-inbox", "payload": {"sources": ["<named article/feed/query>", "..."]}},
+    {"action": "run_deep_dive", "label": "Run a deep-research pass", "payload": {"question": "<the decision-critical question>"}},
+    {"action": "accept_thin", "label": "Accept thin for now"}
+  ],
+  "defaultRecommendation": {"action": "capture_sources", "confidence": "medium"}
+}' | npx tsx scripts/ops/raise-decision.ts --stdin
 ```
 The writer dedupes against an existing active decision for the thesis, so re-runs
-won't pile up duplicate strip items.
+won't pile up duplicate strip items. (Bare `--title/--description` flags still work
+for a quick untyped decision, but prefer the typed packet.)
 
 **Step 5 — Report** per thesis: `title (ticker) — Tana: <found N / none>; <linked M claims | decision raised | already flagged>`.
 

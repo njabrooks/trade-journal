@@ -43,6 +43,7 @@ import {
 } from '../../db/schema.js';
 import { resolveRelevanceContext } from './resolver.js';
 import { scoreContentAgainstSignal, hasNeutralIndicators, type ContentForScoring } from './scoring.js';
+import { buildDecisionPacket } from '../types/decisions.js';
 
 // ---------------------------------------------------------------------------
 // Tunable policy (relevance thresholds). Centralised so validation can tune.
@@ -577,6 +578,7 @@ export async function emitDecision(
       actionDescription: desc,
       source: 'automation',
       metadata: {
+        // Flat keys retained — findActiveDecisionId dedups on metadata.insightId/sourceClaimId.
         insightId: args.claim.insightId,
         sourceClaimId: args.claim.sourceClaimId,
         claimTitle: args.claim.title,
@@ -584,6 +586,33 @@ export async function emitDecision(
         mappingType: args.mappingType,
         confidence: args.confidence,
         reasoning: args.reasoning,
+        decision: buildDecisionPacket({
+          decision_type: args.kind === 'refuting' ? 'review_refuting_claim' : 'confirm_claim_link',
+          why_raised: args.reasoning,
+          evidence_context: {
+            claimTitle: args.claim.title,
+            mappingType: args.mappingType,
+            confidence: args.confidence,
+            insightId: args.claim.insightId,
+            sourceClaimId: args.claim.sourceClaimId,
+          },
+          recommended_actions:
+            args.kind === 'refuting'
+              ? [
+                  { action: 'acknowledge', label: 'Acknowledge — fold into evidence gaps' },
+                  { action: 'downgrade', label: 'Downgrade thesis confidence' },
+                  { action: 'reject_thesis', label: 'Reject the thesis' },
+                ]
+              : [
+                  { action: 'confirm', label: 'Confirm the link' },
+                  { action: 'sever', label: 'Sever the link' },
+                  { action: 'adjust', label: 'Adjust mapping type' },
+                ],
+          default_recommendation:
+            args.kind === 'refuting'
+              ? { action: 'acknowledge', confidence: 'medium' }
+              : { action: 'confirm', confidence: args.confidence >= 0.6 ? 'high' : 'low' },
+        }),
       },
     }),
   );

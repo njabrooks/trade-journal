@@ -16,6 +16,7 @@ import { db } from '@/db';
 import { strategies, strategyTemplates, underlyings, assetTheses, positions, journalEntries } from '@/db/schema';
 import { eq, and, sql, isNull, desc } from 'drizzle-orm';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
+import { buildDecisionPacket } from '@/lib/types/decisions';
 import { decideStrategyThesisAction, inferThesisDirection, type StrategyThesisAction } from '@/lib/derived/strategyThesisLinkRules';
 
 /** Cash-equivalents that never get a thesis. */
@@ -173,6 +174,20 @@ export async function ensureAssetThesesForStrategies(opts: EnsureOptions = {}): 
           actionDescription: `Strategy ${s.strategyKey} (${canonical.ticker}, ${canonical.assetClass}) has no asset thesis and its real underlying can't be auto-resolved`,
           rationale: `This looks like a proxy/derivative (e.g. an option or ETF) whose economic underlying differs from the instrument. Map it: set underlyings.parent_underlying_id for ${canonical.ticker} to its real underlying (then it auto-links), or link the strategy to the right asset thesis directly.`,
           source: 'automation',
+          metadata: {
+            decision: buildDecisionPacket({
+              decision_type: 'resolve_proxy_underlying',
+              why_raised: `${s.strategyKey} is a live exposure on proxy/derivative ${canonical.ticker} (${canonical.assetClass}) whose economic underlying isn't mapped, so it can't auto-link to a thesis.`,
+              related_objects: [{ type: 'strategy', id: s.id, title: s.strategyKey, role: 'expression' }],
+              evidence_context: { canonicalTicker: canonical.ticker, assetClass: canonical.assetClass },
+              recommended_actions: [
+                { action: 'map', label: `Map ${canonical.ticker} → its real underlying (set parent_underlying_id)` },
+                { action: 'link', label: 'Link the strategy to the right asset thesis directly' },
+                { action: 'dismiss', label: 'Tactical — no thesis needed' },
+              ],
+              default_recommendation: { action: 'map', confidence: 'medium' },
+            }),
+          },
         });
       }
     }
