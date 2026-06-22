@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trade-journal.maintenance</string>
+
+    <!--
+        Belief-maintenance loop (docs/v2/09 §10, docs/v2/10).
+
+        Schedule: 08:00 + 20:00 LOCAL TIME (Europe/London), every day.
+        StartCalendarInterval is local-time and follows DST automatically, so no
+        DST cron-pair is needed. Morning run is after overnight ingestion settles;
+        evening run keeps the belief layer fresh end-of-day.
+
+        Runs the `/maintenance` Claude skill headlessly via
+        scripts/cron/maintenance.sh (lockfile, timeout, logging, all-Opus). The
+        skill is decision-only for genuine judgments — it surfaces, never auto-resolves.
+
+        Off-switch: ./launchd/install.sh --remove   (or launchctl unload the plist).
+    -->
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/home-hub/projects/trade-journal/scripts/cron/maintenance.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>8</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>20</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/maintenance.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/maintenance.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/home-hub</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

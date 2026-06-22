@@ -23,6 +23,7 @@ LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 
 PLISTS=(
     "com.trade-journal.options-scanner.plist"
+    "com.trade-journal.maintenance.plist"
 )
 
 # Colors
