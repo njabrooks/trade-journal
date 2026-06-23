@@ -1,6 +1,6 @@
 ---
 name: configure-signal
-description: Interactive workflow to wire up data-source monitoring on a signal that has explicit_details: null. Guides through classification → source identification → live endpoint test → threshold setting → DB write → verification.
+description: "[RETIRED 2026-06-19 — do not invoke] Manual signal/threshold configuration is retired under the loose-agent model (docs/v2/10 §6/§9). Signals are now the synthesized resolution section of a thesis's living underwriting, auto-derived by /build-core-argument from the linked claims' own rebuttals — never hand-wired. Kept only as a tombstone; the dormant explicit_details + collect-signal-data wiring survives for rare hard thresholds."
 allowed-tools: Bash, Read, Write
 ---
 
