@@ -1,5 +1,14 @@
 # Thesis Cull Checklist
 
+> **STATUS: CLOSED 2026-06-23 — superseded by the status-change logic (not a removal exercise).**
+> Decision: **keep all theses.** An unexpressed thesis goes dormant (`closed`) via the expression-driven
+> cascade when its strategies unlink, and re-expresses to `monitoring` automatically when a strategy
+> reappears — nothing is `kill`ed/`rejected` as cleanup. The only residual action is **merging genuine
+> duplicates** (e.g. KWEB developing+draft → fold claims into one, drop the dupe). The `keep`/`kill`
+> markup below is therefore moot and retained only for historical reference. Future catalog-size control,
+> if ever needed, is a *staleness-dormancy* rule (auto-close stale developing theses → intact but out of
+> the active set), **not** deletion. See CLAUDE.md (Entity state machines) + memory `v2-decision-model`.
+
 Mark each row's **Verdict**: `keep` / `kill` / `merge→<target>`. Blank = undecided.
 Generated 2026-06-11 from live DB. "Claims" = linked claims; "Links/Strats" = linked asset theses (macro) or active strategies (asset).
 
