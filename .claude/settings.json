@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && npx tsx scripts/ops/list-decisions.ts --nudge 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
