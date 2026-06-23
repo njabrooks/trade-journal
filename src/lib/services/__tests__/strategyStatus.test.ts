@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   deriveStrategyStatusFromSnapshots,
+  isAbandonedAutoShell,
   STRATEGY_RECENCY_WINDOW_DAYS,
 } from '../strategyStatus';
 
@@ -69,5 +70,60 @@ describe('deriveStrategyStatusFromSnapshots', () => {
 
   it('defaults the window to 7 days', () => {
     expect(STRATEGY_RECENCY_WINDOW_DAYS).toBe(7);
+  });
+});
+
+describe('isAbandonedAutoShell', () => {
+  it('flags an aged auto-created shell that never held a position (the phantom case)', () => {
+    expect(
+      isAbandonedAutoShell({ isAuto: true, derivedStatus: 'draft', openedAt: daysAgo(30), asOf }),
+    ).toBe(true);
+  });
+
+  it('spares a freshly-created shell inside the grace window', () => {
+    expect(
+      isAbandonedAutoShell({ isAuto: true, derivedStatus: 'draft', openedAt: daysAgo(3), asOf }),
+    ).toBe(false);
+  });
+
+  it('never touches user-created (non-auto) drafts, however old', () => {
+    expect(
+      isAbandonedAutoShell({ isAuto: false, derivedStatus: 'draft', openedAt: daysAgo(365), asOf }),
+    ).toBe(false);
+  });
+
+  it('never touches a genuinely-held strategy (active)', () => {
+    expect(
+      isAbandonedAutoShell({ isAuto: true, derivedStatus: 'active', openedAt: daysAgo(365), asOf }),
+    ).toBe(false);
+  });
+
+  it('never touches a closed-out strategy (complete) — it held real positions', () => {
+    expect(
+      isAbandonedAutoShell({ isAuto: true, derivedStatus: 'complete', openedAt: daysAgo(365), asOf }),
+    ).toBe(false);
+  });
+
+  it('treats the grace boundary exclusively (exactly 7 days = not yet abandoned)', () => {
+    expect(
+      isAbandonedAutoShell({
+        isAuto: true,
+        derivedStatus: 'draft',
+        openedAt: daysAgo(STRATEGY_RECENCY_WINDOW_DAYS),
+        asOf,
+      }),
+    ).toBe(false);
+  });
+
+  it('flags just past the grace window (8 days)', () => {
+    expect(
+      isAbandonedAutoShell({ isAuto: true, derivedStatus: 'draft', openedAt: daysAgo(8), asOf }),
+    ).toBe(true);
+  });
+
+  it('honours a custom grace window', () => {
+    expect(
+      isAbandonedAutoShell({ isAuto: true, derivedStatus: 'draft', openedAt: daysAgo(20), asOf, windowDays: 30 }),
+    ).toBe(false);
   });
 });

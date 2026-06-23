@@ -11,6 +11,7 @@ import { populateStrategyEntryContext, recomputeStrategyStatus } from '@/lib/ser
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 import { cascadeThesisStatuses } from '@/lib/derived/thesisCascade';
 import { ensureAssetThesesForStrategies } from '@/lib/derived/strategyThesisLink';
+import { isAbandonedAutoShell, AUTO_CLEANED_EMPTY_SOURCE, STRATEGY_RECENCY_WINDOW_DAYS } from '@/lib/services/strategyStatus';
 
 type DateRangeOptions =
   | { snapshotDate: string; startDate?: never; endDate?: never }
@@ -325,6 +326,7 @@ async function findOrCreateStrategyFromPosition(
       id: strategies.id,
       status: strategies.status,
       isAuto: strategies.isAuto,
+      autoSource: strategies.autoSource,
       strategyKey: strategies.strategyKey,
       autoDerivedLabel: strategies.autoDerivedLabel,
     })
@@ -400,6 +402,9 @@ async function findOrCreateStrategyFromPosition(
     }
 
     if (strategy.status === 'rejected') {
+      // An auto-cleaned empty shell is cleanup, not a user rejection — skip it so a genuine
+      // future position can still create a fresh strategy for this key.
+      if (strategy.autoSource === AUTO_CLEANED_EMPTY_SOURCE) continue;
       // User explicitly rejected this strategy - DON'T create a new one
       // Return null to leave position unlinked
       return null;
@@ -497,7 +502,9 @@ async function findOrCreateStrategyFromPosition(
       }
     }
 
-    // Also check if there's a rejected strategy for this account+symbol (even without positions)
+    // Also check if there's a USER-rejected strategy for this account+symbol (even without
+    // positions). Auto-cleaned empty shells (autoSource marker) are excluded — they're cleanup,
+    // not a user decision, so they must not block a genuine future position from creating one.
     const rejectedStrategy = await db
       .select({ id: strategies.id })
       .from(strategies)
@@ -505,7 +512,8 @@ async function findOrCreateStrategyFromPosition(
         and(
           eq(strategies.accountId, pos.accountId),
           sql`${strategies.strategyKey} LIKE ${pos.symbol + '-%'}`,
-          eq(strategies.status, 'rejected')
+          eq(strategies.status, 'rejected'),
+          sql`${strategies.autoSource} IS DISTINCT FROM ${AUTO_CLEANED_EMPTY_SOURCE}`
         )
       )
       .limit(1);
@@ -595,6 +603,7 @@ async function findOrCreateStrategyFromTrade(
       id: strategies.id,
       status: strategies.status,
       isAuto: strategies.isAuto,
+      autoSource: strategies.autoSource,
       strategyKey: strategies.strategyKey,
       autoDerivedLabel: strategies.autoDerivedLabel,
     })
@@ -663,6 +672,9 @@ async function findOrCreateStrategyFromTrade(
     }
 
     if (strategy.status === 'rejected') {
+      // An auto-cleaned empty shell is cleanup, not a user rejection — skip it so a genuine
+      // future position can still create a fresh strategy for this key.
+      if (strategy.autoSource === AUTO_CLEANED_EMPTY_SOURCE) continue;
       // User explicitly rejected this strategy - DON'T create a new one
       // Return null to leave trade unlinked
       return null;
@@ -1078,7 +1090,13 @@ export async function autoLinkPositionsToStrategies(
 /** Derive status from positions for every recomputable strategy on the account. */
 async function recomputeAccountStrategyStatuses(accountId: string): Promise<void> {
   const accountStrategies = await db
-    .select({ id: strategies.id, status: strategies.status, strategyKey: strategies.strategyKey })
+    .select({
+      id: strategies.id,
+      status: strategies.status,
+      strategyKey: strategies.strategyKey,
+      isAuto: strategies.isAuto,
+      openedAt: strategies.openedAt,
+    })
     .from(strategies)
     .where(
       and(
@@ -1089,9 +1107,39 @@ async function recomputeAccountStrategyStatuses(accountId: string): Promise<void
       )
     );
 
+  // Reference "current book" date for the abandoned-shell grace window (global latest snapshot).
+  const asOfRow = await db
+    .select({ d: sql<string | null>`max(${positions.snapshotDate})` })
+    .from(positions);
+  const asOf = asOfRow[0]?.d ? new Date(asOfRow[0].d) : new Date();
+
   for (const strategy of accountStrategies) {
     try {
       const newStatus = await recomputeStrategyStatus(strategy.id);
+
+      // Janitor: an auto-created strategy that never held a position and has aged past the
+      // grace window is a phantom shell (e.g. an IBKR option exercise/assignment STK booking
+      // that netted to no position). Auto-clean it to `rejected` instead of parking it in
+      // `draft` forever. Stamp a distinct autoSource so the reject-guards treat it as cleanup,
+      // NOT a user rejection — a future genuine position for the symbol can still create one.
+      if (isAbandonedAutoShell({ isAuto: strategy.isAuto, derivedStatus: newStatus, openedAt: strategy.openedAt, asOf })) {
+        await db
+          .update(strategies)
+          .set({ status: 'rejected', autoSource: AUTO_CLEANED_EMPTY_SOURCE, updatedAt: new Date() })
+          .where(eq(strategies.id, strategy.id));
+        await logToJournal({
+          objectType: 'strategy',
+          objectId: strategy.id,
+          objectTitle: strategy.strategyKey,
+          actionType: 'status_change',
+          actionDescription: `Auto-cleaned empty shell (0 positions, aged >${STRATEGY_RECENCY_WINDOW_DAYS}d): ${strategy.status} → rejected`,
+          previousState: { status: strategy.status },
+          newState: { status: 'rejected', autoSource: AUTO_CLEANED_EMPTY_SOURCE },
+          source: 'automation',
+        });
+        continue;
+      }
+
       if (newStatus === strategy.status) continue;
 
       await db
