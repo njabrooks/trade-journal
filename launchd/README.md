@@ -5,6 +5,17 @@ home hub. The Mac Mini is the same machine that runs the notes/Tana cron jobs
 (`com.notes.*`, `com.tana.*`) — all live in the same `~/Library/LaunchAgents/`
 directory and follow the same conventions.
 
+## Currently defined jobs (the `install.sh` registry)
+
+| Job | Schedule (Europe/London) | Wrapper | What it does |
+|---|---|---|---|
+| `com.trade-journal.options-scanner` | 14:50 Mon–Fri | `options-scanner.sh` | Daily 50-ticker vol-curve scan (= 09:50 NYC) |
+| `com.trade-journal.maintenance` | 08:00 + 20:00 | `maintenance.sh` | `/maintenance` belief loop — **spawns headless `claude`** |
+| `com.trade-journal.collect-signal-data` | 06:30 | `collect-signal-data.sh` | Quantitative signal collectors (deterministic tsx, **no Claude**) — docs/v2/14 §8 |
+| `com.trade-journal.thesis-observe` | 07:00 | `thesis-observe.sh` | `/thesis-observe` tracking-evidence producer (Tier-1) — **spawns headless `claude`** — docs/v2/14 |
+
+The morning chain is ordered: **06:30 collectors → 07:00 observe → 08:00 maintenance consume**, so the belief loop reads fresh same-day quantitative + qualitative evidence. The two `claude`-spawning jobs run `--model opus --dangerously-skip-permissions`; treat enabling them as a deliberate go-live (they incur token cost). Install/remove all four with `./install.sh` / `./install.sh --remove`.
+
 ## When to put a job here vs in GitHub Actions
 
 | Pick **GitHub Actions** when… | Pick **on-device launchd** when… |

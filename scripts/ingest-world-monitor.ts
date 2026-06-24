@@ -22,7 +22,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
 import { parseWorldMonitor, type ParsedReport } from '../src/lib/intelligence/parseWorldMonitor.js';
-import { findBestMatch, type Assessment, type ContentForScoring } from '../src/lib/intelligence/scoring.js';
+import { type Assessment } from '../src/lib/intelligence/scoring.js';
 import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
 const { signals, signalDataSnapshots, signalEntityLinks } = schema;
@@ -35,14 +35,18 @@ async function ingestReport(filePath: string): Promise<{ itemCount: number; emit
   const markdown = readFileSync(filePath, 'utf-8');
   const parsed = parseWorldMonitor(markdown);
 
-  const isThesisMonitor = parsed.reportType === 'thesis-monitor';
+  // thesis-observe (docs/v2/14, the tracking-evidence producer) and the legacy
+  // thesis-monitor share one directive report shape; both generate qualitative signal
+  // snapshots. The data_source label keeps their provenance distinct in the stream.
+  const isThesisMonitor = parsed.reportType === 'thesis-monitor' || parsed.reportType === 'thesis-observe';
+  const signalDataSource = parsed.reportType === 'thesis-observe' ? 'thesis_observe' : 'thesis_monitor';
 
   // Emit intel items with deterministic record ids — (source_table, source_record_id)
   // uniqueness makes re-ingestion of the same report a no-op.
   let emitted = 0;
   if (parsed.items.length > 0) {
     const intelItems: IntelItemInput[] = parsed.items.map((item, idx) => ({
-      sourceKey: isThesisMonitor ? 'thesis_monitor' : 'world_monitor',
+      sourceKey: isThesisMonitor ? signalDataSource : 'world_monitor',
       sourceTable: SOURCE_TABLE,
       sourceRecordId: `${parsed.reportType}:${parsed.reportDate}:${parsed.generatedAt}:${idx}`,
       occurredAt: new Date(parsed.generatedAt),
@@ -65,10 +69,11 @@ async function ingestReport(filePath: string): Promise<{ itemCount: number; emit
   // If nothing was newly emitted, the report was already ingested — skip snapshots.
   const skipped = parsed.items.length > 0 && emitted === 0;
 
-  // Post-ingestion hook: generate qualitative signal snapshots for thesis-monitor reports
+  // Post-ingestion hook: generate qualitative signal snapshots for thesis-monitor /
+  // thesis-observe reports.
   if (isThesisMonitor && !skipped) {
-    const snapshotCount = await generateQualitativeSnapshots(parsed);
-    console.log(`  Signal snapshots: ${snapshotCount} generated`);
+    const snapshotCount = await generateQualitativeSnapshots(parsed, signalDataSource);
+    console.log(`  Signal snapshots (${signalDataSource}): ${snapshotCount} generated`);
   }
 
   return { itemCount: parsed.items.length, emitted, skipped };
@@ -82,192 +87,152 @@ function normalizeStatement(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
 }
 
+interface SignalScore { assessment: Assessment; evidenceText: string; }
+
 /**
- * Parse Score: labels from thesis-monitor report markdown.
- * Returns a map from normalized signal statement → { assessment, evidenceText }.
+ * Parse per-signal Score blocks from a thesis-monitor / thesis-observe directive report.
+ *
+ * Canonical block shape (the /thesis-observe + /thesis-monitor template):
+ *   #### {emoji} {signal statement}
+ *   - **Signal ID:** <uuid>
+ *   - **Score:** <neutral|strengthening|confirmed|weakening|invalidated>
+ *   - **Evidence:** <text>
+ *   - **Assessment:** <text>
+ *   - **Change from prior:** <text>
+ *
+ * Returns scores keyed BOTH by Signal ID (authoritative — ingest keys off this, docs/v2/14
+ * §3.4) and by normalized statement (fallback for legacy reports predating the Signal ID
+ * line). Tolerates the old `- {emoji} **statement**` bullet form and bold-wrapped labels
+ * (`**Score:**`). The previous parser matched neither the `####` header form nor `**Score:**`,
+ * so it silently scored everything neutral — this is the fix.
  */
-function parseScoreLabels(markdown: string): Map<string, { assessment: Assessment; evidenceText: string }> {
-  const scores = new Map<string, { assessment: Assessment; evidenceText: string }>();
+function parseSignalScores(markdown: string): { byId: Map<string, SignalScore>; byStatement: Map<string, SignalScore> } {
+  const byId = new Map<string, SignalScore>();
+  const byStatement = new Map<string, SignalScore>();
 
-  // Find SIGNAL ASSESSMENT section
-  const sectionMatch = markdown.match(/## SIGNAL ASSESSMENT\n([\s\S]*?)(?=\n## [A-Z]|\n---\s*$)/);
-  if (!sectionMatch) return scores;
+  const sectionMatch = markdown.match(/## SIGNAL ASSESSMENT\n([\s\S]*?)(?=\n## [A-Z]|\n---\s*$|$)/);
+  if (!sectionMatch) return { byId, byStatement };
+  const section = sectionMatch[1];
 
-  const sectionText = sectionMatch[1];
+  const EMOJI = '🟢|🟡|⚪|🟠|🔴|✅';
+  // Split into per-signal blocks: prefer the `####` header form, fall back to the bullet form.
+  const headerBlocks = section.split(new RegExp(`(?=^#### (?:${EMOJI}))`, 'm'));
+  const useHeader = headerBlocks.some((b) => /^#### /.test(b.trim()));
+  const blocks = useHeader ? headerBlocks : section.split(new RegExp(`(?=^- (?:${EMOJI}))`, 'm'));
 
-  // Match signal blocks: - {emoji} **[statement]** followed by Score: and Assessment: lines
-  const signalBlockRegex = /- (?:🟢|🟡|⚪|🟠|🔴|✅)\s*\*\*(.+?)\*\*([\s\S]*?)(?=\n- (?:🟢|🟡|⚪|🟠|🔴|✅)|\n\*\*(?:Confirmation|Invalidation|Completion)|$)/g;
+  const SCORE_RE = /\*{0,2}Score:?\*{0,2}\s*(neutral|strengthening|confirmed|weakening|invalidated)/i;
+  const ID_RE = /\*{0,2}Signal ID:?\*{0,2}\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+  const EVID_RE = /\*{0,2}Evidence:?\*{0,2}\s*([^\n]+)/i;
+  const ASSESS_RE = /\*{0,2}Assessment:?\*{0,2}\s*([^\n]+)/i;
 
-  let match;
-  while ((match = signalBlockRegex.exec(sectionText)) !== null) {
-    const statement = match[1].trim();
-    const blockBody = match[2];
+  for (const block of blocks) {
+    const trimmed = block.trim();
+    if (!trimmed) continue;
 
-    // Extract Score: line
-    const scoreMatch = blockBody.match(/Score:\s*(neutral|strengthening|confirmed|weakening|invalidated)/i);
+    const scoreMatch = trimmed.match(SCORE_RE);
     if (!scoreMatch) continue;
+    const assessment = scoreMatch[1].toLowerCase() as Assessment;
 
-    const score = scoreMatch[1].toLowerCase() as Assessment;
+    // Statement = the header/bullet line with the emoji + markdown stripped.
+    const firstLine = trimmed.split('\n')[0]
+      .replace(/^####\s*/, '')
+      .replace(/^-\s*/, '')
+      .replace(new RegExp(`^(?:${EMOJI})\\s*`), '')
+      .replace(/\*\*/g, '')
+      .trim();
 
-    // Extract Assessment: prose for evidenceSummary
-    const assessmentMatch = blockBody.match(/Assessment:\s*(.+?)(?:\n|$)/);
-    const evidenceText = assessmentMatch ? assessmentMatch[1].trim() : '';
+    // Prefer the direct Evidence line for evidenceSummary; fall back to the Assessment prose.
+    const evidenceText = trimmed.match(EVID_RE)?.[1]?.trim()
+      || trimmed.match(ASSESS_RE)?.[1]?.trim()
+      || '';
+    const entry: SignalScore = { assessment, evidenceText };
 
-    scores.set(normalizeStatement(statement), { assessment: score, evidenceText });
+    const idMatch = trimmed.match(ID_RE);
+    if (idMatch) byId.set(idMatch[1].toLowerCase(), entry);
+    if (firstLine) byStatement.set(normalizeStatement(firstLine), entry);
   }
 
-  return scores;
+  return { byId, byStatement };
 }
 
 /**
- * Generate qualitative signal data snapshots from a parsed thesis-monitor report.
+ * Generate qualitative signal data snapshots from a parsed thesis-monitor / thesis-observe
+ * report.
  *
- * Primary path: parses explicit Score: labels from the report markdown.
- * Fallback path: heuristic keyword matching (for reports without Score: labels).
- * Creates a snapshot per signal — even "neutral" entries so the timeline is complete.
+ * Scoping (docs/v2/14 §3.4): reports that carry Signal IDs — thesis-observe and the current
+ * thesis-monitor template — write a snapshot for EXACTLY the signals they reported. This is
+ * what lets a tiered/partial observe run (Tier-1 only) write evidence for just the signals it
+ * actually observed, without minting phantom `neutral` rows for unobserved theses. Legacy
+ * reports without IDs fall back to all active thesis signals, matched by statement.
+ *
+ * @param dataSource snapshot provenance label — 'thesis_observe' or 'thesis_monitor'.
  */
-async function generateQualitativeSnapshots(parsed: ParsedReport): Promise<number> {
+async function generateQualitativeSnapshots(parsed: ParsedReport, dataSource: string): Promise<number> {
   if (!parsed.fullMarkdown) return 0;
 
-  // Parse Score: labels from report markdown (primary path)
-  const scoreLabels = parseScoreLabels(parsed.fullMarkdown);
-  const hasScoreLabels = scoreLabels.size > 0;
+  const scores = parseSignalScores(parsed.fullMarkdown);
+  const reportedIds = [...scores.byId.keys()];
 
-  if (hasScoreLabels) {
-    console.log(`  Score labels found: ${scoreLabels.size} signals with explicit scores`);
+  if (scores.byId.size > 0) {
+    console.log(`  Signal scores: ${scores.byId.size} by ID, ${scores.byStatement.size} by statement`);
+  } else if (scores.byStatement.size > 0) {
+    console.log(`  Signal scores: ${scores.byStatement.size} by statement (no Signal IDs in report)`);
   } else {
-    console.log(`  No Score: labels found — using heuristic fallback`);
+    console.log(`  No Score: labels found — nothing to snapshot`);
+    return 0;
   }
 
-  // Report items (in memory — give each an index id for findBestMatch)
-  const items = parsed.items.map((item, idx) => ({ id: String(idx), ...item }));
-
-  if (items.length === 0) return 0;
-
-  // Load all active thesis signals with their linked thesis info (via junction table)
-  const activeSignalRows = await db
+  // Target signal set: scope to reported IDs when present, else all active thesis signals.
+  const targetSignals = await db
     .select({
       id: signals.id,
       type: signals.type,
       statement: signals.statement,
       thesisId: signalEntityLinks.thesisId,
       thesisType: signalEntityLinks.thesisType,
-      explicitDetails: signals.explicitDetails,
     })
     .from(signals)
     .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
     .where(
-      and(
-        eq(signalEntityLinks.entityType, 'thesis'),
-        eq(signals.status, 'active')
-      )
+      reportedIds.length > 0
+        ? and(eq(signalEntityLinks.entityType, 'thesis'), inArray(signals.id, reportedIds))
+        : and(eq(signalEntityLinks.entityType, 'thesis'), eq(signals.status, 'active'))
     );
 
-  if (activeSignalRows.length === 0) return 0;
-
-  // Build ticker → signal mapping via asset theses
-  const assetThesisIds = activeSignalRows
-    .filter(s => s.thesisType === 'asset')
-    .map(s => s.thesisId)
-    .filter((id): id is string => id !== null);
-
-  const tickerMap: Record<string, string> = {}; // thesisId → ticker
-  if (assetThesisIds.length > 0) {
-    const thesisRows = await db
-      .select({
-        thesisId: schema.assetTheses.id,
-        ticker: schema.underlyings.ticker,
-      })
-      .from(schema.assetTheses)
-      .innerJoin(schema.underlyings, eq(schema.assetTheses.underlyingId, schema.underlyings.id))
-      .where(inArray(schema.assetTheses.id, assetThesisIds));
-
-    for (const row of thesisRows) {
-      tickerMap[row.thesisId] = row.ticker;
-    }
-  }
+  if (targetSignals.length === 0) return 0;
 
   const snapshots: Array<typeof signalDataSnapshots.$inferInsert> = [];
   const now = new Date();
 
-  // Helper to convert a report item to the shared ContentForScoring format
-  const itemToContent = (item: { id: string; headline: string; body: string | null; relevantTickers: string[] | null }): ContentForScoring => ({
-    text: `${item.headline} ${item.body || ''}`,
-    tickers: item.relevantTickers || [],
-  });
-
-  for (const signal of activeSignalRows) {
-    const normalizedStatement = normalizeStatement(signal.statement);
-    const thesisTicker = signal.thesisType === 'asset' && signal.thesisId
-      ? tickerMap[signal.thesisId] || null
-      : null;
-
-    // --- Primary path: look up Score: label by signal statement ---
-    const scoreEntry = scoreLabels.get(normalizedStatement);
-
-    if (scoreEntry) {
-      // Find the best-matching report item for evidence context
-      const match = findBestMatch(items, itemToContent, signal, thesisTicker);
-
-      snapshots.push({
-        signalId: signal.id,
-        snapshotDate: now,
-        assessment: scoreEntry.assessment,
-        evidenceSummary: scoreEntry.evidenceText || (match
-          ? `${match.item.headline}${match.item.body ? ': ' + match.item.body.slice(0, 200) : ''}`
-          : null),
-        dataSource: 'thesis_monitor',
-        status: 'pending',
-      });
-      continue;
-    }
-
-    // --- Fallback path (reports without explicit Score: labels) ---
-    // A keyword match establishes only that a report item is TOPICAL to the signal — not
-    // whether it advances or contradicts the signal's criterion, and (for invalidation
-    // signals) NOT the thesis-centric direction, which is the inverse of the criterion's.
-    // So ABSTAIN: record the matched evidence text with a `neutral` assessment instead of
-    // guessing a polarity. (The old code forced `strengthening` on any non-neutral match,
-    // type-blind — wrong for invalidation signals, unfounded for the rest.) Mirrors the
-    // relate-research assessSignal fix; direction comes from the explicit Score: path.
-    const match = findBestMatch(items, itemToContent, signal, thesisTicker);
-
+  for (const signal of targetSignals) {
+    const entry = scores.byId.get(signal.id)
+      ?? scores.byStatement.get(normalizeStatement(signal.statement));
     snapshots.push({
       signalId: signal.id,
       snapshotDate: now,
-      assessment: 'neutral',
-      evidenceSummary: match
-        ? `${match.item.headline}${match.item.body ? ': ' + match.item.body.slice(0, 200) : ''}`
-        : null,
-      dataSource: 'thesis_monitor',
+      assessment: entry?.assessment ?? 'neutral',
+      evidenceSummary: entry?.evidenceText || null,
+      dataSource,
       status: 'pending',
     });
   }
 
-  // Insert all snapshots
   if (snapshots.length > 0) {
     await db.insert(signalDataSnapshots).values(snapshots);
   }
 
-  // Journal non-neutral assessments as thesis-level events
+  // Journal non-neutral assessments as thesis-level signal_evidence_received events.
   const nonNeutralSnapshots = snapshots.filter(s => s.assessment !== 'neutral');
   if (nonNeutralSnapshots.length > 0) {
-    // Build thesis title map
     const thesisIds = new Set<string>();
     for (const snap of nonNeutralSnapshots) {
-      const signal = activeSignalRows.find(s => s.id === snap.signalId);
+      const signal = targetSignals.find(s => s.id === snap.signalId);
       if (signal?.thesisId) thesisIds.add(signal.thesisId);
     }
 
     const thesisTitleMap: Record<string, string> = {};
-    const macroIds = [...thesisIds].filter(id => {
-      const sig = activeSignalRows.find(s => s.thesisId === id);
-      return sig?.thesisType === 'macro';
-    });
-    const assetIds = [...thesisIds].filter(id => {
-      const sig = activeSignalRows.find(s => s.thesisId === id);
-      return sig?.thesisType === 'asset';
-    });
+    const macroIds = [...thesisIds].filter(id => targetSignals.find(s => s.thesisId === id)?.thesisType === 'macro');
+    const assetIds = [...thesisIds].filter(id => targetSignals.find(s => s.thesisId === id)?.thesisType === 'asset');
 
     if (macroIds.length > 0) {
       const rows = await db.select({ id: schema.macroTheses.id, title: schema.macroTheses.title })
@@ -284,24 +249,25 @@ async function generateQualitativeSnapshots(parsed: ParsedReport): Promise<numbe
     let journalCount = 0;
 
     for (const snap of nonNeutralSnapshots) {
-      const signal = activeSignalRows.find(s => s.id === snap.signalId);
+      const signal = targetSignals.find(s => s.id === snap.signalId);
       if (!signal?.thesisId || !signal.thesisType) continue;
 
       const objectType = signal.thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis';
       const thesisTitle = thesisTitleMap[signal.thesisId] || 'Unknown thesis';
       const shortStatement = signal.statement.slice(0, 80);
+      const sourceLabel = dataSource === 'thesis_observe' ? 'thesis observe' : 'thesis monitor';
 
       await logToJournal({
         objectType,
         objectId: signal.thesisId,
         objectTitle: thesisTitle,
         actionType: 'signal_evidence_received',
-        actionDescription: `Signal "${shortStatement}" received ${snap.assessment} evidence from thesis monitor`,
+        actionDescription: `Signal "${shortStatement}" received ${snap.assessment} evidence from ${sourceLabel}`,
         source: 'automation',
         metadata: {
           signalId: snap.signalId,
           assessment: snap.assessment,
-          dataSource: 'thesis_monitor',
+          dataSource,
           reportDate: parsed.reportDate,
           reportGeneratedAt: parsed.generatedAt,
         },

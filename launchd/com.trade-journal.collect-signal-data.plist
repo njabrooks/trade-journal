@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trade-journal.collect-signal-data</string>
+
+    <!--
+        Quantitative signal collectors re-home (docs/v2/14 §8). The whole collection
+        layer died 2026-04-06 with its lost execution host; this restores
+        collect-signal-data.ts on on-device launchd.
+
+        Deterministic (no Claude) by design — see scripts/cron/collect-signal-data.sh.
+        On-device (not GH Actions) because the tradingview_cdp collector needs the local
+        CDP Chrome session.
+
+        Schedule: 06:30 LOCAL TIME (Europe/London) daily — before /thesis-observe (07:00)
+        and /maintenance (08:00); feeds the nightly synthesize-signal-day aggregate.
+
+        Off-switch: ./launchd/install.sh --remove   (or launchctl unload the plist).
+    -->
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/home-hub/projects/trade-journal/scripts/cron/collect-signal-data.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>6</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/collect-signal-data.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/collect-signal-data.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/home-hub</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

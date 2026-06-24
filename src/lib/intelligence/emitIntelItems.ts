@@ -48,7 +48,11 @@ export async function emitIntelItems(
     processingStatus: 'pending' as const,
   }));
 
-  // Batch insert in chunks to avoid query size limits
+  // Batch insert in chunks to avoid query size limits.
+  // Count via RETURNING, not result.rowCount: with onConflictDoNothing, node-postgres
+  // under-reports rowCount (observed 0 on genuinely-fresh inserts), which silently broke
+  // the caller's "already ingested" dedup. RETURNING yields exactly the rows actually
+  // inserted (conflicts are not returned), so its length is the reliable inserted count.
   const CHUNK_SIZE = 500;
   let inserted = 0;
 
@@ -57,8 +61,9 @@ export async function emitIntelItems(
     const result = await dbInstance
       .insert(intelItems)
       .values(chunk)
-      .onConflictDoNothing({ target: [intelItems.sourceTable, intelItems.sourceRecordId] });
-    inserted += result.rowCount ?? 0;
+      .onConflictDoNothing({ target: [intelItems.sourceTable, intelItems.sourceRecordId] })
+      .returning({ id: intelItems.id });
+    inserted += result.length;
   }
 
   return inserted;

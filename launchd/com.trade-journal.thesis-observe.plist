@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trade-journal.thesis-observe</string>
+
+    <!--
+        Thesis-observe tracking-evidence producer (docs/v2/14 — the belief layer's
+        "eyes & ears").
+
+        Schedule: 07:00 LOCAL TIME (Europe/London), every day.
+        StartCalendarInterval is local-time and follows DST automatically. 07:00 sits
+        AFTER overnight ingestion settles and BEFORE the 08:00 /maintenance consume, so
+        the morning belief loop reads fresh, same-day evidence.
+
+        Runs the `/thesis-observe` Claude skill headlessly via
+        scripts/cron/thesis-observe.sh (lockfile, timeout, logging, all-Opus). The skill
+        is SENSING ONLY — it writes scored per-signal evidence + journals it, and NEVER
+        raises a decision or changes a status. Phase 1 observes TIER-1 ONLY (the
+        token-cost lever — docs/v2/14 §3.6).
+
+        Off-switch: ./launchd/install.sh --remove   (or launchctl unload the plist).
+    -->
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/home-hub/projects/trade-journal/scripts/cron/thesis-observe.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/thesis-observe.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/thesis-observe.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/home-hub</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
