@@ -24,6 +24,7 @@ import {
 } from '@/db/schema';
 import { eq, and, inArray, sql, desc, ne, isNotNull } from 'drizzle-orm';
 import { thesisHealthDue, THESIS_HEALTH_FLOOR_DAYS } from '@/lib/derived/thesisHealthRules';
+import { isCollectorTracked } from '@/lib/derived/signalClassification';
 
 export { thesisHealthDue, isWeakening, THESIS_HEALTH_FLOOR_DAYS } from '@/lib/derived/thesisHealthRules';
 
@@ -141,6 +142,9 @@ export interface HealthSignal {
   statement: string;
   notes: string | null;
   linkedClaimIds: string[] | null;
+  /** True when a quantitative sensor (explicit_details / data_driven) tracks this signal.
+   *  Lets thesis-observe DEFER deterministically and signal-quality EXCLUDE it (docs/v2/15 §4.3). */
+  collectorTracked: boolean;
   /** Most recent prior health verdict for this signal (for material-change detection). */
   lastHealthAssessment: string | null;
   /** Recent routed evidence on this signal, newest first. */
@@ -187,6 +191,8 @@ export async function gatherHealthContext(
       statement: signalsTable.statement,
       notes: signalsTable.notes,
       linkedClaimIds: signalsTable.linkedClaimIds,
+      category: signalsTable.category,
+      explicitDetails: signalsTable.explicitDetails,
     })
     .from(signalsTable)
     .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signalsTable.id))
@@ -219,6 +225,7 @@ export async function gatherHealthContext(
       statement: s.statement,
       notes: s.notes,
       linkedClaimIds: (s.linkedClaimIds as string[] | null) ?? null,
+      collectorTracked: isCollectorTracked({ explicitDetails: s.explicitDetails, category: s.category }),
       lastHealthAssessment: lastHealth?.assessment ?? null,
       recentEvidence,
     });

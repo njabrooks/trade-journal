@@ -68,14 +68,17 @@ npx tsx scripts/ops/find-theses-due-observe.ts          # Tier-1 only (the defau
 
 Output is JSON: `{ generatedAt, tiers, thesisCount, signalCount, bundles: [...] }`. Each bundle:
 `{ tier, thesisId, thesisType, title, direction, confidence, ticker|sectors, spot, materialityUsd,
-signals: [{ id, type, statement, notes, recentEvidence: [{assessment, evidenceSummary, dataSource, snapshotDate}] }] }`.
+signals: [{ id, type, statement, notes, collectorTracked, recentEvidence: [{assessment, evidenceSummary, dataSource, snapshotDate}] }] }`.
 
 **Phase 1 observes TIER-1 ONLY** — do not pass `--tier`/`--all`. Tiering is the token-cost
 lever that killed v1; respect it. (`--summary` shows the full ranking + tier bands if you need
 to sanity-check what's in scope; `--tier 1,2` is a later-phase expansion.)
 
-The signal **`statement`** is the thing you judge against. **~89% of signals have NULL
-`explicit_details`** — there are no configured keywords to match; read the statement.
+The signal **`statement`** is the thing you judge against. Most signals have no configured
+metric; read the statement. The bundle now carries **`collectorTracked`** per signal — a
+deterministic flag (true when a quantitative sensor owns the signal) — so you no longer infer
+quant-vs-qual from the statement: **defer the `collectorTracked: true` ones** per the rule in
+Step 5 (docs/v2/15 §8).
 
 ## Step 2 — Load the previous observe report (for change-from-prior)
 
@@ -150,8 +153,9 @@ directional result**:
 
 ### Defer quantitative signals to their collector (no double-count)
 
-Some signals are tracked numerically by `collect-signal-data.ts` (they have `explicit_details`
-with a data source — defillama/coingecko/fred/derived/tradingview_cdp/…). For these:
+Signals with **`collectorTracked: true`** in the bundle are tracked numerically by
+`collect-signal-data.ts` (defillama/coingecko/fred/derived/tradingview_cdp/…). This is the
+**deterministic flag** — do not re-infer it from the statement. For these:
 - Score **`neutral`** if your only evidence is the metric itself ("ARR ~$700M, ~50% of target").
   The collector already records the number — restating it adds nothing.
 - Score **non-neutral only** for genuinely *qualitative* evidence the collector cannot capture:

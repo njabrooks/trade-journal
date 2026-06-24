@@ -190,6 +190,7 @@ async function main() {
         type: s.type,
         statement: s.statement,
         notes: s.notes,
+        collectorTracked: s.collectorTracked, // docs/v2/15 §8 — observe DEFERS these deterministically
         recentEvidence: s.recentEvidence.map((e) => ({
           assessment: e.assessment,
           evidenceSummary: e.evidenceSummary,
