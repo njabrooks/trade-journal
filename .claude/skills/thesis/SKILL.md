@@ -61,6 +61,10 @@ Then `Read` the JSON it prints. Shape (the surface you answer from):
   flag).
 - `strategies`, `performance` (realized + attribution; macro = full-credit exposure view), `allocation`
   (per-strategy pct-of-NAV + `sumPctNav`), `thin` (deterministic gap flags).
+- `signalQuality` — **null** unless monitoring with active signals (docs/v2/15). When present:
+  `chronicNeutralSignals` (observed but never discriminating — *sharpen or drop these on re-underwrite*),
+  `coverageGaps` (a material price move no signal flagged — *author a covering signal*), `signalVerdicts`
+  (per-signal verdict incl. `insufficient_data`/`excluded_collector`), and `reunderwriteTrigger`.
 - `unlinkedClaims` / `unlinkedMethod` — **the completeness backstop**: claims that bear on the thesis but
   aren't linked yet (count mirrored in `thin.unlinkedClaimCount`). For **assets** = claims tagged with the
   ticker (`unlinkedMethod: 'ticker'`); for **macros** = claims on the macro's child asset theses not yet on
@@ -103,6 +107,13 @@ Present conversationally and decision-first — a digest, not a form dump.
 > underwriting isn't built on a silently-incomplete (and possibly lopsided) set. Surface the count + a
 > bull/bear read and let the user choose scope before synthesizing. (Caveat: it's a backstop — won't catch
 > no-ticker claims unrelated to a child asset, or un-promoted Tana content; relate-research stays primary.)
+
+> **Signal-quality read (when `signalQuality` is non-null).** If the snapshot carries
+> `chronicNeutralSignals` (statements observed repeatedly that never discriminated) or `coverageGaps` (a
+> material price move no signal caught), fold them into the re-underwrite: **drop or sharpen** the
+> chronic-neutral statements rather than regenerating them verbatim, and **author a signal** covering the
+> gap. This is the observation→signal feedback (docs/v2/15) — re-underwriting on what the tracking actually
+> revealed, not just on time/claims.
 
 Then invoke **`/build-core-argument`**
 for `{thesisId, thesisType}`. It reads all linked claims (including conversation/research observations),

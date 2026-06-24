@@ -81,6 +81,16 @@ Run each via its `/thesis-review` mode; stop each at the per-run cap and note le
 ```bash
 npx tsx scripts/ops/find-unclassified-exposures.ts --apply
 ```
+8. **re_underwrite_due** — deterministic raiser; merges both triggers (claim-delta +
+   signal-quality) into one packet per thesis (docs/v2/15 §6). Not subject to the ≤5 cap
+   (it's idempotent — dedups per thesis). Preview, then apply:
+```bash
+npx tsx scripts/ops/raise-reunderwrite-decisions.ts            # preview
+npx tsx scripts/ops/raise-reunderwrite-decisions.ts --apply    # raise/bump
+```
+The packets surface in `/decisions`; the user resolves each via `/thesis <X>` (re-underwrite),
+which — for signal-quality triggers — should sharpen/drop the chronic-neutral signals and add a
+signal for the coverage gap (the diagnostics ride along in the thesis-snapshot context).
 
 **Step 5 — Report.** One compact summary: insights related (+cursor advanced to X),
 digests/signals/health/retrospectives processed, decisions raised by type, and what

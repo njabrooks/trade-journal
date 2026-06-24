@@ -29,6 +29,7 @@ import { getLatestArticulation, getArticulationHistory, getActiveSignals } from 
 import { getMainClaimsWithSourcesForThesis, getLinkedStrategiesForThesis } from '@/db/queries/macroTheses';
 import { getMainClaimsWithSourcesForAssetThesis, getLinkedStrategiesForAssetThesis } from '@/db/queries/assetTheses';
 import { getAssetThesisPerformance, getMacroThesisPerformance } from '@/db/queries/thesisPerformance';
+import { gatherSignalQualityContext } from '@/lib/derived/signalQualityDiagnostics';
 
 type ThesisType = 'macro' | 'asset';
 
@@ -212,6 +213,25 @@ async function main() {
   const unlinked = r.type === 'asset' ? await unlinkedByTicker(r.ticker, r.id) : await unlinkedViaChildAssets(r.id);
   const unlinkedMethod = r.type === 'asset' ? 'ticker' : 'child_assets';
 
+  // Signal-quality diagnostics (docs/v2/15 §6.3 — the P1→P3 handoff). Non-null only for a
+  // monitoring thesis with active signals: which signals are chronic-neutral (sharpen/drop on
+  // re-underwrite) + any price coverage-gap (author a covering signal). null otherwise.
+  const sq = await gatherSignalQualityContext(r.id, r.type);
+  const signalQuality = sq
+    ? {
+        reunderwriteTrigger: sq.reunderwriteTrigger,
+        reason: sq.reason,
+        chronicNeutralSignals: sq.chronicNeutralSignals.map((s) => ({
+          signalId: s.signalId, statement: s.statement, verdict: s.verdict,
+          observedCount: s.observedCount, nonNeutralCount: s.nonNeutralCount,
+        })),
+        coverageGaps: sq.coverageGaps,
+        signalVerdicts: sq.signals.map((s) => ({
+          signalId: s.signalId, verdict: s.verdict, observedCount: s.observedCount, collectorTracked: s.collectorTracked,
+        })),
+      }
+    : null;
+
   // Shape claims for the surface: the case-bearing fields + source type + the falsification view.
   const claims = claimsRaw.map((c) => ({
     id: c.claim.id,
@@ -280,6 +300,7 @@ async function main() {
     performance,
     allocation: alloc,
     thin,
+    signalQuality,
   }, null, 2));
 
   process.exit(0);

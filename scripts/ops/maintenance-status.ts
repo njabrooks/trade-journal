@@ -24,6 +24,8 @@ import { findResearchGaps } from '@/lib/derived/researchGap';
 import { findThesesNeedingRetrospective } from '@/lib/derived/retrospective';
 import { findThesesNeedingFraming } from '@/lib/derived/framing';
 import { findUnclassifiedExposures } from '@/lib/derived/exposureClassification';
+import { findThesesDueForReunderwrite } from '@/lib/derived/reunderwriteDue';
+import { computeSignalQualityDiagnostics } from '@/lib/derived/signalQualityDiagnostics';
 
 const { researchInsights } = schema;
 
@@ -67,6 +69,14 @@ async function main() {
   const retro = (await findThesesNeedingRetrospective()).length;
   const framing = (await findThesesNeedingFraming()).length;
   const exposure = (await findUnclassifiedExposures()).length;
+  // Re-underwrite-due = union of the two triggers (claim-delta + signal-quality), deduped
+  // per thesis — the set raise-reunderwrite-decisions.ts would surface (docs/v2/15 §6).
+  const claimReunderwrite = await findThesesDueForReunderwrite();
+  const sqReunderwrite = (await computeSignalQualityDiagnostics()).filter((t) => t.reunderwriteTrigger);
+  const reunderwriteDue = new Set([
+    ...claimReunderwrite.map((d) => `${d.thesisType}:${d.thesisId}`),
+    ...sqReunderwrite.map((t) => `${t.thesisType}:${t.thesisId}`),
+  ]).size;
 
   const relateResearch = { cursor: cursor ?? null, newInsights };
   const worklists = {
@@ -78,9 +88,10 @@ async function main() {
     retrospective: retro,
     framing,
     classifyExposure: exposure,
+    reunderwriteDue,
   };
   // Actionable total (signalThin omitted — it overlaps researchGap).
-  const actionable = digest + sig.ready.length + health + gaps + retro + framing + exposure;
+  const actionable = digest + sig.ready.length + health + gaps + retro + framing + exposure + reunderwriteDue;
 
   if (args.json) {
     console.log(JSON.stringify({ relateResearch, worklists, actionable }, null, 2));
@@ -97,6 +108,7 @@ async function main() {
   console.log(`  health pass due (monitoring)  : ${health}`);
   console.log(`  research-gap bridge           : ${gaps}`);
   console.log(`  retrospective (resolved)      : ${retro}`);
+  console.log(`  re-underwrite due (claim+signal): ${reunderwriteDue}`);
   console.log(`decision detectors:`);
   console.log(`  framing (asset w/o macro)     : ${framing}`);
   console.log(`  classify_exposure (placeholders): ${exposure}`);
