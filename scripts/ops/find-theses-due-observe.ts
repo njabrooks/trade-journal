@@ -27,6 +27,7 @@
 import { db, closeDb } from '../lib/db.js';
 import { sql } from 'drizzle-orm';
 import { gatherHealthContext } from '@/lib/derived/thesisHealth';
+import { getLiveQuotes } from '@/lib/services/livePrices';
 
 // ── Tier thresholds (USD). Materiality ≥ tier1 ⇒ Tier 1, ≥ tier2 ⇒ Tier 2, else Tier 3. ──
 // Asset = open MV of the thesis's own strategies. Macro = summed exposure of linked assets
@@ -40,6 +41,12 @@ const TIER_BANDS = {
 // default driver; this is the escape hatch (docs/v2/14 §3.6 "with a manual override").
 //   e.g. CL: 1  — promote Bearish Oil (CL) to daily regardless of its small book.
 const TIER_OVERRIDE: Record<string, 1 | 2 | 3> = {};
+
+// ── Tier-2/3 cadence floors (P4 #3, docs/v2/14 §3.6). A thesis is cadence-"due" when the
+// floor interval for its tier has elapsed since its last thesis_observe snapshot: Tier-1
+// daily (floor 0 ⇒ always due on a scheduled run), Tier-2 every ~2–3d, Tier-3 weekly. This
+// is what lets a single daily `--due` run pick the right per-tier slice. Tunable. ──
+const CADENCE_FLOOR_DAYS: Record<1 | 2 | 3, number> = { 1: 0, 2: 2, 3: 6 };
 
 type ThesisType = 'asset' | 'macro';
 
@@ -136,6 +143,165 @@ async function macroMateriality(): Promise<MaterialityRow[]> {
   });
 }
 
+// ── PRICE & DATA WATCH (P4 #1, docs/v2/14 §4) ───────────────────────────────────────
+// Freshest spot per constituent underlying off the W6 livePrices overlay (Yahoo → IBKR),
+// NOT the stale underlyings.spot — the direct fix for the Bearish-Oil stale-price miss.
+// Δ-vs-stored shows how far the daily-ingest spot has drifted since last close; target
+// proximity reads the asset thesis target. Known gaps (futures/private/bonds) degrade
+// gracefully (unpriced=true + a note) — we don't pre-build a collector for them (§4).
+
+type LiveKind = 'STK' | 'CRYPTO';
+
+interface PriceWatchEntry {
+  ticker: string;
+  assetClass: string | null;
+  direction: string | null;
+  live: number | null;            // freshest spot (livePrices)
+  liveSource: 'yahoo' | 'ibkr' | null;
+  asOf: string | null;            // ISO of the live quote
+  storedSpot: number | null;      // underlyings.spot (last daily ingest — the "prior")
+  deltaVsStoredPct: number | null;  // (live − stored)/stored × 100 — drift since last close
+  targetPrice: number | null;
+  toTargetPct: number | null;     // (target − live)/live × 100 (signed; +ve = upside to target)
+  unpriced: boolean;
+  note: string | null;
+}
+
+/** Map an underlyings.asset_class to the livePrices kind, or null when not live-priceable. */
+function liveKindFor(assetClass: string | null): LiveKind | null {
+  switch ((assetClass ?? '').toUpperCase()) {
+    case 'STK': case 'EQUITY': case 'ETF': return 'STK';
+    case 'CRYPTO': case 'PERP': case 'STABLECOIN': return 'CRYPTO';
+    default: return null; // FUT/FSFOP/BOND/COMMODITY/REAL_ESTATE/null/… — accepted gaps (§4)
+  }
+}
+
+function unpricedNote(assetClass: string | null): string {
+  const ac = (assetClass ?? '').toUpperCase();
+  if (ac === 'FUT' || ac === 'FSFOP') return 'futures — not live-priced';
+  if (ac === 'BOND') return 'bond — not live-priced';
+  if (!ac) return 'private/unclassified — no live quote';
+  return `${ac.toLowerCase()} — not live-priced`;
+}
+
+interface Constituent {
+  ticker: string; assetClass: string | null; spot: string | null;
+  targetPrice: string | null; direction: string | null;
+}
+
+/**
+ * Build the PRICE & DATA WATCH map (thesisKey → entries[]) for the due set, off live
+ * prices. Asset thesis → its own underlying; macro thesis → its monitoring child-asset
+ * constituents (the exposure-bearing underlyings). All live-priceable tickers are fetched
+ * in ONE batched getLiveQuotes call (TTL-cached, concurrency-limited). Non-fatal: a source
+ * miss yields live=null with a note, never throws.
+ */
+async function gatherPriceWatch(due: MaterialityRow[]): Promise<Map<string, PriceWatchEntry[]>> {
+  const assetIds = due.filter((d) => d.thesisType === 'asset').map((d) => d.id);
+  const macroIds = due.filter((d) => d.thesisType === 'macro').map((d) => d.id);
+  const byKey = new Map<string, Constituent[]>();
+
+  if (assetIds.length > 0) {
+    const rows = await db.execute<{
+      tid: string; ticker: string; asset_class: string | null; spot: string | null;
+      target_price: string | null; direction: string | null;
+    }>(sql`
+      SELECT at.id AS tid, u.ticker, u.asset_class, u.spot, at.target_price, at.direction
+      FROM asset_theses at JOIN underlyings u ON at.underlying_id = u.id
+      WHERE at.id IN (${sql.join(assetIds.map((id) => sql`${id}`), sql`, `)})
+    `);
+    for (const r of rows) {
+      byKey.set(`asset:${r.tid}`, [{
+        ticker: r.ticker, assetClass: r.asset_class, spot: r.spot,
+        targetPrice: r.target_price, direction: r.direction,
+      }]);
+    }
+  }
+
+  if (macroIds.length > 0) {
+    const rows = await db.execute<{
+      mid: string; ticker: string; asset_class: string | null; spot: string | null;
+      target_price: string | null; direction: string | null;
+    }>(sql`
+      SELECT atm.macro_thesis_id AS mid, u.ticker, u.asset_class, u.spot,
+             at.target_price, at.direction
+      FROM asset_thesis_related_macro_theses atm
+      JOIN asset_theses at ON at.id = atm.asset_thesis_id
+      JOIN underlyings u ON at.underlying_id = u.id
+      WHERE atm.macro_thesis_id IN (${sql.join(macroIds.map((id) => sql`${id}`), sql`, `)})
+        AND at.status = 'monitoring'
+      ORDER BY u.ticker
+    `);
+    for (const r of rows) {
+      const key = `macro:${r.mid}`;
+      if (!byKey.has(key)) byKey.set(key, []);
+      const list = byKey.get(key)!;
+      if (!list.some((c) => c.ticker === r.ticker)) {
+        list.push({ ticker: r.ticker, assetClass: r.asset_class, spot: r.spot, targetPrice: r.target_price, direction: r.direction });
+      }
+    }
+  }
+
+  // Batch every live-priceable ticker into one overlay call.
+  const stk = new Set<string>(), crypto = new Set<string>();
+  for (const list of byKey.values()) for (const c of list) {
+    const kind = liveKindFor(c.assetClass);
+    if (kind === 'STK') stk.add(c.ticker);
+    else if (kind === 'CRYPTO') crypto.add(c.ticker);
+  }
+  const quotes = (stk.size + crypto.size) > 0
+    ? await getLiveQuotes({ stk: [...stk], crypto: [...crypto] })
+    : new Map();
+
+  const out = new Map<string, PriceWatchEntry[]>();
+  for (const [key, list] of byKey.entries()) {
+    out.set(key, list.map((c) => {
+      const kind = liveKindFor(c.assetClass);
+      const q = kind ? quotes.get(`${kind}:${c.ticker.toUpperCase()}`) : undefined;
+      const live = q?.price ?? null;
+      const storedSpot = c.spot != null ? Number(c.spot) : null;
+      const target = c.targetPrice != null ? Number(c.targetPrice) : null;
+      const deltaVsStoredPct = live != null && storedSpot ? ((live - storedSpot) / storedSpot) * 100 : null;
+      const toTargetPct = live != null && target ? ((target - live) / live) * 100 : null;
+      return {
+        ticker: c.ticker,
+        assetClass: c.assetClass,
+        direction: c.direction,
+        live,
+        liveSource: q?.source ?? null,
+        asOf: q ? new Date(q.asOfMs).toISOString() : null,
+        storedSpot,
+        deltaVsStoredPct: deltaVsStoredPct != null ? Number(deltaVsStoredPct.toFixed(2)) : null,
+        targetPrice: target,
+        toTargetPct: toTargetPct != null ? Number(toTargetPct.toFixed(1)) : null,
+        unpriced: kind === null,
+        note: kind === null ? unpricedNote(c.assetClass) : (live == null ? 'no live quote (source miss)' : null),
+      };
+    }));
+  }
+  return out;
+}
+
+/** Last thesis_observe snapshot per thesis (the cadence clock for --due). */
+async function lastObservedByThesis(): Promise<Map<string, Date>> {
+  const rows = await db.execute<{ thesis_type: string; thesis_id: string; last_obs: string | null }>(sql`
+    SELECT sel.thesis_type, sel.thesis_id, max(sds.snapshot_date) AS last_obs
+    FROM signal_data_snapshots sds
+    JOIN signal_entity_links sel ON sel.signal_id = sds.signal_id
+    WHERE sds.data_source = 'thesis_observe' AND sel.entity_type = 'thesis'
+    GROUP BY sel.thesis_type, sel.thesis_id
+  `);
+  const out = new Map<string, Date>();
+  for (const r of rows) if (r.last_obs) out.set(`${r.thesis_type}:${r.thesis_id}`, new Date(r.last_obs));
+  return out;
+}
+
+/** Cadence-due iff never observed (baseline) or the tier floor has elapsed since last observe. */
+function cadenceDue(tier: 1 | 2 | 3, last: Date | null, now: number): boolean {
+  if (!last) return true;
+  return (now - last.getTime()) / 86_400_000 >= CADENCE_FLOOR_DAYS[tier];
+}
+
 function parseTiers(argv: string[]): Set<number> {
   const idx = argv.indexOf('--tier');
   if (idx === -1) return new Set([1]); // Phase 1 default: Tier-1 only
@@ -148,6 +314,7 @@ async function main() {
   const argv = process.argv.slice(2);
   const summary = argv.includes('--summary');
   const all = argv.includes('--all');
+  const dueMode = argv.includes('--due');
   const tiers = all ? new Set([1, 2, 3]) : parseTiers(argv);
 
   const ranked = [...(await assetMateriality()), ...(await macroMateriality())]
@@ -168,8 +335,21 @@ async function main() {
     process.exit(0);
   }
 
-  // Bundle output: per-thesis context (signals + recent prior evidence) for the requested tiers.
-  const due = ranked.filter((t) => tiers.has(t.tier));
+  // Selection: --due ⇒ cadence-aware across all tiers (T1 daily, T2 ~2–3d, T3 weekly — the
+  // scheduled producer's slice); otherwise the explicit tier filter (default Tier-1 only).
+  let due: MaterialityRow[];
+  if (dueMode) {
+    const lastObs = await lastObservedByThesis();
+    const now = Date.now();
+    due = ranked.filter((t) => cadenceDue(t.tier, lastObs.get(`${t.thesisType}:${t.id}`) ?? null, now));
+  } else {
+    due = ranked.filter((t) => tiers.has(t.tier));
+  }
+
+  // PRICE & DATA WATCH (P4 #1): one batched live-price pass over the due set's underlyings.
+  const priceWatch = await gatherPriceWatch(due);
+
+  // Bundle output: per-thesis context (signals + recent prior evidence) for the selected set.
   const bundles = [];
   for (const t of due) {
     const ctx = await gatherHealthContext(t.id, t.thesisType);
@@ -185,6 +365,7 @@ async function main() {
       sectors: t.sectors,
       spot: ctx.thesis.spot ?? null,
       materialityUsd: Math.round(t.materialityUsd),
+      priceWatch: priceWatch.get(`${t.thesisType}:${t.id}`) ?? [],
       signals: ctx.signals.map((s) => ({
         id: s.id,
         type: s.type,
@@ -203,7 +384,8 @@ async function main() {
 
   console.log(JSON.stringify({
     generatedAt: new Date().toISOString(),
-    tiers: [...tiers].sort(),
+    selection: dueMode ? 'cadence-due' : 'tier',
+    tiers: dueMode ? [...new Set(due.map((d) => d.tier))].sort() : [...tiers].sort(),
     thesisCount: bundles.length,
     signalCount: bundles.reduce((n, b) => n + b.signals.length, 0),
     bundles,

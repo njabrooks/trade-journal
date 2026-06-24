@@ -24,16 +24,18 @@ import { join, resolve } from 'path';
 import { parseWorldMonitor, type ParsedReport } from '../src/lib/intelligence/parseWorldMonitor.js';
 import { type Assessment } from '../src/lib/intelligence/scoring.js';
 import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
+import { parsePriceWatch, parseThesisRelevantNews } from '../src/lib/intelligence/parseObserveReport.js';
 
-const { signals, signalDataSnapshots, signalEntityLinks } = schema;
+const { signals, signalDataSnapshots, signalEntityLinks, journalEntries } = schema;
 
 // Virtual source table name for intel_items emitted from monitor reports.
 // (Pre-v2 rows used 'intelligence_items' with the now-dropped table's row uuids.)
 const SOURCE_TABLE = 'world_monitor_report';
 
-async function ingestReport(filePath: string): Promise<{ itemCount: number; emitted: number; skipped: boolean }> {
+async function ingestReport(filePath: string): Promise<{ itemCount: number; emitted: number; skipped: boolean; candidates: { written: number; bumped: number; skipped: number } }> {
   const markdown = readFileSync(filePath, 'utf-8');
   const parsed = parseWorldMonitor(markdown);
+  let candidates = { written: 0, bumped: 0, skipped: 0 };
 
   // thesis-observe (docs/v2/14, the tracking-evidence producer) and the legacy
   // thesis-monitor share one directive report shape; both generate qualitative signal
@@ -74,9 +76,28 @@ async function ingestReport(filePath: string): Promise<{ itemCount: number; emit
   if (isThesisMonitor && !skipped) {
     const snapshotCount = await generateQualitativeSnapshots(parsed, signalDataSource);
     console.log(`  Signal snapshots (${signalDataSource}): ${snapshotCount} generated`);
+
+    // PRICE & DATA WATCH (P4 #1) — observability only; parsed + surfaced, not persisted.
+    const priceRows = parsePriceWatch(parsed.fullMarkdown ?? '');
+    if (priceRows.length > 0) {
+      const priced = priceRows.filter((r) => r.live != null);
+      const drift = priced
+        .filter((r) => r.deltaVsStoredPct != null)
+        .sort((a, b) => Math.abs(b.deltaVsStoredPct as number) - Math.abs(a.deltaVsStoredPct as number))[0];
+      const driftStr = drift
+        ? `; largest drift ${drift.ticker} ${(drift.deltaVsStoredPct as number) > 0 ? '+' : ''}${drift.deltaVsStoredPct}% vs stored`
+        : '';
+      console.log(`  PRICE & DATA WATCH: ${priceRows.length} rows (${priced.length} priced, ${priceRows.length - priced.length} gap)${driftStr}`);
+    }
+
+    // Candidate-signal harvesting (P2) — no-signal-matched news → candidate_signal rows.
+    candidates = await harvestCandidateSignals(parsed, filePath);
+    if (candidates.written + candidates.bumped + candidates.skipped > 0) {
+      console.log(`  Candidate signals: ${candidates.written} new, ${candidates.bumped} bumped, ${candidates.skipped} unresolved`);
+    }
   }
 
-  return { itemCount: parsed.items.length, emitted, skipped };
+  return { itemCount: parsed.items.length, emitted, skipped, candidates };
 }
 
 /**
@@ -282,6 +303,79 @@ async function generateQualitativeSnapshots(parsed: ParsedReport, dataSource: st
   }
 
   return snapshots.length;
+}
+
+/**
+ * Harvest THESIS-RELEVANT NEWS items into `candidate_signal` journal rows (docs/v2/16 §1b):
+ * the producer side of the contract Lane B's re-underwrite consumes. Resolves each item's
+ * thesis title within the active monitoring set, then writes one active `candidate_signal`
+ * row per (thesis, proposed statement), deduped per (object_id, normalized statement) —
+ * bump occurrenceCount/lastSeenAt rather than duplicate (mirrors raise-decision §8.2).
+ * We only PROPOSE candidates; promotion into real signals is the re-underwrite's judgment.
+ */
+async function harvestCandidateSignals(
+  parsed: ParsedReport,
+  filePath: string,
+): Promise<{ written: number; bumped: number; skipped: number }> {
+  const items = parseThesisRelevantNews(parsed.fullMarkdown ?? '');
+  if (items.length === 0) return { written: 0, bumped: 0, skipped: 0 };
+
+  // Resolve titles within the active monitoring set (the set the observe bundle drew from).
+  const [monMacros, monAssets] = await Promise.all([
+    db.select({ id: schema.macroTheses.id, title: schema.macroTheses.title })
+      .from(schema.macroTheses).where(eq(schema.macroTheses.status, 'monitoring')),
+    db.select({ id: schema.assetTheses.id, title: schema.assetTheses.title })
+      .from(schema.assetTheses).where(eq(schema.assetTheses.status, 'monitoring')),
+  ]);
+  const byTitle = new Map<string, { id: string; type: 'macro_thesis' | 'asset_thesis'; title: string }>();
+  for (const a of monAssets) byTitle.set(a.title.toLowerCase(), { id: a.id, type: 'asset_thesis', title: a.title });
+  for (const mt of monMacros) byTitle.set(mt.title.toLowerCase(), { id: mt.id, type: 'macro_thesis', title: mt.title });
+
+  let written = 0, bumped = 0, skipped = 0;
+  for (const item of items) {
+    const thesis = byTitle.get(item.thesisTitle.toLowerCase());
+    const normalized = normalizeStatement(item.headline);
+    if (!thesis || !normalized) { skipped++; continue; } // unresolved title or empty statement — leave it, don't guess
+
+    const existing = await db
+      .select({ id: journalEntries.id, occurrenceCount: journalEntries.occurrenceCount, metadata: journalEntries.metadata })
+      .from(journalEntries)
+      .where(and(
+        eq(journalEntries.objectId, thesis.id),
+        eq(journalEntries.actionType, 'candidate_signal'),
+        eq(journalEntries.status, 'active'),
+      ));
+    const dupe = existing.find((e) =>
+      normalizeStatement((e.metadata as { candidateSignal?: { statement?: string } } | null)?.candidateSignal?.statement ?? '') === normalized);
+
+    if (dupe) {
+      await db.update(journalEntries)
+        .set({ lastSeenAt: new Date(), occurrenceCount: (dupe.occurrenceCount ?? 1) + 1 })
+        .where(eq(journalEntries.id, dupe.id));
+      bumped++;
+      continue;
+    }
+
+    await logToJournal({
+      objectType: thesis.type,
+      objectId: thesis.id,
+      objectTitle: thesis.title,
+      actionType: 'candidate_signal',
+      actionDescription: item.headline,
+      source: 'automation',
+      metadata: {
+        candidateSignal: {
+          statement: item.headline,
+          sourceUrl: item.sourceUrl,
+          observedAt: parsed.generatedAt,
+          fromReport: filePath,
+          rationale: item.body || null,
+        },
+      },
+    });
+    written++;
+  }
+  return { written, bumped, skipped };
 }
 
 async function main() {
