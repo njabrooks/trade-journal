@@ -140,11 +140,17 @@ npx tsx scripts/relate-research.ts --since 2026-06-10 --limit 30 --apply-signals
 (Sector/keyword-only signal hits are intentionally **not** auto-applied — routing
 those to monitoring-thesis signals needs judgment and is a deferred v1.1 extension.)
 
-**Caveat — `--apply-signals` infers direction from the signal *type*, not the claim's
-stance.** A bearish claim that ticker-matches a *bullish* thesis's confirmation signal
-is recorded as `strengthening` (wrong polarity). Before running it, scan each claim's
-`monitoringSignalMatches`: if the claim's stance opposes the thesis direction, don't
-blanket-apply — handle those by judgment (note them in the digest) instead.
+**Note — `--apply-signals` records signal evidence as `neutral` (it does NOT infer a
+direction).** The deterministic route knows only that a claim is *topically* relevant to
+the signal (a ticker match); it cannot read whether the evidence supports or contradicts
+the signal's criterion, so it abstains rather than guess a polarity. (It previously
+inferred direction from the signal *type* — `invalidation → weakening` — which inverted
+the polarity of thesis-supportive evidence: an accelerating-capex claim against a
+"capex is cut" invalidation signal was tagged `weakening`, tripping false health alarms.)
+The thesis DIRECTION for these claims is captured where it belongs — the supports/refutes
+`mapping_type` you set on the thesis link in **Step 2**. So always run Step 2 for any
+claim that bears on a monitoring thesis; `--apply-signals` is purely additive provenance
+(snapshot + claim↔signal link), not a directional read.
 
 ## Step 5 — Report the digest
 

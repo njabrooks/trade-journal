@@ -22,7 +22,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
 import { parseWorldMonitor, type ParsedReport } from '../src/lib/intelligence/parseWorldMonitor.js';
-import { findBestMatch, hasNeutralIndicators, type Assessment, type ContentForScoring, type SignalForScoring } from '../src/lib/intelligence/scoring.js';
+import { findBestMatch, type Assessment, type ContentForScoring } from '../src/lib/intelligence/scoring.js';
 import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 
 const { signals, signalDataSnapshots, signalEntityLinks } = schema;
@@ -222,21 +222,20 @@ async function generateQualitativeSnapshots(parsed: ParsedReport): Promise<numbe
       continue;
     }
 
-    // --- Fallback path: heuristic keyword scoring (backwards compat) ---
+    // --- Fallback path (reports without explicit Score: labels) ---
+    // A keyword match establishes only that a report item is TOPICAL to the signal — not
+    // whether it advances or contradicts the signal's criterion, and (for invalidation
+    // signals) NOT the thesis-centric direction, which is the inverse of the criterion's.
+    // So ABSTAIN: record the matched evidence text with a `neutral` assessment instead of
+    // guessing a polarity. (The old code forced `strengthening` on any non-neutral match,
+    // type-blind — wrong for invalidation signals, unfounded for the rest.) Mirrors the
+    // relate-research assessSignal fix; direction comes from the explicit Score: path.
     const match = findBestMatch(items, itemToContent, signal, thesisTicker);
-    let assessment: Assessment = 'neutral';
-
-    if (match) {
-      const matchedText = `${match.item.headline} ${match.item.body || ''}`;
-      if (!hasNeutralIndicators(matchedText)) {
-        assessment = 'strengthening';
-      }
-    }
 
     snapshots.push({
       signalId: signal.id,
       snapshotDate: now,
-      assessment,
+      assessment: 'neutral',
       evidenceSummary: match
         ? `${match.item.headline}${match.item.body ? ': ' + match.item.body.slice(0, 200) : ''}`
         : null,

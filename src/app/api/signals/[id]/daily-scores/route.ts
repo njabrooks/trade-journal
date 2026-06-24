@@ -4,9 +4,11 @@ import { signalDataSnapshots, signals } from '@/db/schema';
 import { eq, and, ne, asc, sql } from 'drizzle-orm';
 
 /**
- * Signal-centric delta: strengthening = +1, weakening = -1 regardless of signal type.
- * The chart shows signal strength/activity. The user interprets what a rising or
- * falling score means based on the signal type (confirmation vs invalidation).
+ * Thesis-centric delta: strengthening/confirmed = +1, weakening/invalidated = -1,
+ * regardless of signal type. `assessment` is thesis-centric everywhere it is written
+ * (the /thesis-monitor scoring rubric + relate-research assessSignal): for an invalidation
+ * signal a *receding* risk is `strengthening` and a *growing* risk `weakening`. So the
+ * cumulative is a thesis-conviction trend — rising = the thesis is getting stronger.
  */
 const DELTA_MAP: Record<string, number> = {
   strengthening: 1,

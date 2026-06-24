@@ -42,7 +42,7 @@ import {
   underlyings,
 } from '../../db/schema.js';
 import { resolveRelevanceContext } from './resolver.js';
-import { scoreContentAgainstSignal, hasNeutralIndicators, type ContentForScoring } from './scoring.js';
+import { scoreContentAgainstSignal, type ContentForScoring, type Assessment } from './scoring.js';
 import { buildDecisionPacket } from '../types/decisions.js';
 
 // ---------------------------------------------------------------------------
@@ -218,18 +218,29 @@ function claimText(claim: CandidateClaim): string {
   return [claim.title, claim.claim].filter(Boolean).join(' ');
 }
 
-/** Heuristic assessment direction for a signal hit (mirrors evaluate.ts). */
-function assessSignal(text: string, signalType: string, score: number): string {
-  if (score < 3) return 'neutral';
-  if (hasNeutralIndicators(text)) return 'neutral';
-  switch (signalType) {
-    case 'invalidation':
-      return 'weakening';
-    case 'confirmation':
-    case 'completion':
-    default:
-      return 'strengthening';
-  }
+/**
+ * Thesis-centric assessment for a deterministic (ticker-matched) signal hit.
+ *
+ * `assessment` is THESIS-CENTRIC wherever it is read: `strengthening`/`confirmed` mean the
+ * THESIS got stronger and `weakening`/`invalidated` mean it got weaker — independent of
+ * whether the signal encodes a confirmation or an invalidation criterion (see
+ * `thesisHealthRules.isWeakening` and the daily-scores `DELTA_MAP`).
+ *
+ * The deterministic route knows only that a claim is TOPICALLY relevant to a signal (a
+ * ticker/keyword score) — NOT whether the evidence advances or contradicts the signal's
+ * criterion. The old `invalidation → weakening` mapping inferred thesis-direction from the
+ * signal *type*, which inverts the common case: thesis-supportive evidence that makes an
+ * invalidation LESS likely (capex accelerating against a "capex is cut" signal) was
+ * mislabelled `weakening`, tripping false health alarms.
+ *
+ * Stance is unknowable here, so the route ABSTAINS and records `neutral`; the snapshot
+ * still preserves the evidence text + claim↔signal link as provenance. The thesis
+ * DIRECTION is supplied by judgment — the supports/refutes `mapping_type` the
+ * relate-research skill sets on the thesis link in Step 2 — never inferred from the
+ * signal's type here.
+ */
+function assessSignal(): Assessment {
+  return 'neutral';
 }
 
 /** Build a relating worksheet per candidate claim. Pure reads — no writes. */
@@ -271,7 +282,7 @@ export async function prepareWorksheets(
           statement: signal.statement,
           score,
           tickerMatched,
-          assessment: assessSignal(text, signal.type, score),
+          assessment: assessSignal(),
           evidenceSummary: buildEvidenceSummary(claim),
         });
       }
