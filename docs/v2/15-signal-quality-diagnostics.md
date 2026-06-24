@@ -1,8 +1,10 @@
 # 15 — Signal-quality diagnostics (P1 of the self-improving loop)
 
-> **Status:** SPEC + **engine BUILT 2026-06-24** (build-order steps 1–4 of §11: pure rules + DB
-> orchestrator + worklist CLI + backtest + observe `collectorTracked` hardening — all tested & validated
-> on live data, §9; surfacing into `/maintenance` + `/decisions` and the P3 handoff are the next tranche).
+> **Status:** SPEC + **FULLY BUILT 2026-06-24** (all of §11 steps 1–6: pure rules + DB orchestrator +
+> worklist CLI + backtest + observe `collectorTracked` hardening + the unified `re_underwrite_due` raiser
+> + maintenance/`/decisions` surfacing + the `signalQuality` re-underwrite handoff — tested & validated on
+> live data, §9; committed `9366ede`+`42b3f31`). The consuming synthesis (build-core-argument acting on
+> the diagnostics) is **P3**; populating the strip via the raiser `--apply` is a user-go step.
 > Specifies **P1** from
 > [14 — thesis-observe §11](14-thesis-tracking-evidence.md#11-build-priority-value-orderedto-refine-at-spec-time):
 > *"Signal-quality diagnostics (§10.1) — chronic-neutral + surprise detection over snapshot history →
@@ -265,12 +267,17 @@ identical (`/thesis <X> re-underwrite`). Distinguish the trigger in `evidence_co
 When the claim-delta trigger *and* signal-quality trigger both fire, **merge into one** packet (one
 `re_underwrite_due` per thesis) with both reasons in `evidence_context` — don't raise two.
 
-### 6.2 Surfacing — same two paths as today's re-underwrite
-- **`/decisions` + `list-decisions.ts`** already rank `re_underwrite_due` (priority 1) as a latent
-  worklist — signal-quality triggers appear there for free once raised. Add the new
-  `find-signal-quality-issues.ts` worklist to the latent set list-decisions reads, alongside
-  `find-theses-due-reunderwrite.ts`.
-- **`/maintenance`** gains a drain step (§7) that runs the deterministic detector and raises the packets.
+### 6.2 Surfacing (as built — corrected from the original plan)
+**Discovery at build time:** `re_underwrite_due` was *designed but unwired* — `list-decisions.ts` only
+ranks decisions **already raised** into `journal_entries` (it does NOT compute latent worklists), and
+nothing ever raised the type, for *either* trigger. So surfacing required building the raise path:
+- **`raise-reunderwrite-decisions.ts`** (new) — the **unified producer**. Gathers both triggers
+  (claim-delta + signal-quality), **merges per thesis** into one packet (§6.1), and raises via the
+  canonical dedup path (mirrors `raise-decision.ts` §8.2). Dry-run by default; `--apply` writes.
+- **`/maintenance`** gains a deterministic drain step running the raiser `--apply`.
+- **`/decisions`** then shows the raised packets for free (list-decisions reads them, tier 1).
+- **`maintenance-status.ts`** reports `reunderwriteDue` = the deduped union of both triggers.
+This also *completes the claim-delta path*, which had the same unwired gap — both triggers now surface.
 
 ### 6.3 Diagnostic-aware re-underwrite context (the P3 handoff)
 So the re-underwrite the trigger invites can *act*, expose the diagnostics where `/thesis` re-underwrite
@@ -294,9 +301,9 @@ tranche (build-order steps 5–6), not yet wired.
 | 5 | **Bundled hardening:** `collectorTracked` per signal in the observe bundle (§8) | `src/lib/derived/thesisHealth.ts`, `scripts/ops/find-theses-due-observe.ts`, `.claude/skills/thesis-observe/SKILL.md` | ✅ |
 | 6 | Unit tests (pure classifiers, 24) | **new** `src/lib/derived/__tests__/signalQualityRules.test.ts` | ✅ |
 | 7 | Backtest harness over legacy `thesis_monitor` (§9.2) | **new** `scripts/ops/backtest-signal-quality.ts` | ✅ |
-| 8 | Maintenance drain step "signal-quality diagnostics" (deterministic; raises merged `re_underwrite_due`) | `.claude/skills/maintenance/SKILL.md` | ⏳ |
-| 9 | Add to latent worklists ranked by `/decisions` | `scripts/ops/list-decisions.ts` | ⏳ |
-| 10 | Attach `signalQuality` block to re-underwrite context (P3 handoff, §6.3) | `scripts/thesis-snapshot.ts` (+ build-core-argument input) | ⏳ |
+| 8 | **Unified raiser** — merges both triggers per thesis, raises `re_underwrite_due` (replaces the planned "add to list-decisions latent worklist", which doesn't compute latents) | **new** `scripts/ops/raise-reunderwrite-decisions.ts` | ✅ |
+| 9 | Maintenance drain step + dashboard count | `.claude/skills/maintenance/SKILL.md`, `scripts/ops/maintenance-status.ts` | ✅ |
+| 10 | Attach `signalQuality` block to the re-underwrite context (P3 handoff, §6.3) | `scripts/ops/thesis-snapshot.ts`, `.claude/skills/thesis/SKILL.md` | ✅ |
 
 The maintenance step is deterministic and idempotent ⇒ **not** subject to the ≤5-items/run cap; run the
 full detector each pass (it's a couple of grouped queries + arithmetic). Only the *re-underwrite it
@@ -358,13 +365,16 @@ build (2026-06-24):**
 3. ✅ **Backtest** (§9.2) over `thesis_monitor` — `backtest-signal-quality.ts`; detection + the
    blind-period exclusion both validated.
 4. ✅ **The bundled hardening** (§8) — `collectorTracked` into `thesisHealth`/the observe bundle/skill.
-5. ⏳ **Surfacing** (§6.2, §7 #8–9) — maintenance drain step + list-decisions latent worklist, raising
-   merged `re_underwrite_due` packets. *(Next tranche.)*
-6. ⏳ **P3 handoff** (§6.3) — attach the `signalQuality` block to the re-underwrite context. *(Next tranche.)*
+5. ✅ **Surfacing** (§6.2) — the unified `raise-reunderwrite-decisions.ts` (both triggers merged) +
+   maintenance drain step + `maintenance-status` count. Live dry-run: 7 due (6 orphaned claim-delta
+   macros + HLIT signal-quality).
+6. ✅ **P3 handoff** (§6.3) — `signalQuality` block on `thesis-snapshot.ts` + `/thesis` skill consume-hint.
 
-> **Build status (2026-06-24):** steps 1–4 ✅ built, tested, validated on live data. Steps 5–6 (surfacing
-> + P3 handoff) deferred to the next tranche — the engine + worklist CLI + observe hardening stand alone
-> (the detector runs on demand via the CLI; wiring it into `/maintenance` and `/decisions` is the connect step).
+> **Build status (2026-06-24):** ALL of P1 (steps 1–6) ✅ built, tested (237 + build + lint green),
+> validated on live data, committed (`9366ede` engine, `42b3f31` surfacing). The raiser is **not
+> auto-applied** — populating the decision strip stays a user-go step (`raise-reunderwrite-decisions.ts
+> --apply` or `/maintenance`). The consuming synthesis (build-core-argument actually rewriting
+> chronic-neutral statements / authoring gap-covering signals off the `signalQuality` block) is **P3**.
 
 Steps 1–4 carry the standalone value (a working, tested detector + the observe fix) and can land first;
 5–6 connect it to the loop. Per §11's sequencing note, **P4 (price-watch/livePrices) can run in
