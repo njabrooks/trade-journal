@@ -253,6 +253,31 @@ describe('computeRealizedSeries', () => {
     expect(r.netQtyBySymbol.get('CAT   260618C00950000')).toBe(0);
     expect(r.netQtyBySymbol.get('CAT   260618P00860000')).toBe(0);
   });
+
+  it('short option expiry realizes retained premium on the zero-cash close', () => {
+    const r = computeRealizedSeries([
+      ibkr({
+        symbol: 'GLW   260618C00230000',
+        assetClass: 'OPT',
+        side: 'SELL',
+        quantity: -20,
+        netAmount: 22049.514764,
+        tradeDate: '2026-05-11',
+      }),
+      ibkr({
+        symbol: 'GLW   260618C00230000',
+        assetClass: 'OPT',
+        side: 'BUY',
+        quantity: 20,
+        netAmount: 0,
+        tradeDate: '2026-06-18',
+      }),
+    ]);
+
+    expect(r.totalRealized).toBeCloseTo(22049.514764, 6);
+    expect(r.realizedByDate.get('2026-06-18')).toBeCloseTo(22049.514764, 6);
+    expect(r.netQtyBySymbol.get('GLW   260618C00230000')).toBe(0);
+  });
 });
 
 describe('futures flows (FUT — margined, net_amount is NOT economics)', () => {

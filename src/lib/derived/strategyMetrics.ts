@@ -299,7 +299,8 @@ export async function writeClosingSnapshotIfNeeded(
   const closeDate =
     lastTradeDate && lastTradeDate > lastPosDate ? lastTradeDate : nextAcctSnapDate;
 
-  // Already terminal? (idempotency — also covers re-runs after reopen)
+  // Existing terminal rows are not enough: close/expiry trades can be ingested
+  // after the first flat snapshot, so refresh the row from current trade links.
   const existing = await db
     .select({ id: strategyMetricsSnapshots.id })
     .from(strategyMetricsSnapshots)
@@ -312,7 +313,6 @@ export async function writeClosingSnapshotIfNeeded(
       )
     )
     .limit(1);
-  if (existing.length > 0) return 0;
 
   const realized = await computeStrategyRealizedToDate(accountId, strategyId, closeDate);
   const realizedPnlToDate =
@@ -333,6 +333,5 @@ export async function writeClosingSnapshotIfNeeded(
     cumulativePnl: realizedPnlToDate,
     realizedConfidence: realized.confidence,
   });
-  return 1;
+  return existing.length > 0 ? 0 : 1;
 }
-
