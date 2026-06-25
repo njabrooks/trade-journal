@@ -22,6 +22,8 @@ import { getIntelItemsForThesis } from '@/db/queries/intelItems';
 import { getMacroThesisPerformance } from '@/db/queries/thesisPerformance';
 import { ThesisPerformanceChart } from '@/components/performance/ThesisPerformanceChart';
 import { MacroAssetBreakdownTable } from '@/components/performance/MacroAssetBreakdownTable';
+import { RetrospectivePanel } from '@/components/performance/RetrospectivePanel';
+import { getRetrospectiveView } from '@/db/queries/retrospectiveView';
 import { RelationshipPanel } from '@/components/ui/relationship-panel';
 import { IntelPanel } from '@/components/intelligence/IntelPanel';
 import { MacroThesisNotes } from '@/components/theses/MacroThesisNotes';
@@ -68,6 +70,8 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
 
   const isMonitoring = thesis.status === 'monitoring';
   const isDeveloping = thesis.status === 'developing';
+  const isResolved = ['closed', 'complete', 'rejected'].includes(thesis.status);
+  const retrospective = isResolved ? await getRetrospectiveView(id, 'macro') : null;
 
   return (
     <EntityDetailLayout
@@ -153,8 +157,15 @@ export default async function MacroThesisOverviewPage({ params }: OverviewPagePr
         )}
       </CollapsibleEntitySection>
 
-      {/* Performance Section (W5 — D8 full-credit exposure view) */}
-      {performance.strategies.length > 0 && (
+      {/* Retrospective (resolved) — two axes: belief + execution (docs/v2/07 §4d) */}
+      {retrospective && (
+        <CollapsibleEntitySection title="Retrospective" defaultOpen={true}>
+          <RetrospectivePanel view={retrospective} />
+        </CollapsibleEntitySection>
+      )}
+
+      {/* Performance Section (W5 — D8 full-credit exposure view) — active theses; resolved use the Retrospective above */}
+      {!isResolved && performance.strategies.length > 0 && (
         <CollapsibleEntitySection
           title="Performance"
           count={performance.strategies.length}

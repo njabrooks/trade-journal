@@ -369,9 +369,12 @@ for a quick untyped decision, but prefer the typed packet.)
 ## Mode: Retrospective (B7, §4d)
 
 When a thesis resolves — `closed` (was expressed, now flat), `complete`, or
-`rejected` — write a one-off **"was I right, did it pay"** retrospective. This closes
-the loop: it records what the belief was, what happened, and what it earned/cost,
-and it ends the thesis's monitoring. Auto, no confirm.
+`rejected` — write a one-off retrospective on **two distinct axes** (docs/v2/07 §4d):
+1. **Belief** — *was I right?* (did the core argument play out)
+2. **Execution** — *did I capture the P&L that was available?* (final vs the peak/trough of the hold)
+This closes the loop: it records what the belief was, what happened, what it
+earned/cost, **and how well it was traded**, and it ends the thesis's monitoring.
+Auto, no confirm.
 
 ### Workflow
 
@@ -386,36 +389,57 @@ npx tsx scripts/ops/find-theses-needing-retrospective.ts --context <thesisId> --
 ```
 Returns the thesis (direction, status, outcome, opened/closed, durationDays), the
 final `performance` (latestCumulative / realized / unrealized P&L + confidence),
+the **`excursion`** (execution axis: `mfe`/`mfeDate` = peak, `mae`/`maeDate` = trough,
+`captureRatio` = final/peak, `giveBackFromPeak`, `neverInProfit`, `neverUnderwater`,
+`confidence`), the **`events`** (the process timeline aligned to the curve — signal
+verdict flips, advisor recs + whether taken, re-underwrites/conviction, decisions),
 the `coreArgument` (the belief at the end), the final `signalsByStatus` tally, and
 the `journalEntryCount`.
 
-**Step 3 — Write the retrospective.** A tight narrative covering:
-- **Was I right?** Did the core argument play out? Use `outcome` ∈
-  `validated | invalidated | partial` (for a `rejected` thesis it's usually
-  `invalidated`; for `closed` after a held run, judge from P&L + what happened).
-- **Did it pay?** Cite `latestCumulative` (realized vs unrealized split). Mind the
-  `confidence` — if not `full`, hedge the P&L claim (see `ConfidenceBadge` rule).
-- **What the trail shows** — duration, how the signals ended, key turns.
-- **Lesson** — one line on what to repeat or avoid.
-Honour the W4/W5 realized-confidence caveat: never assert exact P&L as fact when
-`confidence !== 'full'`.
+**Step 3 — Write the retrospective.** A tight narrative on the **two axes** — keep
+them separate; a right call can be poorly executed and vice versa:
+- **Belief — was I right?** Did the core argument play out? Set `outcome` ∈
+  `validated | invalidated | partial` (for a `rejected` thesis usually `invalidated`;
+  for `closed` after a held run, judge from final P&L + what happened).
+- **Execution — did I capture it?** Read `excursion`: cite the peak (`mfe`), the
+  capture ratio (`captureRatio` → "captured X% of the peak"), the drawdown (`mae`),
+  and the give-back (`giveBackFromPeak`). Then cross-reference the `events` timeline —
+  *did a signal flag weakening near the peak? was a hedge/covered-call (advisor rec)
+  offered and not taken? did conviction (a re-underwrite) peak with the price?* Set
+  `executionQuality` ∈ `excellent | good | fair | poor`: excellent = captured most of
+  the peak / exited near MFE / heeded the turn; poor = gave back most of a real gain or
+  ignored a flagged turn. If `neverInProfit`, execution is moot — say so (the lesson is
+  entry/sizing, not exit timing).
+- **What the trail shows** — duration, how the signals ended, the key turns from `events`.
+- **Lesson** — one line on what to repeat or avoid (often an execution lesson).
+Honour the W4/W5 realized-confidence caveat for BOTH axes: when `excursion.confidence
+!== 'full'`, hedge the peak/capture/MAE figures the same way you hedge final P&L —
+they are a view, not truth.
 
-**Step 4 — Record:**
+**Step 4 — Record:** pass `executionQuality` plus the `excursion` object verbatim from
+the Step 2 context (the writer freezes it into `retrospective_metrics`):
 ```bash
-echo '{"thesisId":"<id>","thesisType":"<type>","outcome":"validated|invalidated|partial","headline":"<one-line verdict + P&L>","narrative":"<the writeup>"}' \
+echo '{"thesisId":"<id>","thesisType":"<type>","outcome":"validated|invalidated|partial",
+  "executionQuality":"excellent|good|fair|poor",
+  "excursion": <the excursion object from --context>,
+  "headline":"<one-line: belief verdict + execution verdict + P&L>","narrative":"<the writeup>"}' \
   | npx tsx scripts/record-retrospective.ts --stdin
 ```
 The writer appends the `retrospective` journal entry, sets `outcome`/`outcome_notes`
-(surfaced by the `/performance` RetrospectiveCard) + `actual_outcome_date`, and
-supersedes any still-active signals → `complete` (monitoring is over).
+(surfaced by the `/performance` RetrospectiveCard) + `actual_outcome_date`, freezes
+`retrospective_metrics` (excursion + `executionQuality`, badged on the card + the
+per-thesis RetrospectivePanel), and supersedes any still-active signals → `complete`.
 
-**Step 5 — Report:** `title — <outcome>, <P&L> over <Nd>; N signals closed`.
+**Step 5 — Report:** `title — belief <outcome> / execution <executionQuality>, <P&L> (captured X% of peak) over <Nd>; N signals closed`.
 
 ### Common mistakes (retrospective mode)
-1. ❌ Asserting exact P&L when `confidence !== 'full'` — hedge it.
+1. ❌ Asserting exact P&L / peak / capture when `confidence !== 'full'` — hedge it.
 2. ❌ Re-writing a retrospective that already exists (the worklist already excludes those).
 3. ❌ Changing thesis status (it's already resolved; leave it).
 4. ❌ A generic writeup — ground it in this thesis's actual core argument, P&L, and trail.
+5. ❌ Collapsing the two axes — a validated belief with a 14% capture ratio is *right + poorly executed*, not "partial". Score belief and execution independently.
+6. ❌ Omitting `executionQuality` / not passing the `excursion` object through to the writer (the card + panel badge them).
+7. ❌ Reading execution off a `neverInProfit` trade — there was no gain to capture; the lesson is entry/sizing, not exit timing.
 
 ---
 

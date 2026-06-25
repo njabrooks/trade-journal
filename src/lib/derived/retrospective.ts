@@ -17,6 +17,8 @@ import { macroTheses, assetTheses, underlyings, thesisArticulations, signals as 
 import { eq, and, sql, desc, inArray } from 'drizzle-orm';
 import { needsRetrospective, RETROSPECTIVE_STATUSES } from '@/lib/derived/retrospectiveRules';
 import { getAssetThesisPerformance, getMacroThesisPerformance } from '@/db/queries/thesisPerformance';
+import { computeExcursion, type Excursion } from '@/lib/derived/retrospectiveExcursion';
+import { assembleRetrospectiveEvents, type RetrospectiveEvent } from '@/db/queries/retrospectiveView';
 
 export { needsRetrospective, RETROSPECTIVE_STATUSES } from '@/lib/derived/retrospectiveRules';
 
@@ -75,6 +77,10 @@ export interface RetrospectiveContext {
     durationDays: number | null;
   };
   performance: { latestCumulative: number; latestRealized: number; latestUnrealized: number; confidence: string };
+  /** Execution axis — favorable/adverse excursion over the hold (MFE/MAE/capture). */
+  excursion: Excursion;
+  /** Process-artefact timeline aligned to the excursion (signals, advisor recs, re-underwrites, decisions). */
+  events: RetrospectiveEvent[];
   /** The belief at the end — latest digest core argument. */
   coreArgument: string | null;
   /** Final signal tally by status (what the monitoring criteria looked like at close). */
@@ -107,6 +113,7 @@ export async function gatherRetrospectiveContext(
   if (!base) return null;
 
   const perf = thesisType === 'asset' ? await getAssetThesisPerformance(thesisId) : await getMacroThesisPerformance(thesisId);
+  const excursion = computeExcursion(perf.combined);
 
   const [digest] = await db
     .select({ coreArgument: thesisArticulations.coreArgument })
@@ -149,6 +156,13 @@ export async function gatherRetrospectiveContext(
   const durationDays =
     openedAt && closedAt ? Math.max(0, Math.round((new Date(closedAt).getTime() - new Date(openedAt).getTime()) / 86_400_000)) : null;
 
+  const events = await assembleRetrospectiveEvents(
+    thesisId,
+    thesisType,
+    { open: openedAt ? openedAt.slice(0, 10) : null, close: closedAt ? closedAt.slice(0, 10) : null },
+    perf.combined
+  );
+
   return {
     thesis: {
       id: thesisId,
@@ -168,6 +182,8 @@ export async function gatherRetrospectiveContext(
       latestUnrealized: perf.totals.latestUnrealized,
       confidence: perf.totals.confidence,
     },
+    excursion,
+    events,
     coreArgument: digest?.coreArgument ?? null,
     signalsByStatus,
     journalEntryCount: jc ? Number(jc.n) : 0,

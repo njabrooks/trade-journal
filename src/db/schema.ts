@@ -93,6 +93,9 @@ export const macroTheses = pgTable(
     outcome: text('outcome'), // 'validated' | 'invalidated' | 'partial' | 'ongoing'
     outcomeNotes: text('outcome_notes'),
     actualOutcomeDate: date('actual_outcome_date'),
+    // Retrospective execution-quality metrics (docs/v2/07 §4d) — frozen at close:
+    // { mfe, mfeDate, mae, maeDate, finalCumulative, captureRatio, giveBackFromPeak, neverInProfit, neverUnderwater, confidence, executionQuality }
+    retrospectiveMetrics: jsonb('retrospective_metrics'),
 
     // Track claims count when articulation was last generated (for triage rule #2)
     claimsCountAtLastArticulation: integer('claims_count_at_last_articulation').default(0),
@@ -162,6 +165,9 @@ export const assetTheses = pgTable(
     outcomeNotes: text('outcome_notes'),
     actualOutcomeDate: date('actual_outcome_date'),
     actualPrice: numeric('actual_price'),
+    // Retrospective execution-quality metrics (docs/v2/07 §4d) — frozen at close:
+    // { mfe, mfeDate, mae, maeDate, finalCumulative, captureRatio, giveBackFromPeak, neverInProfit, neverUnderwater, confidence, executionQuality }
+    retrospectiveMetrics: jsonb('retrospective_metrics'),
 
     // Track claims count when articulation was last generated (for triage rule #2)
     claimsCountAtLastArticulation: integer('claims_count_at_last_articulation').default(0),
