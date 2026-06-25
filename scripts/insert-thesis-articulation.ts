@@ -8,19 +8,28 @@
  * Usage:
  *   npx tsx scripts/insert-thesis-articulation.ts --input articulation-data.json
  *   cat articulation-data.json | npx tsx scripts/insert-thesis-articulation.ts --stdin
+ *   npx tsx scripts/insert-thesis-articulation.ts --input data.json --dry-run   # preview (incl. sensor carry-forward), no write
  *
  * The JSON input should have this structure:
  * {
  *   "thesisId": "uuid",
  *   "thesisType": "macro" | "asset",
  *   "articulation": { ... articulation fields ... },
- *   "validationPoints": [ ... validation point objects ... ]
+ *   "signals": [ ... signal objects ... ]      // (validationPoints accepted as legacy alias)
  * }
+ *
+ * Sensor carry-forward (docs/v2/14 §9, P3): a signal may set "supersedesSignalId" to the
+ * prior signal whose STATEMENT it continues. The new row points back via supersedes_signal_id
+ * and inherits that prior signal's SENSOR (explicit_details) when it is a real one — so a
+ * decision-grade sensor survives statement iteration rather than being orphaned on each
+ * re-underwrite. Vestigial qualitative details are NOT carried (the statement re-enters the
+ * observe loop). Fresh statements (no supersedesSignalId) behave exactly as before.
  */
 
 import * as fs from 'fs';
 import { db, closeDb, schema, logToJournal } from './lib/db.js';
-import { desc, eq, and, sql } from 'drizzle-orm';
+import { desc, eq, and, inArray, sql } from 'drizzle-orm';
+import { resolveSensorCarryForward, parseSensor, describeSensor } from '@/lib/derived/signalSensor';
 
 const {
   thesisArticulations,
@@ -106,6 +115,20 @@ interface SignalInput {
   // Articulation provenance — which section/driver generated this signal
   sourceSection?: 'key_driver' | 'key_assumption' | 'timeframe' | 'dependency';
   sourceDriverIndex?: number;
+  // Statement↔sensor lineage (docs/v2/14 §9, P3). When this re-underwritten statement
+  // CONTINUES a prior signal, set its id here: the new row points back via
+  // supersedes_signal_id AND inherits the prior signal's SENSOR (explicit_details) so a
+  // decision-grade sensor survives statement iteration instead of being orphaned. Only a
+  // REAL sensor is carried (vestigial qualitative blobs drop to statement-only); set by the
+  // re-underwriting agent's judgment that "this statement measures the same thing".
+  supersedesSignalId?: string;
+}
+
+/** What a prior signal contributes to a continuation (its sensor), resolved before insert. */
+interface CarryForward {
+  explicitDetails: unknown; // the sensor to copy, or null (statement-only)
+  category: 'judgment' | 'data_driven';
+  note: string; // human description for the run summary
 }
 
 // ============================================================================
@@ -145,8 +168,56 @@ async function main() {
   const { thesisId, thesisType, articulation } = inputData;
   // Support both old (validationPoints) and new (signals) field names
   const signals = inputData.signals || inputData.validationPoints || [];
+  const dryRun = args.includes('--dry-run');
 
-  console.log(`\nInserting articulation for ${thesisType} thesis: ${thesisId}`);
+  // Signal-shaping helpers (hoisted so the dry-run preview can use them too).
+  const normalizeType = (type: string): 'confirmation' | 'invalidation' | 'completion' => {
+    if (type === 'validation') return 'confirmation';
+    if (type === 'warning') return 'invalidation';
+    return type as 'confirmation' | 'invalidation' | 'completion';
+  };
+  // All fresh signals start 'judgment'; 'data_driven' is reached only via sensor carry-forward.
+  const normalizeCategory = (cat?: string): 'judgment' | 'data_driven' => {
+    if (!cat) return 'judgment';
+    if (cat === 'explicit' || cat === 'data_driven') return 'judgment';
+    return 'judgment';
+  };
+  const buildNotes = (sig: SignalInput): string | null => {
+    if (sig.notes) return sig.notes;
+    const parts: string[] = [];
+    if (sig.rationale) parts.push(`Rationale: ${sig.rationale}`);
+    if (sig.responseProtocol?.description) parts.push(`Response: ${sig.responseProtocol.description}`);
+    if (sig.judgmentDetails?.judgmentCriteria) parts.push(`Judgment Criteria: ${sig.judgmentDetails.judgmentCriteria}`);
+    return parts.length > 0 ? parts.join('\n\n') : null;
+  };
+
+  // -------------------------------------------------------------------------
+  // Sensor carry-forward (docs/v2/14 §9, P3): resolve the prior signals that the new
+  // statements continue, so a real sensor survives statement iteration. Built before any
+  // write so --dry-run can preview it. Keyed by prior signal id.
+  // -------------------------------------------------------------------------
+  const supersededIds = [...new Set(signals.map((s) => s.supersedesSignalId).filter((x): x is string => !!x))];
+  const carryMap = new Map<string, CarryForward>();
+  if (supersededIds.length > 0) {
+    const priors = await db
+      .select({ id: signalsTable.id, statement: signalsTable.statement, explicitDetails: signalsTable.explicitDetails, category: signalsTable.category })
+      .from(signalsTable)
+      .where(inArray(signalsTable.id, supersededIds));
+    const priorById = new Map(priors.map((p) => [p.id, p]));
+    for (const id of supersededIds) {
+      const prior = priorById.get(id);
+      if (!prior) {
+        console.warn(`⚠️  supersedesSignalId ${id} not found — lineage skipped for the continuation referencing it`);
+        continue;
+      }
+      const carried = resolveSensorCarryForward({ explicitDetails: prior.explicitDetails, category: prior.category });
+      carryMap.set(id, carried
+        ? { explicitDetails: carried.explicitDetails, category: 'data_driven', note: `carries ${describeSensor(parseSensor(prior.explicitDetails, prior.category))} from prior signal` }
+        : { explicitDetails: null, category: 'judgment', note: prior.explicitDetails != null ? 'prior had no real sensor (vestigial details dropped) — statement-only lineage' : 'statement-only lineage' });
+    }
+  }
+
+  console.log(`\n${dryRun ? '[dry-run] Would insert' : 'Inserting'} articulation for ${thesisType} thesis: ${thesisId}`);
 
   // -------------------------------------------------------------------------
   // Step 1: Determine next version number
@@ -165,6 +236,24 @@ async function main() {
 
   const nextVersion = existing.length > 0 ? existing[0].version + 1 : 1;
   console.log(`Version: ${nextVersion}`);
+
+  // -------------------------------------------------------------------------
+  // Dry-run: print the plan (incl. sensor carry-forward) and exit before any write.
+  // -------------------------------------------------------------------------
+  if (dryRun) {
+    console.log('\n[dry-run] Plan:');
+    console.log(`  Articulation: v${nextVersion} (${signals.length} signal(s))`);
+    for (const sig of signals) {
+      const cf = sig.supersedesSignalId ? carryMap.get(sig.supersedesSignalId) : undefined;
+      const sensorNote = cf
+        ? cf.explicitDetails != null ? `← SENSOR carried (${cf.note})` : `← lineage only (${cf.note})`
+        : 'no sensor (fresh statement)';
+      console.log(`  · [${normalizeType(sig.type)}] ${sig.statement.slice(0, 72)}`);
+      console.log(`        ${sig.supersedesSignalId ? `supersedes ${sig.supersedesSignalId} — ` : ''}${sensorNote}`);
+    }
+    await closeDb();
+    process.exit(0);
+  }
 
   // -------------------------------------------------------------------------
   // Step 2: Insert articulation
@@ -256,61 +345,41 @@ async function main() {
   // -------------------------------------------------------------------------
   // Step 3: Insert signals
   // -------------------------------------------------------------------------
-  // Helper to convert old type values to new ones
-  const normalizeType = (type: string): 'confirmation' | 'invalidation' | 'completion' => {
-    if (type === 'validation') return 'confirmation';
-    if (type === 'warning') return 'invalidation';
-    return type as 'confirmation' | 'invalidation' | 'completion';
-  };
-
-  // Helper to normalize category - all signals start as 'judgment'
-  // Category becomes 'data_driven' only when user configures explicit_details via UI
-  const normalizeCategory = (cat?: string): 'judgment' | 'data_driven' => {
-    // Legacy mapping and default to judgment
-    if (!cat) return 'judgment';
-    if (cat === 'explicit' || cat === 'data_driven') return 'judgment'; // Even "data-driven" suggestions start as judgment until user configures
-    return 'judgment';
-  };
-
-  // Helper to merge deprecated fields into notes
-  const buildNotes = (sig: SignalInput): string | null => {
-    // If notes is provided directly, use it
-    if (sig.notes) return sig.notes;
-
-    // Otherwise, merge deprecated fields
-    const parts: string[] = [];
-    if (sig.rationale) parts.push(`Rationale: ${sig.rationale}`);
-    if (sig.responseProtocol?.description) parts.push(`Response: ${sig.responseProtocol.description}`);
-    if (sig.judgmentDetails?.judgmentCriteria) parts.push(`Judgment Criteria: ${sig.judgmentDetails.judgmentCriteria}`);
-
-    return parts.length > 0 ? parts.join('\n\n') : null;
-  };
-
   let signalsCreatedCount = 0;
 
   if (signals.length > 0) {
-    const signalsToInsert = signals.map((sig) => ({
-      articulationId: insertedArticulation.id,
-      type: normalizeType(sig.type),
-      statement: sig.statement,
-      notes: buildNotes(sig), // New simplified field
-      rationale: sig.rationale || null, // @deprecated - kept for backwards compatibility
-      category: normalizeCategory(sig.category), // Always 'judgment' until user configures data trigger
-      importance: sig.importance || 'critical', // Focused signals are all critical by default
-      timeframe: sig.timeframe || null, // @deprecated
-      explicitDetails: null, // Never pre-populate - user must configure via UI
-      judgmentDetails: sig.judgmentDetails || null, // @deprecated
-      responseProtocol: sig.responseProtocol || null, // @deprecated
-      linkedClaimIds: sig.linkedClaimIds || [],
-      dependentThesisId: sig.dependentThesisId || null,
-      dependentThesisType: sig.dependentThesisType || null,
-      dependentThesisCondition: sig.dependentThesisCondition || null,
-      // Articulation provenance
-      sourceSection: sig.sourceSection || null,
-      sourceDriverIndex: sig.sourceDriverIndex ?? null,
-      // Default to 'active' - focused signals go directly to monitoring (no draft review workflow)
-      status: (sig.status || 'active') as 'draft' | 'active' | 'complete' | 'rejected',
-    }));
+    const signalsToInsert = signals.map((sig) => {
+      // Sensor carry-forward (docs/v2/14 §9, P3): a continuation inherits the prior
+      // signal's REAL sensor + records the statement↔sensor lineage. Default stays
+      // explicit_details=null / judgment (fresh statement) exactly as before.
+      const cf = sig.supersedesSignalId ? carryMap.get(sig.supersedesSignalId) : undefined;
+      const carriedExplicit = cf ? cf.explicitDetails : null;
+      const category = cf && carriedExplicit != null ? 'data_driven' : normalizeCategory(sig.category);
+      return {
+        articulationId: insertedArticulation.id,
+        type: normalizeType(sig.type),
+        statement: sig.statement,
+        notes: buildNotes(sig), // New simplified field
+        rationale: sig.rationale || null, // @deprecated - kept for backwards compatibility
+        category, // 'judgment' for fresh; 'data_driven' when a real sensor is carried forward
+        importance: sig.importance || 'critical', // Focused signals are all critical by default
+        timeframe: sig.timeframe || null, // @deprecated
+        explicitDetails: carriedExplicit, // null unless a real sensor is carried from supersedesSignalId
+        judgmentDetails: sig.judgmentDetails || null, // @deprecated
+        responseProtocol: sig.responseProtocol || null, // @deprecated
+        linkedClaimIds: sig.linkedClaimIds || [],
+        dependentThesisId: sig.dependentThesisId || null,
+        dependentThesisType: sig.dependentThesisType || null,
+        dependentThesisCondition: sig.dependentThesisCondition || null,
+        // Articulation provenance
+        sourceSection: sig.sourceSection || null,
+        sourceDriverIndex: sig.sourceDriverIndex ?? null,
+        // Statement↔sensor lineage — set only when the referenced prior signal exists.
+        supersedesSignalId: sig.supersedesSignalId && carryMap.has(sig.supersedesSignalId) ? sig.supersedesSignalId : null,
+        // Default to 'active' - focused signals go directly to monitoring (no draft review workflow)
+        status: (sig.status || 'active') as 'draft' | 'active' | 'complete' | 'rejected',
+      };
+    });
 
     const insertedSignals = await db
       .insert(signalsTable)
@@ -349,6 +418,8 @@ async function main() {
     const invalidationCount = insertedSignals.filter((s) => s.type === 'invalidation').length;
     const completionCount = insertedSignals.filter((s) => s.type === 'completion').length;
     console.log(`   - ${confirmationCount} confirmation, ${invalidationCount} invalidation, ${completionCount} completion`);
+    const carriedCount = insertedSignals.filter((s) => s.explicitDetails != null).length;
+    if (carriedCount > 0) console.log(`   - ${carriedCount} sensor(s) carried forward across re-underwrite (statement↔sensor lineage preserved)`);
   } else {
     console.log('ℹ️  No signals to insert');
   }

@@ -1418,6 +1418,13 @@ export const signals = pgTable(
     sourceSection: text('source_section'), // 'key_driver' | 'key_assumption' | 'timeframe' | 'dependency'
     sourceDriverIndex: integer('source_driver_index'), // zero-based index into the section array
 
+    // Statement↔sensor lineage (docs/v2/14 §9, P3). The prior signal whose STATEMENT this
+    // one iterates: on re-underwrite, build-core-argument supersedes the old signal and
+    // inserts a new statement row pointing back here, and insert-thesis-articulation carries
+    // the prior signal's SENSOR (explicit_details) forward — so a decision-grade sensor
+    // survives statement iteration instead of being orphaned. NULL = fresh signal.
+    supersedesSignalId: uuid('supersedes_signal_id'),
+
     // Trigger action — what happens when signal fires (TWO-228)
     // { type: 'create_triage_item' | 'suggest_asset_thesis' | 'notify_only', ... }
     triggerAction: jsonb('trigger_action'),
@@ -1431,6 +1438,7 @@ export const signals = pgTable(
     statusIdx: index('idx_signals_status').on(table.status),
     typeIdx: index('idx_signals_type').on(table.type),
     importanceIdx: index('idx_signals_importance').on(table.importance),
+    supersedesIdx: index('idx_signals_supersedes').on(table.supersedesSignalId),
   })
 );
 
