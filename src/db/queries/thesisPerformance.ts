@@ -8,6 +8,7 @@ import {
   underlyings,
 } from '@/db/schema';
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import { computeExcursion, type RetrospectiveMetrics } from '@/lib/derived/retrospectiveExcursion';
 
 /**
  * W4 session 2 — thesis-level performance attribution (decision D8).
@@ -127,15 +128,6 @@ async function performanceForStrategyIds(strategyIds: string[]): Promise<ThesisP
     });
   }
 
-  // Note: SQL MAX over the confidence text happens to surface a non-'full'
-  // value whenever any account-row is degraded ('partial_history' and
-  // 'no_trades' both sort after 'full'), which is the property we need —
-  // exact weakest-rank ordering across accounts is then applied in JS.
-  const combinedByDate = new Map<
-    string,
-    { realized: number; unrealized: number; cumulative: number; confidence: RealizedConfidence; count: number }
-  >();
-
   for (const row of snapRows) {
     const series = byStrategy.get(row.strategyId);
     if (!series || !row.snapshotDate) continue;
@@ -148,32 +140,46 @@ async function performanceForStrategyIds(strategyIds: string[]): Promise<ThesisP
     };
     series.points.push(point);
     series.latest = { ...point, confidence: conf };
-
-    const agg = combinedByDate.get(row.snapshotDate) ?? {
-      realized: 0,
-      unrealized: 0,
-      cumulative: 0,
-      confidence: 'full' as RealizedConfidence,
-      count: 0,
-    };
-    agg.realized += point.realizedToDate ?? 0;
-    agg.unrealized += point.unrealized ?? 0;
-    agg.cumulative += point.cumulative ?? 0;
-    agg.confidence = weakest(agg.confidence, conf);
-    agg.count += 1;
-    combinedByDate.set(row.snapshotDate, agg);
   }
 
-  const combined = [...combinedByDate.entries()]
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([date, v]) => ({
+  // Forward-filled combined series: a closed strategy's realized cumulative PERSISTS
+  // after its last snapshot. Summing only same-date snapshots (the prior approach)
+  // DROPPED a strategy from the total once it stopped snapshotting, which misstates
+  // both the final value AND the MFE/MAE for any multi-strategy thesis whose legs
+  // close at different times — e.g. a macro whose big shorts close mid-life, making
+  // the combined curve "recover" as the losers leave the sum rather than from a gain.
+  // This mirrors ThesisPerformanceChart's pivot, so combined[last].cumulative ===
+  // totals.latestCumulative.
+  const allDates = [...new Set(snapRows.map((r) => r.snapshotDate).filter(Boolean) as string[])].sort();
+  const combined = allDates.map((date) => {
+    let realized = 0;
+    let unrealized = 0;
+    let cumulative = 0;
+    let started = 0;
+    let confidence: RealizedConfidence = 'full';
+    for (const series of byStrategy.values()) {
+      // most-recent point on/before this date (forward-fill); contributes 0 before it starts
+      let last: (typeof series.points)[number] | null = null;
+      for (const p of series.points) {
+        if (p.date <= date) last = p;
+        else break;
+      }
+      if (!last) continue;
+      started += 1;
+      realized += last.realizedToDate ?? 0;
+      unrealized += last.unrealized ?? 0;
+      cumulative += last.cumulative ?? 0;
+      confidence = weakest(confidence, series.latest?.confidence ?? 'no_trades');
+    }
+    return {
       date,
-      realizedToDate: Math.round(v.realized * 100) / 100,
-      unrealized: Math.round(v.unrealized * 100) / 100,
-      cumulative: Math.round(v.cumulative * 100) / 100,
-      confidence: v.confidence,
-      strategyCount: v.count,
-    }));
+      realizedToDate: Math.round(realized * 100) / 100,
+      unrealized: Math.round(unrealized * 100) / 100,
+      cumulative: Math.round(cumulative * 100) / 100,
+      confidence: started > 0 ? confidence : ('full' as RealizedConfidence),
+      strategyCount: started,
+    };
+  });
 
   // Totals: latest cumulative per strategy summed (strategies end on
   // different dates — a closed strategy's last snapshot still counts).
@@ -298,6 +304,8 @@ export interface ThesisPerformanceSummary {
   createdAt: string;
   actualOutcomeDate: string | null;
   updatedAt: string;
+  // execution axis (docs/v2/07 §4d) — frozen at close, else live-computed for the grid
+  retrospectiveMetrics: RetrospectiveMetrics | null;
 }
 
 export interface MacroThesisPerformanceSummary extends ThesisPerformanceSummary {
@@ -314,7 +322,10 @@ export interface PerformanceOverview {
   attributionNote: 'exposure_view_full_credit';
 }
 
-const CLOSED_STATUSES = ['complete', 'rejected'];
+// Resolved theses get a retrospective (docs/v2/07 §4d) and drop out of the active
+// performance tables. 'closed' = was expressed, now flat (dormant) — its execution
+// lesson belongs in Retrospectives, not the live book.
+const CLOSED_STATUSES = ['closed', 'complete', 'rejected'];
 
 interface StrategyLatestTotals {
   assetThesisId: string;
@@ -376,6 +387,7 @@ export async function getPerformanceOverview(): Promise<PerformanceOverview> {
         createdAt: assetTheses.createdAt,
         updatedAt: assetTheses.updatedAt,
         actualOutcomeDate: assetTheses.actualOutcomeDate,
+        retrospectiveMetrics: assetTheses.retrospectiveMetrics,
       })
       .from(assetTheses)
       .leftJoin(underlyings, eq(underlyings.id, assetTheses.underlyingId)),
@@ -390,6 +402,7 @@ export async function getPerformanceOverview(): Promise<PerformanceOverview> {
         createdAt: macroTheses.createdAt,
         updatedAt: macroTheses.updatedAt,
         actualOutcomeDate: macroTheses.actualOutcomeDate,
+        retrospectiveMetrics: macroTheses.retrospectiveMetrics,
       })
       .from(macroTheses),
     db
@@ -457,6 +470,7 @@ export async function getPerformanceOverview(): Promise<PerformanceOverview> {
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
       actualOutcomeDate: t.actualOutcomeDate,
+      retrospectiveMetrics: (t.retrospectiveMetrics as RetrospectiveMetrics | null) ?? null,
       ...summarize(byAssetThesis.get(t.id) ?? []),
     });
   }
@@ -485,6 +499,7 @@ export async function getPerformanceOverview(): Promise<PerformanceOverview> {
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
       actualOutcomeDate: t.actualOutcomeDate,
+      retrospectiveMetrics: (t.retrospectiveMetrics as RetrospectiveMetrics | null) ?? null,
       assetThesisCount: linkedAssetIds.filter((id) => (byAssetThesis.get(id) ?? []).length > 0)
         .length,
       ...summarize(strats),
@@ -494,6 +509,31 @@ export async function getPerformanceOverview(): Promise<PerformanceOverview> {
   const byCumulativeDesc = (a: ThesisPerformanceSummary, b: ThesisPerformanceSummary) =>
     b.latestCumulative - a.latestCumulative;
 
+  const retrospectives = [
+    ...[...assetSummaries.values()].filter((t) => CLOSED_STATUSES.includes(t.status)),
+    ...[...macroSummaries.values()].filter((t) => CLOSED_STATUSES.includes(t.status)),
+  ].sort(
+    (a, b) => (b.actualOutcomeDate ?? b.updatedAt).localeCompare(a.actualOutcomeDate ?? a.updatedAt)
+  );
+
+  // Execution axis (docs/v2/07 §4d): prefer the frozen retrospective_metrics; for
+  // theses closed before this feature existed (null), live-compute the excursion from
+  // the (frozen, post-close) series so the card still shows MFE/MAE/capture. The
+  // executionQuality badge stays absent until a retrospective is (re-)run.
+  await Promise.all(
+    retrospectives
+      .filter((t) => !t.retrospectiveMetrics)
+      .map(async (t) => {
+        const perf =
+          t.thesisType === 'asset'
+            ? await getAssetThesisPerformance(t.thesisId)
+            : await getMacroThesisPerformance(t.thesisId);
+        if (perf.combined.length > 0) {
+          t.retrospectiveMetrics = { ...computeExcursion(perf.combined), executionQuality: null };
+        }
+      })
+  );
+
   return {
     assetTheses: [...assetSummaries.values()]
       .filter((t) => !CLOSED_STATUSES.includes(t.status) && t.strategyCount > 0)
@@ -501,13 +541,7 @@ export async function getPerformanceOverview(): Promise<PerformanceOverview> {
     macroTheses: [...macroSummaries.values()]
       .filter((t) => !CLOSED_STATUSES.includes(t.status) && t.strategyCount > 0)
       .sort(byCumulativeDesc),
-    retrospectives: [
-      ...[...assetSummaries.values()].filter((t) => CLOSED_STATUSES.includes(t.status)),
-      ...[...macroSummaries.values()].filter((t) => CLOSED_STATUSES.includes(t.status)),
-    ].sort(
-      (a, b) =>
-        (b.actualOutcomeDate ?? b.updatedAt).localeCompare(a.actualOutcomeDate ?? a.updatedAt)
-    ),
+    retrospectives,
     attributionNote: 'exposure_view_full_credit',
   };
 }

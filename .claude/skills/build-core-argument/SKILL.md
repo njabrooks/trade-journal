@@ -42,18 +42,29 @@ yourself writing a number to monitor or a data feed to watch, stop — that is t
 its cognitive-load sink. The whole point of 10 is that the resolution view falls out of the argument
 itself.
 
+**One distinction (docs/v2/14 §9):** *carrying an existing decision-grade sensor forward* across a
+re-underwrite (via `supersedesSignalId`, Step 4.1) is **not** authoring one — you never write
+`explicit_details` by hand; you only preserve a sensor a prior signal already had (a price ladder, a hard
+floor) so statement iteration doesn't orphan it. Authoring a new sensor is still retired; preserving one is
+the clean object model.
+
 ## Workflow
 
 ```
 INPUT: thesis (ticker / title / id)
-  → STEP 1  Load the thesis + all linked claims/observations (+ compositional context)
-  → STEP 2  Basis for the investment  (core argument · drivers · assumptions · confidence · timeframe)
-  → STEP 3  Compositional dependencies (does this thesis depend on another?)
-  → STEP 4  Basis for resolution      (confirmation / invalidation / completion — DERIVED from rebuttals)
-  → STEP 5  Light refinement with the user (skipped in headless mode)
-  → STEP 6  Push for falsifiability (a crisp statement, not a metric)
-  → STEP 7  Store a new version via scripts/insert-thesis-articulation.ts
-OUTPUT: versioned articulation + derived resolution signals
+  → STEP 1   Load the thesis + all linked claims/observations (+ compositional context
+             + the P3 observation inputs: signalQuality + candidateSignals)
+  → STEP 2   Basis for the investment  (core argument · drivers · assumptions · confidence · timeframe)
+  → STEP 3   Compositional dependencies (does this thesis depend on another?)
+  → STEP 4   Basis for resolution      (confirmation / invalidation / completion — DERIVED from rebuttals)
+  → STEP 4.1 Observation-driven refinement (sharpen/drop chronic-neutral · cover gaps · promote
+             candidates · carry sensors forward)
+  → STEP 5   Light refinement with the user (skipped in headless mode)
+  → STEP 6   Push for falsifiability (a crisp statement, not a metric)
+  → STEP 7   Store a new version via scripts/insert-thesis-articulation.ts
+  → STEP 7b  Close out consumed candidate signals (resolve/dismiss)
+OUTPUT: versioned articulation + derived resolution signals (chronic-neutral sharpened, gaps covered,
+        decision-grade sensors preserved)
 ```
 
 ---
@@ -74,6 +85,23 @@ set -a && source .env.local && set +a
 > silently-incomplete/lopsided set. (Backstop only: won't catch no-ticker claims unrelated to a child
 > asset, or un-promoted Tana content — relate-research stays primary.) When invoked from `/thesis`
 > re-underwrite this is already handled upstream.
+
+> **Observation-driven inputs (the P3 loop — load these too).** A re-underwrite isn't only
+> claim-driven; it also acts on *what the tracking revealed* (docs/v2/14 §10.3). Pull both before
+> synthesizing the resolution section (Step 4):
+>
+> ```bash
+> # Signal-quality diagnostics (chronic-neutral statements + price coverage-gaps).
+> npx tsx scripts/ops/thesis-snapshot.ts --id <THESIS_ID> --type <asset|macro>   # read .signalQuality
+> # Candidate signals harvested by observe (coverage-hole news that matched no signal).
+> npx tsx scripts/ops/resolve-candidate-signal.ts --list --thesis-id <THESIS_ID> --type <asset|macro>
+> ```
+>
+> `signalQuality` is null until a thesis has enough observe history (expect quiet early on);
+> `candidateSignals` is empty until observe harvests coverage holes. When either is non-empty,
+> Step 4 **must act on it** (sharpen/drop chronic-neutral, cover the gap, promote/dismiss
+> candidates) rather than regenerating the prior resolution verbatim. These are *inputs to your
+> judgment*, not auto-applied.
 
 **Prefer the query helpers** — they resolve multi-source provenance (including the new
 `conversation` / `deep_research` / `agent_research` artifacts) automatically:
@@ -168,6 +196,34 @@ lives in the claims, you don't author tripwires.
 confirmation, 2 invalidation, 1 completion**. One well-grounded invalidation beats three weak ones. Each
 signal is a **qualitative, specific, falsifiable statement** — no metrics, thresholds, or data sources.
 
+#### Step 4.1 — Observation-driven refinement (the P3 loop — when the inputs are non-empty)
+
+This is what makes a re-underwrite act on *what the tracking revealed*, not just on claims (docs/v2/14
+§10.3). Because every run **regenerates the whole resolution section**, "acting on" each input is concrete:
+
+- **`signalQuality.chronicNeutralSignals`** — statements observed repeatedly that **never discriminated**
+  (always `neutral`). Do **not** regenerate them verbatim. Either **sharpen** the statement so it *could*
+  flip (more specific, observable, time-boxed) — and when you do, set `supersedesSignalId` to that
+  chronic-neutral signal's id (continuity + sensor carry-forward, below) — or **drop** it (omit it from
+  the new set) if it was untestable/irrelevant. Say which you did, per signal.
+- **`signalQuality.coverageGaps`** — a material price move **no signal flagged**. **Author a covering
+  signal**: a confirmation/invalidation whose statement would catch that kind of move next time (grounded
+  in a driver/assumption — name the gap in its `notes`).
+- **`candidateSignals`** (from `resolve-candidate-signal.ts --list`) — coverage-hole news observe harvested
+  that matched no signal. For each: judge if it is **genuinely load-bearing** on the thesis. If yes →
+  include it as a new signal (its `statement` is the candidate's, refined; record the journal-row id to
+  resolve in Step 7b). If no → leave it for Step 7b to **dismiss**. Promote sparingly — a candidate must
+  bear on the *case*, not just be topical.
+
+**Sensor carry-forward (statement↔sensor continuity, docs/v2/14 §9).** A prior signal may carry a
+decision-grade **sensor** (`explicit_details` — a price ladder or a real metric threshold). Re-underwriting
+supersedes prior signals, which would **orphan** the sensor. So when a new statement is the *continuation*
+of a prior one (a sharpened chronic-neutral, or simply the same resolution leg re-expressed), set
+`supersedesSignalId` to the prior signal's id — `insert-thesis-articulation.ts` then carries its real
+sensor onto the new statement automatically (vestigial/qualitative `explicit_details` is intentionally
+dropped). Check the prior resolution set (`resolution` in the snapshot, or the active signals) for sensors
+worth preserving; the `scripts/ops/triage-sensors.ts` report tells you which sensors exist and are worth keeping.
+
 Signal shape (consumed by `insert-thesis-articulation.ts`):
 
 ```typescript
@@ -179,6 +235,9 @@ Signal shape (consumed by `insert-thesis-articulation.ts`):
   linkedClaimIds: string[], // which claims/observations this is grounded in
   sourceSection: 'key_driver' | 'key_assumption' | 'timeframe' | 'dependency',
   sourceDriverIndex: number,// zero-based index into that section's array
+  // Statement↔sensor lineage — set when this statement CONTINUES a prior signal, so its
+  // real sensor (explicit_details) is carried forward instead of orphaned (docs/v2/14 §9):
+  supersedesSignalId?: string,
   // For a dependency-derived invalidation:
   dependentThesisId?: string, dependentThesisType?: 'macro' | 'asset',
   dependentThesisCondition?: 'invalidated' | 'confidence_drops' | 'status_changes',
@@ -219,7 +278,8 @@ npx tsx scripts/insert-thesis-articulation.ts --input articulation-data.json
 # or: cat articulation-data.json | npx tsx scripts/insert-thesis-articulation.ts --stdin
 ```
 
-JSON shape (note: **no** `explicitDetails` / `category` / metric fields — those are retired):
+JSON shape (note: **no** hand-written `explicitDetails` / metric fields — sensors are never authored,
+only *carried forward* via `supersedesSignalId`):
 
 ```json
 {
@@ -239,18 +299,37 @@ JSON shape (note: **no** `explicitDetails` / `category` / metric fields — thos
   "signals": [
     { "type": "confirmation", "statement": "…", "notes": "… Action: …",
       "linkedClaimIds": ["claim-uuid-1"], "sourceSection": "key_driver", "sourceDriverIndex": 0 },
-    { "type": "invalidation", "statement": "… (from claim rebuttal)", "notes": "… Action: re-evaluate / exit.",
-      "linkedClaimIds": ["claim-uuid-2"], "sourceSection": "key_assumption", "sourceDriverIndex": 1 }
+    { "type": "invalidation", "statement": "… (sharpened from a chronic-neutral statement)", "notes": "…",
+      "supersedesSignalId": "prior-signal-uuid", "sourceSection": "key_assumption", "sourceDriverIndex": 1 },
+    { "type": "invalidation", "statement": "… (covers the price coverage-gap)", "notes": "… Action: re-evaluate.",
+      "linkedClaimIds": ["claim-uuid-2"], "sourceSection": "key_assumption", "sourceDriverIndex": 0 }
   ]
 }
 ```
 
-Then `rm articulation-data.json`.
+Then `rm articulation-data.json`. Preview first with `--dry-run` to confirm which sensors carry forward:
+`npx tsx scripts/insert-thesis-articulation.ts --input articulation-data.json --dry-run`.
 
 **JSONB field reference:** `keyDrivers` `[{driver, detail?, supporting_claims?}]` · `keyAssumptions`
 `[{assumption, detail?}]` · `timeframe` `{horizon, expectedResolution?, keyMilestones?}` · `evidenceGaps`
 `string[]` · `claimIdsUsed` `string[]` (UUIDs — includes observation-claims) · `referencedTheses`
-`[{thesisId, thesisType, title, relationship, notes?}]` · `linkedClaimIds` `string[]` (per signal).
+`[{thesisId, thesisType, title, relationship, notes?}]` · `linkedClaimIds` `string[]` (per signal) ·
+`supersedesSignalId` `string?` (per signal — the prior signal whose statement this continues; carries its sensor).
+
+### Step 7b — Close out consumed candidate signals (P3)
+
+If Step 4.1 acted on any `candidateSignals`, mark each consumed row so it stops resurfacing (the script
+re-read its own list, so use the journal-row `id` from Step 1's `--list`):
+
+```bash
+# Promoted a candidate into a real signal — record which signal it became:
+npx tsx scripts/ops/resolve-candidate-signal.ts --resolve <candidateJournalId> --signal-id <newSignalId>
+# Rejected a candidate as not load-bearing:
+npx tsx scripts/ops/resolve-candidate-signal.ts --dismiss <candidateJournalId> --reason "<why>"
+```
+
+(`--signal-id` is optional but preferred — it links the candidate to the signal it became. Find the new
+signal id by re-reading the thesis's active signals, or by `resolution` on a fresh `thesis-snapshot`.)
 
 ### Step 8 — Confirm
 

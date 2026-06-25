@@ -5,6 +5,13 @@ import { UnifiedStrategiesBrowser } from "@/components/strategies/UnifiedStrateg
 import { getStrategiesForList } from "@/db/queries/strategies";
 import { formatCurrency } from "@/lib/formatters";
 
+// Live portfolio page — render per-request, never statically prerender at build.
+// Besides being correct for live data, this avoids a Drizzle `inArray` param-list
+// mangling that only surfaces in the production-bundled static prerender of the
+// large (200+) per-strategy positions aggregation (empty values in the IN list →
+// Postgres 42601). The query is correct at runtime; force-dynamic skips build-time prerender.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Strategies",
 };

@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { UnifiedClaimsBrowser } from './UnifiedClaimsBrowser';
-import type { SuggestionActionResult } from './InlineClaimSuggestions';
 import { Loader2 } from 'lucide-react';
 
 interface ArtifactClaimsBrowserProps {
@@ -39,61 +38,6 @@ export function ArtifactClaimsBrowser({ artifactId }: ArtifactClaimsBrowserProps
     fetchClaims();
   }, [artifactId]);
 
-  const handleSuggestionActioned = useCallback((result: SuggestionActionResult) => {
-    setClaims((prev) =>
-      prev.map((claimWithSource) => {
-        if (claimWithSource.claim.id !== result.claimId) return claimWithSource;
-
-        // Remove the actioned suggestion
-        const updatedSuggestions = (claimWithSource.suggestions || []).filter(
-          (s: any) => s.id !== result.suggestionId
-        );
-
-        if (result.action === 'accepted' && result.newLink) {
-          // Update claim status (draft → active)
-          const updatedClaim = {
-            ...claimWithSource.claim,
-            ...(result.claimStatus ? { status: result.claimStatus } : {}),
-          };
-
-          // Add the new linkage to the appropriate array
-          const link = result.newLink;
-          const updatedTheses = [...(claimWithSource.linkedTheses || [])];
-          const updatedViews = [...(claimWithSource.linkedViews || [])];
-
-          if (link.thesisId) {
-            updatedTheses.push({
-              id: link.thesisId,
-              title: link.thesisTitle || 'Unknown',
-              mappingType: link.mappingType,
-            });
-          } else if (link.assetThesisId) {
-            updatedViews.push({
-              id: link.assetThesisId,
-              title: link.assetThesisTitle || 'Unknown',
-              ticker: link.ticker || '',
-              mappingType: link.mappingType,
-            });
-          }
-
-          return {
-            ...claimWithSource,
-            claim: updatedClaim,
-            suggestions: updatedSuggestions,
-            linkedTheses: updatedTheses,
-            linkedViews: updatedViews,
-          };
-        }
-
-        // Rejected: just remove the suggestion
-        return {
-          ...claimWithSource,
-          suggestions: updatedSuggestions,
-        };
-      })
-    );
-  }, []);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -123,7 +67,6 @@ export function ArtifactClaimsBrowser({ artifactId }: ArtifactClaimsBrowserProps
     <UnifiedClaimsBrowser
       claimsWithSources={claims}
       filterArtifactId={artifactId}
-      onSuggestionActioned={handleSuggestionActioned}
     />
   );
 }

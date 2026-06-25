@@ -20,6 +20,8 @@ import { getRelationshipsForEntity } from '@/db/queries/entityRelationships';
 import { getIntelItemsForThesis } from '@/db/queries/intelItems';
 import { getAssetThesisPerformance } from '@/db/queries/thesisPerformance';
 import { ThesisPerformanceChart } from '@/components/performance/ThesisPerformanceChart';
+import { RetrospectivePanel } from '@/components/performance/RetrospectivePanel';
+import { getRetrospectiveView } from '@/db/queries/retrospectiveView';
 import { RelationshipPanel } from '@/components/ui/relationship-panel';
 import { IntelPanel } from '@/components/intelligence/IntelPanel';
 
@@ -67,6 +69,8 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
 
   const isMonitoring = thesis.status === 'monitoring';
   const isDeveloping = thesis.status === 'developing';
+  const isResolved = ['closed', 'complete', 'rejected'].includes(thesis.status);
+  const retrospective = isResolved ? await getRetrospectiveView(id, 'asset') : null;
 
   // Direction badge for subtitle
   const directionBadge = thesis.direction ? (
@@ -214,8 +218,15 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
         )}
       </CollapsibleEntitySection>
 
-      {/* Performance Section (W5 — D8 attribution) */}
-      {performance.strategies.length > 0 && (
+      {/* Retrospective (resolved) — two axes: belief + execution (docs/v2/07 §4d) */}
+      {retrospective && (
+        <CollapsibleEntitySection title="Retrospective" defaultOpen={true}>
+          <RetrospectivePanel view={retrospective} />
+        </CollapsibleEntitySection>
+      )}
+
+      {/* Performance Section (W5 — D8 attribution) — active theses; resolved theses use the Retrospective above */}
+      {!isResolved && performance.strategies.length > 0 && (
         <CollapsibleEntitySection
           title="Performance"
           count={performance.strategies.length}
@@ -254,7 +265,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
             {claimsWithSources.length === 0 ? (
               <p className="text-sm text-muted-foreground">No claims linked to this thesis.</p>
             ) : (
-              <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} suppressSuggestions={true} />
+              <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
             )}
           </CollapsibleEntitySection>
         </>

@@ -411,9 +411,6 @@ export async function getAllMainClaimsWithSources() {
     });
   });
 
-  // Fetch pending suggestions for all claims
-  const suggestionsByClaimId = await getSuggestionsForClaims(claimIds);
-
   // Fetch signal evidences for all claims
   const signalEvidencesData = await db
     .select({
@@ -440,12 +437,11 @@ export async function getAllMainClaimsWithSources() {
     });
   });
 
-  // Merge linked entities, suggestions, and signal evidences with claims
+  // Merge linked entities and signal evidences with claims
   return claims.map(c => ({
     ...c,
     linkedTheses: thesesByClaimId.get(c.claim.id) || [],
     linkedViews: viewsByClaimId.get(c.claim.id) || [],
-    suggestions: suggestionsByClaimId.get(c.claim.id) || [],
     linkedSignals: signalsByClaimId.get(c.claim.id) || [],
   }));
 }
@@ -530,9 +526,6 @@ export async function getMainClaimsForArtifact(artifactId: string) {
     });
   });
 
-  // Fetch pending suggestions for all claims
-  const suggestionsByClaimId = await getSuggestionsForClaims(claimIds);
-
   // Fetch signal evidences for all claims
   const signalEvidencesData = await db
     .select({
@@ -559,12 +552,11 @@ export async function getMainClaimsForArtifact(artifactId: string) {
     });
   });
 
-  // Merge linked entities, suggestions, and signal evidences with claims
+  // Merge linked entities and signal evidences with claims
   return claims.map(c => ({
     ...c,
     linkedTheses: thesesByClaimId.get(c.claim.id) || [],
     linkedViews: viewsByClaimId.get(c.claim.id) || [],
-    suggestions: suggestionsByClaimId.get(c.claim.id) || [],
     linkedSignals: signalsByClaimId.get(c.claim.id) || [],
   }));
 }
@@ -633,9 +625,6 @@ export async function getMainClaimById(claimId: string) {
     .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
     .where(eq(claimThesisMappings.mainClaimId, claimId));
 
-  // Fetch pending suggestions
-  const suggestionsByClaimId = await getSuggestionsForClaims([claimId]);
-
   // Fetch signal evidence (signals this claim provides evidence for)
   const signalEvidenceData = await db
     .select({
@@ -662,7 +651,6 @@ export async function getMainClaimById(claimId: string) {
       ticker: row.ticker,
       mappingType: row.mappingType,
     })),
-    suggestions: suggestionsByClaimId.get(claimId) || [],
     linkedSignals: signalEvidenceData.map(row => ({
       id: row.signalId,
       statement: row.signalStatement,
@@ -778,169 +766,6 @@ export async function createResearchHierarchyRecommendation(
   return result.id;
 }
 
-export async function getRecommendationsForInsight(insightId: string) {
-  return db
-    .select()
-    .from(researchHierarchyRecommendations)
-    .where(eq(researchHierarchyRecommendations.researchInsightId, insightId))
-    .orderBy(desc(researchHierarchyRecommendations.generatedAt));
-}
-
-export async function getRecommendationById(id: string) {
-  const [result] = await db
-    .select()
-    .from(researchHierarchyRecommendations)
-    .where(eq(researchHierarchyRecommendations.id, id))
-    .limit(1);
-  return result || null;
-}
-
-export async function updateRecommendationStatus(
-  id: string,
-  status: 'pending' | 'accepted' | 'rejected' | 'modified',
-  modifiedByUser: boolean = false
-) {
-  const updateData: any = {
-    status,
-    modifiedByUser,
-  };
-
-  if (status === 'accepted') {
-    updateData.acceptedAt = new Date();
-  } else if (status === 'rejected') {
-    updateData.rejectedAt = new Date();
-  }
-
-  await db
-    .update(researchHierarchyRecommendations)
-    .set(updateData)
-    .where(eq(researchHierarchyRecommendations.id, id));
-}
-
-export async function deleteRecommendation(id: string): Promise<void> {
-  await db
-    .delete(researchHierarchyRecommendations)
-    .where(eq(researchHierarchyRecommendations.id, id));
-}
-
-// ============================================================================
-// Claim-Level Suggestions (extends researchHierarchyRecommendations)
-// ============================================================================
-
-export interface ClaimSuggestion {
-  id: string;
-  claimId: string;
-  thesisId: string | null;
-  thesisTitle: string | null;
-  assetThesisId: string | null;
-  assetThesisTitle: string | null;
-  ticker: string | null;
-  mappingType: string | null;
-  confidenceScore: string | null;
-  reasoning: string;
-}
-
-/**
- * Fetch pending claim-level suggestions for multiple claims.
- * Returns suggestions grouped by claim ID, ordered by confidence desc.
- */
-export async function getSuggestionsForClaims(
-  claimIds: string[]
-): Promise<Map<string, ClaimSuggestion[]>> {
-  if (claimIds.length === 0) return new Map();
-
-  // Suggestions linked to macro theses
-  const macroSuggestions = await db
-    .select({
-      id: researchHierarchyRecommendations.id,
-      claimId: researchHierarchyRecommendations.mainClaimId,
-      thesisId: macroTheses.id,
-      thesisTitle: macroTheses.title,
-      mappingType: researchHierarchyRecommendations.mappingType,
-      confidenceScore: researchHierarchyRecommendations.confidenceScore,
-      reasoning: researchHierarchyRecommendations.reasoning,
-    })
-    .from(researchHierarchyRecommendations)
-    .innerJoin(macroTheses, eq(researchHierarchyRecommendations.existingThesisId, macroTheses.id))
-    .where(
-      and(
-        inArray(researchHierarchyRecommendations.mainClaimId, claimIds),
-        eq(researchHierarchyRecommendations.status, 'pending'),
-        eq(researchHierarchyRecommendations.recommendationType, 'link_existing')
-      )
-    );
-
-  // Suggestions linked to asset theses
-  const assetSuggestions = await db
-    .select({
-      id: researchHierarchyRecommendations.id,
-      claimId: researchHierarchyRecommendations.mainClaimId,
-      assetThesisId: assetTheses.id,
-      assetThesisTitle: assetTheses.title,
-      ticker: underlyings.ticker,
-      mappingType: researchHierarchyRecommendations.mappingType,
-      confidenceScore: researchHierarchyRecommendations.confidenceScore,
-      reasoning: researchHierarchyRecommendations.reasoning,
-    })
-    .from(researchHierarchyRecommendations)
-    .innerJoin(assetTheses, eq(researchHierarchyRecommendations.existingAssetThesisId, assetTheses.id))
-    .innerJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
-    .where(
-      and(
-        inArray(researchHierarchyRecommendations.mainClaimId, claimIds),
-        eq(researchHierarchyRecommendations.status, 'pending'),
-        eq(researchHierarchyRecommendations.recommendationType, 'link_existing')
-      )
-    );
-
-  // Combine and group by claim ID
-  const result = new Map<string, ClaimSuggestion[]>();
-
-  for (const row of macroSuggestions) {
-    if (!row.claimId) continue;
-    if (!result.has(row.claimId)) result.set(row.claimId, []);
-    result.get(row.claimId)!.push({
-      id: row.id,
-      claimId: row.claimId,
-      thesisId: row.thesisId,
-      thesisTitle: row.thesisTitle,
-      assetThesisId: null,
-      assetThesisTitle: null,
-      ticker: null,
-      mappingType: row.mappingType,
-      confidenceScore: row.confidenceScore,
-      reasoning: row.reasoning,
-    });
-  }
-
-  for (const row of assetSuggestions) {
-    if (!row.claimId) continue;
-    if (!result.has(row.claimId)) result.set(row.claimId, []);
-    result.get(row.claimId)!.push({
-      id: row.id,
-      claimId: row.claimId,
-      thesisId: null,
-      thesisTitle: null,
-      assetThesisId: row.assetThesisId,
-      assetThesisTitle: row.assetThesisTitle,
-      ticker: row.ticker,
-      mappingType: row.mappingType,
-      confidenceScore: row.confidenceScore,
-      reasoning: row.reasoning,
-    });
-  }
-
-  // Sort each claim's suggestions by confidence desc, limit to 3
-  for (const [claimId, suggestions] of result) {
-    suggestions.sort((a, b) => Number(b.confidenceScore || 0) - Number(a.confidenceScore || 0));
-    if (suggestions.length > 3) {
-      result.set(claimId, suggestions.slice(0, 3));
-    }
-  }
-
-  return result;
-}
-
 // ============================================================================
 // Artifact Completeness Check & Replace-on-Failure
 // ============================================================================
@@ -952,8 +777,6 @@ export interface CompletenessCheckResult {
     hasInsight: boolean;
     hasValidClaimsStructure: boolean;
     hasPromotedClaims: boolean;
-    hasLinkageSuggestions: boolean;
-    linkageSuggestionsWaived: boolean;
   };
   insightId: string | null;
 }
@@ -1009,48 +832,10 @@ export async function checkArtifactCompleteness(
     promotedClaimIds = claimRows.map(c => c.id);
   }
 
-  // Check 4: Has linkage suggestions? (waived if no developing/monitoring theses exist)
-  let hasLinkageSuggestions = false;
-  let linkageSuggestionsWaived = false;
+  // Check 4 (linkage suggestions) removed in the suggestion-subsystem cutover (docs/v2/11):
+  // claim→thesis linking is now /relate-research's concern, not an upload-completeness criterion.
 
-  if (hasPromotedClaims) {
-    const [suggestionCount] = await db
-      .select({ count: count() })
-      .from(researchHierarchyRecommendations)
-      .where(inArray(researchHierarchyRecommendations.mainClaimId, promotedClaimIds));
-    hasLinkageSuggestions = Number(suggestionCount.count) > 0;
-
-    if (!hasLinkageSuggestions) {
-      // Check if waiver applies: no developing/monitoring theses exist
-      const [activeThesisCount] = await db
-        .select({ count: count() })
-        .from(macroTheses)
-        .where(
-          or(
-            eq(macroTheses.status, 'active'),
-            eq(macroTheses.status, 'draft')
-          )
-        );
-      const [activeAssetThesisCount] = await db
-        .select({ count: count() })
-        .from(assetTheses)
-        .where(
-          or(
-            eq(assetTheses.status, 'active'),
-            eq(assetTheses.status, 'draft')
-          )
-        );
-
-      linkageSuggestionsWaived =
-        Number(activeThesisCount.count) === 0 && Number(activeAssetThesisCount.count) === 0;
-    }
-  }
-
-  const isComplete =
-    hasInsight &&
-    hasValidClaims &&
-    hasPromotedClaims &&
-    (hasLinkageSuggestions || linkageSuggestionsWaived);
+  const isComplete = hasInsight && hasValidClaims && hasPromotedClaims;
 
   return {
     isComplete,
@@ -1059,8 +844,6 @@ export async function checkArtifactCompleteness(
       hasInsight,
       hasValidClaimsStructure: hasValidClaims,
       hasPromotedClaims,
-      hasLinkageSuggestions,
-      linkageSuggestionsWaived,
     },
     insightId: insight?.id ?? null,
   };

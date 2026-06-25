@@ -108,12 +108,20 @@ Present conversationally and decision-first — a digest, not a form dump.
 > bull/bear read and let the user choose scope before synthesizing. (Caveat: it's a backstop — won't catch
 > no-ticker claims unrelated to a child asset, or un-promoted Tana content; relate-research stays primary.)
 
-> **Signal-quality read (when `signalQuality` is non-null).** If the snapshot carries
-> `chronicNeutralSignals` (statements observed repeatedly that never discriminated) or `coverageGaps` (a
-> material price move no signal caught), fold them into the re-underwrite: **drop or sharpen** the
-> chronic-neutral statements rather than regenerating them verbatim, and **author a signal** covering the
-> gap. This is the observation→signal feedback (docs/v2/15) — re-underwriting on what the tracking actually
-> revealed, not just on time/claims.
+> **Observation-driven read (the P3 loop — when the tracking has revealed something).** Fold three
+> inputs into the re-underwrite so it acts on what the tracking showed, not just time/claims (docs/v2/14
+> §10.3):
+> - **`signalQuality.chronicNeutralSignals`** (statements observed repeatedly that never discriminated) —
+>   **drop or sharpen** them rather than regenerating verbatim; **`signalQuality.coverageGaps`** (a material
+>   move no signal caught) — **author a covering signal**.
+> - **`candidateSignals`** — coverage-hole news observe harvested that matched no signal. List them with
+>   `npx tsx scripts/ops/resolve-candidate-signal.ts --list --thesis-id <id> --type <t>`; **promote** the
+>   load-bearing ones into real signals on re-underwrite and **dismiss** the rest. (The snapshot also
+>   surfaces them once Lane A wires `candidateSignals` onto it.)
+> - **Sensor continuity** — if a prior signal carried a decision-grade sensor (a price ladder / hard
+>   threshold), set `supersedesSignalId` on its continuation so the sensor is **carried forward**, not
+>   orphaned (docs/v2/14 §9). `/build-core-argument` handles all of this; `scripts/ops/triage-sensors.ts`
+>   shows which sensors are worth keeping.
 
 Then invoke **`/build-core-argument`**
 for `{thesisId, thesisType}`. It reads all linked claims (including conversation/research observations),

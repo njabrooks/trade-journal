@@ -188,7 +188,8 @@ export default async function PerformancePage() {
         <div>
           <h3 className="text-sm font-semibold">Retrospectives</h3>
           <p className="text-xs text-muted-foreground">
-            Completed and rejected theses — was the call right, and did it pay.
+            Closed, completed and rejected theses on two axes — was the belief right, and
+            did we capture the move that was available.
           </p>
         </div>
         {overview.retrospectives.length === 0 ? (

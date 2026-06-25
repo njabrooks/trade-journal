@@ -34,6 +34,10 @@ interface Input {
   narrative: string;
   /** True exit date (from the gathered context's closedAt) — used to set actual_outcome_date if unset. NOT defaulted to today. */
   closedDate?: string;
+  /** Execution-quality judgment (docs/v2/07 §4d): 'excellent' | 'good' | 'fair' | 'poor'. */
+  executionQuality?: string;
+  /** The computed excursion object from the gathered context (MFE/MAE/capture/etc.) — frozen into retrospective_metrics. */
+  excursion?: Record<string, unknown>;
 }
 
 async function readInput(): Promise<Input> {
@@ -69,6 +73,14 @@ async function main() {
   const set: Record<string, unknown> = { outcomeNotes: narrative, updatedAt: now };
   if (input.outcome) set.outcome = input.outcome;
   if (!thesis.actualOutcomeDate && input.closedDate) set.actualOutcomeDate = input.closedDate.slice(0, 10);
+  // Freeze the two-axis execution metrics (docs/v2/07 §4d): the excursion numbers
+  // (computed by the gathered context) + the executionQuality judgment.
+  if (input.excursion || input.executionQuality) {
+    set.retrospectiveMetrics = {
+      ...(input.excursion ?? {}),
+      executionQuality: input.executionQuality ?? null,
+    };
+  }
   await db.update(thesisTable).set(set).where(eq(thesisTable.id, thesisId));
 
   // 2. Supersede still-active signals → 'complete' (monitoring is over).
@@ -93,11 +105,11 @@ async function main() {
     actionDescription: headline,
     rationale: narrative,
     skillInvoked: '/thesis-review',
-    newState: { outcome: input.outcome ?? null, supersededSignals },
+    newState: { outcome: input.outcome ?? null, executionQuality: input.executionQuality ?? null, supersededSignals },
     source: 'automation',
   });
 
-  console.log(JSON.stringify({ thesis: thesis.title, status: thesis.status, outcome: input.outcome ?? null, supersededSignals, journalId }, null, 2));
+  console.log(JSON.stringify({ thesis: thesis.title, status: thesis.status, outcome: input.outcome ?? null, executionQuality: input.executionQuality ?? null, supersededSignals, journalId }, null, 2));
   await closeDb();
   process.exit(0);
 }
