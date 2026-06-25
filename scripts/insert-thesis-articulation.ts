@@ -30,6 +30,8 @@ import * as fs from 'fs';
 import { db, closeDb, schema, logToJournal } from './lib/db.js';
 import { desc, eq, and, inArray, sql } from 'drizzle-orm';
 import { resolveSensorCarryForward, parseSensor, describeSensor } from '@/lib/derived/signalSensor';
+import { getDecisionPacket, type DecisionResolution } from '@/lib/types/decisions';
+import { provenanceKey, isPacketIncorporated } from '@/lib/derived/decisionRetirement';
 
 const {
   thesisArticulations,
@@ -38,6 +40,8 @@ const {
   assetTheses,
   claimThesisMappings,
   signalEntityLinks,
+  mainClaims,
+  journalEntries,
 } = schema;
 
 // ============================================================================
@@ -130,6 +134,20 @@ interface CarryForward {
   category: 'judgment' | 'data_driven';
   note: string; // human description for the run summary
 }
+
+/**
+ * Gap 1 (confidence sync): the synthesized confidence lives on the articulation, but the
+ * thesis record's own confidence_level field had no sync path and silently drifted from its
+ * latest underwriting (e.g. TAO articulation said 'low' while the thesis field still read
+ * 'medium'). Map the articulation enum (low|medium|high|very_high) onto the thesis enum
+ * (low|medium|high|exploratory) and write it back on every articulation. `very_high`
+ * collapses to `high`; an articulation never emits 'exploratory', so a manual 'exploratory'
+ * is replaced by the synthesized level — the articulation is the source of truth for confidence.
+ */
+const THESIS_CONFIDENCE_FROM_ARTICULATION: Record<
+  ArticulationInput['articulation']['confidenceLevel'],
+  'low' | 'medium' | 'high'
+> = { low: 'low', medium: 'medium', high: 'high', very_high: 'high' };
 
 // ============================================================================
 // Main
@@ -287,6 +305,7 @@ async function main() {
       id: thesisTable.id,
       title: thesisTable.title,
       status: thesisTable.status,
+      confidenceLevel: thesisTable.confidenceLevel,
       claimsCountAtLastArticulation: thesisTable.claimsCountAtLastArticulation,
     })
     .from(thesisTable)
@@ -445,7 +464,8 @@ async function main() {
     const currentClaimCount = claimCountResult[0]?.count ?? 0;
     const previousClaimsCount = thesis.claimsCountAtLastArticulation ?? 0;
 
-    // Update thesis claim count only. Status is NOT touched here.
+    // Update thesis claim count + sync confidence from this articulation (Gap 1).
+    // Status is NOT touched here.
     //
     // W8/B5 decouple: the expression-driven lifecycle cascade
     // (src/lib/derived/thesisCascade.ts) owns thesis status now — a thesis is
@@ -454,11 +474,24 @@ async function main() {
     // developing→monitoring when signalsCreatedCount > 0; that signal gate is
     // removed so articulation (digest + signal synthesis) is purely additive and
     // can run at any lifecycle stage without moving the thesis.
+    //
+    // Confidence, unlike status, IS owned by the underwriting: the synthesized
+    // confidence is written back so the thesis field tracks its latest articulation
+    // instead of drifting (the gap that left TAO reading 'medium' under a 'low' v1).
+    const previousConfidence = thesis.confidenceLevel;
+    const syncedConfidence = THESIS_CONFIDENCE_FROM_ARTICULATION[articulation.confidenceLevel];
     await db
       .update(thesisTable)
-      .set({ claimsCountAtLastArticulation: currentClaimCount, updatedAt: new Date() })
+      .set({
+        claimsCountAtLastArticulation: currentClaimCount,
+        confidenceLevel: syncedConfidence,
+        updatedAt: new Date(),
+      })
       .where(eq(thesisTable.id, thesisId));
     console.log(`✅ Updated ${thesisType} thesis claims count: ${previousClaimsCount} → ${currentClaimCount}`);
+    if (previousConfidence !== syncedConfidence) {
+      console.log(`✅ Synced thesis confidence from articulation: ${previousConfidence ?? 'null'} → ${syncedConfidence}`);
+    }
     console.log(`ℹ️  Thesis status unchanged (lifecycle cascade owns status; ${signalsCreatedCount} signal(s) created this run)`);
 
     // Log articulation creation to journal
@@ -471,14 +504,100 @@ async function main() {
       skillInvoked: '/build-core-argument',
       previousState: {
         claimsCountAtLastArticulation: previousClaimsCount,
+        confidenceLevel: previousConfidence,
       },
       newState: {
         claimsCountAtLastArticulation: currentClaimCount,
+        confidenceLevel: syncedConfidence,
         hasArticulation: true,
       },
       source: 'skill',
     });
     console.log('✅ Journal entry created');
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 4b: Retire decision packets this re-underwrite incorporated (Gap 2 fix).
+  //
+  // relate-research raises a review_refuting_claim / confirm_claim_link packet when it
+  // links a claim. A subsequent re-underwrite that folds that claim into the living
+  // underwriting IS the human acting on it — so the packet must not re-surface in
+  // /decisions as if untouched (the gap that left TAO's 4 refuters open after v1 had
+  // already weighed them and landed at 'low').
+  //
+  // Matched on the COMPOSITE provenance key (source_insight_id, source_claim_id): the
+  // packet stores metadata.insightId + metadata.sourceClaimId, and source_claim_id alone
+  // ("claim-2") is a per-insight ordinal, NOT globally unique. Only packets whose claim is
+  // actually in claimIdsUsed are retired — a linked-but-unused refuter keeps its packet.
+  // Best-effort: failures here never break the already-committed articulation.
+  // -------------------------------------------------------------------------
+  const claimIdsUsed = articulation.claimIdsUsed ?? [];
+  if (thesis && claimIdsUsed.length > 0) {
+    try {
+      const usedClaims = await db
+        .select({ insightId: mainClaims.sourceInsightId, sourceClaimId: mainClaims.sourceClaimId })
+        .from(mainClaims)
+        .where(inArray(mainClaims.id, claimIdsUsed));
+      const usedKeys = new Set(
+        usedClaims
+          .map((c) => provenanceKey(c.insightId, c.sourceClaimId))
+          .filter((k): k is string => k !== null)
+      );
+
+      if (usedKeys.size > 0) {
+        const openPackets = await db
+          .select({ id: journalEntries.id, metadata: journalEntries.metadata })
+          .from(journalEntries)
+          .where(
+            and(
+              eq(journalEntries.objectId, thesisId),
+              eq(journalEntries.actionType, 'decision_required'),
+              eq(journalEntries.status, 'active')
+            )
+          );
+
+        let retired = 0;
+        for (const p of openPackets) {
+          const meta = (p.metadata ?? {}) as Record<string, unknown>;
+          const dtype = getDecisionPacket(meta)?.decision_type;
+          const insightId = meta.insightId as string | undefined;
+          const sourceClaimId = meta.sourceClaimId as string | undefined;
+          if (!isPacketIncorporated(dtype, insightId, sourceClaimId, usedKeys)) continue;
+
+          const resolution: DecisionResolution = {
+            action_taken: 'incorporated_into_articulation',
+            chosen_by: 'agent',
+            at: new Date().toISOString(),
+            notes: `Folded into articulation v${nextVersion} (confidence ${articulation.confidenceLevel}) by /build-core-argument re-underwrite.`,
+          };
+          // Mirror resolve-decision.ts: write resolution onto the packet (or the bare row).
+          const hasPacket = !!meta.decision && typeof meta.decision === 'object';
+          const target = (hasPacket ? meta.decision : meta) as Record<string, unknown>;
+          target.resolution = resolution;
+          await db
+            .update(journalEntries)
+            .set({ status: 'resolved', metadata: meta })
+            .where(eq(journalEntries.id, p.id));
+
+          await logToJournal({
+            objectType: thesisType === 'macro' ? 'macro_thesis' : 'asset_thesis',
+            objectId: thesisId,
+            objectTitle: thesis.title,
+            actionType: 'decision_resolved',
+            actionDescription: `Decision resolved: incorporated_into_articulation (${dtype})`,
+            rationale: `Claim folded into articulation v${nextVersion}; ${dtype} packet retired by re-underwrite.`,
+            source: 'automation',
+            metadata: { decisionType: dtype, articulationVersion: nextVersion, via: '/build-core-argument' },
+          });
+          retired++;
+        }
+        if (retired > 0) {
+          console.log(`✅ Retired ${retired} decision packet(s) incorporated into this re-underwrite (Gap 2)`);
+        }
+      }
+    } catch (e) {
+      console.warn(`⚠️  Decision-packet retirement skipped (non-fatal): ${(e as Error).message}`);
+    }
   }
 
   // Note: REVIEW_RECOMMENDED_SIGNALS triage creation removed.
