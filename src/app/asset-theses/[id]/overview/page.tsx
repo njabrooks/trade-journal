@@ -44,7 +44,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
     getCachedAssetThesisById(id),
     getMainClaimsWithSourcesForAssetThesis(id),
     getMacroThesesList(),
-    getStrategiesForList(1000, { assetThesisId: id }),
+    getStrategiesForList(1000, { assetThesisId: id, includeClosedStrategies: true }),
     getLatestArticulation(id, 'asset'),
     getActiveValidationPoints(id, 'asset'),
     getRelationshipsForEntity('asset_thesis', id),
@@ -91,7 +91,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
   // Legacy summary staleness calculations
   const newClaimsSinceSummary = currentClaimCount - (thesis.aiSummaryClaimCount ?? 0);
   const summaryDaysOld = thesis.aiSummaryGeneratedAt
-    ? Math.floor((Date.now() - new Date(thesis.aiSummaryGeneratedAt).getTime()) / (1000 * 60 * 60 * 24))
+    ? Math.max(0, Math.floor((new Date(thesis.updatedAt).getTime() - new Date(thesis.aiSummaryGeneratedAt).getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
 
   return (

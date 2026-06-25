@@ -39,6 +39,34 @@ function day(d: Date | string | null): string | null {
   return (typeof d === 'string' ? d : d.toISOString()).slice(0, 10);
 }
 
+function effectiveEpisodeOpenDay(
+  episode: RetrospectiveEpisode | undefined,
+  episodeOpenDay: string | null,
+  seriesOpenDay: string | null,
+): string | null {
+  // Backfilled or late-linked strategies can predate the first lifecycle cascade
+  // transition. For episode 1, include that already-linked performance history so a
+  // retrospective does not collapse to the day the cascade first noticed the expression.
+  if (episode?.episodeNo === 1 && episodeOpenDay && seriesOpenDay && seriesOpenDay < episodeOpenDay) {
+    return seriesOpenDay;
+  }
+  return episodeOpenDay;
+}
+
+function effectiveEpisodeCloseDay(
+  episodeCloseDay: string | null,
+  seriesCloseDay: string | null,
+): string | null {
+  // The lifecycle cascade can notice a closed expression after the final
+  // strategy snapshot/trade date. Retrospective windows should stop at the
+  // final performance point so duration and event overlays describe the hold,
+  // not the later bookkeeping transition.
+  if (episodeCloseDay && seriesCloseDay && seriesCloseDay < episodeCloseDay) {
+    return seriesCloseDay;
+  }
+  return episodeCloseDay;
+}
+
 export interface RetrospectiveItem {
   thesisId: string;
   thesisType: 'macro' | 'asset';
@@ -184,8 +212,14 @@ export async function gatherRetrospectiveContext(
   // Window (+ rebase) the P&L series to the episode when given; else the whole hold (legacy/no-episode).
   const seriesOpenDay = perf.combined.length > 0 ? perf.combined[0].date : null;
   const seriesCloseDay = perf.combined.length > 0 ? perf.combined[perf.combined.length - 1].date : null;
-  const openDay = episode ? day(episode.openedAt) : seriesOpenDay;
-  const closeDay = episode ? (episode.closedAt ? day(episode.closedAt) : null) : seriesCloseDay;
+  const episodeOpenDay = episode ? day(episode.openedAt) : null;
+  const openDay = episode
+    ? effectiveEpisodeOpenDay(episode, episodeOpenDay, seriesOpenDay)
+    : seriesOpenDay;
+  const episodeCloseDay = episode?.closedAt ? day(episode.closedAt) : null;
+  const closeDay = episode
+    ? effectiveEpisodeCloseDay(episodeCloseDay, seriesCloseDay)
+    : seriesCloseDay;
   const windowed = episode && openDay ? windowCombined(perf.combined, openDay, closeDay) : perf.combined;
   const excursion = computeExcursion(windowed);
 

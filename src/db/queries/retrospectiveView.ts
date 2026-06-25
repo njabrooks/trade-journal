@@ -75,6 +75,33 @@ function day(d: Date | string | null): string | null {
   return (typeof d === 'string' ? d : d.toISOString()).slice(0, 10);
 }
 
+function effectiveEpisodeOpenDay(
+  episodeNo: number | null | undefined,
+  episodeOpenDay: string | null,
+  seriesOpenDay: string | null,
+): string | null {
+  // Backfilled or late-linked strategies can predate the first lifecycle cascade
+  // transition. For episode 1, include that already-linked performance history so
+  // the resolved thesis page does not hide most of the real holding period.
+  if (episodeNo === 1 && episodeOpenDay && seriesOpenDay && seriesOpenDay < episodeOpenDay) {
+    return seriesOpenDay;
+  }
+  return episodeOpenDay;
+}
+
+function effectiveEpisodeCloseDay(
+  episodeCloseDay: string | null,
+  seriesCloseDay: string | null,
+): string | null {
+  // The lifecycle cascade can notice a closed expression after the final
+  // strategy snapshot/trade date. Stop the retrospective window at the final
+  // performance point so charts and duration describe the actual hold.
+  if (episodeCloseDay && seriesCloseDay && seriesCloseDay < episodeCloseDay) {
+    return seriesCloseDay;
+  }
+  return episodeCloseDay;
+}
+
 /** Snap an event date onto the combined series: nearest point with date ≤ event date (else the first). */
 function snapToSeries(
   eventDay: string,
@@ -424,17 +451,15 @@ export async function getRetrospectiveView(
   const primary = episodeRows.length > 0 ? episodeRows[episodeRows.length - 1] : null;
 
   // Window (+ rebase) the series to the primary episode; else the whole hold (legacy).
+  const seriesOpen = perf.combined.length > 0 ? perf.combined[0].date : null;
+  const seriesClose = perf.combined.length > 0 ? perf.combined[perf.combined.length - 1].date : null;
   const open = primary
-    ? day(primary.openedAt)
-    : perf.combined.length > 0
-      ? perf.combined[0].date
-      : day(base.createdAt);
+    ? effectiveEpisodeOpenDay(primary.episodeNo, day(primary.openedAt), seriesOpen)
+    : seriesOpen ?? day(base.createdAt);
   const close = primary
-    ? primary.closedAt
-      ? day(primary.closedAt)
-      : null
+    ? effectiveEpisodeCloseDay(primary.closedAt ? day(primary.closedAt) : null, seriesClose)
     : perf.combined.length > 0
-      ? perf.combined[perf.combined.length - 1].date
+      ? seriesClose
       : base.actualOutcomeDate ?? day(base.updatedAt);
   const combined = primary && open ? windowCombined(perf.combined, open, close) : perf.combined;
   const window: RetrospectiveWindow = { open, close };
