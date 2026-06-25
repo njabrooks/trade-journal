@@ -19,9 +19,10 @@
  * An absent surface (pure-Claude machine / no mirror) is skipped, not failed.
  *
  * Usage:
- *   npx tsx scripts/ops/check-codex-parity.ts          # human report
- *   npx tsx scripts/ops/check-codex-parity.ts --json   # structured (for hooks/CI)
- *   npx tsx scripts/ops/check-codex-parity.ts --nudge   # one line iff drift, silent when clean; exit 0 (SessionStart)
+ *   npx tsx scripts/ops/check-codex-parity.ts               # full report; gates on BOTH surfaces
+ *   npx tsx scripts/ops/check-codex-parity.ts --json        # structured (for CI)
+ *   npx tsx scripts/ops/check-codex-parity.ts --nudge        # one line iff drift, silent when clean; exit 0 (SessionStart)
+ *   npx tsx scripts/ops/check-codex-parity.ts --bridge-only  # gate ONLY on the bridge; mirror staleness = warning (pre-commit)
  */
 import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
@@ -134,6 +135,12 @@ function main() {
 
   const ok = bridgeOk && mirrorOk;
 
+  // --bridge-only: gate ONLY on the bridge — the rare, high-value "a NEW skill is invisible to
+  // interactive Codex" case. Mirror staleness becomes a non-blocking warning, so routine skill-body
+  // edits aren't taxed while the headless cron fallback is still "if and when". The pre-commit uses this.
+  const bridgeOnly = !!args['bridge-only'];
+  const gatingOk = bridgeOnly ? bridgeOk : ok;
+
   // --nudge: a SessionStart reminder — one line iff drift, silent when clean. Never fails (exit 0).
   if (args.nudge) {
     if (!ok) {
@@ -160,8 +167,10 @@ function main() {
         removedStillReferenced,
       } : null,
       mirror: mirrorFound ? { missing: mirrorMissing, stale: mirrorStale } : null,
+      bridgeOnly,
+      gatingOk,
     }, null, 2));
-    process.exit(ok ? 0 : 1);
+    process.exit(gatingOk ? 0 : 1);
   }
 
   console.log(`\n=== Codex ↔ Claude skill parity ===`);
@@ -193,7 +202,8 @@ function main() {
     const bits: string[] = [];
     if (mirrorMissing.length) bits.push(`${mirrorMissing.length} missing: ${mirrorMissing.join(', ')}`);
     if (mirrorStale.length) bits.push(`${mirrorStale.length} stale: ${mirrorStale.join(', ')}`);
-    console.log(`.agents/ mirror ............ ❌ ${bits.join('; ')}`);
+    // ⚠️ (non-gating) under --bridge-only, ❌ (gating) otherwise.
+    console.log(`.agents/ mirror ............ ${bridgeOnly ? '⚠️ ' : '❌'} ${bits.join('; ')}${bridgeOnly ? ' (warning — not gated)' : ''}`);
   }
 
   if (ok) {
@@ -201,6 +211,10 @@ function main() {
     if (bridgeFound && (workflowAbsent.length || skillAbsent.length)) {
       console.log(`   (ℹ️ curated-doc omissions above are informational — add routing if a skill warrants it.)`);
     }
+  } else if (gatingOk) {
+    // --bridge-only: bridge is clean; mirror drift is reported as a warning, not a failure.
+    console.log(`\n✅ Bridge in sync. ⚠️ Mirror drift is a warning here (--bridge-only), not a block.`);
+    console.log(`   Regenerate when convenient: npx tsx scripts/ops/generate-agents-mirror.ts && git add .agents`);
   } else {
     console.log(`\n✗ Drift detected:`);
     if (inventoryMissing.length) console.log(`   - add ${inventoryMissing.join(', ')} to the bridge references/claude-inventory.md`);
@@ -208,7 +222,7 @@ function main() {
     if (filesMissing.length) console.log(`   - restore the missing bridge file(s) above`);
     if (mirrorMissing.length || mirrorStale.length) console.log(`   - regenerate the mirror: npx tsx scripts/ops/generate-agents-mirror.ts`);
   }
-  process.exit(ok ? 0 : 1);
+  process.exit(gatingOk ? 0 : 1);
 }
 
 main();

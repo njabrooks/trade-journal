@@ -11,13 +11,16 @@
 # commits are untouched. Applies to whoever commits in this tree — Claude or Codex.
 # Bypass (not recommended): git commit --no-verify
 
+# --bridge-only: block ONLY when a NEW skill is missing from the interactive bridge inventory (rare,
+# and a genuine interactive-Codex capability loss). Headless-mirror staleness prints as a warning but
+# does NOT block — routine skill-body edits shouldn't be taxed while the Codex cron fallback is "if and
+# when". Regenerate the mirror at your leisure (or before relying on Codex for cron): generate-agents-mirror.ts.
 if git diff --cached --name-only --diff-filter=ACMRD | grep -qE '^\.claude/skills/|^\.agents/skills/'; then
-  echo "[pre-commit] Codex skill surface changed — checking parity…"
-  if ! npx tsx scripts/ops/check-codex-parity.ts; then
+  echo "[pre-commit] Codex skill surface changed — checking bridge parity…"
+  if ! npx tsx scripts/ops/check-codex-parity.ts --bridge-only; then
     echo ""
-    echo "[pre-commit] ✗ Codex skill surfaces are out of sync (see report above)."
-    echo "             Bridge inventory: edit ~/.codex/skills/trade-journal-workflows/references/claude-inventory.md"
-    echo "             Headless mirror : npx tsx scripts/ops/generate-agents-mirror.ts && git add .agents"
+    echo "[pre-commit] ✗ A skill is missing from the interactive Codex bridge (see report above)."
+    echo "             Add it to ~/.codex/skills/trade-journal-workflows/references/claude-inventory.md"
     echo "             Bypass (not recommended): git commit --no-verify"
     exit 1
   fi
