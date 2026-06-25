@@ -94,7 +94,7 @@ export interface DecisionPacket {
 export const DECISION_RUNBOOKS: Record<DecisionType, string> = {
   confirm_claim_link: '/relate-research',
   review_refuting_claim: '/relate-research',
-  cluster_claims_to_thesis: '/relate-research',
+  cluster_claims_to_thesis: '/thesis-review macro-emergence',
   classify_exposure: 'update-entity-status',
   resolve_proxy_underlying: 'create-underlying + parent_underlying_id',
   develop_thin_thesis: '/thesis-review research-gap',

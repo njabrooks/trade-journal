@@ -10,6 +10,7 @@ import { and, eq, isNull, isNotNull, gte, lte, sql, ne, desc, inArray } from 'dr
 import { populateStrategyEntryContext, recomputeStrategyStatus } from '@/lib/services/strategies';
 import { logToJournal } from '@/lib/workflow/lifecycleDetection';
 import { cascadeThesisStatuses } from '@/lib/derived/thesisCascade';
+import { syncEpisodesForTransitions } from '@/lib/derived/thesisEpisodes';
 import { ensureAssetThesesForStrategies } from '@/lib/derived/strategyThesisLink';
 import { isAbandonedAutoShell, AUTO_CLEANED_EMPTY_SOURCE, STRATEGY_RECENCY_WINDOW_DAYS } from '@/lib/services/strategyStatus';
 
@@ -1180,7 +1181,10 @@ async function recomputeAccountStrategyStatuses(accountId: string): Promise<void
       console.error('Strategy→thesis auto-link failed:', error);
     }
     try {
-      await cascadeThesisStatuses({ source: 'automation' });
+      const cascade = await cascadeThesisStatuses({ source: 'automation' });
+      // Keep expression episodes in step with the transitions the cascade just journaled
+      // (docs/v2/13 §2 — episodic performance). Only the theses that actually moved.
+      await syncEpisodesForTransitions(cascade.transitions);
     } catch (error) {
       console.error('Thesis status cascade failed:', error);
     }

@@ -22,13 +22,16 @@
  */
 import * as fs from 'fs';
 import { db, closeDb, schema, logToJournal } from './lib/db.js';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, desc, isNull, isNotNull } from 'drizzle-orm';
 
-const { macroTheses, assetTheses, signals: signalsTable, signalEntityLinks } = schema;
+const { macroTheses, assetTheses, signals: signalsTable, signalEntityLinks, thesisExpressionEpisodes } = schema;
 
 interface Input {
   thesisId: string;
   thesisType: 'macro' | 'asset';
+  /** Which expression episode this retrospective is for (from the worklist). Defaults to the
+   *  latest closed episode still awaiting one. (docs/v2/13 §2 — episodic performance.) */
+  episodeNo?: number;
   outcome?: string;
   headline: string;
   narrative: string;
@@ -109,7 +112,43 @@ async function main() {
     source: 'automation',
   });
 
-  console.log(JSON.stringify({ thesis: thesis.title, status: thesis.status, outcome: input.outcome ?? null, executionQuality: input.executionQuality ?? null, supersededSignals, journalId }, null, 2));
+  // 4. Record the per-episode retrospective on the expression episode (docs/v2/13 §2).
+  // Resolve the episode: the input's episodeNo, else the latest closed episode still awaiting one.
+  let episodeNo = input.episodeNo ?? null;
+  if (episodeNo == null) {
+    const [ep] = await db
+      .select({ episodeNo: thesisExpressionEpisodes.episodeNo })
+      .from(thesisExpressionEpisodes)
+      .where(and(
+        eq(thesisExpressionEpisodes.thesisId, thesisId),
+        eq(thesisExpressionEpisodes.thesisType, thesisType),
+        isNotNull(thesisExpressionEpisodes.closedAt),
+        isNull(thesisExpressionEpisodes.retrospectiveAt),
+      ))
+      .orderBy(desc(thesisExpressionEpisodes.closedAt))
+      .limit(1);
+    episodeNo = ep?.episodeNo ?? null;
+  }
+  let episodeRecorded = false;
+  if (episodeNo != null) {
+    const epSet: Record<string, unknown> = { outcomeNotes: narrative, retrospectiveAt: now, updatedAt: now };
+    if (input.outcome) epSet.outcome = input.outcome;
+    if (input.executionQuality) epSet.executionQuality = input.executionQuality;
+    if (input.excursion || input.executionQuality) {
+      epSet.retrospectiveMetrics = { ...(input.excursion ?? {}), executionQuality: input.executionQuality ?? null };
+    }
+    await db
+      .update(thesisExpressionEpisodes)
+      .set(epSet)
+      .where(and(
+        eq(thesisExpressionEpisodes.thesisId, thesisId),
+        eq(thesisExpressionEpisodes.thesisType, thesisType),
+        eq(thesisExpressionEpisodes.episodeNo, episodeNo),
+      ));
+    episodeRecorded = true;
+  }
+
+  console.log(JSON.stringify({ thesis: thesis.title, status: thesis.status, outcome: input.outcome ?? null, executionQuality: input.executionQuality ?? null, episodeNo, episodeRecorded, supersededSignals, journalId }, null, 2));
   await closeDb();
   process.exit(0);
 }

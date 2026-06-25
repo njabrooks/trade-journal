@@ -27,15 +27,16 @@ import {
   advisorRecommendations,
   journalEntries,
   assetThesisRelatedMacroTheses,
+  thesisExpressionEpisodes,
 } from '@/db/schema';
-import { and, eq, ne, inArray, isNotNull, desc, sql } from 'drizzle-orm';
+import { and, eq, ne, inArray, isNotNull, asc, desc, sql } from 'drizzle-orm';
 import {
   getAssetThesisPerformance,
   getMacroThesisPerformance,
   type ThesisPerformance,
 } from '@/db/queries/thesisPerformance';
 import { getArticulationHistory } from '@/db/queries/thesisSynthesis';
-import { computeExcursion, type Excursion } from '@/lib/derived/retrospectiveExcursion';
+import { computeExcursion, windowCombined, type Excursion, type RetrospectiveMetrics } from '@/lib/derived/retrospectiveExcursion';
 
 export type RetrospectiveEventKind =
   | 'open'
@@ -330,6 +331,19 @@ export interface RetrospectiveContributor {
   kind: 'strategy' | 'asset_thesis';
 }
 
+/** A prior (non-latest) closed episode — the collapsible history under the primary retrospective. */
+export interface RetrospectiveEpisodeSummary {
+  episodeNo: number;
+  openedAt: string | null;
+  closedAt: string | null;
+  closingStatus: string | null;
+  outcome: string | null;
+  executionQuality: string | null;
+  /** frozen excursion metrics for the mini display (from the episode's retrospective_metrics) */
+  metrics: RetrospectiveMetrics | null;
+  retrospectiveAt: string | null;
+}
+
 export interface RetrospectiveView {
   thesis: {
     id: string;
@@ -352,6 +366,10 @@ export interface RetrospectiveView {
   headline: string | null;
   retrospectiveAt: string | null;
   window: RetrospectiveWindow;
+  /** which expression episode the primary view is scoped to (null = legacy whole-life / no episodes) */
+  episodeNo: number | null;
+  /** prior closed episodes (episodeNo < primary), most-recent first — the collapsible history */
+  priorEpisodes: RetrospectiveEpisodeSummary[];
 }
 
 /** Everything the per-thesis RetrospectivePanel needs. Returns null if the thesis isn't found. */
@@ -362,15 +380,14 @@ export async function getRetrospectiveView(
   const base = await loadThesisBase(thesisId, thesisType);
   if (!base) return null;
 
-  // Per-thesis perf + the attribution breakdown. Asset → per-strategy; macro →
-  // per-linked-asset-thesis (full-credit exposure view, D8). This answers "which leg
-  // carried the bulk of the gains/losses" at a level the macro is otherwise removed from.
+  // Per-thesis perf + the attribution legs. Asset → per-strategy; macro →
+  // per-linked-asset-thesis (full-credit exposure view, D8).
   let perf: ThesisPerformance;
-  let rawContributors: Array<{ label: string; ticker: string | null; finalCumulative: number; kind: 'strategy' | 'asset_thesis' }>;
+  let lifetimeContributors: Array<{ label: string; ticker: string | null; finalCumulative: number; kind: 'strategy' | 'asset_thesis' }>;
   if (thesisType === 'macro') {
     const mp = await getMacroThesisPerformance(thesisId);
     perf = mp;
-    rawContributors = mp.assetTheses.map((a) => ({
+    lifetimeContributors = mp.assetTheses.map((a) => ({
       label: a.title ?? a.ticker ?? 'asset thesis',
       ticker: a.ticker,
       finalCumulative: a.latestCumulative,
@@ -378,32 +395,78 @@ export async function getRetrospectiveView(
     }));
   } else {
     perf = await getAssetThesisPerformance(thesisId);
-    rawContributors = perf.strategies.map((s) => ({
+    lifetimeContributors = perf.strategies.map((s) => ({
       label: s.strategyKey ?? s.strategyId.slice(0, 8),
       ticker: null,
       finalCumulative: s.latest?.cumulative ?? 0,
       kind: 'strategy' as const,
     }));
   }
+
+  // Expression episodes: the primary retrospective is the LATEST episode; earlier closed
+  // episodes become the collapsible history. A thesis with no cascade trail (legacy) has no
+  // episodes → fall back to the whole-life view (docs/v2/13 §2).
+  const episodeRows = await db
+    .select({
+      episodeNo: thesisExpressionEpisodes.episodeNo,
+      openedAt: thesisExpressionEpisodes.openedAt,
+      closedAt: thesisExpressionEpisodes.closedAt,
+      closingStatus: thesisExpressionEpisodes.closingStatus,
+      outcome: thesisExpressionEpisodes.outcome,
+      outcomeNotes: thesisExpressionEpisodes.outcomeNotes,
+      executionQuality: thesisExpressionEpisodes.executionQuality,
+      retrospectiveMetrics: thesisExpressionEpisodes.retrospectiveMetrics,
+      retrospectiveAt: thesisExpressionEpisodes.retrospectiveAt,
+    })
+    .from(thesisExpressionEpisodes)
+    .where(and(eq(thesisExpressionEpisodes.thesisId, thesisId), eq(thesisExpressionEpisodes.thesisType, thesisType)))
+    .orderBy(asc(thesisExpressionEpisodes.episodeNo));
+  const primary = episodeRows.length > 0 ? episodeRows[episodeRows.length - 1] : null;
+
+  // Window (+ rebase) the series to the primary episode; else the whole hold (legacy).
+  const open = primary
+    ? day(primary.openedAt)
+    : perf.combined.length > 0
+      ? perf.combined[0].date
+      : day(base.createdAt);
+  const close = primary
+    ? primary.closedAt
+      ? day(primary.closedAt)
+      : null
+    : perf.combined.length > 0
+      ? perf.combined[perf.combined.length - 1].date
+      : base.actualOutcomeDate ?? day(base.updatedAt);
+  const combined = primary && open ? windowCombined(perf.combined, open, close) : perf.combined;
+  const window: RetrospectiveWindow = { open, close };
+
+  const excursion = computeExcursion(combined);
+
+  // Contributors — windowed per-strategy for an asset episode (each leg's own rebased
+  // contribution); lifetime otherwise (macro exposure view / legacy no-episode).
+  let rawContributors = lifetimeContributors;
+  if (primary && open && thesisType === 'asset') {
+    rawContributors = perf.strategies.map((s) => {
+      const pts = s.points
+        .filter((p) => p.cumulative != null)
+        .map((p) => ({ date: p.date, cumulative: p.cumulative as number }));
+      const w = windowCombined(pts, open, close);
+      return {
+        label: s.strategyKey ?? s.strategyId.slice(0, 8),
+        ticker: null as string | null,
+        finalCumulative: w.length > 0 ? w[w.length - 1].cumulative : 0,
+        kind: 'strategy' as const,
+      };
+    });
+  }
   const gross = rawContributors.reduce((sum, c) => sum + Math.abs(c.finalCumulative), 0);
   const contributors: RetrospectiveContributor[] = rawContributors
     .map((c) => ({ ...c, pctOfGross: gross > 0 ? Math.round((100 * Math.abs(c.finalCumulative)) / gross) : 0 }))
     .sort((a, b) => Math.abs(b.finalCumulative) - Math.abs(a.finalCumulative));
 
-  const excursion = computeExcursion(perf.combined);
+  const events = await assembleRetrospectiveEvents(thesisId, thesisType, window, combined);
 
-  // Window = the hold (series ends); fall back to thesis lifecycle dates when never expressed.
-  const open =
-    perf.combined.length > 0 ? perf.combined[0].date : day(base.createdAt);
-  const close =
-    perf.combined.length > 0
-      ? perf.combined[perf.combined.length - 1].date
-      : base.actualOutcomeDate ?? day(base.updatedAt);
-  const window: RetrospectiveWindow = { open, close };
-
-  const events = await assembleRetrospectiveEvents(thesisId, thesisType, window, perf.combined);
-
-  // Narrative from the retrospective journal entry (record-retrospective writes both).
+  // Verdict + narrative: from the primary episode when present; else thesis-level + the latest
+  // retrospective journal entry (legacy / no-episode). The journal carries the headline.
   const [retro] = await db
     .select({
       headline: journalEntries.actionDescription,
@@ -415,7 +478,27 @@ export async function getRetrospectiveView(
     .orderBy(desc(journalEntries.timestamp))
     .limit(1);
 
-  const metrics = (base.retrospectiveMetrics ?? null) as Record<string, unknown> | null;
+  const metrics = (primary ? primary.retrospectiveMetrics : base.retrospectiveMetrics) as RetrospectiveMetrics | null;
+  const outcome = primary?.outcome ?? base.outcome;
+  const executionQuality = (primary?.executionQuality ?? metrics?.executionQuality) ?? null;
+  const narrative = primary?.outcomeNotes ?? retro?.rationale ?? base.outcomeNotes ?? null;
+  const retrospectiveAt = primary?.retrospectiveAt ? day(primary.retrospectiveAt) : retro ? day(retro.timestamp) : null;
+
+  const priorEpisodes: RetrospectiveEpisodeSummary[] = primary
+    ? episodeRows
+        .filter((e) => e.episodeNo !== primary.episodeNo && e.closedAt != null)
+        .sort((a, b) => b.episodeNo - a.episodeNo)
+        .map((e) => ({
+          episodeNo: e.episodeNo,
+          openedAt: day(e.openedAt),
+          closedAt: day(e.closedAt),
+          closingStatus: e.closingStatus,
+          outcome: e.outcome,
+          executionQuality: e.executionQuality,
+          metrics: (e.retrospectiveMetrics as RetrospectiveMetrics | null) ?? null,
+          retrospectiveAt: e.retrospectiveAt ? day(e.retrospectiveAt) : null,
+        }))
+    : [];
 
   return {
     thesis: {
@@ -425,17 +508,19 @@ export async function getRetrospectiveView(
       ticker: base.ticker,
       status: base.status,
       direction: base.direction,
-      outcome: base.outcome,
+      outcome,
     },
     excursion,
-    combined: perf.combined,
+    combined,
     events,
     contributors,
-    executionQuality: (metrics?.executionQuality as string | undefined) ?? null,
-    narrative: retro?.rationale ?? base.outcomeNotes ?? null,
+    executionQuality,
+    narrative,
     headline: retro?.headline ?? null,
-    retrospectiveAt: retro ? day(retro.timestamp) : null,
+    retrospectiveAt,
     window,
+    episodeNo: primary?.episodeNo ?? null,
+    priorEpisodes,
   };
 }
 

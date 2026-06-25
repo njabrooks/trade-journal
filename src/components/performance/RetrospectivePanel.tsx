@@ -99,6 +99,16 @@ export function RetrospectivePanel({ view }: { view: RetrospectiveView }) {
         </span>
       </div>
 
+      {view.priorEpisodes.length > 0 && view.episodeNo != null && (
+        <p className="text-xs text-muted-foreground">
+          Latest of {view.priorEpisodes.length + 1} holding periods — episode {view.episodeNo}
+          {view.window.open && view.window.close
+            ? ` (${formatDateShort(view.window.open)} → ${formatDateShort(view.window.close)})`
+            : ''}
+          .
+        </p>
+      )}
+
       <p className="text-sm text-muted-foreground">{summary}</p>
 
       {/* Excursion metrics */}
@@ -211,6 +221,53 @@ export function RetrospectivePanel({ view }: { view: RetrospectiveView }) {
             </p>
           )}
         </div>
+      )}
+
+      {/* Prior episodes — earlier holding periods, each its own two-axis verdict + mini excursion */}
+      {view.priorEpisodes.length > 0 && (
+        <details className="rounded-2xl border bg-card p-4 shadow-sm">
+          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Prior episodes ({view.priorEpisodes.length}) — earlier holding periods
+          </summary>
+          <div className="mt-3 flex flex-col gap-3">
+            {view.priorEpisodes.map((ep) => (
+              <div
+                key={ep.episodeNo}
+                className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border/60 pb-3 last:border-0 last:pb-0"
+              >
+                <span className="font-mono text-xs text-muted-foreground">
+                  ep{ep.episodeNo}
+                  {ep.openedAt && ep.closedAt
+                    ? ` ${formatDateShort(ep.openedAt)}→${formatDateShort(ep.closedAt)}`
+                    : ''}
+                </span>
+                {ep.outcome ? (
+                  <BeliefBadge outcome={ep.outcome} />
+                ) : (
+                  <span className="text-xs text-muted-foreground">belief unjudged</span>
+                )}
+                {ep.executionQuality ? (
+                  <ExecutionBadge quality={ep.executionQuality} />
+                ) : (
+                  <span className="text-xs text-muted-foreground">unrated</span>
+                )}
+                {ep.metrics && (
+                  <span className="ml-auto flex items-center gap-3 font-mono text-xs tabular-nums">
+                    <span className={pnlClass(ep.metrics.finalCumulative)}>
+                      {formatCurrency(ep.metrics.finalCumulative)}
+                    </span>
+                    <span className="text-muted-foreground">peak {formatCurrency(ep.metrics.mfe)}</span>
+                    {ep.metrics.captureRatio != null && (
+                      <span className="text-muted-foreground">
+                        {Math.round(ep.metrics.captureRatio * 100)}% captured
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
       )}
     </div>
   );

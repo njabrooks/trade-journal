@@ -195,6 +195,48 @@ export type AssetThesis = typeof assetTheses.$inferSelect;
 export type NewAssetThesis = typeof assetTheses.$inferInsert;
 
 // ============================================================================
+// Thesis Expression Episodes (docs/v2/13 §2 — episodic performance)
+// ============================================================================
+// Each contiguous `monitoring` span of a thesis is an episode. Performance and
+// retrospectives key on episodes (not the whole lifetime), so a thesis that closes
+// and re-expresses later gets a fresh retrospective per holding period. Boundaries
+// are derived from the status_change journal trail (src/lib/derived/thesisEpisodeRules)
+// and synced after the lifecycle cascade. thesis_type is 'macro' | 'asset' (matching
+// signal_entity_links / the query layer), NOT the journal's 'macro_thesis' form.
+export const thesisExpressionEpisodes = pgTable(
+  'thesis_expression_episodes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    thesisId: uuid('thesis_id').notNull(),
+    thesisType: text('thesis_type').notNull(), // 'macro' | 'asset'
+    episodeNo: integer('episode_no').notNull(), // 1-based, chronological
+    openedAt: timestamp('opened_at', { withTimezone: true }).notNull(), // entered monitoring
+    closedAt: timestamp('closed_at', { withTimezone: true }), // left monitoring into a closing status; null = open
+    closingStatus: text('closing_status'), // 'closed' | 'complete' | 'rejected' | null (open)
+
+    // Per-episode retrospective (frozen at close; written by record-retrospective, E2).
+    // retrospectiveMetrics mirrors the thesis-level shape so the UI panel/card consume an
+    // episode unchanged: { mfe, mfeDate, mae, maeDate, finalCumulative, captureRatio,
+    //   giveBackFromPeak, neverInProfit, neverUnderwater, confidence, executionQuality }
+    retrospectiveMetrics: jsonb('retrospective_metrics'),
+    outcome: text('outcome'), // 'validated' | 'invalidated' | 'partial' | ...
+    outcomeNotes: text('outcome_notes'),
+    executionQuality: text('execution_quality'), // denormalized for querying; also inside metrics
+    retrospectiveAt: timestamp('retrospective_at', { withTimezone: true }), // recorded-at; null = closed episode still needs one
+
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    thesisIdx: index('idx_tee_thesis').on(table.thesisId, table.thesisType),
+    episodeUnique: uniqueIndex('uq_tee_thesis_episode').on(table.thesisId, table.thesisType, table.episodeNo),
+  })
+);
+
+export type ThesisExpressionEpisode = typeof thesisExpressionEpisodes.$inferSelect;
+export type NewThesisExpressionEpisode = typeof thesisExpressionEpisodes.$inferInsert;
+
+// ============================================================================
 // Asset Thesis Related Macro Theses (Junction Table)
 // ============================================================================
 

@@ -382,19 +382,24 @@ Auto, no confirm.
 ```bash
 npx tsx scripts/ops/find-theses-needing-retrospective.ts --json
 ```
+Each item is a **closed expression episode** — `episodeNo` plus the `openedAt`/`closedAt`
+window. A thesis that held, closed, and later re-expressed surfaces once **per holding
+period**, so write each episode's retrospective on its own.
 
 **Step 2 — Inputs**
 ```bash
-npx tsx scripts/ops/find-theses-needing-retrospective.ts --context <thesisId> --type <asset|macro>
+npx tsx scripts/ops/find-theses-needing-retrospective.ts --context <thesisId> --type <asset|macro> --episode <episodeNo>
 ```
-Returns the thesis (direction, status, outcome, opened/closed, durationDays), the
+Returns the thesis (direction, status, outcome, the episode's opened/closed window, durationDays), the
 final `performance` (latestCumulative / realized / unrealized P&L + confidence),
 the **`excursion`** (execution axis: `mfe`/`mfeDate` = peak, `mae`/`maeDate` = trough,
 `captureRatio` = final/peak, `giveBackFromPeak`, `neverInProfit`, `neverUnderwater`,
 `confidence`), the **`events`** (the process timeline aligned to the curve — signal
 verdict flips, advisor recs + whether taken, re-underwrites/conviction, decisions),
 the `coreArgument` (the belief at the end), the final `signalsByStatus` tally, and
-the `journalEntryCount`.
+the `journalEntryCount`. **All P&L — `performance`, `excursion`, and the chart anchors in
+`events` — is windowed and rebased to this episode**, so a re-expressed thesis is judged on
+the holding period at hand, not its glued lifetime.
 
 **Step 3 — Write the retrospective.** A tight narrative on the **two axes** — keep
 them separate; a right call can be poorly executed and vice versa:
@@ -419,15 +424,16 @@ they are a view, not truth.
 **Step 4 — Record:** pass `executionQuality` plus the `excursion` object verbatim from
 the Step 2 context (the writer freezes it into `retrospective_metrics`):
 ```bash
-echo '{"thesisId":"<id>","thesisType":"<type>","outcome":"validated|invalidated|partial",
+echo '{"thesisId":"<id>","thesisType":"<type>","episodeNo":<episodeNo>,"outcome":"validated|invalidated|partial",
   "executionQuality":"excellent|good|fair|poor",
   "excursion": <the excursion object from --context>,
   "headline":"<one-line: belief verdict + execution verdict + P&L>","narrative":"<the writeup>"}' \
   | npx tsx scripts/record-retrospective.ts --stdin
 ```
-The writer appends the `retrospective` journal entry, sets `outcome`/`outcome_notes`
-(surfaced by the `/performance` RetrospectiveCard) + `actual_outcome_date`, freezes
-`retrospective_metrics` (excursion + `executionQuality`, badged on the card + the
+The writer records the retrospective on the **expression episode** (`episodeNo`) — its own
+`retrospective_metrics`/`outcome`/`executionQuality` + `retrospective_at` — appends the
+`retrospective` journal entry, mirrors `outcome`/`outcome_notes`/`actual_outcome_date` +
+`retrospective_metrics` to the thesis (badged on the `/performance` RetrospectiveCard + the
 per-thesis RetrospectivePanel), and supersedes any still-active signals → `complete`.
 
 **Step 5 — Report:** `title — belief <outcome> / execution <executionQuality>, <P&L> (captured X% of peak) over <Nd>; N signals closed`.
@@ -513,3 +519,82 @@ The decision is resolved later by `resolve-decision.ts` (`--action set_related|s
 2. ❌ Forcing a framing for topical overlap — an asset thesis may stand alone; skip it.
 3. ❌ Raising a decision for a clear high-confidence `related` — just auto-link it.
 4. ❌ Changing thesis status or touching claims/signals (framing only writes the asset↔macro junction).
+
+---
+
+## Mode: Macro emergence (docs/v2/13 §1)
+
+The complement to framing. Framing links an asset to an **existing** macro; emergence proposes
+a **new** macro when SEVERAL unframed assets share a genuine macro-level theme and no active
+macro covers it — exactly where framing's "nothing fits" tail leaves off. **Creating a belief
+is always a decision** (§4 lean ③): this mode NEVER auto-creates a macro — it raises a
+`cluster_claims_to_thesis` packet and the user accepts.
+
+### Scope rules
+1. **Dedup against the catalog first** — if an active macro already fits the cluster, that's
+   *framing's* job (link the assets to it), NOT a new macro. Only propose NEW when nothing fits.
+2. **A cluster is ≥2 unframed assets** sharing a coherent macro driver — not topical overlap.
+   A lone unframed asset stands alone.
+3. **Be sparing** — cap at ~5 proposals; most assets belong to 0–1 existing macros or stand
+   alone. Quality over coverage (same discipline as framing).
+4. **Never auto-create / never change status** — raise the decision; the cascade promotes
+   status once the macro exists and the assets link.
+
+### Workflow
+
+**Step 1 — Pool**
+```bash
+npx tsx scripts/ops/find-emergent-macros.ts --json
+```
+Returns `{ unframedAssets[] (title/description/direction/ticker/claimTitles), macroCatalog[] }`.
+
+**Step 2 — Judge clusters.** Group the unframed assets by genuine shared macro theme (read
+titles/descriptions/claimTitles/direction). For each candidate, **check `macroCatalog`**: if an
+active macro already covers the theme → SKIP (those assets are a *framing* job). Keep only
+clusters where nothing fits. Name the would-be macro, its `thesis_type` (secular | cyclical |
+structural), and direction.
+
+**Step 3 — Raise one decision per genuine cluster** (anchor it on one member asset):
+```bash
+echo '{
+  "objectType": "asset_thesis", "objectId": "<anchor member asset id>", "objectTitle": "<anchor title>",
+  "title": "Emergent macro: \"<proposed title>\" — <N> assets (<TICKERS>)",
+  "decisionType": "cluster_claims_to_thesis",
+  "whyRaised": "<N> active assets (<tickers>) share <theme>; no active macro covers it",
+  "relatedObjects": [
+    {"type": "asset_thesis", "id": "<memberId>", "title": "<title>", "role": "member"}
+  ],
+  "evidenceContext": {
+    "thesisKind": "macro",
+    "proposed": {"title": "<...>", "description": "<the umbrella argument>", "direction": "bullish|bearish|neutral", "thesisType": "secular|cyclical|structural", "confidence": "low|medium|high"},
+    "memberAssetThesisIds": ["<id>", "<id>"],
+    "whyNoExistingMacro": "<which catalog macros are closest and why none fits>"
+  },
+  "recommendedActions": [
+    {"action": "create_macro", "label": "Create macro & frame these assets"},
+    {"action": "dismiss", "label": "No shared macro"}
+  ],
+  "defaultRecommendation": {"action": "create_macro", "confidence": "medium"}
+}' | npx tsx scripts/ops/raise-decision.ts --stdin
+```
+(One `relatedObjects` entry **per member**; list every member id in `memberAssetThesisIds`.)
+
+**Step 4 — On accept (resolve).** Create the macro, then resolve — the resolver links every
+member from the packet to the new macro (`related`), and the cascade promotes status:
+```bash
+npx tsx scripts/ops/create-macro-thesis.ts --title "<proposed title>" --description "<...>" \
+  --thesis-type <secular|cyclical|structural> --direction <dir> --confidence <c>
+# → { id: <macroId> }
+npx tsx scripts/ops/resolve-decision.ts --id <decisionId> --action create_macro --macro-id <macroId> \
+  --notes "created macro, framed <N> assets as related"
+```
+Dismiss → `resolve-decision --id <decisionId> --action dismiss` (no-op; assets stay unframed).
+
+**Step 5 — Report** per cluster: `proposed "<title>" (<N> assets) — decision raised | created macro <id> + framed N | dismissed`.
+
+### Common mistakes (macro-emergence mode)
+1. ❌ Proposing a macro for a theme an existing macro already covers — dedup against `macroCatalog`; that's framing, not emergence.
+2. ❌ Proposing from a single asset — a cluster is ≥2; a lone unframed asset stands alone.
+3. ❌ Auto-creating the macro — creating a belief is ALWAYS the user's decision; raise the packet.
+4. ❌ Topical clusters ("both are tech") — require a genuine shared driver (a secular/cyclical/structural force).
+5. ❌ Changing thesis status — the cascade promotes once the macro exists and assets link.

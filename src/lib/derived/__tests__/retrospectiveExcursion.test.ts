@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeExcursion, type ExcursionPoint } from '../retrospectiveExcursion';
+import { computeExcursion, windowCombined, type ExcursionPoint } from '../retrospectiveExcursion';
 
 const pt = (date: string, cumulative: number, confidence?: ExcursionPoint['confidence']): ExcursionPoint => ({
   date,
@@ -122,5 +122,47 @@ describe('computeExcursion', () => {
   it('defaults missing per-point confidence to full', () => {
     const e = computeExcursion([pt('a', 1), pt('b', 2)]);
     expect(e.confidence).toBe('full');
+  });
+});
+
+describe('windowCombined (episode rebasing)', () => {
+  it('episode 1 (no carry-in) returns the slice unchanged', () => {
+    const s = [pt('d1', 0), pt('d2', 5), pt('d3', 3)];
+    expect(windowCombined(s, 'd1', 'd3')).toEqual(s);
+  });
+
+  it('rebases a later episode by the carry-in (cumulative before the window)', () => {
+    // episode 1 banks +10 (d1..d3); episode 2 (d4..d7) reads 10→12→9→11 inception-to-date.
+    const s = [
+      pt('d1', 0), pt('d2', 7), pt('d3', 10),
+      pt('d4', 10), pt('d5', 12), pt('d6', 9), pt('d7', 11),
+    ];
+    expect(windowCombined(s, 'd4', 'd7').map((p) => [p.date, p.cumulative])).toEqual([
+      ['d4', 0], ['d5', 2], ['d6', -1], ['d7', 1],
+    ]);
+  });
+
+  it("the rebased window measures the episode's OWN excursion, not the glued lifetime", () => {
+    const s = [
+      pt('d1', 0), pt('d2', 10), // episode 1: +10 banked
+      pt('d3', 10), pt('d4', 12), pt('d5', 11), // episode 2: peaks +2, closes +1
+    ];
+    const raw = computeExcursion(s.slice(2)); // naive slice — still carries the +10
+    const rebased = computeExcursion(windowCombined(s, 'd3', 'd5'));
+    expect(raw.captureRatio).toBeCloseTo(11 / 12, 3); // wrong: dominated by episode 1
+    expect(rebased.mfe).toBe(2);
+    expect(rebased.finalCumulative).toBe(1);
+    expect(rebased.captureRatio).toBe(0.5); // right: episode 2 captured half its own peak
+  });
+
+  it('open episode (null close) takes everything from openDay onward, rebased', () => {
+    const s = [pt('d1', 0), pt('d2', 6), pt('d3', 6), pt('d4', 10)]; // banked 6 by d2; episode opens d3
+    expect(windowCombined(s, 'd3', null).map((p) => [p.date, p.cumulative])).toEqual([
+      ['d3', 0], ['d4', 4],
+    ]);
+  });
+
+  it('returns empty when the window excludes all points', () => {
+    expect(windowCombined([pt('d1', 1), pt('d2', 2)], 'd5', 'd9')).toEqual([]);
   });
 });

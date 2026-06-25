@@ -8,13 +8,16 @@
  * 'decision_resolved' audit entry.
  *
  * BUILT-IN MECHANICAL WRITES — safe, self-contained FK/junction writes that have no
- * other canonical setter — for three decision_types:
+ * other canonical setter — for four decision_types:
  *   - classify_macro_link / frame_asset_under_macro → asset_thesis_related_macro_theses
  *   - link_strategy_to_thesis                       → strategies.asset_thesis_id
  *   - resolve_proxy_underlying                       → underlyings.parent_underlying_id
+ *   - cluster_claims_to_thesis (create_macro)        → asset_thesis_related_macro_theses
+ *       (member-asset links for a just-created emergent macro; the macro itself is made by
+ *        the agent via create-macro-thesis, then its id passed in --macro-id)
  *
  * Everything else (develop_thin_thesis, run_deep_dive, review_refuting_claim,
- * cluster_claims_to_thesis, weakening_signal_action, classify_exposure, confirm_claim_link)
+ * weakening_signal_action, classify_exposure, confirm_claim_link)
  * is DELEGATED: the agent does the real write in the relevant skill — and STATUS changes
  * go through scripts/ops/update-entity-status.ts (the validated transition path) — then
  * calls this with --action + --writes to close + record. This script never reimplements a
@@ -154,6 +157,24 @@ async function runHandler(
       await db.update(underlyings).set({ parentUnderlyingId: input.parentId }).where(eq(underlyings.id, underlyingId));
     }
     return [{ table: 'underlyings', op: 'update', ids: [underlyingId] }];
+  }
+
+  if (type === 'cluster_claims_to_thesis' && action === 'create_macro') {
+    // Emergent macro accepted (docs/v2/13 §1c step 3): the agent created the macro via
+    // create-macro-thesis and passes its id; link every member asset thesis from the packet
+    // to it (the cascade promotes status from there). Members live in
+    // evidence_context.memberAssetThesisIds (fallback: related asset_thesis objects).
+    const macroId = input.macroId;
+    if (!macroId) throw new Error('cluster_claims_to_thesis/create_macro needs --macro-id (the created macro)');
+    const members =
+      (packet?.evidence_context?.memberAssetThesisIds as string[] | undefined) ??
+      (packet?.related_objects?.filter((o) => o.type === 'asset_thesis').map((o) => o.id) ?? []);
+    if (!input.dryRun) {
+      for (const assetId of members) {
+        await linkAssetMacro({ assetThesisId: assetId, macroThesisId: macroId, relationshipType: 'related', addedBy: input.by === 'user' ? 'user' : 'automation' });
+      }
+    }
+    return [{ table: 'asset_thesis_related_macro_theses', op: 'insert', ids: [macroId, ...members] }];
   }
 
   // Delegated / no-op action — the agent did (or will do) the write in a skill.

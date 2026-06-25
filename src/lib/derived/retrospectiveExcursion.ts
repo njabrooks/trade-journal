@@ -140,3 +140,35 @@ export function computeExcursion(series: ExcursionPoint[]): Excursion {
     pointCount: series.length,
   };
 }
+
+/**
+ * Window a cumulative-P&L series to an expression episode and REBASE it to the episode's start.
+ *
+ * `cumulative` is an inception-to-date running total, so a raw slice of a *later* episode would
+ * still carry the prior episodes' banked P&L — exactly the conflation episodic performance exists
+ * to remove (docs/v2/13 §2). We subtract the carry-in (cumulative at the last point before the
+ * window) so the excursion + chart read the episode's OWN P&L. For episode 1 the carry-in is 0,
+ * so this is a no-op there.
+ *
+ * Only `cumulative` is rebased — it is the sole field computeExcursion and the chart read; all
+ * other fields pass through unchanged. Pure. `openDay`/`closeDay` are YYYY-MM-DD (inclusive);
+ * a null `closeDay` means the episode is still open → take everything from `openDay` onward.
+ */
+export function windowCombined<T extends { date: string; cumulative: number }>(
+  series: T[],
+  openDay: string,
+  closeDay: string | null,
+): T[] {
+  let baseline = 0;
+  for (const p of series) {
+    if (p.date < openDay) baseline = p.cumulative;
+    else break;
+  }
+  const out: T[] = [];
+  for (const p of series) {
+    if (p.date < openDay) continue;
+    if (closeDay !== null && p.date > closeDay) continue;
+    out.push({ ...p, cumulative: p.cumulative - baseline });
+  }
+  return out;
+}
