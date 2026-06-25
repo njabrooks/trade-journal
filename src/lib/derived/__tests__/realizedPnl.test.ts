@@ -177,6 +177,82 @@ describe('computeRealizedSeries', () => {
     ]);
     expect(r.totalRealized).toBeCloseTo(17.9, 9);
   });
+
+  it('CAT-style option exercise/assignment realizes through the attached stock legs', () => {
+    const rows: TradeForRealizedPnl[] = [
+      ibkr({
+        symbol: 'CAT   260618C00900000',
+        assetClass: 'OPT',
+        side: 'BUY',
+        quantity: 5,
+        netAmount: -23458.50375,
+        tradeDate: '2026-05-11',
+      }),
+      ibkr({
+        symbol: 'CAT   260618C00950000',
+        assetClass: 'OPT',
+        side: 'SELL',
+        quantity: -5,
+        netAmount: 12096.23054,
+        tradeDate: '2026-05-11',
+      }),
+      ibkr({
+        symbol: 'CAT   260618P00860000',
+        assetClass: 'OPT',
+        side: 'SELL',
+        quantity: -5,
+        netAmount: 11291.247123,
+        tradeDate: '2026-05-11',
+      }),
+      ibkr({
+        symbol: 'CAT   260618C00900000',
+        assetClass: 'OPT',
+        side: 'SELL',
+        quantity: -5,
+        netAmount: 0,
+        tradeDate: '2026-06-18',
+      }),
+      ibkr({
+        symbol: 'CAT   260618C00950000',
+        assetClass: 'OPT',
+        side: 'BUY',
+        quantity: 5,
+        netAmount: 0,
+        tradeDate: '2026-06-18',
+      }),
+      ibkr({
+        symbol: 'CAT   260618P00860000',
+        assetClass: 'OPT',
+        side: 'BUY',
+        quantity: 5,
+        netAmount: 0,
+        tradeDate: '2026-06-18',
+      }),
+      ibkr({
+        symbol: 'CAT',
+        assetClass: 'STK',
+        side: 'BUY',
+        quantity: 500,
+        netAmount: -450000,
+        tradeDate: '2026-06-18',
+      }),
+      ibkr({
+        symbol: 'CAT',
+        assetClass: 'STK',
+        side: 'SELL',
+        quantity: -500,
+        netAmount: 475000,
+        tradeDate: '2026-06-18',
+      }),
+    ];
+
+    const r = computeRealizedSeries(rows);
+    expect(r.totalRealized).toBeCloseTo(24928.973913, 6);
+    expect(r.netQtyBySymbol.get('CAT')).toBe(0);
+    expect(r.netQtyBySymbol.get('CAT   260618C00900000')).toBe(0);
+    expect(r.netQtyBySymbol.get('CAT   260618C00950000')).toBe(0);
+    expect(r.netQtyBySymbol.get('CAT   260618P00860000')).toBe(0);
+  });
 });
 
 describe('futures flows (FUT — margined, net_amount is NOT economics)', () => {

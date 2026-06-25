@@ -13,6 +13,11 @@ import { cascadeThesisStatuses } from '@/lib/derived/thesisCascade';
 import { syncEpisodesForTransitions } from '@/lib/derived/thesisEpisodes';
 import { ensureAssetThesesForStrategies } from '@/lib/derived/strategyThesisLink';
 import { isAbandonedAutoShell, AUTO_CLEANED_EMPTY_SOURCE, STRATEGY_RECENCY_WINDOW_DAYS } from '@/lib/services/strategyStatus';
+import {
+  isStockExerciseAssignmentTrade,
+  matchStockExerciseAssignmentToOptionStrategy,
+  type ExerciseAssignmentTrade,
+} from '@/lib/derived/optionExerciseAssignment';
 
 type DateRangeOptions =
   | { snapshotDate: string; startDate?: never; endDate?: never }
@@ -38,6 +43,11 @@ interface TradeMinimal {
   assetClass: string | null;
   tradeDate: Date;
   conid?: number | null;
+  strategyId?: string | null;
+  side?: string | null;
+  quantity?: string | number | null;
+  price?: string | number | null;
+  rawRow?: unknown;
 }
 
 function formatExpiry(expiry: string | null): string | null {
@@ -1191,18 +1201,88 @@ async function recomputeAccountStrategyStatuses(accountId: string): Promise<void
   }
 }
 
+function tradeDateRangeClauses(range?: DateRangeOptions) {
+  const clauses = [];
+  if (range?.snapshotDate) {
+    clauses.push(eq(sql`date(${trades.tradeDate})`, range.snapshotDate));
+  } else if (range?.startDate && range?.endDate) {
+    clauses.push(gte(sql`date(${trades.tradeDate})`, range.startDate));
+    clauses.push(lte(sql`date(${trades.tradeDate})`, range.endDate));
+  }
+  return clauses;
+}
+
+export async function relinkOptionExerciseAssignmentTradesForAccount(
+  accountId: string,
+  range?: DateRangeOptions
+): Promise<{ relinked: number; alreadyLinked: number; skipped: number; ambiguous: number }> {
+  const stockRows = await db
+    .select({
+      id: trades.id,
+      accountId: trades.accountId,
+      strategyId: trades.strategyId,
+      symbol: trades.symbol,
+      assetClass: trades.assetClass,
+      tradeDate: trades.tradeDate,
+      side: trades.side,
+      quantity: trades.quantity,
+      price: trades.price,
+      rawRow: trades.rawRow,
+    })
+    .from(trades)
+    .where(and(eq(trades.accountId, accountId), eq(trades.assetClass, 'STK'), ...tradeDateRangeClauses(range)));
+
+  const optionRows: ExerciseAssignmentTrade[] = await db
+    .select({
+      id: trades.id,
+      accountId: trades.accountId,
+      strategyId: trades.strategyId,
+      symbol: trades.symbol,
+      assetClass: trades.assetClass,
+      tradeDate: trades.tradeDate,
+      side: trades.side,
+      quantity: trades.quantity,
+      price: trades.price,
+      rawRow: trades.rawRow,
+    })
+    .from(trades)
+    .where(and(eq(trades.accountId, accountId), eq(trades.assetClass, 'OPT'), isNotNull(trades.strategyId), ...tradeDateRangeClauses(range)));
+
+  let relinked = 0;
+  let alreadyLinked = 0;
+  let skipped = 0;
+  let ambiguous = 0;
+
+  for (const stockRow of stockRows) {
+    if (!isStockExerciseAssignmentTrade(stockRow)) continue;
+    const result = matchStockExerciseAssignmentToOptionStrategy(stockRow, optionRows);
+    if (result.status === 'none') {
+      skipped++;
+      continue;
+    }
+    if (result.status === 'ambiguous') {
+      ambiguous++;
+      continue;
+    }
+
+    const targetStrategyId = result.match.strategyId;
+    if (stockRow.strategyId === targetStrategyId) {
+      alreadyLinked++;
+      continue;
+    }
+
+    await db.update(trades).set({ strategyId: targetStrategyId }).where(eq(trades.id, stockRow.id));
+    relinked++;
+  }
+
+  return { relinked, alreadyLinked, skipped, ambiguous };
+}
+
 export async function autoLinkTradesToStrategies(
   accountId: string,
   range?: DateRangeOptions
 ): Promise<{ strategiesCreated: number; tradesLinked: number; skipped: number }> {
-  const whereClauses = [eq(trades.accountId, accountId), isNull(trades.strategyId)];
-
-  if (range?.snapshotDate) {
-    whereClauses.push(eq(sql`date(${trades.tradeDate})`, range.snapshotDate));
-  } else if (range?.startDate && range?.endDate) {
-    whereClauses.push(gte(sql`date(${trades.tradeDate})`, range.startDate));
-    whereClauses.push(lte(sql`date(${trades.tradeDate})`, range.endDate));
-  }
+  const whereClauses = [eq(trades.accountId, accountId), isNull(trades.strategyId), ...tradeDateRangeClauses(range)];
 
   const rows = await db
     .select({
@@ -1212,6 +1292,11 @@ export async function autoLinkTradesToStrategies(
       assetClass: trades.assetClass,
       tradeDate: trades.tradeDate,
       conid: trades.conid,
+      strategyId: trades.strategyId,
+      side: trades.side,
+      quantity: trades.quantity,
+      price: trades.price,
+      rawRow: trades.rawRow,
     })
     .from(trades)
     .where(and(...whereClauses))
@@ -1221,7 +1306,37 @@ export async function autoLinkTradesToStrategies(
   let tradesLinked = 0;
   let skipped = 0;
 
-  for (const trade of rows) {
+  const stockExerciseRows = rows.filter((trade) => isStockExerciseAssignmentTrade(trade));
+  const normalRows = rows.filter((trade) => !isStockExerciseAssignmentTrade(trade));
+
+  // Link option close rows first. Exercise/assignment stock rows need those
+  // option rows to carry a strategy_id before they can be attributed.
+  for (const trade of normalRows) {
+    const strategyResult = await findOrCreateStrategyFromTrade(trade);
+    if (!strategyResult) {
+      skipped++;
+      continue;
+    }
+
+    if (strategyResult.created) {
+      strategiesCreated++;
+    }
+
+    await db.update(trades).set({ strategyId: strategyResult.id }).where(eq(trades.id, trade.id));
+    tradesLinked++;
+  }
+
+  const relinkResult = await relinkOptionExerciseAssignmentTradesForAccount(accountId, range);
+  tradesLinked += relinkResult.relinked;
+
+  for (const trade of stockExerciseRows) {
+    const current = await db
+      .select({ strategyId: trades.strategyId })
+      .from(trades)
+      .where(eq(trades.id, trade.id))
+      .limit(1);
+    if (current[0]?.strategyId) continue;
+
     const strategyResult = await findOrCreateStrategyFromTrade(trade);
     if (!strategyResult) {
       skipped++;
@@ -1238,4 +1353,3 @@ export async function autoLinkTradesToStrategies(
 
   return { strategiesCreated, tradesLinked, skipped };
 }
-

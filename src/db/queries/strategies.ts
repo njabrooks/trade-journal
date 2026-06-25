@@ -15,6 +15,7 @@ import {
   portfolioSnapshots,
   positions,
   strategies,
+  strategyMetricsSnapshots,
   strategyTemplates,
   trades,
   underlyings,
@@ -245,7 +246,7 @@ export async function getStrategiesForList(
     });
 
     // Sort accounts by descending market value within each strategy
-    positionAccountsByStrategy.forEach((accounts, strategyId) => {
+    positionAccountsByStrategy.forEach((accounts) => {
       accounts.sort((a, b) => b.marketValue - a.marketValue);
     });
   }
@@ -402,7 +403,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     const [
       hasPositionsResult,
       linkedMacroThesesResult,
-      positionTimelineRows,
+      metricsSnapshotRows,
       tradesRows,
       navResult,
     ] = await Promise.all([
@@ -434,18 +435,21 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
             .where(eq(assetThesisRelatedMacroTheses.assetThesisId, strategyRow.assetThesisId))
         : Promise.resolve([] as { id: string; title: string }[]),
 
-      // 3. Metrics timeline from positions (the authoritative time series)
+      // 3. Metrics timeline from stored snapshots. This includes terminal flat
+      // rows for completed strategies, which position history alone cannot show.
       db
         .select({
-          snapshotDate: positions.snapshotDate,
-          totalMarketValue: sql<string>`SUM(ABS(CAST(COALESCE(${positions.marketValueUsd}, '0') AS NUMERIC)))`,
-          totalUnrealizedPnl: sql<string>`SUM(CAST(COALESCE(${positions.unrealizedPnl}, '0') AS NUMERIC))`,
-          numOpenPositions: sql<number>`COUNT(*)::int`,
+          snapshotDate: strategyMetricsSnapshots.snapshotDate,
+          totalAbsNotional: strategyMetricsSnapshots.totalAbsNotional,
+          totalUnrealizedPnl: strategyMetricsSnapshots.totalUnrealizedPnl,
+          pctNavAbsNotional: strategyMetricsSnapshots.pctNavAbsNotional,
+          numOpenPositions: strategyMetricsSnapshots.numOpenPositions,
+          minDte: strategyMetricsSnapshots.minDte,
+          maxDte: strategyMetricsSnapshots.maxDte,
         })
-        .from(positions)
-        .where(and(eq(positions.strategyId, strategyId), sql`${positions.quantity} != 0`))
-        .groupBy(positions.snapshotDate)
-        .orderBy(asc(positions.snapshotDate)),
+        .from(strategyMetricsSnapshots)
+        .where(eq(strategyMetricsSnapshots.strategyId, strategyId))
+        .orderBy(asc(strategyMetricsSnapshots.snapshotDate)),
 
       // 4. Trades aggregated by day + account + side + symbol
       db
@@ -494,18 +498,17 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
 
     const linkedMacroTheses = linkedMacroThesesResult;
 
-    const metricsTimeline = positionTimelineRows
+    const metricsTimeline = metricsSnapshotRows
       .filter((row): row is typeof row & { snapshotDate: string } => row.snapshotDate !== null)
       .map((row) => {
-        const mv = toNumber(row.totalMarketValue);
         return {
           snapshotDate: row.snapshotDate,
-          totalAbsNotional: mv,
+          totalAbsNotional: toNumber(row.totalAbsNotional),
           totalUnrealizedPnl: toNumber(row.totalUnrealizedPnl),
-          pctNavAbsNotional: null as number | null,
+          pctNavAbsNotional: toNumber(row.pctNavAbsNotional),
           numOpenPositions: (row.numOpenPositions ?? null) as number | null,
-          minDte: null as number | null,
-          maxDte: null as number | null,
+          minDte: row.minDte ?? null,
+          maxDte: row.maxDte ?? null,
         };
       });
 
@@ -641,7 +644,7 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     if (error instanceof Error) {
       errorMessage = error.message;
       // Include postgres error details if available
-      const pgError = error as any;
+      const pgError = error as Error & { code?: string; detail?: string; hint?: string };
       const details: string[] = [];
       if (pgError.code) details.push(`code: ${pgError.code}`);
       if (pgError.detail) details.push(`detail: ${pgError.detail}`);
@@ -655,4 +658,3 @@ export async function getStrategyDetail(strategyId: string): Promise<StrategyDet
     throw new Error(`Failed to fetch strategy detail: ${errorMessage}`);
   }
 }
-
