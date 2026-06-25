@@ -1,0 +1,5 @@
+{
+  "name": "assess-validation-evidence",
+  "description": "Assess content (SEC filings, presentations, news articles, transcripts) against existing thesis signals to identify confirmation or warning evidence. Cross-references content against active signals (via the `signal_entity_links` junction table), scores relevance, writes `signal_data_snapshots` rows with `data_source = 'qualitative'`, and generates a structured evidence report.",
+  "instructions": "SKILL.md"
+}

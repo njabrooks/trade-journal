@@ -1,0 +1,5 @@
+{
+  "name": "build-core-argument",
+  "description": "Synthesize a thesis's many sources into one living underwriting — a versioned articulation with three faces (basis for the investment, basis for resolution, conviction). The resolution signals are DERIVED from the case's own counter-arguments, never hand-configured. Reads claims + multi-source observations; writes a new articulation version. Use to underwrite or re-underwrite a thesis.",
+  "instructions": "SKILL.md"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "advance-or-kill",
+  "description": "Gate evaluation skill for any pipeline stage. Evaluates whether an idea should advance, hold, or be killed. Handles kill log creation and idea archival.",
+  "instructions": "SKILL.md"
+}

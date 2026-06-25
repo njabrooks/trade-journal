@@ -1,0 +1,5 @@
+{
+  "name": "backfill-claims",
+  "description": "Reprocess existing claims for lifecycle-aware thesis linkage suggestions and signal evidence evaluation. Runs the same logic as process-inbox Steps 3a and 7, but against claims already in the database.",
+  "instructions": "SKILL.md"
+}

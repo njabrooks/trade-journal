@@ -6,6 +6,10 @@
           {
             "type": "command",
             "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && npx tsx scripts/ops/list-decisions.ts --nudge 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && npx tsx scripts/ops/check-codex-parity.ts --nudge 2>/dev/null || true"
           }
         ]
       }

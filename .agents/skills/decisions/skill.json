@@ -1,0 +1,5 @@
+{
+  "name": "decisions",
+  "description": "The decision-mode front door — open a context and immediately see + work through what needs your judgment. Reads the open Decision Items (the agent-side DecisionStrip) plus the latent maintenance worklists, ranks them, and walks you through resolving each via its runbook. Use when the user asks \"what needs me\", \"what's pending\", \"what should I decide\", \"open decisions\", \"let's go through decisions\", \"decision mode\", \"anything need my call\", or opens a session wanting to act on the belief layer. Distinct from /maintenance (which PRODUCES decisions); this one RESOLVES them.",
+  "instructions": "SKILL.md"
+}

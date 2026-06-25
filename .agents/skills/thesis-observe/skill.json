@@ -1,0 +1,5 @@
+{
+  "name": "thesis-observe",
+  "description": "The belief layer's daily eyes & ears (docs/v2/14 — the tracking-evidence producer). Walks the highest-materiality (Tier-1) active monitoring theses and, per signal, judges current news (WebSearch per thesis) + fresh price against the SIGNAL STATEMENT, emitting a directive report (Signal ID / Score / Evidence / Assessment / Change-from-prior) that ingest-world-monitor.ts parses into signal_data_snapshots(data_source='thesis_observe'). SENSING ONLY — writes evidence + journals, never raises decisions or changes status (that stays with /thesis-review health + /maintenance). Use when asked to \"run thesis-observe\", \"observe the theses\", \"sweep news against signals\", \"what's the world doing to my theses\", or on the scheduled producer.",
+  "instructions": "SKILL.md"
+}

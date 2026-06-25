@@ -1,0 +1,5 @@
+{
+  "name": "archived-generate-summary",
+  "description": "Generate AI summary of asset thesis from linked claims. Supports paragraph (executive) and deep-dive (full Toulmin) modes. Tracks provenance for staleness detection.",
+  "instructions": "SKILL.md"
+}

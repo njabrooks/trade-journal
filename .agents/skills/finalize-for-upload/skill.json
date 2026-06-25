@@ -1,0 +1,5 @@
+{
+  "name": "finalize-for-upload",
+  "description": "Upload finalized research to Supabase database. Automatically detects content type (artifact, insight, thesis, or view) from frontmatter and uploads to appropriate tables. Use when ready to commit research to the hierarchy.",
+  "instructions": "SKILL.md"
+}

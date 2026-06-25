@@ -1,0 +1,25 @@
+#!/bin/sh
+# Codex skill-bridge parity gate (canonical, version-controlled source for the git pre-commit hook).
+#
+# Install (delegating shim in .git/hooks): the codex-interop-parity work created
+#   .git/hooks/pre-commit  ->  exec scripts/ops/hooks/pre-commit
+# To (re)install on another clone:
+#   printf '#!/bin/sh\nexec "$(git rev-parse --show-toplevel)/scripts/ops/hooks/pre-commit" "$@"\n' \
+#     > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#
+# Runs only when a Codex skill surface is staged (.claude/skills/ or .agents/skills/), so ordinary
+# commits are untouched. Applies to whoever commits in this tree — Claude or Codex.
+# Bypass (not recommended): git commit --no-verify
+
+if git diff --cached --name-only --diff-filter=ACMRD | grep -qE '^\.claude/skills/|^\.agents/skills/'; then
+  echo "[pre-commit] Codex skill surface changed — checking parity…"
+  if ! npx tsx scripts/ops/check-codex-parity.ts; then
+    echo ""
+    echo "[pre-commit] ✗ Codex skill surfaces are out of sync (see report above)."
+    echo "             Bridge inventory: edit ~/.codex/skills/trade-journal-workflows/references/claude-inventory.md"
+    echo "             Headless mirror : npx tsx scripts/ops/generate-agents-mirror.ts && git add .agents"
+    echo "             Bypass (not recommended): git commit --no-verify"
+    exit 1
+  fi
+fi
+exit 0

@@ -1,0 +1,5 @@
+{
+  "name": "pull-portfolio",
+  "description": "Pull a full portfolio snapshot from the Trade Journal database. Shows NAV, cash, leverage, positions grouped by underlying and strategy, owner breakdown, and cash breakdown. Use when you need current portfolio state for analysis, comparison, or reporting.",
+  "instructions": "SKILL.md"
+}

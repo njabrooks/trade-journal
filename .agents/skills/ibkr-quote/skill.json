@@ -1,0 +1,5 @@
+{
+  "name": "ibkr-quote",
+  "description": "Get live (or delayed) IBKR option quotes for a multi-leg structure. Use to price-check combos, verify vol curve analysis against real market prices, or spot-check a position before executing. Handles starting the IB Gateway if not already running.",
+  "instructions": "SKILL.md"
+}

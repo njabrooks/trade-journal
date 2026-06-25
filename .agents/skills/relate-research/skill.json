@@ -1,0 +1,5 @@
+{
+  "name": "relate-research",
+  "description": "Anticipatory claim→thesis relating (W8/D2). Reads newly-extracted research claims, judges genuine relevance against the active thesis set, auto-links the clear matches, surfaces genuine decisions (refuting/ambiguous), and leaves the irrelevant majority in Tana. Replaces the old unconditional Tana auto-promotion + manual curation. Use when the user asks to \"relate research\", \"process new claims\", \"link new research to theses\", \"run relate-research\", or wants newly-extracted research evidence related to the live thesis set.",
+  "instructions": "SKILL.md"
+}

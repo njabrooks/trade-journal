@@ -1,0 +1,5 @@
+{
+  "name": "process-note",
+  "description": "Process general notes and content with Toulmin claim extraction. No investment-specific fields. Use for non-finance content that you want to extract ideas from without feeding into the investment pipeline.",
+  "instructions": "SKILL.md"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "thesis",
+  "description": "Talk to a thesis (docs/v2/10 §3). Query its living underwriting — where it stands, the current case, what's challenging it, what's thin, what's changed — then re-underwrite it or propose loose next moves. The pull/curious foreground surface over a single thesis; genuine decisions harden via the Decision packet. Use when the user asks \"where does <thesis/ticker> stand\", \"what's the case for X\", \"what's challenging X\", \"re-underwrite X\", \"what's changed on X\", or wants to think about one thesis.",
+  "instructions": "SKILL.md"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "thesis-review",
+  "description": "Auto-maintain the belief layer (W8). Digest refresh (B4) — re-synthesize supporting digests for developing theses that have accumulated new claims.",
+  "instructions": "SKILL.md"
+}

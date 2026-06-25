@@ -1,0 +1,5 @@
+{
+  "name": "process-transcript",
+  "description": "Process research transcripts with forensic claim extraction using Toulmin framework. Auto-formats YouTube transcripts, extracts all claims without information loss, structures with Evidence/Reasoning/Backing, categorizes as macro thesis or asset thesis candidates. Use for rigorous research ingestion.",
+  "instructions": "SKILL.md"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "analyze-vol-curve",
+  "description": "Analyze the options vol surface to find optimal strike selection for call spreads and risk reversals. Based on Campbell's strike optimization framework — compares thesis-implied expected value vs market price across strikes to find the best position on the vol curve.",
+  "instructions": "SKILL.md"
+}

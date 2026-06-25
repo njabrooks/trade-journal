@@ -1,0 +1,5 @@
+{
+  "name": "portfolio-and-options-mcp",
+  "description": "Query the live Two Trees Capital trade journal portfolio via the Supabase MCP connector, cross-reference against options chain data via the Massive Market Data MCP connector, and analyse positions, exposures, and option structures. Use this skill any time the user asks about their current portfolio, positions, exposures, P&L, theme tilts, or wants to evaluate option structures (covered calls, short puts, diagonals, seagulls) against their book. Trigger phrases include \"my portfolio\", \"my positions\", \"what do I own\", \"evaluate my book\", \"current exposure\", \"my SOI / TSLA / GLW position\", or any request to design option trades that reference position size.",
+  "instructions": "SKILL.md"
+}

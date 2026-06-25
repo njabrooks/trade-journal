@@ -1,0 +1,5 @@
+{
+  "name": "synthesize-claims",
+  "description": "Cross-reference audit claims against existing theses/views in database. Maps claims to hierarchy, identifies new thesis/view opportunities vs evidence for existing beliefs. Generates synthesis with recommendations. Use after forensic claim extraction.",
+  "instructions": "SKILL.md"
+}

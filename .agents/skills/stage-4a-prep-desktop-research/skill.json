@@ -1,0 +1,5 @@
+{
+  "name": "stage-4a-prep-desktop-research",
+  "description": "Generate a ready-to-paste prompt for Claude Desktop Deep Research. Extracts context from pipeline idea and formats for Stage 4 research.",
+  "instructions": "SKILL.md"
+}
