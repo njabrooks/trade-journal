@@ -7,15 +7,13 @@ import {
   researchHierarchyRecommendations,
   macroTheses,
   assetTheses,
-  strategies,
-  positions,
   underlyings,
   mainClaims,
   claimThesisMappings,
   claimSignalEvidences,
   signals,
 } from '@/db/schema';
-import { eq, desc, and, isNull, inArray, sql, count, or } from 'drizzle-orm';
+import { eq, desc, and, inArray, sql } from 'drizzle-orm';
 import type {
   NewResearchArtifact,
   NewResearchInsight,
@@ -24,7 +22,7 @@ import type {
   NewResearchHierarchyRecommendation,
   NewMainClaim,
 } from '@/db/schema';
-import type { ClaimsStructure, MainClaim as AuditMainClaim } from '@/types/claims';
+import type { ClaimsStructure } from '@/types/claims';
 import { isValidClaimsStructure } from '@/types/claims';
 
 // ============================================================================
@@ -822,14 +820,12 @@ export async function checkArtifactCompleteness(
 
   // Check 3: Has promoted claims?
   let hasPromotedClaims = false;
-  let promotedClaimIds: string[] = [];
   if (hasInsight) {
     const claimRows = await db
       .select({ id: mainClaims.id })
       .from(mainClaims)
       .where(eq(mainClaims.sourceInsightId, insight.id));
     hasPromotedClaims = claimRows.length > 0;
-    promotedClaimIds = claimRows.map(c => c.id);
   }
 
   // Check 4 (linkage suggestions) removed in the suggestion-subsystem cutover (docs/v2/11):
