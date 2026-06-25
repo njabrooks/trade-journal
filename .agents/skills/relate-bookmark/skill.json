@@ -1,0 +1,5 @@
+{
+  "name": "relate-bookmark",
+  "description": "Human-attention bookmark relating (docs/v2/17). Reads new investment #bookmark nodes from Tana, judges each for genuine bearing on the active thesis set and its significance, and routes the material ones into the MONITORING lane as candidate_signals (surfacing on /thesis re-underwrite) — leaving the trivial/irrelevant majority in Tana. The monitoring-lane sibling of /relate-research (claims → formation). Use when the user asks to \"relate bookmarks\", \"process my bookmarks\", \"run relate-bookmark\", \"route bookmarks to theses\", or wants newly-saved bookmarks folded into signal monitoring.",
+  "instructions": "SKILL.md"
+}

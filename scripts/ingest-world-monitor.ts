@@ -25,8 +25,9 @@ import { parseWorldMonitor, type ParsedReport } from '../src/lib/intelligence/pa
 import { type Assessment } from '../src/lib/intelligence/scoring.js';
 import { emitIntelItems, type IntelItemInput } from '../src/lib/intelligence/emitIntelItems.js';
 import { parsePriceWatch, parseThesisRelevantNews } from '../src/lib/intelligence/parseObserveReport.js';
+import { upsertCandidateSignal } from '../src/lib/intelligence/candidateSignals.js';
 
-const { signals, signalDataSnapshots, signalEntityLinks, journalEntries } = schema;
+const { signals, signalDataSnapshots, signalEntityLinks } = schema;
 
 // Virtual source table name for intel_items emitted from monitor reports.
 // (Pre-v2 rows used 'intelligence_items' with the now-dropped table's row uuids.)
@@ -334,46 +335,23 @@ async function harvestCandidateSignals(
   let written = 0, bumped = 0, skipped = 0;
   for (const item of items) {
     const thesis = byTitle.get(item.thesisTitle.toLowerCase());
-    const normalized = normalizeStatement(item.headline);
-    if (!thesis || !normalized) { skipped++; continue; } // unresolved title or empty statement — leave it, don't guess
+    if (!thesis) { skipped++; continue; } // unresolved title — leave it, don't guess
 
-    const existing = await db
-      .select({ id: journalEntries.id, occurrenceCount: journalEntries.occurrenceCount, metadata: journalEntries.metadata })
-      .from(journalEntries)
-      .where(and(
-        eq(journalEntries.objectId, thesis.id),
-        eq(journalEntries.actionType, 'candidate_signal'),
-        eq(journalEntries.status, 'active'),
-      ));
-    const dupe = existing.find((e) =>
-      normalizeStatement((e.metadata as { candidateSignal?: { statement?: string } } | null)?.candidateSignal?.statement ?? '') === normalized);
-
-    if (dupe) {
-      await db.update(journalEntries)
-        .set({ lastSeenAt: new Date(), occurrenceCount: (dupe.occurrenceCount ?? 1) + 1 })
-        .where(eq(journalEntries.id, dupe.id));
-      bumped++;
-      continue;
-    }
-
-    await logToJournal({
+    // Shared writer (src/lib/intelligence/candidateSignals.ts) owns the dedup + metadata
+    // shape, so observe and relate-bookmark (docs/v2/17) produce identical candidate rows.
+    const result = await upsertCandidateSignal(db, {
       objectType: thesis.type,
       objectId: thesis.id,
       objectTitle: thesis.title,
-      actionType: 'candidate_signal',
-      actionDescription: item.headline,
-      source: 'automation',
-      metadata: {
-        candidateSignal: {
-          statement: item.headline,
-          sourceUrl: item.sourceUrl,
-          observedAt: parsed.generatedAt,
-          fromReport: filePath,
-          rationale: item.body || null,
-        },
-      },
+      statement: item.headline,
+      sourceUrl: item.sourceUrl,
+      observedAt: parsed.generatedAt,
+      fromReport: filePath,
+      rationale: item.body || null,
     });
-    written++;
+    if (result === 'written') written++;
+    else if (result === 'bumped') bumped++;
+    else skipped++; // 'skipped' = empty statement
   }
   return { written, bumped, skipped };
 }
