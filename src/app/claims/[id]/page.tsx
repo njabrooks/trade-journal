@@ -9,7 +9,6 @@ import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import type { ClaimsStructure, EvidenceClaim } from '@/types/claims';
 import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } from '@/types/claims';
-import { InlineClaimSuggestions } from '@/components/research/InlineClaimSuggestions';
 import { ClaimLinkButton } from '@/components/research/ClaimLinkButton';
 import { SIGNAL_TYPE_COLORS, ASSESSMENT_LEVELS } from '@/components/signals/signal-constants';
 
@@ -35,7 +34,7 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
     notFound();
   }
 
-  const { claim, insight, artifact, linkedTheses, linkedViews, linkedSignals = [], suggestions = [] } = claimData;
+  const { claim, insight, artifact, linkedTheses, linkedViews, linkedSignals = [] } = claimData;
 
   // Get evidence claims from the audit structure if available
   const getEvidenceClaims = (): {
@@ -441,19 +440,8 @@ export default async function ClaimDetailPage({ params }: ClaimDetailPageProps) 
           </div>
         )}
 
-        {/* AI Suggested Linkages */}
-        {suggestions.length > 0 && (
-          <div className="bg-card rounded-lg border border p-4">
-            <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
-              Suggested Linkages
-              <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">AI</Badge>
-            </h3>
-            <InlineClaimSuggestions suggestions={suggestions} compact={false} />
-          </div>
-        )}
-
         {/* No Links State */}
-        {linkedTheses.length === 0 && linkedViews.length === 0 && suggestions.length === 0 && (
+        {linkedTheses.length === 0 && linkedViews.length === 0 && (
           <div className="bg-card rounded-lg border border p-4">
             <h3 className="text-base font-semibold mb-3">Linked Entities</h3>
             <p className="text-sm text-muted-foreground mb-4">

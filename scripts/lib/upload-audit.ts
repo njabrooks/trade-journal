@@ -86,9 +86,6 @@ export async function uploadAudit(opts: UploadAuditOptions): Promise<UploadAudit
       if (!completeness.checks.hasInsight) failedChecks.push('missing insight');
       if (!completeness.checks.hasValidClaimsStructure) failedChecks.push('invalid/missing claims_structure');
       if (!completeness.checks.hasPromotedClaims) failedChecks.push('no promoted claims');
-      if (!completeness.checks.hasLinkageSuggestions && !completeness.checks.linkageSuggestionsWaived) {
-        failedChecks.push('no linkage suggestions');
-      }
 
       console.warn(`[upload-audit] Deficient artifact detected: ${completeness.artifactId}`);
       console.warn(`[upload-audit] Failed checks: ${failedChecks.join(', ')}`);

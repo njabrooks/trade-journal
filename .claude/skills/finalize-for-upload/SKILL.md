@@ -238,70 +238,9 @@ npx tsx scripts/auto-promote-claims.ts $insight_id
 
 ```
 
-#### Step 5: Generate Thesis Linkage Suggestions
+#### Step 5: Relate claims to theses — done by `/relate-research`, not at upload
 
-After promoting claims, analyze them against the existing thesis hierarchy and generate linkage suggestions. This is the AI-powered step — you are performing semantic analysis, not just keyword matching.
-
-**This step is non-blocking**: if it fails, claims are still promoted and available for manual linking. Wrap in a try/catch mindset and report any issues without failing the overall upload.
-
-**5a. Query the data** (three parallel queries via `psql-query.ts`):
-
-```bash
-# Run from trade-journal directory
-
-# Promoted claims from this upload
-npx tsx scripts/psql-query.ts "SELECT id, title, claim, category, qualifier, relevant_tickers FROM main_claims WHERE source_insight_id = '$INSIGHT_ID'" --format json
-
-# Non-terminal macro theses (developing or monitoring)
-npx tsx scripts/psql-query.ts "SELECT id, title, description, direction, sectors FROM macro_theses WHERE status IN ('developing', 'monitoring')" --format json
-
-# Non-terminal asset theses (developing or monitoring)
-npx tsx scripts/psql-query.ts "SELECT at.id, at.title, at.description, u.ticker, at.direction FROM asset_theses at JOIN underlyings u ON at.underlying_id = u.id WHERE at.status IN ('developing', 'monitoring')" --format json
-```
-
-**5b. Analyze each claim against each thesis.** For every (claim, thesis) pair, assess:
-
-| Signal | Weight | Example |
-|--------|--------|---------|
-| **Ticker overlap** | High | Claim mentions NVDA, thesis covers NVDA |
-| **Category alignment** | High | `macro` claim → macro thesis, `asset_specific` → asset thesis |
-| **Thematic relevance** | High | Claim about "GPU demand" aligns with thesis about "AI infrastructure buildout" |
-| **Directional alignment** | Medium | Both bullish on same theme → `supports`; opposing → `refutes` |
-| **Time horizon match** | Low | Same time horizon increases confidence slightly |
-
-For each match, determine:
-- **mappingType**: `supports` (claim reinforces thesis), `refutes` (claim contradicts thesis), or `foundation` (claim provides foundational evidence)
-- **confidence**: 0.40–1.00 (only suggest matches >= 0.40)
-- **reasoning**: 1-2 sentence explanation of why this claim relates to this thesis
-
-**Rules**:
-- Max **3 suggestions per claim** (pick the highest-confidence matches)
-- Skip claims that have no plausible thesis match
-- A single claim can suggest links to both macro and asset theses
-
-**5c. Insert suggestions** by piping JSON to the insert script:
-
-```bash
-# Run from trade-journal directory
-echo '[
-  {
-    "claimId": "<promoted-claim-uuid>",
-    "thesisId": "<macro-thesis-uuid>",
-    "mappingType": "supports",
-    "confidence": 0.85,
-    "reasoning": "Claim about GPU supply constraints directly supports the AI infrastructure buildout thesis"
-  },
-  {
-    "claimId": "<promoted-claim-uuid>",
-    "assetThesisId": "<asset-thesis-uuid>",
-    "mappingType": "supports",
-    "confidence": 0.70,
-    "reasoning": "NVDA-specific capex data reinforces the NVDA long thesis"
-  }
-]' | npx tsx scripts/ops/insert-claim-suggestions.ts --insight-id $INSIGHT_ID
-```
-
-The script validates inputs and bulk-inserts into `research_hierarchy_recommendations` with `status='pending'`. These suggestions appear in the Claims Browser UI for user review.
+Claim→thesis linkage is **no longer generated at upload time**. The anticipatory `relate-research` job (the scheduled `/maintenance` loop, or `/relate-research` on demand) reads newly-promoted claims, judges genuine relevance against the active thesis set, auto-links the clear matches, and surfaces only genuine decisions — replacing the old promote-everything-then-curate suggestion queue (docs/v2/10 loose-agent model; cutover docs/v2/11). After uploading, run `/relate-research` if you want the new claims related immediately.
 
 **Claims Structure Format**:
 
@@ -395,16 +334,14 @@ Evidence claims are NOT abbreviated - they receive complete argumentation struct
 ✅ Successfully auto-promoted 14 claims to main_claims table
    Status: draft (ready for manual review and activation)
 
-🔗 Analyzing claims against developing/monitoring theses...
-✅ Generated 8 thesis linkage suggestions across 6 claims
-   (pending review in Claims Browser)
+🔗 Claim→thesis relating runs separately via /relate-research (not at upload time)
 
 → View in app: /research/xyz-789-ghi
 → Browse all claims: /claims
-→ Review claims, linkage suggestions, and promote draft → active in Claims Browser
+→ Review and promote claims (draft → active) in Claims Browser; relate to theses with /relate-research
 ```
 
-**Then suggest**: "Open the Claims Browser at /claims to review linkage suggestions and promote high-priority claims"
+**Then suggest**: "Open the Claims Browser at /claims to review and promote high-priority claims; run /relate-research to link them to theses"
 
 #### For Insights
 
@@ -617,8 +554,6 @@ Completeness checks:
 1. Has insight? (research_insights row linked to artifact)
 2. Has valid claims_structure? (non-null, passes isValidClaimsStructure())
 3. Has promoted claims? (main_claims with sourceInsightId)
-4. Has linkage suggestions? (research_hierarchy_recommendations for promoted claims;
-   waived if no active/draft theses exist)
 
 Replace-on-failure preserves signal_data_snapshots from the original and records
 replaced_artifact_id in the new artifact's metadata for traceability.

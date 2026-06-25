@@ -254,7 +254,7 @@ export default async function AssetThesisOverviewPage({ params }: OverviewPagePr
             {claimsWithSources.length === 0 ? (
               <p className="text-sm text-muted-foreground">No claims linked to this thesis.</p>
             ) : (
-              <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} suppressSuggestions={true} />
+              <UnifiedClaimsBrowser claimsWithSources={claimsWithSources} />
             )}
           </CollapsibleEntitySection>
         </>

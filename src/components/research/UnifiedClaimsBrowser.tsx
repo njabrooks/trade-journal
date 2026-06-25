@@ -12,9 +12,6 @@ import { getSupportingEvidence, getRebuttingEvidence, isValidClaimsStructure } f
 import { ConvertClaimToEntityDialog } from './ConvertClaimToEntityDialog';
 import type { LinkActionResult } from './ConvertClaimToEntityDialog';
 import { ExpandableEvidenceClaim } from './ExpandableEvidenceClaim';
-import { InlineClaimSuggestions } from './InlineClaimSuggestions';
-import type { SuggestionActionResult } from './InlineClaimSuggestions';
-import type { ClaimSuggestion } from '@/db/queries/research';
 import { SIGNAL_TYPE_COLORS, ASSESSMENT_LEVELS } from '@/components/signals/signal-constants';
 
 interface LinkedThesis {
@@ -44,7 +41,6 @@ interface ClaimWithSource {
   linkedTheses?: LinkedThesis[];
   linkedViews?: LinkedView[];
   linkedSignals?: LinkedSignal[];
-  suggestions?: ClaimSuggestion[];
 }
 
 interface UnifiedClaimsBrowserProps {
@@ -53,9 +49,6 @@ interface UnifiedClaimsBrowserProps {
   initialLinkedToFilter?: string; // Optional: pre-filter to a specific thesis/view ID
   showSourceColumn?: boolean; // Optional: show the Research source column in table (default: false)
   compact?: boolean; // Optional: hide filter panel and show minimal UI (default: false)
-  onSuggestionActioned?: (result: SuggestionActionResult) => void; // Callback when a suggestion is accepted/rejected
-  /** B5: suppress claim-to-thesis suggestions (monitoring-phase theses route to signals) */
-  suppressSuggestions?: boolean;
 }
 
 type StatusFilter = 'all' | 'draft' | 'active' | 'complete' | 'rejected';
@@ -69,14 +62,12 @@ export function UnifiedClaimsBrowser({
   filterArtifactId,
   initialLinkedToFilter,
   showSourceColumn = false,
-  onSuggestionActioned,
-  suppressSuggestions = false,
 }: UnifiedClaimsBrowserProps) {
   const router = useRouter();
   const [expandedClaim, setExpandedClaim] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Local state for optimistic updates (status changes, suggestion actions)
+  // Local state for optimistic updates (status changes, link actions)
   const [localClaims, setLocalClaims] = useState<ClaimWithSource[]>(claimsWithSourcesProp);
   useEffect(() => {
     setLocalClaims(claimsWithSourcesProp);
@@ -117,55 +108,6 @@ export function UnifiedClaimsBrowser({
   // Convert/Link dialog state (used by both status badge and Link button)
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [claimToConvert, setClaimToConvert] = useState<DbMainClaim | null>(null);
-
-  // Internal handler for suggestion actions — optimistically updates local state
-  const handleSuggestionActioned = (result: SuggestionActionResult) => {
-    setLocalClaims(prev => prev.map(c => {
-      if (c.claim.id !== result.claimId) return c;
-
-      // Remove the actioned suggestion
-      const updatedSuggestions = (c.suggestions || []).filter(s => s.id !== result.suggestionId);
-
-      if (result.action === 'accepted' && result.newLink) {
-        // Add the new link to the claim's linked entities
-        const updatedTheses = [...(c.linkedTheses || [])];
-        const updatedViews = [...(c.linkedViews || [])];
-
-        if (result.newLink.thesisId && result.newLink.thesisTitle) {
-          updatedTheses.push({
-            id: result.newLink.thesisId,
-            title: result.newLink.thesisTitle,
-            mappingType: result.newLink.mappingType,
-          });
-        }
-        if (result.newLink.assetThesisId && result.newLink.assetThesisTitle) {
-          updatedViews.push({
-            id: result.newLink.assetThesisId,
-            title: result.newLink.assetThesisTitle,
-            ticker: result.newLink.ticker || '',
-            mappingType: result.newLink.mappingType,
-          });
-        }
-
-        return {
-          ...c,
-          claim: result.claimStatus ? { ...c.claim, status: result.claimStatus } : c.claim,
-          linkedTheses: updatedTheses,
-          linkedViews: updatedViews,
-          suggestions: updatedSuggestions,
-        };
-      }
-
-      // Rejection — just remove the suggestion
-      return { ...c, suggestions: updatedSuggestions };
-    }));
-
-    // Notify parent if provided
-    onSuggestionActioned?.(result);
-
-    // Refresh server data in the background
-    router.refresh();
-  };
 
   // Internal handler for manual link/unlink actions — optimistically updates local state
   const handleLinkAction = (result: LinkActionResult) => {
@@ -730,7 +672,7 @@ export function UnifiedClaimsBrowser({
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedClaims.map(({ claim, insight, artifact, linkedTheses = [], linkedViews = [], linkedSignals = [], suggestions = [] }) => {
+                {filteredAndSortedClaims.map(({ claim, insight, artifact, linkedTheses = [], linkedViews = [], linkedSignals = [] }) => {
                   const isExpanded = expandedClaim === claim.id;
                   const evidenceClaims = getEvidenceClaims({ claim, insight, artifact });
 
@@ -754,11 +696,7 @@ export function UnifiedClaimsBrowser({
                         <td className="px-4 py-3">
                           <div className={isExpanded ? "space-y-1" : "flex items-center gap-1 overflow-hidden"}>
                             {linkedTheses.length === 0 && linkedViews.length === 0 ? (
-                              suggestions.length > 0 && !suppressSuggestions ? (
-                                <InlineClaimSuggestions suggestions={suggestions} compact={true} onSuggestionActioned={handleSuggestionActioned} suppressSuggestions={suppressSuggestions} />
-                              ) : (
-                                <span className="text-xs text-muted-foreground">Not linked</span>
-                              )
+                              <span className="text-xs text-muted-foreground">Not linked</span>
                             ) : (
                               <>
                                 {/* Combined list of all linked entities */}
@@ -1165,17 +1103,6 @@ export function UnifiedClaimsBrowser({
                                       );
                                     })}
                                   </div>
-                                </div>
-                              )}
-
-                              {/* AI Suggested Linkages (B5: suppressed for monitoring-phase theses) */}
-                              {suggestions.length > 0 && !suppressSuggestions && (
-                                <div className="pt-2 border-t">
-                                  <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide flex items-center gap-1">
-                                    <span>Suggested Linkages</span>
-                                    <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs">AI</Badge>
-                                  </h4>
-                                  <InlineClaimSuggestions suggestions={suggestions} compact={false} onSuggestionActioned={handleSuggestionActioned} suppressSuggestions={suppressSuggestions} />
                                 </div>
                               )}
 
