@@ -30,6 +30,7 @@ import { getMainClaimsWithSourcesForThesis, getLinkedStrategiesForThesis } from 
 import { getMainClaimsWithSourcesForAssetThesis, getLinkedStrategiesForAssetThesis } from '@/db/queries/assetTheses';
 import { getAssetThesisPerformance, getMacroThesisPerformance } from '@/db/queries/thesisPerformance';
 import { gatherSignalQualityContext } from '@/lib/derived/signalQualityDiagnostics';
+import { getBookmarkAttention } from '@/lib/derived/bookmarkAttention';
 
 type ThesisType = 'macro' | 'asset';
 
@@ -251,6 +252,9 @@ async function main() {
   // re-underwrite) + any price coverage-gap (author a covering signal). null otherwise.
   // candidate_signal rows (Lane A producer → Lane B consumer; docs/v2/16 §1b).
   const candidateSignals = await candidateSignalsForThesis(r.id);
+  // Bookmark attention (docs/v2/17 P3) — human-curation intensity on this thesis (from
+  // bookmark-origin candidate_signals), so the re-underwrite can weigh it. null if none.
+  const attention = await getBookmarkAttention(r.id);
 
   const sq = await gatherSignalQualityContext(r.id, r.type);
   const signalQuality = sq
@@ -338,6 +342,7 @@ async function main() {
     thin,
     signalQuality,
     candidateSignals,
+    attention,
   }, null, 2));
 
   process.exit(0);

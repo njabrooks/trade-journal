@@ -90,17 +90,34 @@ cat /tmp/bm-plan.json | npx tsx scripts/relate-bookmark.ts --apply -
 The engine dedups per `(thesis, normalized statement)` — re-runs are safe (bumped, not duplicated).
 The apply output lists each entry's `result` (`written`/`bumped`/`skipped`).
 
-### 5. Mark processed in Tana (so they don't re-process)
-Flip the Status of every judged bookmark via `set_field_option` (attributeId `2J2cAm36yfMW`):
+### 5. Finalise each judged bookmark in Tana
+
+**a. Tickers** (Phase 2) — if the bookmark references a specific ticker and its `Tickers` field
+(`drnK4xgDIy6B`, instance of `#ticker`) is empty, populate it:
+1. Find an existing, non-trash `#ticker` node for the symbol:
+   `search_nodes({ query: { and: [{ hasType: "4eXaUEU8moy5" }, { textContains: "<SYMBOL>" }] } })` —
+   match the exact name; prefer one already in the Library.
+2. If none exists, create a canonical one in the Library:
+   `import_tana_paste({ parentNodeId: "5Iqof5q6KFJU_STASH", content: "- <SYMBOL> #[[^4eXaUEU8moy5]]" })`
+   → use the returned node id.
+3. Reference it (append, so multiple tickers accumulate):
+   `set_field_content({ nodeId: "<bookmarkNodeId>", attributeId: "drnK4xgDIy6B", content: "<tickerNodeId>", mode: "append" })`
+
+> `#ticker` nodes are currently **non-canonical** (per-occurrence dupes from `#content` extraction; some in
+> trash). Always prefer an existing non-trash node; only create when none exists. Macro/thematic bookmarks
+> with no single ticker get **no** Tickers — that's correct. Populating Tickers as bookmarks are processed
+> IS the existing-corpus backfill (docs/v2/17 §7) — there is no separate mass script.
+
+**b. Status** — flip every judged bookmark's Status so it doesn't re-process
+(`set_field_option`, attributeId `2J2cAm36yfMW`):
 - **Routed** (a candidate was written/bumped) → Done `radl8GFO67zX`
 - **Left in Tana** (trivial / irrelevant / no thesis / already covered) → Dropped `P-vZKWb8S56r`
 
 ```
 set_field_option({ nodeId: "<bookmarkNodeId>", attributeId: "2J2cAm36yfMW", optionId: "radl8GFO67zX" })
 ```
-The bookmark and all its data stay in Tana — only its pipeline Status changes, so the next run's
-Backlog query skips it. (Optional: if you resolved a ticker the bookmark lacked, you may set the Tickers
-field, but the systematic backfill is Phase 2.)
+The bookmark and all its data stay in Tana — only its pipeline Status changes, so the next Backlog query
+skips it.
 
 ### 6. Report the digest
 - **Candidates written** (per thesis, with the proposed statement) — the genuine output.
@@ -114,6 +131,8 @@ field, but the systematic backfill is Phase 2.)
 - ❌ No claims by default — bookmarks are attention, not argument. (A bookmark that genuinely *asserts*
   something can be promoted to a lightweight claim via `scripts/ops/capture-observation.ts` — manual,
   opt-in, surfaced as a suggestion only.)
-- ❌ No standalone decisions and no priority-weighting yet — that's Phase 3 (channel B).
+- ❌ The skill never raises decisions or weights priority. Bookmark attention enriches an existing
+  `re_underwrite_due` (boost to high confidence) inside the raiser (docs/v2/17 P3 — automatic, off the
+  candidate_signals this skill writes), never here and never as a standalone raise. relate-bookmark senses + routes only.
 - ❌ No review queue. Auto-route the clear; leave the rest in Tana.
 - ❌ Don't re-tag bookmarks to #content or push them through Toulmin extraction.

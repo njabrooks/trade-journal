@@ -1,6 +1,6 @@
 # 17 — Bookmarks as a human-attention sensor (`relate-bookmark` + attention-weighting)
 
-> **Status:** SPEC + **Phase 1 (keystone) BUILT + VALIDATED 2026-06-25** (§10 step 1). Design
+> **Status:** SPEC + **Phases 1–3 BUILT + VALIDATED 2026-06-25** (§10; only the §8 #8/#9 deferrals remain). Design
 > conversation w/ Claude. Folds the dead-ended Tana `#bookmark`
 > stream into the **monitoring lane** (not the claim lane) as a distinct *human-attention* evidence
 > source. Builds on the self-improving loop: [14 thesis-observe](14-thesis-tracking-evidence.md),
@@ -252,11 +252,22 @@ The self-improving loop (15) today triggers re-underwrite from **two** detectors
    Helios-specific signals → wrote a `candidate_signal` on *Bullish GLXY Medium Term* (origin=bookmark)
    that surfaces on `thesis-snapshot --ticker GLXY`; bookmark flipped to Done. `npm run build` + `npm test`
    (301) + targeted lint green.
-2. **Backfill existing bookmarks** (§7) — one-shot Tickers resolver so the corpus, not just new saves, is
-   addressable.
-3. **Attention-weight on `re_underwrite_due`** (§5.3B) — add the `attention` block + raiser ranking
-   enrichment. The auto-improvement payoff; depends on 1.
-4. **(Phase 2) Observe context-feed** (§8 #8) and **(later) thesis-emergence** (§8 #9).
+2. **Tickers population** (§7) — ✅ **BUILT 2026-06-25.** Reframed on contact with the data: there is **no
+   mass backfill script**. (a) Most investment bookmarks have **no** ticker (macro/thematic/tooling) — N/A.
+   (b) `#ticker` nodes are **non-canonical** — per-occurrence dupes minted by `#content` extraction (multiple
+   `CIEN`/`SNPS`/`GLW`/`LLY`, many trashed; no `GLXY`), so the field has no clean registry to point at. So
+   relate-bookmark **populates Tickers during processing** (skill §5a: find existing non-trash `#ticker` →
+   else create a canonical one in the Library → `set_field_content` reference). The Backlog *is* the existing
+   corpus, so processing it *is* the backfill. Validated on the GLXY bookmark (`Tickers → GLXY #ticker`).
+   **Follow-up:** a `#ticker` canonicalisation pass is the prerequisite for reliable ticker-based clustering.
+3. **Attention-weight on `re_underwrite_due`** (§5.3B) — ✅ **BUILT + VALIDATED 2026-06-25.** `src/lib/derived/
+   bookmarkAttentionRules.ts` (pure: significance-weighted, linearly time-decayed score over a 60d window;
+   `strong` at ≥1.5 ≈ one recent material or two fresh notables) + `bookmarkAttention.ts` (DB: rolls up
+   bookmark-origin `candidate_signal`s per thesis). The raiser (`raise-reunderwrite-decisions.ts`) attaches
+   `attention` to `evidence_context` and boosts confidence to `high` — but **only on theses already due**
+   from claim-delta / signal-quality (fork b: never a standalone raise). Also surfaced on `thesis-snapshot`.
+   Validated: GLXY shows `strong` attention on the snapshot yet is correctly absent from the raiser (not due).
+4. **(later) Observe context-feed** (§8 #8) and **thesis-emergence** (§8 #9) — deferred.
 
 **Acceptance:** `/relate-bookmark` routes a real investment bookmark to the correct active thesis, grades
 significance, writes a deduped `candidate_signal` that shows up under `thesis-snapshot --ticker <X>`

@@ -26,6 +26,8 @@ import { and, eq } from 'drizzle-orm';
 import { buildDecisionPacket, type RelatedObject } from '@/lib/types/decisions';
 import { findThesesDueForReunderwrite } from '@/lib/derived/reunderwriteDue';
 import { computeSignalQualityDiagnostics, type ThesisSignalQuality } from '@/lib/derived/signalQualityDiagnostics';
+import { computeBookmarkAttention } from '@/lib/derived/bookmarkAttention';
+import type { AttentionSummary } from '@/lib/derived/bookmarkAttentionRules';
 
 const { journalEntries } = schema;
 
@@ -35,6 +37,8 @@ interface MergedDue {
   title: string;
   claimDelta?: { reason: string; claimsDelta: number; newRefutes: number; lastVersion: number };
   signalQuality?: Pick<ThesisSignalQuality, 'reason' | 'chronicNeutralSignals' | 'coverageGaps'>;
+  /** Bookmark attention (docs/v2/17 P3) — ENRICHES an existing trigger; never raises alone. */
+  attention?: AttentionSummary;
 }
 
 function objectTypeOf(t: 'macro' | 'asset'): 'macro_thesis' | 'asset_thesis' {
@@ -60,6 +64,15 @@ async function gatherMerged(): Promise<MergedDue[]> {
     if (existing) existing.signalQuality = signalQuality;
     else merged.set(key, { thesisId: t.thesisId, thesisType: t.thesisType, title: t.title, signalQuality });
   }
+
+  // Bookmark attention (docs/v2/17 P3) ENRICHES the theses already due from claim-delta /
+  // signal-quality — it is NEVER itself a reason to raise (fork b). So we only attach it to
+  // entries already in `merged`; theses with attention but no trigger are deliberately skipped.
+  const attention = await computeBookmarkAttention();
+  for (const m of merged.values()) {
+    const a = attention.get(m.thesisId);
+    if (a && a.total > 0) m.attention = a;
+  }
   return [...merged.values()];
 }
 
@@ -74,11 +87,15 @@ function buildPacketFor(m: MergedDue) {
     type: 'signal', id: s.signalId, title: s.statement.slice(0, 80), role: 'weak_signal',
   }));
 
-  const strong = (m.signalQuality?.coverageGaps?.length ?? 0) > 0 || (m.claimDelta?.newRefutes ?? 0) > 0;
+  // Bookmark attention boosts the priority of an EXISTING trigger (→ high confidence); it is
+  // never itself the reason the thesis is here (gatherMerged only attaches it to already-due ones).
+  const strong = (m.signalQuality?.coverageGaps?.length ?? 0) > 0
+    || (m.claimDelta?.newRefutes ?? 0) > 0
+    || (m.attention?.strong ?? false);
 
   return buildDecisionPacket({
     decision_type: 're_underwrite_due',
-    why_raised: reasons.join('; '),
+    why_raised: reasons.join('; ') + (m.attention?.strong ? ` (+ ${m.attention.detail})` : ''),
     related_objects: related,
     evidence_context: {
       triggers,
@@ -91,6 +108,13 @@ function buildPacketFor(m: MergedDue) {
             nonNeutralCount: s.nonNeutralCount, verdict: s.verdict,
           })),
           coverageGaps: m.signalQuality.coverageGaps,
+        },
+      } : {}),
+      ...(m.attention ? {
+        attention: {
+          score: m.attention.score, materialCount: m.attention.materialCount,
+          total: m.attention.total, strong: m.attention.strong,
+          detail: m.attention.detail, recent: m.attention.recent,
         },
       } : {}),
     },
@@ -143,7 +167,7 @@ async function main() {
   const asJson = argv.includes('--json');
 
   const merged = await gatherMerged();
-  const results: Array<{ title: string; thesisType: string; triggers: string[]; disposition: string }> = [];
+  const results: Array<{ title: string; thesisType: string; triggers: string[]; disposition: string; attention: string | null }> = [];
 
   for (const m of merged) {
     const triggers = [m.claimDelta && 'claim_delta', m.signalQuality && 'signal_quality'].filter(Boolean) as string[];
@@ -151,7 +175,7 @@ async function main() {
       : m.signalQuality ? 'signal set weak' : 'new evidence since last version';
     const title = `Re-underwrite ${m.title} — ${short}`;
     const disposition = await raiseOrBump(m, title, apply);
-    results.push({ title: m.title, thesisType: m.thesisType, triggers, disposition });
+    results.push({ title: m.title, thesisType: m.thesisType, triggers, disposition, attention: m.attention?.strong ? m.attention.detail : null });
   }
 
   const inserted = results.filter((r) => r.disposition === 'insert').length;
@@ -163,7 +187,7 @@ async function main() {
     console.log(`\nre_underwrite_due — ${merged.length} due thesis(es) ${apply ? '(APPLIED)' : '(dry-run; pass --apply to write)'}`);
     for (const r of results) {
       const verb = apply ? (r.disposition === 'insert' ? 'raised' : 'bumped') : (r.disposition === 'insert' ? 'would raise' : 'would bump (active exists)');
-      console.log(`  [${r.thesisType}] ${r.title} — ${verb} (${r.triggers.join(' + ')})`);
+      console.log(`  [${r.thesisType}] ${r.title} — ${verb} (${r.triggers.join(' + ')})${r.attention ? `  ⭑ ${r.attention}` : ''}`);
     }
     console.log(apply ? `\n${inserted} raised, ${bumped} bumped.\n` : `\n${inserted} new, ${bumped} already active.\n`);
   }
