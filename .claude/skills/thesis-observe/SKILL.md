@@ -63,16 +63,21 @@ tiered thesis set, each thesis's active signals, and the recent prior evidence p
 
 ```bash
 cd /Users/home-hub/projects/trade-journal
-npx tsx scripts/ops/find-theses-due-observe.ts          # Tier-1 only (the default; the cost lever)
+npx tsx scripts/ops/find-theses-due-observe.ts --due    # scheduled: cadence-aware slice (P4 #3)
 ```
 
-Output is JSON: `{ generatedAt, tiers, thesisCount, signalCount, bundles: [...] }`. Each bundle:
+Output is JSON: `{ generatedAt, selection, tiers, thesisCount, signalCount, bundles: [...] }`. Each bundle:
 `{ tier, thesisId, thesisType, title, direction, confidence, ticker|sectors, spot, materialityUsd,
+priceWatch: [{ ticker, assetClass, direction, live, liveSource, asOf, storedSpot, deltaVsStoredPct, targetPrice, toTargetPct, unpriced, note }],
 signals: [{ id, type, statement, notes, collectorTracked, recentEvidence: [{assessment, evidenceSummary, dataSource, snapshotDate}] }] }`.
 
-**Phase 1 observes TIER-1 ONLY** — do not pass `--tier`/`--all`. Tiering is the token-cost
-lever that killed v1; respect it. (`--summary` shows the full ranking + tier bands if you need
-to sanity-check what's in scope; `--tier 1,2` is a later-phase expansion.)
+**`--due` is the scheduled cadence (P4 #3 — docs/v2/14 §3.6):** Tier-1 daily, Tier-2 every ~2–3d,
+Tier-3 weekly, keyed on each thesis's last `thesis_observe` snapshot. Tiering is the token-cost
+lever that killed v1 — `--due` honors it by only pulling a tier when its floor has elapsed.
+**Note:** the *first* `--due` run after a gap is a full baseline (every never-observed thesis is
+due at once); it settles to the per-tier cadence on subsequent days. If cost bites on a given run,
+fall back to `npx tsx scripts/ops/find-theses-due-observe.ts` (bare = **Tier-1 only**) or `--tier 1`.
+(`--summary` shows the full ranking + tier bands; `--all` forces every tier.)
 
 The signal **`statement`** is the thing you judge against. Most signals have no configured
 metric; read the statement. The bundle now carries **`collectorTracked`** per signal — a
@@ -107,12 +112,28 @@ sectors and the **specific signal statements** — search the *conditions*, not 
 - One thesis's fetched news often bears on several theses' signals (a BTC story touches Bullish
   BTC, Tokenisation, Monetary Debasement) — reuse it, scoring each signal by its own bearing.
 
-## Step 4 — Fresh price
+## Step 4 — PRICE & DATA WATCH (off live prices)
 
-Use the `spot` carried in each asset bundle as the baseline and whatever current price/level
-WebSearch surfaces (for liquid Tier-1 names — BTC/HYPE/TSLA/GLXY — both are fresh). Note the
-move vs the prior report in **Change from prior**. (A full PRICE & DATA WATCH table + the
-`livePrices.ts` overlay is a Phase-2 addition; keep Step 4 light here.)
+Each bundle now carries a **`priceWatch`** array — the freshest spot per constituent underlying
+from the **W6 `livePrices.ts` overlay** (Yahoo → IBKR), computed deterministically by the worklist
+script. **Use this, not the stale `spot`/`storedSpot`** — `livePrices` is the direct fix for the
+stale-price / Bearish-Oil miss (a live thesis's defining price move that the stored daily spot
+never caught). Per entry:
+
+- **`live`** — the freshest price (use this everywhere you reason about price). **`liveSource`/`asOf`**
+  tell you its provenance/freshness.
+- **`deltaVsStoredPct`** — how far `live` has drifted from `storedSpot` (the last daily-ingest close).
+  A large drift means the stored figure is stale — flag it; it is often itself the news.
+- **`toTargetPct`** — signed proximity to the thesis target (`targetPrice`), when one is set.
+- **`unpriced: true`** (with a `note`) — an accepted gap (futures CL/HG, private SPACEX, bonds). Render
+  it as "—"; fall back to whatever level WebSearch surfaces, and never fabricate a number.
+- A `live: null` with `note: "no live quote (source miss)"` (e.g. HYPE/SUI not on Yahoo) — same: use
+  the WebSearch level if you find one, else say so.
+
+Render the table in the **PRICE & DATA WATCH** report section (Step 6) directly from this array, and
+carry the `live` figure + its `deltaVsStoredPct` into the per-signal price reasoning (Step 5) and the
+**Change from prior** line. For liquid names WebSearch will corroborate; if it diverges materially from
+`live`, prefer the more recent and say which.
 
 ## Step 5 — Per-signal judgment (the core loop)
 
@@ -139,6 +160,14 @@ qualify — they are `neutral`, with the inferential reasoning in the Assessment
 **Test:** re-read the statement. Does the evidence directly advance or set back *that specific
 condition*? If the link needs a 2+-step inferential chain ("gold weak → sovereigns reconsider
 reserves → might choose BTC → supports sovereign BTC allocation"), the Score is `neutral`.
+
+### Price-level signals — judge against the LIVE price (the stale-price fix)
+
+For a signal whose condition is a price/level ("Brent < $80", "BTC reclaims $100k") and which is
+**not** `collectorTracked`, judge it against the bundle's `priceWatch.live` (and `deltaVsStoredPct`),
+**never** the stored `spot`. A stale stored figure on the wrong side of the level is exactly the
+Bearish-Oil miss. If the underlying is `unpriced`/source-miss, use the WebSearch level or score
+`neutral` with an honest "no fresh price this period" — do not infer from the stale spot.
 
 ### Event-type items are JUDGED, never auto-scored (the W9 lesson — docs/v2/14 §2.1)
 
@@ -209,7 +238,7 @@ date: YYYY-MM-DDTHH:MM:SSZ
 time_window: 24h
 type: thesis-observe
 generated_by: thesis-observe
-tier: 1
+tiers: [1]            # the tiers actually in this run's slice (from the bundle's `tiers`)
 theses_monitored: N
 signals_monitored: N
 tickers_monitored: [GLXY, TSLA, BTC, HYPE]
@@ -219,9 +248,20 @@ tickers_monitored: [GLXY, TSLA, BTC, HYPE]
 ### Body template
 
 ```markdown
-# Thesis Observe — YYYY-MM-DD HH:MM UTC (Tier 1)
+# Thesis Observe — YYYY-MM-DD HH:MM UTC (Tiers [from the run])
 
 **Context:** [2–4 sentences on the day's developments most relevant to the observed theses.]
+
+## PRICE & DATA WATCH
+
+Freshest spot per observed underlying (live overlay), drift vs the last stored daily close, and
+proximity to the thesis target. **One row per (thesis, underlying)** from each bundle's `priceWatch`.
+Unpriced gaps (futures/private/bonds) and source misses show `—`. **Column order is the machine
+contract** — `ingest-world-monitor.ts` reads these columns positionally; keep them exactly:
+
+| Thesis | Ticker | Live | Δ vs stored | Target | To target | As of (src) |
+|--------|--------|------|-------------|--------|-----------|-------------|
+| [thesis title] | [TICKER] | [$live or —] | [+/−X.X% or —] | [$target or —] | [+/−X.X% or —] | [HH:MM (yahoo\|ibkr) or —] |
 
 ## SIGNAL ASSESSMENT
 
@@ -299,11 +339,19 @@ npx tsx scripts/ingest-world-monitor.ts --file /Users/home-hub/projects/notes/in
 ```
 
 This parses the report, writes one `signal_data_snapshots` row per reported signal with
-`data_source='thesis_observe'` (keyed off Signal ID — only the signals you reported), and
-journals each non-neutral score as a thesis-level `signal_evidence_received` entry. The nightly
-`synthesize-signal-day.ts` then aggregates these into `daily_synthesis` and the `/thesis-review`
-health pass consumes them — no further wiring needed. Confirm the console shows
+`data_source='thesis_observe'` (keyed off Signal ID — only the signals you reported), journals each
+non-neutral score as a thesis-level `signal_evidence_received` entry, parses **PRICE & DATA WATCH**
+(observability only — logged, not persisted), and **harvests THESIS-RELEVANT NEWS into
+`candidate_signal` rows** (P2 — the no-signal-matched forces become re-underwrite input). The nightly
+`synthesize-signal-day.ts` then aggregates the snapshots into `daily_synthesis` and the
+`/thesis-review` health pass consumes them — no further wiring needed. Confirm the console shows
 `Signal snapshots (thesis_observe): N generated`.
+
+**Escalation is automatic — you do nothing (P4 #2, §1d).** A `confirmed`/`invalidated` score writes a
+non-health snapshot, which makes its thesis register `hasNewEvidenceSince` → the next `/thesis-review`
+health pass picks it up within one cycle (`thesisHealth.ts` counts any non-`thesis_health` snapshot).
+The hard score thus *flags the thesis for an immediate health look* without you raising anything — the
+sensing/deciding boundary holds. No separate force-due hook is needed (verified, not built).
 
 ## Step 9 — (optional) commit the report
 

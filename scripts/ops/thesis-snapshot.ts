@@ -23,7 +23,7 @@
  */
 
 import { db } from '@/db';
-import { macroTheses, assetTheses, underlyings, strategyMetricsSnapshots, mainClaims, claimThesisMappings, assetThesisRelatedMacroTheses } from '@/db/schema';
+import { macroTheses, assetTheses, underlyings, strategyMetricsSnapshots, mainClaims, claimThesisMappings, assetThesisRelatedMacroTheses, journalEntries } from '@/db/schema';
 import { eq, and, ilike, inArray, desc, sql } from 'drizzle-orm';
 import { getLatestArticulation, getArticulationHistory, getActiveSignals } from '@/db/queries/thesisSynthesis';
 import { getMainClaimsWithSourcesForThesis, getLinkedStrategiesForThesis } from '@/db/queries/macroTheses';
@@ -179,6 +179,39 @@ async function unlinkedViaChildAssets(macroId: string) {
     .where(inArray(mainClaims.id, missingIds));
 }
 
+/**
+ * Active `candidate_signal` journal rows for this thesis (docs/v2/16 §1b) — the producer
+ * side of the Lane A↔B contract. Lane A (thesis-observe ingest) writes these from no-signal
+ * news; the re-underwrite (Lane B) reads them here and promotes the load-bearing ones into
+ * real signals (marking the rest resolved/dismissed). Read-only surface — sibling of
+ * `signalQuality`.
+ */
+async function candidateSignalsForThesis(thesisId: string) {
+  const rows = await db
+    .select({
+      id: journalEntries.id,
+      actionDescription: journalEntries.actionDescription,
+      metadata: journalEntries.metadata,
+      timestamp: journalEntries.timestamp,
+    })
+    .from(journalEntries)
+    .where(and(
+      eq(journalEntries.objectId, thesisId),
+      eq(journalEntries.actionType, 'candidate_signal'),
+      eq(journalEntries.status, 'active'),
+    ))
+    .orderBy(desc(journalEntries.timestamp));
+  return rows.map((r) => {
+    const cs = (r.metadata as { candidateSignal?: { statement?: string; sourceUrl?: string | null; observedAt?: string } } | null)?.candidateSignal;
+    return {
+      id: r.id,
+      statement: cs?.statement ?? r.actionDescription,
+      sourceUrl: cs?.sourceUrl ?? null,
+      observedAt: cs?.observedAt ?? (r.timestamp instanceof Date ? r.timestamp.toISOString() : r.timestamp),
+    };
+  });
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const r = await resolve(args);
@@ -216,6 +249,9 @@ async function main() {
   // Signal-quality diagnostics (docs/v2/15 §6.3 — the P1→P3 handoff). Non-null only for a
   // monitoring thesis with active signals: which signals are chronic-neutral (sharpen/drop on
   // re-underwrite) + any price coverage-gap (author a covering signal). null otherwise.
+  // candidate_signal rows (Lane A producer → Lane B consumer; docs/v2/16 §1b).
+  const candidateSignals = await candidateSignalsForThesis(r.id);
+
   const sq = await gatherSignalQualityContext(r.id, r.type);
   const signalQuality = sq
     ? {
@@ -301,6 +337,7 @@ async function main() {
     allocation: alloc,
     thin,
     signalQuality,
+    candidateSignals,
   }, null, 2));
 
   process.exit(0);
