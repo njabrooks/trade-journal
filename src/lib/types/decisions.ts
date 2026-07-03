@@ -151,6 +151,55 @@ export function buildDecisionPacket(input: {
   };
 }
 
+/**
+ * Urgency tiers (lower = act first): risk → belief upkeep → graph hygiene → additive.
+ * Shared by list-decisions.ts (the /decisions skill ranking) and the /decisions page
+ * so both surfaces present the same order. Untyped/legacy packets rank last.
+ */
+export const DECISION_TYPE_TIERS: Record<DecisionType, number> = {
+  review_refuting_claim: 0,
+  weakening_signal_action: 0,
+  re_underwrite_due: 1,
+  develop_thin_thesis: 1,
+  frame_asset_under_macro: 2,
+  classify_macro_link: 2,
+  link_strategy_to_thesis: 2,
+  classify_exposure: 2,
+  resolve_proxy_underlying: 2,
+  confirm_claim_link: 3,
+  cluster_claims_to_thesis: 3,
+  run_deep_dive: 3,
+};
+
+export const UNTYPED_DECISION_TIER = 4;
+
+/**
+ * Lane B (docs/v2/20) split: mechanical packets carry a clear proposal the user can
+ * one-click resolve/dismiss/snooze in the web UI; everything else is a judgment call
+ * that goes through the packet's agent runbook (copy-command deep link).
+ * `classify_macro_link` is mechanical only when the writer supplied a clear proposal
+ * (a default_recommendation).
+ */
+export function isMechanicalPacket(packet: DecisionPacket): boolean {
+  const t = packet.decision_type;
+  if (t === 'confirm_claim_link' || t === 'classify_exposure') return true;
+  if (t === 'classify_macro_link') return !!packet.default_recommendation;
+  return false;
+}
+
+/**
+ * The paste-into-terminal command a judgment packet deep-links to (Lane B v1 is
+ * clipboard-copy, not a URL scheme). Bespoke for re_underwrite_due (`/thesis <title>`);
+ * otherwise the packet's runbook with `<X>` substituted.
+ */
+export function deepLinkCommand(packet: DecisionPacket, objectTitle: string | null): string {
+  if (packet.decision_type === 're_underwrite_due' && objectTitle) {
+    return `/thesis ${objectTitle} re-underwrite`;
+  }
+  const runbook = packet.agent_runbook || DECISION_RUNBOOKS[packet.decision_type];
+  return objectTitle ? runbook.replace('<X>', objectTitle) : runbook;
+}
+
 export const DECISION_TYPES = Object.keys(DECISION_RUNBOOKS) as DecisionType[];
 
 export function isDecisionType(s: string | undefined | null): s is DecisionType {

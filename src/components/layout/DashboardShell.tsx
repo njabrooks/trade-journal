@@ -14,6 +14,7 @@ export type NavKey =
   | "strategies"
   | "signals"
   | "journal"
+  | "decisions"
   | "research"
   | "claims"
   | "admin-strategies"

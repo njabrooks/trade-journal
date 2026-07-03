@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CircleAlert,
   LayoutDashboard,
   FolderKanban,
   Settings,
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const ACTIVITY_NAV = [
+  { href: "/decisions", label: "Decisions", icon: CircleAlert, id: "decisions" },
   { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
 ] as const;
 

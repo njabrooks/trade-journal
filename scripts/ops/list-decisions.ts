@@ -23,27 +23,11 @@ import {
   getDecisionPacket,
   DECISION_TYPE_LABELS,
   DECISION_RUNBOOKS,
-  type DecisionType,
+  DECISION_TYPE_TIERS as TIER,
+  UNTYPED_DECISION_TIER as UNTYPED_TIER,
 } from '@/lib/types/decisions';
 
 const { journalEntries, researchInsights } = schema;
-
-// Urgency tiers (lower = act first): risk → belief upkeep → graph hygiene → additive.
-const TIER: Record<DecisionType, number> = {
-  review_refuting_claim: 0,
-  weakening_signal_action: 0,
-  re_underwrite_due: 1,
-  develop_thin_thesis: 1,
-  frame_asset_under_macro: 2,
-  classify_macro_link: 2,
-  link_strategy_to_thesis: 2,
-  classify_exposure: 2,
-  resolve_proxy_underlying: 2,
-  confirm_claim_link: 3,
-  cluster_claims_to_thesis: 3,
-  run_deep_dive: 3,
-};
-const UNTYPED_TIER = 4;
 
 // snoozed_until lives in the packet (metadata.decision) or, for legacy bare rows, at metadata top-level.
 const SNOOZED_UNTIL = sql`COALESCE(${journalEntries.metadata}->'decision'->>'snoozed_until', ${journalEntries.metadata}->>'snoozed_until')`;
