@@ -1,13 +1,8 @@
 "use client";
 
 import { Clock, TriangleAlert, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  DECISION_TYPE_LABELS,
-  deepLinkCommand,
-  isMechanicalPacket,
-} from "@/lib/types/decisions";
+import { DECISION_TYPE_LABELS, deepLinkCommand } from "@/lib/types/decisions";
 import { CopyCommandButton } from "./CopyCommandButton";
 import { decisionAgeDays, STALE_AGE_DAYS, type DecisionItem } from "./shared";
 
@@ -16,20 +11,25 @@ const SNOOZE_DAYS = 7;
 export type PatchDecision = (id: string, body: Record<string, unknown>) => void;
 
 /**
- * One decision packet inside an object card. Mechanical packets (clear proposal —
- * confirm_claim_link / classify_exposure / classify_macro_link with a default) get
- * one-click resolve buttons wired to the existing PATCH; judgment packets get the
- * copy-command deep link to their agent runbook. Everything can snooze/dismiss.
- * Age escalates visually past STALE_AGE_DAYS (Lane B §3 — nothing rots silently).
+ * One decision packet inside an object card — a READING surface, not an action one.
+ *
+ * The graph writes (confirm a claim link, classify exposure, re-underwrite, …) all go
+ * through the agent via resolve-decision.ts, which validates transitions and captures
+ * the judgment. The app never mutates the belief graph from here — an earlier build put
+ * one-click "resolve" buttons on this row wired to a PATCH that only closed the journal
+ * row without doing the write, so clicking "Confirm" silently dropped the link. Those
+ * are gone.
+ *
+ * What remains: the packet's proposed actions shown read-only (so you know what the agent
+ * would do), a copy-command hand-off to the runbook that actually resolves it, and the two
+ * genuinely-safe status-only controls — snooze and dismiss. Age escalates past
+ * STALE_AGE_DAYS (Lane B §3 — nothing rots silently).
  */
 export function DecisionPacketRow({ item, onPatch }: { item: DecisionItem; onPatch: PatchDecision }) {
   const packet = item.decision;
-  const mechanical = !!packet && isMechanicalPacket(packet);
   const ageDays = decisionAgeDays(item.timestamp);
   const stale = ageDays > STALE_AGE_DAYS;
 
-  const resolve = (actionTaken: string) =>
-    onPatch(item.id, { status: "resolved", resolution: { action_taken: actionTaken } });
   const snooze = () =>
     onPatch(item.id, {
       status: "snoozed",
@@ -63,34 +63,25 @@ export function DecisionPacketRow({ item, onPatch }: { item: DecisionItem; onPat
             {packet?.why_raised ?? item.rationale}
           </p>
         )}
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          {mechanical && packet ? (
-            <>
-              {packet.recommended_actions.length > 0 ? (
-                packet.recommended_actions.map((a) => (
-                  <Button
-                    key={a.action}
-                    type="button"
-                    size="sm"
-                    variant={
-                      packet.default_recommendation?.action === a.action ? "default" : "outline"
-                    }
-                    title={a.action}
-                    onClick={() => resolve(a.action)}
-                  >
-                    {a.label}
-                  </Button>
-                ))
-              ) : (
-                <Button type="button" size="sm" variant="outline" onClick={() => resolve("resolved")}>
-                  Resolve
-                </Button>
-              )}
-            </>
-          ) : (
-            packet && <CopyCommandButton command={deepLinkCommand(packet, item.objectTitle)} />
-          )}
-        </div>
+        {packet && packet.recommended_actions.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
+            <span className="text-[11px] text-muted-foreground">Agent can:</span>
+            {packet.recommended_actions.map((a) => (
+              <span
+                key={a.action}
+                className="rounded border border-border px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                title={a.action}
+              >
+                {a.label}
+              </span>
+            ))}
+          </div>
+        )}
+        {packet && (
+          <div className="mt-2">
+            <CopyCommandButton command={deepLinkCommand(packet, item.objectTitle)} />
+          </div>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <button

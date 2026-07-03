@@ -60,8 +60,10 @@ export function DecisionCards() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         {decisions.length} open decision{decisions.length === 1 ? "" : "s"} across {groups.length}{" "}
-        object{groups.length === 1 ? "" : "s"} — ranked by urgency, oldest first. Judgment calls
-        copy a runbook command to run in a Claude Code session.
+        object{groups.length === 1 ? "" : "s"} — ranked by urgency, oldest first. Read them here, then{" "}
+        <span className="font-medium text-foreground">resolve in a Claude session</span> (run{" "}
+        <code className="rounded bg-muted px-1 py-0.5 text-xs">/decisions</code>, or copy a specific
+        command from a card). Snooze parks one for later; dismiss clears noise.
       </p>
       {groups.map((group) => (
         <DecisionObjectCard key={group.key} group={group} onPatch={patch} />
