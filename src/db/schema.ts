@@ -2706,3 +2706,34 @@ export const advisorRecommendations = pgTable(
 
 export type AdvisorRecommendation = typeof advisorRecommendations.$inferSelect;
 export type NewAdvisorRecommendation = typeof advisorRecommendations.$inferInsert;
+
+// ============================================================================
+// Morning Briefs (docs/v2/20 Lane A — the daily synthesis surface)
+// ============================================================================
+// ONE row per day (upsert on brief_date): the /morning-brief skill's judgment
+// synthesis over the deterministic bundle (scripts/morning-brief-data.ts).
+// Synthesis-only — the brief never mutates the belief layer and never raises
+// decisions; re-running the same day supersedes the row.
+
+export const morningBriefs = pgTable(
+  'morning_briefs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    briefDate: date('brief_date').notNull().unique(),
+    headline: text('headline').notNull(),
+    // Ranked attention list (≤5): [{ title, why, deepLink }] — deepLink is a copyable
+    // agent command ('/thesis GLXY', '/decisions'), not a URL.
+    attention: jsonb('attention').notNull().default(sql`'[]'::jsonb`),
+    bodyMd: text('body_md'),
+    // Provenance + the deterministic inputs digest (navDelta, counts, generator versions)
+    metadata: jsonb('metadata'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    dateIdx: index('idx_morning_briefs_date').on(table.briefDate),
+  })
+);
+
+export type MorningBrief = typeof morningBriefs.$inferSelect;
+export type NewMorningBrief = typeof morningBriefs.$inferInsert;

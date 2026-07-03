@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trade-journal.morning-brief</string>
+
+    <!--
+        Morning-brief synthesis producer (docs/v2/20 Lane A — the daily
+        "what deserves my attention today" surface).
+
+        Schedule: 08:45 LOCAL TIME (Europe/London), every day.
+        StartCalendarInterval is local-time and follows DST automatically. 08:45 sits
+        AFTER the 07:00 thesis-observe and 08:00 /maintenance runs, so the brief
+        synthesizes fresh evidence and newly-raised decisions into one row.
+
+        Runs the `/morning-brief` Claude skill headlessly via
+        scripts/cron/morning-brief.sh (lockfile, timeout, logging, all-Opus). The skill
+        is SYNTHESIS ONLY — its single DB write is the morning_briefs upsert; it NEVER
+        mutates the belief layer or raises decisions.
+
+        Off-switch: ./launchd/install.sh --remove   (or launchctl unload the plist).
+    -->
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/home-hub/projects/trade-journal/scripts/cron/morning-brief.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>45</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/morning-brief.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/morning-brief.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/home-hub</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

@@ -1,0 +1,5 @@
+{
+  "name": "morning-brief",
+  "description": "The daily synthesis surface (docs/v2/20 Lane A). Reads the deterministic morning bundle (NAV delta, overnight signal evidence, open decisions, advisor recommendations, sizing-coherence findings, execution patterns, next-48h calendar) and writes ONE judged brief row (headline + ranked attention list ≤5 + body) to morning_briefs, upserted on brief_date. SYNTHESIS ONLY — never mutates the belief layer, never raises decisions. Use when asked to \"run the morning brief\", \"generate the brief\", \"what deserves my attention today\", or on the 08:45 scheduled producer.",
+  "instructions": "SKILL.md"
+}
