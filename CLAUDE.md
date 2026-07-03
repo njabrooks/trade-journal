@@ -17,8 +17,8 @@ A **Next.js full-stack application** for managing a multi-exchange investment po
 ### Removed in the 2026-06 prune — do not look for these
 Position triage + thesis triage (entire subsystem: pages, queues, engines, tables), `/news` page + intelligence report storage (`intelligence_reports`/`intelligence_items`), AI prompts admin (`ai_prompts`), FRED table subsystem, analyst upgrade/downgrade + price targets (insider transactions survive), in-app research upload/processing UI, reconciliation checkpoints, `thesis_news_items`. Dropped-table CSV dumps: `archive/db-dumps/2026-06/` (local). Old journal entries may reference these — that's history, not a bug.
 
-### Deferred to W8 (research redesign) — do not "clean up" prematurely
-`research_hierarchy_recommendations` + `research_processing_runs` tables, claim-suggestion routes (`/api/research/claims/suggestions/*`, `available-entities`, `link-evidence`, `promote-claim`), `InlineClaimSuggestions`, `scripts/ops/insert-claim-suggestions.ts`, `scripts/backfill-claim-suggestions.ts`, redesigned `scripts/ingest-world-monitor.ts` (now emits `intel_items` directly, no report storage). These serve the live Tana→Trade Journal pipeline until its replacement exists.
+### Research redesign (W8) — landed as the loose-agent model
+W8 shipped incrementally as docs/v2/10–17 (relate-research, `/thesis`, `/maintenance`, thesis-observe, relate-bookmark). The claim-suggestion subsystem was cut over 2026-06-25 (docs/v2/11): the suggestion API routes, `InlineClaimSuggestions`, and the insert/backfill suggestion scripts are **gone** — don't look for them. The `research_hierarchy_recommendations` + `research_processing_runs` tables still exist but are dead; dropping them is deferred housekeeping. `scripts/ingest-world-monitor.ts` remains live (emits `intel_items` directly, no report storage).
 
 ## Technology Stack
 
@@ -55,7 +55,7 @@ Exchanges/APIs → src/lib/ingestion/* → raw tables (trades, positions, …)
               → computed tables (strategy_metrics_snapshots, portfolio_snapshots, journal_entries)
               → src/db/queries/* → server components (pages) / API routes → React
 ```
-Compute during ingestion and store; don't compute on query. All ingestion logs to `ingestion_runs`.
+Compute during ingestion and store; don't compute on query. Crypto/manual-snapshot ingestion logs to `ingestion_runs`; the IBKR flex pipeline currently does NOT write there — check `positions.snapshot_date` freshness instead (known observability gap).
 
 **Research flow (Tana-centric):** capture + Toulmin extraction happen in Tana (notes repo); investment claims auto-promote into `main_claims`; linkage to theses via `claim_thesis_mappings`. The in-app research UI is browse-only (`/research`, `/claims`). The whole interface is being redesigned in W8.
 
@@ -76,10 +76,10 @@ Signals = confirmation/invalidation/completion criteria per thesis or strategy. 
 Entity detail pages use route-based tabs via `createEntityTabs()` (`src/lib/types/entity-tabs.ts`): **Overview | Journal** (claims & signals render inside Overview). Pattern: server components call `src/db/queries/*` directly; the portfolio/accounting pages are client components fetching API routes. Dynamic `[id]` pages must guard non-UUID params with `isUuid()` from `src/lib/utils.ts` (404, not 500).
 
 ### `/src/db`
-- **`schema.ts`** — authoritative Drizzle schema (62 tables)
+- **`schema.ts`** — authoritative Drizzle schema (64 tables)
 - **`queries/`** — accounting, accounts, assetTheses, assets, cached, earningsEvents, economicEvents, entityRelationships, events, importBatches, intelItems, macroTheses, portfolio, reconciliation, relatedMacroTheses, research, secFilings, signals, strategies, tax-transactions, thesisSynthesis
   - `earningsEvents`/`economicEvents`/`secFilings` are currently orphaned (their feed routes died in the prune); data still ingests — modules may be re-used by W6/W7
-- **`types.ts`** — auto-generated Supabase types (stale: still lists dropped tables; regenerate opportunistically)
+- **`types.ts`** — auto-generated Supabase types (regenerated 2026-07-03 via Supabase MCP `generate_typescript_types`; reference only — query via Drizzle)
 
 ### `/src/lib`
 - **`derived/`** — ivMetrics, portfolio, signalEvaluation, strategyAuto, strategyMetrics (per-strategy daily snapshots — **unrealized PnL only**; realized PnL is the W4 build)
@@ -95,7 +95,7 @@ Entity detail pages use route-based tabs via `createEntityTabs()` (`src/lib/type
 - **Ops (manual):** `scripts/ops/*` (create/link/status/journal helpers), psql-query, push/restore-from-remote, reconcile-koinly, import-koinly, run-calculation-engine, s104-tax-summary, backfill-cik (SEC CIK populator — keep), sync-tv-drawings (fate undecided)
 - **`scripts/lib/db.ts`** — ALWAYS use for DB access in scripts (loads dotenv before client creation; importing `src/db/index.ts` breaks on import hoisting)
 
-## Database Schema (62 tables — `src/db/schema.ts` is authoritative)
+## Database Schema (64 tables — `src/db/schema.ts` is authoritative)
 
 **Core:** accounts, owners, underlyings (ticker reference + spot/IV30/conid), trades, positions (`market_value_usd` is canonical USD value; `abs_notional*` are deprecated legacy), strategies, macro_theses, asset_theses, main_claims (+ main_claim_evidence, claim_thesis_mappings, claim_signal_evidences)
 
@@ -117,7 +117,7 @@ Entity detail pages use route-based tabs via `createEntityTabs()` (`src/lib/type
 
 GitHub Actions (UTC): flex hourly 04–14 · massive 21:30 · hyperliquid/coinbase/kraken/deribit/solana every 4h (offsets :00/:15/:30/:45/:50) · crypto-prices 00:30+06:00 · economic calendar 06:00+14:00 · earnings 05:00 wd · finnhub 07:00 · SEC 07:00 · signal-day-synthesis 01:00 · evaluate-intel-items every 4h @ :10 · price-gap-check 08:00 · manual-snapshots 06:00. All have `workflow_dispatch`.
 
-On-device launchd: `com.trade-journal.options-scanner` Mon–Fri 14:50 Europe/London (wrapper `scripts/cron/options-scanner.sh`; read [launchd/README.md](launchd/README.md) before adding jobs).
+On-device launchd (wrappers in `scripts/cron/`; read [launchd/README.md](launchd/README.md) before adding jobs): `options-scanner` Mon–Fri 14:50 Europe/London · `collect-signal-data` daily 06:30 · `thesis-observe` daily 07:00 · `maintenance` twice daily 08:00/20:00. The observe/maintenance jobs run the Claude CLI headlessly — **an expired CLI login (`claude /login`) fails them silently with rc=1**. Every wrapper appends its outcome to `logs/cron-status.tsv`; `scripts/ops/check-cron-health.ts --nudge` (wired to SessionStart) surfaces failure streaks and stale jobs, and failures also fire a macOS notification.
 
 **Known issues:** IBKR Flex API refuses statement generation mid-US-market-day (`ErrorCode 1001`) — failures outside the 04–14 UTC window are usually IBKR-side, not code. (Solana flakiness was the triage engine erroring on crypto positions; resolved by the prune, verified 2026-06-11.)
 
@@ -136,7 +136,7 @@ On-device launchd: `com.trade-journal.options-scanner` Mon–Fri 14:50 Europe/Lo
 
 ## Skills (`.claude/skills/`)
 
-Active: pull-portfolio, portfolio-and-options-mcp, ibkr-quote, analyze-vol-curve, build-core-argument, **thesis** (talk-to-your-thesis, docs/v2/10 D3), relate-research, maintenance, thesis-review, assess-validation-evidence, synthesize-claims, finalize-for-upload, backfill-claims, process-transcript, process-note, graduate-pipeline-idea + the stage-1…5 deep-dive pipeline skills, advance-or-kill, pipeline-status. (paperclip-backlog and archived-* are deprecated; **configure-signal is retired** — signals are now auto-derived by build-core-argument, never configured, per docs/v2/10 §6/§9.)
+Active: pull-portfolio, portfolio-and-options-mcp, ibkr-quote, analyze-vol-curve, options-advisor, build-core-argument, **thesis** (talk-to-your-thesis, docs/v2/10 D3), **decisions** (pull resolver), relate-research, relate-bookmark, maintenance, thesis-review, thesis-observe, assess-validation-evidence, synthesize-claims, finalize-for-upload, backfill-claims, process-transcript, process-note, graduate-pipeline-idea + the stage-1…5 deep-dive pipeline skills, advance-or-kill, pipeline-status. (paperclip-backlog and archived-* are deprecated; **configure-signal is retired** — signals are now auto-derived by build-core-argument, never configured, per docs/v2/10 §6/§9.)
 
 ## V2 Roadmap Snapshot (details in [docs/v2/03-v2-spec.md](docs/v2/03-v2-spec.md))
 
@@ -150,6 +150,8 @@ Active: pull-portfolio, portfolio-and-options-mcp, ibkr-quote, analyze-vol-curve
 | W5 performance section UI | **DONE** 2026-06-12 — `/performance` page (asset/macro attribution tables + retrospective cards, empty until the cull closes theses); Performance sections on thesis overview pages (asset: stacked per-strategy chart, macro: full-credit exposure view + per-asset breakdown); `ConfidenceBadge` (`src/components/performance/`) enforces the non-'full' realized_confidence badging rule everywhere realized figures render |
 | W6 morning screen + live-pricing overlay (D14) | **DONE** 2026-06-12 — live overlay: `src/lib/services/livePrices.ts` (Yahoo live → IBKR gateway fallback, 15-min TTL, stale-quote + deviation + currency guards) applied client-side as a price RATIO (`src/lib/livePricingOverlay.ts`, tested); dashboard = morning screen: needs-decision strip (journal `action_type='decision_required'` + `status='active'`, W8 produces items), D12 lens tabs (underlying/strategy/account-NAV/P&L), performance + scanner modules. Advisor slot in ScannerSnapshot awaits W7 |
 | W7 portfolio-aware options advisor (D11) | **DONE** 2026-06-12 — all four scenarios: hedge (puts/put-spreads), income (covered calls + run-up context), put_entry (cash-secured puts on bullish-thesis names), opportunistic (judgment payload, no mechanical structures). Engine `scripts/options-advisor.ts` (math only; NOTE: scripts/lib/db pools max 1 connection — loaders must stay sequential), judgment in `/options-advisor` skill, storage `advisor_recommendations` (per-scenario batch supersede, 7-day expiry), dashboard ScannerSnapshot groups by scenario. Live batches: hedge 3 + income 3 + put_entry 2. Post-scan scheduling deliberately on-demand pending user decision |
-| W8 research redesign (Tana-aware, anticipatory; absorbs all deferred items above) | pending |
-| W9 intel router quality audit | pending |
+| W8 research redesign (Tana-aware, anticipatory) | **DONE** — landed incrementally as the loose-agent model (docs/v2/10–17: relate-research, /thesis, /maintenance, thesis-observe, relate-bookmark); claim-suggestion cutover 2026-06-25 (docs/v2/11) |
+| W9 intel router quality audit | **KILLED** — evaluate.ts engine + cron removed instead of audited; signal evidence now comes from thesis-observe + ingest-world-monitor |
+| docs/v2/13 macro emergence + episodic performance | **DONE** 2026-06-25 @64f5981 |
+| docs/v2/19 post-sweep decision plan | **DONE** 2026-06-29 — all 260 claim decisions resolved, 10 theses re-underwritten with owner calls (ETH flipped bearish), 2 new draft macros |
 | Thesis cull | **CLOSED 2026-06-23** — superseded by the status-change logic (keep all; unexpressed theses go dormant=`closed` via the cascade, re-express automatically; never delete/reject as cleanup). Only residual action = merge genuine duplicates (KWEB). |

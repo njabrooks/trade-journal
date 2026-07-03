@@ -47,6 +47,7 @@ next-env.d.ts
 *.csv
 *.xlsx
 !docs/WeeklyOptionsReview.xlsx
+*.pdf
 # Vim swap files
 *.swp
 .*.swp
