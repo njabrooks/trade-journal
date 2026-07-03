@@ -86,4 +86,10 @@ elif [ "$RC" -ne 0 ]; then
 else
     echo "[$(ts)] thesis-observe complete" >> "$LOG_FILE"
 fi
+
+# Record outcome for check-cron-health.ts (SessionStart nudge surfaces failure streaks).
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "thesis-observe" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+if [ "$RC" -ne 0 ]; then
+    /usr/bin/osascript -e "display notification \"thesis-observe failed (rc=$RC) — see logs/thesis-observe.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
+fi
 exit 0

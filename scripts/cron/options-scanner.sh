@@ -54,7 +54,15 @@ if [ -f "$LOCK_FILE" ]; then
     fi
     echo "[$(ts)] Stale lock found (${LOCK_AGE}s old). Removing." >> "$LOG_FILE"
 fi
-trap 'rm -f "$LOCK_FILE"' EXIT
+# Record outcome for check-cron-health.ts (SessionStart nudge surfaces failure streaks).
+# Script is fail-fast (set -e), so the EXIT trap captures the rc of whichever stage died.
+record_status() {
+    printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "options-scanner" "$1" >> "$TJ_ROOT/logs/cron-status.tsv"
+    if [ "$1" -ne 0 ]; then
+        /usr/bin/osascript -e "display notification \"options-scanner failed (rc=$1) — see logs/options-scanner.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
+    fi
+}
+trap 'rc=$?; rm -f "$LOCK_FILE"; record_status "$rc"' EXIT
 touch "$LOCK_FILE"
 
 cd "$TJ_ROOT"
