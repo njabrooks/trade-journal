@@ -13,8 +13,9 @@ directory and follow the same conventions.
 | `com.trade-journal.maintenance` | 08:00 + 20:00 | `maintenance.sh` | `/maintenance` belief loop — **spawns headless `claude`** |
 | `com.trade-journal.collect-signal-data` | 06:30 | `collect-signal-data.sh` | Quantitative signal collectors (deterministic tsx, **no Claude**) — docs/v2/14 §8 |
 | `com.trade-journal.thesis-observe` | 07:00 | `thesis-observe.sh` | `/thesis-observe` tracking-evidence producer (Tier-1) — **spawns headless `claude`** — docs/v2/14 |
+| `com.trade-journal.morning-brief` | 08:45 | `morning-brief.sh` | `/morning-brief` daily synthesis surface (ONE upserted `morning_briefs` row for the dashboard) — **spawns headless `claude`** — docs/v2/20 Lane A |
 
-The morning chain is ordered: **06:30 collectors → 07:00 observe → 08:00 maintenance consume**, so the belief loop reads fresh same-day quantitative + qualitative evidence. The two `claude`-spawning jobs run `--model opus --dangerously-skip-permissions`; treat enabling them as a deliberate go-live (they incur token cost). Install/remove all four with `./install.sh` / `./install.sh --remove`.
+The morning chain is ordered: **06:30 collectors → 07:00 observe → 08:00 maintenance consume → 08:45 brief synthesize**, so the belief loop reads fresh same-day quantitative + qualitative evidence and the brief summarizes what came out of it. The `claude`-spawning jobs run `--model opus --dangerously-skip-permissions`; treat enabling them as a deliberate go-live (they incur token cost). Install/remove all five with `./install.sh` / `./install.sh --remove`.
 
 ## When to put a job here vs in GitHub Actions
 

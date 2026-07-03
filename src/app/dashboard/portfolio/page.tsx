@@ -18,6 +18,7 @@ import { AccountNavTable } from "@/components/portfolio/AccountNavTable";
 import { StrategyLensTable } from "@/components/portfolio/StrategyLensTable";
 import { PnlLensTable } from "@/components/portfolio/PnlLensTable";
 import { DecisionStrip } from "@/components/portfolio/DecisionStrip";
+import { MorningBrief } from "@/components/portfolio/MorningBrief";
 import { PerformanceSnapshot } from "@/components/portfolio/PerformanceSnapshot";
 import { ScannerSnapshot } from "@/components/portfolio/ScannerSnapshot";
 import { PortfolioCharts } from "@/components/portfolio/PortfolioCharts";
@@ -450,6 +451,9 @@ function PortfolioDashboardContent() {
 
   return (
     <DashboardShell activeNav="portfolio" title="Portfolio" subtitle={subtitle}>
+      {/* Morning brief — the daily synthesis surface (docs/v2/20 Lane A) */}
+      <MorningBrief />
+
       {/* Needs-decision strip — renders nothing until a review job emits items */}
       <DecisionStrip />
 
