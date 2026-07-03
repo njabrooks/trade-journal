@@ -1678,7 +1678,7 @@ export const journalEntries = pgTable(
     timestamp: timestamp('timestamp', { withTimezone: true }).notNull().defaultNow(),
 
     // Object context (polymorphic)
-    objectType: text('object_type').notNull(),  // 'macro_thesis' | 'asset_thesis' | 'strategy' | 'position' | 'claim' | 'validation_point'
+    objectType: text('object_type').notNull(),  // 'macro_thesis' | 'asset_thesis' | 'strategy' | 'position' | 'claim' | 'signal' | 'validation_point' | 'reconciliation' | 'advisor_recommendation' (DB CHECK journal_entries_object_type_check)
     objectId: uuid('object_id').notNull(),
     objectTitle: text('object_title'),
 
@@ -2691,6 +2691,17 @@ export const advisorRecommendations = pgTable(
 
     status: text('status').notNull().default('active'), // 'active' | 'dismissed' | 'acted' | 'expired' | 'superseded'
     source: text('source').notNull().default('skill'), // 'skill' | 'automation'
+
+    // Lane C (docs/v2/20) — the execution loop: when the user records having acted
+    // on a recommendation, we stamp the moment + the trade_action journal entry,
+    // and the retrospective scoring pass later fills outcome (entry edge vs realized).
+    actedAt: timestamp('acted_at', { withTimezone: true }),
+    actedJournalId: uuid('acted_journal_id').references(() => journalEntries.id, {
+      onDelete: 'set null',
+    }),
+    // { scoredAt, expiry, spotAtExpiry, spotDate, entryNetPremiumPerShare,
+    //   intrinsicAtExpiryPerShare, realizedPnlPerShare, win } — see src/lib/derived/advisorOutcome.ts
+    outcome: jsonb('outcome'),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

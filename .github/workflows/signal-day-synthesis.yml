@@ -32,3 +32,14 @@ jobs:
           USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
         run: |
           npx tsx scripts/synthesize-signal-day.ts
+
+      # Lane C (docs/v2/20) — advisor execution loop maintenance:
+      # flip lapsed recommendations to 'expired' and score settled acted ones.
+      - name: Score advisor outcomes
+        if: always()
+        env:
+          DATABASE_URL_POOLER: ${{ secrets.DATABASE_URL_POOLER }}
+          DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+          USE_DIRECT_CONNECTION: ${{ secrets.USE_DIRECT_CONNECTION }}
+        run: |
+          npx tsx scripts/ops/score-advisor-outcomes.ts
