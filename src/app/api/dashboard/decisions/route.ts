@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { journalEntries } from '@/db/schema';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { isUuid } from '@/lib/utils';
 import { getDecisionPacket, type DecisionResolution } from '@/lib/types/decisions';
 
@@ -14,14 +14,24 @@ export const dynamic = 'force-dynamic';
  * metadata.decision. The strip surfaces ACTIVE ones, hard-capped, newest first.
  * Dismissing sets status='dismissed'; snoozing hides until snoozed_until passes;
  * resolving records a resolution into the packet.
+ *
+ * GET honours `?limit=<n>|all` (default HARD_CAP, for the strip) and always returns
+ * `total` — the full active count — so the strip count stays honest past the cap and
+ * the /decisions page (Lane B, docs/v2/20) can render everything.
  */
 const HARD_CAP = 5;
 
 /** snoozed_until can live in the packet (metadata.decision) or, for legacy bare rows, at metadata top-level. */
 const SNOOZED_UNTIL_SQL = sql`COALESCE(${journalEntries.metadata}->'decision'->>'snoozed_until', ${journalEntries.metadata}->>'snoozed_until')`;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const limitParam = request.nextUrl.searchParams.get('limit');
+    const limit =
+      limitParam === 'all'
+        ? null
+        : Math.max(1, Number.parseInt(limitParam ?? '', 10) || HARD_CAP);
+
     // Self-heal: wake any snoozed decision whose snooze has expired (idempotent).
     await db
       .update(journalEntries)
@@ -35,7 +45,12 @@ export async function GET() {
         )
       );
 
-    const rows = await db
+    const activeWhere = and(
+      eq(journalEntries.actionType, 'decision_required'),
+      eq(journalEntries.status, 'active')
+    );
+
+    const baseQuery = db
       .select({
         id: journalEntries.id,
         objectType: journalEntries.objectType,
@@ -48,21 +63,23 @@ export async function GET() {
         metadata: journalEntries.metadata,
       })
       .from(journalEntries)
-      .where(
-        and(
-          eq(journalEntries.actionType, 'decision_required'),
-          eq(journalEntries.status, 'active')
-        )
-      )
-      .orderBy(desc(journalEntries.timestamp))
-      .limit(HARD_CAP);
+      .where(activeWhere)
+      .orderBy(desc(journalEntries.timestamp));
+
+    const rows = limit ? await baseQuery.limit(limit) : await baseQuery;
+
+    let total = rows.length;
+    if (limit && rows.length === limit) {
+      const [{ n }] = await db.select({ n: count() }).from(journalEntries).where(activeWhere);
+      total = n;
+    }
 
     const decisions = rows.map(({ metadata, ...rest }) => ({
       ...rest,
       decision: getDecisionPacket(metadata),
     }));
 
-    return NextResponse.json({ decisions });
+    return NextResponse.json({ decisions, total });
   } catch (error) {
     console.error('Error fetching decisions:', error);
     return NextResponse.json({ error: 'Failed to fetch decisions' }, { status: 500 });

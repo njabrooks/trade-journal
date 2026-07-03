@@ -41,11 +41,15 @@ const SNOOZE_DAYS = 7;
  */
 export function DecisionStrip() {
   const [decisions, setDecisions] = useState<DecisionItem[]>([]);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetch("/api/dashboard/decisions")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setDecisions(data?.decisions ?? []))
+      .then((data) => {
+        setDecisions(data?.decisions ?? []);
+        setTotal(data?.total ?? data?.decisions?.length ?? 0);
+      })
       .catch(() => {});
   }, []);
 
@@ -78,7 +82,19 @@ export function DecisionStrip() {
       <div className="mb-2 flex items-center gap-2">
         <CircleAlert className="h-4 w-4 text-amber-500" />
         <h3 className="text-sm font-semibold">Needs decision</h3>
-        <span className="text-xs text-muted-foreground">{decisions.length}</span>
+        <Link
+          href="/decisions"
+          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+          title="Open the decisions page"
+        >
+          {total}
+        </Link>
+        <Link
+          href="/decisions"
+          className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          View all →
+        </Link>
       </div>
       <ul className="space-y-2">
         {decisions.map((d) => {
