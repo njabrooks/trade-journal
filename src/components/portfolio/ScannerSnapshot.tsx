@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Activity, ShieldCheck, X } from "lucide-react";
+import { Activity, Check, ShieldCheck, X } from "lucide-react";
 import { formatCurrency, formatDateShort } from "@/lib/formatters";
 
 interface ScannerSnapshotRow {
@@ -46,6 +46,25 @@ interface AdvisorRecommendation {
   rationale: string;
 }
 
+/** Lane C — per-scenario hit-rate tallies from the outcome scoring pass. */
+interface AdvisorScenarioSummary {
+  scenario: string;
+  acted: number;
+  expired: number;
+  dismissed: number;
+  scored: number;
+  hitRate: number | null;
+}
+
+function summaryLine(s: AdvisorScenarioSummary | undefined): string | null {
+  if (!s) return null;
+  const total = s.acted + s.expired + s.dismissed;
+  if (total === 0) return null;
+  const parts = [`${s.acted} acted`, `${s.expired} expired`, `${s.dismissed} dismissed`];
+  if (s.hitRate !== null) parts.push(`${Math.round(s.hitRate * 100)}% hit`);
+  return parts.join(" · ");
+}
+
 const STRUCTURE_LABELS: Record<string, string> = {
   protective_put: "put",
   put_spread: "put spread",
@@ -81,6 +100,7 @@ const TOP_N = 5;
 export function ScannerSnapshot() {
   const [data, setData] = useState<ScannerTodayData | null>(null);
   const [recs, setRecs] = useState<AdvisorRecommendation[]>([]);
+  const [summary, setSummary] = useState<AdvisorScenarioSummary[]>([]);
 
   useEffect(() => {
     fetch("/api/vol-curve/scanner-today")
@@ -89,16 +109,19 @@ export function ScannerSnapshot() {
       .catch(() => {});
     fetch("/api/advisor/recommendations")
       .then((res) => (res.ok ? res.json() : null))
-      .then((d) => setRecs(d?.recommendations ?? []))
+      .then((d) => {
+        setRecs(d?.recommendations ?? []);
+        setSummary(d?.summary ?? []);
+      })
       .catch(() => {});
   }, []);
 
-  const dismissRec = useCallback(async (id: string) => {
+  const updateRec = useCallback(async (id: string, status: "dismissed" | "acted") => {
     setRecs((prev) => prev.filter((r) => r.id !== id));
-    await fetch("/api/advisor/recommendations", {
+    await fetch(`/api/advisor/recommendations/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, status: "dismissed" }),
+      body: JSON.stringify({ status }),
     }).catch(() => {});
   }, []);
 
@@ -128,42 +151,61 @@ export function ScannerSnapshot() {
       {/* Advisor recommendations (D11), grouped by scenario */}
       {recs.length > 0 && (
         <div className="mb-4 space-y-3 border-b pb-4">
-          {[...new Set(recs.map((r) => r.scenario))].map((scenario) => (
-            <div key={scenario} className="space-y-1.5">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Advisor — {SCENARIO_LABELS[scenario] ?? scenario}
-                </span>
-              </div>
-              {recs
-                .filter((r) => r.scenario === scenario)
-                .map((rec) => (
-                  <div key={rec.id} className="flex items-start gap-2 text-sm">
-                    <span className="w-14 shrink-0 font-mono text-xs font-medium">
-                      {rec.ticker}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <span title={rec.rationale}>{describeStructure(rec)}</span>
-                      {rec.exposureUsd !== null && rec.exposureUsd > 0 && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          on {formatCurrency(rec.exposureUsd)}
-                          {rec.pctNav !== null && ` (${(rec.pctNav * 100).toFixed(1)}% NAV)`}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => dismissRec(rec.id)}
-                      className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      title="Dismiss"
+          {[...new Set(recs.map((r) => r.scenario))].map((scenario) => {
+            const hitLine = summaryLine(summary.find((s) => s.scenario === scenario));
+            return (
+              <div key={scenario} className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Advisor — {SCENARIO_LABELS[scenario] ?? scenario}
+                  </span>
+                  {hitLine && (
+                    <span
+                      className="ml-auto text-[10px] tabular-nums text-muted-foreground"
+                      title="How past recommendations in this scenario resolved (last 180 days); hit rate is over scored acted structures"
                     >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-            </div>
-          ))}
+                      {hitLine}
+                    </span>
+                  )}
+                </div>
+                {recs
+                  .filter((r) => r.scenario === scenario)
+                  .map((rec) => (
+                    <div key={rec.id} className="flex items-start gap-2 text-sm">
+                      <span className="w-14 shrink-0 font-mono text-xs font-medium">
+                        {rec.ticker}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span title={rec.rationale}>{describeStructure(rec)}</span>
+                        {rec.exposureUsd !== null && rec.exposureUsd > 0 && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            on {formatCurrency(rec.exposureUsd)}
+                            {rec.pctNav !== null && ` (${(rec.pctNav * 100).toFixed(1)}% NAV)`}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => updateRec(rec.id, "acted")}
+                        className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-emerald-600 dark:hover:text-emerald-400"
+                        title="Record action — I traded this (writes a trade_action journal entry)"
+                      >
+                        <Check className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateRec(rec.id, "dismissed")}
+                        className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        title="Dismiss"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            );
+          })}
         </div>
       )}
 

@@ -1,14 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/db';
 import { advisorRecommendations } from '@/db/schema';
 import { and, desc, eq, gt, isNull, or, sql } from 'drizzle-orm';
-import { isUuid } from '@/lib/utils';
+import { summarizeAdvisorOutcomes } from '@/lib/derived/advisorOutcome';
 
 export const dynamic = 'force-dynamic';
 
-/** Active (non-expired) advisor recommendations for the dashboard module. */
+/** How far back the per-scenario hit-rate summary looks. */
+const SUMMARY_WINDOW_DAYS = 180;
+
+/**
+ * Active (non-expired) advisor recommendations for the dashboard module, plus
+ * the Lane C per-scenario hit-rate summary (acted/expired/dismissed + scored
+ * outcome win rate) over the recent window.
+ *
+ * Status changes go through PATCH /api/advisor/recommendations/[id].
+ */
 export async function GET() {
   try {
+    const now = new Date();
     const rows = await db
       .select({
         id: advisorRecommendations.id,
@@ -29,50 +39,32 @@ export async function GET() {
           eq(advisorRecommendations.status, 'active'),
           or(
             isNull(advisorRecommendations.expiresAt),
-            gt(advisorRecommendations.expiresAt, new Date())
+            gt(advisorRecommendations.expiresAt, now)
           )
         )
       )
       .orderBy(desc(advisorRecommendations.exposureUsd));
 
-    return NextResponse.json({ recommendations: rows });
+    const windowStart = new Date(now.getTime() - SUMMARY_WINDOW_DAYS * 86_400_000);
+    const summaryRows = await db
+      .select({
+        scenario: advisorRecommendations.scenario,
+        status: advisorRecommendations.status,
+        outcome: advisorRecommendations.outcome,
+        expiresAt: advisorRecommendations.expiresAt,
+      })
+      .from(advisorRecommendations)
+      .where(gt(advisorRecommendations.createdAt, windowStart));
+
+    return NextResponse.json({
+      recommendations: rows,
+      summary: summarizeAdvisorOutcomes(summaryRows, now),
+    });
   } catch (error) {
     console.error('Error fetching advisor recommendations:', error);
     return NextResponse.json(
       { error: 'Failed to fetch recommendations' },
       { status: 500 }
     );
-  }
-}
-
-/** Dismiss or mark acted: PATCH { id, status: 'dismissed' | 'acted' } */
-export async function PATCH(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { id, status } = body as { id?: string; status?: string };
-
-    if (!id || !isUuid(id)) {
-      return NextResponse.json({ error: 'Valid id is required' }, { status: 400 });
-    }
-    if (status !== 'dismissed' && status !== 'acted') {
-      return NextResponse.json(
-        { error: "status must be 'dismissed' or 'acted'" },
-        { status: 400 }
-      );
-    }
-
-    const updated = await db
-      .update(advisorRecommendations)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(advisorRecommendations.id, id))
-      .returning({ id: advisorRecommendations.id });
-
-    if (updated.length === 0) {
-      return NextResponse.json({ error: 'Recommendation not found' }, { status: 404 });
-    }
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error updating recommendation:', error);
-    return NextResponse.json({ error: 'Failed to update recommendation' }, { status: 500 });
   }
 }

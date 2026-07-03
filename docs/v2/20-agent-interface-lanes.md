@@ -96,6 +96,13 @@ No schema changes. Components under `src/components/decisions/`.
 
 ## Lane C — Advisor execution loop
 
+> **BUILT 2026-07-03.** Schema (`acted_at`/`acted_journal_id`/`outcome` + journal object-type
+> `advisor_recommendation`), PATCH `/api/advisor/recommendations/[id]` (acted → `trade_action`
+> journal entry with thesis linkage; dismissed), record/dismiss buttons + per-scenario hit-rate
+> line on ScannerSnapshot, outcome scoring `src/lib/derived/advisorOutcome.ts` (13 golden tests) +
+> `scripts/ops/score-advisor-outcomes.ts` (expiry flip + entry-edge-vs-realized at expiry spot,
+> daily via signal-day-synthesis workflow). Fill linkage (§3) deferred as specced.
+
 `advisor_recommendations.status` already includes `'acted'` — the enum anticipated this; nothing sets
 it and nothing links to what happened. Close the loop:
 
