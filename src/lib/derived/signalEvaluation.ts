@@ -1,7 +1,7 @@
 /**
  * Signal Evaluation Module
  *
- * Evaluates position-metric signals (DTE, sigma, PnL%) during data ingestion.
+ * Evaluates position-metric signals (DTE, PnL%) during data ingestion.
  * This replaces the deprecated state code system with user-configurable signals.
  *
  * Price-based signals are handled separately by TradingView webhooks.
@@ -21,25 +21,11 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 // Condition types that can be evaluated from position data
 // Price conditions (price_above, price_below) are handled by TradingView webhooks
-type PositionConditionType =
-  | 'dte_lte'
-  | 'dte_gte'
-  | 'sigma_to_strike_lte'
-  | 'sigma_to_strike_gte'
-  | 'pnl_pct_gte'
-  | 'pnl_pct_lte'
-  | 'iv_rank_gte'
-  | 'iv_rank_lte';
-
 const POSITION_CONDITION_TYPES: Set<string> = new Set([
   'dte_lte',
   'dte_gte',
-  'sigma_to_strike_lte',
-  'sigma_to_strike_gte',
   'pnl_pct_gte',
   'pnl_pct_lte',
-  'iv_rank_gte',
-  'iv_rank_lte',
 ]);
 
 interface SignalCondition {
@@ -59,9 +45,7 @@ interface SignalConfig {
 interface PositionMetrics {
   maxDte: number | null;
   minDte: number | null;
-  worstSigmaToStrike: number | null;
   pnlPct: number | null;
-  ivRank: number | null;
 }
 
 interface EvaluationResult {
@@ -102,24 +86,6 @@ function evaluateCondition(
         description: `DTE ≥ ${value} (actual: ${metrics.maxDte})`,
       };
 
-    case 'sigma_to_strike_lte':
-      if (metrics.worstSigmaToStrike === null) {
-        return { met: false, description: `Sigma ≤ ${value}σ (no sigma data)` };
-      }
-      return {
-        met: metrics.worstSigmaToStrike <= value,
-        description: `Sigma ≤ ${value}σ (actual: ${metrics.worstSigmaToStrike.toFixed(2)}σ)`,
-      };
-
-    case 'sigma_to_strike_gte':
-      if (metrics.worstSigmaToStrike === null) {
-        return { met: false, description: `Sigma ≥ ${value}σ (no sigma data)` };
-      }
-      return {
-        met: metrics.worstSigmaToStrike >= value,
-        description: `Sigma ≥ ${value}σ (actual: ${metrics.worstSigmaToStrike.toFixed(2)}σ)`,
-      };
-
     case 'pnl_pct_gte':
       if (metrics.pnlPct === null) {
         return { met: false, description: `PnL% ≥ ${value}% (no PnL data)` };
@@ -136,24 +102,6 @@ function evaluateCondition(
       return {
         met: metrics.pnlPct <= value,
         description: `PnL% ≤ ${value}% (actual: ${metrics.pnlPct.toFixed(1)}%)`,
-      };
-
-    case 'iv_rank_gte':
-      if (metrics.ivRank === null) {
-        return { met: false, description: `IV Rank ≥ ${value}% (no IV data)` };
-      }
-      return {
-        met: metrics.ivRank >= value,
-        description: `IV Rank ≥ ${value}% (actual: ${metrics.ivRank.toFixed(1)}%)`,
-      };
-
-    case 'iv_rank_lte':
-      if (metrics.ivRank === null) {
-        return { met: false, description: `IV Rank ≤ ${value}% (no IV data)` };
-      }
-      return {
-        met: metrics.ivRank <= value,
-        description: `IV Rank ≤ ${value}% (actual: ${metrics.ivRank.toFixed(1)}%)`,
       };
 
     default:
@@ -206,25 +154,10 @@ async function getPositionMetrics(
       (parseFloat(metrics.totalUnrealizedPnl) / parseFloat(strategy.entryNotional)) * 100;
   }
 
-  // NOTE: IV rank evaluation is not implemented yet
-  // IV rank is a calculated metric (from ivMetrics.ts), not stored in DB
-  // To enable IV rank signals, we would need to either:
-  // 1. Store calculated IV rank in underlyings_iv_history, or
-  // 2. Call computeIvMetrics() here (expensive)
-  // For now, IV rank conditions will return "no data available"
-  const ivRank: number | null = null;
-
-  // TODO: Get worstSigmaToStrike from triage computation
-  // For now, this needs to be passed in or computed separately
-  // The triage computation already calculates this for position-level triggers
-  const worstSigmaToStrike: number | null = null;
-
   return {
     maxDte: metrics?.maxDte ?? null,
     minDte: metrics?.minDte ?? null,
-    worstSigmaToStrike,
     pnlPct,
-    ivRank,
   };
 }
 
@@ -305,7 +238,6 @@ async function triggerSignal(
         minDte: metrics.minDte,
         maxDte: metrics.maxDte,
         pnlPct: metrics.pnlPct,
-        ivRank: metrics.ivRank,
       },
     },
     source: 'automation' as const,
