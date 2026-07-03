@@ -1,5 +1,5 @@
 {
   "name": "maintenance",
-  "description": "Run the belief-maintenance routine (C6 — docs/v2/09 §10). Incremental, cursor-based, token-aware orchestration of relate-research + the /thesis-review modes + the C5 decision detectors. Reads one status dashboard, advances the relate-research cursor, drains a bounded slice of each worklist, and emits decision packets (never silent decisions). Use when the user asks to \"run maintenance\", \"run the belief loop\", \"process the maintenance backlog\", \"what needs maintaining\", or wants the thesis layer brought up to date.",
+  "description": "Run the belief-maintenance routine (C6 — docs/v2/09 §10). Incremental, cursor-based, token-aware orchestration of relate-research + relate-bookmark + the /thesis-review modes + the C5 decision detectors. Reads one status dashboard, advances the relate-research cursor, drains a bounded slice of each worklist, and emits decision packets (never silent decisions). Use when the user asks to \"run maintenance\", \"run the belief loop\", \"process the maintenance backlog\", \"what needs maintaining\", or wants the thesis layer brought up to date.",
   "instructions": "SKILL.md"
 }

@@ -92,6 +92,19 @@ export interface CoverageGap {
 }
 
 /**
+ * A coverage gap is only actionable if it happened after the latest articulation.
+ * Re-underwriting is the close-out path for a missed move; without this guard, the
+ * same historical price gap keeps resurfacing until it ages out of the window.
+ */
+export function isCoverageGapAfterLatestArticulation(
+  gap: CoverageGap,
+  latestArticulationAt: Date | null,
+): boolean {
+  if (!latestArticulationAt) return true;
+  return gap.moveDate > latestArticulationAt.toISOString().slice(0, 10);
+}
+
+/**
  * Chronic-neutral verdict for one signal over its TRACKING snapshots.
  * `now` is injectable so the backtest can evaluate historically (docs/v2/15 §9.2).
  * Collector-tracked exclusion is the caller's job (it needs the signal record, not

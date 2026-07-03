@@ -4,6 +4,7 @@ import {
   isMaterialMove,
   hasFlagWithin,
   detectPriceCoverageGap,
+  isCoverageGapAfterLatestArticulation,
   isChronicFlag,
   MIN_TRACKING_OBSERVATIONS,
   type SnapshotLite,
@@ -193,5 +194,29 @@ describe('detectPriceCoverageGap', () => {
   it('macro kind is carried through', () => {
     const gap = detectPriceCoverageGap(series, NOW, 0.2, [], 'AI Infra (exposure-weighted)', 'price_macro')!;
     expect(gap.kind).toBe('price_macro');
+  });
+});
+
+describe('isCoverageGapAfterLatestArticulation', () => {
+  const gap = {
+    kind: 'price' as const,
+    detail: 'HLIT -22% over 9d, no signal flagged',
+    magnitudePct: 0.22,
+    changePct: -0.22,
+    moveDate: '2026-06-05',
+    flaggedWithin: false,
+  };
+
+  it('keeps gaps when there is no articulation clock', () => {
+    expect(isCoverageGapAfterLatestArticulation(gap, null)).toBe(true);
+  });
+
+  it('keeps gaps after the latest articulation', () => {
+    expect(isCoverageGapAfterLatestArticulation(gap, new Date('2026-06-04T23:00:00Z'))).toBe(true);
+  });
+
+  it('drops gaps already incorporated by a same-day or later re-underwrite', () => {
+    expect(isCoverageGapAfterLatestArticulation(gap, new Date('2026-06-05T14:00:00Z'))).toBe(false);
+    expect(isCoverageGapAfterLatestArticulation(gap, new Date('2026-06-25T14:00:00Z'))).toBe(false);
   });
 });

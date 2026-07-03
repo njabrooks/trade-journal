@@ -24,6 +24,7 @@ import {
   SURPRISE_WINDOW_DAYS,
   TRACKING_SOURCES,
   NON_NEUTRAL,
+  isCoverageGapAfterLatestArticulation,
   type ChronicVerdict,
   type CoverageGap,
   type PricePoint,
@@ -62,12 +63,25 @@ interface ThesisRow {
   ticker: string | null;
   underlyingId: string | null;
   rv20: number | null;
+  latestArticulationAt: Date | null;
 }
 
 /** Monitoring asset + macro theses that have ≥1 active signal (the assessable set). */
 async function activeMonitoringTheses(): Promise<ThesisRow[]> {
-  const assets = await db.execute<{ id: string; title: string; underlying_id: string; ticker: string; rv20: string | null }>(sql`
-    SELECT at.id, at.title, u.id AS underlying_id, u.ticker, u.rv20
+  const assets = await db.execute<{
+    id: string;
+    title: string;
+    underlying_id: string;
+    ticker: string;
+    rv20: string | null;
+    latest_articulation_at: string | Date | null;
+  }>(sql`
+    SELECT at.id, at.title, u.id AS underlying_id, u.ticker, u.rv20,
+           (
+             SELECT max(ta.created_at)
+             FROM thesis_articulations ta
+             WHERE ta.thesis_id = at.id AND ta.thesis_type = 'asset'
+           ) AS latest_articulation_at
     FROM asset_theses at
     JOIN underlyings u ON at.underlying_id = u.id
     WHERE at.status = 'monitoring'
@@ -89,9 +103,11 @@ async function activeMonitoringTheses(): Promise<ThesisRow[]> {
     ...assets.map((a): ThesisRow => ({
       thesisId: a.id, thesisType: 'asset', title: a.title, ticker: a.ticker,
       underlyingId: a.underlying_id, rv20: a.rv20 != null ? Number(a.rv20) : null,
+      latestArticulationAt: a.latest_articulation_at ? new Date(a.latest_articulation_at) : null,
     })),
     ...macros.map((m): ThesisRow => ({
       thesisId: m.id, thesisType: 'macro', title: m.title, ticker: null, underlyingId: null, rv20: null,
+      latestArticulationAt: null,
     })),
   ];
 }
@@ -228,7 +244,7 @@ export async function computeSignalQualityDiagnostics(opts: { asOf?: Date } = {}
         .filter((snap) => snap.assessment != null && NON_NEUTRAL.has(snap.assessment))
         .map((snap) => snap.snapshotDate);
       const gap = detectPriceCoverageGap(series, now, t.rv20, flagDates, t.ticker ?? 'underlying');
-      if (gap) coverageGaps.push(gap);
+      if (gap && isCoverageGapAfterLatestArticulation(gap, t.latestArticulationAt)) coverageGaps.push(gap);
     }
 
     const reunderwriteTrigger = chronicNeutralSignals.length > 0 || coverageGaps.length > 0;

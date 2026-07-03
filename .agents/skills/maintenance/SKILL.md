@@ -3,10 +3,10 @@
 ## Purpose
 
 The single routine that keeps the belief layer current (docs/v2/09 §10). It wraps the
-already-built pieces — `relate-research` (claim→thesis) and the five `/thesis-review`
-modes (digest / signal / health / research-gap / retrospective) plus the C5 decision
-detectors (framing / classify_exposure) — into one **incremental, cursor-based,
-token-aware** pass. It **emits decision packets, never silent decisions**; the
+already-built pieces — `relate-research` (claim→thesis), `relate-bookmark` (bookmark→
+candidate_signal, docs/v2/17) and the five `/thesis-review` modes (digest / signal /
+health / research-gap / retrospective) plus the C5 decision detectors (framing /
+classify_exposure) — into one **incremental, cursor-based, token-aware** pass. It **emits decision packets, never silent decisions**; the
 mechanical maintenance writes (digests, signals, health snapshots) are not decisions
 and run automatically.
 
@@ -26,8 +26,9 @@ activate a billed schedule yourself.
   relevance/framing/research-gap/retrospective judgment) and by keeping batches bounded
   (≤5/mode), not by downgrading the model. When fanning out to sub-agents, pass
   `model:'opus'` and set `effort` per the task.
-- **Cursor-based.** Only relate-research has a cursor (`automation_cursors`); the
-  `/thesis-review` worklists are self-clearing, so they need none.
+- **Cursor-based.** Only relate-research has a cursor (`automation_cursors`); relate-bookmark's
+  cursor is the Tana Status flip (Backlog→Done/Dropped) and the `/thesis-review` worklists are
+  self-clearing, so they need none.
 - **Decisions are packets.** Anything surfaced to the user goes through `raise-decision`
   as a typed packet (docs/v2/09 §8). Never write a status/strategy/link change that is a
   genuine judgment without a decision.
@@ -60,6 +61,23 @@ npx tsx scripts/ops/maintenance-status.ts --advance-relate-research <now-ISO>
 ```
 (Use the ISO timestamp of when you started the window. Re-running an overlapping window
 is safe — the engine dedups — so erring slightly early is fine.)
+
+**Step 2b — relate-bookmark (bookmark→candidate_signal), if Backlog bookmarks**
+New `#bookmark` saves are a human-attention sensor (docs/v2/17) — the monitoring-lane sibling of
+relate-research. Query the investment-bookmark Backlog via the Tana MCP:
+```
+search_nodes({ and: [
+  { hasType: "CKcv0SohYIYs" },                                  // #bookmark
+  { field: { fieldId: "pldNUHKkVotI", nodeId: "acNRFtsYYWtg" } },  // Category = investment
+  { field: { fieldId: "2J2cAm36yfMW", nodeId: "PFqMIQc_KLER" } }   // Status = Backlog
+] }, limit: 25)
+```
+If any, follow `/relate-bookmark` over **≤20** of them (Opus — bearing + significance judgment):
+judge → write `candidate_signal`s → flip Status (Backlog→Done/Dropped). **Self-clearing** (the
+Status flip is the cursor; processed bookmarks drop out of the Backlog), so leftovers drain next
+run — report how many Backlog remain. The candidate_signals surface on `/thesis` re-underwrite and
+feed the re_underwrite_due attention-weighting (Step 4 #8). Skip if the Backlog is empty. (The large
+existing backlog is cleared once via a dedicated drain, not this bounded step — see docs/v2/17.)
 
 **Step 3 — Drain the `/thesis-review` worklists (≤5 each, in this order)**
 Run each via its `/thesis-review` mode; stop each at the per-run cap and note leftovers:
