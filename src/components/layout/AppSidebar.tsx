@@ -18,6 +18,7 @@ import {
   Lightbulb,
   ScrollText,
   Calculator,
+  Sunrise,
   Zap,
   ChartLine,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/sidebar";
 
 const ACTIVITY_NAV = [
+  { href: "/brief", label: "Morning Brief", icon: Sunrise, id: "brief" },
   { href: "/decisions", label: "Decisions", icon: CircleAlert, id: "decisions" },
   { href: "/journal", label: "Journal", icon: ScrollText, id: "journal" },
 ] as const;
