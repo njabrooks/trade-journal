@@ -1,6 +1,6 @@
 ---
 name: options-advisor
-description: Portfolio-aware options advisor (D11). Generates scenario recommendations against the live book — hedge (downside protection for unhedged exposures), income (covered calls on run-up holds), put_entry (cash-secured puts on bullish-thesis names), opportunistic (judgment over vol-regime extremes). Use when the user asks to "hedge the book", "run the advisor", "sell some calls", "income on holds", "put entries", or wants options recommendations keyed to current positions and vol. Results are stored and surface on the dashboard advisor module.
+description: Portfolio-aware options advisor (D11 + docs/v2/21). Generates scenario recommendations against the live book — hedge (downside protection for unhedged exposures), income (covered calls on run-up holds), put_entry (cash-secured puts on bullish-thesis names), collar (put funded by call sale on post-run-up holds), risk_reversal (sell rich skew put / buy call on bullish-thesis names — undefined risk, always flagged), leap_entry (long-dated calls where realized vol exceeds IV, via radon's IB LEAP scanner), opportunistic (judgment over vol-regime extremes). Use when the user asks to "hedge the book", "run the advisor", "sell some calls", "income on holds", "put entries", "collar", "protect but stay long", "risk reversal", "LEAP entries", "cheap leaps", or wants options recommendations keyed to current positions and vol. Results are stored and surface on the dashboard advisor module.
 allowed-tools: Bash, Read
 user_invocable: true
 ---
@@ -10,9 +10,21 @@ user_invocable: true
 ## Purpose
 
 Turn the scanner from "find cheap options" into **proactive, portfolio-aware
-strategy recommendations** (decision D11). Four scenario classes, all
-implemented: `hedge`, `income`, `put_entry`, `opportunistic`. Run the
-scenario(s) the user asked for; "run the advisor" with no qualifier = all four.
+strategy recommendations** (decision D11 + docs/v2/21). Seven scenario
+classes, all implemented: `hedge`, `income`, `put_entry`, `collar`,
+`risk_reversal`, `leap_entry`, `opportunistic`. Run the scenario(s) the user
+asked for; "run the advisor" with no qualifier = all except `leap_entry` (it
+hits the live IB Gateway at ~1 min/ticker — run it when asked, on the
+scheduled producer, or when the regime/vol context makes long-dated entries
+topical).
+
+**Regime context first:** read the latest `regime_snapshots` (CRI band + VCG)
+before judging — an elevated crash-risk read promotes hedge/collar batches and
+argues against fresh undefined-risk risk reversals; say so in rationales.
+
+```bash
+npx tsx scripts/psql-query.ts "SELECT DISTINCT ON (source) source, band, score, scan_time FROM regime_snapshots ORDER BY source, scan_time DESC" --format json
+```
 
 Division of labour:
 - `scripts/options-advisor.ts` does the **math** — exposures, chains, candidate
@@ -27,10 +39,15 @@ Division of labour:
 
 ```bash
 cd trade-journal && npx tsx scripts/options-advisor.ts --scenario hedge > /tmp/advisor-hedge.json
-# scenarios: hedge | income | put_entry | opportunistic
+# scenarios: hedge | income | put_entry | leap_entry | opportunistic
 ```
 
-(`--min-exposure <usd>` to change the default $50K floor for hedge/income.)
+(`--min-exposure <usd>` to change the default $50K floor for hedge/income;
+`--max-tickers <n>` to change leap_entry's default 10-ticker universe cap.)
+
+Before a `leap_entry` run, check the gateway is up (`nc -z localhost 4001`) —
+the scanner needs live IB. Prefer US market hours (14:30–21:00 London);
+pre-market chains return sparse quotes.
 
 **hedge** — per net-long exposure ≥ floor: existing hedges (long puts / short
 calls), vol regime, and priced structures — protective puts (~95/90/85%
@@ -50,6 +67,28 @@ plus `runUpPct` (unrealized as % of cost basis) and `existingHedge.shortCalls`
 `exposureUsd` included): short puts at ~95/90/85% strikes, ~30/60 DTE, with
 `yieldOnCollateralPct`, `annualizedYieldOnCollateralPct`, `entryDiscountPct`,
 `effectiveEntryDiscountPct`, `collateralPerContract`.
+
+**collar** — per held long ≥ floor: buy put + sell call, same expiry (95/105,
+90/110, 90/105 × ~30/90 DTE) with `netCostPct` (negative = **credit** collar),
+`floorPct`/`capPct`, `maxLossPct`/`maxGainPct`, `callFundingRatio` (how much of
+the put the call sale funds), `runUpPct`. The post-run-up shape: "stay long,
+less bullish for a few weeks" — protection paid for by capping upside you
+don't currently expect.
+
+**risk_reversal** — per bullish-thesis ticker: sell ~25Δ put / buy ~25Δ call,
+same expiry (~60/120 DTE) with `netCostPct` and `skewEdgeVolPts` (put IV −
+call IV — the edge being harvested). **Undefined downside risk below the short
+put.** Verify chosen structures live via `/ibkr-quote` before saving (EOD skew
+drifts); radon's `risk_reversal.py` remains available for a deeper single-name
+matrix during market hours.
+
+**leap_entry** — per bullish-thesis equity/ETF (monitoring-first, capped
+universe; crypto/perp/futures theses excluded): mispriced long-dated calls
+(2027/2028 expiries, ~50/30/20/10Δ) where realized vol exceeds IV by ≥15 pts —
+`iv`, `hv20Gap`/`hv60Gap`/`avgHvGap` (vol points), `mispricingScore`, `vega`,
+`theta`, OI/volume, plus candidate-level `hv` (HV20/60/252) and `thesis`.
+Structures come from radon's scanner over live IB, not the Massive chain
+snapshots. `skipped` explains capped/unqualified/not-mispriced names.
 
 **opportunistic** — no structures; a context payload: `cheapEntries`
 (cheap-vol scan hits with a bullish thesis or held position — long-vol
@@ -103,6 +142,50 @@ Selection principles — put_entry:
 - Skip names already at heavy exposure (`exposureUsd` is included) — selling
   puts there adds concentration, not entry.
 
+Selection principles — collar:
+- **The setup is run-up + tension, not run-up alone.** High `runUpPct` on a
+  name where near-term conviction has cooled (check the thesis + recent
+  journal) = the trade. Full-conviction names keep their upside — skip.
+- **Standing hedge constraints apply** — a collar contains a protective put,
+  so e.g. GLXY below the mid-$40s is excluded outright (no downside hedges;
+  the user's standing call). Check memory/journal constraints per name.
+- **Prefer credit or near-zero collars** (`netCostPct ≤ 0`, `callFundingRatio
+  ≥ ~1`) — paying materially for a collar usually means the hedge scenario's
+  put spread is better value.
+- **The 30-DTE tenor is tactical** (2–3 week less-bullish window — say when
+  it should come off); 90-DTE is a standing position collar. Name which.
+- Collar a FRACTION unless conviction has genuinely dropped — capping 100% of
+  a high-conviction hold is closing it in slow motion; say the coverage.
+
+Selection principles — risk_reversal:
+- **UNDEFINED RISK — always flagged, never a default recommendation.** Lead
+  the rationale with the short-put obligation: strike × 100 × contracts
+  collateral, and that assignment below the strike is real ownership.
+- **Only on names you'd own at the put strike anyway** (same test as
+  put_entry) with a genuine skew edge — `skewEdgeVolPts` meaningfully positive
+  (rich puts funding cheap calls). Negative/flat skew = no edge, skip.
+- **Near-zero net cost is the shape** — a big debit RR is just an expensive
+  call; a big credit usually means the put is too near the money.
+- Check `callDelta`: the fallback strike pick can land far from 25Δ — a
+  >0.4Δ call leg changes the character (more directional, less convex); note
+  or re-pick via `/analyze-vol-curve`.
+
+Selection principles — leap_entry:
+- **This is thesis expression, not vol arbitrage.** The gap makes the entry
+  cheap; the thesis makes it worth entering. High-confidence monitoring theses
+  with a live gap first; a big gap on a low-confidence thesis is a note, not a
+  recommendation.
+- **Prefer persistent-vol names.** A gap driven by HV20 alone (recent spike)
+  is weaker than one confirmed by HV60/HV252 — check `avgHvGap`, not just
+  `hv20Gap`.
+- **Mind existing expression.** `exposureUsd` and `existingHedge` are included
+  — a name already heavily expressed doesn't need a LEAP on top (that's
+  concentration); flag as add-only-on-pullback or skip.
+- **Delta choice:** ~50Δ for conviction expression, ~30Δ for convex
+  asymmetry; below 20Δ needs an explicit lottery-ticket rationale.
+- **Liquidity floor:** skip contracts with near-zero OI unless the rationale
+  says how to work the order (`/ibkr-quote` the spread first).
+
 Batch discipline (all scenarios):
 - **Cap each batch at ~5.** Genuine recommendations only — this feeds a
   glanceable module, not an inbox.
@@ -144,8 +227,16 @@ exposure), total cost of the recommended protection vs NAV, and that the batch
 is live on the dashboard (Options Scanner module) with prior batches
 superseded. Surface any large `skipped` exposures (no listed options).
 
-## Scheduling note
+## Scheduling (docs/v2/21 Phase 4 — LIVE since 2026-07-06)
 
-Post-scan daily runs are a follow-up: the launchd options-scanner job
-(Mon–Fri 14:50) can chain this skill after the scan once the advisor has
-bedded in. On-demand only for now.
+Two launchd producers run this skill headlessly on weekdays:
+- **08:05 `com.trade-journal.options-advisor` (batch)** — the six Massive-chain
+  scenarios, regime-aware, before the 08:45 morning brief.
+- **15:20 `com.trade-journal.options-advisor-leap`** — `leap_entry` via the live
+  IB gateway (~25 min scan), after the 15:10 regime scan with the US market open.
+
+Scheduled runs follow the same doctrine as interactive ones: regime first,
+live-verify before saving, save only genuine recommendations, respect standing
+constraints. Fresh batches surface via the dashboard ScannerSnapshot (protection
+scenarios ordered first when the regime is elevated) and the SessionStart nudge
+(`scripts/ops/advisor-nudge.ts`).

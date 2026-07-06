@@ -152,11 +152,41 @@ ORDER BY ctm.mapped_at DESC" --format json
 4. Report: "N new observations since v{version} ({date}); {k} refuting → revisit invalidation, {m}
    supporting → conviction may firm." Then offer to re-underwrite.
 
+## Step 3b — Express / protect (docs/v2/21 Phase 5)
+
+When the conversation turns to **acting on the belief** — "how do I express this?", "we've run up a lot,
+protect but stay long", "cheap way to get long?", "should I collar this?" — pull the targeted advisor
+surface for the thesis's underlying:
+
+```bash
+npx tsx scripts/options-advisor.ts --underlying <TICKER> > /tmp/express-<TICKER>.json
+```
+
+One call returns every applicable scenario (hedge/income/collar if held; put_entry/risk_reversal if a
+bullish thesis exists) plus the context that shapes the judgment: `exposureUsd`/`pctNav`, `runUpPct`,
+`existingHedge`, `volContext`, the latest **regime** read, and the thesis itself. Then **judge
+conversationally using the `/options-advisor` skill's selection principles** (that skill owns the
+doctrine — do not re-derive it here): regime shapes urgency, collars want run-up + cooled conviction,
+risk reversals are undefined-risk and always flagged, standing constraints bind (e.g. GLXY no downside
+hedges below mid-$40s), leap_entry runs on its own scheduled job.
+
+Discussion discipline:
+- **The belief leads, the structure follows.** Tie every structure to the thesis's three faces — e.g.
+  "your invalidation signal is X; the 90P floor sits just below where X resolves" beats naked yield talk.
+- **Live-verify before the user acts** (`/ibkr-quote` or `scripts/ibkr-quote-contracts.py`) — Massive
+  marks drift (docs/v2/22 data doctrine), and quotes may be 15-min delayed until the API user's data
+  subscriptions land; say so.
+- **Dialogue runs are ephemeral** — nothing is stored by `--underlying`. If the user decides to act:
+  save a one-rec batch for the right scenario (`scripts/ops/save-advisor-recommendations.ts`) so it's on
+  the record, then when they confirm execution mark it acted
+  (`PATCH /api/advisor/recommendations/<id> {"status":"acted"}` — writes the trade_action journal
+  entry), so Lane C outcome-scores dialogue-served recommendations like dashboard ones.
+
 ## Step 4 — Propose loose next moves (don't auto-execute the soft ones)
 
 Suggest, the user picks — **develop** (capture a source / run deep research / log an observation),
-**reconsider sizing**, **revisit conviction**, **mark resolved**. Soft moves stay conversational. Two
-moves have concrete tools:
+**reconsider sizing**, **revisit conviction**, **mark resolved**, **express/protect** (Step 3b). Soft
+moves stay conversational. Two moves have concrete tools:
 
 - **Log an observation** (an insight from this conversation) → capture it so it feeds the underwriting:
   ```bash

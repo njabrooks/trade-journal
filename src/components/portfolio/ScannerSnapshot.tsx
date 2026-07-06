@@ -42,6 +42,10 @@ interface AdvisorRecommendation {
     yieldOnCollateralPct?: number;
     protectionLevel?: number;
     dte?: number;
+    /** leap_entry: HV20 − IV in vol points */
+    hv20Gap?: number;
+    /** collar / risk_reversal: net cost as % of spot (negative = credit) */
+    netCostPct?: number;
   };
   rationale: string;
 }
@@ -70,12 +74,18 @@ const STRUCTURE_LABELS: Record<string, string> = {
   put_spread: "put spread",
   covered_call: "covered call",
   cash_secured_put: "cash-secured put",
+  long_leap_call: "LEAP call",
+  collar: "collar",
+  risk_reversal: "risk reversal",
 };
 
 const SCENARIO_LABELS: Record<string, string> = {
   hedge: "Hedge",
   income: "Income",
   put_entry: "Put entry",
+  leap_entry: "LEAP entry",
+  collar: "Collar",
+  risk_reversal: "Risk reversal",
   opportunistic: "Opportunistic",
 };
 
@@ -84,10 +94,21 @@ function describeStructure(rec: AdvisorRecommendation): string {
   const expiry = legs[0]?.expiry ? formatDateShort(legs[0].expiry) : "";
   const strikes = legs.map((l) => l.strike).join("/");
   const kind = STRUCTURE_LABELS[rec.structure?.type] ?? rec.structure?.type ?? "";
-  // one headline number per scenario: cost (hedge) or yield (income/put-entry)
+  // one headline number per scenario: cost (hedge), yield (income/put-entry),
+  // or the HV-IV gap in vol points (leap_entry)
   const pct =
     rec.metrics?.costPct ?? rec.metrics?.premiumYieldPct ?? rec.metrics?.yieldOnCollateralPct;
-  const pctLabel = pct != null ? ` · ${(pct * 100).toFixed(1)}%` : "";
+  const net = rec.metrics?.netCostPct;
+  const pctLabel =
+    pct != null
+      ? ` · ${(pct * 100).toFixed(1)}%`
+      : net != null
+        ? net <= 0
+          ? ` · ${(-net * 100).toFixed(1)}% credit`
+          : ` · ${(net * 100).toFixed(1)}% cost`
+        : rec.metrics?.hv20Gap != null
+          ? ` · +${Number(rec.metrics.hv20Gap).toFixed(1)} vol gap`
+          : "";
   return `${strikes} ${kind} ${expiry}${pctLabel}`;
 }
 
@@ -97,10 +118,16 @@ const TOP_N = 5;
  * Morning-screen scanner module — top cheap-vol hits from the latest daily
  * scan. The options-advisor recommendations slot in here when W7 lands.
  */
+// Default scenario display order; under an elevated regime (CRI band above LOW /
+// VCG above NORMAL) the protection scenarios jump to the front (docs/v2/21 Phase 4).
+const SCENARIO_ORDER = ["leap_entry", "put_entry", "risk_reversal", "income", "collar", "hedge", "opportunistic"];
+const SCENARIO_ORDER_ELEVATED = ["hedge", "collar", "income", "risk_reversal", "put_entry", "leap_entry", "opportunistic"];
+
 export function ScannerSnapshot() {
   const [data, setData] = useState<ScannerTodayData | null>(null);
   const [recs, setRecs] = useState<AdvisorRecommendation[]>([]);
   const [summary, setSummary] = useState<AdvisorScenarioSummary[]>([]);
+  const [regimeElevated, setRegimeElevated] = useState(false);
 
   useEffect(() => {
     fetch("/api/vol-curve/scanner-today")
@@ -112,6 +139,13 @@ export function ScannerSnapshot() {
       .then((d) => {
         setRecs(d?.recommendations ?? []);
         setSummary(d?.summary ?? []);
+      })
+      .catch(() => {});
+    fetch("/api/dashboard/regime")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d) => {
+        const snaps = (d?.snapshots ?? []) as Array<{ band: string; stale: boolean }>;
+        setRegimeElevated(snaps.some((s) => !s.stale && !["LOW", "NORMAL"].includes(s.band)));
       })
       .catch(() => {});
   }, []);
@@ -151,7 +185,13 @@ export function ScannerSnapshot() {
       {/* Advisor recommendations (D11), grouped by scenario */}
       {recs.length > 0 && (
         <div className="mb-4 space-y-3 border-b pb-4">
-          {[...new Set(recs.map((r) => r.scenario))].map((scenario) => {
+          {[...new Set(recs.map((r) => r.scenario))]
+            .sort((a, b) => {
+              const order = regimeElevated ? SCENARIO_ORDER_ELEVATED : SCENARIO_ORDER;
+              const idx = (s: string) => (order.indexOf(s) === -1 ? order.length : order.indexOf(s));
+              return idx(a) - idx(b);
+            })
+            .map((scenario) => {
             const hitLine = summaryLine(summary.find((s) => s.scenario === scenario));
             return (
               <div key={scenario} className="space-y-1.5">
