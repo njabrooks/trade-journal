@@ -2748,3 +2748,37 @@ export const morningBriefs = pgTable(
 
 export type MorningBrief = typeof morningBriefs.$inferSelect;
 export type NewMorningBrief = typeof morningBriefs.$inferInsert;
+
+// ============================================================================
+// Regime snapshots (docs/v2/21 Phase 1) — market-structure sensing from radon's
+// IB-only scanners (CRI crash-risk, VCG vol/credit gap), run on trade-journal's
+// launchd (scripts/cron/regime-scan.sh → scripts/ingest-regime-scan.ts).
+// Consumers: morning-brief bundle, dashboard regime strip, advisor scenario
+// ranking (elevated crash-risk promotes hedge/collar batches).
+// ============================================================================
+
+export const regimeSnapshots = pgTable(
+  'regime_snapshots',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    // 'cri' (crash risk index) | 'vcg' (volatility-credit gap)
+    source: text('source').notNull(),
+    scanTime: timestamp('scan_time', { withTimezone: true }).notNull(),
+    marketOpen: boolean('market_open'),
+    // Headline number: CRI score (0-10) or VCG value
+    score: numeric('score'),
+    // Categorical read: CRI level (LOW/ELEVATED/HIGH/CRITICAL) or VCG interpretation
+    // (NORMAL/WARNING/…); the scanner's own labels, not re-derived.
+    band: text('band').notNull(),
+    // Full scanner signal payload (components, trigger conditions, CTA model,
+    // attribution…) minus bulky history arrays.
+    components: jsonb('components').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    sourceTimeIdx: index('idx_regime_snapshots_source_time').on(table.source, table.scanTime),
+  })
+);
+
+export type RegimeSnapshot = typeof regimeSnapshots.$inferSelect;
+export type NewRegimeSnapshot = typeof regimeSnapshots.$inferInsert;

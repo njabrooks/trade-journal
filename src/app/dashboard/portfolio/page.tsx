@@ -18,6 +18,7 @@ import { AccountNavTable } from "@/components/portfolio/AccountNavTable";
 import { StrategyLensTable } from "@/components/portfolio/StrategyLensTable";
 import { PnlLensTable } from "@/components/portfolio/PnlLensTable";
 import { DecisionStrip } from "@/components/portfolio/DecisionStrip";
+import { RegimeStrip } from "@/components/portfolio/RegimeStrip";
 import { MorningBrief } from "@/components/portfolio/MorningBrief";
 import { PerformanceSnapshot } from "@/components/portfolio/PerformanceSnapshot";
 import { ScannerSnapshot } from "@/components/portfolio/ScannerSnapshot";
@@ -451,6 +452,9 @@ function PortfolioDashboardContent() {
 
   return (
     <DashboardShell activeNav="portfolio" title="Portfolio" subtitle={subtitle}>
+      {/* Regime strip — CRI/VCG market-structure context (docs/v2/21 Phase 1) */}
+      <RegimeStrip />
+
       {/* Morning brief — the daily synthesis surface (docs/v2/20 Lane A) */}
       <MorningBrief />
 

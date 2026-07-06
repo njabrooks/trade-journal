@@ -357,13 +357,47 @@ async function gatherCalendar() {
   };
 }
 
+// Latest regime read per source (docs/v2/21 Phase 1: radon CRI + VCG via
+// scripts/ingest-regime-scan.ts, 07:40 run lands before this bundle). Stale
+// snapshots (>24h) are flagged, not hidden — a dead feed should be visible.
+async function gatherRegime() {
+  const rows = await db.execute(sql`
+    SELECT DISTINCT ON (source) source, scan_time, band, score, components
+    FROM regime_snapshots
+    ORDER BY source, scan_time DESC
+  `);
+  const now = Date.now();
+  return (rows as unknown as Array<Record<string, unknown>>).map((r) => {
+    const scanTime = new Date(String(r.scan_time));
+    const components = r.components as Record<string, unknown>;
+    const prior = components?.crash_trigger as Record<string, unknown> | undefined;
+    return {
+      source: String(r.source), // 'cri' | 'vcg'
+      band: String(r.band), // CRI: LOW/ELEVATED/HIGH/CRITICAL · VCG: NORMAL/…
+      score: r.score !== null ? Number(r.score) : null,
+      scanTime: scanTime.toISOString(),
+      staleHours: Math.round((now - scanTime.getTime()) / 3600_000),
+      stale: now - scanTime.getTime() > 24 * 3600_000,
+      // CRI extras the brief may cite directly
+      ...(String(r.source) === 'cri'
+        ? {
+            vix: components?.vix ?? null,
+            crashTriggered: (prior?.triggered as boolean) ?? null,
+            ctaForcedSellingBn: (components?.cta as Record<string, unknown>)?.est_selling_bn ?? null,
+          }
+        : { regime: (components?.regime as string) ?? null }),
+    };
+  });
+}
+
 async function main() {
   const navDelta = await gatherNavDelta();
-  const [overnightEvidence, advisor, sizing, calendar] = await Promise.all([
+  const [overnightEvidence, advisor, sizing, calendar, regime] = await Promise.all([
     gatherOvernightEvidence(),
     gatherAdvisor(),
     gatherSizingFindings(navDelta.latestNavUsd),
     gatherCalendar(),
+    gatherRegime(),
   ]);
 
   // Deterministic reuse of the sibling --json surfaces (each runs in its own process).
@@ -374,6 +408,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     briefDate: londonToday(),
     navDelta,
+    regime,
     overnightEvidence,
     openDecisions,
     advisor,

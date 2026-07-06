@@ -33,10 +33,13 @@ Answer **"what deserves my attention today"** in one generated brief, delivered 
 npx tsx scripts/morning-brief-data.ts --json > logs/morning-brief-data.json
 ```
 
-Read `logs/morning-brief-data.json`. Sections: `navDelta`, `overnightEvidence` (last-24h
-thesis_observe/price_watch signal evidence, thesis-centric polarity: strengthening = the
-thesis got stronger), `openDecisions` (ranked, with ages), `advisor` (active
-recommendations), `sizing` (A1 findings: under_expressed / over_expressed /
+Read `logs/morning-brief-data.json`. Sections: `navDelta`, `regime` (latest CRI
+crash-risk + VCG vol/credit read from radon's scanners — docs/v2/21; `band` LOW/NORMAL is
+one quiet line, an elevated band or `crashTriggered: true` is headline-eligible; if
+`stale: true` say the feed is stale rather than citing old numbers), `overnightEvidence`
+(last-24h thesis_observe/price_watch signal evidence, thesis-centric polarity:
+strengthening = the thesis got stronger), `openDecisions` (ranked, with ages), `advisor`
+(active recommendations), `sizing` (A1 findings: under_expressed / over_expressed /
 concentration), `executionPatterns` (A2 aggregates), `calendar` (next-48h economic events
 + earnings for held tickers).
 
@@ -44,8 +47,10 @@ concentration), `executionPatterns` (A2 aggregates), `calendar` (next-48h econom
 
 Rank what actually deserves attention **today**. Priority instincts (not mechanical):
 
-1. **Risk first** — weakening/invalidated overnight evidence on expressed theses;
-   high-impact calendar events on large held exposures in the next 48h.
+1. **Risk first** — an elevated regime read (CRI band above LOW, crash trigger, VCG
+   PANIC/WARNING) outranks everything and makes hedge-flavoured advisor recs timely;
+   weakening/invalidated overnight evidence on expressed theses; high-impact calendar
+   events on large held exposures in the next 48h.
 2. **Decisions rotting** — open decisions >14 days old, or tier-0 (refuting evidence /
    weakening signal) items of any age.
 3. **Sizing incoherence** — a new or persistent under/over-expression or the
@@ -66,7 +71,7 @@ below the mid-$40s).
   sentence citing the bundle (numbers, ages, assessments). `deepLink` is the command
   that opens the right working context.
 - **bodyMd** — short markdown, sections in this order, each a few lines max
-  (omit empty ones): `## Overnight` (NAV delta + evidence), `## Decisions`,
+  (omit empty ones): `## Overnight` (NAV delta + regime line + evidence), `## Decisions`,
   `## Sizing`, `## Advisor`, `## Calendar`, `## Coach` (the optional single nudge).
   Plain numbers over adjectives; cite thesis titles verbatim.
 - **metadata** — `{ generator: "morning-brief skill", bundleGeneratedAt, counts: { evidenceTheses, openDecisions, advisorRecs, sizingFindings } }`.

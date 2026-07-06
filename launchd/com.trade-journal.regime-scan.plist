@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trade-journal.regime-scan</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/home-hub/projects/trade-journal/scripts/cron/regime-scan.sh</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/home-hub</string>
+    </dict>
+
+    <!-- Europe/London local. 07:40 pre-brief (before /morning-brief 08:45),
+         15:10 post-US-open (= 10:10 NYC), 21:10 post-US-close (= 16:10 NYC).
+         Weekdays only — the scanners read US market structure. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>40</integer><key>Weekday</key><integer>1</integer></dict>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>40</integer><key>Weekday</key><integer>2</integer></dict>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>40</integer><key>Weekday</key><integer>3</integer></dict>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>40</integer><key>Weekday</key><integer>4</integer></dict>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>40</integer><key>Weekday</key><integer>5</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>1</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>2</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>3</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>4</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>5</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>1</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>2</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>3</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>4</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>10</integer><key>Weekday</key><integer>5</integer></dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/regime-scan.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/regime-scan.log</string>
+</dict>
+</plist>
