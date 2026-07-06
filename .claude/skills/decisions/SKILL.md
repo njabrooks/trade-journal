@@ -77,9 +77,23 @@ For each open decision, surface its `recommended_actions` + default, get the use
 
 Preview anything ambiguous with `--dry-run` before applying.
 
+**Step 3b — Expression follow-on (docs/v2/21 Phase 5).** When a resolution *changes a
+belief about a name* — a re-underwrite lands, a direction/conviction flips, refuting
+evidence is accepted, a weakening signal is acted on — offer, in one line, to look at the
+expression consequences before moving to the next packet: *"conviction on X changed —
+want to look at expressing/protecting it?"* If yes:
+```bash
+npx tsx scripts/options-advisor.ts --underlying <TICKER>
+```
+then judge conversationally per the `/options-advisor` doctrine (regime first,
+live-verify before acting, standing constraints bind; if the user acts, save a one-rec
+batch + mark it acted so Lane C scores it). A decision that changes a belief is exactly
+the moment its expression should be revisited — but it's an OFFER, never automatic, and
+skip it for mechanical link/classify resolutions.
+
 **Step 4 — When the open queue is empty**
 If `list-decisions` is `0` but `maintenance-status.actionable > 0`, say so and offer to
-**run `/maintenance`** to surface/drain the latent worklists (or jump straight to the
+**run `/maintenance`** to drain the agent worklists (or jump straight to the
 highest-value one — e.g. the due re-underwrites via `find-theses-due-reunderwrite.ts` → `/thesis <X>`).
 If both are `0` and `newInsights === 0`, report "belief layer up to date — nothing needs you."
 

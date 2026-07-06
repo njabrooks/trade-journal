@@ -1,0 +1,5 @@
+{
+  "name": "gateway",
+  "description": "Control the IBC-managed IB Gateway connection (docs/v2/21 Phase 0). Pause it to free the active username for a manual login (e.g. Client Portal to manage market-data subscriptions), resume it, check status, list credential profiles, or switch the gateway between login profiles (e.g. api ↔ main). Use when the user says \"pause the gateway\", \"I need to log into the API account\", \"free up the IBKR login\", \"resume/restart the gateway\", \"is the gateway up\", \"switch the gateway login/profile\", \"which profile is the gateway on\", or reports being kicked out of an IBKR login by the auto-reconnect.",
+  "instructions": "SKILL.md"
+}

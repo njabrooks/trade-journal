@@ -27,6 +27,9 @@ PLISTS=(
     "com.trade-journal.collect-signal-data.plist"
     "com.trade-journal.thesis-observe.plist"
     "com.trade-journal.morning-brief.plist"
+    "com.trade-journal.regime-scan.plist"
+    "com.trade-journal.options-advisor.plist"
+    "com.trade-journal.options-advisor-leap.plist"
 )
 
 # Colors

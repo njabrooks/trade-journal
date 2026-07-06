@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.trade-journal.options-advisor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/home-hub/projects/trade-journal/scripts/cron/options-advisor-run.sh</string>
+        <string>batch</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/home-hub</string>
+    </dict>
+
+    <!-- 08:05 Europe/London wd — after the 07:40 regime scan, before the 08:45
+         morning brief (which reads the advisor batches this run produces). -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>5</integer><key>Weekday</key><integer>1</integer></dict>
+        <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>5</integer><key>Weekday</key><integer>2</integer></dict>
+        <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>5</integer><key>Weekday</key><integer>3</integer></dict>
+        <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>5</integer><key>Weekday</key><integer>4</integer></dict>
+        <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>5</integer><key>Weekday</key><integer>5</integer></dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/options-advisor-batch.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/home-hub/projects/trade-journal/logs/options-advisor-batch.log</string>
+</dict>
+</plist>

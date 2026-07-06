@@ -14,8 +14,11 @@ directory and follow the same conventions.
 | `com.trade-journal.collect-signal-data` | 06:30 | `collect-signal-data.sh` | Quantitative signal collectors (deterministic tsx, **no Claude**) — docs/v2/14 §8 |
 | `com.trade-journal.thesis-observe` | 07:00 | `thesis-observe.sh` | `/thesis-observe` tracking-evidence producer (Tier-1) — **spawns headless `claude`** — docs/v2/14 |
 | `com.trade-journal.morning-brief` | 08:45 | `morning-brief.sh` | `/morning-brief` daily synthesis surface (ONE upserted `morning_briefs` row for the dashboard) — **spawns headless `claude`** — docs/v2/20 Lane A |
+| `com.trade-journal.regime-scan` | 07:40 + 15:10 + 21:10 Mon–Fri | `regime-scan.sh` | CRI + VCG regime sensing via radon's IB-only scanners (deterministic tsx, **no Claude**) — docs/v2/21 Phase 1 |
+| `com.trade-journal.options-advisor` | 08:05 Mon–Fri | `options-advisor-run.sh batch` | `/options-advisor` six Massive-chain scenarios, regime-aware — **spawns headless `claude`** — docs/v2/21 Phase 4 |
+| `com.trade-journal.options-advisor-leap` | 15:20 Mon–Fri | `options-advisor-run.sh leap` | `/options-advisor` leap_entry via live IB gateway (needs `local.ibc-gateway`) — **spawns headless `claude`** — docs/v2/21 Phase 4 |
 
-The morning chain is ordered: **06:30 collectors → 07:00 observe → 08:00 maintenance consume → 08:45 brief synthesize**, so the belief loop reads fresh same-day quantitative + qualitative evidence and the brief summarizes what came out of it. The `claude`-spawning jobs run `--model opus --dangerously-skip-permissions`; treat enabling them as a deliberate go-live (they incur token cost). Install/remove all five with `./install.sh` / `./install.sh --remove`.
+The morning chain is ordered: **06:30 collectors → 07:00 observe → 07:40 regime scan → 08:00 maintenance consume → 08:05 advisor batch → 08:45 brief synthesize**, so the belief loop reads fresh same-day quantitative + qualitative evidence and the brief summarizes what came out of it (including the advisor's fresh batches). The `claude`-spawning jobs run `--model opus --dangerously-skip-permissions`; treat enabling them as a deliberate go-live (they incur token cost). Install/remove all of them with `./install.sh` / `./install.sh --remove`. The IB Gateway substrate is its own launchd job (`local.ibc-gateway`, IBC-managed, weekly Monday 2FA — docs/v2/21 Phase 0; `scripts/ops/gateway.sh` to pause/resume).
 
 ## When to put a job here vs in GitHub Actions
 

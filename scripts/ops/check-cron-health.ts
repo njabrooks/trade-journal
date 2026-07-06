@@ -16,8 +16,29 @@
  */
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { Socket } from 'net';
 
 const STATUS_FILE = join(process.cwd(), 'logs', 'cron-status.tsv');
+
+// IB Gateway API port (IBC-managed, local.ibc-gateway launchd job — docs/v2/21).
+// Expected up Mon-Fri after the Monday 2FA tap; down on weekends is normal
+// (IBKR weekly auth reset), so the probe only warns on weekdays.
+const IB_GATEWAY_PORT = 4001;
+
+function ibGatewayUp(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const sock = new Socket();
+    const done = (up: boolean) => {
+      sock.destroy();
+      resolve(up);
+    };
+    sock.setTimeout(1500);
+    sock.once('connect', () => done(true));
+    sock.once('timeout', () => done(false));
+    sock.once('error', () => done(false));
+    sock.connect(IB_GATEWAY_PORT, '127.0.0.1');
+  });
+}
 
 // Max hours between runs before a job counts as stale (≈2× cadence, weekend-tolerant).
 const EXPECTED_INTERVAL_HOURS: Record<string, number> = {
@@ -25,6 +46,9 @@ const EXPECTED_INTERVAL_HOURS: Record<string, number> = {
   maintenance: 24, // twice daily 08:00/20:00
   'collect-signal-data': 48, // daily 06:30
   'options-scanner': 96, // weekdays 14:50
+  'regime-scan': 96, // weekdays 07:40/15:10/21:10 (weekend-tolerant)
+  'options-advisor-batch': 96, // weekdays 08:05
+  'options-advisor-leap': 96, // weekdays 15:20
 };
 
 // Failure streak length that triggers a warning (1 flake is tolerated).
@@ -93,29 +117,40 @@ function problems(health: JobHealth[]): string[] {
   return out;
 }
 
-function main() {
+async function main() {
   const nudge = process.argv.includes('--nudge');
   const health = loadHealth();
+
+  const day = new Date().getDay(); // local (Europe/London box)
+  const isWeekday = day >= 1 && day <= 5;
+  const gatewayWarning =
+    isWeekday && !(await ibGatewayUp())
+      ? `⚠ IB Gateway not reachable on :${IB_GATEWAY_PORT} — regime scans + advisor quotes degraded. Monday? approve the IBKR 2FA prompt on your phone; otherwise check \`launchctl list local.ibc-gateway\` + ~/ibc/logs/ibc-gateway.log`
+      : null;
 
   if (nudge) {
     // Session-start signal: print only when something needs attention.
     for (const p of problems(health)) console.log(p);
+    if (gatewayWarning) console.log(gatewayWarning);
     return;
   }
 
   if (health.length === 0) {
     console.log(`No cron status recorded yet (${STATUS_FILE} missing or empty).`);
-    return;
+  } else {
+    console.log('Cron job health (from logs/cron-status.tsv):\n');
+    for (const h of health) {
+      const status = h.trailingFailures === 0 ? '✅' : h.trailingFailures >= STREAK_THRESHOLD ? '🔴' : '🟡';
+      console.log(
+        `${status} ${h.job.padEnd(20)} last run ${h.lastRun.toISOString()} (rc=${h.lastRc})  trailing failures: ${h.trailingFailures}  last success: ${h.lastSuccess ? h.lastSuccess.toISOString() : 'never'}  runs recorded: ${h.totalRuns}`
+      );
+    }
+    const p = problems(health);
+    if (p.length) console.log('\n' + p.join('\n'));
   }
-  console.log('Cron job health (from logs/cron-status.tsv):\n');
-  for (const h of health) {
-    const status = h.trailingFailures === 0 ? '✅' : h.trailingFailures >= STREAK_THRESHOLD ? '🔴' : '🟡';
-    console.log(
-      `${status} ${h.job.padEnd(20)} last run ${h.lastRun.toISOString()} (rc=${h.lastRc})  trailing failures: ${h.trailingFailures}  last success: ${h.lastSuccess ? h.lastSuccess.toISOString() : 'never'}  runs recorded: ${h.totalRuns}`
-    );
-  }
-  const p = problems(health);
-  if (p.length) console.log('\n' + p.join('\n'));
+  console.log(
+    gatewayWarning ?? `${isWeekday ? '✅' : 'ℹ️'} IB Gateway :${IB_GATEWAY_PORT} ${isWeekday ? 'reachable' : 'not probed on weekends'}`
+  );
 }
 
 main();
