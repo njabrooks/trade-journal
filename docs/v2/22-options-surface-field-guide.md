@@ -89,10 +89,11 @@ re-measures the drift any time.
 ## Gateway ops quick-reference
 
 - One session per IBKR username. The gateway runs a **credential profile**
-  (`~/ibc/profiles/*.ini`): **`maisy` = primary** (full live market-data
-  subscriptions — verified 2026-07-06), `nick` = backup (delayed data only).
-  Whichever username the gateway holds cannot be logged in elsewhere; the
-  others are untouched.
+  (`~/ibc/profiles/*.ini`): **`nick` = primary** (live entitlements verified
+  2026-07-06 after adding the US Equity & Options Add-On Streaming Bundle,
+  $4.50/mo; chosen because nick is rarely needed elsewhere), `maisy` = backup
+  (also fully live-entitled). Whichever username the gateway holds cannot be
+  logged in elsewhere; the others are untouched.
 - Manual login as the gateway's username (e.g. market-data subscriptions):
   "pause the gateway" → do it → "resume the gateway".
 - Deliberate switch: "switch the gateway to maisy" (pause → swap → resume,
