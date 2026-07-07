@@ -300,6 +300,7 @@ def main():
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--months", type=int, nargs="+", default=DEFAULT_MONTHS, help="Months ahead to pull")
     parser.add_argument("--strike-pct", type=float, default=DEFAULT_STRIKE_PCT, help="Strike window ± pct of spot (default 0.20)")
+    parser.add_argument("--delayed", action="store_true", help="Force delayed quotes (type 3) instead of live")
     args = parser.parse_args()
 
     snapshot_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -333,8 +334,9 @@ def main():
     try:
         client.connect(host=args.host, port=args.port, client_id=args.client_id)
         ib = client.ib
-        # Use frozen quotes (3) when delayed acceptable; live (1) needs subscriptions
-        ib.reqMarketDataType(3)
+        # Live by default (streaming bundle on the nick gateway profile, added 2026-07-06);
+        # --delayed forces type 3 for sessions on an unentitled login
+        ib.reqMarketDataType(3 if args.delayed else 1)
         print(f"[IBKR] Connected to {args.host}:{args.port} as client_id={args.client_id}")
     except Exception as e:
         print(f"\n❌ IBKR connect failed: {e}")

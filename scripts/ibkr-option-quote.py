@@ -73,9 +73,14 @@ def main():
 
     print(f"  Connected: {ib.managedAccounts()}")
 
-    # Request delayed data (no live subscription required)
-    ib.reqMarketDataType(3)  # 3 = delayed, 4 = delayed-frozen
-    print("  Market data type: DELAYED")
+    # Live data by default (nick gateway profile carries the streaming bundle);
+    # --delayed forces type 3 for sessions on an unentitled login
+    if "--delayed" in sys.argv:
+        ib.reqMarketDataType(3)  # 3 = delayed, 4 = delayed-frozen
+        print("  Market data type: DELAYED (forced)")
+    else:
+        ib.reqMarketDataType(1)  # 1 = live; unentitled contracts just won't populate
+        print("  Market data type: LIVE (use --delayed if quotes come back empty)")
 
     # Build option contracts
     contracts = []

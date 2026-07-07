@@ -22,10 +22,10 @@ def main():
     contracts_in = json.loads(sys.stdin.read())
     ib = IB()
     ib.connect("127.0.0.1", 4001, clientId=CLIENT_ID, timeout=20)
-    # Type 3: live where subscribed, free 15-min delayed otherwise (the API
-    # username has no market-data subscriptions yet — 2026-07-06). The returned
+    # Live by default (streaming bundle on the nick gateway profile, added 2026-07-06);
+    # pass --delayed to force type 3 on an unentitled login. The returned
     # marketDataType field says which was actually served (1=live, 3=delayed).
-    ib.reqMarketDataType(3)
+    ib.reqMarketDataType(3 if "--delayed" in sys.argv else 1)
 
     out = []
     try:
