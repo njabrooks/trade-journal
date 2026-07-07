@@ -30,6 +30,7 @@ import {
   validateFlexTradeRow,
 } from '@/lib/ingestion/flex/trades';
 import { resolveAccountId } from '@/lib/ingestion/flex/account';
+import { computeAvgCostSinceFlat, QTY_EPSILON } from '@/lib/ingestion/flex/costBasis';
 import { and, eq, ne, sql, lt, isNotNull } from 'drizzle-orm';
 import { computeStrategyMetricsForDateRange } from '@/lib/derived/strategyMetrics';
 import { computePortfolioSnapshotsForDateRange } from '@/lib/derived/portfolio';
@@ -126,6 +127,53 @@ export interface ProcessPositionsResult {
   totalErrors: number;
   snapshotDates: string[];
   accountId: string | null;
+}
+
+// Only trust a previous snapshot's cost basis if it's recent enough to belong to
+// the same continuously-held position; a stale snapshot may be from a position
+// that was closed and re-opened with a completely different basis.
+const MAX_BASIS_BACKFILL_GAP_DAYS = 7;
+
+export interface DerivedBasis {
+  avgPrice: number;
+  costBasisMoney: number;
+}
+
+export async function deriveBasisFromTrades(
+  accountId: string,
+  symbol: string,
+  conid: number | null,
+  targetQty: number,
+  multiplier: number,
+  snapshotDate: string
+): Promise<DerivedBasis | null> {
+  if (Math.abs(targetQty) < QTY_EPSILON) return null;
+
+  const tradeRows = await db
+    .select({
+      quantity: trades.quantity,
+      price: trades.price,
+    })
+    .from(trades)
+    .where(
+      and(
+        eq(trades.accountId, accountId),
+        conid ? eq(trades.conid, conid) : eq(trades.symbol, symbol),
+        sql`DATE(${trades.tradeDate}) <= ${snapshotDate}`
+      )
+    )
+    .orderBy(sql`${trades.tradeDate} ASC, ${trades.createdAt} ASC`);
+
+  const avg = computeAvgCostSinceFlat(
+    tradeRows.map((t) => ({ qty: parseFloat(t.quantity ?? '0'), price: parseFloat(t.price ?? '0') })),
+    targetQty
+  );
+  if (avg === null) return null;
+
+  return {
+    avgPrice: avg,
+    costBasisMoney: avg * targetQty * multiplier,
+  };
 }
 
 /**
@@ -442,128 +490,117 @@ export async function processPositionsCsv(csvText: string, processRunId?: string
           }
         }
 
-        // Backfill avg_price and calculate unrealized_pnl from previous snapshots before deleting
-        // This preserves values when IBKR hasn't calculated them yet (defaults to 0)
-        // We use previous day's avg_price and calculate unrealized_pnl as (spot - avg_price) * quantity * multiplier
+        // Backfill cost basis where IBKR sent missing/zero values (futures never
+        // carry Flex cost basis — they're settled daily; early-day ingestions can
+        // lack it too). Authoritative source: trade history since the position was
+        // last flat. The previous-snapshot fallback is recency-gated so a
+        // closed-and-reopened position can't inherit a dead position's basis.
         const positionsToBackfill = normalizedRows.filter(
-          (entry) => 
+          (entry) =>
             !entry.data.avgPrice || entry.data.avgPrice === '0' || parseFloat(entry.data.avgPrice || '0') === 0 ||
             !entry.data.unrealizedPnl || entry.data.unrealizedPnl === '0' || parseFloat(entry.data.unrealizedPnl || '0') === 0
         );
-        
+
         if (positionsToBackfill.length > 0) {
           console.log(`Backfilling ${positionsToBackfill.length} positions with missing/zero values`);
-          
-          // For each position needing backfill, find most recent previous snapshot
+
           for (const entry of positionsToBackfill) {
             if (!entry.data.conid && !entry.data.symbol) continue;
-            if (!entry.data.accountId) continue;
+            if (!entry.data.accountId || !entry.data.snapshotDate) continue;
 
-            // Find previous snapshots for this position (by conid if available, otherwise by symbol+expiry+strike)
-            const whereConditions = [
-              eq(positions.accountId, entry.data.accountId),
-              lt(positions.snapshotDate, entry.data.snapshotDate!),
-            ];
-            
-            if (entry.data.conid) {
-              whereConditions.push(eq(positions.conid, entry.data.conid));
-            } else {
-              whereConditions.push(eq(positions.symbol, entry.data.symbol));
-              if (entry.data.expiry) {
-                whereConditions.push(eq(positions.expiry, entry.data.expiry));
-              }
-              if (entry.data.strike) {
-                whereConditions.push(eq(positions.strike, entry.data.strike));
-              }
-              if (entry.data.optionRight) {
-                whereConditions.push(eq(positions.optionRight, entry.data.optionRight));
-              }
-            }
-            
-            const previousSnapshot = await db
-              .select({
-                avgPrice: positions.avgPrice,
-                costBasisMoney: positions.costBasisMoney,
-                unrealizedPnl: positions.unrealizedPnl,
-                snapshotDate: positions.snapshotDate,
-              })
-              .from(positions)
-              .where(and(...whereConditions))
-              .orderBy(sql`${positions.snapshotDate} DESC`)
-              .limit(1);
-            
-            if (previousSnapshot.length > 0) {
-              const prev = previousSnapshot[0];
-              const needsAvgPrice = !entry.data.avgPrice || entry.data.avgPrice === '0' || parseFloat(entry.data.avgPrice || '0') === 0;
-              const needsCostBasisMoney = !entry.data.costBasisMoney || entry.data.costBasisMoney === '0' || parseFloat(entry.data.costBasisMoney || '0') === 0;
-              const needsUnrealizedPnl = !entry.data.unrealizedPnl || entry.data.unrealizedPnl === '0' || parseFloat(entry.data.unrealizedPnl || '0') === 0;
-              
-              // Backfill avg_price from previous day if missing or zero
-              if (needsAvgPrice && prev.avgPrice && parseFloat(prev.avgPrice) !== 0) {
-                entry.data.avgPrice = prev.avgPrice;
-                console.log(`Backfilled avg_price for ${entry.data.symbol}: ${prev.avgPrice} from ${prev.snapshotDate}`);
-              }
-              
-              // Backfill cost_basis_money from previous day if missing or zero
-              if (needsCostBasisMoney && prev.costBasisMoney && parseFloat(prev.costBasisMoney) !== 0) {
-                entry.data.costBasisMoney = prev.costBasisMoney;
-                console.log(`Backfilled cost_basis_money for ${entry.data.symbol}: ${prev.costBasisMoney} from ${prev.snapshotDate}`);
-              }
-              
-              // Calculate unrealized_pnl if we have spot, avg_price, quantity, and multiplier
-              if (needsUnrealizedPnl && entry.data.spot && entry.data.avgPrice && entry.data.quantity) {
-                const spot = parseFloat(entry.data.spot);
-                const avgPrice = parseFloat(entry.data.avgPrice);
-                const quantity = parseFloat(entry.data.quantity);
-                const multiplier = entry.data.multiplier ? parseFloat(entry.data.multiplier) : 1;
-                
-                if (!isNaN(spot) && !isNaN(avgPrice) && !isNaN(quantity) && !isNaN(multiplier)) {
-                  const calculatedPnl = (spot - avgPrice) * quantity * multiplier;
-                  entry.data.unrealizedPnl = calculatedPnl.toString();
-                  console.log(`Calculated unrealized_pnl for ${entry.data.symbol}: ${calculatedPnl} = (${spot} - ${avgPrice}) * ${quantity} * ${multiplier}`);
+            const needsAvgPrice = () => !entry.data.avgPrice || parseFloat(entry.data.avgPrice || '0') === 0;
+            const needsCostBasisMoney = () => !entry.data.costBasisMoney || parseFloat(entry.data.costBasisMoney || '0') === 0;
+            const needsUnrealizedPnl = !entry.data.unrealizedPnl || parseFloat(entry.data.unrealizedPnl || '0') === 0;
+
+            // Primary: derive basis from trades since the position was last flat
+            if (needsAvgPrice()) {
+              const quantity = parseFloat(entry.data.quantity || '0');
+              const multiplier = entry.data.multiplier ? parseFloat(entry.data.multiplier) : 1;
+              const derived = await deriveBasisFromTrades(
+                entry.data.accountId,
+                entry.data.symbol,
+                entry.data.conid ?? null,
+                quantity,
+                Number.isNaN(multiplier) ? 1 : multiplier,
+                entry.data.snapshotDate
+              );
+              if (derived) {
+                entry.data.avgPrice = derived.avgPrice.toString();
+                if (needsCostBasisMoney()) {
+                  entry.data.costBasisMoney = derived.costBasisMoney.toString();
                 }
-              } else if (needsUnrealizedPnl && prev.unrealizedPnl && parseFloat(prev.unrealizedPnl) !== 0) {
-                // Fallback: use previous day's unrealized_pnl if we can't calculate
-                entry.data.unrealizedPnl = prev.unrealizedPnl;
-                console.log(`Backfilled unrealized_pnl for ${entry.data.symbol}: ${prev.unrealizedPnl} from ${prev.snapshotDate}`);
+                console.log(`Derived cost basis from trades for ${entry.data.symbol}: avgPrice=${derived.avgPrice.toFixed(6)}`);
               }
             }
 
-            // If still missing cost basis after snapshot backfill, derive from trades
-            const stillNeedsAvgPrice = !entry.data.avgPrice || entry.data.avgPrice === '0' || parseFloat(entry.data.avgPrice || '0') === 0;
-            if (stillNeedsAvgPrice && entry.data.accountId && entry.data.symbol) {
-              const tradeRows = await db
+            // Fallback: most recent previous snapshot, only if recent enough to
+            // belong to the same continuously-held position
+            if (needsAvgPrice() || needsCostBasisMoney()) {
+              const whereConditions = [
+                eq(positions.accountId, entry.data.accountId),
+                lt(positions.snapshotDate, entry.data.snapshotDate),
+              ];
+
+              if (entry.data.conid) {
+                whereConditions.push(eq(positions.conid, entry.data.conid));
+              } else {
+                whereConditions.push(eq(positions.symbol, entry.data.symbol));
+                if (entry.data.expiry) {
+                  whereConditions.push(eq(positions.expiry, entry.data.expiry));
+                }
+                if (entry.data.strike) {
+                  whereConditions.push(eq(positions.strike, entry.data.strike));
+                }
+                if (entry.data.optionRight) {
+                  whereConditions.push(eq(positions.optionRight, entry.data.optionRight));
+                }
+              }
+
+              const previousSnapshot = await db
                 .select({
-                  totalQty: sql<string>`SUM(ABS(CAST(${trades.quantity} AS NUMERIC)))`,
-                  totalCost: sql<string>`SUM(ABS(CAST(${trades.quantity} AS NUMERIC)) * CAST(${trades.price} AS NUMERIC))`,
+                  avgPrice: positions.avgPrice,
+                  costBasisMoney: positions.costBasisMoney,
+                  snapshotDate: positions.snapshotDate,
                 })
-                .from(trades)
-                .where(and(
-                  eq(trades.accountId, entry.data.accountId),
-                  eq(trades.symbol, entry.data.symbol),
-                  eq(trades.side, 'BUY'),
-                ));
+                .from(positions)
+                .where(and(...whereConditions))
+                .orderBy(sql`${positions.snapshotDate} DESC`)
+                .limit(1);
 
-              const totalQty = parseFloat(tradeRows[0]?.totalQty || '0');
-              const totalCost = parseFloat(tradeRows[0]?.totalCost || '0');
-              if (totalQty > 0 && totalCost > 0) {
-                const derivedAvgPrice = totalCost / totalQty;
-                const derivedCostBasis = totalCost;
-                entry.data.avgPrice = derivedAvgPrice.toString();
-                entry.data.costBasisMoney = derivedCostBasis.toString();
-                console.log(`Derived cost basis from trades for ${entry.data.symbol}: avgPrice=${derivedAvgPrice.toFixed(4)}, costBasis=${derivedCostBasis.toFixed(2)}`);
+              if (previousSnapshot.length > 0) {
+                const prev = previousSnapshot[0];
+                const gapDays =
+                  (Date.parse(entry.data.snapshotDate) - Date.parse(prev.snapshotDate!)) /
+                  (24 * 60 * 60 * 1000);
 
-                // Recalculate unrealized PnL with derived cost basis
-                if (entry.data.spot && entry.data.quantity) {
-                  const spot = parseFloat(entry.data.spot);
-                  const quantity = parseFloat(entry.data.quantity);
-                  const multiplier = entry.data.multiplier ? parseFloat(entry.data.multiplier) : 1;
-                  if (!isNaN(spot) && !isNaN(quantity) && !isNaN(multiplier)) {
-                    const calculatedPnl = (spot - derivedAvgPrice) * quantity * multiplier;
-                    entry.data.unrealizedPnl = calculatedPnl.toString();
-                    console.log(`Calculated unrealized_pnl for ${entry.data.symbol}: ${calculatedPnl.toFixed(2)} = (${spot} - ${derivedAvgPrice.toFixed(4)}) * ${quantity} * ${multiplier}`);
+                if (gapDays <= MAX_BASIS_BACKFILL_GAP_DAYS) {
+                  if (needsAvgPrice() && prev.avgPrice && parseFloat(prev.avgPrice) !== 0) {
+                    entry.data.avgPrice = prev.avgPrice;
+                    console.log(`Backfilled avg_price for ${entry.data.symbol}: ${prev.avgPrice} from ${prev.snapshotDate}`);
                   }
+                  if (needsCostBasisMoney() && prev.costBasisMoney && parseFloat(prev.costBasisMoney) !== 0) {
+                    entry.data.costBasisMoney = prev.costBasisMoney;
+                    console.log(`Backfilled cost_basis_money for ${entry.data.symbol}: ${prev.costBasisMoney} from ${prev.snapshotDate}`);
+                  }
+                } else if (needsAvgPrice()) {
+                  console.warn(
+                    `No cost basis for ${entry.data.symbol} on ${entry.data.snapshotDate}: trades don't reconcile and previous snapshot (${prev.snapshotDate}) is ${Math.round(gapDays)}d old — leaving unset`
+                  );
                 }
+              }
+            }
+
+            // Recompute unrealized PnL from whatever basis we now have
+            if (needsUnrealizedPnl && entry.data.spot && entry.data.avgPrice && entry.data.quantity) {
+              const spot = parseFloat(entry.data.spot);
+              const avgPrice = parseFloat(entry.data.avgPrice);
+              const quantity = parseFloat(entry.data.quantity);
+              const multiplier = entry.data.multiplier ? parseFloat(entry.data.multiplier) : 1;
+
+              if (!isNaN(spot) && !isNaN(avgPrice) && avgPrice !== 0 && !isNaN(quantity) && !isNaN(multiplier)) {
+                const calculatedPnl = (spot - avgPrice) * quantity * multiplier;
+                entry.data.unrealizedPnl = calculatedPnl.toString();
+                console.log(`Calculated unrealized_pnl for ${entry.data.symbol}: ${calculatedPnl} = (${spot} - ${avgPrice}) * ${quantity} * ${multiplier}`);
               }
             }
           }
