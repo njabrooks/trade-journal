@@ -1,0 +1,5 @@
+{
+  "name": "visser-scan",
+  "description": "On-demand read of the VisserLabs AI Macro Nexus weekend data (notes/jordi-visser/) — trend scores, setup labels, exhaustion scores, consolidation buckets for his ~100-name AI value-chain universe. Cross-references the current book and thesis set to answer two questions — \"what are good buy opportunities in this data today?\" and \"which of our existing strategies/theses have recommended actions?\" — with options-structure suggestions (short-put retest entries, collars on exhaustion, hedge levels). PULL-ONLY and standalone — reads files + read-only DB queries, never writes to the database, never schedules anything. Use when the user says \"run the visser scan\", \"what's the visser data saying\", \"check the AI macro nexus\", \"any opportunities in the weekend scan\", \"apply the AI/Visser lens to the book\", or asks about buy setups / exhaustion / pullback entries \"based on this data\".",
+  "instructions": "SKILL.md"
+}
