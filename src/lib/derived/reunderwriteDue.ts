@@ -6,8 +6,13 @@
  * digest-refresh worklist is developing-only and never regenerates signals). This
  * detector flags ALREADY-UNDERWRITTEN asset OR macro theses where, since their latest
  * articulation version, either:
- *   - linked claims grew by >= threshold (default 5), or
- *   - >= 1 new REFUTING claim landed (counter-evidence is always worth a look).
+ *   - linked claims grew by >= threshold (default 8), or
+ *   - >= REFUTE_THRESHOLD (default 2) new REFUTING claims landed.
+ *
+ * Thresholds tuned up 2026-07-07 (was delta 5 / refutes 1): one or two new claims rarely
+ * change a thesis, and a SINGLE refuting claim is already surfaced at link time as a lighter
+ * `review_refuting_claim` decision by relate-research — so a full re-underwrite here now needs
+ * genuine accumulation (>=8) or a PATTERN of counter-evidence (>=2 refutes), not a single link.
  *
  * Claim-delta based ⇒ ticker-agnostic ⇒ works for macro theses natively (unlike the
  * ticker-based completeness backstop in thesis-snapshot). The maintenance / thesis
@@ -20,7 +25,10 @@ import { db } from '@/db';
 import { macroTheses, assetTheses, thesisArticulations, claimThesisMappings } from '@/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
-export const DEFAULT_REUNDERWRITE_THRESHOLD = 5;
+export const DEFAULT_REUNDERWRITE_THRESHOLD = 8;
+/** New refuting claims needed to escalate to a full re-underwrite (a single refute is already
+ *  surfaced as a lighter review_refuting_claim decision at link time). */
+export const REUNDERWRITE_REFUTE_THRESHOLD = 2;
 const ACTIVE = ['developing', 'monitoring'];
 
 export interface ReunderwriteDueItem {
@@ -87,10 +95,10 @@ export async function findThesesDueForReunderwrite(
       const claimsAtLast = t.claimsAtLast ?? 0;
       const claimsDelta = currentClaims - claimsAtLast;
       const newRefutes = (refuteDates.get(t.id) ?? []).filter((d) => d > art.createdAt).length;
-      if (claimsDelta >= threshold || newRefutes >= 1) {
+      if (claimsDelta >= threshold || newRefutes >= REUNDERWRITE_REFUTE_THRESHOLD) {
         const reasons: string[] = [];
         if (claimsDelta >= threshold) reasons.push(`+${claimsDelta} claims since v${art.version}`);
-        if (newRefutes >= 1) reasons.push(`${newRefutes} new refuting claim(s)`);
+        if (newRefutes >= REUNDERWRITE_REFUTE_THRESHOLD) reasons.push(`${newRefutes} new refuting claims`);
         out.push({
           thesisId: t.id,
           thesisType,
