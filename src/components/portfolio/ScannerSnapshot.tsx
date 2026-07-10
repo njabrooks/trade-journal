@@ -175,8 +175,14 @@ export function ScannerSnapshot() {
           {formatDateShort(data.run.runDate)}
         </span>
         <Link
-          href="/vol-curve"
+          href="/advisor"
           className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          Advisor history →
+        </Link>
+        <Link
+          href="/vol-curve"
+          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
         >
           Full scan →
         </Link>
@@ -197,9 +203,12 @@ export function ScannerSnapshot() {
               <div key={scenario} className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <Link
+                    href="/advisor"
+                    className="text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground hover:underline"
+                  >
                     Advisor — {SCENARIO_LABELS[scenario] ?? scenario}
-                  </span>
+                  </Link>
                   {hitLine && (
                     <span
                       className="ml-auto text-[10px] tabular-nums text-muted-foreground"

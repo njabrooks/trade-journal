@@ -34,6 +34,11 @@ thing per day, it's this.*
 `/options-advisor` (engine `scripts/options-advisor.ts` + skill judgment) →
 `advisor_recommendations` (per-scenario batch supersede, 7-day expiry) →
 dashboard **ScannerSnapshot** grouped by scenario, hit-rates attached (Lane C).
+Full record on the **`/advisor` page** (sidebar: Options Advisor): every batch
+with generation time + source, expandable rationale/legs/metrics, lifecycle
+incl. superseded/expired, Lane C outcomes. The vol scanner (`/vol-curve`) is a
+linked sub-surface — the advisor's vol-context sensor + per-name strike
+deep-dive, not a sibling page.
 
 | Scenario | Universe | The question it answers |
 |---|---|---|

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import {
   Tabs,
@@ -13,8 +14,17 @@ export default function VolCurvePage() {
   return (
     <DashboardShell
       title="Vol Curve Analyzer"
-      subtitle="Find optimal strike selection for directional option structures"
-      activeNav="vol-curve"
+      subtitle={
+        <>
+          The advisor&apos;s vol-context sensor + per-name strike deep-dive — recommendations live
+          on the{" "}
+          <Link href="/advisor" className="underline hover:text-foreground">
+            Options Advisor
+          </Link>{" "}
+          page
+        </>
+      }
+      activeNav="advisor"
     >
       <Tabs defaultValue="scanner" className="w-full">
         <TabsList>

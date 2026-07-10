@@ -25,7 +25,7 @@ export default async function VolCurveReportPage({
     <DashboardShell
       title={`${report.ticker} Vol Curve`}
       subtitle={`${report.direction} — $${parseFloat(String(report.targetBase)).toFixed(0)} / $${parseFloat(String(report.targetHigh)).toFixed(0)} — ${new Date(report.createdAt).toLocaleDateString()}`}
-      activeNav="vol-curve"
+      activeNav="advisor"
     >
       <ReportDetailClient data={data} />
     </DashboardShell>

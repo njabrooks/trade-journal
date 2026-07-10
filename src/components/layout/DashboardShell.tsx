@@ -24,7 +24,8 @@ export type NavKey =
   | "admin-ingestion"
   | "admin-recompute"
   | "admin-processes"
-  | "vol-curve";
+  | "vol-curve"
+  | "advisor";
 
 interface DashboardShellProps {
   title: string | ReactNode;
