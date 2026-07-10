@@ -11,6 +11,13 @@ This skill is designed for the **Claude.ai app environment** (web/desktop/projec
 
 For Claude Code in the terminal, use the sibling `pull-portfolio` skill instead, which runs `scripts/pull-portfolio.ts` with local `.env.local` credentials.
 
+> **Live option pricing in a repo session:** prefer the local 4001 IBC-gateway tools —
+> `scripts/ibkr-quote-contracts.py` (batch JSON) or `/ibkr-quote` (docs/v2/21) — over any
+> MCP connector. The **IBKR MCP connector** ("Get Option Data", Web-API expiration ids like
+> `123@SMART/OPT/...`) is a separate, third data path: fine for ad-hoc browsing, but it
+> rate-limits under parallel calls, errors transiently, is absent in headless/cron runs,
+> and its failures are IBKR-side — don't misattribute them to Massive.
+
 ## What this is
 
 The Two Trees Capital trade journal is a Next.js + Supabase application that tracks live positions, trades, NAV, cash, and option strategies across multiple broker and crypto accounts. This skill documents how to query it safely and how to combine portfolio data with options market data for trade design.

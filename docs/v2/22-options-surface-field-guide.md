@@ -89,7 +89,10 @@ history (percentiles) and pick structure geometry well; their marks drift
 structure is live-verified before saving/acting. IB data types: live where
 subscribed, free 15-min delayed otherwise (type 3 requests auto-upgrade when
 subscriptions land). The comparison harness (`scripts/ops/compare-chain-sources.ts`)
-re-measures the drift any time.
+re-measures the drift any time. Three IBKR paths exist — precedence: the
+**4001 IBC gateway** (default; only path that works headless) → the **IBKR MCP
+connector** (ad-hoc browsing only; rate-limits, absent in cron) → the **5001
+Client Portal gateway** (legacy; usually down, never required).
 
 ## Gateway ops quick-reference
 

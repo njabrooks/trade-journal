@@ -202,6 +202,17 @@ echo '[{"ticker":"AAPL","expiry":"20260814","strike":290,"right":"P"}, ...]' \
 
 Note in each rationale that legs were live-verified (and re-quote at execution).
 
+**Data-path precedence (three IBKR paths exist — don't conflate):**
+1. **IBC/TWS gateway, port 4001** (`ibkr-quote-contracts.py`, `/ibkr-quote`) —
+   the default and the ONLY path for verification and headless runs.
+2. **IBKR MCP connector** ("Interactive Brokers (IBKR): Get Option Data" etc.,
+   Web-API ids like `123@SMART/OPT/...`) — fine for ad-hoc browsing when the
+   repo tools aren't available; rate-limits under parallel calls, throws
+   transient errors, and is ABSENT in headless/cron sessions. It is IBKR, not
+   Massive — don't misattribute its errors.
+3. **Client Portal gateway, port 5001** — legacy livePrices fallback; usually
+   down, never required.
+
 ## Step 3 — Save the batch
 
 Build the batch JSON and pipe it in (supersedes the previous active batch for
