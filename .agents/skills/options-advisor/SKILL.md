@@ -183,8 +183,24 @@ Batch discipline (all scenarios):
 - **Cap each batch at ~5.** Genuine recommendations only — this feeds a
   glanceable module, not an inbox.
 
-Optionally sanity-check the chosen structure's pricing live via `/ibkr-quote`
-(EOD chain marks can drift); note in the rationale if you did.
+**Live verification (required before saving any batch — EOD chain marks drift;
+see docs/v2/22 data doctrine).** The live path is the **IBC/TWS gateway on port
+4001** (always-on, `local.ibc-gateway`) — check `nc -z localhost 4001`. Do NOT
+reach for the Client Portal gateway on 5001 (`src/lib/services/ibkr/`) — that's
+a legacy livePrices fallback, usually down, and not part of this workflow; its
+absence is normal, not a blocker. Two tools, both on 4001:
+
+```bash
+# batch, machine-readable (preferred for verification):
+echo '[{"ticker":"AAPL","expiry":"20260814","strike":290,"right":"P"}, ...]' \
+  | /Users/home-hub/projects/radon/.venv/bin/python3 scripts/ibkr-quote-contracts.py
+# returns bid/ask/mid/iv/delta + marketDataType per contract
+
+# multi-leg human-readable spot-check:
+/ibkr-quote  (skill — TICKER + "BUY 290P 20260814, SELL ..." leg syntax)
+```
+
+Note in each rationale that legs were live-verified (and re-quote at execution).
 
 ## Step 3 — Save the batch
 
