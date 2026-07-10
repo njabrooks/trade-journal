@@ -108,7 +108,7 @@ export const DECISION_RUNBOOKS: Record<DecisionType, string> = {
 
 /** Short human label for the decision_type chip in the strip. */
 export const DECISION_TYPE_LABELS: Record<DecisionType, string> = {
-  confirm_claim_link: 'Confirm link',
+  confirm_claim_link: 'Review claim link',
   review_refuting_claim: 'Refuting evidence',
   cluster_claims_to_thesis: 'New thesis?',
   classify_exposure: 'Tactical or belief?',

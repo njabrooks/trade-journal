@@ -206,7 +206,7 @@ items can be deferred when there is higher-value work.
 | `classify_macro_link` | What kind of macro relationship is this? | Choose `related`, `gated_by`, unlink, or stand-alone. |
 | `link_strategy_to_thesis` | Which thesis owns this strategy? | Set `strategies.asset_thesis_id`. |
 | `review_refuting_claim` | A claim may argue against the thesis. | Link as refuting, dismiss, or re-underwrite. |
-| `confirm_claim_link` | A claim probably belongs, but needs confirmation. | Confirm link or reject link. |
+| `confirm_claim_link` | A tentative claim-to-thesis link needs a quick sanity check. | Confirm, sever, or adjust the link. |
 | `cluster_claims_to_thesis` | Several claims may point to a new thesis. | Create/link a thesis or keep claims separate. |
 | `weakening_signal_action` | A signal is flashing weakness. | Re-underwrite, reduce conviction, add note, or dismiss as noise. |
 | `run_deep_dive` | The system thinks a research pass is worth doing. | Start the research pipeline or dismiss. |
@@ -336,4 +336,3 @@ When you see a Decision Item, ask:
   work has been completed.
 - Completed or rejected strategies can still matter for retrospectives and linked-thesis
   history.
-

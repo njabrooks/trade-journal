@@ -1,6 +1,6 @@
 ---
 name: decisions
-description: The decision-mode front door — open a context and immediately see + work through what needs your judgment. Reads the open Decision Items (the agent-side DecisionStrip) plus the latent maintenance worklists, ranks them, and walks you through resolving each via its runbook. Use when the user asks "what needs me", "what's pending", "what should I decide", "open decisions", "let's go through decisions", "decision mode", "anything need my call", or opens a session wanting to act on the belief layer. Distinct from /maintenance (which PRODUCES decisions); this one RESOLVES them.
+description: The decision-mode front door — open a context and immediately see + work through what needs your judgment. Reads the open Decision Items (the agent-side DecisionStrip) plus the agent-run maintenance worklists, ranks the resolve-now items, and walks you through resolving each via its runbook. Use when the user asks "what needs me", "what's pending", "what should I decide", "open decisions", "let's go through decisions", "decision mode", "anything need my call", or opens a session wanting to act on the belief layer. Distinct from /maintenance (which runs background upkeep and may PRODUCE decisions); this one RESOLVES already-raised decisions.
 user_invocable: true
 allowed-tools: Bash, Read, Edit, Write
 ---
@@ -13,17 +13,20 @@ The **pull, curious foreground** for a fresh context: one command that answers *
 me right now?"* and then helps you resolve it conversationally. It is the agent-side
 counterpart to the web **DecisionStrip**.
 
-It reads two layers and composes them:
+It reads two layers and keeps them distinct:
 1. **Open Decision Items** — already-raised, typed `DecisionPacket`s (`journal_entries`,
    `action_type='decision_required'`, `status='active'`/expired-snooze). These are the
    things to **resolve now**.
-2. **Latent maintenance worklists** — work `/maintenance` would surface as decisions but
-   hasn't yet (due re-underwrites, signalless/thin theses, framing, research-gaps, …).
+2. **Agent maintenance worklists** — work `/maintenance` should run or drain (health
+   passes, digest refreshes, signal derivation, research gaps, framing, due re-underwrites,
+   …). Some worklists may produce Decision Items, but many are agent upkeep and only
+   surface a decision on deterioration or ambiguity.
 
-**Relationship to `/maintenance`:** `/maintenance` is the *producer* (drains worklists,
-raises packets, advances the relate-research cursor — the background freshness-keeper).
-`/decisions` is the *consumer/resolver* (the headline conversation). Use `/decisions` to
-act; use `/maintenance` to refresh/surface. They share the same dashboard + packet model.
+**Relationship to `/maintenance`:** `/maintenance` is the background freshness-keeper
+(drains worklists, advances cursors, performs agent upkeep, and raises packets only when
+judgment is needed). `/decisions` is the *consumer/resolver* for packets already raised.
+Use `/decisions` to act on current decisions; use `/maintenance` to refresh or drain
+agent work. They share the same packet model only where work becomes a real decision.
 
 ## Principles
 - **Resolve genuine decisions, don't manufacture them.** A raised packet already passed the
@@ -48,11 +51,13 @@ cd /Users/home-hub/projects/trade-journal
 **Step 1 — Read both layers**
 ```bash
 npx tsx scripts/ops/list-decisions.ts --json     # open packets, ranked (the resolve-now set)
-npx tsx scripts/ops/maintenance-status.ts --json # latent worklists (what /maintenance would raise)
+npx tsx scripts/ops/maintenance-status.ts --json # agent worklists (not all are user decisions)
 ```
 
 **Step 2 — Present the brief**
-Lead with a one-line headline: *"N decisions to resolve · M latent maintenance items."*
+Lead with a one-line headline: *"N open decisions · M maintenance work items."*
+If useful, add a short qualifier such as: *"maintenance work is agent-run; it may emit
+new decisions only on ambiguity, weakening, or a required owner call."*
 Then list the open decisions in ranked order — for each: the type label, the subject
 (`objectTitle`), `whyRaised`, age/×occurrence, and the `default_recommendation` if present.
 Keep it scannable; don't dump JSON.
@@ -60,8 +65,9 @@ Keep it scannable; don't dump JSON.
 **Step 3 — Work through them (one at a time, user-led)**
 For each open decision, surface its `recommended_actions` + default, get the user's pick, then:
 - **Built-in mechanical types** (`frame_asset_under_macro`, `classify_macro_link`,
-  `link_strategy_to_thesis`, `resolve_proxy_underlying`) — `resolve-decision.ts` does the
-  write **and** the close in one call:
+  `link_strategy_to_thesis`, `resolve_proxy_underlying`, plus `confirm_claim_link`
+  with `--action sever` — deletes the claim↔thesis mapping directly) —
+  `resolve-decision.ts` does the write **and** the close in one call:
   ```bash
   npx tsx scripts/ops/resolve-decision.ts --id <decisionId> --action <set_gated_by|link|map|stand_alone> [--macro-id|--strategy-id|--thesis-id|--parent-id <uuid>] --by user
   ```

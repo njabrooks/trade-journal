@@ -90,11 +90,14 @@ async function main() {
     classifyExposure: exposure,
     reunderwriteDue,
   };
-  // Actionable total (signalThin omitted — it overlaps researchGap).
-  const actionable = digest + sig.ready.length + health + gaps + retro + framing + exposure + reunderwriteDue;
+  // Maintenance work total (signalThin omitted — it overlaps researchGap).
+  // Keep `actionable` for backward compatibility with skills/scripts, but present it
+  // to humans as agent-run maintenance work, not already-raised user decisions.
+  const maintenanceWorkItems = digest + sig.ready.length + health + gaps + retro + framing + exposure + reunderwriteDue;
+  const actionable = maintenanceWorkItems;
 
   if (args.json) {
-    console.log(JSON.stringify({ relateResearch, worklists, actionable }, null, 2));
+    console.log(JSON.stringify({ relateResearch, worklists, actionable, maintenanceWorkItems }, null, 2));
     await closeDb();
     process.exit(0);
   }
@@ -112,7 +115,7 @@ async function main() {
   console.log(`decision detectors:`);
   console.log(`  framing (asset w/o macro)     : ${framing}`);
   console.log(`  classify_exposure (placeholders): ${exposure}`);
-  console.log(`\nactionable items: ${actionable}`);
+  console.log(`\nmaintenance work items: ${maintenanceWorkItems}`);
   console.log(`Run the /maintenance skill to drain incrementally (token-aware), or each worklist's find-*/mode directly.`);
 
   await closeDb();
