@@ -27,17 +27,18 @@ If nothing is listening → Gateway needs to be started (Step 2).
 
 ## Step 2: Start IB Gateway (if needed)
 
+The gateway is IBC-managed (launchd `local.ibc-gateway`, docs/v2/21) — do NOT
+launch the app by hand:
+
 ```bash
-open -a "IB Gateway 10.37"
+scripts/ops/gateway.sh resume
 ```
 
-Then tell the user:
-> IB Gateway is launching. Log in with your IBKR credentials and complete 2FA.
-> If you have multiple accounts, use the one with US Options market data subscription
-> for live quotes (otherwise delayed data will be used).
-> Let me know when you see "Client login succeeds" or the main gateway window.
-
-Wait for user confirmation before proceeding.
+It polls port 4001 for up to 4 minutes. If the weekly token has lapsed the user
+gets an IBKR 2FA prompt on their phone — tell them to approve it. If it stays
+down, `scripts/ops/gateway.sh status` + the `/gateway` skill are the recovery
+path. (Do not confuse this with the legacy Client Portal gateway on 5001 —
+that being down is normal.)
 
 ## Step 3: Parse the User's Request
 

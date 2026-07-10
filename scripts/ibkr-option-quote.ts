@@ -1,5 +1,15 @@
 #!/usr/bin/env tsx
 /**
+ * ⚠ DEPRECATED (2026-07-10) — do not use for live verification.
+ *
+ * This is the OLD Client Portal Gateway (port 5001) quote path. The CP gateway
+ * is a legacy livePrices fallback and is usually NOT running — its absence is
+ * normal. The live-verification path is the always-on IBC/TWS gateway on port
+ * 4001 (launchd local.ibc-gateway, docs/v2/21):
+ *   - multi-leg human-readable:  scripts/ibkr-option-quote.py  (the /ibkr-quote skill)
+ *   - batch machine-readable:    scripts/ibkr-quote-contracts.py (stdin JSON)
+ * Kept only for the rare case the CP gateway is deliberately running.
+ *
  * Fetch live IBKR option quotes for a multi-leg structure.
  *
  * Uses the IBKR Client Portal Gateway API to get real bid/ask/last
