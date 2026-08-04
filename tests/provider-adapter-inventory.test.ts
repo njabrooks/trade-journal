@@ -7,9 +7,17 @@ const inventoryPath = resolve(
   process.cwd(),
   'docs/agents/provider-adapters/interactive-inventory.json',
 );
+const headlessInventoryPath = resolve(
+  process.cwd(),
+  'docs/agents/provider-adapters/headless-inventory.json',
+);
 
 function readInventory(): Record<string, unknown> {
   return JSON.parse(readFileSync(inventoryPath, 'utf8')) as Record<string, unknown>;
+}
+
+function readHeadlessInventory(): Record<string, unknown> {
+  return JSON.parse(readFileSync(headlessInventoryPath, 'utf8')) as Record<string, unknown>;
 }
 
 describe('Provider Adapter inventory validation', () => {
@@ -77,6 +85,61 @@ describe('Provider Adapter inventory validation', () => {
       requirement: 'TJ-INV-014',
       path: '/tool_mappings/0/affected_entries',
       message: 'Unknown affected inventory entry: interactive-claude-does-not-exist.',
+    });
+  });
+
+  it('accepts the checked-in exhaustive headless inventory', () => {
+    expect(validateInventory(readHeadlessInventory())).toEqual([]);
+  });
+
+  it('reports a stable coverage diagnostic when a headless projection is omitted', () => {
+    const inventory = readHeadlessInventory();
+    inventory.entries = (inventory.entries as Array<Record<string, unknown>>).slice(1);
+
+    expect(validateInventory(inventory)).toContainEqual({
+      requirement: 'TJ-HEAD-006',
+      path: '/entries',
+      message: 'Missing headless projections: .agents/skills/advance-or-kill/SKILL.md.',
+    });
+  });
+
+  it('rejects a generic classification for a bespoke contract', () => {
+    const inventory = readHeadlessInventory();
+    const entries = inventory.entries as Array<Record<string, unknown>>;
+    const bespoke = entries.find((entry) => entry.id === 'headless-codex-build-core-argument');
+    const contract = bespoke?.execution_contract as Record<string, unknown>;
+    contract.class = 'generic';
+
+    expect(validateInventory(inventory)).toContainEqual({
+      requirement: 'TJ-HEAD-004',
+      path: `/entries/${entries.indexOf(bespoke!)}/execution_contract/class`,
+      message: 'Contract class must be bespoke for build-core-argument.',
+    });
+  });
+
+  it('keeps interactive-only workflows ineligible for unattended execution', () => {
+    const inventory = readHeadlessInventory();
+    const entries = inventory.entries as Array<Record<string, unknown>>;
+    const thesis = entries.find((entry) => entry.id === 'headless-codex-thesis');
+    const invocation = thesis?.invocation as Record<string, unknown>;
+    invocation.unattended_eligibility = 'eligible';
+
+    expect(validateInventory(inventory)).toContainEqual({
+      requirement: 'TJ-HEAD-008',
+      path: `/entries/${entries.indexOf(thesis!)}/invocation/unattended_eligibility`,
+      message: 'thesis must remain ineligible for unattended execution.',
+    });
+  });
+
+  it('rejects a dangling scheduled-workflow adapter reference', () => {
+    const inventory = readHeadlessInventory();
+    const workflows = inventory.operational_workflows as Array<Record<string, unknown>>;
+    workflows[0].migration_target_entry = 'headless-codex-does-not-exist';
+
+    expect(validateInventory(inventory)).toContainEqual({
+      requirement: 'TJ-HEAD-010',
+      path: '/operational_workflows/0/migration_target_entry',
+      message: 'Unknown headless migration target: headless-codex-does-not-exist.',
     });
   });
 });

@@ -15,6 +15,8 @@ Run the supporting repository validator from the repository root:
 ```console
 npx tsx scripts/ops/validate-provider-adapter-inventory.ts
 npx tsx scripts/ops/validate-provider-adapter-inventory.ts --format json
+npx tsx scripts/ops/validate-provider-adapter-inventory.ts docs/agents/provider-adapters/headless-inventory.json
+npx tsx scripts/ops/validate-provider-adapter-inventory.ts docs/agents/provider-adapters/headless-inventory.json --format json
 ```
 
 The human and JSON reports are deterministic over repository content. A valid report proves that required
@@ -44,3 +46,34 @@ unattended judgment. File presence, parity, and historical execution never upgra
 Cross-repository candidate Capabilities keep their external authority. Notes owns Toulmin extraction and
 Radon owns IBKR gateway/quote infrastructure; this inventory references those authorities instead of copying
 their contracts into Trade Journal.
+
+## Headless inventory
+
+`headless-inventory.json` contains all 36 repository-owned `.agents/skills/` projections and links each one
+back to its authored `.claude/skills/` authority. The validator compares each generated body with its authored
+source, checks `skill.json` and preamble packaging, and rejects missing, extra, duplicate, or stale mirrors.
+
+The inventory deliberately distinguishes packaging from readiness:
+
+- `assess-validation-evidence` and `build-core-argument` have bespoke authored headless contracts;
+- the other 34 projections have generic generated preambles, which are packaging baselines only; and
+- `decisions` and `thesis` are mirrored for parity but remain ineligible for unattended execution.
+
+Five live provider-dependent launchd jobs are mapped with their current Claude provider, model, invocation,
+schedule, read/write boundary, machine-local environment, timeout, locking, failure observability, downstream
+consumer, and proposed J2 disposition. They correspond to four adapter families: maintenance, thesis-observe,
+options-advisor (morning batch and afternoon LEAP jobs), and morning-brief. None currently invokes a Codex
+projection: each job names its currently invoked authored Claude source separately from its proposed Codex
+migration target. Migration priority follows operational risk, starting with belief maintenance and its genuine-
+judgment boundary.
+
+Deterministic on-device jobs and GitHub Actions are recorded separately as exclusions because they do not
+invoke an agent model. Provider data dependencies such as Radon, IB Gateway, Massive, Supabase, browser/web
+access, credentials, login state, and macOS notifications remain visible on the live workflows where they
+affect execution.
+
+The parity script is supporting diagnostic tooling, not Adapter Conformance evidence. Likewise, a current
+mirror and a valid rich inventory do not upgrade any W1 evidence state. All projections remain `unavailable`
+until an exact source Capability version, package digest, and adapter digest can be bound by the W1 evidence
+contract. J1 #35 will validate only the smaller Repository Manifest adapter declarations using the accepted
+Workspace CLI.
