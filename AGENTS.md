@@ -1,8 +1,8 @@
 # AGENTS.md — Codex operating guide for Trade Journal
 
-> **Codex shim, not a full manual.** The canonical, continuously-maintained operating manual for this repo is
-> **[CLAUDE.md](CLAUDE.md)** (same directory). It is agent-neutral for everything except slash-command
-> invocation, and it is kept current. Read it for the full architecture, the 62-table schema, ingestion and
+> **Codex shim, not a full manual.** Provider-neutral domain semantics and repository-critical safeguards are
+> authoritative in **[CONTEXT.md](CONTEXT.md)**. The continuously-maintained detailed operating manual is
+> **[CLAUDE.md](CLAUDE.md)** (same directory). Read it for the full architecture, schema, ingestion and
 > automation cadence, entity state machines, and working conventions. **This file records only (a) what differs
 > for Codex and (b) a fast-start for the operations you actually run** — so it can't drift out of sync the way a
 > full copy does.
@@ -16,12 +16,13 @@
 
 ## Read order
 
-1. **[CLAUDE.md](CLAUDE.md)** — source of truth: architecture, schema, ingestion, state machines, conventions.
-2. **`docs/v2/`** — product direction + the loose-agent model. Most relevant: `03-v2-spec.md`,
+1. **[CONTEXT.md](CONTEXT.md)** — provider-neutral domain vocabulary, authority boundaries, and safeguards.
+2. **[CLAUDE.md](CLAUDE.md)** — detailed architecture, schema, ingestion, state machines, and conventions.
+3. **`docs/v2/`** — product direction + the loose-agent model. Most relevant: `03-v2-spec.md`,
    `07-belief-maintenance-loop.md`, `10` (decision/loose-agent model), `14` (thesis-observe), `15` (self-improving loop).
-3. **Bridge skill** `~/.codex/skills/trade-journal-workflows/SKILL.md` + its `references/claude-inventory.md`
+4. **Bridge skill** `~/.codex/skills/trade-journal-workflows/SKILL.md` + its `references/claude-inventory.md`
    (every current skill, grouped) and `references/workflow-map.md` (intent → skill routing).
-4. **This file** — Codex deltas + fast-start.
+5. **This file** — Codex deltas + fast-start.
 
 ## Codex deltas (the Claude → Codex translation)
 
@@ -40,7 +41,7 @@
 - **`.agents/skills/` is the headless mirror, not your interactive source.** Each skill carries a
   `HEADLESS_PREAMBLE.md` (autonomous-mode wrapper) — it's for programmatic/cron runs. It's generated from
   `.claude/skills/` by `scripts/ops/generate-agents-mirror.ts` and kept honest by
-  `scripts/ops/check-codex-parity.ts` (run after any skill change, then `git add .agents`). Current at all 32
+  `scripts/ops/check-codex-parity.ts` (run after any skill change, then `git add .agents`). Current at all 36
   skills. For interactive work, read the canonical `.claude/skills/` source — the mirror is headless-only.
   - **NOTE — before relying on Codex for a headless CRON job:** the per-skill preambles are a *generic
     baseline* except the two hand-authored ones (`build-core-argument`, `assess-validation-evidence`). Give the

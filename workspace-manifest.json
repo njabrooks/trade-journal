@@ -1,0 +1,613 @@
+{
+  "workspace_standard": {
+    "version": "1.0.0"
+  },
+  "scope": {
+    "id": "scope:trade-journal"
+  },
+  "repository": {
+    "id": "github:njabrooks/trade-journal"
+  },
+  "conformance": {
+    "command": "./workspace validate repository ."
+  },
+  "record_authority": {
+    "default": "github:njabrooks/trade-journal",
+    "exceptions": [
+      {
+        "records": "architecture decisions",
+        "authority": "repository:docs/adr",
+        "rationale": "ADRs are durable repository records; GitHub Work Items coordinate changes without replacing adopted decision records."
+      }
+    ]
+  },
+  "tracker": {
+    "provider": "github",
+    "location": "njabrooks/trade-journal",
+    "triage_roles": {
+      "needs-triage": {
+        "label": "needs-triage",
+        "meaning": "Maintainer needs to evaluate this Work Item."
+      },
+      "needs-info": {
+        "label": "needs-info",
+        "meaning": "Waiting on the reporter for more information."
+      },
+      "ready-for-agent": {
+        "label": "ready-for-agent",
+        "meaning": "Fully specified and ready for an AFK agent."
+      },
+      "ready-for-human": {
+        "label": "ready-for-human",
+        "meaning": "Requires human implementation or judgment."
+      },
+      "wontfix": {
+        "label": "wontfix",
+        "meaning": "Will not be actioned."
+      }
+    }
+  },
+  "guidance": {
+    "domain_context": "CONTEXT.md",
+    "adrs": "docs/adr",
+    "agent_guidance": "docs/agents",
+    "tracker_guidance": "docs/agents/issue-tracker.md",
+    "triage_guidance": "docs/agents/triage-labels.md"
+  },
+  "owned_capabilities": "none",
+  "provider_adapters": [
+    {
+      "id": "headless-codex-advance-or-kill",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/advance-or-kill/SKILL.md"
+    },
+    {
+      "id": "headless-codex-analyze-vol-curve",
+      "capability": "capability:scope:trade-journal/options-vol-analysis",
+      "provider": "codex",
+      "path": ".agents/skills/analyze-vol-curve/SKILL.md"
+    },
+    {
+      "id": "headless-codex-assess-validation-evidence",
+      "capability": "capability:scope:trade-journal/belief-evidence-assessment",
+      "provider": "codex",
+      "path": ".agents/skills/assess-validation-evidence/SKILL.md"
+    },
+    {
+      "id": "headless-codex-backfill-claims",
+      "capability": "capability:scope:trade-journal/belief-maintenance",
+      "provider": "codex",
+      "path": ".agents/skills/backfill-claims/SKILL.md"
+    },
+    {
+      "id": "headless-codex-build-core-argument",
+      "capability": "capability:scope:trade-journal/thesis-underwriting",
+      "provider": "codex",
+      "path": ".agents/skills/build-core-argument/SKILL.md"
+    },
+    {
+      "id": "headless-codex-decisions",
+      "capability": "capability:scope:trade-journal/decision-resolution",
+      "provider": "codex",
+      "path": ".agents/skills/decisions/SKILL.md"
+    },
+    {
+      "id": "headless-codex-finalize-for-upload",
+      "capability": "capability:scope:trade-journal/research-publication",
+      "provider": "codex",
+      "path": ".agents/skills/finalize-for-upload/SKILL.md"
+    },
+    {
+      "id": "headless-codex-gateway",
+      "capability": "capability:scope:radon/ibkr-gateway-control",
+      "provider": "codex",
+      "path": ".agents/skills/gateway/SKILL.md"
+    },
+    {
+      "id": "headless-codex-graduate-pipeline-idea",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/graduate-pipeline-idea/SKILL.md"
+    },
+    {
+      "id": "headless-codex-ibkr-quote",
+      "capability": "capability:scope:radon/ibkr-option-quote",
+      "provider": "codex",
+      "path": ".agents/skills/ibkr-quote/SKILL.md"
+    },
+    {
+      "id": "headless-codex-maintenance",
+      "capability": "capability:scope:trade-journal/belief-maintenance",
+      "provider": "codex",
+      "path": ".agents/skills/maintenance/SKILL.md"
+    },
+    {
+      "id": "headless-codex-morning-brief",
+      "capability": "capability:scope:trade-journal/morning-attention-brief",
+      "provider": "codex",
+      "path": ".agents/skills/morning-brief/SKILL.md"
+    },
+    {
+      "id": "headless-codex-options-advisor",
+      "capability": "capability:scope:trade-journal/portfolio-options-advice",
+      "provider": "codex",
+      "path": ".agents/skills/options-advisor/SKILL.md"
+    },
+    {
+      "id": "headless-codex-pipeline-status",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/pipeline-status/SKILL.md"
+    },
+    {
+      "id": "headless-codex-portfolio-and-options-mcp",
+      "capability": "capability:scope:trade-journal/portfolio-analysis",
+      "provider": "codex",
+      "path": ".agents/skills/portfolio-and-options-mcp/SKILL.md"
+    },
+    {
+      "id": "headless-codex-process-note",
+      "capability": "capability:scope:notes/toulmin-extraction",
+      "provider": "codex",
+      "path": ".agents/skills/process-note/SKILL.md"
+    },
+    {
+      "id": "headless-codex-process-transcript",
+      "capability": "capability:scope:notes/toulmin-extraction",
+      "provider": "codex",
+      "path": ".agents/skills/process-transcript/SKILL.md"
+    },
+    {
+      "id": "headless-codex-pull-portfolio",
+      "capability": "capability:scope:trade-journal/portfolio-snapshot",
+      "provider": "codex",
+      "path": ".agents/skills/pull-portfolio/SKILL.md"
+    },
+    {
+      "id": "headless-codex-relate-bookmark",
+      "capability": "capability:scope:trade-journal/belief-research-relation",
+      "provider": "codex",
+      "path": ".agents/skills/relate-bookmark/SKILL.md"
+    },
+    {
+      "id": "headless-codex-relate-research",
+      "capability": "capability:scope:trade-journal/belief-research-relation",
+      "provider": "codex",
+      "path": ".agents/skills/relate-research/SKILL.md"
+    },
+    {
+      "id": "headless-codex-stage-1-init-idea",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/stage-1-init-idea/SKILL.md"
+    },
+    {
+      "id": "headless-codex-stage-2-formalize-thesis",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/stage-2-formalize-thesis/SKILL.md"
+    },
+    {
+      "id": "headless-codex-stage-3-map-unknowns",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/stage-3-map-unknowns/SKILL.md"
+    },
+    {
+      "id": "headless-codex-stage-4a-prep-desktop-research",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/stage-4a-prep-desktop-research/SKILL.md"
+    },
+    {
+      "id": "headless-codex-stage-4a-research-unknown",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/stage-4a-research-unknown/SKILL.md"
+    },
+    {
+      "id": "headless-codex-stage-4b-synthesize-evidence",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/stage-4b-synthesize-evidence/SKILL.md"
+    },
+    {
+      "id": "headless-codex-stage-5-express-thesis",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "codex",
+      "path": ".agents/skills/stage-5-express-thesis/SKILL.md"
+    },
+    {
+      "id": "headless-codex-synthesize-claims",
+      "capability": "capability:scope:trade-journal/claims-synthesis",
+      "provider": "codex",
+      "path": ".agents/skills/synthesize-claims/SKILL.md"
+    },
+    {
+      "id": "headless-codex-thesis",
+      "capability": "capability:scope:trade-journal/thesis-foreground",
+      "provider": "codex",
+      "path": ".agents/skills/thesis/SKILL.md"
+    },
+    {
+      "id": "headless-codex-thesis-observe",
+      "capability": "capability:scope:trade-journal/thesis-observation",
+      "provider": "codex",
+      "path": ".agents/skills/thesis-observe/SKILL.md"
+    },
+    {
+      "id": "headless-codex-thesis-review",
+      "capability": "capability:scope:trade-journal/belief-maintenance",
+      "provider": "codex",
+      "path": ".agents/skills/thesis-review/SKILL.md"
+    },
+    {
+      "id": "headless-codex-visser-scan",
+      "capability": "capability:scope:trade-journal/market-research-scan",
+      "provider": "codex",
+      "path": ".agents/skills/visser-scan/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-advance-or-kill",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/advance-or-kill/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-analyze-vol-curve",
+      "capability": "capability:scope:trade-journal/options-vol-analysis",
+      "provider": "claude",
+      "path": ".claude/skills/analyze-vol-curve/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-assess-validation-evidence",
+      "capability": "capability:scope:trade-journal/belief-evidence-assessment",
+      "provider": "claude",
+      "path": ".claude/skills/assess-validation-evidence/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-backfill-claims",
+      "capability": "capability:scope:trade-journal/belief-maintenance",
+      "provider": "claude",
+      "path": ".claude/skills/backfill-claims/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-build-core-argument",
+      "capability": "capability:scope:trade-journal/thesis-underwriting",
+      "provider": "claude",
+      "path": ".claude/skills/build-core-argument/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-decisions",
+      "capability": "capability:scope:trade-journal/decision-resolution",
+      "provider": "claude",
+      "path": ".claude/skills/decisions/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-finalize-for-upload",
+      "capability": "capability:scope:trade-journal/research-publication",
+      "provider": "claude",
+      "path": ".claude/skills/finalize-for-upload/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-gateway",
+      "capability": "capability:scope:radon/ibkr-gateway-control",
+      "provider": "claude",
+      "path": ".claude/skills/gateway/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-graduate-pipeline-idea",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/graduate-pipeline-idea/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-ibkr-quote",
+      "capability": "capability:scope:radon/ibkr-option-quote",
+      "provider": "claude",
+      "path": ".claude/skills/ibkr-quote/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-maintenance",
+      "capability": "capability:scope:trade-journal/belief-maintenance",
+      "provider": "claude",
+      "path": ".claude/skills/maintenance/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-morning-brief",
+      "capability": "capability:scope:trade-journal/morning-attention-brief",
+      "provider": "claude",
+      "path": ".claude/skills/morning-brief/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-options-advisor",
+      "capability": "capability:scope:trade-journal/portfolio-options-advice",
+      "provider": "claude",
+      "path": ".claude/skills/options-advisor/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-pipeline-status",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/pipeline-status/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-portfolio-and-options-mcp",
+      "capability": "capability:scope:trade-journal/portfolio-analysis",
+      "provider": "claude",
+      "path": ".claude/skills/portfolio-and-options-mcp/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-process-note",
+      "capability": "capability:scope:notes/toulmin-extraction",
+      "provider": "claude",
+      "path": ".claude/skills/process-note/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-process-transcript",
+      "capability": "capability:scope:notes/toulmin-extraction",
+      "provider": "claude",
+      "path": ".claude/skills/process-transcript/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-pull-portfolio",
+      "capability": "capability:scope:trade-journal/portfolio-snapshot",
+      "provider": "claude",
+      "path": ".claude/skills/pull-portfolio/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-relate-bookmark",
+      "capability": "capability:scope:trade-journal/belief-research-relation",
+      "provider": "claude",
+      "path": ".claude/skills/relate-bookmark/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-relate-research",
+      "capability": "capability:scope:trade-journal/belief-research-relation",
+      "provider": "claude",
+      "path": ".claude/skills/relate-research/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-stage-1-init-idea",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/stage-1-init-idea/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-stage-2-formalize-thesis",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/stage-2-formalize-thesis/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-stage-3-map-unknowns",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/stage-3-map-unknowns/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-stage-4a-prep-desktop-research",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/stage-4a-prep-desktop-research/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-stage-4a-research-unknown",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/stage-4a-research-unknown/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-stage-4b-synthesize-evidence",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/stage-4b-synthesize-evidence/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-stage-5-express-thesis",
+      "capability": "capability:scope:trade-journal/research-pipeline",
+      "provider": "claude",
+      "path": ".claude/skills/stage-5-express-thesis/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-synthesize-claims",
+      "capability": "capability:scope:trade-journal/claims-synthesis",
+      "provider": "claude",
+      "path": ".claude/skills/synthesize-claims/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-thesis",
+      "capability": "capability:scope:trade-journal/thesis-foreground",
+      "provider": "claude",
+      "path": ".claude/skills/thesis/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-thesis-observe",
+      "capability": "capability:scope:trade-journal/thesis-observation",
+      "provider": "claude",
+      "path": ".claude/skills/thesis-observe/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-thesis-review",
+      "capability": "capability:scope:trade-journal/belief-maintenance",
+      "provider": "claude",
+      "path": ".claude/skills/thesis-review/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-visser-scan",
+      "capability": "capability:scope:trade-journal/market-research-scan",
+      "provider": "claude",
+      "path": ".claude/skills/visser-scan/SKILL.md"
+    }
+  ],
+  "relationships": {
+    "policy": {
+      "hierarchy": "native-when-available",
+      "dependencies": "native-when-available",
+      "text_fallback": "record-authority-without-native-primitive"
+    },
+    "declarations": [
+      {
+        "kind": "hierarchy",
+        "target": "github:njabrooks/projects#12"
+      },
+      {
+        "kind": "hierarchy",
+        "target": "github:njabrooks/projects#1"
+      },
+      {
+        "kind": "dependency",
+        "target": "github:njabrooks/projects#13"
+      }
+    ]
+  },
+  "extensions": {
+    "trade-journal.authorities": {
+      "workspace": {
+        "repository": "github:njabrooks/projects",
+        "scope": "scope:home-hub-workspace",
+        "accepted_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
+        "migration_decision": "github:njabrooks/projects#9"
+      },
+      "notes": {
+        "repository": "local:/Users/home-hub/projects/notes",
+        "authority": "capture, thinking, and Toulmin extraction"
+      },
+      "radon": {
+        "repository": "local:/Users/home-hub/projects/radon",
+        "authority": "IBKR gateway, contract qualification, bulk chains, and quotes"
+      },
+      "machine_local": {
+        "authority": "credentials, authenticated provider sessions, browser state, notifications, and gateway availability"
+      }
+    },
+    "trade-journal.provider-inventory": {
+      "interactive": {
+        "artifact": "docs/agents/provider-adapters/interactive-inventory.json",
+        "repository_owned_entries": 36,
+        "external_entries": [
+          {
+            "id": "interactive-codex-trade-journal-bridge",
+            "provider": "codex",
+            "ownership": "machine-local:home-hub",
+            "path": "~/.codex/skills/trade-journal-workflows/SKILL.md",
+            "evidence_state": "unavailable"
+          }
+        ]
+      },
+      "headless": {
+        "artifact": "docs/agents/provider-adapters/headless-inventory.json",
+        "generated_entries": 36,
+        "live_provider_dependent_jobs": 5
+      },
+      "manifest_adapter_declarations": 64,
+      "non_candidate_projections": [
+        {
+          "id": "interactive-claude-archived-deep-dive",
+          "provider": "claude",
+          "path": ".claude/skills/archived-deep-dive/SKILL.md",
+          "lifecycle": "archived",
+          "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+        },
+        {
+          "id": "interactive-claude-archived-generate-summary",
+          "provider": "claude",
+          "path": ".claude/skills/archived-generate-summary/SKILL.md",
+          "lifecycle": "archived",
+          "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+        },
+        {
+          "id": "interactive-claude-configure-signal",
+          "provider": "claude",
+          "path": ".claude/skills/configure-signal/SKILL.md",
+          "lifecycle": "retired",
+          "reason": "retired artifact retained for history or protection; it is not a current Capability candidate."
+        },
+        {
+          "id": "interactive-claude-paperclip-backlog",
+          "provider": "claude",
+          "path": ".claude/skills/paperclip-backlog/SKILL.md",
+          "lifecycle": "deprecated",
+          "reason": "deprecated artifact retained for history or protection; it is not a current Capability candidate."
+        },
+        {
+          "id": "headless-codex-archived-deep-dive",
+          "provider": "codex",
+          "path": ".agents/skills/archived-deep-dive/SKILL.md",
+          "lifecycle": "archived",
+          "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+        },
+        {
+          "id": "headless-codex-archived-generate-summary",
+          "provider": "codex",
+          "path": ".agents/skills/archived-generate-summary/SKILL.md",
+          "lifecycle": "archived",
+          "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+        },
+        {
+          "id": "headless-codex-configure-signal",
+          "provider": "codex",
+          "path": ".agents/skills/configure-signal/SKILL.md",
+          "lifecycle": "retired",
+          "reason": "retired artifact retained for history or protection; it is not a current Capability candidate."
+        },
+        {
+          "id": "headless-codex-paperclip-backlog",
+          "provider": "codex",
+          "path": ".agents/skills/paperclip-backlog/SKILL.md",
+          "lifecycle": "deprecated",
+          "reason": "deprecated artifact retained for history or protection; it is not a current Capability candidate."
+        }
+      ],
+      "evidence_state": "unavailable",
+      "evidence_boundary": "Rich inventory validation is repository supporting evidence; W1 validates only these manifest declarations and exact source-owned Capability packages."
+    },
+    "trade-journal.guidance": {
+      "provider_neutral": "CONTEXT.md",
+      "provider_specific": [
+        "CLAUDE.md",
+        "AGENTS.md"
+      ],
+      "rule": "Provider-specific constraints may package but not reinterpret shared semantics."
+    },
+    "trade-journal.labels": {
+      "additional": [
+        "bug",
+        "documentation",
+        "duplicate",
+        "enhancement",
+        "good first issue",
+        "help wanted",
+        "invalid",
+        "question"
+      ]
+    }
+  },
+  "deviations": "none",
+  "validation_evidence": {
+    "as_of": "2026-08-04",
+    "records": [
+      {
+        "id": "j1-execution-gate",
+        "method": "accepted-input-and-baseline",
+        "path": "docs/agents/j1-execution-gate.md"
+      },
+      {
+        "id": "repository-adoption",
+        "method": "accepted-workspace-cli",
+        "path": "docs/agents/workspace-adoption.md"
+      },
+      {
+        "id": "interactive-provider-inventory",
+        "method": "repository-supporting-validator",
+        "path": "docs/agents/provider-adapters/interactive-inventory.json"
+      },
+      {
+        "id": "headless-provider-inventory",
+        "method": "repository-supporting-validator",
+        "path": "docs/agents/provider-adapters/headless-inventory.json"
+      }
+    ]
+  }
+}
