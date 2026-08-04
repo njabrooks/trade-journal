@@ -3,6 +3,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { splitFrontmatter } from '../lib/skillBody.js';
 
 type Diagnostic = {
   requirement: string;
@@ -50,6 +51,8 @@ const PACKAGING = new Set([
 const LOCATION_CLASSES = new Set(['repository', 'external-bridge']);
 const INVOCATION_MODES = new Set(['interactive', 'headless', 'scheduled']);
 const OWNERSHIP_PREFIXES = ['repository:', 'machine-local:', 'workspace:', 'external:'];
+const CONTRACT_CLASSES = new Set(['generic', 'bespoke']);
+const RISK_LEVELS = new Set(['low', 'medium', 'high', 'critical']);
 
 function diagnostic(requirement: string, path: string, message: string): Diagnostic {
   return { requirement, path, message };
@@ -133,7 +136,36 @@ function validateCandidate(value: unknown, path: string, diagnostics: Diagnostic
   }
 }
 
-function validateEntry(value: unknown, index: number, diagnostics: Diagnostic[]) {
+function validateRepositorySource(
+  value: unknown,
+  path: string,
+  requirement: string,
+  diagnostics: Diagnostic[],
+) {
+  if (!isObject(value)) {
+    diagnostics.push(diagnostic(requirement, path, `${path.split('/').at(-1)} must be an object.`));
+    return;
+  }
+  exactFields(value, ['ownership', 'location_class', 'path'], path, requirement, diagnostics);
+  requireStrings(value, ['ownership', 'location_class', 'path'], path, requirement, diagnostics);
+  if (value.location_class !== 'repository') {
+    diagnostics.push(diagnostic(requirement, `${path}/location_class`, 'Source must use a repository location.'));
+  }
+  if (nonempty(value.path)) {
+    if (!safeRepositoryPath(value.path)) {
+      diagnostics.push(diagnostic(requirement, `${path}/path`, 'Source must be a safe relative path.'));
+    } else if (!existsSync(join(REPO_ROOT, value.path))) {
+      diagnostics.push(diagnostic(requirement, `${path}/path`, 'Source path does not exist.'));
+    }
+  }
+}
+
+function validateEntry(
+  value: unknown,
+  index: number,
+  inventoryKind: 'interactive' | 'headless',
+  diagnostics: Diagnostic[],
+) {
   const path = `/entries/${index}`;
   if (!isObject(value)) {
     diagnostics.push(diagnostic('TJ-INV-003', path, 'Inventory entry must be an object.'));
@@ -156,6 +188,9 @@ function validateEntry(value: unknown, index: number, diagnostics: Diagnostic[])
       'operational_consumers',
       'evidence',
       'j2_disposition',
+      ...(inventoryKind === 'headless'
+        ? ['authored_source', 'execution_contract', 'operational_risk']
+        : []),
     ],
     path,
     'TJ-INV-003',
@@ -262,12 +297,12 @@ function validateEntry(value: unknown, index: number, diagnostics: Diagnostic[])
         ),
       );
     }
-    if (invocation.mode !== 'interactive') {
+    if (invocation.mode !== inventoryKind) {
       diagnostics.push(
         diagnostic(
           'TJ-INV-006',
           `${path}/invocation/mode`,
-          'Interactive inventory entries must use interactive invocation mode.',
+          `${inventoryKind === 'interactive' ? 'Interactive' : 'Headless'} inventory entries must use ${inventoryKind} invocation mode.`,
         ),
       );
     }
@@ -360,6 +395,38 @@ function validateEntry(value: unknown, index: number, diagnostics: Diagnostic[])
       diagnostics.push(
         diagnostic('TJ-INV-011', `${path}/j2_disposition/action`, 'Unknown J2 disposition.'),
       );
+    }
+  }
+
+  if (inventoryKind === 'headless') {
+    validateRepositorySource(value.authored_source, `${path}/authored_source`, 'TJ-HEAD-003', diagnostics);
+
+    const contract = value.execution_contract;
+    if (!isObject(contract)) {
+      diagnostics.push(diagnostic('TJ-HEAD-004', `${path}/execution_contract`, 'execution_contract must be an object.'));
+    } else {
+      exactFields(contract, ['class', 'preamble_path', 'readiness'], `${path}/execution_contract`, 'TJ-HEAD-004', diagnostics);
+      requireStrings(contract, ['class', 'preamble_path', 'readiness'], `${path}/execution_contract`, 'TJ-HEAD-004', diagnostics);
+      if (nonempty(contract.class) && !CONTRACT_CLASSES.has(contract.class)) {
+        diagnostics.push(diagnostic('TJ-HEAD-004', `${path}/execution_contract/class`, 'Contract class must be generic or bespoke.'));
+      }
+      if (nonempty(contract.preamble_path) && (!safeRepositoryPath(contract.preamble_path) || !existsSync(join(REPO_ROOT, contract.preamble_path)))) {
+        diagnostics.push(diagnostic('TJ-HEAD-004', `${path}/execution_contract/preamble_path`, 'Headless preamble path must resolve in the repository.'));
+      }
+    }
+
+    const risk = value.operational_risk;
+    if (!isObject(risk)) {
+      diagnostics.push(diagnostic('TJ-HEAD-005', `${path}/operational_risk`, 'operational_risk must be an object.'));
+    } else {
+      exactFields(risk, ['level', 'priority', 'rationale'], `${path}/operational_risk`, 'TJ-HEAD-005', diagnostics);
+      requireStrings(risk, ['level', 'rationale'], `${path}/operational_risk`, 'TJ-HEAD-005', diagnostics);
+      if (nonempty(risk.level) && !RISK_LEVELS.has(risk.level)) {
+        diagnostics.push(diagnostic('TJ-HEAD-005', `${path}/operational_risk/level`, 'Unknown operational risk level.'));
+      }
+      if (risk.priority !== null && (!Number.isInteger(risk.priority) || (risk.priority as number) < 1)) {
+        diagnostics.push(diagnostic('TJ-HEAD-005', `${path}/operational_risk/priority`, 'priority must be null or a positive integer.'));
+      }
     }
   }
 }
@@ -574,25 +641,177 @@ function validateSupportingCollections(inventory: JsonObject, diagnostics: Diagn
   }
 }
 
+function validateHeadlessCoverage(inventory: JsonObject, diagnostics: Diagnostic[]) {
+  const expected = repositorySkillPaths(join(REPO_ROOT, '.agents', 'skills'));
+  const entries = Array.isArray(inventory.entries) ? inventory.entries : [];
+  const declared = entries
+    .filter(isObject)
+    .filter((entry) => entry.provider === 'codex' && isObject(entry.source))
+    .map((entry) => (entry.source as JsonObject).path)
+    .filter(nonempty)
+    .sort();
+  const missing = expected.filter((path) => !declared.includes(path));
+  const extra = declared.filter((path) => !expected.includes(path));
+  const duplicate = declared.filter((path, index) => declared.indexOf(path) !== index);
+  if (missing.length) diagnostics.push(diagnostic('TJ-HEAD-006', '/entries', `Missing headless projections: ${missing.join(', ')}.`));
+  if (extra.length) diagnostics.push(diagnostic('TJ-HEAD-006', '/entries', `Unknown headless projections: ${extra.join(', ')}.`));
+  if (duplicate.length) diagnostics.push(diagnostic('TJ-HEAD-006', '/entries', `Duplicate headless projections: ${[...new Set(duplicate)].join(', ')}.`));
+
+  for (const [index, rawEntry] of entries.entries()) {
+    if (!isObject(rawEntry) || !isObject(rawEntry.source) || !isObject(rawEntry.authored_source) || !isObject(rawEntry.execution_contract)) continue;
+    const sourcePath = rawEntry.source.path;
+    const authoredPath = rawEntry.authored_source.path;
+    if (!nonempty(sourcePath) || !nonempty(authoredPath)) continue;
+    const match = sourcePath.match(/^\.agents\/skills\/([^/]+)\/SKILL\.md$/);
+    if (!match || authoredPath !== `.claude/skills/${match[1]}/SKILL.md`) {
+      diagnostics.push(diagnostic('TJ-HEAD-007', `/entries/${index}/authored_source/path`, 'Projection must link to the same-named authored Claude source.'));
+      continue;
+    }
+    const skillName = match[1];
+    const sourceAbsolute = join(REPO_ROOT, sourcePath);
+    const authoredAbsolute = join(REPO_ROOT, authoredPath);
+    if (existsSync(sourceAbsolute) && existsSync(authoredAbsolute)) {
+      const expectedBody = splitFrontmatter(readFileSync(authoredAbsolute, 'utf8')).body;
+      if (readFileSync(sourceAbsolute, 'utf8') !== expectedBody) {
+        diagnostics.push(diagnostic('TJ-HEAD-007', `/entries/${index}/source/path`, 'Generated projection is stale against its authored source.'));
+      }
+    }
+    const skillJson = `.agents/skills/${skillName}/skill.json`;
+    if (!existsSync(join(REPO_ROOT, skillJson))) {
+      diagnostics.push(diagnostic('TJ-HEAD-007', `/entries/${index}/source/path`, `Projection package is missing ${skillJson}.`));
+    }
+    const bespokePreamble = `.claude/skills/${skillName}/HEADLESS_PREAMBLE.md`;
+    const expectedClass = existsSync(join(REPO_ROOT, bespokePreamble)) ? 'bespoke' : 'generic';
+    if (rawEntry.execution_contract.class !== expectedClass) {
+      diagnostics.push(diagnostic('TJ-HEAD-004', `/entries/${index}/execution_contract/class`, `Contract class must be ${expectedClass} for ${skillName}.`));
+    }
+    const expectedPreamble = expectedClass === 'bespoke'
+      ? bespokePreamble
+      : `.agents/skills/${skillName}/HEADLESS_PREAMBLE.md`;
+    if (rawEntry.execution_contract.preamble_path !== expectedPreamble) {
+      diagnostics.push(diagnostic('TJ-HEAD-004', `/entries/${index}/execution_contract/preamble_path`, `preamble_path must be ${expectedPreamble}.`));
+    }
+    if (['decisions', 'thesis'].includes(skillName) && isObject(rawEntry.invocation) && rawEntry.invocation.unattended_eligibility !== 'ineligible') {
+      diagnostics.push(diagnostic('TJ-HEAD-008', `/entries/${index}/invocation/unattended_eligibility`, `${skillName} must remain ineligible for unattended execution.`));
+    }
+  }
+}
+
+function validateHeadlessCollections(inventory: JsonObject, diagnostics: Diagnostic[]) {
+  const entryIds = new Set(
+    (Array.isArray(inventory.entries) ? inventory.entries : []).filter(isObject).map((entry) => entry.id).filter(nonempty),
+  );
+  const expectedTopCollections = ['operational_workflows', 'deterministic_exclusions', 'known_gaps'];
+  for (const collection of expectedTopCollections) {
+    if (!Array.isArray(inventory[collection]) || (inventory[collection] as unknown[]).length === 0) {
+      diagnostics.push(diagnostic('TJ-HEAD-009', `/${collection}`, `${collection} must be a non-empty array.`));
+    }
+  }
+
+  if (Array.isArray(inventory.operational_workflows)) {
+    inventory.operational_workflows.forEach((workflow, index) => {
+      const path = `/operational_workflows/${index}`;
+      if (!isObject(workflow)) {
+        diagnostics.push(diagnostic('TJ-HEAD-010', path, 'Operational workflow must be an object.'));
+        return;
+      }
+      exactFields(workflow, [
+        'id', 'invoked_adapter_source', 'migration_target_entry', 'provider', 'model', 'invocation',
+        'schedule', 'wrapper', 'scheduler',
+        'reads', 'writes', 'environment', 'timeout_seconds', 'stale_lock_seconds', 'locking',
+        'failure_behavior', 'consumers', 'prerequisites', 'operational_risk', 'risk_priority',
+        'j2_disposition',
+      ], path, 'TJ-HEAD-010', diagnostics);
+      requireStrings(workflow, [
+        'id', 'invoked_adapter_source', 'migration_target_entry', 'provider', 'model', 'invocation',
+        'schedule', 'wrapper', 'scheduler',
+        'reads', 'writes', 'environment', 'locking', 'failure_behavior', 'consumers', 'operational_risk',
+        'j2_disposition',
+      ], path, 'TJ-HEAD-010', diagnostics);
+      if (!entryIds.has(workflow.migration_target_entry as string)) {
+        diagnostics.push(diagnostic('TJ-HEAD-010', `${path}/migration_target_entry`, `Unknown headless migration target: ${String(workflow.migration_target_entry)}.`));
+      }
+      if (
+        nonempty(workflow.invoked_adapter_source) &&
+        (!safeRepositoryPath(workflow.invoked_adapter_source) ||
+          !existsSync(join(REPO_ROOT, workflow.invoked_adapter_source)))
+      ) {
+        diagnostics.push(diagnostic('TJ-HEAD-010', `${path}/invoked_adapter_source`, 'Invoked adapter source must resolve in the repository.'));
+      }
+      for (const field of ['wrapper', 'scheduler']) {
+        if (nonempty(workflow[field]) && (!safeRepositoryPath(workflow[field] as string) || !existsSync(join(REPO_ROOT, workflow[field] as string)))) {
+          diagnostics.push(diagnostic('TJ-HEAD-010', `${path}/${field}`, `${field} must resolve in the repository.`));
+        }
+      }
+      for (const field of ['timeout_seconds', 'stale_lock_seconds']) {
+        if (!Number.isInteger(workflow[field]) || (workflow[field] as number) < 1) {
+          diagnostics.push(diagnostic('TJ-HEAD-010', `${path}/${field}`, `${field} must be a positive integer.`));
+        }
+      }
+      if (!stringArray(workflow.prerequisites)) {
+        diagnostics.push(diagnostic('TJ-HEAD-010', `${path}/prerequisites`, 'prerequisites must be a non-empty string array.'));
+      }
+      if (nonempty(workflow.operational_risk) && !RISK_LEVELS.has(workflow.operational_risk)) {
+        diagnostics.push(diagnostic('TJ-HEAD-010', `${path}/operational_risk`, 'Unknown operational risk level.'));
+      }
+      if (!Number.isInteger(workflow.risk_priority) || (workflow.risk_priority as number) < 1) {
+        diagnostics.push(diagnostic('TJ-HEAD-010', `${path}/risk_priority`, 'risk_priority must be a positive integer.'));
+      }
+    });
+    if (inventory.operational_workflows.length !== 5) {
+      diagnostics.push(diagnostic('TJ-HEAD-010', '/operational_workflows', 'Exactly five live provider-dependent scheduled jobs must be inventoried.'));
+    }
+  }
+
+  if (Array.isArray(inventory.deterministic_exclusions)) {
+    inventory.deterministic_exclusions.forEach((exclusion, index) => {
+      const path = `/deterministic_exclusions/${index}`;
+      if (!isObject(exclusion)) return;
+      exactFields(exclusion, ['id', 'classification', 'path', 'context'], path, 'TJ-HEAD-011', diagnostics);
+      requireStrings(exclusion, ['id', 'classification', 'path', 'context'], path, 'TJ-HEAD-011', diagnostics);
+      if (nonempty(exclusion.path) && (!safeRepositoryPath(exclusion.path) || !existsSync(join(REPO_ROOT, exclusion.path)))) {
+        diagnostics.push(diagnostic('TJ-HEAD-011', `${path}/path`, 'Excluded automation path must resolve in the repository.'));
+      }
+    });
+  }
+
+  const mirror = inventory.mirror_diagnostic;
+  if (!isObject(mirror)) {
+    diagnostics.push(diagnostic('TJ-HEAD-012', '/mirror_diagnostic', 'mirror_diagnostic must be an object.'));
+  } else {
+    exactFields(mirror, ['source_count', 'projection_count', 'missing', 'stale', 'supporting_tooling'], '/mirror_diagnostic', 'TJ-HEAD-012', diagnostics);
+    const sourceCount = repositorySkillPaths(join(REPO_ROOT, '.claude', 'skills')).length;
+    const projectionCount = repositorySkillPaths(join(REPO_ROOT, '.agents', 'skills')).length;
+    if (mirror.source_count !== sourceCount || mirror.projection_count !== projectionCount) {
+      diagnostics.push(diagnostic('TJ-HEAD-012', '/mirror_diagnostic', `Mirror counts must be source=${sourceCount}, projection=${projectionCount}.`));
+    }
+    if (!Array.isArray(mirror.missing) || mirror.missing.length !== 0 || !Array.isArray(mirror.stale) || mirror.stale.length !== 0) {
+      diagnostics.push(diagnostic('TJ-HEAD-012', '/mirror_diagnostic', 'Checked-in mirror diagnostic must declare no missing or stale projections.'));
+    }
+    if (!nonempty(mirror.supporting_tooling) || !safeRepositoryPath(mirror.supporting_tooling) || !existsSync(join(REPO_ROOT, mirror.supporting_tooling))) {
+      diagnostics.push(diagnostic('TJ-HEAD-012', '/mirror_diagnostic/supporting_tooling', 'supporting_tooling must resolve in the repository.'));
+    }
+  }
+}
+
 export function validateInventory(inventory: unknown): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(inventory)) {
     return [diagnostic('TJ-INV-001', '/', 'Inventory must be a JSON object.')];
   }
+  const inventoryKind = inventory.inventory_kind;
+  const topFields = inventoryKind === 'headless'
+    ? [
+        'schema_version', 'inventory_kind', 'as_of', 'accepted_workspace_revision', 'authority',
+        'entries', 'mirror_diagnostic', 'operational_workflows', 'deterministic_exclusions', 'known_gaps',
+      ]
+    : [
+        'schema_version', 'inventory_kind', 'as_of', 'accepted_workspace_revision', 'authority',
+        'entries', 'discovery_surfaces', 'session_hooks', 'tool_mappings', 'known_gaps',
+      ];
   exactFields(
     inventory,
-    [
-      'schema_version',
-      'inventory_kind',
-      'as_of',
-      'accepted_workspace_revision',
-      'authority',
-      'entries',
-      'discovery_surfaces',
-      'session_hooks',
-      'tool_mappings',
-      'known_gaps',
-    ],
+    topFields,
     '/',
     'TJ-INV-002',
     diagnostics,
@@ -607,8 +826,8 @@ export function validateInventory(inventory: unknown): Diagnostic[] {
   if (inventory.schema_version !== '1.0.0') {
     diagnostics.push(diagnostic('TJ-INV-002', '/schema_version', 'schema_version must be 1.0.0.'));
   }
-  if (inventory.inventory_kind !== 'interactive') {
-    diagnostics.push(diagnostic('TJ-INV-002', '/inventory_kind', 'inventory_kind must be interactive.'));
+  if (!['interactive', 'headless'].includes(String(inventoryKind))) {
+    diagnostics.push(diagnostic('TJ-INV-002', '/inventory_kind', 'inventory_kind must be interactive or headless.'));
   }
   if (inventory.accepted_workspace_revision !== ACCEPTED_WORKSPACE_REVISION) {
     diagnostics.push(
@@ -622,7 +841,7 @@ export function validateInventory(inventory: unknown): Diagnostic[] {
   if (!Array.isArray(inventory.entries) || inventory.entries.length === 0) {
     diagnostics.push(diagnostic('TJ-INV-003', '/entries', 'entries must be a non-empty array.'));
   } else {
-    inventory.entries.forEach((entry, index) => validateEntry(entry, index, diagnostics));
+    inventory.entries.forEach((entry, index) => validateEntry(entry, index, inventoryKind as 'interactive' | 'headless', diagnostics));
     const ids = inventory.entries
       .filter(isObject)
       .map((entry) => entry.id)
@@ -634,9 +853,14 @@ export function validateInventory(inventory: unknown): Diagnostic[] {
       );
     }
   }
-  validateSupportingCollections(inventory, diagnostics);
-  validateInteractiveCoverage(inventory, diagnostics);
-  validateSessionHooks(inventory, diagnostics);
+  if (inventoryKind === 'headless') {
+    validateHeadlessCoverage(inventory, diagnostics);
+    validateHeadlessCollections(inventory, diagnostics);
+  } else {
+    validateSupportingCollections(inventory, diagnostics);
+    validateInteractiveCoverage(inventory, diagnostics);
+    validateSessionHooks(inventory, diagnostics);
+  }
   return diagnostics;
 }
 
