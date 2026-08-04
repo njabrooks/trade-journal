@@ -1,0 +1,2259 @@
+{
+  "schema_version": "1.0.0",
+  "inventory_kind": "interactive",
+  "as_of": "2026-08-04",
+  "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
+  "authority": "repository:njabrooks/trade-journal",
+  "entries": [
+    {
+      "id": "interactive-claude-advance-or-kill",
+      "ability": "Evaluate a research-pipeline gate and record advance, hold, or kill outcomes.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/advance-or-kill/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/advance-or-kill",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Makes a genuine investment-research gate decision with the user."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Pipeline files and evidence.",
+        "writes": "Pipeline state, kill log, and archived idea files.",
+        "judgment": "Makes a genuine investment-research gate decision with the user."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Shared research workspace and current pipeline idea."
+      ],
+      "limitations": [
+        "Must not make an unattended kill or advancement decision.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-analyze-vol-curve",
+      "ability": "Compare thesis-implied value with the options vol surface for strike selection.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/options-vol-analysis",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/analyze-vol-curve/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/analyze-vol-curve",
+        "unattended_eligibility": "conditional",
+        "rationale": "Applies a documented optimization framework; trade judgment remains with the user."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Options-chain data, thesis assumptions, and portfolio context.",
+        "writes": "Analysis reports when explicitly requested.",
+        "judgment": "Applies a documented optimization framework; trade judgment remains with the user."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Options-chain data and current thesis assumptions."
+      ],
+      "limitations": [
+        "Market data availability and model assumptions are environment-dependent.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-archived-deep-dive",
+      "ability": "Legacy collaborative deep-dive workflow.",
+      "candidate_capability": {
+        "status": "not-candidate",
+        "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/archived-deep-dive/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/deep-dive (authored name; directory archived-deep-dive marks it non-current)",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Obsolete collaborative workflow."
+      },
+      "lifecycle": {
+        "status": "archived",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Archived research inputs.",
+        "writes": "Archived workflow files only if deliberately invoked.",
+        "judgment": "Obsolete collaborative workflow."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Explicit historical-use request."
+      ],
+      "limitations": [
+        "Archived and not advertised as current support.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "id": "interactive-claude-archived-generate-summary",
+      "ability": "Legacy asset-thesis summary generator.",
+      "candidate_capability": {
+        "status": "not-candidate",
+        "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/archived-generate-summary/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/generate-summary (authored name; directory archived-generate-summary marks it non-current)",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Obsolete synthesis workflow."
+      },
+      "lifecycle": {
+        "status": "archived",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Historical asset-thesis claims.",
+        "writes": "Legacy summary output if deliberately invoked.",
+        "judgment": "Obsolete synthesis workflow."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Explicit historical-use request."
+      ],
+      "limitations": [
+        "Archived and not advertised as current support.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "id": "interactive-claude-assess-validation-evidence",
+      "ability": "Assess supplied content against active thesis signals.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-evidence-assessment",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/assess-validation-evidence/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/assess-validation-evidence",
+        "unattended_eligibility": "conditional",
+        "rationale": "Classifies evidence against established signals without resolving investment decisions."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Research content, signals, and entity links.",
+        "writes": "Signal evidence snapshots through repository scripts.",
+        "judgment": "Classifies evidence against established signals without resolving investment decisions."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Database access through repository helpers and readable source content."
+      ],
+      "limitations": [
+        "Two bespoke headless contracts exist, but no W1 Capability or adapter evidence is bound.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-backfill-claims",
+      "ability": "Reprocess existing claims for thesis linkage and signal evidence.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/backfill-claims/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/backfill-claims",
+        "unattended_eligibility": "conditional",
+        "rationale": "May auto-link only clear matches and must surface ambiguous judgment."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Existing claims, active theses, and signals.",
+        "writes": "Clear claim links, evidence, and Decision Items through governed scripts.",
+        "judgment": "May auto-link only clear matches and must surface ambiguous judgment."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Remote database access through repository helpers."
+      ],
+      "limitations": [
+        "Historical volume and ambiguity require bounded execution.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-build-core-argument",
+      "ability": "Create a versioned thesis articulation and derive resolution signals.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-underwriting",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/build-core-argument/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/build-core-argument",
+        "unattended_eligibility": "conditional",
+        "rationale": "Performs underwriting synthesis but cannot fabricate owner conviction."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Claims, observations, thesis state, and prior articulations.",
+        "writes": "New articulation versions and derived signals through repository scripts.",
+        "judgment": "Performs underwriting synthesis but cannot fabricate owner conviction."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Remote database access and a specified thesis."
+      ],
+      "limitations": [
+        "Bespoke headless contract exists; genuine conviction calls remain interactive.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-configure-signal",
+      "ability": "Protective tombstone for the retired manual signal-configuration workflow.",
+      "candidate_capability": {
+        "status": "not-candidate",
+        "reason": "retired artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/configure-signal/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/configure-signal",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Prevents unsafe revival of hand-configured signals."
+      },
+      "lifecycle": {
+        "status": "retired",
+        "protective_tombstone": true
+      },
+      "authority_and_write_scope": {
+        "reads": "Retirement notice only.",
+        "writes": "No writes permitted.",
+        "judgment": "Prevents unsafe revival of hand-configured signals."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "None; do not invoke as an active workflow."
+      ],
+      "limitations": [
+        "Manual signal configuration conflicts with the loose-agent model.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "id": "interactive-claude-decisions",
+      "ability": "Present and resolve Decision Items that require the user.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/decision-resolution",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/decisions/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/decisions",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Explicit resolver for genuine user judgment."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Open Decision Items and maintenance worklists.",
+        "writes": "User-authorized resolutions through resolve-decision and governed runbooks.",
+        "judgment": "Explicit resolver for genuine user judgment."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "User participation and remote database access through ops scripts."
+      ],
+      "limitations": [
+        "Generic headless packaging does not make decision resolution autonomous.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-finalize-for-upload",
+      "ability": "Publish finalized research artifacts into Trade Journal records.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-publication",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/finalize-for-upload/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/finalize-for-upload",
+        "unattended_eligibility": "conditional",
+        "rationale": "Classifies artifact type and performs authorized publication."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Finalized research files and current schema.",
+        "writes": "Research artifacts, insights, theses, or views through existing upload paths.",
+        "judgment": "Classifies artifact type and performs authorized publication."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Finalized artifact, schema verification, and database credentials."
+      ],
+      "limitations": [
+        "Older assumptions must be checked against the Tana-first architecture.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-gateway",
+      "ability": "Control the Radon-owned IBC-managed IB Gateway.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:radon/ibkr-gateway-control",
+        "authority": "scope:radon"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/gateway/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/gateway",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Operational control can interrupt market-data access and requires deliberate user intent."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Local launchd state, profiles, and gateway status.",
+        "writes": "Can pause, resume, or switch the live gateway profile.",
+        "judgment": "Operational control can interrupt market-data access and requires deliberate user intent."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Eligible Home Hub host, Radon installation, IBC, and IBKR credentials."
+      ],
+      "limitations": [
+        "Machine-local, credential-sensitive, and unavailable in CI.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "id": "interactive-claude-graduate-pipeline-idea",
+      "ability": "Handoff a researched pipeline idea into Trade Journal entities.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/graduate-pipeline-idea/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/graduate-pipeline-idea",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Formal investment-research gate with material database effects."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Pipeline evidence and existing investment entities.",
+        "writes": "Theses, claim links, articulations, and pipeline state through governed workflows.",
+        "judgment": "Formal investment-research gate with material database effects."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Completed research stages, user approval, and database access."
+      ],
+      "limitations": [
+        "Must not infer the final handoff decision unattended.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-ibkr-quote",
+      "ability": "Obtain live or delayed option quotes through Radon-owned IBKR infrastructure.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:radon/ibkr-option-quote",
+        "authority": "scope:radon"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/ibkr-quote/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/ibkr-quote",
+        "unattended_eligibility": "conditional",
+        "rationale": "Prices requested structures but does not authorize trades."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Requested option contracts and gateway state.",
+        "writes": "No Trade Journal database writes; may start the local gateway.",
+        "judgment": "Prices requested structures but does not authorize trades."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Eligible Home Hub host, IB Gateway, market-data entitlement, and client id 20–49."
+      ],
+      "limitations": [
+        "Host-only and may degrade to delayed data.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "id": "interactive-claude-maintenance",
+      "ability": "Run bounded belief maintenance and surface genuine decisions.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/maintenance/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/maintenance",
+        "unattended_eligibility": "conditional",
+        "rationale": "Producer only; never silently resolves genuine judgment."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Maintenance status, claims, bookmarks, theses, and signals.",
+        "writes": "Clear links, refreshed artifacts, cursor progress, and Decision Items.",
+        "judgment": "Producer only; never silently resolves genuine judgment."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Database credentials, Tana access where required, and bounded run controls."
+      ],
+      "limitations": [
+        "Live Claude-dependent scheduled consumer exists and is a high-risk J2 boundary.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent",
+        "scripts/cron/maintenance.sh via launchd/com.trade-journal.maintenance.plist"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-morning-brief",
+      "ability": "Synthesize the deterministic morning bundle into one attention brief.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/morning-attention-brief",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/morning-brief/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/morning-brief",
+        "unattended_eligibility": "conditional",
+        "rationale": "Ranks attention but cannot alter the belief layer or create decisions."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "NAV, evidence, decisions, recommendations, findings, and calendar bundle.",
+        "writes": "One morning_briefs upsert for the brief date.",
+        "judgment": "Ranks attention but cannot alter the belief layer or create decisions."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Fresh deterministic bundle and database credentials."
+      ],
+      "limitations": [
+        "Live Claude-dependent scheduled consumer exists.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent",
+        "scripts/cron/morning-brief.sh via launchd/com.trade-journal.morning-brief.plist"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-options-advisor",
+      "ability": "Generate and save portfolio-aware options recommendations.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-options-advice",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/options-advisor/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/options-advisor",
+        "unattended_eligibility": "conditional",
+        "rationale": "Exercises investment-structure judgment within standing constraints."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Live portfolio, regime, thesis, vol, and quote data.",
+        "writes": "Recommendation batches only; no trade execution.",
+        "judgment": "Exercises investment-structure judgment within standing constraints."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Database credentials, market data, and Radon gateway for live verification or LEAP mode."
+      ],
+      "limitations": [
+        "Live Claude-dependent scheduled consumers exist; connector and host availability vary.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent",
+        "scripts/cron/options-advisor-run.sh batch via launchd/com.trade-journal.options-advisor.plist",
+        "scripts/cron/options-advisor-run.sh leap via launchd/com.trade-journal.options-advisor-leap.plist"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-paperclip-backlog",
+      "ability": "Deprecated Paperclip backlog bridge.",
+      "candidate_capability": {
+        "status": "not-candidate",
+        "reason": "deprecated artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/paperclip-backlog/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/paperclip-backlog",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Obsolete backlog authority."
+      },
+      "lifecycle": {
+        "status": "deprecated",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Deprecated backlog material.",
+        "writes": "No current authoritative writes.",
+        "judgment": "Obsolete backlog authority."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Explicit historical-use request."
+      ],
+      "limitations": [
+        "Paperclip is not the canonical Trade Journal backlog.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "id": "interactive-claude-pipeline-status",
+      "ability": "Summarize current research-pipeline ideas and kill-log patterns.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/pipeline-status/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/pipeline-status",
+        "unattended_eligibility": "eligible",
+        "rationale": "Read-only status reporting."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Pipeline files and kill log.",
+        "writes": "No writes.",
+        "judgment": "Read-only status reporting."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Shared research workspace."
+      ],
+      "limitations": [
+        "Pipeline files may contain legacy paths or stale stage conventions.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-portfolio-and-options-mcp",
+      "ability": "Analyze portfolio and options through Claude.ai connector assumptions.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-analysis",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/portfolio-and-options-mcp/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "Claude.ai app skill discovery with Supabase and Massive connectors (not a Claude Code slash command)",
+        "unattended_eligibility": "conditional",
+        "rationale": "Analyzes exposures and structures for the user."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Portfolio and options data through Supabase and Massive connector semantics.",
+        "writes": "Read-only analysis; no DDL or trade execution.",
+        "judgment": "Analyzes exposures and structures for the user."
+      },
+      "prerequisites": [
+        "Claude.ai connector environment with read-only Supabase and market-data access."
+      ],
+      "limitations": [
+        "Connector-era assumptions conflict with repository script precedence and are unavailable in many runtimes.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Claude.ai user; Claude Code is directed to pull-portfolio instead"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "id": "interactive-claude-process-note",
+      "ability": "Extract Toulmin claims from general notes.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:notes/toulmin-extraction",
+        "authority": "scope:notes"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/process-note/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/process-note",
+        "unattended_eligibility": "conditional",
+        "rationale": "Extraction and structuring; publication remains separate."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "User-supplied note content.",
+        "writes": "Structured claim files in the research workspace.",
+        "judgment": "Extraction and structuring; publication remains separate."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Shared Notes research workspace and source content."
+      ],
+      "limitations": [
+        "Notes/Tana now owns capture and extraction authority; this repository entry is a migration input.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "id": "interactive-claude-process-transcript",
+      "ability": "Extract forensic Toulmin claims from research transcripts.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:notes/toulmin-extraction",
+        "authority": "scope:notes"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/process-transcript/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/process-transcript",
+        "unattended_eligibility": "conditional",
+        "rationale": "Extraction and classification; investment promotion remains governed separately."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "User-supplied transcript content.",
+        "writes": "Structured research artifacts in the shared workspace.",
+        "judgment": "Extraction and classification; investment promotion remains governed separately."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Shared Notes research workspace and transcript content."
+      ],
+      "limitations": [
+        "Notes/Tana now owns capture and extraction authority; legacy paths may remain.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "id": "interactive-claude-pull-portfolio",
+      "ability": "Read and present a current portfolio snapshot.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-snapshot",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/pull-portfolio/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/pull-portfolio",
+        "unattended_eligibility": "eligible",
+        "rationale": "Read-only portfolio reporting."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Remote portfolio state through scripts/pull-portfolio.ts.",
+        "writes": "No writes.",
+        "judgment": "Read-only portfolio reporting."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Database credentials and repository script runtime."
+      ],
+      "limitations": [
+        "Snapshot quality depends on upstream ingestion freshness.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-relate-bookmark",
+      "ability": "Relate significant Tana bookmarks to active thesis monitoring.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-research-relation",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/relate-bookmark/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/relate-bookmark",
+        "unattended_eligibility": "conditional",
+        "rationale": "May route material items but must leave trivial items and surface ambiguity."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Tana bookmarks and active Trade Journal theses.",
+        "writes": "Candidate signals or surfaced decisions through governed paths.",
+        "judgment": "May route material items but must leave trivial items and surface ambiguity."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Tana MCP access and Trade Journal database helpers."
+      ],
+      "limitations": [
+        "Machine-local Tana availability is not guaranteed; absent from curated Codex routing.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent",
+        "/maintenance orchestrator, including scripts/cron/maintenance.sh"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-relate-research",
+      "ability": "Relate new investment claims to active theses by bearing.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-research-relation",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/relate-research/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/relate-research",
+        "unattended_eligibility": "conditional",
+        "rationale": "May auto-link clear matches; ambiguous or refuting evidence becomes a decision."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Tana-promoted claims and active theses.",
+        "writes": "Clear claim links and Decision Items through governed scripts.",
+        "judgment": "May auto-link clear matches; ambiguous or refuting evidence becomes a decision."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Trade Journal database helpers and Notes-owned claim provenance."
+      ],
+      "limitations": [
+        "Cross-repository source availability and ambiguity constrain unattended execution.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent",
+        "/maintenance orchestrator, including scripts/cron/maintenance.sh"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-stage-1-init-idea",
+      "ability": "Create the initial research-pipeline idea structure.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-1-init-idea/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/stage-1-init-idea",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Starts a user-chosen research idea."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "A user-selected claim or transcript.",
+        "writes": "Pipeline idea directory and stage-one triage file.",
+        "judgment": "Starts a user-chosen research idea."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Shared research workspace and explicit idea selection."
+      ],
+      "limitations": [
+        "Should not invent investment ideas unattended.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-stage-2-formalize-thesis",
+      "ability": "Formalize a pipeline idea into a falsifiable thesis.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-2-formalize-thesis/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/stage-2-formalize-thesis",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Collaborative thesis formulation and failure-mode judgment."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Stage-one idea material.",
+        "writes": "Stage-two thesis file.",
+        "judgment": "Collaborative thesis formulation and failure-mode judgment."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Existing pipeline idea and user engagement."
+      ],
+      "limitations": [
+        "Investment framing requires genuine judgment.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-stage-3-map-unknowns",
+      "ability": "Map decision-critical unknowns and research value.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-3-map-unknowns/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/stage-3-map-unknowns",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Determines whether further research is worthwhile."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Formalized thesis and current evidence.",
+        "writes": "Stage-three unknown map.",
+        "judgment": "Determines whether further research is worthwhile."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Completed stage two and user engagement."
+      ],
+      "limitations": [
+        "Research-priority decisions should not be fabricated unattended.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-stage-4a-prep-desktop-research",
+      "ability": "Prepare a provider-specific prompt for Claude Desktop Deep Research.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-4a-prep-desktop-research/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/stage-4a-prep-desktop-research",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Packages user-selected research scope."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Pipeline context and selected unknowns.",
+        "writes": "A prompt artifact for an external Claude Desktop workflow.",
+        "judgment": "Packages user-selected research scope."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Completed stage three and Claude Desktop access."
+      ],
+      "limitations": [
+        "Hard provider dependency and manual cross-surface handoff.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "id": "interactive-claude-stage-4a-research-unknown",
+      "ability": "Research one mapped unknown using web sources.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-4a-research-unknown/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/stage-4a-research-unknown",
+        "unattended_eligibility": "conditional",
+        "rationale": "Research synthesis under a user-selected track."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Mapped unknown, web sources, and pipeline context.",
+        "writes": "Evidence appended to stage-four files.",
+        "judgment": "Research synthesis under a user-selected track."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "WebSearch/WebFetch and shared research workspace."
+      ],
+      "limitations": [
+        "Source quality and web availability require review.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-stage-4b-synthesize-evidence",
+      "ability": "Synthesize accumulated research into a belief update.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-4b-synthesize-evidence/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/stage-4b-synthesize-evidence",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Updates investment belief and confidence with the user."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Stage-four evidence files.",
+        "writes": "Stage-four synthesis and posterior confidence.",
+        "judgment": "Updates investment belief and confidence with the user."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Completed evidence collection and user review."
+      ],
+      "limitations": [
+        "Posterior confidence is genuine investment judgment.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-stage-5-express-thesis",
+      "ability": "Translate conviction into positioning and sizing inputs.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-5-express-thesis/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/stage-5-express-thesis",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Positioning and sizing require explicit user judgment."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Synthesized thesis, portfolio context, and constraints.",
+        "writes": "Stage-five expression plan only.",
+        "judgment": "Positioning and sizing require explicit user judgment."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Completed stage four and current portfolio context."
+      ],
+      "limitations": [
+        "Must not create or size a live position unattended.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-claude-synthesize-claims",
+      "ability": "Cross-reference extracted claims against the thesis hierarchy.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/claims-synthesis",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/synthesize-claims/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/synthesize-claims",
+        "unattended_eligibility": "conditional",
+        "rationale": "Identifies mapping opportunities without silently promoting uncertain claims."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Audit claims and existing thesis hierarchy.",
+        "writes": "Synthesis recommendations; database writes require a separate governed step.",
+        "judgment": "Identifies mapping opportunities without silently promoting uncertain claims."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Research claims and database read access."
+      ],
+      "limitations": [
+        "Older Supabase MCP assumptions require translation to repository helpers.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-thesis",
+      "ability": "Explore and re-underwrite one thesis with the user.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-foreground",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/thesis",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Foreground surface for genuine thesis and expression judgment."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Thesis snapshot, claims, signals, evidence, and portfolio context.",
+        "writes": "Observations or explicit Decision packets through governed paths.",
+        "judgment": "Foreground surface for genuine thesis and expression judgment."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "User participation and database helpers."
+      ],
+      "limitations": [
+        "Generic headless packaging must not turn the foreground conversation into autonomous judgment.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-thesis-observe",
+      "ability": "Sense current news and price evidence against Tier-1 thesis signals.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-observation",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis-observe/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/thesis-observe",
+        "unattended_eligibility": "conditional",
+        "rationale": "Sensing producer only."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Observation bundle, WebSearch results, prices, and prior signal evidence.",
+        "writes": "Signal evidence snapshots and journal records; no decisions or status changes.",
+        "judgment": "Sensing producer only."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "WebSearch/WebFetch, database credentials, and eligible scheduled environment."
+      ],
+      "limitations": [
+        "Live Claude-dependent scheduled consumer exists; web evidence is environment-sensitive.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent",
+        "scripts/cron/thesis-observe.sh via launchd/com.trade-journal.thesis-observe.plist"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-thesis-review",
+      "ability": "Maintain thesis digests, signals, health, gaps, and retrospectives.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis-review/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/thesis-review",
+        "unattended_eligibility": "conditional",
+        "rationale": "Surfaces weakening or ambiguity rather than deciding silently."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Theses, claims, signals, evidence, and worklists.",
+        "writes": "Maintained artifacts and Decision Items; never status changes.",
+        "judgment": "Surfaces weakening or ambiguity rather than deciding silently."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Database helpers and bounded maintenance mode."
+      ],
+      "limitations": [
+        "Multiple modes have different judgment and write boundaries.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent",
+        "/maintenance orchestrator, including scripts/cron/maintenance.sh"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "id": "interactive-claude-visser-scan",
+      "ability": "Read VisserLabs weekend data against the book and thesis set.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/market-research-scan",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/visser-scan/SKILL.md"
+      },
+      "packaging": "authored-provider-entry-point",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "/visser-scan",
+        "unattended_eligibility": "conditional",
+        "rationale": "Produces pull-only opportunity and risk suggestions."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Notes-owned Visser files and read-only portfolio/thesis data.",
+        "writes": "No writes.",
+        "judgment": "Produces pull-only opportunity and risk suggestions."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Notes repository data and Trade Journal read access."
+      ],
+      "limitations": [
+        "Machine-local file dependency; absent from curated Codex routing.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "id": "interactive-codex-trade-journal-bridge",
+      "ability": "Route interactive Codex work to Trade Journal guidance and translate Claude-specific invocation and tools.",
+      "candidate_capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/workflow-discovery",
+        "authority": "scope:trade-journal"
+      },
+      "provider": "codex",
+      "source": {
+        "ownership": "machine-local:home-hub",
+        "location_class": "external-bridge",
+        "path": "~/.codex/skills/trade-journal-workflows/SKILL.md"
+      },
+      "packaging": "external-interactive-bridge",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "Codex skill discovery by repository or Trade Journal intent",
+        "unattended_eligibility": "ineligible",
+        "rationale": "The bridge provides interactive routing and translation, not a headless execution contract."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Repository guidance, selected Claude skill bodies, and bridge references. Codex reads live state through available tools and repository helpers. Writes occur only when the selected workflow and user authority permit them.",
+        "writes": "The bridge itself writes nothing; selected workflows retain their own governed write boundaries.",
+        "judgment": "Maps provider differences but must preserve Trade Journal semantics and surface genuine user decisions."
+      },
+      "prerequisites": [
+        "Codex installation with the machine-local bridge",
+        "Trade Journal repository checkout",
+        "Runtime-specific tools for the selected workflow"
+      ],
+      "limitations": [
+        "External to the repository and unavailable on hosts without the installed bridge.",
+        "Its exhaustive inventory covers 36 skills, while curated routing omits gateway, morning-brief, relate-bookmark, and visser-scan.",
+        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+      ],
+      "operational_consumers": [
+        "Interactive Codex user working in Trade Journal"
+      ],
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "Machine-local bridge presence and parity do not constitute W1 Adapter Conformance evidence."
+      },
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the bridge as the current interactive Codex discovery path until J2 establishes generated, evidence-bound entry points."
+      }
+    }
+  ],
+  "discovery_surfaces": [
+    {
+      "id": "claude-manual",
+      "provider": "claude",
+      "location_class": "repository",
+      "path": "CLAUDE.md",
+      "coverage": "Canonical maintained operating manual; handwritten and not yet a W1-generated Provider Entry Point."
+    },
+    {
+      "id": "codex-shim",
+      "provider": "codex",
+      "location_class": "repository",
+      "path": "AGENTS.md",
+      "coverage": "Codex runtime-difference shim; handwritten and not yet a W1-generated Provider Entry Point."
+    },
+    {
+      "id": "claude-session-settings",
+      "provider": "claude",
+      "location_class": "repository",
+      "path": ".claude/settings.json",
+      "coverage": "Four Claude-only SessionStart command hooks."
+    },
+    {
+      "id": "codex-bridge-skill",
+      "provider": "codex",
+      "location_class": "external-bridge",
+      "path": "~/.codex/skills/trade-journal-workflows/SKILL.md",
+      "coverage": "Curated interactive routing: 21 of 25 expected active workflows; four omissions are recorded, not repaired."
+    },
+    {
+      "id": "codex-workflow-map",
+      "provider": "codex",
+      "location_class": "external-bridge",
+      "path": "~/.codex/skills/trade-journal-workflows/references/workflow-map.md",
+      "coverage": "Curated intent-to-workflow routing: 21 of 25 expected active workflows."
+    },
+    {
+      "id": "codex-exhaustive-inventory",
+      "provider": "codex",
+      "location_class": "external-bridge",
+      "path": "~/.codex/skills/trade-journal-workflows/references/claude-inventory.md",
+      "coverage": "Exhaustive discovery of all 36 repository Claude skill sources."
+    }
+  ],
+  "session_hooks": [
+    {
+      "id": "decisions-nudge",
+      "provider": "claude",
+      "trigger": "SessionStart",
+      "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && npx tsx scripts/ops/list-decisions.ts --nudge 2>/dev/null || true",
+      "purpose": "Surface open Decision Items.",
+      "availability": "Claude Code only",
+      "limitation": "Codex must invoke the decision check deliberately."
+    },
+    {
+      "id": "parity-nudge",
+      "provider": "claude",
+      "trigger": "SessionStart",
+      "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && npx tsx scripts/ops/check-codex-parity.ts --nudge 2>/dev/null || true",
+      "purpose": "Surface bridge or mirror drift.",
+      "availability": "Claude Code only",
+      "limitation": "Supporting diagnostic, not W1 conformance evidence."
+    },
+    {
+      "id": "cron-health-nudge",
+      "provider": "claude",
+      "trigger": "SessionStart",
+      "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && npx tsx scripts/ops/check-cron-health.ts --nudge 2>/dev/null || true",
+      "purpose": "Surface stale or failing on-device jobs.",
+      "availability": "Eligible Home Hub host",
+      "limitation": "Depends on machine-local logs and launchd state."
+    },
+    {
+      "id": "advisor-nudge",
+      "provider": "claude",
+      "trigger": "SessionStart",
+      "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" && npx tsx scripts/ops/advisor-nudge.ts --nudge 2>/dev/null || true",
+      "purpose": "Surface options-advisor attention state.",
+      "availability": "Claude Code with Trade Journal database access",
+      "limitation": "Provider-specific hook; no Codex SessionStart equivalent."
+    }
+  ],
+  "tool_mappings": [
+    {
+      "id": "filesystem-and-shell",
+      "claude_surface": "Bash, Read, Write, Edit, Glob, and Grep allowed-tools declarations",
+      "codex_mapping": "Repository-scoped shell/file tools; use rg for discovery and apply_patch for edits, with normal Codex approval and sandbox boundaries.",
+      "authority": "Repository operating rules in AGENTS.md and CLAUDE.md",
+      "prerequisites": [
+        "Trade Journal checkout",
+        "Required command-line runtimes"
+      ],
+      "limitations": [
+        "Claude allowed-tools metadata is packaging, not authorization for Codex.",
+        "Writes remain limited by the selected workflow and user authority."
+      ],
+      "affected_entries": [
+        "All repository-authored Claude entries"
+      ]
+    },
+    {
+      "id": "web-research",
+      "claude_surface": "WebSearch and WebFetch",
+      "codex_mapping": "Codex internet research tools with primary-source and citation requirements; report unavailable when network or source access is absent.",
+      "authority": "Source workflow plus Codex runtime policy",
+      "prerequisites": [
+        "Network access",
+        "Accessible source material"
+      ],
+      "limitations": [
+        "Search results and page access are environment-dependent.",
+        "Provider tool names do not guarantee equivalent evidence quality."
+      ],
+      "affected_entries": [
+        "interactive-claude-stage-4a-research-unknown",
+        "interactive-claude-thesis-observe",
+        "interactive-claude-assess-validation-evidence"
+      ]
+    },
+    {
+      "id": "supabase-access",
+      "claude_surface": "Supabase MCP execute_sql and Claude.ai Supabase connector",
+      "codex_mapping": "scripts/psql-query.ts for reads and purpose-built scripts/ops commands for writes; do not use Supabase MCP as the Trade Journal database authority.",
+      "authority": "Trade Journal remote Supabase operating safeguards",
+      "prerequisites": [
+        "Configured Trade Journal database environment",
+        "Repository script runtime"
+      ],
+      "limitations": [
+        "Read helpers cannot mutate.",
+        "Writes require a governed operations script; direct ad hoc SQL is not an equivalent mapping."
+      ],
+      "affected_entries": [
+        "interactive-claude-portfolio-and-options-mcp",
+        "interactive-claude-process-transcript",
+        "interactive-claude-synthesize-claims",
+        "interactive-claude-archived-deep-dive"
+      ]
+    },
+    {
+      "id": "tana-access",
+      "claude_surface": "mcp__tana-local__ search, read, and field-mutation tools",
+      "codex_mapping": "Installed Tana tools routed through the Notes/Tana workflow authority; report unavailable on hosts without the local Tana service.",
+      "authority": "scope:notes",
+      "prerequisites": [
+        "Eligible Home Hub host",
+        "Running authenticated Tana service"
+      ],
+      "limitations": [
+        "Machine-local dependency is unavailable in generic CI.",
+        "Notes owns capture and thinking; Trade Journal owns promoted investment entities."
+      ],
+      "affected_entries": [
+        "interactive-claude-relate-bookmark",
+        "interactive-claude-maintenance",
+        "interactive-claude-thesis-review"
+      ]
+    },
+    {
+      "id": "massive-market-data",
+      "claude_surface": "Massive Market Data MCP or Claude.ai connector",
+      "codex_mapping": "Available Codex market-data tools or existing Trade Journal market-data scripts, preserving read-only analysis and source freshness reporting.",
+      "authority": "Trade Journal market-data integration",
+      "prerequisites": [
+        "Massive entitlement or an eligible current market-data tool"
+      ],
+      "limitations": [
+        "Connector availability differs by runtime.",
+        "Substitution must not silently change quote timing, chain coverage, or currency semantics."
+      ],
+      "affected_entries": [
+        "interactive-claude-portfolio-and-options-mcp",
+        "interactive-claude-options-advisor",
+        "interactive-claude-analyze-vol-curve"
+      ]
+    },
+    {
+      "id": "ibkr-market-data",
+      "claude_surface": "IBKR MCP connector and local gateway shell assumptions",
+      "codex_mapping": "Radon-owned IB Gateway and Trade Journal wrappers such as scripts/ibkr-option-quote.ts; preserve client ids 20–49 and gateway precedence.",
+      "authority": "scope:radon",
+      "prerequisites": [
+        "Eligible Home Hub host",
+        "IBC-managed IB Gateway and valid credentials",
+        "Required market-data entitlement"
+      ],
+      "limitations": [
+        "Unavailable in CI and may provide delayed data.",
+        "Gateway control can disrupt a manual IBKR login and requires deliberate authority."
+      ],
+      "affected_entries": [
+        "interactive-claude-gateway",
+        "interactive-claude-ibkr-quote",
+        "interactive-claude-options-advisor"
+      ]
+    },
+    {
+      "id": "skill-and-agent-invocation",
+      "claude_surface": "Slash commands, Skill tool, and Agent/subagent assumptions",
+      "codex_mapping": "Read the selected .claude/skills/<name>/SKILL.md body, preserve workflow intent, and use Codex skills or multi-agent tools only when actually available.",
+      "authority": "AGENTS.md Claude-to-Codex translation rules",
+      "prerequisites": [
+        "Repository source skill",
+        "Required Codex capability exposed in the current runtime"
+      ],
+      "limitations": [
+        "No literal slash-command equivalence is assumed.",
+        "Generic headless mirrors and subagent wording do not authorize unattended judgment."
+      ],
+      "affected_entries": [
+        "All repository-authored Claude entries",
+        "interactive-codex-trade-journal-bridge"
+      ]
+    }
+  ],
+  "known_gaps": [
+    {
+      "id": "no-exact-adapter-evidence",
+      "classification": "evidence",
+      "detail": "All 37 interactive entries are unavailable for Adapter Conformance because no exact source-owned Capability Package and digest-bound evidence exists."
+    },
+    {
+      "id": "curated-codex-routing-omissions",
+      "classification": "j2",
+      "detail": "gateway, morning-brief, relate-bookmark, and visser-scan are absent from both curated bridge routing files."
+    },
+    {
+      "id": "external-codex-bridge",
+      "classification": "evidence",
+      "detail": "The interactive Codex bridge is machine-local and cannot be assumed present in CI or on another host."
+    },
+    {
+      "id": "connector-era-assumptions",
+      "classification": "j2",
+      "detail": "portfolio-and-options-mcp and several skill bodies retain Claude.ai connector or provider-tool assumptions requiring authority-preserving translation."
+    },
+    {
+      "id": "slash-command-packaging",
+      "classification": "j2",
+      "detail": "Claude slash-command entry points are invocation packaging; Codex reads the source body and maps available tools."
+    },
+    {
+      "id": "w1-rich-inventory-boundary",
+      "classification": "implementation",
+      "detail": "W1 validates shallow manifest adapter paths, not these rich fields; this artifact is validated only by the repository-local supporting validator."
+    }
+  ]
+}
