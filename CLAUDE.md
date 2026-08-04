@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides Claude-specific packaging and detailed operating guidance. Provider-neutral domain semantics
+and repository-critical safeguards are authoritative in [CONTEXT.md](CONTEXT.md); this file may elaborate but
+must not reinterpret them.
 
 > **V2 REVIEW IN PROGRESS (since 2026-06-11).** This codebase was heavily pruned on 2026-06-11 (−36K lines, 19 DB tables dropped — see [docs/v2/04-prune-report.md](docs/v2/04-prune-report.md)). The product direction, feature decisions, and build sequence live in [docs/v2/](docs/v2/) — read [03-v2-spec.md](docs/v2/03-v2-spec.md) before designing anything new. Governing principle: **the system (with Claude inside) does the curating, relating, and reviewing; the user only touches genuine decisions.** Never build review queues or curation UIs.
 
@@ -16,7 +18,7 @@ Engineering skills use the five canonical triage roles mapped to the repository'
 
 ### Domain docs
 
-This is a single-context repository: read root domain context when present and relevant ADRs under `docs/adr/`. See `docs/agents/domain.md`.
+This is a single-context repository: read root `CONTEXT.md` and relevant ADRs under `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Project Overview
 
