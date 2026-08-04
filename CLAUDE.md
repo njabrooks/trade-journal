@@ -4,6 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > **V2 REVIEW IN PROGRESS (since 2026-06-11).** This codebase was heavily pruned on 2026-06-11 (−36K lines, 19 DB tables dropped — see [docs/v2/04-prune-report.md](docs/v2/04-prune-report.md)). The product direction, feature decisions, and build sequence live in [docs/v2/](docs/v2/) — read [03-v2-spec.md](docs/v2/03-v2-spec.md) before designing anything new. Governing principle: **the system (with Claude inside) does the curating, relating, and reviewing; the user only touches genuine decisions.** Never build review queues or curation UIs.
 
+## Agent skills
+
+### Issue tracker
+
+Repository-owned issues and specifications are tracked in GitHub Issues for `njabrooks/trade-journal`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Engineering skills use the five canonical triage roles mapped to the repository's same-named GitHub labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository: read root domain context when present and relevant ADRs under `docs/adr/`. See `docs/agents/domain.md`.
+
 ## Project Overview
 
 A **Next.js full-stack application** for managing a multi-exchange investment portfolio. What it does today:
