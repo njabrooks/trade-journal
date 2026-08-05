@@ -81,3 +81,6 @@ research-workspace
 # Deprecated code archive (local reference only)
 /archive/
 tmp/
+
+# Ephemeral accepted Workspace Standard checkout used by local/CI validation
+/.workspace-standard/

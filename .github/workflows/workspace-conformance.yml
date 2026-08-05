@@ -1,0 +1,125 @@
+name: Workspace conformance
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".agents/**"
+      - ".claude/**"
+      - "docs/adr/**"
+      - "docs/agents/**"
+      - "evidence/**"
+      - "launchd/**"
+      - "scripts/**"
+      - "tests/provider-adapter-inventory.test.ts"
+      - "tests/provider-generation-eligibility.test.ts"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "CONTEXT.md"
+      - "package.json"
+      - "package-lock.json"
+      - "workspace"
+      - "workspace-manifest.json"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - ".agents/**"
+      - ".claude/**"
+      - "docs/adr/**"
+      - "docs/agents/**"
+      - "evidence/**"
+      - "launchd/**"
+      - "scripts/**"
+      - "tests/provider-adapter-inventory.test.ts"
+      - "tests/provider-generation-eligibility.test.ts"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "CONTEXT.md"
+      - "package.json"
+      - "package-lock.json"
+      - "workspace"
+      - "workspace-manifest.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  validate:
+    name: J1 governance acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WORKSPACE_EVIDENCE_TIME: "2026-08-04"
+      WORKSPACE_REPOSITORY_ROOT: ${{ github.workspace }}/.workspace-standard
+    steps:
+      - name: Check out Trade Journal
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out the accepted Workspace Standard
+        uses: actions/checkout@v4
+        with:
+          repository: njabrooks/projects
+          ref: 2b6ea3e02ff5ba114b0f91dd779c4afb26181358
+          path: .workspace-standard
+          ssh-key: ${{ secrets.WORKSPACE_REPOSITORY_DEPLOY_KEY }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install repository dependencies
+        run: npm ci
+
+      - name: Validate the pinned Workspace CLI acquisition
+        run: ./workspace --help
+
+      - name: Validate repository conformance in human and JSON modes
+        run: |
+          ./workspace validate repository .
+          ./workspace validate repository . --format json
+
+      - name: Require credential-free tracker validation to be unavailable
+        run: |
+          set +e
+          env -u GITHUB_TOKEN -u GH_TOKEN ./workspace validate repository . --validate-tracker --format json > "$RUNNER_TEMP/unavailable-tracker-report.json"
+          status=$?
+          set -e
+          test "$status" -eq 1
+          node -e 'const fs=require("node:fs"); const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); const c=r.checks.find(c=>c.id==="github-tracker"); if(r.outcome!=="nonconformant"||c?.status!=="unavailable"||c?.reason!=="credentials-unavailable"||r.diagnostics.length!==1||r.diagnostics[0].requirement!=="WS-TRK-001") process.exit(1)' "$RUNNER_TEMP/unavailable-tracker-report.json"
+
+      - name: Validate live canonical tracker semantics
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./workspace validate repository . --validate-tracker
+          ./workspace validate repository . --validate-tracker --format json
+
+      - name: Validate complete Provider Adapter inventories
+        run: |
+          npx tsx scripts/ops/validate-provider-adapter-inventory.ts
+          npx tsx scripts/ops/validate-provider-adapter-inventory.ts --format json
+          npx tsx scripts/ops/validate-provider-adapter-inventory.ts docs/agents/provider-adapters/headless-inventory.json
+          npx tsx scripts/ops/validate-provider-adapter-inventory.ts docs/agents/provider-adapters/headless-inventory.json --format json
+
+      - name: Require zero generation-eligible adapters
+        run: |
+          npx tsx scripts/ops/validate-provider-generation-eligibility.ts
+          npx tsx scripts/ops/validate-provider-generation-eligibility.ts --format json
+
+      - name: Prove unavailable support fails before writing
+        run: |
+          npx tsx scripts/ops/prove-provider-entry-point-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT"
+          npx tsx scripts/ops/prove-provider-entry-point-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT" --format json
+
+      - name: Run focused governance regression tests
+        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts
