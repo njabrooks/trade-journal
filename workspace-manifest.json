@@ -592,7 +592,7 @@
   },
   "deviations": "none",
   "validation_evidence": {
-    "as_of": "2026-08-04",
+    "as_of": "2026-08-05",
     "records": [
       {
         "id": "j1-execution-gate",
@@ -618,6 +618,11 @@
         "id": "provider-generation-eligibility",
         "method": "deterministic-zero-eligibility-and-w1-refusal",
         "path": "docs/agents/provider-adapters/generation-eligibility.json"
+      },
+      {
+        "id": "j1-acceptance",
+        "method": "default-branch-ci-and-repository-local-evidence",
+        "path": "evidence/j1-acceptance.md"
       }
     ]
   }
