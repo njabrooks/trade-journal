@@ -37,13 +37,35 @@ Archived, retired, and deprecated non-candidates plus the external machine-local
 in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not establish Adapter
 Conformance; every inventory evidence state remains `unavailable`.
 
+## Generation eligibility and refusal
+
+`docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
+headless inventory entries. At governed evidence date `2026-08-04`, it records zero generation-eligible
+adapters and no governed outputs. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and
+the machine-local bridge remain non-governed migration inputs.
+
+The controlled refusal harness was executed in human and JSON modes against a clean detached Workspace
+checkout at accepted revision `2b6ea3e02ff5ba114b0f91dd779c4afb26181358`:
+
+```console
+npx tsx scripts/ops/prove-provider-entry-point-refusal.ts \
+  --workspace-root /private/tmp/workspace-w1-accepted
+npx tsx scripts/ops/prove-provider-entry-point-refusal.ts \
+  --workspace-root /private/tmp/workspace-w1-accepted --format json
+```
+
+The temporary controlled fixture resolved a publication-eligible immutable Registry Lock containing one
+environmentally `unavailable` adapter. W1 generation exited `1` with `WS-ENTRY-005` on both attempts, returned
+byte-identical diagnostics, and left the governed output absent. The harness removed the temporary fixture.
+It did not add a Capability Package, evidence record, Registry, lock, or Provider Entry Point to Trade Journal.
+
 ## Remaining J1 work
 
-- #36 owns any authored Registry/declaration and deterministic generated Provider Entry Point work. It must
-  not project unavailable adapters or manufacture source-owned Capability Packages.
-- #37 owns final acceptance evidence and the parent J1 close decision after all required generated surfaces
-  and checks exist.
+- #37 owns CI integration, final acceptance evidence, and the parent J1 close decision. Its completion claim is
+  repository conformance, exhaustive inventory, zero generation eligibility, and deterministic W1 no-write
+  refusal—not clean generation.
+- J2 or the accountable source authority owns Capability authoring, exact adapter evaluation, immutable
+  Registry locking, and Provider Entry Point generation one Capability boundary at a time.
 
 No product code, Provider Adapter implementation, scheduled job, model, prompt, permission, or runtime
 behaviour changes in this adoption slice.
-

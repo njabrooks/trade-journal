@@ -1,0 +1,2443 @@
+{
+  "kind": "ProviderAdapterGenerationEligibility",
+  "schema_version": "1.0.0",
+  "as_of": "2026-08-04",
+  "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
+  "outcome": "no-eligible-adapters",
+  "generation_eligible_count": 0,
+  "governed_outputs": "none",
+  "current_entry_points": {
+    "classification": "non-governed-migration-inputs",
+    "shared_guidance": "CONTEXT.md",
+    "provider_specific_guidance": ["CLAUDE.md", "AGENTS.md"],
+    "authored_adapter_root": ".claude/skills",
+    "generated_mirror_root": ".agents/skills",
+    "limitation": "Existing handwritten and mirrored surfaces are migration inputs, not W1-generated Provider Entry Points."
+  },
+  "entries": [
+    {
+      "inventory_entry": "headless-codex-advance-or-kill",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/advance-or-kill/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-analyze-vol-curve",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/analyze-vol-curve/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/options-vol-analysis",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-archived-deep-dive",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/archived-deep-dive/SKILL.md"
+      },
+      "lifecycle_status": "archived",
+      "capability": {
+        "status": "not-candidate",
+        "id": null,
+        "authority": null,
+        "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "This lifecycle projection is not a current Capability candidate.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-archived-generate-summary",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/archived-generate-summary/SKILL.md"
+      },
+      "lifecycle_status": "archived",
+      "capability": {
+        "status": "not-candidate",
+        "id": null,
+        "authority": null,
+        "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "This lifecycle projection is not a current Capability candidate.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-assess-validation-evidence",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/assess-validation-evidence/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-evidence-assessment",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-backfill-claims",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/backfill-claims/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-build-core-argument",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/build-core-argument/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-underwriting",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-configure-signal",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/configure-signal/SKILL.md"
+      },
+      "lifecycle_status": "retired",
+      "capability": {
+        "status": "not-candidate",
+        "id": null,
+        "authority": null,
+        "reason": "retired artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "This lifecycle projection is not a current Capability candidate.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-decisions",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/decisions/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/decision-resolution",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-finalize-for-upload",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/finalize-for-upload/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-publication",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-gateway",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/gateway/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:radon/ibkr-gateway-control",
+        "authority": "scope:radon",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-graduate-pipeline-idea",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/graduate-pipeline-idea/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-ibkr-quote",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/ibkr-quote/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:radon/ibkr-option-quote",
+        "authority": "scope:radon",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-maintenance",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/maintenance/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-morning-brief",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/morning-brief/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/morning-attention-brief",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-options-advisor",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/options-advisor/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-options-advice",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-paperclip-backlog",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/paperclip-backlog/SKILL.md"
+      },
+      "lifecycle_status": "deprecated",
+      "capability": {
+        "status": "not-candidate",
+        "id": null,
+        "authority": null,
+        "reason": "deprecated artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "This lifecycle projection is not a current Capability candidate.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-pipeline-status",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/pipeline-status/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-portfolio-and-options-mcp",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/portfolio-and-options-mcp/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-analysis",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-process-note",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/process-note/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:notes/toulmin-extraction",
+        "authority": "scope:notes",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-process-transcript",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/process-transcript/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:notes/toulmin-extraction",
+        "authority": "scope:notes",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-pull-portfolio",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/pull-portfolio/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-snapshot",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-relate-bookmark",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/relate-bookmark/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-research-relation",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-relate-research",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/relate-research/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-research-relation",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-stage-1-init-idea",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-1-init-idea/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-stage-2-formalize-thesis",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-2-formalize-thesis/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-stage-3-map-unknowns",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-3-map-unknowns/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-stage-4a-prep-desktop-research",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-4a-prep-desktop-research/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-stage-4a-research-unknown",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-4a-research-unknown/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-stage-4b-synthesize-evidence",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-4b-synthesize-evidence/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-stage-5-express-thesis",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-5-express-thesis/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-synthesize-claims",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/synthesize-claims/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/claims-synthesis",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-thesis",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/thesis/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-foreground",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-thesis-observe",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/thesis-observe/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-observation",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-thesis-review",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/thesis-review/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "headless-codex-visser-scan",
+      "provider": "codex",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/visser-scan/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/market-research-scan",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-advance-or-kill",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/advance-or-kill/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-analyze-vol-curve",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/analyze-vol-curve/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/options-vol-analysis",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-archived-deep-dive",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/archived-deep-dive/SKILL.md"
+      },
+      "lifecycle_status": "archived",
+      "capability": {
+        "status": "not-candidate",
+        "id": null,
+        "authority": null,
+        "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "This lifecycle projection is not a current Capability candidate.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-archived-generate-summary",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/archived-generate-summary/SKILL.md"
+      },
+      "lifecycle_status": "archived",
+      "capability": {
+        "status": "not-candidate",
+        "id": null,
+        "authority": null,
+        "reason": "archived artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "This lifecycle projection is not a current Capability candidate.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-assess-validation-evidence",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/assess-validation-evidence/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-evidence-assessment",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-backfill-claims",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/backfill-claims/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-build-core-argument",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/build-core-argument/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-underwriting",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-configure-signal",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/configure-signal/SKILL.md"
+      },
+      "lifecycle_status": "retired",
+      "capability": {
+        "status": "not-candidate",
+        "id": null,
+        "authority": null,
+        "reason": "retired artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "This lifecycle projection is not a current Capability candidate.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-decisions",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/decisions/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/decision-resolution",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-finalize-for-upload",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/finalize-for-upload/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-publication",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-gateway",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/gateway/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:radon/ibkr-gateway-control",
+        "authority": "scope:radon",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-graduate-pipeline-idea",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/graduate-pipeline-idea/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-ibkr-quote",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/ibkr-quote/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:radon/ibkr-option-quote",
+        "authority": "scope:radon",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-maintenance",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/maintenance/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-morning-brief",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/morning-brief/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/morning-attention-brief",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-options-advisor",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/options-advisor/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-options-advice",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-paperclip-backlog",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/paperclip-backlog/SKILL.md"
+      },
+      "lifecycle_status": "deprecated",
+      "capability": {
+        "status": "not-candidate",
+        "id": null,
+        "authority": null,
+        "reason": "deprecated artifact retained for history or protection; it is not a current Capability candidate."
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "This lifecycle projection is not a current Capability candidate.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "retire",
+        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-pipeline-status",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/pipeline-status/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-portfolio-and-options-mcp",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/portfolio-and-options-mcp/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-analysis",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-process-note",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/process-note/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:notes/toulmin-extraction",
+        "authority": "scope:notes",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-process-transcript",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/process-transcript/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:notes/toulmin-extraction",
+        "authority": "scope:notes",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-pull-portfolio",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/pull-portfolio/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/portfolio-snapshot",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-relate-bookmark",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/relate-bookmark/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-research-relation",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-relate-research",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/relate-research/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-research-relation",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-stage-1-init-idea",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-1-init-idea/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-stage-2-formalize-thesis",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-2-formalize-thesis/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-stage-3-map-unknowns",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-3-map-unknowns/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-stage-4a-prep-desktop-research",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-4a-prep-desktop-research/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "replace",
+        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-stage-4a-research-unknown",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-4a-research-unknown/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-stage-4b-synthesize-evidence",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-4b-synthesize-evidence/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-stage-5-express-thesis",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-5-express-thesis/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/research-pipeline",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-synthesize-claims",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/synthesize-claims/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/claims-synthesis",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-thesis",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-foreground",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-thesis-observe",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis-observe/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/thesis-observation",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-thesis-review",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis-review/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/belief-maintenance",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+      }
+    },
+    {
+      "inventory_entry": "interactive-claude-visser-scan",
+      "provider": "claude",
+      "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/visser-scan/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/market-research-scan",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+      ],
+      "j2_disposition": {
+        "action": "defer",
+        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      }
+    },
+    {
+      "inventory_entry": "interactive-codex-trade-journal-bridge",
+      "provider": "codex",
+      "source": {
+        "ownership": "machine-local:home-hub",
+        "location_class": "external-bridge",
+        "path": "~/.codex/skills/trade-journal-workflows/SKILL.md"
+      },
+      "lifecycle_status": "active",
+      "capability": {
+        "status": "candidate",
+        "id": "capability:scope:trade-journal/workflow-discovery",
+        "authority": "scope:trade-journal",
+        "reason": null
+      },
+      "evidence": {
+        "state": "unavailable",
+        "as_of": "2026-08-04",
+        "capability_version": null,
+        "package_digest": null,
+        "adapter_digest": null,
+        "reason": "Machine-local bridge presence and parity do not constitute W1 Adapter Conformance evidence."
+      },
+      "generation_eligible": false,
+      "ineligibility_reasons": [
+        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "Machine-local bridge presence and parity do not constitute W1 Adapter Conformance evidence."
+      ],
+      "j2_disposition": {
+        "action": "retain-temporarily",
+        "rationale": "Keep the bridge as the current interactive Codex discovery path until J2 establishes generated, evidence-bound entry points."
+      }
+    }
+  ],
+  "w1_refusal_contract": {
+    "script": "scripts/ops/prove-provider-entry-point-refusal.ts",
+    "expected_requirement": "WS-ENTRY-005",
+    "expected_outcome": "failed",
+    "output_policy": "The governed target must remain absent."
+  },
+  "j2_sequence": [
+    "Choose one candidate Capability boundary.",
+    "Confirm its accountable Capability Authority.",
+    "Author the Capability Package at that authority.",
+    "Implement or evaluate exact Provider Adapters.",
+    "Collect digest-bound conformance evidence.",
+    "Resolve an immutable Capability Registry Lock.",
+    "Generate governed Provider Entry Points."
+  ]
+}

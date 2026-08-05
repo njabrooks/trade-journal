@@ -501,6 +501,12 @@
         "generated_entries": 36,
         "live_provider_dependent_jobs": 5
       },
+      "generation_eligibility": {
+        "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
+        "eligible_adapters": 0,
+        "governed_outputs": "none",
+        "refusal_proof": "scripts/ops/prove-provider-entry-point-refusal.ts"
+      },
       "manifest_adapter_declarations": 64,
       "non_candidate_projections": [
         {
@@ -607,6 +613,11 @@
         "id": "headless-provider-inventory",
         "method": "repository-supporting-validator",
         "path": "docs/agents/provider-adapters/headless-inventory.json"
+      },
+      {
+        "id": "provider-generation-eligibility",
+        "method": "deterministic-zero-eligibility-and-w1-refusal",
+        "path": "docs/agents/provider-adapters/generation-eligibility.json"
       }
     ]
   }
