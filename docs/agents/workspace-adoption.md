@@ -19,6 +19,18 @@ GITHUB_TOKEN=<read-only-token> \
   ./workspace validate repository /absolute/path/to/trade-journal --validate-tracker --format json
 ```
 
+The repository-root `./workspace` command is a small fail-closed launcher, not a vendored Workspace CLI. It
+requires `WORKSPACE_REPOSITORY_ROOT` (or the local parent Workspace checkout) to be clean and at the exact
+accepted revision and verifies the accepted CLI Git blob before execution. CI acquires that checkout with a
+Trade-Journal-specific read-only deploy key; the key cannot write to the Workspace repository. The normal
+job-scoped `GITHUB_TOKEN` remains responsible only for authenticated read access to Trade Journal's own live
+tracker metadata.
+
+This acquisition mechanism is an explicit first-wave interim choice. Workspace issue
+`njabrooks/projects#31` owns the future specification for a canonical CLI distribution and downstream
+acquisition model, including migration of the different interim approaches used by Notes, Threadline, and
+Trade Journal.
+
 The unauthenticated human and JSON reports are conformant with zero diagnostics and zero active deviations.
 Repeated JSON runs are byte-identical. The authenticated live GitHub check passes both the repository-manifest
 and `github-tracker` checks. When credentials are deliberately absent, the tracker check is `unavailable` with

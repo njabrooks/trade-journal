@@ -1,0 +1,33 @@
+#!/bin/sh
+set -eu
+
+accepted_revision="2b6ea3e02ff5ba114b0f91dd779c4afb26181358"
+accepted_cli_blob="6d35a84382ddbfa004238a61b0d6f643a57f58c0"
+repository_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+workspace_root=${WORKSPACE_REPOSITORY_ROOT:-"$repository_root/.."}
+cli="$workspace_root/workspace"
+
+if [ ! -x "$cli" ]; then
+  echo "Workspace CLI is unavailable at $cli." >&2
+  echo "Set WORKSPACE_REPOSITORY_ROOT to a clean checkout of njabrooks/projects at $accepted_revision." >&2
+  exit 127
+fi
+
+actual_revision=$(git -C "$workspace_root" rev-parse HEAD 2>/dev/null || true)
+if [ "$actual_revision" != "$accepted_revision" ]; then
+  echo "Workspace checkout must be exact revision $accepted_revision; found ${actual_revision:-unavailable}." >&2
+  exit 1
+fi
+
+actual_cli_blob=$(git -C "$workspace_root" hash-object workspace 2>/dev/null || true)
+if [ "$actual_cli_blob" != "$accepted_cli_blob" ]; then
+  echo "Workspace CLI bytes do not match the accepted W1 executable." >&2
+  exit 1
+fi
+
+if [ -n "$(git -C "$workspace_root" status --short 2>/dev/null)" ]; then
+  echo "Workspace checkout must be clean." >&2
+  exit 1
+fi
+
+exec "$cli" "$@"
