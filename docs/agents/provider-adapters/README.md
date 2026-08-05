@@ -17,6 +17,8 @@ npx tsx scripts/ops/validate-provider-adapter-inventory.ts
 npx tsx scripts/ops/validate-provider-adapter-inventory.ts --format json
 npx tsx scripts/ops/validate-provider-adapter-inventory.ts docs/agents/provider-adapters/headless-inventory.json
 npx tsx scripts/ops/validate-provider-adapter-inventory.ts docs/agents/provider-adapters/headless-inventory.json --format json
+npx tsx scripts/ops/validate-provider-generation-eligibility.ts
+npx tsx scripts/ops/validate-provider-generation-eligibility.ts --format json
 ```
 
 The human and JSON reports are deterministic over repository content. A valid report proves that required
@@ -77,3 +79,29 @@ mirror and a valid rich inventory do not upgrade any W1 evidence state. All proj
 until an exact source Capability version, package digest, and adapter digest can be bound by the W1 evidence
 contract. J1 #35 will validate only the smaller Repository Manifest adapter declarations using the accepted
 Workspace CLI.
+
+## Generation eligibility
+
+`generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
+generation decision. It covers all 73 inventoried entry points and records zero generation-eligible adapters,
+no governed outputs, the current surfaces as non-governed migration inputs, and the required J2 sequence.
+
+Every adapter remains `unavailable` because none is bound to an accepted source-owned Capability version,
+package digest, adapter digest, and complete current evidence. This is an honest Adapter Conformance state,
+not a repository failure. It must not be upgraded from file presence, mirror parity, generic packaging, or a
+historical execution.
+
+The accepted W1 no-write boundary is exercised separately against a clean checkout at the pinned revision:
+
+```console
+npx tsx scripts/ops/prove-provider-entry-point-refusal.ts \
+  --workspace-root /absolute/path/to/accepted-w1-checkout
+npx tsx scripts/ops/prove-provider-entry-point-refusal.ts \
+  --workspace-root /absolute/path/to/accepted-w1-checkout --format json
+```
+
+The harness constructs a temporary source-owned fixture with valid `unavailable` environmental evidence,
+resolves an immutable published Registry Lock, and invokes W1 generation twice. A passing proof requires
+`WS-ENTRY-005`, byte-identical refusal diagnostics, and an absent governed output after both attempts. The
+temporary fixture is removed afterward; no Capability Package, Registry, lock, or governed entry point is
+added to Trade Journal.
