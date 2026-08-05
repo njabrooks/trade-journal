@@ -71,11 +71,12 @@ environmentally `unavailable` adapter. W1 generation exited `1` with `WS-ENTRY-0
 byte-identical diagnostics, and left the governed output absent. The harness removed the temporary fixture.
 It did not add a Capability Package, evidence record, Registry, lock, or Provider Entry Point to Trade Journal.
 
-## Remaining J1 work
+## J1 acceptance boundary
 
-- #37 owns CI integration, final acceptance evidence, and the parent J1 close decision. Its completion claim is
-  repository conformance, exhaustive inventory, zero generation eligibility, and deterministic W1 no-write
-  refusal—not clean generation.
+- #37 publishes the final evidence in `evidence/j1-acceptance.md`. Its completion claim is repository
+  conformance, exhaustive inventory, zero generation eligibility, and deterministic W1 no-write refusal—not
+  clean generation. The tracker records the evidence-publication revision after merge so this file does not
+  claim to validate its own commit.
 - J2 or the accountable source authority owns Capability authoring, exact adapter evaluation, immutable
   Registry locking, and Provider Entry Point generation one Capability boundary at a time.
 
