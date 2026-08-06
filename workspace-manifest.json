@@ -56,8 +56,24 @@
   },
   "owned_capabilities": [
     {
+      "id": "capability:scope:trade-journal/belief-maintenance",
+      "path": "capabilities/belief-maintenance/capability-package.json"
+    },
+    {
+      "id": "capability:scope:trade-journal/morning-attention-brief",
+      "path": "capabilities/morning-attention-brief/capability-package.json"
+    },
+    {
+      "id": "capability:scope:trade-journal/portfolio-options-advice",
+      "path": "capabilities/portfolio-options-advice/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/portfolio-snapshot",
       "path": "capabilities/portfolio-snapshot/capability-package.json"
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-observation",
+      "path": "capabilities/thesis-observation/capability-package.json"
     }
   ],
   "provider_adapters": [
@@ -83,7 +99,7 @@
       "id": "headless-codex-backfill-claims",
       "capability": "capability:scope:trade-journal/belief-maintenance",
       "provider": "codex",
-      "path": ".agents/skills/backfill-claims/SKILL.md"
+      "path": "capabilities/belief-maintenance/adapters/codex.md"
     },
     {
       "id": "headless-codex-build-core-argument",
@@ -125,19 +141,19 @@
       "id": "headless-codex-maintenance",
       "capability": "capability:scope:trade-journal/belief-maintenance",
       "provider": "codex",
-      "path": ".agents/skills/maintenance/SKILL.md"
+      "path": "capabilities/belief-maintenance/adapters/codex.md"
     },
     {
       "id": "headless-codex-morning-brief",
       "capability": "capability:scope:trade-journal/morning-attention-brief",
       "provider": "codex",
-      "path": ".agents/skills/morning-brief/SKILL.md"
+      "path": "capabilities/morning-attention-brief/adapters/codex.md"
     },
     {
       "id": "headless-codex-options-advisor",
       "capability": "capability:scope:trade-journal/portfolio-options-advice",
       "provider": "codex",
-      "path": ".agents/skills/options-advisor/SKILL.md"
+      "path": "capabilities/portfolio-options-advice/adapters/codex.md"
     },
     {
       "id": "headless-codex-pipeline-status",
@@ -239,13 +255,13 @@
       "id": "headless-codex-thesis-observe",
       "capability": "capability:scope:trade-journal/thesis-observation",
       "provider": "codex",
-      "path": ".agents/skills/thesis-observe/SKILL.md"
+      "path": "capabilities/thesis-observation/adapters/codex.md"
     },
     {
       "id": "headless-codex-thesis-review",
       "capability": "capability:scope:trade-journal/belief-maintenance",
       "provider": "codex",
-      "path": ".agents/skills/thesis-review/SKILL.md"
+      "path": "capabilities/belief-maintenance/adapters/codex.md"
     },
     {
       "id": "headless-codex-visser-scan",
@@ -275,7 +291,7 @@
       "id": "interactive-claude-backfill-claims",
       "capability": "capability:scope:trade-journal/belief-maintenance",
       "provider": "claude",
-      "path": ".claude/skills/backfill-claims/SKILL.md"
+      "path": "capabilities/belief-maintenance/adapters/claude.md"
     },
     {
       "id": "interactive-claude-build-core-argument",
@@ -317,19 +333,19 @@
       "id": "interactive-claude-maintenance",
       "capability": "capability:scope:trade-journal/belief-maintenance",
       "provider": "claude",
-      "path": ".claude/skills/maintenance/SKILL.md"
+      "path": "capabilities/belief-maintenance/adapters/claude.md"
     },
     {
       "id": "interactive-claude-morning-brief",
       "capability": "capability:scope:trade-journal/morning-attention-brief",
       "provider": "claude",
-      "path": ".claude/skills/morning-brief/SKILL.md"
+      "path": "capabilities/morning-attention-brief/adapters/claude.md"
     },
     {
       "id": "interactive-claude-options-advisor",
       "capability": "capability:scope:trade-journal/portfolio-options-advice",
       "provider": "claude",
-      "path": ".claude/skills/options-advisor/SKILL.md"
+      "path": "capabilities/portfolio-options-advice/adapters/claude.md"
     },
     {
       "id": "interactive-claude-pipeline-status",
@@ -431,13 +447,13 @@
       "id": "interactive-claude-thesis-observe",
       "capability": "capability:scope:trade-journal/thesis-observation",
       "provider": "claude",
-      "path": ".claude/skills/thesis-observe/SKILL.md"
+      "path": "capabilities/thesis-observation/adapters/claude.md"
     },
     {
       "id": "interactive-claude-thesis-review",
       "capability": "capability:scope:trade-journal/belief-maintenance",
       "provider": "claude",
-      "path": ".claude/skills/thesis-review/SKILL.md"
+      "path": "capabilities/belief-maintenance/adapters/claude.md"
     },
     {
       "id": "interactive-claude-visser-scan",

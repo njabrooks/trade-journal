@@ -114,6 +114,90 @@ If proposed work contradicts an existing ADR, surface the conflict explicitly ra
 
 ## Locked Capabilities
 
+### capability:scope:trade-journal/belief-maintenance 1.0.0
+
+Intent: Maintain Trade Journal belief records in bounded passes while reserving genuine investment judgment for explicit Decision Items.
+
+Contract: Given a declared maintenance mode, bounded target set, and optional dry-run choice, inspect current Trade Journal claims, theses, signals, evidence, cursors, and maintenance worklists; perform only the mode's approved mechanical writes; record auditable changes; surface ambiguous or judgment-bearing outcomes as Decision Items; return a machine-readable summary of reads, writes, cursor movement, decisions surfaced, skips, and failures; never silently resolve a genuine decision or change an entity status.
+
+Provider-neutral instructions:
+- Accept only maintenance, thesis-review, or claim-backfill modes and require every run to declare its bound before execution.
+- Use repository read helpers for database reads and purpose-built operations scripts for writes; never use ad hoc SQL mutation.
+- Auto-link or update only deterministic, policy-authorized cases and send ambiguity, contradiction, or weakening to the Decision Item path.
+- Preserve producer/resolver separation: surfacing a Decision Item is permitted, resolving one is forbidden.
+- Preserve cursor monotonicity and record the before and after cursor whenever a cursor is advanced.
+- Write auditable investment changes to journal_entries through the approved repository boundary.
+- Return an explicit empty result when no work is due and an explicit failure result when prerequisites or bounded execution fail.
+
+Provider Adapter `belief-maintenance-claude` (current):
+
+## Claude Provider Adapter
+
+Accept a request object with `mode` (`maintenance`, `thesis-review`, or `claim-backfill`), a required `bound` describing the maximum items or explicit identifiers, and `dryRun` (default `true`). Run from the Trade Journal repository root with the configured repository environment.
+
+1. For `maintenance`, follow `.claude/skills/maintenance/SKILL.md`; begin with `npx tsx scripts/ops/maintenance-status.ts --json` and drain only the declared bound.
+2. For `thesis-review`, follow `.claude/skills/thesis-review/SKILL.md` in the requested bounded sub-mode.
+3. For `claim-backfill`, follow `.claude/skills/backfill-claims/SKILL.md` for only the declared claim identifiers or item limit.
+4. Use `scripts/psql-query.ts` for reads and only the purpose-built operations named by the selected workflow for writes. Keep dry-run behavior whenever the underlying operation supports it.
+5. Auto-apply only clear mechanical outcomes authorized by the workflow. Surface ambiguity, refutation, weakening, re-underwriting, or any other genuine judgment as a Decision Item.
+6. Return one JSON object with `success`, `mode`, `dryRun`, `bound`, `reads`, `writes`, `cursorBefore`, `cursorAfter`, `decisionsSurfaced`, `skipped`, and `errors`. Every write entry must name the repository operation and affected record.
+
+This adapter is a producer. It must not invoke `scripts/ops/resolve-decision.ts`, `scripts/ops/update-entity-status.ts`, or silently re-underwrite a thesis. A missing prerequisite, exhausted bound, or partial failure is reported honestly and is not converted into success.
+
+### capability:scope:trade-journal/morning-attention-brief 1.0.0
+
+Intent: Synthesize fresh upstream Trade Journal state into one date-scoped attention brief without mutating the belief layer.
+
+Contract: Given a brief date and a deterministic morning bundle with explicit upstream freshness, synthesize one headline, at most five ranked attention items, and a concise body; if required upstream state is stale or missing, identify that limitation in the result; persist at most one morning_briefs row for the date through an idempotent upsert; and never mutate belief entities, journal history, Decision Items, recommendations, positions, or statuses.
+
+Provider-neutral instructions:
+- Require a brief date and gather only the deterministic repository morning bundle.
+- Inspect and report freshness for thesis observation, maintenance, options advice, portfolio, decisions, and calendar inputs before synthesis.
+- Do not re-query, browse, or invent evidence beyond the supplied bundle.
+- Rank no more than five genuine attention items and preserve actionable deep links without resolving the underlying judgment.
+- Persist only through the date-keyed morning brief upsert and report whether the row was inserted or replaced.
+- On a same-date rerun, preserve idempotent exactly-one-row behavior.
+- Never write to belief-layer entities, journal_entries, Decision Items, advisor recommendations, positions, strategies, or status fields.
+
+Provider Adapter `morning-attention-brief-claude` (current):
+
+## Claude Provider Adapter
+
+Accept `briefDate` and optional `dryRun`; reject a missing or invalid date. From the Trade Journal root, follow `.claude/skills/morning-brief/SKILL.md` and gather the sole input with `npx tsx scripts/morning-brief-data.ts --json`.
+
+Check the bundle's timestamps and stale flags for the required upstream producers. Use only that bundle: do not browse, re-query for extra evidence, or fill missing state with assumptions. Produce one headline, zero to five ranked attention items, the bounded Markdown body, and metadata containing the bundle generation time and input counts.
+
+When not in dry-run, persist only with `npx tsx scripts/ops/save-morning-brief.ts --stdin`; the operation is keyed by `brief_date`, so a same-date rerun replaces the existing row and leaves exactly one row. Return JSON containing `success`, `briefDate`, `freshness`, `headline`, `attention`, `persisted`, `write`, `unavailableInputs`, and `errors`.
+
+This adapter is synthesis-only. It must not invoke any other write operation, write `journal_entries`, raise or resolve a Decision Item, save advisor recommendations, or mutate a thesis, claim, signal, strategy, position, or status.
+
+### capability:scope:trade-journal/portfolio-options-advice 1.0.0
+
+Intent: Produce bounded, portfolio-aware options recommendations without acquiring trade-execution authority.
+
+Contract: Given either morning-batch or LEAP mode, current portfolio and regime context, standing constraints, and eligible market-data access, generate and judge bounded option candidates, live-verify every selected structure where required, persist only genuine recommendation batches with the established dashboard result shape, return explicit empty or unavailable outcomes, and never place, route, stage, or modify an order.
+
+Provider-neutral instructions:
+- Require an explicit mode: morning-batch for the six non-LEAP scenarios or LEAP for long-dated call candidates.
+- Read current portfolio, regime, thesis, volatility, chain, and constraint context through repository-owned read boundaries.
+- Treat the Radon-managed IBKR gateway and quote path as an environmental prerequisite; do not copy or redefine Radon infrastructure.
+- Live-verify selected structures and reject stale, unavailable, or materially changed quotes rather than fabricating a recommendation.
+- Persist only genuine, bounded recommendations using the approved recommendation-batch operation; an empty candidate set or unavailable verification writes nothing.
+- Preserve the existing recommendation payload used by dashboard consumers and report mode, candidates, verification, persistence, skips, and failures.
+- Never place, route, stage, preview, or modify a trade or order.
+
+Provider Adapter `portfolio-options-advice-claude` (current):
+
+## Claude Provider Adapter
+
+Accept `mode` (`morning-batch` or `leap`), optional bounded scenario/ticker filters, and `maxRecommendations` (maximum five per scenario). From the Trade Journal root, follow `.claude/skills/options-advisor/SKILL.md` and read the latest regime before candidate judgment.
+
+For `morning-batch`, run only hedge, income, collar, put_entry, risk_reversal, and opportunistic scenarios. For `leap`, require eligible US market hours and check the Radon-managed IBKR gateway on port 4001 before running only `leap_entry`. Use `npx tsx scripts/options-advisor.ts --scenario <scenario>` for candidate math. Live-verify selected contracts through the documented Radon-backed quote boundary; unavailable or materially stale verification removes the candidate.
+
+Persist a scenario only when genuine recommendations remain, using only `npx tsx scripts/ops/save-advisor-recommendations.ts --stdin`. Preserve engine-produced structure, metrics, and volatility context. Return JSON containing `success`, `mode`, `regime`, `candidates`, `recommendations`, `verification`, `writes`, `skipped`, `unavailableInputs`, and `errors`.
+
+This adapter has recommendation authority only. It must never call an order, trade, execution, preview, or staging operation. Empty candidate sets, unavailable verification, or gateway failure write no recommendation batch.
+
 ### capability:scope:trade-journal/portfolio-snapshot 1.0.0
 
 Intent: Read and present the current Trade Journal portfolio state without mutation.
@@ -139,3 +223,29 @@ Provider Adapter `portfolio-snapshot-claude` (current):
 5. Treat missing credentials, database errors, invalid UUID filters, and non-zero execution as explicit unavailability or failure.
 
 This adapter is read-only. Its authority ends at presenting the returned snapshot; it does not mutate Trade Journal state or place trades.
+
+### capability:scope:trade-journal/thesis-observation 1.0.0
+
+Intent: Sense current evidence against high-materiality thesis signals without making or resolving investment decisions.
+
+Contract: Given a governed observation time and a bounded set of due Tier-1 monitoring theses, gather current attributable sources and fresh price context, assess each active qualitative signal from the thesis's perspective, persist only observation artifacts, signal evidence snapshots, and their audit history, and return a directive per-signal result; never create or resolve Decision Items or mutate thesis, strategy, claim, or signal status.
+
+Provider-neutral instructions:
+- Select observations from the repository's deterministic due-observation bundle and preserve its Tier-1 bound.
+- Use current attributable sources and report source or price unavailability rather than filling gaps with assumptions.
+- Assess the signal statement in thesis-centric polarity and preserve neutral results when evidence is not discriminating.
+- Write only the approved observation report, signal_data_snapshots evidence, and corresponding journal history.
+- Do not raise or resolve Decision Items and do not change any entity status.
+- Return complete per-signal directives, source references, changed-from-prior state, write records, and failures.
+
+Provider Adapter `thesis-observation-claude` (current):
+
+## Claude Provider Adapter
+
+Accept `asOf`, an optional explicit `thesisIds` subset, and `maxTheses`; reject an unbounded request. From the Trade Journal root, follow `.claude/skills/thesis-observe/SKILL.md` and load the due bundle with `npx tsx scripts/ops/find-theses-due-observe.ts --json`.
+
+Use Claude's current web research tools for attributable, recent sources and the repository's supplied price context. Do not infer a pass from missing news, stale price data, login failure, or an unavailable source. For collector-tracked signals, preserve the deterministic deferral in the bundle.
+
+Produce the workflow's directive report with signal identifier, score, evidence, assessment, and change from prior, then use only the documented thesis-observe ingestion boundary. Return JSON containing `success`, `asOf`, `thesesObserved`, `signalsAssessed`, `directives`, `writes`, `unavailableInputs`, and `errors`.
+
+This adapter is sensing-only. Its writes are limited to the observation artifact, `signal_data_snapshots`, and corresponding journal history. It must not invoke `scripts/ops/resolve-decision.ts`, `scripts/ops/update-entity-status.ts`, raise a Decision Item, or change thesis, strategy, claim, or signal status.

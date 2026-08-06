@@ -365,22 +365,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/backfill-claims/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/backfill-claims/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/backfill-claims/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/backfill-claims/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "May auto-link only clear matches and must surface ambiguous judgment."
       },
@@ -398,9 +398,8 @@
         "Remote database access through repository helpers."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
         "Historical volume and ambiguity require bounded execution.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -411,16 +410,27 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:1c3e9fb432cd494bf71bf691771ac9284dd1b8dc63b8ce0cfaaa22aeb8b0b22c",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/backfill-claims/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-maintenance/capability-package.json",
+        "adapter_id": "belief-maintenance-codex",
+        "evidence_path": "capabilities/belief-maintenance/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -924,22 +934,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/maintenance/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/maintenance/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/maintenance/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/maintenance/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Producer only; never silently resolves genuine judgment."
       },
@@ -957,9 +967,8 @@
         "Database credentials, Tana access where required, and bounded run controls."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
         "Live Claude-dependent scheduled consumer exists and is a high-risk J2 boundary.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "J2 migration candidate corresponding to a live Claude scheduled workflow; no live job currently consumes this Codex projection."
@@ -970,16 +979,27 @@
         "rationale": "Live twice-daily belief-maintenance producer can write links, artifacts, cursors, and Decision Items."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:1c3e9fb432cd494bf71bf691771ac9284dd1b8dc63b8ce0cfaaa22aeb8b0b22c",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/maintenance/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-maintenance/capability-package.json",
+        "adapter_id": "belief-maintenance-codex",
+        "evidence_path": "capabilities/belief-maintenance/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -994,22 +1014,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/morning-brief/SKILL.md"
+        "path": "capabilities/morning-attention-brief/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/morning-brief/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/morning-brief/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/morning-brief/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Ranks attention but cannot alter the belief layer or create decisions."
       },
@@ -1027,9 +1047,8 @@
         "Fresh deterministic bundle and database credentials."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
         "Live Claude-dependent scheduled consumer exists.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "J2 migration candidate corresponding to a live Claude scheduled workflow; no live job currently consumes this Codex projection."
@@ -1040,16 +1059,27 @@
         "rationale": "Live daily synthesis writes the dashboard brief after upstream evidence and maintenance jobs."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
+        "adapter_digest": "sha256:015175518241ad95e8f1a19db750286fa0fabdfa3715b5a764aa0676f83567f1",
+        "reason": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/morning-brief/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/morning-attention-brief/capability-package.json",
+        "adapter_id": "morning-attention-brief-codex",
+        "evidence_path": "capabilities/morning-attention-brief/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -1064,22 +1094,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/options-advisor/SKILL.md"
+        "path": "capabilities/portfolio-options-advice/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/options-advisor/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/options-advisor/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/options-advisor/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Exercises investment-structure judgment within standing constraints."
       },
@@ -1097,9 +1127,8 @@
         "Database credentials, market data, and Radon gateway for live verification or LEAP mode."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
         "Live Claude-dependent scheduled consumers exist; connector and host availability vary.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "J2 migration candidate corresponding to a live Claude scheduled workflow; no live job currently consumes this Codex projection."
@@ -1110,16 +1139,27 @@
         "rationale": "Two live weekday jobs produce actionable options recommendation batches and one depends on IB Gateway."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:2082d00338232f3bed0a320b7fabdc8eda80e8bc26803adad173b90d1ba8a6a7",
+        "adapter_digest": "sha256:14f1cf3627fdd8734ed973f67ed0f562ab8126639d77d44c3468a90903a173c6",
+        "reason": "Exact current evidence is bound to portfolio-options-advice 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/options-advisor/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/portfolio-options-advice/capability-package.json",
+        "adapter_id": "portfolio-options-advice-codex",
+        "evidence_path": "capabilities/portfolio-options-advice/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -2333,22 +2373,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/thesis-observe/SKILL.md"
+        "path": "capabilities/thesis-observation/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/thesis-observe/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/thesis-observe/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/thesis-observe/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Sensing producer only."
       },
@@ -2366,9 +2406,8 @@
         "WebSearch/WebFetch, database credentials, and eligible scheduled environment."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
         "Live Claude-dependent scheduled consumer exists; web evidence is environment-sensitive.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "J2 migration candidate corresponding to a live Claude scheduled workflow; no live job currently consumes this Codex projection."
@@ -2379,16 +2418,27 @@
         "rationale": "Live daily evidence producer uses web and market data before the maintenance chain."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
+        "adapter_digest": "sha256:20e4586623451c88c16deee0bc6add22bcf7281a4a8e908972705a8ff5f2938a",
+        "reason": "Exact current evidence is bound to thesis-observation 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/thesis-observe/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/thesis-observation/capability-package.json",
+        "adapter_id": "thesis-observation-codex",
+        "evidence_path": "capabilities/thesis-observation/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -2403,22 +2453,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/thesis-review/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/thesis-review/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/thesis-review/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The legacy mirror remains a migration input; the exact governed adapter carries the bounded execution and result contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/thesis-review/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Surfaces weakening or ambiguity rather than deciding silently."
       },
@@ -2436,9 +2486,8 @@
         "Database helpers and bounded maintenance mode."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
         "Multiple modes have different judgment and write boundaries.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2449,16 +2498,27 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:1c3e9fb432cd494bf71bf691771ac9284dd1b8dc63b8ce0cfaaa22aeb8b0b22c",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/thesis-review/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-maintenance/capability-package.json",
+        "adapter_id": "belief-maintenance-codex",
+        "evidence_path": "capabilities/belief-maintenance/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -2801,7 +2861,7 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "The portfolio-snapshot Codex adapter has exact current evidence; the other 35 headless entries remain unavailable until their J2 slices bind source-owned packages and exact adapters."
+      "detail": "Seven Codex adapters now have exact current evidence across five governed Capabilities; the other 29 headless entries remain unavailable until their J2 dispositions are completed."
     },
     {
       "id": "generic-contract-readiness",

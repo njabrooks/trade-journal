@@ -285,12 +285,12 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/backfill-claims/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/backfill-claims",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "May auto-link only clear matches and must surface ambiguous judgment."
       },
@@ -309,22 +309,33 @@
       ],
       "limitations": [
         "Historical volume and ambiguity require bounded execution.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/backfill-claims/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-maintenance/capability-package.json",
+        "adapter_id": "belief-maintenance-claude",
+        "evidence_path": "capabilities/belief-maintenance/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -716,12 +727,12 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/maintenance/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/maintenance",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Producer only; never silently resolves genuine judgment."
       },
@@ -740,23 +751,34 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumer exists and is a high-risk J2 boundary.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
         "scripts/cron/maintenance.sh via launchd/com.trade-journal.maintenance.plist"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/maintenance/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-maintenance/capability-package.json",
+        "adapter_id": "belief-maintenance-claude",
+        "evidence_path": "capabilities/belief-maintenance/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -771,12 +793,12 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/morning-brief/SKILL.md"
+        "path": "capabilities/morning-attention-brief/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/morning-brief",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Ranks attention but cannot alter the belief layer or create decisions."
       },
@@ -795,23 +817,34 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumer exists.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
         "scripts/cron/morning-brief.sh via launchd/com.trade-journal.morning-brief.plist"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
+        "adapter_digest": "sha256:386b1b3673b3056cc0112bc880baa77ea2d39d6acc61b9ad1fa3461472cd694f",
+        "reason": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/morning-brief/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/morning-attention-brief/capability-package.json",
+        "adapter_id": "morning-attention-brief-claude",
+        "evidence_path": "capabilities/morning-attention-brief/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -826,12 +859,12 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/options-advisor/SKILL.md"
+        "path": "capabilities/portfolio-options-advice/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/options-advisor",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Exercises investment-structure judgment within standing constraints."
       },
@@ -850,7 +883,7 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumers exist; connector and host availability vary.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
@@ -858,16 +891,27 @@
         "scripts/cron/options-advisor-run.sh leap via launchd/com.trade-journal.options-advisor-leap.plist"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:2082d00338232f3bed0a320b7fabdc8eda80e8bc26803adad173b90d1ba8a6a7",
+        "adapter_digest": "sha256:4fe912e48492cf4fc3d65649a169cf380b831d4fb919039cd15a34351ab80e38",
+        "reason": "Exact current evidence is bound to portfolio-options-advice 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/options-advisor/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/portfolio-options-advice/capability-package.json",
+        "adapter_id": "portfolio-options-advice-claude",
+        "evidence_path": "capabilities/portfolio-options-advice/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -1811,12 +1855,12 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/thesis-observe/SKILL.md"
+        "path": "capabilities/thesis-observation/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/thesis-observe",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Sensing producer only."
       },
@@ -1835,23 +1879,34 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumer exists; web evidence is environment-sensitive.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
         "scripts/cron/thesis-observe.sh via launchd/com.trade-journal.thesis-observe.plist"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
+        "adapter_digest": "sha256:c6eb5237932881cd801aae3e55bd20fab541ff247e92e3b4a88c6faada2029ca",
+        "reason": "Exact current evidence is bound to thesis-observation 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis-observe/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/thesis-observation/capability-package.json",
+        "adapter_id": "thesis-observation-claude",
+        "evidence_path": "capabilities/thesis-observation/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -1866,12 +1921,12 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/thesis-review/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/thesis-review",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
         "rationale": "Surfaces weakening or ambiguity rather than deciding silently."
       },
@@ -1890,23 +1945,34 @@
       ],
       "limitations": [
         "Multiple modes have different judgment and write boundaries.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
         "/maintenance orchestrator, including scripts/cron/maintenance.sh"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/thesis-review/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-maintenance/capability-package.json",
+        "adapter_id": "belief-maintenance-claude",
+        "evidence_path": "capabilities/belief-maintenance/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -2239,7 +2305,7 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "The portfolio-snapshot Claude adapter has exact current evidence; the other 36 interactive entries remain unavailable until their J2 slices bind source-owned packages and exact adapters."
+      "detail": "Seven Claude adapters now have exact current evidence across five governed Capabilities; the other 30 interactive entries remain unavailable until their J2 dispositions are completed."
     },
     {
       "id": "curated-codex-routing-omissions",

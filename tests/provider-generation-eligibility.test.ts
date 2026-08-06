@@ -33,12 +33,12 @@ function readInventory(
 }
 
 describe("Provider Adapter generation eligibility", () => {
-  it("accepts the checked-in deterministic first governed slice", () => {
+  it("accepts the checked-in deterministic governed slices", () => {
     const artifact = readArtifact();
 
     expect(validateEligibility(artifact)).toEqual([]);
     expect(artifact.outcome).toBe("eligible-adapters-present");
-    expect(artifact.generation_eligible_count).toBe(2);
+    expect(artifact.generation_eligible_count).toBe(14);
     expect(artifact.governed_outputs).toEqual([
       "docs/agents/provider-entry-points/staging/claude.md",
       "docs/agents/provider-entry-points/staging/codex.md",
