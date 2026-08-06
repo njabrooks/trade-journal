@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "neutral_guidance": [
+    "CONTEXT.md",
+    "docs/agents/domain.md"
+  ],
+  "providers": [
+    {
+      "provider": "claude",
+      "output": "docs/agents/provider-entry-points/staging/claude.md"
+    },
+    {
+      "provider": "codex",
+      "output": "docs/agents/provider-entry-points/staging/codex.md"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "inventory_kind": "headless",
-  "as_of": "2026-08-04",
+  "as_of": "2026-08-06",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "authority": "Repository-owned supporting inventory under Workspace Initiative #12, Wayfinder #1, migration decision #9, and accepted W1 #13. W1 remains authoritative only for its defined manifest and exact evidence contracts.",
   "entries": [
@@ -1483,6 +1483,11 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
+        "path": "capabilities/portfolio-snapshot/adapters/codex.md"
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
         "path": ".agents/skills/pull-portfolio/SKILL.md"
       },
       "authored_source": {
@@ -1490,15 +1495,15 @@
         "location_class": "repository",
         "path": ".claude/skills/pull-portfolio/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/pull-portfolio/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The legacy mirror remains a generic migration input; the exact governed Codex adapter is current and staged for final discovery cutover."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/pull-portfolio/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "eligible",
         "rationale": "Read-only portfolio reporting."
       },
@@ -1516,9 +1521,8 @@
         "Database credentials and repository script runtime."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
         "Snapshot quality depends on upstream ingestion freshness.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the generic headless mirror remains a migration input until final discovery cutover."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1529,16 +1533,22 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155",
+        "adapter_digest": "sha256:a885a2fc94d9dea473d4df4e466caea7a8a0cdb18088b58d8c227d76a482c209",
+        "reason": "Exact current evidence is bound to portfolio-snapshot 1.0.0 and the governed Codex adapter."
+      },
+      "governed_binding": {
+        "package_path": "capabilities/portfolio-snapshot/capability-package.json",
+        "adapter_id": "portfolio-snapshot-codex",
+        "evidence_path": "capabilities/portfolio-snapshot/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the legacy headless mirror until the final provider-discovery cutover."
       }
     },
     {
@@ -2791,7 +2801,7 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "No projection is bound to an exact source Capability version, Capability Package digest, and adapter digest; every evidence state therefore remains unavailable."
+      "detail": "The portfolio-snapshot Codex adapter has exact current evidence; the other 35 headless entries remain unavailable until their J2 slices bind source-owned packages and exact adapters."
     },
     {
       "id": "generic-contract-readiness",

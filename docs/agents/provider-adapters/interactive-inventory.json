@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "inventory_kind": "interactive",
-  "as_of": "2026-08-04",
+  "as_of": "2026-08-06",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "authority": "repository:njabrooks/trade-journal",
   "entries": [
@@ -1150,12 +1150,17 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
+        "path": "capabilities/portfolio-snapshot/adapters/claude.md"
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
         "path": ".claude/skills/pull-portfolio/SKILL.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/pull-portfolio",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "eligible",
         "rationale": "Read-only portfolio reporting."
       },
@@ -1174,22 +1179,28 @@
       ],
       "limitations": [
         "Snapshot quality depends on upstream ingestion freshness.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; /pull-portfolio remains the active migration input until the final discovery cutover."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155",
+        "adapter_digest": "sha256:cd677a8d769e3eee5873d1f9db44cdc02dbc839a33e31392e4fb3fd5146b3db4",
+        "reason": "Exact current evidence is bound to portfolio-snapshot 1.0.0 and the governed Claude adapter."
+      },
+      "governed_binding": {
+        "package_path": "capabilities/portfolio-snapshot/capability-package.json",
+        "adapter_id": "portfolio-snapshot-claude",
+        "evidence_path": "capabilities/portfolio-snapshot/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the legacy discovery input until the final provider-discovery cutover."
       }
     },
     {
@@ -2228,7 +2239,7 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "All 37 interactive entries are unavailable for Adapter Conformance because no exact source-owned Capability Package and digest-bound evidence exists."
+      "detail": "The portfolio-snapshot Claude adapter has exact current evidence; the other 36 interactive entries remain unavailable until their J2 slices bind source-owned packages and exact adapters."
     },
     {
       "id": "curated-codex-routing-omissions",

@@ -83,13 +83,15 @@ Workspace CLI.
 ## Generation eligibility
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
-generation decision. It covers all 73 inventoried entry points and records zero generation-eligible adapters,
-no governed outputs, the current surfaces as non-governed migration inputs, and the required J2 sequence.
+generation decision and the incremental J2 migration state. It covers all 73 inventoried entry points. The
+portfolio-snapshot slice now records two generation-eligible adapters and two governed staging outputs; the
+other 71 entries remain non-governed migration inputs or non-candidates with explicit dispositions.
 
-Every adapter remains `unavailable` because none is bound to an accepted source-owned Capability version,
-package digest, adapter digest, and complete current evidence. This is an honest Adapter Conformance state,
-not a repository failure. It must not be upgraded from file presence, mirror parity, generic packaging, or a
-historical execution.
+The portfolio-snapshot Claude and Codex adapters are `current` because they bind to source-owned Capability
+version `1.0.0`, exact package and adapter digests, complete current evidence, and the immutable published
+Registry Lock. The governed outputs stay under the staging discovery surface until J2's final provider-
+discovery cutover. Every other adapter retains its honest J1 evidence state; file presence, mirror parity,
+generic packaging, or a historical execution cannot upgrade it.
 
 The accepted W1 no-write boundary is exercised separately against a clean checkout at the pinned revision:
 
@@ -105,3 +107,18 @@ resolves an immutable published Registry Lock, and invokes W1 generation twice. 
 `WS-ENTRY-005`, byte-identical refusal diagnostics, and an absent governed output after both attempts. The
 temporary fixture is removed afterward; no Capability Package, Registry, lock, or governed entry point is
 added to Trade Journal.
+
+## J2 portfolio-snapshot tracer
+
+The first J2 slice establishes the reusable governance spine without changing a live job:
+
+- Trade Journal is the source Capability Authority for `capability:scope:trade-journal/portfolio-snapshot`;
+- its exact Claude and Codex adapters are separately authored and digest-bound;
+- the published Registry release points to the preserved source-release commit;
+- the immutable lock and complete staging outputs reproduce through the accepted Workspace CLI; and
+- the original Claude skill and Codex mirror remain visible as migration inputs until final discovery cutover.
+
+CI validates the Capability, published lock, and clean regeneration in both human and JSON modes while
+retaining the J1 unavailable-input refusal proof. The repository inventory validator also checks that each
+`current` entry resolves to the exact package, adapter, evidence record, digest, staging output, and preserved
+migration input it declares.

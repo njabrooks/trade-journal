@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,6 +48,7 @@ const PACKAGING = new Set([
   'authored-provider-entry-point',
   'external-interactive-bridge',
   'generated-headless-projection',
+  'governed-provider-adapter',
 ]);
 const LOCATION_CLASSES = new Set(['repository', 'external-bridge']);
 const INVOCATION_MODES = new Set(['interactive', 'headless', 'scheduled']);
@@ -74,6 +76,10 @@ function safeRepositoryPath(value: string): boolean {
   if (isAbsolute(value)) return false;
   const target = resolve(REPO_ROOT, value);
   return target === REPO_ROOT || target.startsWith(`${REPO_ROOT}/`);
+}
+
+function fileDigest(path: string): string {
+  return `sha256:${createHash('sha256').update(readFileSync(path)).digest('hex')}`;
 }
 
 function exactFields(
@@ -171,6 +177,8 @@ function validateEntry(
     diagnostics.push(diagnostic('TJ-INV-003', path, 'Inventory entry must be an object.'));
     return;
   }
+  const hasMigrationInput = isObject(value.migration_input);
+  const hasGovernedBinding = isObject(value.governed_binding);
   exactFields(
     value,
     [
@@ -188,6 +196,8 @@ function validateEntry(
       'operational_consumers',
       'evidence',
       'j2_disposition',
+      ...(hasMigrationInput ? ['migration_input'] : []),
+      ...(hasGovernedBinding ? ['governed_binding'] : []),
       ...(inventoryKind === 'headless'
         ? ['authored_source', 'execution_contract', 'operational_risk']
         : []),
@@ -202,6 +212,14 @@ function validateEntry(
   }
   if (nonempty(value.packaging) && !PACKAGING.has(value.packaging)) {
     diagnostics.push(diagnostic('TJ-INV-003', `${path}/packaging`, 'Unknown packaging class.'));
+  }
+  if (hasMigrationInput) {
+    validateRepositorySource(
+      value.migration_input,
+      `${path}/migration_input`,
+      'TJ-INV-015',
+      diagnostics,
+    );
   }
   validateCandidate(value.candidate_capability, `${path}/candidate_capability`, diagnostics);
 
@@ -381,6 +399,129 @@ function validateEntry(
         diagnostic('TJ-INV-010', `${path}/evidence`, 'current evidence requires exact version and digests.'),
       );
     }
+    if (evidence.state === 'current' && value.packaging !== 'governed-provider-adapter') {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-010',
+          `${path}/packaging`,
+          'current evidence requires governed-provider-adapter packaging.',
+        ),
+      );
+    }
+    if (evidence.state === 'current' && !hasGovernedBinding) {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-016',
+          `${path}/governed_binding`,
+          'current evidence requires an exact governed binding.',
+        ),
+      );
+    }
+  }
+
+  if (hasGovernedBinding) {
+    const binding = value.governed_binding as JsonObject;
+    exactFields(
+      binding,
+      ['package_path', 'adapter_id', 'evidence_path', 'staged_entry_point'],
+      `${path}/governed_binding`,
+      'TJ-INV-016',
+      diagnostics,
+    );
+    requireStrings(
+      binding,
+      ['package_path', 'adapter_id', 'evidence_path', 'staged_entry_point'],
+      `${path}/governed_binding`,
+      'TJ-INV-016',
+      diagnostics,
+    );
+    for (const field of ['package_path', 'evidence_path', 'staged_entry_point']) {
+      const fieldValue = binding[field];
+      if (
+        nonempty(fieldValue) &&
+        (!safeRepositoryPath(fieldValue) || !existsSync(join(REPO_ROOT, fieldValue)))
+      ) {
+        diagnostics.push(
+          diagnostic(
+            'TJ-INV-016',
+            `${path}/governed_binding/${field}`,
+            `${field} must resolve in the repository.`,
+          ),
+        );
+      }
+    }
+
+    const sourcePath = isObject(value.source) ? value.source.path : null;
+    const packagePath = binding.package_path;
+    const evidencePath = binding.evidence_path;
+    if (
+      nonempty(sourcePath) &&
+      safeRepositoryPath(sourcePath) &&
+      existsSync(join(REPO_ROOT, sourcePath)) &&
+      nonempty(packagePath) &&
+      safeRepositoryPath(packagePath) &&
+      existsSync(join(REPO_ROOT, packagePath)) &&
+      nonempty(evidencePath) &&
+      safeRepositoryPath(evidencePath) &&
+      existsSync(join(REPO_ROOT, evidencePath))
+    ) {
+      try {
+        const capabilityPackage = JSON.parse(
+          readFileSync(join(REPO_ROOT, packagePath), 'utf8'),
+        ) as JsonObject;
+        const adapterEvidence = JSON.parse(
+          readFileSync(join(REPO_ROOT, evidencePath), 'utf8'),
+        ) as JsonObject;
+        const packageAdapters = Array.isArray(capabilityPackage.provider_adapters)
+          ? capabilityPackage.provider_adapters.filter(isObject)
+          : [];
+        const packageAdapter = packageAdapters.find(
+          (adapter) => adapter.id === binding.adapter_id,
+        );
+        const packageDirectory = dirname(join(REPO_ROOT, packagePath));
+        const expectedSource =
+          packageAdapter && nonempty(packageAdapter.source)
+            ? relative(REPO_ROOT, resolve(packageDirectory, packageAdapter.source))
+            : null;
+        const expectedEvidence =
+          packageAdapter && nonempty(packageAdapter.evidence)
+            ? relative(REPO_ROOT, resolve(packageDirectory, packageAdapter.evidence))
+            : null;
+        const inventoryEvidence = isObject(value.evidence) ? value.evidence : {};
+
+        if (
+          capabilityPackage.id !== (isObject(value.candidate_capability) ? value.candidate_capability.id : null) ||
+          capabilityPackage.version !== inventoryEvidence.capability_version ||
+          !packageAdapter ||
+          packageAdapter.provider !== value.provider ||
+          expectedSource !== sourcePath ||
+          expectedEvidence !== evidencePath ||
+          adapterEvidence.adapter_id !== binding.adapter_id ||
+          adapterEvidence.capability_id !== capabilityPackage.id ||
+          adapterEvidence.capability_version !== capabilityPackage.version ||
+          adapterEvidence.package_digest !== inventoryEvidence.package_digest ||
+          adapterEvidence.adapter_digest !== inventoryEvidence.adapter_digest ||
+          inventoryEvidence.package_digest !== fileDigest(join(REPO_ROOT, packagePath)) ||
+          inventoryEvidence.adapter_digest !== fileDigest(join(REPO_ROOT, sourcePath))
+        ) {
+          diagnostics.push(
+            diagnostic(
+              'TJ-INV-016',
+              `${path}/governed_binding`,
+              'Governed binding must match the exact Capability Package, Provider Adapter, evidence record, and digests.',
+            ),
+          );
+        }
+      } catch {
+        diagnostics.push(
+          diagnostic(
+            'TJ-INV-016',
+            `${path}/governed_binding`,
+            'Governed binding files must be readable JSON where required.',
+          ),
+        );
+      }
+    }
   }
 
   const disposition = value.j2_disposition;
@@ -445,7 +586,11 @@ function validateInteractiveCoverage(inventory: JsonObject, diagnostics: Diagnos
   const declared = entries
     .filter(isObject)
     .filter((entry) => entry.provider === 'claude' && isObject(entry.source))
-    .map((entry) => (entry.source as JsonObject).path)
+    .map((entry) =>
+      isObject(entry.migration_input)
+        ? entry.migration_input.path
+        : (entry.source as JsonObject).path,
+    )
     .filter(nonempty)
     .filter((path) => path.startsWith('.claude/skills/'))
     .sort();
@@ -647,7 +792,11 @@ function validateHeadlessCoverage(inventory: JsonObject, diagnostics: Diagnostic
   const declared = entries
     .filter(isObject)
     .filter((entry) => entry.provider === 'codex' && isObject(entry.source))
-    .map((entry) => (entry.source as JsonObject).path)
+    .map((entry) =>
+      isObject(entry.migration_input)
+        ? entry.migration_input.path
+        : (entry.source as JsonObject).path,
+    )
     .filter(nonempty)
     .sort();
   const missing = expected.filter((path) => !declared.includes(path));
@@ -659,7 +808,9 @@ function validateHeadlessCoverage(inventory: JsonObject, diagnostics: Diagnostic
 
   for (const [index, rawEntry] of entries.entries()) {
     if (!isObject(rawEntry) || !isObject(rawEntry.source) || !isObject(rawEntry.authored_source) || !isObject(rawEntry.execution_contract)) continue;
-    const sourcePath = rawEntry.source.path;
+    const sourcePath = isObject(rawEntry.migration_input)
+      ? rawEntry.migration_input.path
+      : rawEntry.source.path;
     const authoredPath = rawEntry.authored_source.path;
     if (!nonempty(sourcePath) || !nonempty(authoredPath)) continue;
     const match = sourcePath.match(/^\.agents\/skills\/([^/]+)\/SKILL\.md$/);
