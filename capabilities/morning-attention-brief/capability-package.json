@@ -1,0 +1,89 @@
+{
+  "id": "capability:scope:trade-journal/morning-attention-brief",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Synthesize fresh upstream Trade Journal state into one date-scoped attention brief without mutating the belief layer.",
+  "contract": "Given a brief date and a deterministic morning bundle with explicit upstream freshness, synthesize one headline, at most five ranked attention items, and a concise body; if required upstream state is stale or missing, identify that limitation in the result; persist at most one morning_briefs row for the date through an idempotent upsert; and never mutate belief entities, journal history, Decision Items, recommendations, positions, or statuses.",
+  "instructions": [
+    "Require a brief date and gather only the deterministic repository morning bundle.",
+    "Inspect and report freshness for thesis observation, maintenance, options advice, portfolio, decisions, and calendar inputs before synthesis.",
+    "Do not re-query, browse, or invent evidence beyond the supplied bundle.",
+    "Rank no more than five genuine attention items and preserve actionable deep links without resolving the underlying judgment.",
+    "Persist only through the date-keyed morning brief upsert and report whether the row was inserted or replaced.",
+    "On a same-date rerun, preserve idempotent exactly-one-row behavior.",
+    "Never write to belief-layer entities, journal_entries, Decision Items, advisor recommendations, positions, strategies, or status fields."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "The exact adapter exposes a date-scoped bundle input and one-brief result contract.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "freshness-and-synthesis",
+        "category": "behavioural",
+        "description": "The adapter checks required upstream freshness, uses only the deterministic bundle, and reports stale or missing inputs.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "exactly-one-upsert",
+        "category": "behavioural",
+        "description": "The adapter permits only one date-keyed morning_briefs upsert and same-date reruns remain idempotent.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "belief-write-refusal",
+        "category": "behavioural",
+        "description": "The adapter forbids belief-layer, journal, decision, recommendation, position, strategy, and status mutation.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "neutral-semantics",
+        "category": "semantic",
+        "description": "Provider instructions preserve synthesis-only judgment and the date-scoped attention contract.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The repository runtime and configured database environment can gather the deterministic morning bundle and expose its freshness metadata.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "morning-attention-brief-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "morning-attention-brief-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "capability:scope:trade-journal/belief-maintenance",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    },
+    {
+      "id": "capability:scope:trade-journal/portfolio-options-advice",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    },
+    {
+      "id": "capability:scope:trade-journal/portfolio-snapshot",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-observation",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    }
+  ]
+}

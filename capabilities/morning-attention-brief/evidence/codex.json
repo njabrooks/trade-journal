@@ -1,0 +1,17 @@
+{
+  "capability_id": "capability:scope:trade-journal/morning-attention-brief",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
+  "adapter_id": "morning-attention-brief-codex",
+  "adapter_digest": "sha256:015175518241ad95e8f1a19db750286fa0fabdfa3715b5a764aa0676f83567f1",
+  "support_state": "current",
+  "validated_at": "2026-08-06",
+  "results": {
+    "adapter-entry-point": { "status": "passed", "method": "Repository contract test verifies the date-scoped request, sole bundle input, result fields, and exact source through Workspace validation" },
+    "freshness-and-synthesis": { "status": "passed", "method": "Read-only deterministic morning bundle through Codex completed with dated NAV, non-stale regime feeds, overnight evidence, decisions, advisor, sizing, execution, and calendar sections" },
+    "exactly-one-upsert": { "status": "passed", "method": "Repository contract test and save-morning-brief implementation inspection bind persistence to the brief_date conflict target and one approved operation" },
+    "belief-write-refusal": { "status": "passed", "method": "Repository contract test requires synthesis-only behavior and refusal of every other write operation, journal entry, decision, recommendation, and entity mutation" },
+    "neutral-semantics": { "status": "passed", "reviewer": "J2 implementation review", "method": "Compared the Codex adapter with docs/v2/20 Lane A, the one-upsert contract, Codex availability semantics, and ticket #55", "evidence_link": "https://github.com/njabrooks/trade-journal/issues/55", "expires_at": "2026-09-05" },
+    "eligible-environment": { "status": "passed", "method": "Read-only deterministic morning bundle completed through Codex against the configured Home Hub database on 2026-08-06 without invoking the save operation" }
+  }
+}

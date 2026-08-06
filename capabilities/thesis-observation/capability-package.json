@@ -1,0 +1,65 @@
+{
+  "id": "capability:scope:trade-journal/thesis-observation",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Sense current evidence against high-materiality thesis signals without making or resolving investment decisions.",
+  "contract": "Given a governed observation time and a bounded set of due Tier-1 monitoring theses, gather current attributable sources and fresh price context, assess each active qualitative signal from the thesis's perspective, persist only observation artifacts, signal evidence snapshots, and their audit history, and return a directive per-signal result; never create or resolve Decision Items or mutate thesis, strategy, claim, or signal status.",
+  "instructions": [
+    "Select observations from the repository's deterministic due-observation bundle and preserve its Tier-1 bound.",
+    "Use current attributable sources and report source or price unavailability rather than filling gaps with assumptions.",
+    "Assess the signal statement in thesis-centric polarity and preserve neutral results when evidence is not discriminating.",
+    "Write only the approved observation report, signal_data_snapshots evidence, and corresponding journal history.",
+    "Do not raise or resolve Decision Items and do not change any entity status.",
+    "Return complete per-signal directives, source references, changed-from-prior state, write records, and failures."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "The exact adapter exposes a bounded observation request and directive result contract.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "current-source-contract",
+        "category": "behavioural",
+        "description": "The adapter uses the deterministic Tier-1 bundle, current attributable sources, and fresh price context and reports unavailable inputs honestly.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "sensing-only-write-set",
+        "category": "behavioural",
+        "description": "The adapter permits observation artifacts, signal evidence, and journal history while forbidding decisions and entity-status mutation.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "neutral-semantics",
+        "category": "semantic",
+        "description": "Provider instructions preserve thesis-centric signal polarity and the sensing-only boundary.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The repository runtime, database credentials, current-source access, and price context required for observation are explicitly checked.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "thesis-observation-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "thesis-observation-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": []
+}

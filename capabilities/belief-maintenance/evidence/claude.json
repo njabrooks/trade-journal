@@ -1,0 +1,17 @@
+{
+  "capability_id": "capability:scope:trade-journal/belief-maintenance",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+  "adapter_id": "belief-maintenance-claude",
+  "adapter_digest": "sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
+  "support_state": "current",
+  "validated_at": "2026-08-06",
+  "results": {
+    "adapter-entry-point": { "status": "passed", "method": "Repository contract test checks all three modes and the exact JSON result fields; accepted Workspace CLI validates the exact adapter source" },
+    "bounded-write-set": { "status": "passed", "method": "Repository contract test and adapter inspection bind writes to selected purpose-built workflow operations and require per-write reporting" },
+    "judgment-refusal": { "status": "passed", "method": "Repository contract test requires explicit refusal of resolve-decision, entity-status mutation, and silent re-underwriting" },
+    "cursor-and-failure-contract": { "status": "passed", "method": "Repository contract test requires cursor-before/cursor-after, bounds, skips, partial failures, and explicit errors" },
+    "neutral-semantics": { "status": "passed", "reviewer": "J2 implementation review", "method": "Compared the Claude adapter with the accepted loose-agent model, maintenance producer contract, and ticket #48 boundaries", "evidence_link": "https://github.com/njabrooks/trade-journal/issues/48", "expires_at": "2026-09-05" },
+    "eligible-environment": { "status": "passed", "method": "Read-only maintenance-status JSON probe completed against the configured Home Hub database on 2026-08-06 and reported cursor plus 60 bounded work items without mutation" }
+  }
+}

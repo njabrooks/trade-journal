@@ -1,0 +1,16 @@
+{
+  "capability_id": "capability:scope:trade-journal/portfolio-options-advice",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:2082d00338232f3bed0a320b7fabdc8eda80e8bc26803adad173b90d1ba8a6a7",
+  "adapter_id": "portfolio-options-advice-claude",
+  "adapter_digest": "sha256:4fe912e48492cf4fc3d65649a169cf380b831d4fb919039cd15a34351ab80e38",
+  "support_state": "current",
+  "validated_at": "2026-08-06",
+  "results": {
+    "adapter-entry-point": { "status": "passed", "method": "Repository contract test verifies both named modes, bounded outputs, and exact adapter source through the Workspace CLI" },
+    "mode-contracts": { "status": "passed", "method": "Read-only morning-path opportunistic probe returned portfolio/thesis candidates; an independently bounded one-ticker LEAP probe returned live Radon-backed chain data and explicit universe-cap skips" },
+    "recommendation-only-write-set": { "status": "passed", "method": "Repository contract test permits only save-advisor-recommendations and requires no-write outcomes for empty or unavailable verification while refusing every trade/order operation" },
+    "neutral-semantics": { "status": "passed", "reviewer": "J2 implementation review", "method": "Compared the Claude adapter with both options-advisor modes, dashboard payload doctrine, Radon authority, strict no-trade scope, and ticket #52", "evidence_link": "https://github.com/njabrooks/trade-journal/issues/52", "expires_at": "2026-09-05" },
+    "eligible-environment": { "status": "passed", "method": "Database-backed opportunistic probe, localhost:4001 gateway check, and one-ticker LEAP scan all succeeded without writes on 2026-08-06 during eligible US market hours" }
+  }
+}
