@@ -1,0 +1,42 @@
+{
+  "capabilities": [
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [],
+      "id": "capability:scope:trade-journal/portfolio-snapshot",
+      "package_digest": "sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "portfolio-snapshot-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "portfolio-snapshot-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/portfolio-snapshot",
+        "release_reference": "0aaf10db7eaf4315aadd440f09ab150b38192d5e",
+        "revision": "0aaf10db7eaf4315aadd440f09ab150b38192d5e"
+      }
+    }
+  ],
+  "evidence_time": "2026-08-06",
+  "kind": "CapabilityRegistryLock",
+  "mode": "published",
+  "publication_eligible": true,
+  "registry_digest": "sha256:5bf9e3faa88f5dec4884403c943795f0b39e4b415684d456bceeca377183a8eb",
+  "schema_version": "1.0.0"
+}

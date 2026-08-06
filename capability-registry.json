@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "capabilities": [
+    {
+      "id": "capability:scope:trade-journal/portfolio-snapshot",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/portfolio-snapshot",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "0aaf10db7eaf4315aadd440f09ab150b38192d5e"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    }
+  ]
+}

@@ -1,18 +1,28 @@
 {
   "kind": "ProviderAdapterGenerationEligibility",
   "schema_version": "1.0.0",
-  "as_of": "2026-08-04",
+  "as_of": "2026-08-06",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
-  "outcome": "no-eligible-adapters",
-  "generation_eligible_count": 0,
-  "governed_outputs": "none",
+  "outcome": "eligible-adapters-present",
+  "generation_eligible_count": 2,
+  "governed_outputs": [
+    "docs/agents/provider-entry-points/staging/claude.md",
+    "docs/agents/provider-entry-points/staging/codex.md"
+  ],
   "current_entry_points": {
-    "classification": "non-governed-migration-inputs",
+    "classification": "governed-staging-with-non-governed-migration-inputs",
     "shared_guidance": "CONTEXT.md",
-    "provider_specific_guidance": ["CLAUDE.md", "AGENTS.md"],
+    "provider_specific_guidance": [
+      "CLAUDE.md",
+      "AGENTS.md"
+    ],
     "authored_adapter_root": ".claude/skills",
     "generated_mirror_root": ".agents/skills",
-    "limitation": "Existing handwritten and mirrored surfaces are migration inputs, not W1-generated Provider Entry Points."
+    "governed_staging_outputs": [
+      "docs/agents/provider-entry-points/staging/claude.md",
+      "docs/agents/provider-entry-points/staging/codex.md"
+    ],
+    "limitation": "Governed outputs remain staged; existing handwritten and mirrored surfaces stay active migration inputs until the final J2 discovery cutover."
   },
   "entries": [
     {
@@ -40,7 +50,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -73,7 +83,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -107,6 +117,8 @@
       "generation_eligible": false,
       "ineligibility_reasons": [
         "This lifecycle projection is not a current Capability candidate.",
+        "Only active adapters are generation eligible.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -140,6 +152,8 @@
       "generation_eligible": false,
       "ineligibility_reasons": [
         "This lifecycle projection is not a current Capability candidate.",
+        "Only active adapters are generation eligible.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -172,7 +186,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -205,7 +219,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -238,7 +252,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -272,6 +286,8 @@
       "generation_eligible": false,
       "ineligibility_reasons": [
         "This lifecycle projection is not a current Capability candidate.",
+        "Only active adapters are generation eligible.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -304,7 +320,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -337,7 +353,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -370,7 +386,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -403,7 +419,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -436,7 +452,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -469,7 +485,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -502,7 +518,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -535,7 +551,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -569,6 +585,8 @@
       "generation_eligible": false,
       "ineligibility_reasons": [
         "This lifecycle projection is not a current Capability candidate.",
+        "Only active adapters are generation eligible.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -601,7 +619,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -634,7 +652,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -667,7 +685,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -700,7 +718,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -714,7 +732,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/pull-portfolio/SKILL.md"
+        "path": "capabilities/portfolio-snapshot/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -724,21 +742,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155",
+        "adapter_digest": "sha256:a885a2fc94d9dea473d4df4e466caea7a8a0cdb18088b58d8c227d76a482c209",
+        "reason": "Exact current evidence is bound to portfolio-snapshot 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the legacy headless mirror until the final provider-discovery cutover."
       }
     },
     {
@@ -766,7 +781,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -799,7 +814,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -832,7 +847,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -865,7 +880,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -898,7 +913,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -931,7 +946,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -964,7 +979,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -997,7 +1012,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1030,7 +1045,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1063,7 +1078,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1096,7 +1111,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1129,7 +1144,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1162,7 +1177,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1195,7 +1210,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1228,7 +1243,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1261,7 +1276,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1295,6 +1310,8 @@
       "generation_eligible": false,
       "ineligibility_reasons": [
         "This lifecycle projection is not a current Capability candidate.",
+        "Only active adapters are generation eligible.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1328,6 +1345,8 @@
       "generation_eligible": false,
       "ineligibility_reasons": [
         "This lifecycle projection is not a current Capability candidate.",
+        "Only active adapters are generation eligible.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1360,7 +1379,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1393,7 +1412,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1426,7 +1445,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1460,6 +1479,8 @@
       "generation_eligible": false,
       "ineligibility_reasons": [
         "This lifecycle projection is not a current Capability candidate.",
+        "Only active adapters are generation eligible.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1492,7 +1513,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1525,7 +1546,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1558,7 +1579,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1591,7 +1612,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1624,7 +1645,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1657,7 +1678,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1690,7 +1711,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1723,7 +1744,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1757,6 +1778,8 @@
       "generation_eligible": false,
       "ineligibility_reasons": [
         "This lifecycle projection is not a current Capability candidate.",
+        "Only active adapters are generation eligible.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1789,7 +1812,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1822,7 +1845,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1855,7 +1878,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1888,7 +1911,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1902,7 +1925,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/pull-portfolio/SKILL.md"
+        "path": "capabilities/portfolio-snapshot/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1912,21 +1935,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155",
+        "adapter_digest": "sha256:cd677a8d769e3eee5873d1f9db44cdc02dbc839a33e31392e4fb3fd5146b3db4",
+        "reason": "Exact current evidence is bound to portfolio-snapshot 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the legacy discovery input until the final provider-discovery cutover."
       }
     },
     {
@@ -1954,7 +1974,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -1987,7 +2007,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2020,7 +2040,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2053,7 +2073,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2086,7 +2106,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2119,7 +2139,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2152,7 +2172,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2185,7 +2205,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2218,7 +2238,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2251,7 +2271,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2284,7 +2304,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2317,7 +2337,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2350,7 +2370,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2383,7 +2403,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
       ],
       "j2_disposition": {
@@ -2416,7 +2436,7 @@
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
-        "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter.",
+        "No complete current evidence with exact Capability and adapter bindings is available.",
         "Machine-local bridge presence and parity do not constitute W1 Adapter Conformance evidence."
       ],
       "j2_disposition": {

@@ -6,6 +6,9 @@ on:
       - ".github/workflows/**"
       - ".agents/**"
       - ".claude/**"
+      - "capabilities/**"
+      - "capability-registry.json"
+      - "capability-registry-lock.json"
       - "docs/adr/**"
       - "docs/agents/**"
       - "evidence/**"
@@ -13,6 +16,7 @@ on:
       - "scripts/**"
       - "tests/provider-adapter-inventory.test.ts"
       - "tests/provider-generation-eligibility.test.ts"
+      - "tests/portfolio-snapshot-capability.test.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -20,6 +24,7 @@ on:
       - "package-lock.json"
       - "workspace"
       - "workspace-manifest.json"
+      - "provider-entry-points.json"
   push:
     branches:
       - main
@@ -27,6 +32,9 @@ on:
       - ".github/workflows/**"
       - ".agents/**"
       - ".claude/**"
+      - "capabilities/**"
+      - "capability-registry.json"
+      - "capability-registry-lock.json"
       - "docs/adr/**"
       - "docs/agents/**"
       - "evidence/**"
@@ -34,6 +42,7 @@ on:
       - "scripts/**"
       - "tests/provider-adapter-inventory.test.ts"
       - "tests/provider-generation-eligibility.test.ts"
+      - "tests/portfolio-snapshot-capability.test.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -41,6 +50,7 @@ on:
       - "package-lock.json"
       - "workspace"
       - "workspace-manifest.json"
+      - "provider-entry-points.json"
   workflow_dispatch:
 
 permissions:
@@ -49,11 +59,11 @@ permissions:
 
 jobs:
   validate:
-    name: J1 governance acceptance
+    name: Workspace governance
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      WORKSPACE_EVIDENCE_TIME: "2026-08-04"
+      WORKSPACE_EVIDENCE_TIME: "2026-08-06"
       WORKSPACE_REPOSITORY_ROOT: ${{ github.workspace }}/.workspace-standard
     steps:
       - name: Check out Trade Journal
@@ -111,10 +121,25 @@ jobs:
           npx tsx scripts/ops/validate-provider-adapter-inventory.ts docs/agents/provider-adapters/headless-inventory.json
           npx tsx scripts/ops/validate-provider-adapter-inventory.ts docs/agents/provider-adapters/headless-inventory.json --format json
 
-      - name: Require zero generation-eligible adapters
+      - name: Validate deterministic generation eligibility
         run: |
           npx tsx scripts/ops/validate-provider-generation-eligibility.ts
           npx tsx scripts/ops/validate-provider-generation-eligibility.ts --format json
+
+      - name: Validate the portfolio-snapshot Capability
+        run: |
+          ./workspace validate capability capabilities/portfolio-snapshot --evidence-time "$WORKSPACE_EVIDENCE_TIME"
+          ./workspace validate capability capabilities/portfolio-snapshot --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
+
+      - name: Validate the immutable published Registry Lock
+        run: |
+          ./workspace validate registry-lock capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME"
+          ./workspace validate registry-lock capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
+
+      - name: Validate clean staged Provider Entry Point regeneration
+        run: |
+          ./workspace validate provider-entry-points . --registry capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME"
+          ./workspace validate provider-entry-points . --registry capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
 
       - name: Prove unavailable support fails before writing
         run: |
@@ -122,4 +147,4 @@ jobs:
           npx tsx scripts/ops/prove-provider-entry-point-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT" --format json
 
       - name: Run focused governance regression tests
-        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts
+        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts

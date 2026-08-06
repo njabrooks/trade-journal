@@ -54,7 +54,12 @@
     "tracker_guidance": "docs/agents/issue-tracker.md",
     "triage_guidance": "docs/agents/triage-labels.md"
   },
-  "owned_capabilities": "none",
+  "owned_capabilities": [
+    {
+      "id": "capability:scope:trade-journal/portfolio-snapshot",
+      "path": "capabilities/portfolio-snapshot/capability-package.json"
+    }
+  ],
   "provider_adapters": [
     {
       "id": "headless-codex-advance-or-kill",
@@ -162,7 +167,7 @@
       "id": "headless-codex-pull-portfolio",
       "capability": "capability:scope:trade-journal/portfolio-snapshot",
       "provider": "codex",
-      "path": ".agents/skills/pull-portfolio/SKILL.md"
+      "path": "capabilities/portfolio-snapshot/adapters/codex.md"
     },
     {
       "id": "headless-codex-relate-bookmark",
@@ -354,7 +359,7 @@
       "id": "interactive-claude-pull-portfolio",
       "capability": "capability:scope:trade-journal/portfolio-snapshot",
       "provider": "claude",
-      "path": ".claude/skills/pull-portfolio/SKILL.md"
+      "path": "capabilities/portfolio-snapshot/adapters/claude.md"
     },
     {
       "id": "interactive-claude-relate-bookmark",
@@ -503,8 +508,11 @@
       },
       "generation_eligibility": {
         "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
-        "eligible_adapters": 0,
-        "governed_outputs": "none",
+        "eligible_adapters": 2,
+        "governed_outputs": [
+          "docs/agents/provider-entry-points/staging/claude.md",
+          "docs/agents/provider-entry-points/staging/codex.md"
+        ],
         "refusal_proof": "scripts/ops/prove-provider-entry-point-refusal.ts"
       },
       "manifest_adapter_declarations": 64,
@@ -592,7 +600,7 @@
   },
   "deviations": "none",
   "validation_evidence": {
-    "as_of": "2026-08-05",
+    "as_of": "2026-08-06",
     "records": [
       {
         "id": "j1-execution-gate",
@@ -616,8 +624,18 @@
       },
       {
         "id": "provider-generation-eligibility",
-        "method": "deterministic-zero-eligibility-and-w1-refusal",
+        "method": "deterministic-mixed-eligibility-and-w1-refusal",
         "path": "docs/agents/provider-adapters/generation-eligibility.json"
+      },
+      {
+        "id": "portfolio-snapshot-capability",
+        "method": "accepted-workspace-cli-capability-conformance",
+        "path": "capabilities/portfolio-snapshot/capability-package.json"
+      },
+      {
+        "id": "published-capability-registry-lock",
+        "method": "accepted-workspace-cli-published-lock-validation",
+        "path": "capability-registry-lock.json"
       },
       {
         "id": "j1-acceptance",

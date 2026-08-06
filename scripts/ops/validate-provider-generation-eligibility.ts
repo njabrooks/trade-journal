@@ -29,7 +29,11 @@ const DEFAULT_ELIGIBILITY = resolve(
 
 export const ACCEPTED_WORKSPACE_REVISION =
   "2b6ea3e02ff5ba114b0f91dd779c4afb26181358";
-export const GOVERNED_EVIDENCE_DATE = "2026-08-04";
+export const GOVERNED_EVIDENCE_DATE = "2026-08-06";
+export const GOVERNED_OUTPUTS = [
+  "docs/agents/provider-entry-points/staging/claude.md",
+  "docs/agents/provider-entry-points/staging/codex.md",
+];
 
 function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -70,10 +74,33 @@ function projectEntry(entry: JsonObject): JsonObject {
     ? entry.j2_disposition
     : {};
   const candidateStatus = candidate.status;
-  const candidateReason =
-    candidateStatus === "candidate"
-      ? "No accepted source-owned Capability version, package digest, adapter digest, and complete current evidence bind this adapter."
-      : "This lifecycle projection is not a current Capability candidate.";
+  const exactBindings = [
+    evidence.capability_version,
+    evidence.package_digest,
+    evidence.adapter_digest,
+  ].every(nonempty);
+  const generationEligible =
+    candidateStatus === "candidate" &&
+    lifecycle.status === "active" &&
+    evidence.state === "current" &&
+    exactBindings;
+  const ineligibilityReasons: string[] = [];
+  if (candidateStatus !== "candidate") {
+    ineligibilityReasons.push(
+      "This lifecycle projection is not a current Capability candidate.",
+    );
+  }
+  if (lifecycle.status !== "active") {
+    ineligibilityReasons.push("Only active adapters are generation eligible.");
+  }
+  if (evidence.state !== "current" || !exactBindings) {
+    ineligibilityReasons.push(
+      "No complete current evidence with exact Capability and adapter bindings is available.",
+    );
+  }
+  if (nonempty(evidence.reason) && !generationEligible) {
+    ineligibilityReasons.push(evidence.reason);
+  }
 
   return {
     inventory_entry: entry.id,
@@ -98,8 +125,8 @@ function projectEntry(entry: JsonObject): JsonObject {
       adapter_digest: evidence.adapter_digest,
       reason: evidence.reason,
     },
-    generation_eligible: false,
-    ineligibility_reasons: [candidateReason, String(evidence.reason ?? "")],
+    generation_eligible: generationEligible,
+    ineligibility_reasons: ineligibilityReasons,
     j2_disposition: {
       action: disposition.action,
       rationale: disposition.rationale,
@@ -119,23 +146,37 @@ export function buildExpectedEligibility(
     .sort((left, right) =>
       String(left.inventory_entry).localeCompare(String(right.inventory_entry)),
     );
+  const generationEligibleCount = entries.filter(
+    (entry) => entry.generation_eligible === true,
+  ).length;
 
   return {
     kind: "ProviderAdapterGenerationEligibility",
     schema_version: "1.0.0",
     as_of: GOVERNED_EVIDENCE_DATE,
     accepted_workspace_revision: ACCEPTED_WORKSPACE_REVISION,
-    outcome: "no-eligible-adapters",
-    generation_eligible_count: 0,
-    governed_outputs: "none",
+    outcome:
+      generationEligibleCount > 0
+        ? "eligible-adapters-present"
+        : "no-eligible-adapters",
+    generation_eligible_count: generationEligibleCount,
+    governed_outputs:
+      generationEligibleCount > 0 ? GOVERNED_OUTPUTS : "none",
     current_entry_points: {
-      classification: "non-governed-migration-inputs",
+      classification:
+        generationEligibleCount > 0
+          ? "governed-staging-with-non-governed-migration-inputs"
+          : "non-governed-migration-inputs",
       shared_guidance: "CONTEXT.md",
       provider_specific_guidance: ["CLAUDE.md", "AGENTS.md"],
       authored_adapter_root: ".claude/skills",
       generated_mirror_root: ".agents/skills",
+      governed_staging_outputs:
+        generationEligibleCount > 0 ? GOVERNED_OUTPUTS : "none",
       limitation:
-        "Existing handwritten and mirrored surfaces are migration inputs, not W1-generated Provider Entry Points.",
+        generationEligibleCount > 0
+          ? "Governed outputs remain staged; existing handwritten and mirrored surfaces stay active migration inputs until the final J2 discovery cutover."
+          : "Existing handwritten and mirrored surfaces are migration inputs, not W1-generated Provider Entry Points.",
     },
     entries,
     w1_refusal_contract: {
@@ -193,22 +234,22 @@ export function validateEligibility(
     for (const entry of inventoryEntries(inventory)) {
       const id = nonempty(entry.id) ? entry.id : "unknown";
       const evidence = isObject(entry.evidence) ? entry.evidence : {};
-      const bindingFieldsAreNull = [
+      const bindingFields = [
         evidence.capability_version,
         evidence.package_digest,
         evidence.adapter_digest,
-      ].every((value) => value === null);
-      if (
-        evidence.state !== "unavailable" ||
-        evidence.as_of !== GOVERNED_EVIDENCE_DATE ||
-        !bindingFieldsAreNull ||
-        !nonempty(evidence.reason)
-      ) {
+      ];
+      const unavailableBinding =
+        evidence.state === "unavailable" &&
+        bindingFields.every((value) => value === null);
+      const currentBinding =
+        evidence.state === "current" && bindingFields.every(nonempty);
+      if (!unavailableBinding && !currentBinding) {
         diagnostics.push(
           diagnostic(
             "TJ-GEN-006",
             `/source-inventories/${inventoryKind}/entries/${id}/evidence`,
-            `J1 requires state unavailable, as_of ${GOVERNED_EVIDENCE_DATE}, null Capability/adapter bindings, and a non-empty reason.`,
+            "Evidence must be either unavailable with null bindings or current with an exact Capability version, package digest, and adapter digest.",
           ),
         );
       }
@@ -303,7 +344,7 @@ export function validateEligibility(
         diagnostic(
           "TJ-GEN-005",
           `/${field}`,
-          `${field} must match the deterministic zero-eligibility contract.`,
+          `${field} must match the deterministic generation-eligibility projection.`,
         ),
       );
     }

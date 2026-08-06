@@ -50,6 +50,23 @@ describe('Provider Adapter inventory validation', () => {
     });
   });
 
+  it('rejects a current adapter digest that drifts from its governed source', () => {
+    const inventory = readInventory();
+    const entries = inventory.entries as Array<Record<string, unknown>>;
+    const portfolio = entries.find(
+      (entry) => entry.id === 'interactive-claude-pull-portfolio',
+    );
+    const evidence = portfolio?.evidence as Record<string, unknown>;
+    evidence.adapter_digest = 'sha256:drifted';
+
+    expect(validateInventory(inventory)).toContainEqual({
+      requirement: 'TJ-INV-016',
+      path: `/entries/${entries.indexOf(portfolio!)}/governed_binding`,
+      message:
+        'Governed binding must match the exact Capability Package, Provider Adapter, evidence record, and digests.',
+    });
+  });
+
   it('rejects unknown categorical values that could bypass source validation', () => {
     const inventory = readInventory();
     const entries = inventory.entries as Array<Record<string, unknown>>;

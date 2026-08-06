@@ -1,0 +1,34 @@
+{
+  "capability_id": "capability:scope:trade-journal/portfolio-snapshot",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155",
+  "adapter_id": "portfolio-snapshot-codex",
+  "adapter_digest": "sha256:a885a2fc94d9dea473d4df4e466caea7a8a0cdb18088b58d8c227d76a482c209",
+  "support_state": "current",
+  "validated_at": "2026-08-06",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+    },
+    "snapshot-contract": {
+      "status": "passed",
+      "method": "Read-only JSON portfolio snapshot command completed successfully in the eligible Home Hub environment with output suppressed"
+    },
+    "read-only-boundary": {
+      "status": "passed",
+      "method": "Repository contract test verifies the adapter invokes only the portfolio snapshot command and declares no mutation authority"
+    },
+    "neutral-semantics": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the Codex adapter with the provider-neutral contract, accepted J1 safeguards, and existing portfolio snapshot workflow",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/47",
+      "expires_at": "2026-09-05"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "Read-only portfolio snapshot command completed successfully against the configured remote database on 2026-08-06"
+    }
+  }
+}

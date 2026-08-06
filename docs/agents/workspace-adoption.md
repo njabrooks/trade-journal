@@ -82,3 +82,14 @@ It did not add a Capability Package, evidence record, Registry, lock, or Provide
 
 No product code, Provider Adapter implementation, scheduled job, model, prompt, permission, or runtime
 behaviour changes in this adoption slice.
+
+## J2 incremental migration
+
+Issue #47 adds the first source-owned Capability without changing J1's historical acceptance claim. The
+portfolio-snapshot Capability is released from an immutable Trade Journal commit, resolved through a
+published Registry Lock, and projected to governed Claude and Codex staging outputs. Both exact adapters have
+current digest-bound evidence dated 2026-08-06. Existing provider discovery remains active until J2's final
+cutover, and no scheduled job or database write path changes in this tracer slice.
+
+The accepted W1 CLI remains pinned through the existing exact-revision acquisition mechanism. Workspace
+issue `njabrooks/projects#31` continues to own any future replacement for that interim acquisition design.
