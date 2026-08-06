@@ -1,0 +1,65 @@
+{
+  "id": "capability:scope:trade-journal/portfolio-snapshot",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Read and present the current Trade Journal portfolio state without mutation.",
+  "contract": "Given an optional list of account UUIDs and a human or JSON output choice, return the latest available portfolio snapshot from Trade Journal's remote source of truth, including snapshot date, NAV, cash, leverage, owner and underlying breakdowns, strategies, unlinked positions, and cash balances; report unavailable data or execution failures honestly and perform no writes.",
+  "instructions": [
+    "Use the repository's portfolio snapshot command as the sole data-access boundary.",
+    "Use the latest available per-account snapshots and preserve their reported snapshot date rather than implying wall-clock freshness.",
+    "Pass optional account filtering only as explicit account UUIDs.",
+    "Return the command's human-readable result when a human summary is requested and its JSON result for programmatic consumption.",
+    "Treat portfolio state as read-only and perform no database, journal, order, strategy, thesis, or position mutation.",
+    "Report missing credentials, database unavailability, malformed filters, and command failures explicitly rather than substituting cached or invented portfolio state."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "The exact adapter exposes an executable portfolio-snapshot entry point through the governed provider projection.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "snapshot-contract",
+        "category": "behavioural",
+        "description": "An eligible invocation returns the contracted portfolio snapshot fields in JSON mode and supports the human-readable mode.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "read-only-boundary",
+        "category": "behavioural",
+        "description": "The adapter invokes only the read-only portfolio snapshot boundary and claims no mutation or trade authority.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "neutral-semantics",
+        "category": "semantic",
+        "description": "Provider-specific instructions preserve the provider-neutral portfolio snapshot contract and Trade Journal authority boundaries.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The repository runtime and database credentials can execute the read-only portfolio snapshot command successfully.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "portfolio-snapshot-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "portfolio-snapshot-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": []
+}
