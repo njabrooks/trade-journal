@@ -102,3 +102,49 @@ A Next production build is not proportionate for shell, launchd metadata,
 inventory, tests, and evidence-only changes. No package, application route, or
 runtime bundle changed, so the managed Trade Journal service does not require
 a post-build restart.
+
+## Fixed-point review repair
+
+The reopened #56 repair starts from fixed point
+`e67fd994d331c9d9041fffb50b8cb057860f04e7`, after the repaired
+morning-attention-brief Capability in #55 was merged and closed. It adds
+process-boundary fixture coverage for both stale and missing required upstream
+state. In each case the real governed selector launches an isolated adapter
+fixture mode, returns the Capability evaluator's complete freshness,
+unavailability, and error result unchanged, reports `persisted:false` and
+`write:null`, and performs no write. The fixture mode is restricted to the two
+checked-in evidence scenarios and runs before environment or credential loading.
+
+The sole persistence operation is now exposed behind a narrow injected store
+without changing its production CLI or Drizzle adapter. A behavioural
+read-after-write fixture invokes that operation twice for the same date, observes
+the same row id with the second result marked superseded, and finds exactly one
+row. The real dashboard API then reads that row and the dashboard consumer's
+strict response parser accepts the persisted headline, attention list, body,
+date, id, and update timestamp without shape drift.
+
+The read-after-write proof drives the production Drizzle store adapter and
+records `morning_briefs` as its only mutation target plus `brief_date` as both
+conflict targets. Macro theses, asset theses, claims, signals, journal history,
+Decision Items, recommendations, positions, strategies, and their statuses
+remain outside the adapter's available write surface. Focused wrapper,
+persistence, dashboard, Capability, inventory,
+generation, and evidence-freshness tests pass (37 passed, one environmental
+test skipped), together with TypeScript, scoped ESLint, shell syntax, plist
+lint, 37/36 inventory validation, 14/73 eligibility validation, repository and
+all five Capability checks, Registry Lock reproduction, both staged Provider
+Entry Points, `WS-ENTRY-005` refusal, and expired-evidence refusal.
+
+The final production build passed, followed by the complete suite (427 passed,
+one environmental test skipped). The managed `com.tradej` service was restarted
+as required after the build, and its morning-brief dashboard endpoint returned
+HTTP 200. Repository-wide ESLint again traversed unrelated generated `.next`
+artifacts under `.claude/worktrees` and was interrupted after the same bounded
+attempt recorded above; scoped ESLint for every changed TypeScript file passes
+with no warnings.
+
+No provider credential, live database canary, scheduler copy, or launchd reload
+was used for this repair. The reopening comment requires new explicit
+issue-scoped approval before another live canary or reload, and no newer approval
+is recorded. The accepted live cutover, off-switch, rollback marker, and retained
+pre-cutover plist described above therefore remain unchanged.

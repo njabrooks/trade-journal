@@ -5,6 +5,38 @@ import Link from "next/link";
 import { ChevronDown, ChevronRight, Sunrise } from "lucide-react";
 import { BriefView, type Brief } from "@/components/brief/BriefView";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function parseMorningBriefResponse(data: unknown): Brief | null {
+  if (!isRecord(data) || !isRecord(data.brief)) return null;
+  const brief = data.brief;
+  if (
+    typeof brief.id !== "string" ||
+    typeof brief.briefDate !== "string" ||
+    typeof brief.headline !== "string" ||
+    !Array.isArray(brief.attention) ||
+    (brief.bodyMd !== null && typeof brief.bodyMd !== "string") ||
+    typeof brief.updatedAt !== "string"
+  ) return null;
+  const attention = brief.attention.filter((item): item is Brief["attention"][number] =>
+    isRecord(item) &&
+    typeof item.title === "string" &&
+    typeof item.why === "string" &&
+    typeof item.deepLink === "string"
+  );
+  if (attention.length !== brief.attention.length) return null;
+  return {
+    id: brief.id,
+    briefDate: brief.briefDate,
+    headline: brief.headline,
+    attention,
+    bodyMd: brief.bodyMd,
+    updatedAt: brief.updatedAt,
+  };
+}
+
 /**
  * Morning brief module (docs/v2/20 Lane A) — the daily synthesis surface at the top
  * of the morning screen. Renders the latest morning_briefs row via the shared
@@ -21,7 +53,7 @@ export function MorningBrief() {
     fetch("/api/dashboard/morning-brief")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        const b: Brief | null = data?.brief ?? null;
+        const b = parseMorningBriefResponse(data);
         setBrief(b);
         if (b) {
           setIsStale(Date.now() - new Date(`${b.briefDate}T00:00:00Z`).getTime() > 2 * 86_400_000);
