@@ -1,0 +1,72 @@
+{
+  "id": "capability:scope:trade-journal/belief-maintenance",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Maintain Trade Journal belief records in bounded passes while reserving genuine investment judgment for explicit Decision Items.",
+  "contract": "Given a declared maintenance mode, bounded target set, and optional dry-run choice, inspect current Trade Journal claims, theses, signals, evidence, cursors, and maintenance worklists; perform only the mode's approved mechanical writes; record auditable changes; surface ambiguous or judgment-bearing outcomes as Decision Items; return a machine-readable summary of reads, writes, cursor movement, decisions surfaced, skips, and failures; never silently resolve a genuine decision or change an entity status.",
+  "instructions": [
+    "Accept only maintenance, thesis-review, or claim-backfill modes and require every run to declare its bound before execution.",
+    "Use repository read helpers for database reads and purpose-built operations scripts for writes; never use ad hoc SQL mutation.",
+    "Auto-link or update only deterministic, policy-authorized cases and send ambiguity, contradiction, or weakening to the Decision Item path.",
+    "Preserve producer/resolver separation: surfacing a Decision Item is permitted, resolving one is forbidden.",
+    "Preserve cursor monotonicity and record the before and after cursor whenever a cursor is advanced.",
+    "Write auditable investment changes to journal_entries through the approved repository boundary.",
+    "Return an explicit empty result when no work is due and an explicit failure result when prerequisites or bounded execution fail."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "The exact adapter exposes bounded maintenance, thesis-review, and claim-backfill modes with a machine-readable result contract.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "bounded-write-set",
+        "category": "behavioural",
+        "description": "The adapter limits writes to approved links, maintained artifacts, evidence, cursor progress, audit rows, and Decision Items and reports every write.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "judgment-refusal",
+        "category": "behavioural",
+        "description": "The adapter cannot resolve Decision Items, re-underwrite a thesis, or change entity status and surfaces genuine judgment instead.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "cursor-and-failure-contract",
+        "category": "behavioural",
+        "description": "Bounded runs report cursor movement, partial progress, skipped work, and non-success without fabricating completion.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "neutral-semantics",
+        "category": "semantic",
+        "description": "Provider instructions preserve the loose-agent producer/resolver boundary and Trade Journal authority model.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The repository runtime and configured read-only database environment can gather the maintenance worklists used by the adapter.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "belief-maintenance-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "belief-maintenance-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": []
+}

@@ -1,0 +1,71 @@
+{
+  "id": "capability:scope:trade-journal/portfolio-options-advice",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Produce bounded, portfolio-aware options recommendations without acquiring trade-execution authority.",
+  "contract": "Given either morning-batch or LEAP mode, current portfolio and regime context, standing constraints, and eligible market-data access, generate and judge bounded option candidates, live-verify every selected structure where required, persist only genuine recommendation batches with the established dashboard result shape, return explicit empty or unavailable outcomes, and never place, route, stage, or modify an order.",
+  "instructions": [
+    "Require an explicit mode: morning-batch for the six non-LEAP scenarios or LEAP for long-dated call candidates.",
+    "Read current portfolio, regime, thesis, volatility, chain, and constraint context through repository-owned read boundaries.",
+    "Treat the Radon-managed IBKR gateway and quote path as an environmental prerequisite; do not copy or redefine Radon infrastructure.",
+    "Live-verify selected structures and reject stale, unavailable, or materially changed quotes rather than fabricating a recommendation.",
+    "Persist only genuine, bounded recommendations using the approved recommendation-batch operation; an empty candidate set or unavailable verification writes nothing.",
+    "Preserve the existing recommendation payload used by dashboard consumers and report mode, candidates, verification, persistence, skips, and failures.",
+    "Never place, route, stage, preview, or modify a trade or order."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "The exact adapter exposes independent morning-batch and LEAP requests and machine-readable outcomes.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "mode-contracts",
+        "category": "behavioural",
+        "description": "The adapter preserves mode-specific inputs, candidate filtering, live verification, empty results, unavailable quotes, and recommendation payloads.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "recommendation-only-write-set",
+        "category": "behavioural",
+        "description": "Only genuine recommendation batches may be persisted and no order or trade operation is permitted.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "neutral-semantics",
+        "category": "semantic",
+        "description": "Provider instructions preserve portfolio-aware recommendation semantics without redefining Radon-owned access or implying execution authority.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "Database, market-data, market-hours, and Radon gateway requirements are checked per mode and unavailable prerequisites produce no recommendation write.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "portfolio-options-advice-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "portfolio-options-advice-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "capability:scope:trade-journal/portfolio-snapshot",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    }
+  ]
+}

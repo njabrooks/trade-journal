@@ -4,7 +4,7 @@
   "as_of": "2026-08-06",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
-  "generation_eligible_count": 2,
+  "generation_eligible_count": 14,
   "governed_outputs": [
     "docs/agents/provider-entry-points/staging/claude.md",
     "docs/agents/provider-entry-points/staging/codex.md"
@@ -200,7 +200,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/backfill-claims/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -210,21 +210,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:1c3e9fb432cd494bf71bf691771ac9284dd1b8dc63b8ce0cfaaa22aeb8b0b22c",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
       }
     },
     {
@@ -466,7 +463,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/maintenance/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -476,21 +473,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:1c3e9fb432cd494bf71bf691771ac9284dd1b8dc63b8ce0cfaaa22aeb8b0b22c",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
       }
     },
     {
@@ -499,7 +493,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/morning-brief/SKILL.md"
+        "path": "capabilities/morning-attention-brief/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -509,21 +503,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
+        "adapter_digest": "sha256:015175518241ad95e8f1a19db750286fa0fabdfa3715b5a764aa0676f83567f1",
+        "reason": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
       }
     },
     {
@@ -532,7 +523,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/options-advisor/SKILL.md"
+        "path": "capabilities/portfolio-options-advice/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -542,21 +533,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:2082d00338232f3bed0a320b7fabdc8eda80e8bc26803adad173b90d1ba8a6a7",
+        "adapter_digest": "sha256:14f1cf3627fdd8734ed973f67ed0f562ab8126639d77d44c3468a90903a173c6",
+        "reason": "Exact current evidence is bound to portfolio-options-advice 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
       }
     },
     {
@@ -1125,7 +1113,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/thesis-observe/SKILL.md"
+        "path": "capabilities/thesis-observation/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1135,21 +1123,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
+        "adapter_digest": "sha256:20e4586623451c88c16deee0bc6add22bcf7281a4a8e908972705a8ff5f2938a",
+        "reason": "Exact current evidence is bound to thesis-observation 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Evaluate early in J2 because a live provider-dependent scheduled workflow currently invokes the authored Claude adapter."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
       }
     },
     {
@@ -1158,7 +1143,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/thesis-review/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1168,21 +1153,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:1c3e9fb432cd494bf71bf691771ac9284dd1b8dc63b8ce0cfaaa22aeb8b0b22c",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing headless mirror and live invocation until its separately approved cutover."
       }
     },
     {
@@ -1393,7 +1375,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/backfill-claims/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1403,21 +1385,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
       }
     },
     {
@@ -1659,7 +1638,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/maintenance/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1669,21 +1648,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
       }
     },
     {
@@ -1692,7 +1668,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/morning-brief/SKILL.md"
+        "path": "capabilities/morning-attention-brief/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1702,21 +1678,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
+        "adapter_digest": "sha256:386b1b3673b3056cc0112bc880baa77ea2d39d6acc61b9ad1fa3461472cd694f",
+        "reason": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
       }
     },
     {
@@ -1725,7 +1698,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/options-advisor/SKILL.md"
+        "path": "capabilities/portfolio-options-advice/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1735,21 +1708,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:2082d00338232f3bed0a320b7fabdc8eda80e8bc26803adad173b90d1ba8a6a7",
+        "adapter_digest": "sha256:4fe912e48492cf4fc3d65649a169cf380b831d4fb919039cd15a34351ab80e38",
+        "reason": "Exact current evidence is bound to portfolio-options-advice 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
       }
     },
     {
@@ -2318,7 +2288,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/thesis-observe/SKILL.md"
+        "path": "capabilities/thesis-observation/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -2328,21 +2298,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
+        "adapter_digest": "sha256:c6eb5237932881cd801aae3e55bd20fab541ff247e92e3b4a88c6faada2029ca",
+        "reason": "Exact current evidence is bound to thesis-observation 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
       }
     },
     {
@@ -2351,7 +2318,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/thesis-review/SKILL.md"
+        "path": "capabilities/belief-maintenance/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -2361,21 +2328,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-06",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+        "adapter_digest": "sha256:994acd5860b1e78d952d26c1e69dc46f05a9bb9b2cbce013ca8b073599fc2641",
+        "reason": "Exact current evidence is bound to belief-maintenance 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
       }
     },
     {

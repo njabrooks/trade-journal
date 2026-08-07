@@ -75,23 +75,25 @@ access, credentials, login state, and macOS notifications remain visible on the 
 affect execution.
 
 The parity script is supporting diagnostic tooling, not Adapter Conformance evidence. Likewise, a current
-mirror and a valid rich inventory do not upgrade any W1 evidence state. All projections remain `unavailable`
-until an exact source Capability version, package digest, and adapter digest can be bound by the W1 evidence
-contract. J1 #35 will validate only the smaller Repository Manifest adapter declarations using the accepted
-Workspace CLI.
+mirror and a valid rich inventory do not upgrade any W1 evidence state. J2 upgrades an inventory entry only
+when an exact source Capability version, package digest, adapter digest, complete evidence, immutable lock,
+and staged generated output bind it through W1. The remaining generic projections stay `unavailable`.
 
 ## Generation eligibility
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
 generation decision and the incremental J2 migration state. It covers all 73 inventoried entry points. The
-portfolio-snapshot slice now records two generation-eligible adapters and two governed staging outputs; the
-other 71 entries remain non-governed migration inputs or non-candidates with explicit dispositions.
+five governed Capabilities now record 14 generation-eligible inventory entries and two whole-file governed
+staging outputs. The other 59 entries remain non-governed migration inputs or non-candidates with explicit
+dispositions.
 
-The portfolio-snapshot Claude and Codex adapters are `current` because they bind to source-owned Capability
-version `1.0.0`, exact package and adapter digests, complete current evidence, and the immutable published
-Registry Lock. The governed outputs stay under the staging discovery surface until J2's final provider-
-discovery cutover. Every other adapter retains its honest J1 evidence state; file presence, mirror parity,
-generic packaging, or a historical execution cannot upgrade it.
+The portfolio-snapshot, belief-maintenance, thesis-observation, portfolio-options-advice, and morning-attention-
+brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
+adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
+package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
+neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live
+or final discovery cutover. File presence, mirror parity, generic packaging, or historical execution cannot
+upgrade any remaining adapter.
 
 The accepted W1 no-write boundary is exercised separately against a clean checkout at the pinned revision:
 
@@ -122,3 +124,12 @@ CI validates the Capability, published lock, and clean regeneration in both huma
 retaining the J1 unavailable-input refusal proof. The repository inventory validator also checks that each
 `current` entry resolves to the exact package, adapter, evidence record, digest, staging output, and preserved
 migration input it declares.
+
+## J2 governed operational packages
+
+Tickets #48, #50, #52, and #55 extend the same immutable spine to four operational Capability families. Their
+exact adapters declare bounded inputs and machine-readable results and preserve the producer/resolver,
+sensing-only, recommendation-only/no-trade, and synthesis-only write boundaries. Read-only environment probes
+cover the maintenance worklist, Tier-1 observation bundle, both options modes, and deterministic morning
+bundle. No scheduler, launchd definition, active root/provider discovery file, database state, or live provider
+invocation changes in these governance slices.

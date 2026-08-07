@@ -4,6 +4,124 @@
       "approved_version": "1.0.0",
       "authority": "scope:trade-journal",
       "dependencies": [],
+      "id": "capability:scope:trade-journal/belief-maintenance",
+      "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "belief-maintenance-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "belief-maintenance-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/belief-maintenance",
+        "release_reference": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
+        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [
+        {
+          "id": "capability:scope:trade-journal/belief-maintenance",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        },
+        {
+          "id": "capability:scope:trade-journal/portfolio-options-advice",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        },
+        {
+          "id": "capability:scope:trade-journal/portfolio-snapshot",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        },
+        {
+          "id": "capability:scope:trade-journal/thesis-observation",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        }
+      ],
+      "id": "capability:scope:trade-journal/morning-attention-brief",
+      "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "morning-attention-brief-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "morning-attention-brief-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/morning-attention-brief",
+        "release_reference": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
+        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [
+        {
+          "id": "capability:scope:trade-journal/portfolio-snapshot",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        }
+      ],
+      "id": "capability:scope:trade-journal/portfolio-options-advice",
+      "package_digest": "sha256:2082d00338232f3bed0a320b7fabdc8eda80e8bc26803adad173b90d1ba8a6a7",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "portfolio-options-advice-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "portfolio-options-advice-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/portfolio-options-advice",
+        "release_reference": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
+        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [],
       "id": "capability:scope:trade-journal/portfolio-snapshot",
       "package_digest": "sha256:8e37dcee1342e6d1b9e4b53bb5eb24c56208e4fe52cbd78844f8993ebc41f155",
       "provider_adapters": [
@@ -31,12 +149,44 @@
         "release_reference": "0aaf10db7eaf4315aadd440f09ab150b38192d5e",
         "revision": "0aaf10db7eaf4315aadd440f09ab150b38192d5e"
       }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [],
+      "id": "capability:scope:trade-journal/thesis-observation",
+      "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "thesis-observation-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "thesis-observation-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-06"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/thesis-observation",
+        "release_reference": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
+        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
+      }
     }
   ],
   "evidence_time": "2026-08-06",
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:5bf9e3faa88f5dec4884403c943795f0b39e4b415684d456bceeca377183a8eb",
+  "registry_digest": "sha256:963e09e5d8a2aaf83aa5c51527b4d991ff90a4a89544739eac2fbf0d19d7bddd",
   "schema_version": "1.0.0"
 }

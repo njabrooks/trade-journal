@@ -1,0 +1,16 @@
+{
+  "capability_id": "capability:scope:trade-journal/thesis-observation",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
+  "adapter_id": "thesis-observation-codex",
+  "adapter_digest": "sha256:20e4586623451c88c16deee0bc6add22bcf7281a4a8e908972705a8ff5f2938a",
+  "support_state": "current",
+  "validated_at": "2026-08-06",
+  "results": {
+    "adapter-entry-point": { "status": "passed", "method": "Repository contract test verifies the bounded request, due-bundle command, and directive result fields; Workspace CLI validates the exact source" },
+    "current-source-contract": { "status": "passed", "method": "Read-only Tier-1 observation bundle probe through Codex returned 14 theses, 76 signals, current Yahoo price timestamps, explicit source misses, prior attributed evidence, and collector deferrals" },
+    "sensing-only-write-set": { "status": "passed", "method": "Repository contract test requires sensing-only language, signal evidence writes, journal history, and explicit refusal of decisions and status mutation" },
+    "neutral-semantics": { "status": "passed", "reviewer": "J2 implementation review", "method": "Compared the Codex adapter with docs/v2/14, thesis-centric polarity, Codex availability semantics, and ticket #50", "evidence_link": "https://github.com/njabrooks/trade-journal/issues/50", "expires_at": "2026-09-05" },
+    "eligible-environment": { "status": "passed", "method": "Configured database and live price context successfully produced the read-only Tier-1 bundle through Codex on 2026-08-06; sandbox denial was separately observed and correctly represented as unavailable before rerunning in the eligible host environment" }
+  }
+}

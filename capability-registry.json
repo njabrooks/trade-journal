@@ -2,6 +2,51 @@
   "version": "1.0.0",
   "capabilities": [
     {
+      "id": "capability:scope:trade-journal/belief-maintenance",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/belief-maintenance",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
+      "id": "capability:scope:trade-journal/morning-attention-brief",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/morning-attention-brief",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
+      "id": "capability:scope:trade-journal/portfolio-options-advice",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/portfolio-options-advice",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/portfolio-snapshot",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",
@@ -10,6 +55,21 @@
       "release": {
         "source": ".",
         "revision": "0aaf10db7eaf4315aadd440f09ab150b38192d5e"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-observation",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/thesis-observation",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
       },
       "development": {
         "enabled": true,

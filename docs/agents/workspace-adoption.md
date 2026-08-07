@@ -43,18 +43,20 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The manifest declares no owned Capability Packages because Trade Journal has not authored any. It declares
-only repository-owned interactive and headless sources that #33/#34 classified as Capability candidates.
-Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge remain visible
-in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not establish Adapter
-Conformance; every inventory evidence state remains `unavailable`.
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares five Trade Journal-owned
+packages: portfolio snapshot, belief maintenance, thesis observation, portfolio options advice, and morning
+attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
+remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
+establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry.
 
 ## Generation eligibility and refusal
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
-headless inventory entries. At governed evidence date `2026-08-04`, it records zero generation-eligible
-adapters and no governed outputs. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and
-the machine-local bridge remain non-governed migration inputs.
+headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
+generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-06`, five locked
+Capabilities make 14 inventory entries generation eligible while the whole-file Claude and Codex outputs
+remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
+bridge remain migration inputs until their separately governed cutovers.
 
 The controlled refusal harness was executed in human and JSON modes against a clean detached Workspace
 checkout at accepted revision `2b6ea3e02ff5ba114b0f91dd779c4afb26181358`:
@@ -90,6 +92,12 @@ portfolio-snapshot Capability is released from an immutable Trade Journal commit
 published Registry Lock, and projected to governed Claude and Codex staging outputs. Both exact adapters have
 current digest-bound evidence dated 2026-08-06. Existing provider discovery remains active until J2's final
 cutover, and no scheduled job or database write path changes in this tracer slice.
+
+Tickets #48, #50, #52, and #55 add belief-maintenance, thesis-observation, portfolio-options-advice, and
+morning-attention-brief packages at one preserved publication revision. Their exact Claude and Codex adapters
+have current evidence from structural boundary tests and bounded read-only environment probes. The immutable
+Registry Lock and generated staging outputs include all five Capabilities. Live scheduler and provider
+invocations remain unchanged pending the explicit approvals required by #49, #51, #53, #54, and #56.
 
 The accepted W1 CLI remains pinned through the existing exact-revision acquisition mechanism. Workspace
 issue `njabrooks/projects#31` continues to own any future replacement for that interim acquisition design.
