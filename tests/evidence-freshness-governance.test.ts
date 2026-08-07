@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const repositoryRoot = process.cwd();
 const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
+const lockEvidenceTime = process.env.WORKSPACE_LOCK_EVIDENCE_TIME ?? "2026-08-06";
 const governanceIt = workspaceRoot ? it : it.skip;
 
 describe("Workspace evidence freshness governance", () => {
@@ -45,7 +46,7 @@ describe("Workspace evidence freshness governance", () => {
     expect(report).toMatchObject({
       outcome: "passed",
       lock_reproduction: {
-        evidence_time: "2026-08-06",
+        evidence_time: lockEvidenceTime,
         byte_identical: true,
       },
       freshness_evaluation: {
