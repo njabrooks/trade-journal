@@ -64,10 +64,10 @@ The inventory deliberately distinguishes packaging from readiness:
 Five live provider-dependent launchd jobs are mapped with their current Claude provider, model, invocation,
 schedule, read/write boundary, machine-local environment, timeout, locking, failure observability, downstream
 consumer, and proposed J2 disposition. They correspond to four adapter families: maintenance, thesis-observe,
-options-advisor (morning batch and afternoon LEAP jobs), and morning-brief. None currently invokes a Codex
-projection: each job names its currently invoked authored Claude source separately from its proposed Codex
-migration target. Migration priority follows operational risk, starting with belief maintenance and its genuine-
-judgment boundary.
+options-advisor (morning batch and afternoon LEAP jobs), and morning-brief. None invokes a Codex projection.
+Each migrated job names its governed Claude adapter, while an unmigrated job names its authored Claude source;
+both remain distinct from the separately gated Codex migration target. Migration priority follows operational
+risk, starting with belief maintenance and its genuine-judgment boundary.
 
 Deterministic on-device jobs and GitHub Actions are recorded separately as exclusions because they do not
 invoke an agent model. Provider data dependencies such as Radon, IB Gateway, Massive, Supabase, browser/web
