@@ -26,6 +26,14 @@ export interface MorningBriefFreshnessInput {
   producerFreshness: Partial<Record<RequiredInput, ProducerFreshness>>;
 }
 
+export interface MorningBriefProducerObservations {
+  generatedAt: string;
+  cronStatusTsv: string;
+  portfolioObservedAt: string | null;
+  decisionsObservedAt: string | null;
+  calendarObservedAt: string | null;
+}
+
 export interface MorningBriefFreshnessResult {
   success: boolean;
   briefDate: string;
@@ -42,15 +50,103 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function validTimestamp(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+
 function normalizeFreshness(value: unknown): ProducerFreshness {
   if (!isRecord(value)) return { status: "missing", observedAt: null };
   const status = value.status;
   if (status !== "current" && status !== "stale" && status !== "missing") {
     return { status: "missing", observedAt: null };
   }
+  if (status !== "missing" && !validTimestamp(value.observedAt)) {
+    return { status: "missing", observedAt: null };
+  }
   return {
     status,
-    observedAt: typeof value.observedAt === "string" ? value.observedAt : null,
+    observedAt: validTimestamp(value.observedAt) ? value.observedAt : null,
+  };
+}
+
+interface ProducerObservation {
+  observedAt: string | null;
+  succeeded: boolean;
+}
+
+function latestCronObservation(
+  cronStatusTsv: string,
+  job: string,
+): ProducerObservation | null {
+  let latest: ProducerObservation | null = null;
+  for (const line of cronStatusTsv.split("\n")) {
+    const [observedAt, statusName, result] = line.trim().split("\t");
+    if (statusName !== job || !validTimestamp(observedAt)) continue;
+    if (!latest || Date.parse(observedAt) > Date.parse(latest.observedAt ?? "")) {
+      latest = { observedAt, succeeded: result === "0" };
+    }
+  }
+  return latest;
+}
+
+function assessObservation(
+  observation: ProducerObservation | null,
+  generatedAt: string,
+  maxAgeHours: number,
+): ProducerFreshness {
+  if (!observation || !validTimestamp(observation.observedAt)) {
+    return { status: "missing", observedAt: null };
+  }
+  if (!observation.succeeded) {
+    return { status: "missing", observedAt: observation.observedAt };
+  }
+  const ageHours =
+    (Date.parse(generatedAt) - Date.parse(observation.observedAt)) / 3_600_000;
+  if (ageHours < 0 || ageHours > maxAgeHours) {
+    return { status: "stale", observedAt: observation.observedAt };
+  }
+  return { status: "current", observedAt: observation.observedAt };
+}
+
+export function buildMorningBriefProducerFreshness(
+  observations: MorningBriefProducerObservations,
+): Record<RequiredInput, ProducerFreshness> {
+  const generatedAt = observations.generatedAt;
+  const directObservation = (observedAt: string | null): ProducerObservation => ({
+    observedAt,
+    succeeded: true,
+  });
+  return {
+    thesisObservation: assessObservation(
+      latestCronObservation(observations.cronStatusTsv, "thesis-observe"),
+      generatedAt,
+      26,
+    ),
+    maintenance: assessObservation(
+      latestCronObservation(observations.cronStatusTsv, "maintenance"),
+      generatedAt,
+      14,
+    ),
+    optionsAdvice: assessObservation(
+      latestCronObservation(observations.cronStatusTsv, "options-advisor-batch"),
+      generatedAt,
+      26,
+    ),
+    portfolio: assessObservation(
+      directObservation(observations.portfolioObservedAt),
+      generatedAt,
+      36,
+    ),
+    decisions: assessObservation(
+      directObservation(observations.decisionsObservedAt),
+      generatedAt,
+      1,
+    ),
+    calendar: assessObservation(
+      directObservation(observations.calendarObservedAt),
+      generatedAt,
+      1,
+    ),
   };
 }
 
