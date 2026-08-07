@@ -43,6 +43,42 @@ The first wrapper attempt from a restricted test context could not see the
 machine-local provider login and recorded status 1 without writes. Re-running
 in the same host context as launchd succeeded without changing credentials.
 
+## Fixed-point review repair
+
+The 2026-08-07 J2 fixed-point review correctly found that the market-sensitive
+canary proved only the no-write path: no recommendation survived verification,
+so it did not prove the positive persistence and dashboard result contract.
+
+The repair drives the real `batch canary` wrapper path through `run_governed`
+and exact adapter-digest validation, substituting only a deterministic provider
+boundary with no network, market-data, database, or trade capability. The
+fixture records an eligible `morning-batch` opportunistic request with
+`maxRecommendations=1`, two candidate recommendations, and delayed quotes with
+real bids, asks, and midpoints. The proof applies the production scenario,
+contract-identity verification, and maximum gates before calling only the
+approved writer with an in-memory recommendation store. Executable tests prove
+that the governed path:
+
+- supersedes only active recommendations for `opportunistic`;
+- inserts exactly one verified recommendation despite two eligible candidates;
+- preserves ticker, exposure, NAV percentage, structure, metrics, volatility
+  context, rationale, and `source=skill` fields consumed by ScannerSnapshot;
+- applies the existing seven-day expiry contract; and
+- refuses both empty-candidate and unavailable-verification outcomes before
+  resolving underlyings, superseding a batch, or inserting a row;
+- rejects a recommendation whose verification belongs to another ticker; and
+- refuses scenarios outside the accepted six morning scenarios;
+- requires one-to-one usable quotes for every selected contract leg.
+
+The dashboard contract test then passes the writer-produced row through the
+actual `/api/advisor/recommendations` GET serializer and ScannerSnapshot's
+presentation function. The recorded effect set contains only underlying
+resolution, same-scenario supersession, and recommendation insertion, proving
+the strict no-order/no-trade boundary. This repair used no provider session,
+credential, database write, market-data call, scheduler reload, launchd change,
+or live canary. The existing `live` invocation and rollback marker are
+unchanged.
+
 ## Preserved controls and rollback
 
 The 08:05 weekday schedule, `RunAtLoad=false`, batch-specific lock, 3,000-second
@@ -72,14 +108,15 @@ reloaded by this cutover.
   eligibility passed with 14 of 73 entries current;
 - provider refusal proof passed for `WS-ENTRY-005` with byte-identical
   diagnostics and no output;
-- TypeScript, shell syntax, plist validation, and ticket-scoped ESLint passed;
-- four focused invocation tests and the full suite of 402 tests passed; and
-- the repository-wide ESLint baseline again traversed unrelated generated
-  `.next` files under `.claude/worktrees`, emitted Babel de-optimization
-  warnings, and did not complete during a bounded 60-second attempt. It was
-  interrupted; the changed TypeScript scope is clean.
+- TypeScript and ticket-scoped ESLint passed;
+- the wrapper, writer, dashboard-contract, and governed-Capability focused
+  suite passed 21 tests;
+- the full suite passed 419 tests with one pre-existing skipped test;
+- the repository-wide ESLint baseline completed but failed on unrelated old
+  `.claude/worktrees`, generated `.next` bundles, and `tmp/pdfs` content; it
+  reported no finding in the changed scope; and
+- the production build passed, the managed `com.tradej` service was restarted,
+  and `/dashboard/portfolio` returned HTTP 200 afterward.
 
-A Next production build was not proportionate for shell, launchd metadata,
-inventory, tests, and evidence-only changes. No package, application route, or
-runtime bundle changed, so the managed Trade Journal service did not require a
-post-build restart.
+No package or lock file changed, so the npm 10 clean-install dry-run was not
+required.

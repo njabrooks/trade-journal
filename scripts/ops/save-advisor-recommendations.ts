@@ -20,12 +20,10 @@
  *
  * Usage: cat recs.json | npx tsx scripts/ops/save-advisor-recommendations.ts --stdin
  */
-import { db, closeDb } from '../lib/db';
-import { advisorRecommendations, underlyings } from '../../src/db/schema';
-import { and, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import { pathToFileURL } from 'node:url';
 
-interface RecommendationInput {
+export interface RecommendationInput {
   ticker: string;
   exposureUsd?: number | null;
   pctNav?: number | null;
@@ -35,10 +33,81 @@ interface RecommendationInput {
   rationale: string;
 }
 
-interface BatchInput {
+export interface BatchInput {
   scenario: string;
   expiresDays?: number;
   recommendations: RecommendationInput[];
+}
+
+export interface AdvisorRecommendationRow {
+  batchId: string;
+  scenario: string;
+  ticker: string;
+  underlyingId: string | null;
+  exposureUsd: string | null;
+  pctNav: string | null;
+  structure: Record<string, unknown>;
+  metrics: Record<string, unknown>;
+  volContext: Record<string, unknown> | null;
+  rationale: string;
+  source: 'skill';
+  expiresAt: Date;
+}
+
+export interface AdvisorRecommendationStore {
+  resolveUnderlyingIds(tickers: string[]): Promise<Map<string, string>>;
+  supersedeActive(scenario: string, updatedAt: Date): Promise<number>;
+  insertRecommendations(rows: AdvisorRecommendationRow[]): Promise<number>;
+}
+
+export interface SaveAdvisorRecommendationDependencies {
+  store: AdvisorRecommendationStore;
+  now?: Date;
+  batchId?: string;
+}
+
+function validateBatchInput(input: BatchInput): void {
+  if (!input.scenario || !Array.isArray(input.recommendations) || input.recommendations.length === 0) {
+    throw new Error('Batch must have scenario and a non-empty recommendations array');
+  }
+  for (const rec of input.recommendations) {
+    if (!rec.ticker || !rec.structure || !rec.metrics || !rec.rationale) {
+      throw new Error(`Recommendation missing required fields: ${JSON.stringify(rec).slice(0, 120)}`);
+    }
+  }
+}
+
+export async function saveAdvisorRecommendations(
+  input: BatchInput,
+  dependencies: SaveAdvisorRecommendationDependencies,
+) {
+  validateBatchInput(input);
+
+  const now = dependencies.now ?? new Date();
+  const batchId = dependencies.batchId ?? randomUUID();
+  const expiresDays = input.expiresDays ?? 7;
+  const expiresAt = new Date(now.getTime() + expiresDays * 86_400_000);
+  const tickers = [...new Set(input.recommendations.map((rec) => rec.ticker.toUpperCase()))];
+  const underlyingByTicker = await dependencies.store.resolveUnderlyingIds(tickers);
+  const superseded = await dependencies.store.supersedeActive(input.scenario, now);
+  const inserted = await dependencies.store.insertRecommendations(
+    input.recommendations.map((rec) => ({
+      batchId,
+      scenario: input.scenario,
+      ticker: rec.ticker.toUpperCase(),
+      underlyingId: underlyingByTicker.get(rec.ticker.toUpperCase()) ?? null,
+      exposureUsd: rec.exposureUsd != null ? String(rec.exposureUsd) : null,
+      pctNav: rec.pctNav != null ? String(rec.pctNav) : null,
+      structure: rec.structure,
+      metrics: rec.metrics,
+      volContext: rec.volContext ?? null,
+      rationale: rec.rationale,
+      source: 'skill',
+      expiresAt,
+    })),
+  );
+
+  return { batchId, inserted, superseded, expiresAt };
 }
 
 async function readStdin(): Promise<string> {
@@ -59,70 +128,52 @@ async function main() {
     ? raw.indexOf('\n{') + 1
     : raw.indexOf('{');
   const input = JSON.parse(raw.slice(start)) as BatchInput;
+  validateBatchInput(input);
+  const [{ db, closeDb }, { advisorRecommendations, underlyings }, { and, eq, inArray }] =
+    await Promise.all([
+      import('../lib/db.js'),
+      import('../../src/db/schema.js'),
+      import('drizzle-orm'),
+    ]);
+  const store: AdvisorRecommendationStore = {
+    async resolveUnderlyingIds(tickers) {
+      const rows = await db
+        .select({ id: underlyings.id, ticker: underlyings.ticker })
+        .from(underlyings)
+        .where(inArray(underlyings.ticker, tickers));
+      return new Map(rows.map((row) => [row.ticker, row.id]));
+    },
+    async supersedeActive(scenario, updatedAt) {
+      const rows = await db
+        .update(advisorRecommendations)
+        .set({ status: 'superseded', updatedAt })
+        .where(
+          and(
+            eq(advisorRecommendations.scenario, scenario),
+            eq(advisorRecommendations.status, 'active'),
+          ),
+        )
+        .returning({ id: advisorRecommendations.id });
+      return rows.length;
+    },
+    async insertRecommendations(rows) {
+      const inserted = await db
+        .insert(advisorRecommendations)
+        .values(rows)
+        .returning({ id: advisorRecommendations.id });
+      return inserted.length;
+    },
+  };
 
-  if (!input.scenario || !Array.isArray(input.recommendations) || input.recommendations.length === 0) {
-    console.error('Batch must have scenario and a non-empty recommendations array');
-    process.exit(1);
-  }
-  for (const rec of input.recommendations) {
-    if (!rec.ticker || !rec.structure || !rec.metrics || !rec.rationale) {
-      console.error(`Recommendation missing required fields: ${JSON.stringify(rec).slice(0, 120)}`);
-      process.exit(1);
-    }
-  }
+  const result = await saveAdvisorRecommendations(input, { store });
 
-  const batchId = randomUUID();
-  const expiresDays = input.expiresDays ?? 7;
-  const expiresAt = new Date(Date.now() + expiresDays * 86_400_000);
-
-  // Resolve underlying ids
-  const tickers = [...new Set(input.recommendations.map((r) => r.ticker.toUpperCase()))];
-  const underlyingRows = await db
-    .select({ id: underlyings.id, ticker: underlyings.ticker })
-    .from(underlyings)
-    .where(inArray(underlyings.ticker, tickers));
-  const underlyingByTicker = new Map(underlyingRows.map((u) => [u.ticker, u.id]));
-
-  // Supersede prior actives for this scenario — one live batch at a time
-  const superseded = await db
-    .update(advisorRecommendations)
-    .set({ status: 'superseded', updatedAt: new Date() })
-    .where(
-      and(
-        eq(advisorRecommendations.scenario, input.scenario),
-        eq(advisorRecommendations.status, 'active')
-      )
-    )
-    .returning({ id: advisorRecommendations.id });
-
-  const inserted = await db
-    .insert(advisorRecommendations)
-    .values(
-      input.recommendations.map((rec) => ({
-        batchId,
-        scenario: input.scenario,
-        ticker: rec.ticker.toUpperCase(),
-        underlyingId: underlyingByTicker.get(rec.ticker.toUpperCase()) ?? null,
-        exposureUsd: rec.exposureUsd != null ? String(rec.exposureUsd) : null,
-        pctNav: rec.pctNav != null ? String(rec.pctNav) : null,
-        structure: rec.structure,
-        metrics: rec.metrics,
-        volContext: rec.volContext ?? null,
-        rationale: rec.rationale,
-        source: 'skill',
-        expiresAt,
-      }))
-    )
-    .returning({ id: advisorRecommendations.id });
-
-  console.log(
-    JSON.stringify({ batchId, inserted: inserted.length, superseded: superseded.length, expiresAt })
-  );
+  console.log(JSON.stringify(result));
   await closeDb();
-  process.exit(0);
 }
 
-main().catch((e) => {
-  console.error('Error:', e);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((e) => {
+    console.error('Error:', e);
+    process.exit(1);
+  });
+}

@@ -13,7 +13,7 @@ MODE="${1:-batch}"
 RUN_MODE="${2:-live}"
 ROLLBACK_MARKER="${TJ_OPTIONS_ADVISOR_ROLLBACK_MARKER:-$TJ_REPO_ROOT/logs/.options-advisor-${MODE}-use-legacy}"
 
-if [ -f "$TJ_REPO_ROOT/.env.local" ]; then
+if [ "${TJ_OPTIONS_ADVISOR_SKIP_ENV:-0}" != "1" ] && [ -f "$TJ_REPO_ROOT/.env.local" ]; then
     set -a
     # shellcheck disable=SC1091
     source "$TJ_REPO_ROOT/.env.local"

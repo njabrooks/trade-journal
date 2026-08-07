@@ -1,0 +1,135 @@
+{
+  "request": {
+    "mode": "morning-batch",
+    "scenarioFilters": ["opportunistic"],
+    "maxRecommendations": 1
+  },
+  "verification": [
+    {
+      "id": "slv-dec-call",
+      "ticker": "SLV",
+      "status": "verified",
+      "marketDataType": "delayed",
+      "legs": [
+        {
+          "action": "BUY",
+          "expiry": "2026-12-18",
+          "strike": 42,
+          "right": "C",
+          "bid": 2.1,
+          "ask": 2.3,
+          "mid": 2.2
+        }
+      ]
+    },
+    {
+      "id": "gld-dec-call",
+      "ticker": "GLD",
+      "status": "verified",
+      "marketDataType": "delayed",
+      "legs": [
+        {
+          "action": "BUY",
+          "expiry": "2026-12-18",
+          "strike": 410,
+          "right": "C",
+          "bid": 8.4,
+          "ask": 8.8,
+          "mid": 8.6
+        }
+      ]
+    }
+  ],
+  "governedRecommendations": [
+    {
+      "scenario": "opportunistic",
+      "verificationId": "slv-dec-call",
+      "recommendation": {
+        "ticker": "SLV",
+        "exposureUsd": 125000,
+        "pctNav": 0.0125,
+        "structure": {
+          "type": "long_call",
+          "legs": [
+            {
+              "action": "BUY",
+              "expiry": "2026-12-18",
+              "strike": 42,
+              "right": "C",
+              "mid": 2.2
+            }
+          ]
+        },
+        "metrics": {
+          "costPct": 0.0524,
+          "dte": 132
+        },
+        "volContext": {
+          "regime": "cheap",
+          "ivPercentile252": 24
+        },
+        "rationale": "Verified delayed quote preserves the genuine long-vol opportunity."
+      }
+    },
+    {
+      "scenario": "opportunistic",
+      "verificationId": "gld-dec-call",
+      "recommendation": {
+        "ticker": "GLD",
+        "structure": {
+          "type": "long_call",
+          "legs": [
+            {
+              "action": "BUY",
+              "expiry": "2026-12-18",
+              "strike": 410,
+              "right": "C",
+              "mid": 8.6
+            }
+          ]
+        },
+        "metrics": {
+          "costPct": 0.021
+        },
+        "rationale": "Second verified candidate demonstrates the hard request maximum."
+      }
+    }
+  ],
+  "noWriteOutcomes": [
+    {
+      "name": "empty candidates",
+      "governedRecommendations": [],
+      "verification": [],
+      "unavailableInputs": []
+    },
+    {
+      "name": "unavailable verification",
+      "verification": [
+        {
+          "id": "slv-dec-call",
+          "ticker": "SLV",
+          "status": "unavailable",
+          "reason": "No bid, ask, or midpoint was available."
+        }
+      ],
+      "governedRecommendations": [
+        {
+          "scenario": "opportunistic",
+          "verificationId": "slv-dec-call",
+          "recommendation": {
+            "ticker": "SLV",
+            "structure": {
+              "type": "long_call",
+              "legs": []
+            },
+            "metrics": {
+              "costPct": 0.0524
+            },
+            "rationale": "Must not persist without usable verification."
+          }
+        }
+      ],
+      "unavailableInputs": ["ibkr-option-verification"]
+    }
+  ]
+}

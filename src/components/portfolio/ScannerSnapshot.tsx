@@ -29,7 +29,7 @@ interface AdvisorLeg {
   mid: number;
 }
 
-interface AdvisorRecommendation {
+export interface AdvisorRecommendation {
   id: string;
   scenario: string;
   ticker: string;
@@ -89,7 +89,7 @@ const SCENARIO_LABELS: Record<string, string> = {
   opportunistic: "Opportunistic",
 };
 
-function describeStructure(rec: AdvisorRecommendation): string {
+export function describeStructure(rec: AdvisorRecommendation): string {
   const legs = rec.structure?.legs ?? [];
   const expiry = legs[0]?.expiry ? formatDateShort(legs[0].expiry) : "";
   const strikes = legs.map((l) => l.strike).join("/");
