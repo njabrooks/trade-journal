@@ -2309,7 +2309,7 @@
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and the thesis-observe scheduler cutover completed under issue #51 approval; retain the authored skill only as the delegated workflow source."
       }
     },
     {

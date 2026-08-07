@@ -1878,8 +1878,8 @@
         "WebSearch/WebFetch, database credentials, and eligible scheduled environment."
       ],
       "limitations": [
-        "Live Claude-dependent scheduled consumer exists; web evidence is environment-sensitive.",
-        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The live Claude-dependent scheduled consumer remains environment-sensitive to current-source availability.",
+        "The governed Claude adapter is live for thesis-observe; final provider discovery remains separately gated."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
@@ -1895,7 +1895,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and the thesis-observe scheduler cutover completed under issue #51 approval; retain the authored skill only as the delegated workflow source."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",

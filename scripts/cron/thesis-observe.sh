@@ -7,7 +7,7 @@
 # once daily at 07:00 Europe/London — AFTER overnight ingestion settles and BEFORE the
 # 08:00 /maintenance consume, so the morning belief loop reads fresh evidence.
 #
-# Runs the `/thesis-observe` Claude skill headlessly: it loads the Tier-1 observation
+# Runs the governed thesis-observation Claude adapter headlessly: it loads the Tier-1 observation
 # bundle (find-theses-due-observe.ts), WebSearches per thesis, judges each signal's
 # STATEMENT against current news + price (thesis-centric polarity, events-judged),
 # writes a directive report to notes/intelligence/, and ingests it into
@@ -25,7 +25,6 @@ set -euo pipefail
 TJ_ROOT="$HOME/projects/trade-journal"
 LOG_FILE="$TJ_ROOT/logs/thesis-observe.log"
 LOCK_FILE="$TJ_ROOT/logs/.thesis-observe.lock"
-CLAUDE="/opt/homebrew/bin/claude"
 CLAUDE_TIMEOUT=3000   # 50 min hard cap (WebSearch-heavy; Tier-1 bounded)
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
@@ -70,12 +69,11 @@ cd "$TJ_ROOT"
     echo "============================================================"
 } >> "$LOG_FILE"
 
-# Run the /thesis-observe skill headlessly (all-Opus for signal judgment).
+# Run the governed adapter headlessly (all-Opus for signal judgment).
 # --dangerously-skip-permissions: required for unattended Bash/tsx/WebSearch + git.
+RUN_MODE="${TJ_THESIS_OBSERVE_RUN_MODE:-live}"
 set +e
-run_with_timeout "$CLAUDE_TIMEOUT" "$CLAUDE" -p "/thesis-observe" \
-    --model opus \
-    --dangerously-skip-permissions >> "$LOG_FILE" 2>&1
+run_with_timeout "$CLAUDE_TIMEOUT" "$TJ_ROOT/scripts/cron/thesis-observe-invocation.sh" "$RUN_MODE" >> "$LOG_FILE" 2>&1
 RC=$?
 set -e
 
@@ -88,7 +86,9 @@ else
 fi
 
 # Record outcome for check-cron-health.ts (SessionStart nudge surfaces failure streaks).
-printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "thesis-observe" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+STATUS_NAME="thesis-observe"
+if [ "$RUN_MODE" != "live" ]; then STATUS_NAME="thesis-observe-$RUN_MODE"; fi
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
 if [ "$RC" -ne 0 ]; then
     /usr/bin/osascript -e "display notification \"thesis-observe failed (rc=$RC) — see logs/thesis-observe.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
 fi
