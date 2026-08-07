@@ -2683,11 +2683,11 @@
     },
     {
       "id": "launchd-options-advisor-leap",
-      "invoked_adapter_source": ".claude/skills/options-advisor/SKILL.md",
+      "invoked_adapter_source": "capabilities/portfolio-options-advice/adapters/claude.md",
       "migration_target_entry": "headless-codex-options-advisor",
       "provider": "claude",
       "model": "opus",
-      "invocation": "/opt/homebrew/bin/claude -p <scheduled leap_entry prompt> --model opus --dangerously-skip-permissions; the Codex projection is not currently invoked.",
+      "invocation": "scripts/cron/options-advisor-invocation.sh leap live preflights eligible US market hours and the Radon gateway, runs the canonical 10-ticker engine synchronously, then invokes the digest-pinned governed Claude adapter; logs/.options-advisor-leap-use-legacy restores the previous /options-advisor command.",
       "schedule": "15:20 Europe/London weekdays",
       "wrapper": "scripts/cron/options-advisor-run.sh",
       "scheduler": "launchd/com.trade-journal.options-advisor-leap.plist",
@@ -2706,7 +2706,7 @@
       ],
       "operational_risk": "high",
       "risk_priority": 4,
-      "j2_disposition": "Migrate/evaluate fourth; gateway dependency and market-hours behavior require explicit verification."
+      "j2_disposition": "Migrated under issue #54 approval after eligible-hours gateway shadow/canary runs, live quote and liquidity checks, bounded no-write proof, synchronous scanner correction, and rollback proof."
     },
     {
       "id": "launchd-morning-brief",

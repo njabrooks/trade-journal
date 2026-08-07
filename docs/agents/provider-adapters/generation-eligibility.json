@@ -1719,7 +1719,7 @@
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and live for the morning-batch consumer under #53; retain the existing interactive discovery input and separately gated LEAP invocation until their own cutovers."
+        "rationale": "The governed adapter is current and live for the morning-batch and LEAP consumers under #53/#54; retain the existing interactive discovery input until its separately approved cutover."
       }
     },
     {
