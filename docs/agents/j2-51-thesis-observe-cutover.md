@@ -50,6 +50,26 @@ The corrected one-thesis canary completed successfully:
 - unchanged macro, asset, and strategy status digests; and
 - unchanged Decision Items (77 active / 514 inactive).
 
+## Fixed-point review repair
+
+The J2 fixed-point review found that `--thesis-observe-only` suppressed
+`intel_items` but still allowed the shared candidate-signal harvester to run.
+The corrected canary's zero candidate rows were therefore an observed outcome,
+not proof of the governed write boundary.
+
+An executable regression runs a realistic directive report through the public
+`ingestReport` seam, real parser, and production ingestion effects against a
+controlled database boundary. It proves the exact signal snapshot and corresponding
+`signal_evidence_received` journal history, rejects any other database mutation,
+and verifies that the intel-item and candidate-signal writers are not invoked.
+The unflagged legacy path retains both writers, while a non-thesis-observe report
+still refuses the governed flag before any writer is invoked.
+
+This repair required no new live provider invocation, database-writing canary,
+scheduler reload, credential use, or operational cutover. The existing bounded
+canary and scheduler evidence above remain the operational evidence for #51;
+the executable regression supplies the previously missing impossibility proof.
+
 The canary reported that repeated same-day invocations re-observe the same Tier-1
 leader because Tier-1's cadence floor is zero. This is confined to explicit
 canary reruns; the live launchd job remains once daily at 07:00.
