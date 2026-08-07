@@ -20,6 +20,7 @@
 import { db, closeDb, schema, logToJournal } from './lib/db.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import { readFileSync, readdirSync } from 'fs';
+import { fileURLToPath } from 'url';
 import { join, resolve } from 'path';
 import { parseWorldMonitor, type ParsedReport } from '../src/lib/intelligence/parseWorldMonitor.js';
 import { type Assessment } from '../src/lib/intelligence/scoring.js';
@@ -33,7 +34,7 @@ const { signals, signalDataSnapshots, signalEntityLinks } = schema;
 // (Pre-v2 rows used 'intelligence_items' with the now-dropped table's row uuids.)
 const SOURCE_TABLE = 'world_monitor_report';
 
-async function ingestReport(
+export async function ingestReport(
   filePath: string,
   options: { thesisObserveOnly?: boolean } = {},
 ): Promise<{ itemCount: number; emitted: number; skipped: boolean; candidates: { written: number; bumped: number; skipped: number } }> {
@@ -97,10 +98,13 @@ async function ingestReport(
       console.log(`  PRICE & DATA WATCH: ${priceRows.length} rows (${priced.length} priced, ${priceRows.length - priced.length} gap)${driftStr}`);
     }
 
-    // Candidate-signal harvesting (P2) — no-signal-matched news → candidate_signal rows.
-    candidates = await harvestCandidateSignals(parsed, filePath);
-    if (candidates.written + candidates.bumped + candidates.skipped > 0) {
-      console.log(`  Candidate signals: ${candidates.written} new, ${candidates.bumped} bumped, ${candidates.skipped} unresolved`);
+    // Candidate-signal harvesting is part of the legacy general-ingestion path. The
+    // governed thesis-observe-only path is limited to signal evidence + audit history.
+    if (!options.thesisObserveOnly) {
+      candidates = await harvestCandidateSignals(parsed, filePath);
+      if (candidates.written + candidates.bumped + candidates.skipped > 0) {
+        console.log(`  Candidate signals: ${candidates.written} new, ${candidates.bumped} bumped, ${candidates.skipped} unresolved`);
+      }
     }
   }
 
@@ -420,7 +424,9 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(e => {
-  console.error('Fatal error:', e);
-  process.exit(1);
-});
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(e => {
+    console.error('Fatal error:', e);
+    process.exit(1);
+  });
+}
