@@ -2655,11 +2655,11 @@
     },
     {
       "id": "launchd-options-advisor-batch",
-      "invoked_adapter_source": ".claude/skills/options-advisor/SKILL.md",
+      "invoked_adapter_source": "capabilities/portfolio-options-advice/adapters/claude.md",
       "migration_target_entry": "headless-codex-options-advisor",
       "provider": "claude",
       "model": "opus",
-      "invocation": "/opt/homebrew/bin/claude -p <scheduled batch prompt> --model opus --dangerously-skip-permissions; the Codex projection is not currently invoked.",
+      "invocation": "scripts/cron/options-advisor-invocation.sh batch live invokes the digest-pinned governed Claude adapter for the six morning scenarios with a five-recommendation ceiling; logs/.options-advisor-batch-use-legacy restores the previous /options-advisor command.",
       "schedule": "08:05 Europe/London weekdays",
       "wrapper": "scripts/cron/options-advisor-run.sh",
       "scheduler": "launchd/com.trade-journal.options-advisor.plist",
@@ -2679,7 +2679,7 @@
       ],
       "operational_risk": "high",
       "risk_priority": 3,
-      "j2_disposition": "Migrate/evaluate third with live verification, no-trade, and empty-result boundaries intact."
+      "j2_disposition": "Migrated under issue #53 approval after six-scenario legacy/governed shadows, a bounded opportunistic canary, no-write proof when pre-market verification was unavailable, and rollback proof; LEAP remains separately gated by #54."
     },
     {
       "id": "launchd-options-advisor-leap",

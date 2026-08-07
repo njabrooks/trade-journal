@@ -5,6 +5,8 @@
     <key>Label</key>
     <string>com.trade-journal.options-advisor</string>
 
+    <!-- Governed morning-batch adapter; strict recommendation-only/no-trade boundary. -->
+
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>

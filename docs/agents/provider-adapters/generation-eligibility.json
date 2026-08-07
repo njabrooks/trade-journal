@@ -1719,7 +1719,7 @@
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and live for the morning-batch consumer under #53; retain the existing interactive discovery input and separately gated LEAP invocation until their own cutovers."
       }
     },
     {

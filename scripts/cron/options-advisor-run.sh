@@ -12,9 +12,10 @@
 #   leap   — 15:20 wd: leap_entry via radon's IB LEAP scanner (needs US market
 #            hours + the gateway; ~25 min scan + judgment).
 #
-# Runs the `/options-advisor` skill headlessly (all-Opus). The skill reads the
-# latest regime_snapshots first (elevated CRI promotes hedge/collar), live-verifies
-# chosen structures via IB before saving, and saves per-scenario batches
+# Runs the governed portfolio-options-advice adapter headlessly (all-Opus). The
+# adapter reads the latest regime_snapshots first (elevated CRI promotes
+# hedge/collar), live-verifies chosen structures via IB before saving, and saves
+# per-scenario batches
 # (supersede-on-save, 7-day expiry) that the dashboard ScannerSnapshot renders.
 #
 # Off-switch: ./launchd/install.sh --remove (or launchctl unload the plists).
@@ -25,17 +26,14 @@ MODE="${1:-batch}"
 TJ_ROOT="$HOME/projects/trade-journal"
 LOG_FILE="$TJ_ROOT/logs/options-advisor-${MODE}.log"
 LOCK_FILE="$TJ_ROOT/logs/.options-advisor-${MODE}.lock"
-CLAUDE="/opt/homebrew/bin/claude"
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
 case "$MODE" in
   batch)
     CLAUDE_TIMEOUT=2400  # 40 min: 6 scenarios + judgment + live verification
-    PROMPT="/options-advisor Scheduled morning batch run. Scenarios: hedge, income, collar, put_entry, risk_reversal, opportunistic (NOT leap_entry — it has its own afternoon job). Read the latest regime_snapshots first and let the regime shape the judgment. Live-verify chosen structures via IB (delayed data is fine) before saving. Save a batch ONLY for scenarios with genuine recommendations — an empty scenario saves nothing rather than filler. Respect all standing constraints (e.g. GLXY no downside hedges below mid-\$40s)."
     ;;
   leap)
     CLAUDE_TIMEOUT=3600  # 60 min: ~25 min IB scan + judgment
-    PROMPT="/options-advisor Scheduled leap_entry run. Run the leap_entry scenario (scripts/options-advisor.ts --scenario leap_entry), judge per the leap doctrine (thesis expression not vol arbitrage; avgHvGap persistence; existing-expression guard; liquidity floor), and save the batch only if there are genuine candidates. Check the gateway is up first (nc -z localhost 4001); if it is down, log and exit without saving."
     ;;
   *)
     echo "Usage: options-advisor-run.sh batch|leap" >&2; exit 1
@@ -81,9 +79,8 @@ cd "$TJ_ROOT"
 } >> "$LOG_FILE"
 
 set +e
-run_with_timeout "$CLAUDE_TIMEOUT" "$CLAUDE" -p "$PROMPT" \
-    --model opus \
-    --dangerously-skip-permissions >> "$LOG_FILE" 2>&1
+RUN_MODE="${TJ_OPTIONS_ADVISOR_RUN_MODE:-live}"
+run_with_timeout "$CLAUDE_TIMEOUT" "$TJ_ROOT/scripts/cron/options-advisor-invocation.sh" "$MODE" "$RUN_MODE" >> "$LOG_FILE" 2>&1
 RC=$?
 set -e
 
@@ -95,7 +92,9 @@ else
     echo "[$(ts)] options-advisor-${MODE} complete" >> "$LOG_FILE"
 fi
 
-printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "options-advisor-${MODE}" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+STATUS_NAME="options-advisor-${MODE}"
+if [ "$RUN_MODE" != "live" ]; then STATUS_NAME="${STATUS_NAME}-${RUN_MODE}"; fi
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
 if [ "$RC" -ne 0 ]; then
     /usr/bin/osascript -e "display notification \"options-advisor-${MODE} failed (rc=$RC) — see logs/options-advisor-${MODE}.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
 fi
