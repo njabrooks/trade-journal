@@ -816,8 +816,8 @@
         "Fresh deterministic bundle and database credentials."
       ],
       "limitations": [
-        "Live Claude-dependent scheduled consumer exists.",
-        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The live Claude-dependent scheduled consumer invokes the governed adapter; interactive slash-command discovery remains a separate provider-owned entry path.",
+        "The governed Provider Entry Point remains staged for interactive discovery; the authored Claude skill is retained as migration history and the explicit rollback target."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
@@ -833,7 +833,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and the scheduled morning-brief consumer cutover completed under issue #56 approval; retain interactive discovery and the authored skill outside that bounded live invocation change."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",

@@ -1689,7 +1689,7 @@
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and the scheduled morning-brief consumer cutover completed under issue #56 approval; retain interactive discovery and the authored skill outside that bounded live invocation change."
       }
     },
     {

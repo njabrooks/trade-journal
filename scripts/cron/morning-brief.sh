@@ -8,7 +8,7 @@
 # 07:00 thesis-observe and 08:00 /maintenance runs, so the brief synthesizes the
 # morning's fresh evidence and newly-raised decisions.
 #
-# Runs the `/morning-brief` Claude skill headlessly: it gathers the deterministic
+# Runs the governed morning-attention-brief adapter headlessly: it gathers the deterministic
 # bundle (scripts/morning-brief-data.ts --json), judges what deserves attention,
 # and upserts ONE row into morning_briefs (keyed on brief_date) that the dashboard
 # MorningBrief module renders.
@@ -26,7 +26,6 @@ set -euo pipefail
 TJ_ROOT="$HOME/projects/trade-journal"
 LOG_FILE="$TJ_ROOT/logs/morning-brief.log"
 LOCK_FILE="$TJ_ROOT/logs/.morning-brief.lock"
-CLAUDE="/opt/homebrew/bin/claude"
 CLAUDE_TIMEOUT=1800   # 30 min hard cap (deterministic bundle + synthesis; no WebSearch)
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
@@ -71,12 +70,10 @@ cd "$TJ_ROOT"
     echo "============================================================"
 } >> "$LOG_FILE"
 
-# Run the /morning-brief skill headlessly (all-Opus for the judgment synthesis).
-# --dangerously-skip-permissions: required for unattended Bash/tsx.
+# Run the governed selector headlessly (all-Opus for the judgment synthesis).
 set +e
-run_with_timeout "$CLAUDE_TIMEOUT" "$CLAUDE" -p "/morning-brief" \
-    --model opus \
-    --dangerously-skip-permissions >> "$LOG_FILE" 2>&1
+RUN_MODE="${TJ_MORNING_BRIEF_RUN_MODE:-live}"
+run_with_timeout "$CLAUDE_TIMEOUT" "$TJ_ROOT/scripts/cron/morning-brief-invocation.sh" "$RUN_MODE" >> "$LOG_FILE" 2>&1
 RC=$?
 set -e
 
@@ -89,7 +86,9 @@ else
 fi
 
 # Record outcome for check-cron-health.ts (SessionStart nudge surfaces failure streaks).
-printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "morning-brief" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+STATUS_NAME="morning-brief"
+if [ "$RUN_MODE" != "live" ]; then STATUS_NAME="${STATUS_NAME}-${RUN_MODE}"; fi
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
 if [ "$RC" -ne 0 ]; then
     /usr/bin/osascript -e "display notification \"morning-brief failed (rc=$RC) — see logs/morning-brief.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
 fi

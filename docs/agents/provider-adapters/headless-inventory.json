@@ -2710,11 +2710,11 @@
     },
     {
       "id": "launchd-morning-brief",
-      "invoked_adapter_source": ".claude/skills/morning-brief/SKILL.md",
+      "invoked_adapter_source": "capabilities/morning-attention-brief/adapters/claude.md",
       "migration_target_entry": "headless-codex-morning-brief",
       "provider": "claude",
       "model": "opus",
-      "invocation": "/opt/homebrew/bin/claude -p /morning-brief --model opus --dangerously-skip-permissions; the Codex projection is not currently invoked.",
+      "invocation": "scripts/cron/morning-brief-invocation.sh live verifies the digest-pinned governed Claude adapter and permits exactly one same-date morning_briefs upsert; logs/.morning-brief-use-legacy restores the previous /morning-brief command.",
       "schedule": "08:45 Europe/London daily",
       "wrapper": "scripts/cron/morning-brief.sh",
       "scheduler": "launchd/com.trade-journal.morning-brief.plist",
@@ -2733,7 +2733,7 @@
       ],
       "operational_risk": "medium",
       "risk_priority": 5,
-      "j2_disposition": "Migrate/evaluate fifth after upstream producers; preserve single-upsert synthesis boundary."
+      "j2_disposition": "Migrated under issue #56 approval after legacy/governed read-only shadows, same-date idempotent canary proof, belief-layer and Decision Item refusal proofs, and rollback proof."
     }
   ],
   "deterministic_exclusions": [
