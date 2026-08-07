@@ -54,6 +54,12 @@ function validTimestamp(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
 
+function validIsoCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 function normalizeFreshness(value: unknown): ProducerFreshness {
   if (!isRecord(value)) return { status: "missing", observedAt: null };
   const status = value.status;
@@ -170,7 +176,7 @@ export function evaluateMorningBriefInputs(
   );
   const errors: string[] = [];
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(briefDate)) {
+  if (!validIsoCalendarDate(briefDate)) {
     errors.push("briefDate must be an ISO calendar date.");
   }
   if (unavailableInputs.length > 0) {

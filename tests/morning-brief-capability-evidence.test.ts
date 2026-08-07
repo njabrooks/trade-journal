@@ -139,4 +139,28 @@ describe("morning attention brief adapter evidence", () => {
       expect(result.freshness[input].observedAt).not.toBeNull();
     }
   });
+
+  it("refuses an impossible brief date even when every producer is fresh", () => {
+    const generatedAt = "2026-08-07T07:45:00Z";
+    const producerFreshness = buildMorningBriefProducerFreshness({
+      generatedAt,
+      cronStatusTsv: [
+        "2026-08-07T06:58:00Z\tthesis-observe\t0",
+        "2026-08-07T07:01:00Z\tmaintenance\t0",
+        "2026-08-07T07:05:00Z\toptions-advisor-batch\t0",
+      ].join("\n"),
+      portfolioObservedAt: "2026-08-07T00:00:00Z",
+      decisionsObservedAt: generatedAt,
+      calendarObservedAt: generatedAt,
+    });
+    const result = evaluateAtPublicSeam({
+      briefDate: "2026-13-40",
+      producerFreshness,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toContain("briefDate must be an ISO calendar date.");
+    expect(result.persisted).toBe(false);
+    expect(result.write).toBeNull();
+  });
 });
