@@ -5,6 +5,8 @@
     <key>Label</key>
     <string>com.trade-journal.options-advisor-leap</string>
 
+    <!-- Governed LEAP adapter; eligible-market-hours, gateway, and no-trade gates. -->
+
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>

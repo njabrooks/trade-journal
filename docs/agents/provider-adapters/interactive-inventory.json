@@ -883,7 +883,7 @@
       ],
       "limitations": [
         "Live Claude-dependent scheduled consumers exist; connector and host availability vary.",
-        "The governed Provider Entry Point is live for the morning-batch scheduled consumer; the LEAP consumer and interactive discovery remain separately gated."
+        "The governed Provider Entry Point is live for both scheduled options-advisor consumers; interactive discovery remains separately gated."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
@@ -900,7 +900,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and live for the morning-batch consumer under #53; retain the existing interactive discovery input and separately gated LEAP invocation until their own cutovers."
+        "rationale": "The governed adapter is current and live for the morning-batch and LEAP consumers under #53/#54; retain the existing interactive discovery input until its separately approved cutover."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
