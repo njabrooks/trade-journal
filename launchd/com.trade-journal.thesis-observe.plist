@@ -14,7 +14,7 @@
         AFTER overnight ingestion settles and BEFORE the 08:00 /maintenance consume, so
         the morning belief loop reads fresh, same-day evidence.
 
-        Runs the `/thesis-observe` Claude skill headlessly via
+        Runs the governed thesis-observation Claude adapter headlessly via
         scripts/cron/thesis-observe.sh (lockfile, timeout, logging, all-Opus). The skill
         is SENSING ONLY — it writes scored per-signal evidence + journals it, and NEVER
         raises a decision or changes a status. Phase 1 observes TIER-1 ONLY (the

@@ -2628,11 +2628,11 @@
     },
     {
       "id": "launchd-thesis-observe",
-      "invoked_adapter_source": ".claude/skills/thesis-observe/SKILL.md",
+      "invoked_adapter_source": "capabilities/thesis-observation/adapters/claude.md",
       "migration_target_entry": "headless-codex-thesis-observe",
       "provider": "claude",
       "model": "opus",
-      "invocation": "/opt/homebrew/bin/claude -p /thesis-observe --model opus --dangerously-skip-permissions; the Codex projection is not currently invoked.",
+      "invocation": "scripts/cron/thesis-observe-invocation.sh live invokes the digest-pinned governed Claude adapter with maxTheses=14 and a structured sensing-only result; logs/.thesis-observe-use-legacy restores the previous /thesis-observe command.",
       "schedule": "07:00 Europe/London daily",
       "wrapper": "scripts/cron/thesis-observe.sh",
       "scheduler": "launchd/com.trade-journal.thesis-observe.plist",
@@ -2651,7 +2651,7 @@
       ],
       "operational_risk": "high",
       "risk_priority": 2,
-      "j2_disposition": "Migrate/evaluate second; preserve sensing-only write boundary."
+      "j2_disposition": "Migrated under issue #51 approval after shadow comparison, corrected one-thesis canary, and rollback proof; preserve the separately gated Codex discovery target."
     },
     {
       "id": "launchd-options-advisor-batch",

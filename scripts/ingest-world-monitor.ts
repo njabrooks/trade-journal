@@ -33,7 +33,10 @@ const { signals, signalDataSnapshots, signalEntityLinks } = schema;
 // (Pre-v2 rows used 'intelligence_items' with the now-dropped table's row uuids.)
 const SOURCE_TABLE = 'world_monitor_report';
 
-async function ingestReport(filePath: string): Promise<{ itemCount: number; emitted: number; skipped: boolean; candidates: { written: number; bumped: number; skipped: number } }> {
+async function ingestReport(
+  filePath: string,
+  options: { thesisObserveOnly?: boolean } = {},
+): Promise<{ itemCount: number; emitted: number; skipped: boolean; candidates: { written: number; bumped: number; skipped: number } }> {
   const markdown = readFileSync(filePath, 'utf-8');
   const parsed = parseWorldMonitor(markdown);
   let candidates = { written: 0, bumped: 0, skipped: 0 };
@@ -43,11 +46,14 @@ async function ingestReport(filePath: string): Promise<{ itemCount: number; emit
   // snapshots. The data_source label keeps their provenance distinct in the stream.
   const isThesisMonitor = parsed.reportType === 'thesis-monitor' || parsed.reportType === 'thesis-observe';
   const signalDataSource = parsed.reportType === 'thesis-observe' ? 'thesis_observe' : 'thesis_monitor';
+  if (options.thesisObserveOnly && parsed.reportType !== 'thesis-observe') {
+    throw new Error('--thesis-observe-only requires a report with type: thesis-observe');
+  }
 
   // Emit intel items with deterministic record ids — (source_table, source_record_id)
   // uniqueness makes re-ingestion of the same report a no-op.
   let emitted = 0;
-  if (parsed.items.length > 0) {
+  if (parsed.items.length > 0 && !options.thesisObserveOnly) {
     const intelItems: IntelItemInput[] = parsed.items.map((item, idx) => ({
       sourceKey: isThesisMonitor ? signalDataSource : 'world_monitor',
       sourceTable: SOURCE_TABLE,
@@ -70,7 +76,7 @@ async function ingestReport(filePath: string): Promise<{ itemCount: number; emit
   }
 
   // If nothing was newly emitted, the report was already ingested — skip snapshots.
-  const skipped = parsed.items.length > 0 && emitted === 0;
+  const skipped = !options.thesisObserveOnly && parsed.items.length > 0 && emitted === 0;
 
   // Post-ingestion hook: generate qualitative signal snapshots for thesis-monitor /
   // thesis-observe reports.
@@ -360,16 +366,17 @@ async function main() {
   const args = process.argv.slice(2);
   const fileIdx = args.indexOf('--file');
   const backfill = args.includes('--backfill');
+  const thesisObserveOnly = args.includes('--thesis-observe-only');
 
   if (!backfill && fileIdx === -1) {
-    console.error('Usage: npx tsx scripts/ingest-world-monitor.ts --file <path> | --backfill');
+    console.error('Usage: npx tsx scripts/ingest-world-monitor.ts --file <path> [--thesis-observe-only] | --backfill');
     process.exit(1);
   }
 
   if (fileIdx !== -1) {
     const filePath = resolve(args[fileIdx + 1]);
     console.log(`Ingesting: ${filePath}`);
-    const result = await ingestReport(filePath);
+    const result = await ingestReport(filePath, { thesisObserveOnly });
     if (result.skipped) {
       console.log(`  Skipped (already ingested)`);
     } else {
