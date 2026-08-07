@@ -18,6 +18,7 @@ on:
       - "tests/provider-generation-eligibility.test.ts"
       - "tests/portfolio-snapshot-capability.test.ts"
       - "tests/j2-governed-capabilities.test.ts"
+      - "tests/morning-brief-capability-evidence.test.ts"
       - "tests/evidence-freshness-governance.test.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
@@ -46,6 +47,7 @@ on:
       - "tests/provider-generation-eligibility.test.ts"
       - "tests/portfolio-snapshot-capability.test.ts"
       - "tests/j2-governed-capabilities.test.ts"
+      - "tests/morning-brief-capability-evidence.test.ts"
       - "tests/evidence-freshness-governance.test.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
@@ -164,4 +166,4 @@ jobs:
           npx tsx scripts/ops/prove-evidence-freshness-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT" --format json
 
       - name: Run focused governance regression tests
-        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/evidence-freshness-governance.test.ts
+        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/morning-brief-capability-evidence.test.ts tests/evidence-freshness-governance.test.ts

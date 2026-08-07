@@ -5,13 +5,13 @@
   "adapter_id": "morning-attention-brief-claude",
   "adapter_digest": "sha256:386b1b3673b3056cc0112bc880baa77ea2d39d6acc61b9ad1fa3461472cd694f",
   "support_state": "current",
-  "validated_at": "2026-08-06",
+  "validated_at": "2026-08-07",
   "results": {
     "adapter-entry-point": { "status": "passed", "method": "Repository contract test verifies the date-scoped request, sole bundle input, result fields, and exact source through Workspace validation" },
-    "freshness-and-synthesis": { "status": "passed", "method": "Read-only deterministic morning bundle completed with dated NAV, non-stale regime feeds, overnight evidence, decisions, advisor, sizing, execution, and calendar sections" },
+    "freshness-and-synthesis": { "status": "passed", "method": "Provider-result evidence in results/claude-stale-required-inputs.json and results/claude-missing-required-inputs.json proves every required producer is reported in freshness, unavailableInputs, and errors; both controlled results refuse synthesis and persistence without fallback data" },
     "exactly-one-upsert": { "status": "passed", "method": "Repository contract test and save-morning-brief implementation inspection bind persistence to the brief_date conflict target and one approved operation" },
     "belief-write-refusal": { "status": "passed", "method": "Repository contract test requires synthesis-only behavior and refusal of every other write operation, journal entry, decision, recommendation, and entity mutation" },
-    "neutral-semantics": { "status": "passed", "reviewer": "J2 implementation review", "method": "Compared the Claude adapter with docs/v2/20 Lane A, the one-upsert contract, upstream freshness rules, and ticket #55", "evidence_link": "https://github.com/njabrooks/trade-journal/issues/55", "expires_at": "2026-09-05" },
+    "neutral-semantics": { "status": "passed", "reviewer": "J2 implementation review", "method": "Compared the Claude adapter and stale/missing result evidence with docs/v2/20 Lane A, the one-upsert contract, upstream freshness rules, and ticket #55", "evidence_link": "https://github.com/njabrooks/trade-journal/issues/55", "expires_at": "2026-09-06" },
     "eligible-environment": { "status": "passed", "method": "Read-only deterministic morning bundle completed against the configured Home Hub database on 2026-08-06 without invoking the save operation" }
   }
 }

@@ -1,0 +1,27 @@
+{
+  "success": false,
+  "briefDate": "2026-08-07",
+  "freshness": {
+    "thesisObservation": { "status": "stale", "observedAt": "2026-08-05T07:00:00Z" },
+    "maintenance": { "status": "stale", "observedAt": "2026-08-05T20:00:00Z" },
+    "optionsAdvice": { "status": "stale", "observedAt": "2026-08-05T08:30:00Z" },
+    "portfolio": { "status": "stale", "observedAt": "2026-08-04T14:00:00Z" },
+    "decisions": { "status": "stale", "observedAt": "2026-08-05T08:00:00Z" },
+    "calendar": { "status": "stale", "observedAt": "2026-08-04T06:00:00Z" }
+  },
+  "headline": "Morning brief unavailable: required upstream inputs are stale.",
+  "attention": [],
+  "persisted": false,
+  "write": null,
+  "unavailableInputs": [
+    "thesisObservation",
+    "maintenance",
+    "optionsAdvice",
+    "portfolio",
+    "decisions",
+    "calendar"
+  ],
+  "errors": [
+    "Required upstream state is stale; synthesis and persistence were refused without browsing, re-querying, or assumptions."
+  ]
+}
