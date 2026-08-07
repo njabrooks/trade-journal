@@ -77,8 +77,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/morning-attention-brief",
-        "release_reference": "4bc2eeaa724c610d30bdb12c3c4629d1beb1a56e",
-        "revision": "4bc2eeaa724c610d30bdb12c3c4629d1beb1a56e"
+        "release_reference": "2f83f8ac96b554bcb0247484b4b2a75f4c956588",
+        "revision": "2f83f8ac96b554bcb0247484b4b2a75f4c956588"
       }
     },
     {
@@ -187,6 +187,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:88a147ccec91310a884d129e421c38319ba6ba84b2e312497ca447458461d943",
+  "registry_digest": "sha256:d57f098f2afa3417b1164d5718067078e27ea0a71474e1383360401fe6fcf1af",
   "schema_version": "1.0.0"
 }
