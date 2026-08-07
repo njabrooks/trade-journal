@@ -100,11 +100,12 @@ Registry Lock and generated staging outputs include all five Capabilities. Live 
 invocations remain unchanged pending the explicit approvals required by #49, #51, #53, #54, and #56.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
-`2f83f8ac96b554bcb0247484b4b2a75f4c956588`. Controlled stale and missing declarations cover thesis
-observation, maintenance, options advice, portfolio, decisions, and calendar state. Both exact adapters must
-run the pure stdin/stdout freshness gate before synthesis; the observed result reports each unavailable
-producer through `freshness`, `unavailableInputs`, and `errors`, and refuses synthesis and persistence without
-browsing, re-querying, assumptions, provider invocation, or database access.
+`70396ad5f46500186f15383a6e033dba7226db5c`. The real deterministic bundle emits timestamped freshness from
+the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar
+observations. Both exact adapters must run the pure stdin/stdout freshness gate before synthesis; fresh bundles
+remain eligible, while stale, failed, missing, or timestamp-less state is reported through `freshness`,
+`unavailableInputs`, and `errors` and refuses synthesis and persistence without browsing, re-querying,
+assumptions, provider invocation, or database access.
 
 The accepted W1 CLI remains pinned through the existing exact-revision acquisition mechanism. Workspace
 issue `njabrooks/projects#31` continues to own any future replacement for that interim acquisition design.

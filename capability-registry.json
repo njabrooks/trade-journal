@@ -24,7 +24,7 @@
       "approved_version": "1.0.0",
       "release": {
         "source": ".",
-        "revision": "2f83f8ac96b554bcb0247484b4b2a75f4c956588"
+        "revision": "70396ad5f46500186f15383a6e033dba7226db5c"
       },
       "development": {
         "enabled": true,
