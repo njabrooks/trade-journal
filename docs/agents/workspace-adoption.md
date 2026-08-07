@@ -100,7 +100,7 @@ Registry Lock and generated staging outputs include all five Capabilities. Live 
 invocations remain unchanged pending the explicit approvals required by #49, #51, #53, #54, and #56.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
-`70396ad5f46500186f15383a6e033dba7226db5c`. The real deterministic bundle emits timestamped freshness from
+`be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar
 observations. Both exact adapters must run the pure stdin/stdout freshness gate before synthesis; fresh bundles
 remain eligible, while stale, failed, missing, or timestamp-less state is reported through `freshness`,
