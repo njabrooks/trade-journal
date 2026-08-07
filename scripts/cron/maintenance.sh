@@ -4,13 +4,14 @@
 #
 # Scheduled wrapper for the belief-maintenance loop (docs/v2/09 §10, docs/v2/10).
 # Called by launchd (com.trade-journal.maintenance) twice daily — 08:00 + 20:00
-# Europe/London. Runs the `/maintenance` Claude skill headlessly: it reads the
+# Europe/London. Runs the governed belief-maintenance Claude adapter headlessly:
+# it reads the
 # status dashboard, relates new research (relate-research over [cursor, now)),
 # drains a bounded slice of each worklist (digest / signal / health / research-gap /
 # retrospective / framing / classify_exposure / re-underwrite-due), and raises
 # DecisionStrip items.
 #
-# Safety: /maintenance is decision-ONLY for genuine judgments — it auto-links only
+# Safety: belief maintenance is decision-ONLY for genuine judgments — it auto-links only
 # clear (>=0.7) claim matches and SURFACES everything else as decisions for the user;
 # it never auto-resolves a genuine decision or auto-re-underwrites. It is token-aware
 # and bounded per run, so the catch-up backlog drains over many runs.
@@ -28,7 +29,6 @@ set -euo pipefail
 TJ_ROOT="$HOME/projects/trade-journal"
 LOG_FILE="$TJ_ROOT/logs/maintenance.log"
 LOCK_FILE="$TJ_ROOT/logs/.maintenance.lock"
-CLAUDE="/opt/homebrew/bin/claude"
 CLAUDE_TIMEOUT=2400   # 40 min hard cap on the agent run
 ts() { TZ='Europe/London' date +'%Y-%m-%d %H:%M:%S %Z'; }
 
@@ -73,12 +73,13 @@ cd "$TJ_ROOT"
     echo "============================================================"
 } >> "$LOG_FILE"
 
-# Run the /maintenance skill headlessly (all-Opus for belief judgment).
+# Run the governed adapter headlessly (all-Opus for belief judgment). The
+# operator-only TJ_MAINTENANCE_RUN_MODE supports bounded shadow/canary evidence;
+# launchd leaves it unset and therefore uses the live bounded request.
 # --dangerously-skip-permissions: required for unattended Bash/psql/tsx writes.
+RUN_MODE="${TJ_MAINTENANCE_RUN_MODE:-live}"
 set +e
-run_with_timeout "$CLAUDE_TIMEOUT" "$CLAUDE" -p "/maintenance" \
-    --model opus \
-    --dangerously-skip-permissions >> "$LOG_FILE" 2>&1
+run_with_timeout "$CLAUDE_TIMEOUT" "$TJ_ROOT/scripts/cron/maintenance-invocation.sh" "$RUN_MODE" >> "$LOG_FILE" 2>&1
 RC=$?
 set -e
 
@@ -91,7 +92,11 @@ else
 fi
 
 # Record outcome for check-cron-health.ts (SessionStart nudge surfaces failure streaks).
-printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "maintenance" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
+STATUS_NAME="maintenance"
+if [ "$RUN_MODE" != "live" ]; then
+    STATUS_NAME="maintenance-$RUN_MODE"
+fi
+printf '%s\t%s\t%s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$STATUS_NAME" "$RC" >> "$TJ_ROOT/logs/cron-status.tsv"
 if [ "$RC" -ne 0 ]; then
     /usr/bin/osascript -e "display notification \"maintenance failed (rc=$RC) — see logs/maintenance.log\" with title \"trade-journal cron\"" >/dev/null 2>&1 || true
 fi
