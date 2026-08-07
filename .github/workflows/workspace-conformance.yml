@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      WORKSPACE_LOCK_EVIDENCE_TIME: "2026-08-06"
+      WORKSPACE_LOCK_EVIDENCE_TIME: "2026-08-07"
       WORKSPACE_REPOSITORY_ROOT: ${{ github.workspace }}/.workspace-standard
     steps:
       - name: Check out Trade Journal

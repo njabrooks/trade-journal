@@ -62,7 +62,7 @@
           "provider": "claude",
           "source": "adapters/claude.md",
           "state": "current",
-          "validated_at": "2026-08-06"
+          "validated_at": "2026-08-07"
         },
         {
           "evidence": "evidence/codex.json",
@@ -70,15 +70,15 @@
           "provider": "codex",
           "source": "adapters/codex.md",
           "state": "current",
-          "validated_at": "2026-08-06"
+          "validated_at": "2026-08-07"
         }
       ],
       "repository": "github:njabrooks/trade-journal",
       "source": {
         "development_digest": null,
         "package_path": "capabilities/morning-attention-brief",
-        "release_reference": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
-        "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
+        "release_reference": "4bc2eeaa724c610d30bdb12c3c4629d1beb1a56e",
+        "revision": "4bc2eeaa724c610d30bdb12c3c4629d1beb1a56e"
       }
     },
     {
@@ -183,10 +183,10 @@
       }
     }
   ],
-  "evidence_time": "2026-08-06",
+  "evidence_time": "2026-08-07",
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:963e09e5d8a2aaf83aa5c51527b4d991ff90a4a89544739eac2fbf0d19d7bddd",
+  "registry_digest": "sha256:88a147ccec91310a884d129e421c38319ba6ba84b2e312497ca447458461d943",
   "schema_version": "1.0.0"
 }
