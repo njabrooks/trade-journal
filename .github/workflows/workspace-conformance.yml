@@ -18,6 +18,7 @@ on:
       - "tests/provider-generation-eligibility.test.ts"
       - "tests/portfolio-snapshot-capability.test.ts"
       - "tests/j2-governed-capabilities.test.ts"
+      - "tests/evidence-freshness-governance.test.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -45,6 +46,7 @@ on:
       - "tests/provider-generation-eligibility.test.ts"
       - "tests/portfolio-snapshot-capability.test.ts"
       - "tests/j2-governed-capabilities.test.ts"
+      - "tests/evidence-freshness-governance.test.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -65,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      WORKSPACE_EVIDENCE_TIME: "2026-08-06"
+      WORKSPACE_LOCK_EVIDENCE_TIME: "2026-08-06"
       WORKSPACE_REPOSITORY_ROOT: ${{ github.workspace }}/.workspace-standard
     steps:
       - name: Check out Trade Journal
@@ -88,6 +90,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      - name: Set the present governed evidence date
+        run: echo "WORKSPACE_EVIDENCE_TIME=$(date -u +%F)" >> "$GITHUB_ENV"
 
       - name: Install repository dependencies
         run: npm ci
@@ -137,18 +142,26 @@ jobs:
 
       - name: Validate the immutable published Registry Lock
         run: |
-          ./workspace validate registry-lock capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME"
-          ./workspace validate registry-lock capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
+          ./workspace validate registry-lock capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_LOCK_EVIDENCE_TIME"
+          ./workspace validate registry-lock capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_LOCK_EVIDENCE_TIME" --format json
 
       - name: Validate clean staged Provider Entry Point regeneration
         run: |
-          ./workspace validate provider-entry-points . --registry capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME"
-          ./workspace validate provider-entry-points . --registry capability-registry.json --lock capability-registry-lock.json --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
+          current_lock="$RUNNER_TEMP/current-evidence-registry-lock.json"
+          ./workspace resolve registry capability-registry.json --lock "$current_lock" --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME"
+          ./workspace validate registry-lock capability-registry.json --lock "$current_lock" --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
+          ./workspace validate provider-entry-points . --registry capability-registry.json --lock "$current_lock" --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME"
+          ./workspace validate provider-entry-points . --registry capability-registry.json --lock "$current_lock" --mode published --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
 
       - name: Prove unavailable support fails before writing
         run: |
           npx tsx scripts/ops/prove-provider-entry-point-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT"
           npx tsx scripts/ops/prove-provider-entry-point-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT" --format json
 
+      - name: Prove expired evidence fails before acceptance or writing
+        run: |
+          npx tsx scripts/ops/prove-evidence-freshness-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT"
+          npx tsx scripts/ops/prove-evidence-freshness-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT" --format json
+
       - name: Run focused governance regression tests
-        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts
+        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/evidence-freshness-governance.test.ts

@@ -101,3 +101,11 @@ invocations remain unchanged pending the explicit approvals required by #49, #51
 
 The accepted W1 CLI remains pinned through the existing exact-revision acquisition mechanism. Workspace
 issue `njabrooks/projects#31` continues to own any future replacement for that interim acquisition design.
+
+CI evaluates Capability and Provider Entry Point freshness against the runner's current UTC date. The
+checked-in immutable Registry Lock remains independently reproducible at its recorded governed evidence date
+of `2026-08-06`; CI resolves a temporary present-day lock before clean-regeneration validation so current
+freshness is enforced without rewriting or making the published lock nondeterministic. A controlled public-CLI
+proof also evaluates evidence on `2026-09-06`, after its `2026-09-05` expiry, and requires the adapter to become
+`stale`, existing governed output validation to fail, regeneration to fail, and the absent target to remain
+unwritten. The existing `WS-ENTRY-005` unavailable-support refusal remains a separate regression.
