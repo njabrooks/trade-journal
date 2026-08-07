@@ -1,29 +1,24 @@
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+
+import {
+  REQUIRED_UPSTREAM_INPUTS,
+  type MorningBriefFreshnessInput,
+} from "../capabilities/morning-attention-brief/evaluate-inputs.js";
 
 const evidenceRoot = resolve(
   process.cwd(),
   "capabilities/morning-attention-brief/evidence",
 );
+const evaluator = resolve(
+  process.cwd(),
+  "capabilities/morning-attention-brief/evaluate-inputs.ts",
+);
 
-const requiredInputs = [
-  "thesisObservation",
-  "maintenance",
-  "optionsAdvice",
-  "portfolio",
-  "decisions",
-  "calendar",
-] as const;
-
-type RequiredInput = (typeof requiredInputs)[number];
+type RequiredInput = (typeof REQUIRED_UPSTREAM_INPUTS)[number];
 type InputStatus = "current" | "stale" | "missing";
-
-interface Scenario {
-  briefDate: string;
-  upstream: Record<RequiredInput, { status: InputStatus; observedAt: string | null }>;
-  fallbackTraps: string[];
-}
 
 interface Result {
   success: boolean;
@@ -41,6 +36,17 @@ function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(resolve(evidenceRoot, path), "utf8")) as T;
 }
 
+function evaluateAtPublicSeam(input: MorningBriefFreshnessInput): Result {
+  const evaluated = spawnSync(process.execPath, ["--import", "tsx", evaluator], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    input: JSON.stringify(input),
+  });
+  expect(evaluated.status).toBe(0);
+  expect(evaluated.stderr).toBe("");
+  return JSON.parse(evaluated.stdout) as Result;
+}
+
 function expectSafeRefusal(result: Result, scenario: Scenario): void {
   expect(result).toMatchObject({
     success: false,
@@ -50,44 +56,41 @@ function expectSafeRefusal(result: Result, scenario: Scenario): void {
     attention: [],
   });
   expect(result.errors.length).toBeGreaterThan(0);
-  expect(JSON.stringify(result)).not.toContain(scenario.fallbackTraps.join(""));
+  for (const trap of scenario.fallbackData) {
+    expect(JSON.stringify(result)).not.toContain(trap);
+  }
 }
 
+type Scenario = MorningBriefFreshnessInput & { fallbackData: string[] };
+
 describe("morning attention brief adapter evidence", () => {
-  it.each(["claude", "codex"])(
-    "%s reports every stale required input without synthesizing or persisting",
-    (provider) => {
+  it.each([{ provider: "claude" }, { provider: "codex" }])(
+    "$provider reports every stale required input without synthesizing or persisting",
+    () => {
       const scenario = readJson<Scenario>("scenarios/stale-required-inputs.json");
-      const result = readJson<Result>(
-        `results/${provider}-stale-required-inputs.json`,
-      );
+      const result = evaluateAtPublicSeam(scenario);
 
       expectSafeRefusal(result, scenario);
-      expect(result.unavailableInputs).toEqual(requiredInputs);
-      for (const input of requiredInputs) {
-        expect(result.freshness[input]).toEqual(scenario.upstream[input]);
+      expect(result.unavailableInputs).toEqual(REQUIRED_UPSTREAM_INPUTS);
+      for (const input of REQUIRED_UPSTREAM_INPUTS) {
+        expect(result.freshness[input]).toEqual(scenario.producerFreshness[input]);
       }
     },
   );
 
-  it.each(["claude", "codex"])(
-    "%s reports every missing required input without browsing, re-querying, or assumptions",
-    (provider) => {
+  it.each([{ provider: "claude" }, { provider: "codex" }])(
+    "$provider reports every missing required input without browsing, re-querying, or assumptions",
+    () => {
       const scenario = readJson<Scenario>("scenarios/missing-required-inputs.json");
-      const result = readJson<Result>(
-        `results/${provider}-missing-required-inputs.json`,
-      );
+      const result = evaluateAtPublicSeam(scenario);
 
       expectSafeRefusal(result, scenario);
-      expect(result.unavailableInputs).toEqual(requiredInputs);
-      for (const input of requiredInputs) {
+      expect(result.unavailableInputs).toEqual(REQUIRED_UPSTREAM_INPUTS);
+      for (const input of REQUIRED_UPSTREAM_INPUTS) {
         expect(result.freshness[input]).toEqual({
           status: "missing",
           observedAt: null,
         });
-      }
-      for (const trap of scenario.fallbackTraps) {
-        expect(JSON.stringify(result)).not.toContain(trap);
       }
     },
   );
