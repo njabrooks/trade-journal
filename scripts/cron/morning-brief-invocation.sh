@@ -11,6 +11,20 @@ RUN_MODE="${1:-live}"
 ROLLBACK_MARKER="${TJ_MORNING_BRIEF_ROLLBACK_MARKER:-$TJ_REPO_ROOT/logs/.morning-brief-use-legacy}"
 BRIEF_DATE="$(TZ=Europe/London "$DATE_BIN" +%F)"
 
+if [ "$RUN_MODE" = "fixture" ]; then
+    case "${2:-}" in
+        stale-required-inputs.json|missing-required-inputs.json)
+            FIXTURE_PATH="$TJ_REPO_ROOT/capabilities/morning-attention-brief/evidence/scenarios/$2"
+            exec /usr/bin/env node --import tsx \
+                "$TJ_REPO_ROOT/capabilities/morning-attention-brief/evaluate-inputs.ts" < "$FIXTURE_PATH"
+            ;;
+        *)
+            echo "usage: $0 fixture [stale-required-inputs.json|missing-required-inputs.json]" >&2
+            exit 64
+            ;;
+    esac
+fi
+
 if [ -f "$TJ_REPO_ROOT/.env.local" ]; then
     set -a
     # shellcheck disable=SC1091
@@ -61,5 +75,5 @@ case "$RUN_MODE" in
     legacy-shadow)
         exec "$CLAUDE_BIN" -p "/morning-brief Read-only shadow for $BRIEF_DATE: gather the normal deterministic bundle and synthesize the complete brief, but do not invoke save-morning-brief or any other write. Return the governed morning-attention-brief result object with persisted=false and write=null." --model opus --dangerously-skip-permissions --no-session-persistence --output-format json
         ;;
-    *) echo "usage: $0 [live|shadow|canary|legacy-shadow]" >&2; exit 64 ;;
+    *) echo "usage: $0 [live|shadow|canary|legacy-shadow|fixture]" >&2; exit 64 ;;
 esac
