@@ -1,7 +1,7 @@
 {
   "kind": "ProviderAdapterGenerationEligibility",
   "schema_version": "1.0.0",
-  "as_of": "2026-08-06",
+  "as_of": "2026-08-07",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
   "generation_eligible_count": 14,
@@ -504,10 +504,10 @@
       },
       "evidence": {
         "state": "current",
-        "as_of": "2026-08-06",
+        "as_of": "2026-08-07",
         "capability_version": "1.0.0",
         "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
-        "adapter_digest": "sha256:015175518241ad95e8f1a19db750286fa0fabdfa3715b5a764aa0676f83567f1",
+        "adapter_digest": "sha256:392151b5da990f7f3f407ddd46c6100072c58d58632cfc0b605cbf30724ba934",
         "reason": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Codex adapter."
       },
       "generation_eligible": true,
@@ -1679,10 +1679,10 @@
       },
       "evidence": {
         "state": "current",
-        "as_of": "2026-08-06",
+        "as_of": "2026-08-07",
         "capability_version": "1.0.0",
         "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
-        "adapter_digest": "sha256:386b1b3673b3056cc0112bc880baa77ea2d39d6acc61b9ad1fa3461472cd694f",
+        "adapter_digest": "sha256:d84d2c175160b79ee612bbce054a4ee0dd5702932bf18e8864b147bdd55c63d3",
         "reason": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Claude adapter."
       },
       "generation_eligible": true,

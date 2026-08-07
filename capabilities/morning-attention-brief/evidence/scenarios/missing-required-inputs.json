@@ -1,0 +1,16 @@
+{
+  "briefDate": "2026-08-07",
+  "producerFreshness": {
+    "thesisObservation": { "status": "missing", "observedAt": null },
+    "maintenance": { "status": "missing", "observedAt": null },
+    "optionsAdvice": { "status": "missing", "observedAt": null },
+    "portfolio": { "status": "missing", "observedAt": null },
+    "decisions": { "status": "missing", "observedAt": null },
+    "calendar": { "status": "missing", "observedAt": null }
+  },
+  "fallbackData": [
+    "BROWSED_REPLACEMENT_EVIDENCE",
+    "REQUERIED_DATABASE_STATE",
+    "ASSUMED_EMPTY_MEANS_CURRENT"
+  ]
+}

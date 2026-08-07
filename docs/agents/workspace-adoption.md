@@ -99,12 +99,20 @@ have current evidence from structural boundary tests and bounded read-only envir
 Registry Lock and generated staging outputs include all five Capabilities. Live scheduler and provider
 invocations remain unchanged pending the explicit approvals required by #49, #51, #53, #54, and #56.
 
+Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
+`be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
+the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar
+observations. Both exact adapters must run the pure stdin/stdout freshness gate before synthesis; fresh bundles
+remain eligible, while stale, failed, missing, or timestamp-less state is reported through `freshness`,
+`unavailableInputs`, and `errors` and refuses synthesis and persistence without browsing, re-querying,
+assumptions, provider invocation, or database access.
+
 The accepted W1 CLI remains pinned through the existing exact-revision acquisition mechanism. Workspace
 issue `njabrooks/projects#31` continues to own any future replacement for that interim acquisition design.
 
 CI evaluates Capability and Provider Entry Point freshness against the runner's current UTC date. The
 checked-in immutable Registry Lock remains independently reproducible at its recorded governed evidence date
-of `2026-08-06`; CI resolves a temporary present-day lock before clean-regeneration validation so current
+of `2026-08-07`; CI resolves a temporary present-day lock before clean-regeneration validation so current
 freshness is enforced without rewriting or making the published lock nondeterministic. A controlled public-CLI
 proof also evaluates evidence on `2026-09-06`, after its `2026-09-05` expiry, and requires the adapter to become
 `stale`, existing governed output validation to fail, regeneration to fail, and the absent target to remain

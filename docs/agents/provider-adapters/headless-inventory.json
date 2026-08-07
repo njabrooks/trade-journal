@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "inventory_kind": "headless",
-  "as_of": "2026-08-06",
+  "as_of": "2026-08-07",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "authority": "Repository-owned supporting inventory under Workspace Initiative #12, Wayfinder #1, migration decision #9, and accepted W1 #13. W1 remains authoritative only for its defined manifest and exact evidence contracts.",
   "entries": [
@@ -1060,10 +1060,10 @@
       },
       "evidence": {
         "state": "current",
-        "as_of": "2026-08-06",
+        "as_of": "2026-08-07",
         "capability_version": "1.0.0",
         "package_digest": "sha256:e9224d2a011b4b3c9f83233efed7a30f0ed92818a7e16495f88c48a299b2e3ec",
-        "adapter_digest": "sha256:015175518241ad95e8f1a19db750286fa0fabdfa3715b5a764aa0676f83567f1",
+        "adapter_digest": "sha256:392151b5da990f7f3f407ddd46c6100072c58d58632cfc0b605cbf30724ba934",
         "reason": "Exact current evidence is bound to morning-attention-brief 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {

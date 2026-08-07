@@ -7,6 +7,7 @@
  * pattern: deterministic gather here, judgment in the skill). READ-ONLY — no writes.
  *
  * Sections:
+ *   producerFreshness  — explicit status/timestamp for each required upstream producer
  *   navDelta            — day-over-day NAV + gross exposure (portfolio_snapshots, account level)
  *   overnightEvidence   — signal evidence last 24h (signal_data_snapshots, data_source
  *                         thesis_observe/price_watch), grouped by thesis, thesis-centric polarity
@@ -46,6 +47,9 @@ import {
   OVER_PCT,
 } from '@/lib/derived/sizingCoherence';
 import { execFileSync } from 'child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { buildMorningBriefProducerFreshness } from '../capabilities/morning-attention-brief/evaluate-inputs.js';
 
 const num = (v: string | number | null | undefined): number | null =>
   v == null ? null : Number(v);
@@ -403,10 +407,25 @@ async function main() {
   // Deterministic reuse of the sibling --json surfaces (each runs in its own process).
   const openDecisions = runJsonScript('scripts/ops/list-decisions.ts');
   const executionPatterns = runJsonScript('scripts/ops/execution-patterns.ts');
+  const generatedAt = new Date().toISOString();
+  const cronStatusPath = resolve(process.cwd(), 'logs/cron-status.tsv');
+  const cronStatusTsv = existsSync(cronStatusPath)
+    ? readFileSync(cronStatusPath, 'utf8')
+    : '';
+  const producerFreshness = buildMorningBriefProducerFreshness({
+    generatedAt,
+    cronStatusTsv,
+    portfolioObservedAt: navDelta.latestDate
+      ? `${navDelta.latestDate}T00:00:00Z`
+      : null,
+    decisionsObservedAt: generatedAt,
+    calendarObservedAt: generatedAt,
+  });
 
   const bundle = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     briefDate: londonToday(),
+    producerFreshness,
     navDelta,
     regime,
     overnightEvidence,

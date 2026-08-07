@@ -29,7 +29,7 @@ const DEFAULT_ELIGIBILITY = resolve(
 
 export const ACCEPTED_WORKSPACE_REVISION =
   "2b6ea3e02ff5ba114b0f91dd779c4afb26181358";
-export const GOVERNED_EVIDENCE_DATE = "2026-08-06";
+export const GOVERNED_EVIDENCE_DATE = "2026-08-07";
 export const GOVERNED_OUTPUTS = [
   "docs/agents/provider-entry-points/staging/claude.md",
   "docs/agents/provider-entry-points/staging/codex.md",
