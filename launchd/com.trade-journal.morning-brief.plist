@@ -14,7 +14,7 @@
         AFTER the 07:00 thesis-observe and 08:00 /maintenance runs, so the brief
         synthesizes fresh evidence and newly-raised decisions into one row.
 
-        Runs the `/morning-brief` Claude skill headlessly via
+        Runs the governed morning-attention-brief adapter headlessly via
         scripts/cron/morning-brief.sh (lockfile, timeout, logging, all-Opus). The skill
         is SYNTHESIS ONLY — its single DB write is the morning_briefs upsert; it NEVER
         mutates the belief layer or raises decisions.
