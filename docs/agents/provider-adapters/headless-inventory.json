@@ -2602,11 +2602,11 @@
   "operational_workflows": [
     {
       "id": "launchd-maintenance",
-      "invoked_adapter_source": ".claude/skills/maintenance/SKILL.md",
+      "invoked_adapter_source": "capabilities/belief-maintenance/adapters/claude.md",
       "migration_target_entry": "headless-codex-maintenance",
       "provider": "claude",
       "model": "opus",
-      "invocation": "/opt/homebrew/bin/claude -p /maintenance --model opus --dangerously-skip-permissions; the Codex projection is not currently invoked.",
+      "invocation": "scripts/cron/maintenance-invocation.sh live invokes the digest-pinned governed Claude adapter with a declared bound and structured result contract; logs/.maintenance-use-legacy restores the previous /maintenance command.",
       "schedule": "08:00 and 20:00 Europe/London daily",
       "wrapper": "scripts/cron/maintenance.sh",
       "scheduler": "launchd/com.trade-journal.maintenance.plist",
@@ -2624,7 +2624,7 @@
       ],
       "operational_risk": "critical",
       "risk_priority": 1,
-      "j2_disposition": "Migrate/evaluate first; preserve decision-only judgment boundary and observability."
+      "j2_disposition": "Migrated under issue #49 approval after shadow comparison, a one-item canary, and rollback proof; preserve the remaining separately gated Codex discovery target."
     },
     {
       "id": "launchd-thesis-observe",

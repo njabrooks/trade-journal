@@ -750,8 +750,8 @@
         "Database credentials, Tana access where required, and bounded run controls."
       ],
       "limitations": [
-        "Live Claude-dependent scheduled consumer exists and is a high-risk J2 boundary.",
-        "The governed Provider Entry Point is staged; the authored Claude skill remains the active migration input until an explicitly approved operational or final discovery cutover."
+        "The live Claude-dependent scheduled consumer remains a critical operational boundary.",
+        "The governed Claude adapter is live for maintenance; final provider discovery remains separately gated."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
@@ -767,7 +767,7 @@
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The governed adapter is current and staged; retain the existing Claude discovery input and live invocation until its separately approved cutover."
+        "rationale": "The governed adapter is current and the maintenance scheduler cutover completed under issue #49 approval; retain the authored skill only as the delegated workflow source."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",

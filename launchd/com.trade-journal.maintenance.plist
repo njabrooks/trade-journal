@@ -13,7 +13,7 @@
         DST cron-pair is needed. Morning run is after overnight ingestion settles;
         evening run keeps the belief layer fresh end-of-day.
 
-        Runs the `/maintenance` Claude skill headlessly via
+        Runs the governed belief-maintenance Claude adapter headlessly via
         scripts/cron/maintenance.sh (lockfile, timeout, logging, all-Opus). The
         skill is decision-only for genuine judgments — it surfaces, never auto-resolves.
 
