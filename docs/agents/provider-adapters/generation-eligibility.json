@@ -4,7 +4,7 @@
   "as_of": "2026-08-07",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
-  "generation_eligible_count": 14,
+  "generation_eligible_count": 16,
   "governed_outputs": [
     "docs/agents/provider-entry-points/staging/claude.md",
     "docs/agents/provider-entry-points/staging/codex.md"
@@ -230,7 +230,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/build-core-argument/SKILL.md"
+        "path": "capabilities/thesis-underwriting/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -240,21 +240,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-07",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+        "adapter_digest": "sha256:f5067026d7a81aa37de1d1ddc78d9c80511112b6e28e59f15851ed033b887a45",
+        "reason": "Exact current evidence is bound to thesis-underwriting 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
       }
     },
     {
@@ -1405,7 +1402,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/build-core-argument/SKILL.md"
+        "path": "capabilities/thesis-underwriting/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1415,21 +1412,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-07",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+        "adapter_digest": "sha256:58ec39a1d27c3a184e5cc7624ba4e95ffcf96a289318352555f2e1826ddd490d",
+        "reason": "Exact current evidence is bound to thesis-underwriting 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
       }
     },
     {

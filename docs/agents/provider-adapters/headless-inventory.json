@@ -445,22 +445,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/build-core-argument/SKILL.md"
+        "path": "capabilities/thesis-underwriting/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/build-core-argument/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/build-core-argument/HEADLESS_PREAMBLE.md",
-        "readiness": "Hand-authored parameters and output contract exist; exact W1 evidence is still unavailable."
+        "readiness": "The bespoke headless preamble remains a migration input; the exact governed adapter carries the bounded delegated-underwriting contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/build-core-argument/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
         "rationale": "Performs underwriting synthesis but cannot fabricate owner conviction."
       },
@@ -469,18 +469,17 @@
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Claims, observations, thesis state, and prior articulations.",
-        "writes": "New articulation versions and derived signals through repository scripts.",
-        "judgment": "Performs underwriting synthesis but cannot fabricate owner conviction."
+        "reads": "Linked claims, observations, thesis state, prior articulations, and signal-quality context.",
+        "writes": "New articulation versions, derived signals, consumed candidate-signal dispositions, and resulting audit history through repository scripts.",
+        "judgment": "Requires an explicit delegated underwriting request and cannot change lifecycle state or resolve genuine Decision Items."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Remote database access and a specified thesis."
+        "Remote database access, a specified thesis, and an explicit delegated underwriting request."
       ],
       "limitations": [
-        "Bespoke contract improves invocation specificity but does not establish W1 conformance.",
-        "Bespoke headless contract exists; genuine conviction calls remain interactive.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the bespoke headless mirror remains the active migration input until final discovery cutover.",
+        "Database, provider, sandbox, or network unavailability must be reported explicitly and cannot be substituted with invented underwriting state."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -491,16 +490,28 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-07",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+        "adapter_digest": "sha256:f5067026d7a81aa37de1d1ddc78d9c80511112b6e28e59f15851ed033b887a45",
+        "reason": "Exact current evidence is bound to thesis-underwriting 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+      }
+      ,
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/build-core-argument/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/thesis-underwriting/capability-package.json",
+        "adapter_id": "thesis-underwriting-codex",
+        "evidence_path": "capabilities/thesis-underwriting/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {

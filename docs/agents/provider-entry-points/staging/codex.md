@@ -251,3 +251,34 @@ Use the available current web research capability for attributable, recent sourc
 Produce the workflow's directive report with signal identifier, score, evidence, assessment, and change from prior, then use only the documented thesis-observe ingestion boundary. Return JSON containing `success`, `asOf`, `thesesObserved`, `signalsAssessed`, `directives`, `writes`, `unavailableInputs`, and `errors`.
 
 This adapter is sensing-only. Its writes are limited to the observation artifact, `signal_data_snapshots`, and corresponding journal history. It must not invoke `scripts/ops/resolve-decision.ts`, `scripts/ops/update-entity-status.ts`, raise a Decision Item, or change thesis, strategy, claim, or signal status.
+
+### capability:scope:trade-journal/thesis-underwriting 1.0.0
+
+Intent: Build a living thesis underwriting from provenance-bearing evidence without changing the Trade Journal thesis lifecycle or reviving retired manual signal configuration.
+
+Contract: Given an identified macro or asset thesis, its complete linked provenance-bearing claims and observations, prior articulation, relevant compositional context, and any available signal-quality inputs, produce a new versioned thesis articulation and derived resolution signals; preserve claim linkage and rebuttal handling, require relation of in-scope unlinked claims before writing, refine the resolution section from actionable quality or candidate inputs, carry forward prior signal lineage whenever a statement continues it, record only the bounded articulation, signal, candidate-resolution, and audit writes supplied by the repository scripts, does not change thesis status, and reports unavailable inputs or execution failures explicitly.
+
+Provider-neutral instructions:
+- Read thesis context only through the repository snapshot and query helpers, including linked claims, observations, prior articulations, compositional context, signal-quality diagnostics, and candidate signals where available.
+- Before synthesis, require all in-scope evidence to be linked: if thesis-snapshot reports unlinked claims, report the relation prerequisite and do not write a new articulation until the evidence set is complete.
+- Preserve provenance by grounding the articulation and each derived signal in linked claim or observation identifiers; treat sparse provenance-bearing observations as valid evidence with appropriate weight.
+- Derive qualitative confirmation, invalidation, and completion signals from linked claims, counterarguments, assumptions, timeframes, and legitimate thesis dependencies.
+- When signal-quality diagnostics or candidate signals are non-empty, refine the resolution section by sharpening or dropping chronic-neutral statements, covering material gaps, and promoting or dismissing every assessed candidate.
+- Use a new articulation version for every completed underwriting and set supersedesSignalId whenever a new resolution statement continues a prior signal, preserving eligible statement-to-sensor lineage.
+- Never author manual signal thresholds, data sources, explicit_details, or retired configure-signal behaviour.
+- Do not change macro or asset thesis status; the expression-driven cascade owns thesis lifecycle state.
+- Do not resolve Decision Items or represent synthesized confidence as an unrequested owner decision; interactive refinement remains available, and headless use requires an explicit delegated underwriting request for the identified thesis.
+- Use only the repository articulation and candidate-resolution scripts for bounded writes, retain their journal audit trail, and report unavailable database, malformed thesis, missing evidence, or command failures without substituting invented state.
+
+Provider Adapter `thesis-underwriting-codex` (current):
+
+## Codex Provider Adapter
+
+1. Require an explicit macro or asset thesis identifier and a delegated underwriting request. For headless execution, require both the thesis identifier and type; do not infer an owner decision or authority from a scheduled or ambient request.
+2. Use the repository command runner from the Trade Journal root to load complete thesis context with `npx tsx scripts/ops/thesis-snapshot.ts --id <thesis-id> --type <asset|macro>`. Check `thin.unlinkedClaimCount`; if it is non-zero, report the relation prerequisite and do not write a new articulation until those claims are related. Then inspect linked claims, observations, prior articulation, compositional context, signal-quality diagnostics, and candidate signals before synthesizing.
+3. Preserve linked-claim and observation provenance in the new articulation. Derive qualitative confirmation, invalidation, and completion signals from the case's drivers, assumptions, rebuttals, timeframe, and legitimate dependencies. When signal-quality diagnostics or candidate signals are non-empty, must sharpen or drop chronic-neutral statements, cover material gaps with grounded signals, and promote or dismiss every assessed candidate signal. Set `supersedesSignalId` whenever a new resolution statement continues a prior signal so statement-to-sensor lineage is preserved.
+4. Never create manual signal thresholds, data sources, or `explicit_details`; do not invoke retired configure-signal behaviour. Interactive work may present a draft for refinement, while headless work returns the delegated synthesis and its assumptions explicitly.
+5. Preview the bounded write with `npx tsx scripts/insert-thesis-articulation.ts --input <articulation.json> --dry-run`, then use the same command without `--dry-run` only for the requested new versioned articulation and derived resolution signals. Record each promoted candidate's resulting signal identifier, and resolve or dismiss every assessed candidate signal through `scripts/ops/resolve-candidate-signal.ts`.
+6. Report sandbox or network denial, missing database access, an unknown thesis, incomplete evidence, malformed input, or non-zero command results as unavailable or failed. Preserve the returned articulation identifier, signal count, and audit outcome.
+
+This adapter may write a new versioned articulation, derived resolution signals, consumed candidate-signal dispositions, and their resulting audit history. It must not change thesis status, must not invoke `scripts/ops/update-entity-status.ts`, must not invoke `scripts/ops/resolve-decision.ts`, must not write ad hoc SQL, and has no order, trade, execution, or scheduler authority.

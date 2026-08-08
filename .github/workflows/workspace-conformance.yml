@@ -20,6 +20,7 @@ on:
       - "tests/j2-governed-capabilities.test.ts"
       - "tests/morning-brief-capability-evidence.test.ts"
       - "tests/evidence-freshness-governance.test.ts"
+      - "tests/thesis-underwriting-capability.test.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -49,6 +50,7 @@ on:
       - "tests/j2-governed-capabilities.test.ts"
       - "tests/morning-brief-capability-evidence.test.ts"
       - "tests/evidence-freshness-governance.test.ts"
+      - "tests/thesis-underwriting-capability.test.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -137,7 +139,7 @@ jobs:
 
       - name: Validate governed Capabilities
         run: |
-          for capability in portfolio-snapshot belief-maintenance thesis-observation portfolio-options-advice morning-attention-brief; do
+          for capability in portfolio-snapshot belief-maintenance thesis-observation thesis-underwriting portfolio-options-advice morning-attention-brief; do
             ./workspace validate capability "capabilities/$capability" --evidence-time "$WORKSPACE_EVIDENCE_TIME"
             ./workspace validate capability "capabilities/$capability" --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
           done
@@ -166,4 +168,4 @@ jobs:
           npx tsx scripts/ops/prove-evidence-freshness-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT" --format json
 
       - name: Run focused governance regression tests
-        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/morning-brief-capability-evidence.test.ts tests/evidence-freshness-governance.test.ts
+        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/morning-brief-capability-evidence.test.ts tests/evidence-freshness-governance.test.ts tests/thesis-underwriting-capability.test.ts

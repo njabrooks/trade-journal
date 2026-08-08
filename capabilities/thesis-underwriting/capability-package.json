@@ -1,0 +1,69 @@
+{
+  "id": "capability:scope:trade-journal/thesis-underwriting",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Build a living thesis underwriting from provenance-bearing evidence without changing the Trade Journal thesis lifecycle or reviving retired manual signal configuration.",
+  "contract": "Given an identified macro or asset thesis, its complete linked provenance-bearing claims and observations, prior articulation, relevant compositional context, and any available signal-quality inputs, produce a new versioned thesis articulation and derived resolution signals; preserve claim linkage and rebuttal handling, require relation of in-scope unlinked claims before writing, refine the resolution section from actionable quality or candidate inputs, carry forward prior signal lineage whenever a statement continues it, record only the bounded articulation, signal, candidate-resolution, and audit writes supplied by the repository scripts, does not change thesis status, and reports unavailable inputs or execution failures explicitly.",
+  "instructions": [
+    "Read thesis context only through the repository snapshot and query helpers, including linked claims, observations, prior articulations, compositional context, signal-quality diagnostics, and candidate signals where available.",
+    "Before synthesis, require all in-scope evidence to be linked: if thesis-snapshot reports unlinked claims, report the relation prerequisite and do not write a new articulation until the evidence set is complete.",
+    "Preserve provenance by grounding the articulation and each derived signal in linked claim or observation identifiers; treat sparse provenance-bearing observations as valid evidence with appropriate weight.",
+    "Derive qualitative confirmation, invalidation, and completion signals from linked claims, counterarguments, assumptions, timeframes, and legitimate thesis dependencies.",
+    "When signal-quality diagnostics or candidate signals are non-empty, refine the resolution section by sharpening or dropping chronic-neutral statements, covering material gaps, and promoting or dismissing every assessed candidate.",
+    "Use a new articulation version for every completed underwriting and set supersedesSignalId whenever a new resolution statement continues a prior signal, preserving eligible statement-to-sensor lineage.",
+    "Never author manual signal thresholds, data sources, explicit_details, or retired configure-signal behaviour.",
+    "Do not change macro or asset thesis status; the expression-driven cascade owns thesis lifecycle state.",
+    "Do not resolve Decision Items or represent synthesized confidence as an unrequested owner decision; interactive refinement remains available, and headless use requires an explicit delegated underwriting request for the identified thesis.",
+    "Use only the repository articulation and candidate-resolution scripts for bounded writes, retain their journal audit trail, and report unavailable database, malformed thesis, missing evidence, or command failures without substituting invented state."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "underwriting-contract",
+        "category": "behavioural",
+        "description": "The adapters preserve versioned articulation output, linked-claim provenance, rebuttal-derived qualitative resolution signals, prior signal lineage, and explicit unavailable or failure results.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "bounded-write-and-lifecycle-boundary",
+        "category": "behavioural",
+        "description": "The adapters allow only articulation, derived-signal, optional candidate-resolution, and resulting audit writes while refusing thesis-status mutation, Decision Item resolution, manual signal configuration, and trade authority.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "neutral-semantics",
+        "category": "semantic",
+        "description": "Provider-specific instructions preserve the Trade Journal living-underwriting contract, explicit delegated headless constraint, provenance, and loose-agent judgment boundary.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The configured repository runtime can perform the adapter's non-mutating command preflight; unavailable database or provider prerequisites are reported rather than treated as a successful underwriting run.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "thesis-underwriting-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "thesis-underwriting-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": []
+}

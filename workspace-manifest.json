@@ -74,6 +74,10 @@
     {
       "id": "capability:scope:trade-journal/thesis-observation",
       "path": "capabilities/thesis-observation/capability-package.json"
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-underwriting",
+      "path": "capabilities/thesis-underwriting/capability-package.json"
     }
   ],
   "provider_adapters": [

@@ -181,12 +181,44 @@
         "release_reference": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce",
         "revision": "be8ac53f04a59d34570ab72c4fe891dfa69a35ce"
       }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [],
+      "id": "capability:scope:trade-journal/thesis-underwriting",
+      "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "thesis-underwriting-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-07"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "thesis-underwriting-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-07"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/thesis-underwriting",
+        "release_reference": "d139934716d654b8608a1d591f96de572aefa467",
+        "revision": "d139934716d654b8608a1d591f96de572aefa467"
+      }
     }
   ],
   "evidence_time": "2026-08-07",
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:f17575480c941e1a687879a96e3f969633de96f75caad86b3fe0f68cd9c6aa07",
+  "registry_digest": "sha256:da85a44c9052968386e33762f24d664781b9d13ccf8f680ae7449135e083452e",
   "schema_version": "1.0.0"
 }

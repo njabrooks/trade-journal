@@ -43,9 +43,9 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares five Trade Journal-owned
-packages: portfolio snapshot, belief maintenance, thesis observation, portfolio options advice, and morning
-attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares six Trade Journal-owned
+packages: portfolio snapshot, belief maintenance, thesis observation, thesis underwriting, portfolio options advice,
+and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
 remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry.
 
@@ -53,8 +53,8 @@ establish Adapter Conformance; only exact W1-bound evidence upgrades an inventor
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-06`, five locked
-Capabilities make 14 inventory entries generation eligible while the whole-file Claude and Codex outputs
+generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-07`, six locked
+Capabilities make 16 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers.
 
@@ -98,6 +98,13 @@ morning-attention-brief packages at one preserved publication revision. Their ex
 have current evidence from structural boundary tests and bounded read-only environment probes. The immutable
 Registry Lock and generated staging outputs include all five Capabilities. Live scheduler and provider
 invocations remain unchanged pending the explicit approvals required by #49, #51, #53, #54, and #56.
+
+Issue #57 adds the source-owned thesis-underwriting Capability at immutable revision
+`d139934716d654b8608a1d591f96de572aefa467`. Its exact Claude and Codex adapters preserve the living-underwriting
+contract—versioned articulation, provenance-bearing linked claims, rebuttal-derived qualitative signals, and no
+thesis-status mutation—while remaining a staged discovery surface. Its eligible-environment evidence is limited
+to a non-mutating articulation-command preflight; no provider invocation, database write, scheduler, or discovery
+cutover occurred.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
