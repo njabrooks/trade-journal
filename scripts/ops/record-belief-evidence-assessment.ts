@@ -2,18 +2,6 @@
 
 import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { and, desc, eq, sql } from 'drizzle-orm';
-import {
-  assetTheses,
-  claimSignalEvidences,
-  journalEntries,
-  macroTheses,
-  mainClaims,
-  signalDataSnapshots,
-  signalEntityLinks,
-  signals,
-  thesisArticulations,
-} from '../../src/db/schema.js';
 
 export type ThesisType = 'macro' | 'asset';
 export type AssessmentValue =
@@ -27,7 +15,43 @@ export type SignalConditionEffect =
   | 'risk_receding'
   | 'risk_growing'
   | 'condition_cleared'
-  | 'condition_triggered';
+  | 'condition_triggered'
+  | 'no_bearing';
+
+export interface UnderwritingClaimContext {
+  id: string;
+  title: string;
+  category: string;
+  claim: string;
+  evidence: string[] | null;
+  reasoning: string | null;
+  backing: string | null;
+  qualifier: string | null;
+  rebuttal: string[] | null;
+  timeHorizon: string | null;
+  status: string;
+  mappingType: string;
+  provenance: {
+    sourceInsightId: string | null;
+    sourceClaimId: string | null;
+    sourceArtifactId: string | null;
+    sourceType: string | null;
+    sourceTitle: string | null;
+    sourceUrl: string | null;
+    publishedDate: string | null;
+    rawContent: string | null;
+  };
+}
+
+export interface PriorSignalEvidenceContext {
+  id: string;
+  signalId: string;
+  snapshotDate: Date;
+  assessment: string | null;
+  evidenceSummary: string | null;
+  dataSource: string;
+  claimId: string | null;
+}
 
 export interface BoundAssessmentTarget {
   thesisId: string;
@@ -62,6 +86,8 @@ export interface CurrentAssessmentTarget {
     notes: string | null;
     linkedClaimIds: string[];
   }>;
+  claimsAndObservations: UnderwritingClaimContext[];
+  priorEvidence: PriorSignalEvidenceContext[];
 }
 
 interface PromotedClaim {
@@ -139,7 +165,7 @@ interface ExternalSource {
   publishedAt?: string;
 }
 
-interface SignalAssessment {
+export interface SignalAssessment {
   signalId: string;
   statement: string;
   type: SignalType;
@@ -152,9 +178,10 @@ interface SignalAssessment {
   quotations: string[];
   limitations: string[];
   recommendation: string;
+  conditionEffect?: SignalConditionEffect;
 }
 
-interface AssessmentEnvelope {
+export interface AssessmentEnvelope {
   recordingRequested: true;
   target: BoundAssessmentTarget;
   source: PromotedClaimSource | ExternalSource;
@@ -193,7 +220,7 @@ function fail(message: string): never {
   throw new AssessmentRecordingError('invalid_input', message);
 }
 
-function object(value: unknown, path: string): Record<string, unknown> {
+function requireObjectRecord(value: unknown, path: string): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     fail(`${path} must be an object`);
   }
@@ -245,7 +272,7 @@ function isoDate(value: unknown, path: string): string {
 }
 
 function parseTarget(value: unknown): BoundAssessmentTarget {
-  const target = object(value, 'target');
+  const target = requireObjectRecord(value, 'target');
   exactKeys(
     target,
     ['thesisId', 'thesisType', 'articulationId', 'articulationVersion', 'signalIds'],
@@ -276,7 +303,7 @@ function parseTarget(value: unknown): BoundAssessmentTarget {
 }
 
 function parseSource(value: unknown): PromotedClaimSource | ExternalSource {
-  const source = object(value, 'source');
+  const source = requireObjectRecord(value, 'source');
   if (source.kind === 'promoted_claim') {
     exactKeys(source, ['kind', 'claimId'], [], 'source');
     return { kind: 'promoted_claim', claimId: uuid(source.claimId, 'source.claimId') };
@@ -307,7 +334,7 @@ function parseSource(value: unknown): PromotedClaimSource | ExternalSource {
 
 function parseAssessment(value: unknown, index: number): SignalAssessment {
   const path = `assessments[${index}]`;
-  const assessment = object(value, path);
+  const assessment = requireObjectRecord(value, path);
   exactKeys(
     assessment,
     [
@@ -324,7 +351,7 @@ function parseAssessment(value: unknown, index: number): SignalAssessment {
       'limitations',
       'recommendation',
     ],
-    [],
+    ['conditionEffect'],
     path,
   );
   if (!SIGNAL_TYPES.has(assessment.type as SignalType)) fail(`${path}.type is invalid`);
@@ -337,6 +364,27 @@ function parseAssessment(value: unknown, index: number): SignalAssessment {
   }
   if (assessment.assessment !== 'neutral' && assessment.semanticBearing !== 'direct') {
     fail(`${path} requires direct semantic bearing for a non-neutral result`);
+  }
+  let conditionEffect: SignalConditionEffect | undefined;
+  if (assessment.type === 'invalidation') {
+    const effect = assessment.conditionEffect;
+    const allowedEffects = new Set<SignalConditionEffect>([
+      'risk_receding',
+      'risk_growing',
+      'condition_cleared',
+      'condition_triggered',
+      'no_bearing',
+    ]);
+    if (!allowedEffects.has(effect as SignalConditionEffect)) {
+      fail(`${path}.conditionEffect is required for an invalidation signal`);
+    }
+    conditionEffect = effect as SignalConditionEffect;
+    const expected = assessmentForInvalidationCondition(conditionEffect);
+    if (assessment.assessment !== expected) {
+      fail(`${path}.assessment must be ${expected} for invalidation conditionEffect ${conditionEffect}`);
+    }
+  } else if (assessment.conditionEffect !== undefined) {
+    fail(`${path}.conditionEffect is only valid for an invalidation signal`);
   }
   return {
     signalId: uuid(assessment.signalId, `${path}.signalId`),
@@ -351,11 +399,12 @@ function parseAssessment(value: unknown, index: number): SignalAssessment {
     quotations: stringArray(assessment.quotations, `${path}.quotations`),
     limitations: stringArray(assessment.limitations, `${path}.limitations`),
     recommendation: nonempty(assessment.recommendation, `${path}.recommendation`),
+    ...(conditionEffect === undefined ? {} : { conditionEffect }),
   };
 }
 
 function parseEnvelope(value: unknown): AssessmentEnvelope {
-  const envelope = object(value, 'assessment envelope');
+  const envelope = requireObjectRecord(value, 'assessment envelope');
   exactKeys(
     envelope,
     ['recordingRequested', 'target', 'source', 'assessments', 'overallSummary'],
@@ -387,23 +436,15 @@ function parseEnvelope(value: unknown): AssessmentEnvelope {
   };
 }
 
-export function assessmentForSignalCondition(
-  signalType: SignalType,
+function assessmentForInvalidationCondition(
   effect: SignalConditionEffect,
 ): AssessmentValue {
-  if (signalType === 'invalidation') {
-    return {
-      risk_receding: 'strengthening',
-      risk_growing: 'weakening',
-      condition_cleared: 'confirmed',
-      condition_triggered: 'invalidated',
-    }[effect] as AssessmentValue;
-  }
   return {
-    risk_receding: 'weakening',
-    risk_growing: 'strengthening',
-    condition_cleared: 'invalidated',
-    condition_triggered: 'confirmed',
+    risk_receding: 'strengthening',
+    risk_growing: 'weakening',
+    condition_cleared: 'confirmed',
+    condition_triggered: 'invalidated',
+    no_bearing: 'neutral',
   }[effect] as AssessmentValue;
 }
 
@@ -579,128 +620,6 @@ export async function recordBeliefEvidenceAssessment(
   });
 }
 
-type Database = typeof import('../lib/db.js').db;
-
-function createDatabaseStore(db: Database): BeliefEvidenceAssessmentStore {
-  return {
-    async transaction(work) {
-      return db.transaction(async (tx) => {
-        const transaction: BeliefEvidenceAssessmentTransaction = {
-          async loadCurrentTarget(thesisId, thesisType) {
-            const thesisTable = thesisType === 'macro' ? macroTheses : assetTheses;
-            const [thesis] = await tx
-              .select({
-                id: thesisTable.id,
-                title: thesisTable.title,
-                status: thesisTable.status,
-                notes: thesisTable.notes,
-              })
-              .from(thesisTable)
-              .where(eq(thesisTable.id, thesisId))
-              .limit(1);
-            if (!thesis) return null;
-
-            const [articulation] = await tx
-              .select()
-              .from(thesisArticulations)
-              .where(and(
-                eq(thesisArticulations.thesisId, thesisId),
-                eq(thesisArticulations.thesisType, thesisType),
-              ))
-              .orderBy(desc(thesisArticulations.version), desc(thesisArticulations.createdAt))
-              .limit(1);
-            if (!articulation) return null;
-
-            const activeSignals = await tx
-              .select({
-                id: signals.id,
-                statement: signals.statement,
-                type: signals.type,
-                importance: signals.importance,
-                notes: signals.notes,
-                linkedClaimIds: signals.linkedClaimIds,
-              })
-              .from(signals)
-              .innerJoin(signalEntityLinks, eq(signalEntityLinks.signalId, signals.id))
-              .where(and(
-                eq(signalEntityLinks.entityType, 'thesis'),
-                eq(signalEntityLinks.thesisId, thesisId),
-                eq(signalEntityLinks.thesisType, thesisType),
-                eq(signals.articulationId, articulation.id),
-                eq(signals.status, 'active'),
-              ))
-              .orderBy(signals.id);
-            if (activeSignals.length === 0) return null;
-
-            return {
-              thesis: { id: thesis.id, type: thesisType, title: thesis.title, status: thesis.status },
-              articulation: {
-                id: articulation.id,
-                version: articulation.version,
-                coreArgument: articulation.coreArgument,
-                keyDrivers: articulation.keyDrivers,
-                keyAssumptions: articulation.keyAssumptions,
-                timeframe: articulation.timeframe,
-                notes: thesis.notes,
-                claimIdsUsed: Array.isArray(articulation.claimIdsUsed)
-                  ? articulation.claimIdsUsed.filter((id): id is string => typeof id === 'string')
-                  : [],
-              },
-              signals: activeSignals.map((signal) => ({
-                id: signal.id,
-                statement: signal.statement,
-                type: signal.type as SignalType,
-                importance: signal.importance,
-                notes: signal.notes,
-                linkedClaimIds: Array.isArray(signal.linkedClaimIds)
-                  ? signal.linkedClaimIds.filter((id): id is string => typeof id === 'string')
-                  : [],
-              })),
-            };
-          },
-          async loadPromotedClaim(claimId) {
-            const [claim] = await tx
-              .select({
-                id: mainClaims.id,
-                sourceInsightId: mainClaims.sourceInsightId,
-                sourceClaimId: mainClaims.sourceClaimId,
-                sourceArtifactId: mainClaims.sourceArtifactId,
-              })
-              .from(mainClaims)
-              .where(eq(mainClaims.id, claimId))
-              .limit(1);
-            return claim ?? null;
-          },
-          async insertSnapshots(rows) {
-            return tx
-              .insert(signalDataSnapshots)
-              .values(rows)
-              .returning({ id: signalDataSnapshots.id, signalId: signalDataSnapshots.signalId });
-          },
-          async upsertClaimSignalEvidences(rows) {
-            for (const row of rows) {
-              await tx
-                .insert(claimSignalEvidences)
-                .values(row)
-                .onConflictDoUpdate({
-                  target: [claimSignalEvidences.claimId, claimSignalEvidences.signalId],
-                  set: {
-                    assessment: sql`excluded.assessment`,
-                    snapshotId: sql`excluded.snapshot_id`,
-                  },
-                });
-            }
-          },
-          async insertJournalEntries(rows) {
-            await tx.insert(journalEntries).values(rows);
-          },
-        };
-        return work(transaction);
-      }, { isolationLevel: 'serializable', accessMode: 'read write' });
-    },
-  };
-}
-
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
@@ -729,7 +648,10 @@ async function main(): Promise<void> {
       'pass --target --thesis-id <uuid> --thesis-type <macro|asset> or pipe an envelope with --stdin',
     );
   }
-  const { db, closeDb } = await import('../lib/db.js');
+  const [{ db, closeDb }, { createDatabaseStore }] = await Promise.all([
+    import('../lib/db.js'),
+    import('./lib/belief-evidence-assessment-db.js'),
+  ]);
   const store = createDatabaseStore(db);
   try {
     if (process.argv.includes('--target')) {

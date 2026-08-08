@@ -1,8 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  assessmentForSignalCondition,
   recordBeliefEvidenceAssessment,
   type AssessmentJournalRow,
+  type AssessmentEnvelope,
   type AssessmentSnapshotRow,
   type BeliefEvidenceAssessmentStore,
   type BeliefEvidenceAssessmentTransaction,
@@ -18,6 +20,22 @@ const CLAIM_ID = '00000000-0000-4000-8000-000000000005';
 const BATCH_ID = '00000000-0000-4000-8000-000000000006';
 const CONFIRMATION_SNAPSHOT_ID = '00000000-0000-4000-8000-000000000007';
 const INVALIDATION_SNAPSHOT_ID = '00000000-0000-4000-8000-000000000008';
+
+const adapterEquivalence = JSON.parse(readFileSync(resolve(
+  process.cwd(),
+  'tests/fixtures/belief-evidence-assessment-adapter-equivalence.json',
+), 'utf8')) as {
+  expected: {
+    conditionEffect: 'risk_receding';
+    assessment: 'strengthening';
+    semanticBearing: 'direct';
+  };
+  providers: Record<'claude' | 'codex', {
+    conditionEffect: 'risk_receding';
+    assessment: 'strengthening';
+    semanticBearing: 'direct';
+  }>;
+};
 
 const currentTarget: CurrentAssessmentTarget = {
   thesis: {
@@ -54,9 +72,46 @@ const currentTarget: CurrentAssessmentTarget = {
       linkedClaimIds: [CLAIM_ID],
     },
   ],
+  claimsAndObservations: [
+    {
+      id: CLAIM_ID,
+      title: 'Regulatory access remains open',
+      category: 'asset_specific',
+      claim: 'The regulator has left institutional access open.',
+      evidence: ['The investigation ended without enforcement.'],
+      reasoning: 'No enforcement removes the immediate access constraint.',
+      backing: 'The regulator published a final notice.',
+      qualifier: 'high',
+      rebuttal: ['A new investigation could begin later.'],
+      timeHorizon: 'medium_term',
+      status: 'active',
+      mappingType: 'supports',
+      provenance: {
+        sourceInsightId: '00000000-0000-4000-8000-000000000009',
+        sourceClaimId: 'claim-1',
+        sourceArtifactId: null,
+        sourceType: 'filing',
+        sourceTitle: 'Final notice',
+        sourceUrl: 'https://example.test/final-notice',
+        publishedDate: '2026-08-08',
+        rawContent: 'The investigation is closed.',
+      },
+    },
+  ],
+  priorEvidence: [
+    {
+      id: '00000000-0000-4000-8000-000000000011',
+      signalId: INVALIDATION_SIGNAL_ID,
+      snapshotDate: new Date('2026-08-01T00:00:00.000Z'),
+      assessment: 'neutral',
+      evidenceSummary: 'The investigation remained open.',
+      dataSource: 'qualitative',
+      claimId: null,
+    },
+  ],
 };
 
-function validEnvelope() {
+function validEnvelope(): AssessmentEnvelope {
   return {
     recordingRequested: true,
     target: {
@@ -98,6 +153,7 @@ function validEnvelope() {
         quotations: ['The investigation is closed.'],
         limitations: [],
         recommendation: 'Retain the evidence for thesis-health review.',
+        conditionEffect: 'risk_receding',
       },
     ],
     overallSummary: 'One neutral result and one thesis-strengthening result.',
@@ -206,11 +262,65 @@ describe('belief-evidence assessment recorder', () => {
     expect(store.committed.journals.every(({ objectId }) => objectId === THESIS_ID)).toBe(true);
   });
 
-  it('uses thesis-centric polarity for invalidation signals', () => {
-    expect(assessmentForSignalCondition('invalidation', 'risk_receding')).toBe('strengthening');
-    expect(assessmentForSignalCondition('invalidation', 'risk_growing')).toBe('weakening');
-    expect(assessmentForSignalCondition('invalidation', 'condition_cleared')).toBe('confirmed');
-    expect(assessmentForSignalCondition('invalidation', 'condition_triggered')).toBe('invalidated');
+  it.each([
+    ['risk_receding', 'strengthening'],
+    ['risk_growing', 'weakening'],
+    ['condition_cleared', 'confirmed'],
+    ['condition_triggered', 'invalidated'],
+    ['no_bearing', 'neutral'],
+  ] as const)('enforces thesis-centric invalidation polarity for %s', async (conditionEffect, assessment) => {
+    const store = new MemoryStore();
+    const envelope = validEnvelope();
+    envelope.assessments[1] = {
+      ...envelope.assessments[1],
+      conditionEffect,
+      assessment,
+      semanticBearing: assessment === 'neutral' ? 'none' : 'direct',
+    };
+
+    await recordBeliefEvidenceAssessment(envelope, { store, batchId: BATCH_ID });
+
+    expect(store.committed.snapshots[1]).toEqual(expect.objectContaining({
+      signalId: INVALIDATION_SIGNAL_ID,
+      assessment,
+    }));
+  });
+
+  it('rejects mismatched invalidation polarity without partial writes', async () => {
+    const store = new MemoryStore();
+    const envelope = validEnvelope();
+    envelope.assessments[1] = {
+      ...envelope.assessments[1],
+      conditionEffect: 'condition_triggered',
+      assessment: 'strengthening',
+    };
+
+    await expect(recordBeliefEvidenceAssessment(envelope, {
+      store,
+      batchId: BATCH_ID,
+    })).rejects.toThrow(/must be invalidated/);
+    expect(store.committed).toEqual({ snapshots: [], claimEvidences: [], journals: [] });
+  });
+
+  it('produces equivalent observable writes for the bound Claude and Codex fixtures', async () => {
+    const outcomes = [];
+    for (const provider of ['claude', 'codex'] as const) {
+      expect(adapterEquivalence.providers[provider]).toEqual(adapterEquivalence.expected);
+      const store = new MemoryStore();
+      const envelope = validEnvelope();
+      envelope.assessments[1] = {
+        ...envelope.assessments[1],
+        ...adapterEquivalence.providers[provider],
+      };
+      const result = await recordBeliefEvidenceAssessment(envelope, {
+        store,
+        batchId: BATCH_ID,
+        now: new Date('2026-08-08T15:00:00.000Z'),
+      });
+      outcomes.push({ result, committed: store.committed });
+    }
+
+    expect(outcomes[0]).toEqual(outcomes[1]);
   });
 
   it.each([

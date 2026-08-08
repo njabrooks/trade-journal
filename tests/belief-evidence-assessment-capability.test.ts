@@ -58,6 +58,10 @@ describe('belief-evidence-assessment Capability', () => {
       expect(adapter).toContain('record-belief-evidence-assessment.ts --stdin');
       expect(adapter).toContain('analysis is read-only');
       expect(adapter).toContain('direct semantic bearing');
+      expect(adapter).toContain('full linked claims and observations with Toulmin fields and source content');
+      expect(adapter).toContain('prior signal evidence');
+      expect(adapter).toContain('conditionEffect');
+      expect(adapter).toContain('The recorder rejects mismatched pairs');
       expect(lowerAdapter).toContain('ticker or keyword overlap');
       expect(adapter).toContain('must not create a claim');
       expect(adapter).toContain('must not invoke `scripts/ops/update-entity-status.ts`');

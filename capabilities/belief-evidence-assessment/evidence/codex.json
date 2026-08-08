@@ -1,9 +1,9 @@
 {
   "capability_id": "capability:scope:trade-journal/belief-evidence-assessment",
   "capability_version": "1.0.0",
-  "package_digest": "sha256:2b4a4f22e7e73dd3028bc7132d34e1020cc87a11d466da0bcc32a9aaaac1ff9a",
+  "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
   "adapter_id": "belief-evidence-assessment-codex",
-  "adapter_digest": "sha256:d338152d7ad061866dba7960c83643334f190ff0d2e33ebc531e3a67ad64f0da",
+  "adapter_digest": "sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
   "support_state": "current",
   "validated_at": "2026-08-08",
   "results": {
@@ -13,15 +13,15 @@
     },
     "governed-target": {
       "status": "passed",
-      "method": "Repository behavioral tests prove exact thesis, articulation version, and complete active signal-set binding with missing and stale target refusal"
+      "method": "Repository behavioral tests prove exact thesis, articulation version, complete active signal-set binding, a full linked claim/observation context with source content, prior evidence, and missing or stale target refusal"
     },
     "evidence-semantics-and-provenance": {
       "status": "passed",
-      "method": "Repository behavioral tests prove thesis-centric invalidation polarity, direct-bearing requirements, neutral completeness, complete provenance, and promoted-claim reuse"
+      "method": "Repository behavioral tests enforce thesis-centric invalidation condition/effect pairs through the actual recorder input, prove direct-bearing requirements, neutral completeness, complete provenance and promoted-claim reuse, and compare observable writes from bound Claude and Codex fixtures"
     },
     "deterministic-recorder": {
       "status": "passed",
-      "method": "Repository behavioral tests prove the serializable recorder's exact permitted write set and atomic no-write outcomes for invalid inputs or changed targets"
+      "method": "Repository behavioral tests exercise the production database adapter boundary, prove serializable transaction configuration, the exact three-table write routing, rollback on failure, and no-write outcomes for invalid or changed targets"
     },
     "authority-boundary": {
       "status": "passed",

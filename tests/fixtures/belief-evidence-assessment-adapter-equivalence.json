@@ -1,0 +1,20 @@
+{
+  "case": "invalidation risk receded after a regulator closed an investigation without enforcement",
+  "expected": {
+    "conditionEffect": "risk_receding",
+    "assessment": "strengthening",
+    "semanticBearing": "direct"
+  },
+  "providers": {
+    "claude": {
+      "conditionEffect": "risk_receding",
+      "assessment": "strengthening",
+      "semanticBearing": "direct"
+    },
+    "codex": {
+      "conditionEffect": "risk_receding",
+      "assessment": "strengthening",
+      "semanticBearing": "direct"
+    }
+  }
+}
