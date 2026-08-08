@@ -4,7 +4,7 @@
   "as_of": "2026-08-08",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
-  "generation_eligible_count": 20,
+  "generation_eligible_count": 22,
   "governed_outputs": [
     "docs/agents/provider-entry-points/staging/claude.md",
     "docs/agents/provider-entry-points/staging/codex.md"
@@ -325,7 +325,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/finalize-for-upload/SKILL.md"
+        "path": "capabilities/research-publication/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -335,21 +335,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-08",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
+        "adapter_digest": "sha256:e89e187bc4e509f3fa1e56cf2f27d2da85c65113bc5c93fe2e0d43a2ab8118e0",
+        "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a preparation-only migration input until final discovery cutover."
       }
     },
     {
@@ -1491,7 +1488,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/finalize-for-upload/SKILL.md"
+        "path": "capabilities/research-publication/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1501,21 +1498,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-08",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
+        "adapter_digest": "sha256:bd963ae249d123183632c5c09bd878b2979d99149d4e8815a9bcbb1c24e58134",
+        "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the modernized interactive skill as a migration input until final discovery cutover."
       }
     },
     {

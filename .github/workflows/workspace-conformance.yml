@@ -24,6 +24,8 @@ on:
       - "tests/belief-evidence-assessment-capability.test.ts"
       - "tests/belief-evidence-assessment-recorder.test.ts"
       - "tests/claims-synthesis-*.test.ts"
+      - "tests/research-publication-*.test.ts"
+      - "src/lib/intelligence/researchPublication*.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -57,6 +59,8 @@ on:
       - "tests/belief-evidence-assessment-capability.test.ts"
       - "tests/belief-evidence-assessment-recorder.test.ts"
       - "tests/claims-synthesis-*.test.ts"
+      - "tests/research-publication-*.test.ts"
+      - "src/lib/intelligence/researchPublication*.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -145,7 +149,7 @@ jobs:
 
       - name: Validate governed Capabilities
         run: |
-          for capability in portfolio-snapshot belief-maintenance claims-synthesis thesis-observation thesis-underwriting belief-evidence-assessment portfolio-options-advice morning-attention-brief; do
+          for capability in portfolio-snapshot belief-maintenance claims-synthesis research-publication thesis-observation thesis-underwriting belief-evidence-assessment portfolio-options-advice morning-attention-brief; do
             ./workspace validate capability "capabilities/$capability" --evidence-time "$WORKSPACE_EVIDENCE_TIME"
             ./workspace validate capability "capabilities/$capability" --evidence-time "$WORKSPACE_EVIDENCE_TIME" --format json
           done
@@ -174,4 +178,4 @@ jobs:
           npx tsx scripts/ops/prove-evidence-freshness-refusal.ts --workspace-root "$WORKSPACE_REPOSITORY_ROOT" --format json
 
       - name: Run focused governance regression tests
-        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/morning-brief-capability-evidence.test.ts tests/evidence-freshness-governance.test.ts tests/thesis-underwriting-capability.test.ts tests/belief-evidence-assessment-capability.test.ts tests/belief-evidence-assessment-recorder.test.ts tests/claims-synthesis-capability.test.ts tests/claims-synthesis-contract.test.ts tests/claims-synthesis-db-adapter.test.ts tests/claims-synthesis-read-boundary.test.ts
+        run: npx vitest run tests/provider-adapter-inventory.test.ts tests/provider-generation-eligibility.test.ts tests/portfolio-snapshot-capability.test.ts tests/j2-governed-capabilities.test.ts tests/morning-brief-capability-evidence.test.ts tests/evidence-freshness-governance.test.ts tests/thesis-underwriting-capability.test.ts tests/belief-evidence-assessment-capability.test.ts tests/belief-evidence-assessment-recorder.test.ts tests/claims-synthesis-capability.test.ts tests/claims-synthesis-contract.test.ts tests/claims-synthesis-db-adapter.test.ts tests/claims-synthesis-read-boundary.test.ts tests/research-publication-capability.test.ts tests/research-publication-contract.test.ts tests/research-publication-db-adapter.test.ts tests/research-publication-read-boundary.test.ts tests/research-publication-recorder.test.ts

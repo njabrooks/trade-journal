@@ -1,0 +1,42 @@
+{
+  "capability_id": "capability:scope:trade-journal/research-publication",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
+  "adapter_id": "research-publication-codex",
+  "adapter_digest": "sha256:e89e187bc4e509f3fa1e56cf2f27d2da85c65113bc5c93fe2e0d43a2ab8118e0",
+  "support_state": "current",
+  "validated_at": "2026-08-08",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and byte-identical staged Provider Entry Point generation"
+    },
+    "publication-readiness": {
+      "status": "passed",
+      "method": "Repository behavioral tests prove complete Notes-owned provenance input, deterministic current-state preparation, exact concept separation, bounded readiness, explicit ambiguity exclusion, and unavailable or stale refusal with no writes"
+    },
+    "provenance-and-authorization": {
+      "status": "passed",
+      "method": "Repository contract and recorder tests prove deterministic existing-claim reuse, duplicate refusal, exact short-lived user authorization, candidate selection closure, and authority-expanding field refusal"
+    },
+    "atomic-recorder": {
+      "status": "passed",
+      "method": "Repository behavioral and production-adapter tests prove unique deterministic candidate re-derivation, serializable transaction configuration, exact three-table routing, current-state revalidation, accepted-only fresh-snapshot concurrency reuse, exact relationship rationale reuse, a compact reconstructable digest-bound audit snapshot of candidates and persisted records, idempotent retry, and complete rollback after injected partial failure"
+    },
+    "authority-boundary": {
+      "status": "passed",
+      "method": "Repository contract and adapter tests prove the sole purpose-built recorder and refusal of direct API, Supabase MCP, ad-hoc SQL, generic write, status, Decision Item, strategy, position, and trade authority"
+    },
+    "provider-semantic-equivalence": {
+      "status": "passed",
+      "reviewer": "Issue #63 implementation review",
+      "method": "Compared the exact Codex adapter with issue #63, parent #46, predecessor #62, CONTEXT.md, the canonical publication workflow's useful intent, and the Notes/Trade Journal authority boundary; representative output was used without live provider invocation",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/63",
+      "expires_at": "2026-09-07"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured repository runtime completed non-mutating CLI help and focused read/refusal validation on 2026-08-08; missing database, source, provider, authorization, sandbox, or network prerequisites remain explicit unavailable or refused outcomes"
+    }
+  }
+}

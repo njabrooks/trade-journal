@@ -222,6 +222,43 @@
     {
       "approved_version": "1.0.0",
       "authority": "scope:trade-journal",
+      "dependencies": [
+        {
+          "id": "capability:scope:trade-journal/claims-synthesis",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        }
+      ],
+      "id": "capability:scope:trade-journal/research-publication",
+      "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "research-publication-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-08"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "research-publication-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-08"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/research-publication",
+        "release_reference": "1c7c1d81916966cee8ed8e1fe7e4a6b46ee757bc",
+        "revision": "1c7c1d81916966cee8ed8e1fe7e4a6b46ee757bc"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
       "dependencies": [],
       "id": "capability:scope:trade-journal/thesis-observation",
       "package_digest": "sha256:3bd4bbd415adf291ae8a421cb09724031b147008d79482914a20f5f19f7f230c",
@@ -288,6 +325,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:0c42cf5a5a835eb609d2f57a7ab3d7fec86f48f685281f14cc22bec6a5b96222",
+  "registry_digest": "sha256:c2c9fe2c28dd2e2c79d8a280dc5939029896a22c5d550a87f32043f863f67e45",
   "schema_version": "1.0.0"
 }

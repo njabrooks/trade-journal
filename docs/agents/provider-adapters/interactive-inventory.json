@@ -524,7 +524,7 @@
     },
     {
       "id": "interactive-claude-finalize-for-upload",
-      "ability": "Publish finalized research artifacts into Trade Journal records.",
+      "ability": "Prepare and explicitly authorize governed publication of Notes-owned research claims and claim-thesis relationships.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-publication",
@@ -534,46 +534,57 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/finalize-for-upload/SKILL.md"
+        "path": "capabilities/research-publication/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/finalize-for-upload",
-        "unattended_eligibility": "conditional",
-        "rationale": "Classifies artifact type and performs authorized publication."
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Exact claim and thesis-bearing acceptance requires a current user's explicit judgment; unattended use may prepare or validate only."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Finalized research files and current schema.",
-        "writes": "Research artifacts, insights, theses, or views through existing upload paths.",
-        "judgment": "Classifies artifact type and performs authorized publication."
+        "reads": "One Notes-owned research insight, the complete current main-claim identity catalog, developing and monitoring macro/asset theses, and an exact validated claims-synthesis recommendation.",
+        "writes": "Only explicitly accepted main_claims, claim_thesis_mappings, and one journal_entries audit through scripts/ops/publish-research.ts under an exact short-lived user token.",
+        "judgment": "The current user must explicitly accept exact claim refs and relationship IDs; the adapter cannot infer, fabricate, broaden, or self-authorize publication."
       },
       "prerequisites": [
-        "Claude Code repository session",
-        "Finalized artifact, schema verification, and database credentials."
+        "Claude Code repository session and the published Registry Lock",
+        "Complete Notes-owned provenance, validated claims-synthesis output, current repository reads, and an explicit user authorization token for persistence."
       ],
       "limitations": [
-        "Older assumptions must be checked against the Tana-first architecture.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "Unattended execution cannot authorize or publish.",
+        "No live provider invocation or production write was used as evidence; active discovery and operational state remain unchanged."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-08",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
+        "adapter_digest": "sha256:bd963ae249d123183632c5c09bd878b2979d99149d4e8815a9bcbb1c24e58134",
+        "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the modernized interactive skill as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/finalize-for-upload/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-publication/capability-package.json",
+        "adapter_id": "research-publication-claude",
+        "evidence_path": "capabilities/research-publication/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {

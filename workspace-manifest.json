@@ -80,6 +80,10 @@
       "path": "capabilities/portfolio-snapshot/capability-package.json"
     },
     {
+      "id": "capability:scope:trade-journal/research-publication",
+      "path": "capabilities/research-publication/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/thesis-observation",
       "path": "capabilities/thesis-observation/capability-package.json"
     },
@@ -129,7 +133,7 @@
       "id": "headless-codex-finalize-for-upload",
       "capability": "capability:scope:trade-journal/research-publication",
       "provider": "codex",
-      "path": ".agents/skills/finalize-for-upload/SKILL.md"
+      "path": "capabilities/research-publication/adapters/codex.md"
     },
     {
       "id": "headless-codex-gateway",
@@ -321,7 +325,7 @@
       "id": "interactive-claude-finalize-for-upload",
       "capability": "capability:scope:trade-journal/research-publication",
       "provider": "claude",
-      "path": ".claude/skills/finalize-for-upload/SKILL.md"
+      "path": "capabilities/research-publication/adapters/claude.md"
     },
     {
       "id": "interactive-claude-gateway",
