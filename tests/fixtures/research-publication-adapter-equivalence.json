@@ -1,8 +1,8 @@
 {
   "limitation": "No live provider invocation was performed. This representative output is validated against repository contract code and cryptographically bound to the exact adapter bytes.",
   "providers": {
-    "claude": { "adapterDigest": "sha256:b6278e6987edc203be5efbea2c757248a2081d46a377826d17f5fe6baa9c3b43" },
-    "codex": { "adapterDigest": "sha256:84aafabae99ffd4950040eb41c4d2921bcc8a0b043cd252ad84f1d9736ff7129" }
+    "claude": { "adapterDigest": "sha256:909bd0d97b22929cd3d17682818f8b1c1d47c5c92b4cb18a3c0219937657caab" },
+    "codex": { "adapterDigest": "sha256:3b8334e88e63093e50c169fcb960b969908522211473ed76868ab85bdd2acf7a" }
   },
   "context": {
     "contractVersion": "1.0.0",

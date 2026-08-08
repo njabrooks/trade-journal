@@ -98,6 +98,10 @@ export interface PublicationAuditRecord {
   publicationDigest: string;
   actionType: 'research_publication_recorded';
   result: StoredPublishedResearchResult;
+  envelope: {
+    prepared: PreparedResearchPublication;
+    authorization: ResearchPublicationAuthorization;
+  };
   recordedAt: Date;
 }
 
@@ -285,6 +289,47 @@ function restored(audit: PublicationAuditRecord): PublishedResearchResult {
   return { ...audit.result, journalEntryId: audit.id };
 }
 
+function sameJson(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function isCompatibleProvenancePromotion(
+  prepared: PreparedResearchPublication,
+  current: ClaimsSynthesisContext,
+): boolean {
+  const original = prepared.claimsSynthesis.context;
+  if (!sameJson(current.source, original.source)
+    || !sameJson(current.sourceEvidence, original.sourceEvidence)
+    || !sameJson(current.thesisTargets, original.thesisTargets)) {
+    return false;
+  }
+
+  const currentById = new Map(current.existingMainClaims.map((claim) => [claim.id, claim]));
+  for (const claim of original.existingMainClaims) {
+    if (!sameJson(currentById.get(claim.id), claim)) return false;
+    currentById.delete(claim.id);
+  }
+  const createBySource = new Map(
+    prepared.claimCandidates
+      .filter((candidate) => candidate.disposition === 'create_main_claim')
+      .map((candidate) => [candidate.sourceClaimId, candidate]),
+  );
+  for (const claim of currentById.values()) {
+    const candidate = claim.sourceClaimId ? createBySource.get(claim.sourceClaimId) : undefined;
+    const proposal = candidate?.proposedClaim;
+    if (!candidate || !proposal
+      || claim.provenanceMatch !== 'exact'
+      || claim.sourceInsightId !== prepared.source.insightId
+      || claim.title !== proposal.title
+      || claim.category !== proposal.category
+      || claim.claim !== proposal.claim
+      || claim.status !== 'draft') {
+      return false;
+    }
+  }
+  return currentById.size > 0;
+}
+
 function errorDetail(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -303,10 +348,12 @@ export async function recordResearchPublication(
     const recorded = await transaction.loadRecordedPublication(id);
     if (recorded) {
       if (recorded.authorizationDigest !== authorizationDigest
-        || recorded.publicationDigest !== envelope.prepared.publicationDigest) {
+        || recorded.publicationDigest !== envelope.prepared.publicationDigest
+        || digestResearchPublicationAuthorization(recorded.envelope.authorization) !== authorizationDigest
+        || recorded.envelope.prepared.publicationDigest !== envelope.prepared.publicationDigest) {
         throw new ResearchPublicationRecordingError(
           'authority_refused',
-          'Authorization ID was already used for different publication bytes',
+          'Authorization ID was already used for different canonical publication content',
         );
       }
       return restored(recorded);
@@ -327,13 +374,16 @@ export async function recordResearchPublication(
     if (!currentContext) {
       throw new ResearchPublicationRecordingError('stale_input', 'Current Notes-owned source is unavailable');
     }
-    let current: PreparedResearchPublication;
+    let current: PreparedResearchPublication | null = null;
     try {
       current = buildResearchPublication(currentContext, envelope.prepared.claimsSynthesis.result);
-    } catch (error) {
-      throw new ResearchPublicationRecordingError('stale_input', errorDetail(error));
+    } catch {
+      // A different authorized transaction may have promoted the same exact
+      // source claim since preparation. Accept only that narrow compatible
+      // delta; all other source/catalog changes remain stale.
     }
-    if (current.publicationDigest !== envelope.prepared.publicationDigest) {
+    if (current?.publicationDigest !== envelope.prepared.publicationDigest
+      && !isCompatibleProvenancePromotion(envelope.prepared, currentContext)) {
       throw new ResearchPublicationRecordingError(
         'stale_input',
         'Repository source, promoted claims, or active thesis targets changed after preparation',
@@ -407,6 +457,7 @@ export async function recordResearchPublication(
       publicationDigest: envelope.prepared.publicationDigest,
       actionType: 'research_publication_recorded',
       result,
+      envelope: { prepared: envelope.prepared, authorization },
       recordedAt: now,
     });
     return restored(audit);

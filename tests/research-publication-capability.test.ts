@@ -64,7 +64,7 @@ describe('research-publication Capability', () => {
       expect(adapter).toContain('Notes/Tana owns capture, source material, and Toulmin extraction');
       expect(adapter).toContain('`(sourceInsightId, sourceClaimId)` provenance is deterministic identity');
       expect(adapter).toContain('Do not use ticker or keyword overlap as semantic proof');
-      expect(adapter).toContain('Never infer, fabricate, broaden, reuse for different bytes, or self-authorize a token');
+      expect(adapter).toContain('Never infer, fabricate, broaden, reuse for different canonical content, or self-authorize a token');
       expect(adapter).toContain('scripts/ops/publish-research.ts --stdin');
       expect(adapter).toContain('sole mutation boundary');
       expect(adapter).toContain('must not use ad-hoc SQL or Drizzle writes, Supabase MCP writes, direct API mutation');
@@ -72,6 +72,13 @@ describe('research-publication Capability', () => {
       expect(adapter).toContain('cannot create an authorization token or invoke the recorder');
       expect(adapter).not.toContain('/api/research/promote-claim');
     }
+  });
+
+  it('gives headless validation complete supplied-input parameters without token-creation authority', () => {
+    const preamble = read('../../.claude/skills/finalize-for-upload/HEADLESS_PREAMBLE.md');
+    expect(preamble).toContain('Prepared publication result (validate mode)');
+    expect(preamble).toContain('User-supplied authorization token (validate mode)');
+    expect(preamble).toContain('Never create a `research_publication_authorization` token');
   });
 
   it('binds a representative equivalent result to exact adapters without claiming live invocation', () => {

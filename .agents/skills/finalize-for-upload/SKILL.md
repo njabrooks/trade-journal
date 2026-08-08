@@ -119,8 +119,8 @@ The serializable recorder re-reads current repository state and may only:
 2. reuse or insert accepted `claim_thesis_mappings` rows;
 3. insert one complete `research_publication_recorded` `journal_entries` audit.
 
-It uses the authorization UUID as the batch/idempotency key. A byte-identical
-retry returns the recorded result. Changed authorization bytes, stale source or
+It uses the authorization UUID as the batch/idempotency key. A canonically
+identical JSON retry returns the recorded result. Changed canonical authorization content, stale source or
 catalog state, conflicting provenance, conflicting relationship semantics, or
 any partial failure is refused and rolled back.
 

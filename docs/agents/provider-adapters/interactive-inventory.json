@@ -567,8 +567,8 @@
         "state": "current",
         "as_of": "2026-08-08",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:ed8b759515cc4955df912598b6a68b4b0ddbbf3db57a5e76185f3d3aafee29da",
-        "adapter_digest": "sha256:b6278e6987edc203be5efbea2c757248a2081d46a377826d17f5fe6baa9c3b43",
+        "package_digest": "sha256:337b3cd8c45fab3d8af5c45eb6455257bd557e9c399ebc6907dadc1feaa1e74d",
+        "adapter_digest": "sha256:909bd0d97b22929cd3d17682818f8b1c1d47c5c92b4cb18a3c0219937657caab",
         "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {

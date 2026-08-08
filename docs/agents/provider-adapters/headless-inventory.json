@@ -723,8 +723,8 @@
         "state": "current",
         "as_of": "2026-08-08",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:ed8b759515cc4955df912598b6a68b4b0ddbbf3db57a5e76185f3d3aafee29da",
-        "adapter_digest": "sha256:84aafabae99ffd4950040eb41c4d2921bcc8a0b043cd252ad84f1d9736ff7129",
+        "package_digest": "sha256:337b3cd8c45fab3d8af5c45eb6455257bd557e9c399ebc6907dadc1feaa1e74d",
+        "adapter_digest": "sha256:3b8334e88e63093e50c169fcb960b969908522211473ed76868ab85bdd2acf7a",
         "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {

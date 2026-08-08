@@ -5,6 +5,11 @@ import {
   mainClaims,
 } from '../../../src/db/schema.js';
 import { prepareClaimsSynthesisContext } from '../../../src/lib/intelligence/claimsSynthesisReadBoundary.js';
+import {
+  digestResearchPublicationAuthorization,
+  validatePreparedResearchPublication,
+  validateResearchPublicationAuthorization,
+} from '../../../src/lib/intelligence/researchPublication.js';
 import { createClaimsSynthesisReadRepository } from '../../lib/claims-synthesis-db.js';
 import type {
   PublicationAuditRecord,
@@ -63,8 +68,30 @@ function auditRecord(row: { id: string; timestamp: Date; metadata: unknown }): P
   if (typeof metadata.authorizationId !== 'string'
     || typeof metadata.authorizationDigest !== 'string'
     || typeof metadata.publicationDigest !== 'string'
-    || !metadata.result || typeof metadata.result !== 'object' || Array.isArray(metadata.result)) {
+    || !metadata.result || typeof metadata.result !== 'object' || Array.isArray(metadata.result)
+    || !metadata.envelope || typeof metadata.envelope !== 'object' || Array.isArray(metadata.envelope)) {
     throw new Error(`Research publication audit ${row.id} is incomplete`);
+  }
+  const envelope = metadata.envelope as Record<string, unknown>;
+  const prepared = validatePreparedResearchPublication(envelope.prepared);
+  const rawAuthorization = envelope.authorization as Record<string, unknown> | null;
+  const authorizedAt = rawAuthorization && typeof rawAuthorization.authorizedAt === 'string'
+    ? new Date(rawAuthorization.authorizedAt)
+    : new Date(Number.NaN);
+  const authorization = validateResearchPublicationAuthorization(
+    prepared,
+    envelope.authorization,
+    authorizedAt,
+  );
+  if (metadata.authorizationId !== authorization.authorizationId
+    || metadata.authorizationDigest !== digestResearchPublicationAuthorization(authorization)
+    || metadata.publicationDigest !== prepared.publicationDigest) {
+    throw new Error(`Research publication audit ${row.id} does not match its immutable envelope`);
+  }
+  const result = metadata.result as PublicationAuditRecord['result'];
+  if (result.authorizationId !== authorization.authorizationId
+    || result.publicationDigest !== prepared.publicationDigest) {
+    throw new Error(`Research publication audit ${row.id} result does not match its authorization`);
   }
   return {
     id: row.id,
@@ -72,7 +99,8 @@ function auditRecord(row: { id: string; timestamp: Date; metadata: unknown }): P
     authorizationDigest: metadata.authorizationDigest,
     publicationDigest: metadata.publicationDigest,
     actionType: 'research_publication_recorded',
-    result: metadata.result as PublicationAuditRecord['result'],
+    result,
+    envelope: { prepared, authorization },
     recordedAt: row.timestamp,
   };
 }
@@ -80,7 +108,9 @@ function auditRecord(row: { id: string; timestamp: Date; metadata: unknown }): P
 export function createResearchPublicationDatabaseStore(db: Database): ResearchPublicationStore {
   return {
     async transaction(work) {
-      return db.transaction(async (tx) => {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          return await db.transaction(async (tx) => {
         const database = tx as unknown as Database;
         const transaction: ResearchPublicationTransaction = {
           async acquireAuthorizationLock(authorizationId) {
@@ -206,6 +236,7 @@ export function createResearchPublicationDatabaseStore(db: Database): ResearchPu
                 authorizationDigest: row.authorizationDigest,
                 publicationDigest: row.publicationDigest,
                 result: row.result,
+                envelope: row.envelope,
               },
               batchId: row.authorizationId,
               firstDetectedAt: row.recordedAt,
@@ -217,11 +248,19 @@ export function createResearchPublicationDatabaseStore(db: Database): ResearchPu
             return { ...row, id: inserted.id };
           },
         };
-        return work(transaction);
-      }, {
-        isolationLevel: 'serializable',
-        accessMode: 'read write',
-      });
+            return work(transaction);
+          }, {
+            isolationLevel: 'serializable',
+            accessMode: 'read write',
+          });
+        } catch (error) {
+          const code = error && typeof error === 'object' && 'code' in error
+            ? String((error as { code: unknown }).code)
+            : null;
+          if (attempt === 2 || !['40001', '40P01', '23505'].includes(code ?? '')) throw error;
+        }
+      }
+      throw new Error('Research-publication transaction retry exhausted');
     },
   };
 }

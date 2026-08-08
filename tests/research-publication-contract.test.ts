@@ -211,6 +211,23 @@ describe('research-publication contract', () => {
     expect(prepared.publicationDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
   });
 
+  it('preserves every ambiguity axis instead of collapsing a dual-axis refusal', () => {
+    const result = synthesisResult();
+    result.ambiguities.push({
+      sourceClaimId: 'claim-3',
+      axis: 'thesis_mapping',
+      kind: 'thesis_bearing',
+      candidateMainClaimIds: [],
+      candidateThesisIds: ['44444444-4444-4444-8444-444444444444'],
+      reason: 'The claim may be adjacent to the thesis without direct bearing.',
+    });
+    const prepared = buildResearchPublication(context, result);
+    expect(prepared.exclusions.filter(({ sourceClaimId }) => sourceClaimId === 'claim-3')).toEqual([
+      expect.objectContaining({ reason: 'claim_identity_ambiguous' }),
+      expect.objectContaining({ reason: 'thesis_mapping_ambiguous' }),
+    ]);
+  });
+
   it('accepts only a short-lived digest-bound user decision naming exact claims and relationships', () => {
     const prepared = buildResearchPublication(context, synthesisResult());
     const authorization = {

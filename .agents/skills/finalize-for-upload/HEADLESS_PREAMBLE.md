@@ -8,6 +8,8 @@ do not infer, simulate, or fabricate a publication decision.
 - **Trade Journal research insight ID:** `{{insightId}}`
 - **Validated claims-synthesis result:** `{{claimsSynthesisResult}}`
 - **Mode:** `prepare|validate`
+- **Prepared publication result (validate mode):** `{{preparedPublication}}`
+- **User-supplied authorization token (validate mode):** `{{authorizationToken}}`
 
 ## Governing override
 

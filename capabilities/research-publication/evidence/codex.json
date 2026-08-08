@@ -1,9 +1,9 @@
 {
   "capability_id": "capability:scope:trade-journal/research-publication",
   "capability_version": "1.0.0",
-  "package_digest": "sha256:ed8b759515cc4955df912598b6a68b4b0ddbbf3db57a5e76185f3d3aafee29da",
+  "package_digest": "sha256:337b3cd8c45fab3d8af5c45eb6455257bd557e9c399ebc6907dadc1feaa1e74d",
   "adapter_id": "research-publication-codex",
-  "adapter_digest": "sha256:84aafabae99ffd4950040eb41c4d2921bcc8a0b043cd252ad84f1d9736ff7129",
+  "adapter_digest": "sha256:3b8334e88e63093e50c169fcb960b969908522211473ed76868ab85bdd2acf7a",
   "support_state": "current",
   "validated_at": "2026-08-08",
   "results": {
@@ -21,7 +21,7 @@
     },
     "atomic-recorder": {
       "status": "passed",
-      "method": "Repository behavioral and production-adapter tests prove serializable transaction configuration, exact three-table routing, current-state revalidation, audit output, idempotent retry, concurrency-safe reuse, and complete rollback after injected partial failure"
+      "method": "Repository behavioral and production-adapter tests prove serializable transaction configuration, exact three-table routing, current-state revalidation, fresh-snapshot concurrency retry and compatible provenance reuse, a reconstructable immutable authorization/preparation audit envelope, idempotent retry, and complete rollback after injected partial failure"
     },
     "authority-boundary": {
       "status": "passed",

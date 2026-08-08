@@ -59,6 +59,7 @@ export interface PreparedResearchPublication {
     sourceRelease: string;
     packageDigest: string;
     contextDigest: string;
+    context: ClaimsSynthesisContext;
     resultDigest: string;
     result: ClaimsSynthesisReadyResult;
   };
@@ -279,7 +280,12 @@ export function buildResearchPublication(
   resultInput: unknown,
 ): PreparedResearchPublication {
   const result = validateClaimsSynthesisResult(context, resultInput);
-  const ambiguousBySource = new Map(result.ambiguities.map((ambiguity) => [ambiguity.sourceClaimId, ambiguity]));
+  const ambiguitiesBySource = new Map<string, ClaimsSynthesisReadyResult['ambiguities']>();
+  for (const ambiguity of result.ambiguities) {
+    const ambiguities = ambiguitiesBySource.get(ambiguity.sourceClaimId) ?? [];
+    ambiguities.push(ambiguity);
+    ambiguitiesBySource.set(ambiguity.sourceClaimId, ambiguities);
+  }
   const mappingsBySource = new Map<string, ClaimsSynthesisReadyResult['thesisMappings']>();
   for (const mapping of result.thesisMappings) {
     const mappings = mappingsBySource.get(mapping.sourceClaimId) ?? [];
@@ -296,15 +302,15 @@ export function buildResearchPublication(
   const exclusions: PreparedResearchPublication['exclusions'] = [];
 
   for (const evidence of result.sourceEvidence) {
-    const ambiguity = ambiguousBySource.get(evidence.sourceClaimId);
-    if (ambiguity) {
-      exclusions.push({
+    const ambiguities = ambiguitiesBySource.get(evidence.sourceClaimId) ?? [];
+    if (ambiguities.length > 0) {
+      exclusions.push(...ambiguities.map((ambiguity) => ({
         sourceClaimId: evidence.sourceClaimId,
         reason: ambiguity.axis === 'claim_identity'
-          ? 'claim_identity_ambiguous'
-          : 'thesis_mapping_ambiguous',
+          ? 'claim_identity_ambiguous' as const
+          : 'thesis_mapping_ambiguous' as const,
         detail: ambiguity.reason,
-      });
+      })));
       continue;
     }
 
@@ -350,6 +356,7 @@ export function buildResearchPublication(
       sourceRelease: CLAIMS_SYNTHESIS_SOURCE_RELEASE,
       packageDigest: CLAIMS_SYNTHESIS_PACKAGE_DIGEST,
       contextDigest: digestClaimsSynthesisContext(context),
+      context,
       resultDigest: digestClaimsSynthesisResult(result),
       result,
     },

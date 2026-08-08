@@ -182,21 +182,17 @@ describe('governed research-publication recorder', () => {
     expect(store.audits.get(input.authorization.authorizationId)).toMatchObject({
       actionType: 'research_publication_recorded', publicationDigest: input.prepared.publicationDigest,
       authorizationDigest: digestResearchPublicationAuthorization(input.authorization),
+      envelope: {
+        prepared: input.prepared,
+        authorization: input.authorization,
+      },
     });
     expect(new Set(store.writeLog)).toEqual(new Set(['main_claims', 'claim_thesis_mappings', 'journal_entries']));
   });
 
-  it('is idempotent for an exact authorization retry and reuses a matching concurrent provenance claim', async () => {
+  it('is idempotent for a canonically identical authorization retry', async () => {
     const input = fixture();
     const store = new MemoryStore(input.context);
-    const proposed = input.prepared.claimCandidates.find(({ sourceClaimId }) => sourceClaimId === 'claim-2')?.proposedClaim;
-    if (!proposed) throw new Error('missing fixture proposal');
-    store.claims.set('99999999-9999-4999-8999-999999999999', {
-      id: '99999999-9999-4999-8999-999999999999', title: proposed.title, category: proposed.category,
-      claim: proposed.claim, evidence: proposed.evidence, reasoning: proposed.reasoning, backing: proposed.backing,
-      qualifier: proposed.qualifier, rebuttal: proposed.rebuttal, timeHorizon: proposed.timeHorizon,
-      relevantTickers: proposed.relevantTickers, status: 'draft', sourceInsightId: INSIGHT_ID, sourceClaimId: 'claim-2',
-    });
 
     const first = await recordResearchPublication(
       { prepared: input.prepared, authorization: input.authorization },
@@ -208,10 +204,39 @@ describe('governed research-publication recorder', () => {
       { store, now: new Date('2026-08-09T10:01:00.000Z') },
     );
 
-    expect(first.claims.find(({ sourceClaimId }) => sourceClaimId === 'claim-2')).toMatchObject({ disposition: 'reused' });
+    expect(first.claims.find(({ sourceClaimId }) => sourceClaimId === 'claim-2')).toMatchObject({ disposition: 'created' });
     expect(second).toEqual(first);
     expect(store.writeLog).toEqual(writesAfterFirst);
     expect([...store.claims.values()].filter((claim) => claim.sourceClaimId === 'claim-2')).toHaveLength(1);
+  });
+
+  it('reuses a matching provenance claim committed since preparation', async () => {
+    const input = fixture();
+    const proposed = input.prepared.claimCandidates.find(({ sourceClaimId }) => sourceClaimId === 'claim-2')?.proposedClaim;
+    if (!proposed) throw new Error('missing fixture proposal');
+    const current = structuredClone(input.context);
+    current.existingMainClaims.push({
+      id: '99999999-9999-4999-8999-999999999999', title: proposed.title,
+      category: proposed.category, claim: proposed.claim, status: 'draft', sourceInsightId: INSIGHT_ID,
+      sourceClaimId: 'claim-2', provenanceMatch: 'exact',
+    });
+    const store = new MemoryStore(current);
+    store.claims.set('99999999-9999-4999-8999-999999999999', {
+      id: '99999999-9999-4999-8999-999999999999', title: proposed.title, category: proposed.category,
+      claim: proposed.claim, evidence: proposed.evidence, reasoning: proposed.reasoning, backing: proposed.backing,
+      qualifier: proposed.qualifier, rebuttal: proposed.rebuttal, timeHorizon: proposed.timeHorizon,
+      relevantTickers: proposed.relevantTickers, status: 'draft', sourceInsightId: INSIGHT_ID, sourceClaimId: 'claim-2',
+    });
+
+    const recorded = await recordResearchPublication(
+      { prepared: input.prepared, authorization: input.authorization },
+      { store, now: new Date('2026-08-08T10:01:00.000Z') },
+    );
+    expect(recorded.claims.find(({ sourceClaimId }) => sourceClaimId === 'claim-2')).toMatchObject({
+      mainClaimId: '99999999-9999-4999-8999-999999999999',
+      disposition: 'reused',
+    });
+    expect(recorded.writes[0]).toEqual({ table: 'main_claims', operation: 'insert', count: 0 });
   });
 
   it('rolls back every claim, mapping, and audit write after a partial failure', async () => {

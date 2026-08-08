@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const repositoryRoot = process.cwd();
 const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
-const lockEvidenceTime = process.env.WORKSPACE_LOCK_EVIDENCE_TIME ?? "2026-08-06";
+const lockEvidenceTime = process.env.WORKSPACE_LOCK_EVIDENCE_TIME ?? "2026-08-08";
 const governanceIt = workspaceRoot ? it : it.skip;
 
 describe("Workspace evidence freshness governance", () => {

@@ -29,12 +29,14 @@ function mapping(): PublicationMappingInsert {
 }
 
 function audit(): PublicationAuditInsert {
+  const envelope = {} as PublicationAuditInsert['envelope'];
   return {
     authorizationId: AUTHORIZATION_ID,
     authorizationDigest: `sha256:${'a'.repeat(64)}`,
     publicationDigest: `sha256:${'b'.repeat(64)}`,
     actionType: 'research_publication_recorded',
     recordedAt: new Date('2026-08-08T10:01:00.000Z'),
+    envelope,
     result: {
       status: 'published', authorizationId: AUTHORIZATION_ID, batchId: AUTHORIZATION_ID,
       publicationDigest: `sha256:${'b'.repeat(64)}`,
@@ -104,6 +106,7 @@ describe('research-publication production database adapter', () => {
     expect(committed[2].row).toMatchObject({
       objectType: 'claim', actionType: 'research_publication_recorded',
       skillInvoked: 'research-publication', source: 'user', batchId: AUTHORIZATION_ID,
+      metadata: { envelope: {} },
     });
   });
 
@@ -137,5 +140,19 @@ describe('research-publication production database adapter', () => {
       throw new Error('force rollback');
     })).rejects.toThrow('force rollback');
     expect(committed).toEqual([]);
+  });
+
+  it('retries serialization and unique-conflict races with a fresh transaction snapshot', async () => {
+    let attempts = 0;
+    const fakeDb = {
+      async transaction<T>(work: (transaction: Record<string, unknown>) => Promise<T>): Promise<T> {
+        attempts += 1;
+        if (attempts === 1) throw Object.assign(new Error('serialization race'), { code: '40001' });
+        return work({});
+      },
+    } as unknown as Parameters<typeof createResearchPublicationDatabaseStore>[0];
+    const store = createResearchPublicationDatabaseStore(fakeDb);
+    await expect(store.transaction(async () => 'reused-after-reload')).resolves.toBe('reused-after-reload');
+    expect(attempts).toBe(2);
   });
 });
