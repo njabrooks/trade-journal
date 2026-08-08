@@ -1,0 +1,42 @@
+{
+  "capability_id": "capability:scope:trade-journal/belief-evidence-assessment",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:2b4a4f22e7e73dd3028bc7132d34e1020cc87a11d466da0bcc32a9aaaac1ff9a",
+  "adapter_id": "belief-evidence-assessment-codex",
+  "adapter_digest": "sha256:d338152d7ad061866dba7960c83643334f190ff0d2e33ebc531e3a67ad64f0da",
+  "support_state": "current",
+  "validated_at": "2026-08-08",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+    },
+    "governed-target": {
+      "status": "passed",
+      "method": "Repository behavioral tests prove exact thesis, articulation version, and complete active signal-set binding with missing and stale target refusal"
+    },
+    "evidence-semantics-and-provenance": {
+      "status": "passed",
+      "method": "Repository behavioral tests prove thesis-centric invalidation polarity, direct-bearing requirements, neutral completeness, complete provenance, and promoted-claim reuse"
+    },
+    "deterministic-recorder": {
+      "status": "passed",
+      "method": "Repository behavioral tests prove the serializable recorder's exact permitted write set and atomic no-write outcomes for invalid inputs or changed targets"
+    },
+    "authority-boundary": {
+      "status": "passed",
+      "method": "Repository contract tests prove the exact adapter delegates its only mutation to the recorder and refuses status, Decision Item, claim creation, signal configuration, ad-hoc write, strategy, position, and trade authority"
+    },
+    "neutral-semantics": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the Codex adapter with issue #58's accepted contract, CONTEXT.md, the canonical assessment workflow's useful intent, and the governed thesis-underwriting dependency",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/58#issuecomment-5226480524",
+      "expires_at": "2026-09-07"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured repository runtime completed the non-mutating recorder --help preflight on 2026-08-08; database, source, provider, sandbox, or network unavailability remains an explicit unavailable result"
+    }
+  }
+}
