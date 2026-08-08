@@ -54,6 +54,12 @@ describe("thesis-underwriting Capability", () => {
     expect(instructions).toContain(
       "Never author manual signal thresholds, data sources, explicit_details, or retired configure-signal behaviour.",
     );
+    expect(instructions).toContain(
+      "Before synthesis, require all in-scope evidence to be linked: if thesis-snapshot reports unlinked claims, report the relation prerequisite and do not write a new articulation until the evidence set is complete.",
+    );
+    expect(instructions).toContain(
+      "When signal-quality diagnostics or candidate signals are non-empty, refine the resolution section by sharpening or dropping chronic-neutral statements, covering material gaps, and promoting or dismissing every assessed candidate.",
+    );
   });
 
   it("makes the bounded articulation write explicit while refusing unsupported mutation", () => {
@@ -67,6 +73,11 @@ describe("thesis-underwriting Capability", () => {
       expect(adapter).toContain("must not invoke `scripts/ops/update-entity-status.ts`");
       expect(adapter).toContain("must not invoke `scripts/ops/resolve-decision.ts`");
       expect(adapter).toContain("Never create manual signal thresholds, data sources, or `explicit_details`");
+      expect(adapter).toContain("thin.unlinkedClaimCount");
+      expect(adapter).toContain("do not write a new articulation until those claims are related");
+      expect(adapter).toContain("must sharpen or drop chronic-neutral statements");
+      expect(adapter).toContain("promote or dismiss every assessed candidate signal");
+      expect(adapter).toContain("whenever a new resolution statement continues a prior signal");
     }
   });
 });

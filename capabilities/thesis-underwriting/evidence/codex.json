@@ -1,9 +1,9 @@
 {
   "capability_id": "capability:scope:trade-journal/thesis-underwriting",
   "capability_version": "1.0.0",
-  "package_digest": "sha256:21d8ba9a2dbdf4c08d92c888425f2ccb430fb40bb55300677b514a78e81e3a30",
+  "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
   "adapter_id": "thesis-underwriting-codex",
-  "adapter_digest": "sha256:d1510f9f4b8d6562c319dc62ebc1e7c2267221ede026ca48493b988d614bd040",
+  "adapter_digest": "sha256:f5067026d7a81aa37de1d1ddc78d9c80511112b6e28e59f15851ed033b887a45",
   "support_state": "current",
   "validated_at": "2026-08-07",
   "results": {
@@ -13,7 +13,7 @@
     },
     "underwriting-contract": {
       "status": "passed",
-      "method": "Repository contract test proves the exact package preserves versioned articulation, provenance-bearing linked claims, qualitative rebuttal-derived resolution signals, prior signal lineage, and explicit failure handling"
+      "method": "Repository contract test proves the exact package requires linked-evidence completeness, preserves provenance-bearing claims, applies required quality and candidate refinement, preserves qualitative rebuttal-derived resolution and prior-signal lineage, and reports explicit failures"
     },
     "bounded-write-and-lifecycle-boundary": {
       "status": "passed",
