@@ -1,0 +1,34 @@
+{
+  "capability_id": "capability:scope:trade-journal/thesis-underwriting",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:21d8ba9a2dbdf4c08d92c888425f2ccb430fb40bb55300677b514a78e81e3a30",
+  "adapter_id": "thesis-underwriting-codex",
+  "adapter_digest": "sha256:d1510f9f4b8d6562c319dc62ebc1e7c2267221ede026ca48493b988d614bd040",
+  "support_state": "current",
+  "validated_at": "2026-08-07",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+    },
+    "underwriting-contract": {
+      "status": "passed",
+      "method": "Repository contract test proves the exact package preserves versioned articulation, provenance-bearing linked claims, qualitative rebuttal-derived resolution signals, prior signal lineage, and explicit failure handling"
+    },
+    "bounded-write-and-lifecycle-boundary": {
+      "status": "passed",
+      "method": "Repository contract test proves only the articulation and candidate-resolution scripts are permitted and that thesis status, Decision Item resolution, manual signal configuration, ad hoc SQL, and trade authority are refused"
+    },
+    "neutral-semantics": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the Codex adapter with the source build-core-argument workflow, Trade Journal loose-agent safeguards, and the governed provider-neutral package",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/57",
+      "expires_at": "2026-09-06"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured repository runtime completed the non-mutating insert-thesis-articulation --help preflight on 2026-08-07; sandbox or network denial, database, or provider unavailability remain explicit failed or unavailable underwriting results"
+    }
+  }
+}

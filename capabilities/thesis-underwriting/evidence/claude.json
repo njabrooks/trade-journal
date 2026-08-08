@@ -1,0 +1,34 @@
+{
+  "capability_id": "capability:scope:trade-journal/thesis-underwriting",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:21d8ba9a2dbdf4c08d92c888425f2ccb430fb40bb55300677b514a78e81e3a30",
+  "adapter_id": "thesis-underwriting-claude",
+  "adapter_digest": "sha256:fec2080b66f2e687996ab054f03f697297cbfe57e75ca4f7712bb1b1f5fd1842",
+  "support_state": "current",
+  "validated_at": "2026-08-07",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+    },
+    "underwriting-contract": {
+      "status": "passed",
+      "method": "Repository contract test proves the exact package preserves versioned articulation, provenance-bearing linked claims, qualitative rebuttal-derived resolution signals, prior signal lineage, and explicit failure handling"
+    },
+    "bounded-write-and-lifecycle-boundary": {
+      "status": "passed",
+      "method": "Repository contract test proves only the articulation and candidate-resolution scripts are permitted and that thesis status, Decision Item resolution, manual signal configuration, ad hoc SQL, and trade authority are refused"
+    },
+    "neutral-semantics": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the Claude adapter with the source build-core-argument workflow, Trade Journal loose-agent safeguards, and the governed provider-neutral package",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/57",
+      "expires_at": "2026-09-06"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured repository runtime completed the non-mutating insert-thesis-articulation --help preflight on 2026-08-07; database or provider unavailability remains an explicit failed or unavailable underwriting result"
+    }
+  }
+}
