@@ -33,8 +33,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/belief-evidence-assessment",
-        "release_reference": "fd538e1a41e0a2f646e655c1abd02bd259dee842",
-        "revision": "fd538e1a41e0a2f646e655c1abd02bd259dee842"
+        "release_reference": "483f6ea79ffbbed6e9dfa2144964f02aa91fd038",
+        "revision": "483f6ea79ffbbed6e9dfa2144964f02aa91fd038"
       }
     },
     {
@@ -256,6 +256,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:091ef9ee76b6aa4de4d53fd721b879f98cc10561c5539cec134380230cfd9bd9",
+  "registry_digest": "sha256:235e690e415668ab7b0917acb60451bc63df1cc4f50c24046ea2429f5d9e7cca",
   "schema_version": "1.0.0"
 }
