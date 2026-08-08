@@ -32,6 +32,21 @@
       }
     },
     {
+      "id": "capability:scope:trade-journal/claims-synthesis",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/claims-synthesis",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "df1a2e3ed5860a0495f4461d747a06ea26d09aca"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/morning-attention-brief",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",

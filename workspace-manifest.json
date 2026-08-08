@@ -64,6 +64,10 @@
       "path": "capabilities/belief-maintenance/capability-package.json"
     },
     {
+      "id": "capability:scope:trade-journal/claims-synthesis",
+      "path": "capabilities/claims-synthesis/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/morning-attention-brief",
       "path": "capabilities/morning-attention-brief/capability-package.json"
     },
@@ -251,7 +255,7 @@
       "id": "headless-codex-synthesize-claims",
       "capability": "capability:scope:trade-journal/claims-synthesis",
       "provider": "codex",
-      "path": ".agents/skills/synthesize-claims/SKILL.md"
+      "path": "capabilities/claims-synthesis/adapters/codex.md"
     },
     {
       "id": "headless-codex-thesis",
@@ -443,7 +447,7 @@
       "id": "interactive-claude-synthesize-claims",
       "capability": "capability:scope:trade-journal/claims-synthesis",
       "provider": "claude",
-      "path": ".claude/skills/synthesize-claims/SKILL.md"
+      "path": "capabilities/claims-synthesis/adapters/claude.md"
     },
     {
       "id": "interactive-claude-thesis",
