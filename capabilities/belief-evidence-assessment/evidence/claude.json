@@ -17,7 +17,7 @@
     },
     "evidence-semantics-and-provenance": {
       "status": "passed",
-      "method": "Repository behavioral tests enforce thesis-centric invalidation condition/effect pairs through the actual recorder input, prove direct-bearing requirements, neutral completeness, complete provenance and promoted-claim reuse, and compare observable writes from bound Claude and Codex fixtures"
+      "method": "Repository behavioral tests enforce thesis-centric invalidation condition/effect pairs through the actual recorder input, prove direct-bearing requirements, neutral completeness, complete provenance and promoted-claim reuse, cryptographically bind each exact adapter byte stream to its representative output fixture, and compare the resulting observable writes; no live provider invocation is claimed"
     },
     "deterministic-recorder": {
       "status": "passed",

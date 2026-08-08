@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -31,11 +32,19 @@ const adapterEquivalence = JSON.parse(readFileSync(resolve(
     semanticBearing: 'direct';
   };
   providers: Record<'claude' | 'codex', {
-    conditionEffect: 'risk_receding';
-    assessment: 'strengthening';
-    semanticBearing: 'direct';
+    adapterDigest: string;
+    output: {
+      conditionEffect: 'risk_receding';
+      assessment: 'strengthening';
+      semanticBearing: 'direct';
+    };
   }>;
 };
+
+function fileDigest(path: string): string {
+  const content = readFileSync(resolve(process.cwd(), path));
+  return `sha256:${createHash('sha256').update(content).digest('hex')}`;
+}
 
 const currentTarget: CurrentAssessmentTarget = {
   thesis: {
@@ -305,12 +314,16 @@ describe('belief-evidence assessment recorder', () => {
   it('produces equivalent observable writes for the bound Claude and Codex fixtures', async () => {
     const outcomes = [];
     for (const provider of ['claude', 'codex'] as const) {
-      expect(adapterEquivalence.providers[provider]).toEqual(adapterEquivalence.expected);
+      const fixture = adapterEquivalence.providers[provider];
+      expect(fixture.adapterDigest).toBe(fileDigest(
+        `capabilities/belief-evidence-assessment/adapters/${provider}.md`,
+      ));
+      expect(fixture.output).toEqual(adapterEquivalence.expected);
       const store = new MemoryStore();
       const envelope = validEnvelope();
       envelope.assessments[1] = {
         ...envelope.assessments[1],
-        ...adapterEquivalence.providers[provider],
+        ...fixture.output,
       };
       const result = await recordBeliefEvidenceAssessment(envelope, {
         store,
