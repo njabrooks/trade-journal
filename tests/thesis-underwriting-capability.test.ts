@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -7,6 +8,8 @@ const capabilityRoot = resolve(
   process.cwd(),
   "capabilities/thesis-underwriting",
 );
+const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
+const governanceIt = workspaceRoot ? it : it.skip;
 
 function read(path: string): string {
   return readFileSync(resolve(capabilityRoot, path), "utf8");
@@ -79,5 +82,59 @@ describe("thesis-underwriting Capability", () => {
       expect(adapter).toContain("promote or dismiss every assessed candidate signal");
       expect(adapter).toContain("whenever a new resolution statement continues a prior signal");
     }
+  });
+
+  governanceIt("validates the exact package and its staged provider projection through the public Workspace CLI", () => {
+    const environment = {
+      ...process.env,
+      WORKSPACE_REPOSITORY_ROOT: workspaceRoot,
+    };
+    const capabilityReport = JSON.parse(
+      execFileSync(
+        "./workspace",
+        [
+          "validate",
+          "capability",
+          "capabilities/thesis-underwriting",
+          "--evidence-time",
+          "2026-08-07",
+          "--format",
+          "json",
+        ],
+        { cwd: process.cwd(), encoding: "utf8", env: environment },
+      ),
+    ) as { outcome: string; adapters: Array<{ state: string }> };
+    const entryPointReport = JSON.parse(
+      execFileSync(
+        "./workspace",
+        [
+          "validate",
+          "provider-entry-points",
+          ".",
+          "--registry",
+          "capability-registry.json",
+          "--lock",
+          "capability-registry-lock.json",
+          "--mode",
+          "published",
+          "--evidence-time",
+          "2026-08-07",
+          "--format",
+          "json",
+        ],
+        { cwd: process.cwd(), encoding: "utf8", env: environment },
+      ),
+    ) as { outcome: string; outputs: Array<{ provider: string }> };
+
+    expect(capabilityReport.outcome).toBe("valid");
+    expect(capabilityReport.adapters.map(({ state }) => state)).toEqual([
+      "current",
+      "current",
+    ]);
+    expect(entryPointReport.outcome).toBe("valid");
+    expect(entryPointReport.outputs.map(({ provider }) => provider)).toEqual([
+      "claude",
+      "codex",
+    ]);
   });
 });
