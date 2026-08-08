@@ -83,12 +83,12 @@ and staged generated output bind it through W1. The remaining generic projection
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
 generation decision and the incremental J2 migration state. It covers all 73 inventoried entry points. The
-six governed Capabilities now record 16 generation-eligible inventory entries and two whole-file governed
-staging outputs. The other 57 entries remain non-governed migration inputs or non-candidates with explicit
+seven governed Capabilities now record 18 generation-eligible inventory entries and two whole-file governed
+staging outputs. The other 55 entries remain non-governed migration inputs or non-candidates with explicit
 dispositions.
 
-The portfolio-snapshot, belief-maintenance, thesis-observation, thesis-underwriting, portfolio-options-advice,
-and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
+The portfolio-snapshot, belief-maintenance, thesis-observation, thesis-underwriting, belief-evidence-assessment,
+portfolio-options-advice, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
 adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
 package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
 neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live
@@ -141,3 +141,12 @@ preserve versioned articulations, linked-claim provenance, rebuttal-derived qual
 statement-to-sensor lineage while refusing manual signal configuration, thesis-status mutation, Decision Item
 resolution, ad hoc SQL, and trade authority. The package is staged only: it does not change a scheduler, provider
 entry point, database record, or live provider invocation.
+
+## J2 belief-evidence-assessment package
+
+Issue #58 governs interactive and conditionally delegated headless assessment against the latest governed
+thesis articulation and its complete active resolution-signal set. Its exact adapters preserve source
+provenance, thesis-centric polarity, neutral completeness, and direct semantic bearing. Recording is explicit
+and passes through one serializable repository recorder whose maximum write set is qualitative snapshots,
+existing-claim evidence links, and accepted journal audit. The package is staged only: no provider invocation,
+database-writing canary, scheduler, credential, or discovery cutover was authorized.

@@ -114,6 +114,39 @@ If proposed work contradicts an existing ADR, surface the conflict explicitly ra
 
 ## Locked Capabilities
 
+### capability:scope:trade-journal/belief-evidence-assessment 1.0.0
+
+Intent: Assess provenance-bearing evidence against governed thesis underwriting without changing investment state or fabricating owner judgment.
+
+Contract: Given an explicit macro or asset thesis identifier, an explicit assessment request, provenance-bearing evidence, and the Registry-resolved thesis-underwriting dependency, bind analysis to the latest versioned thesis articulation and its complete active, thesis-linked, auto-derived resolution-signal set as { thesisId, thesisType, articulationId, articulationVersion, signalIds }; return a thesis-centric assessment for every bound signal with source provenance, direct semantic bearing, findings, quotations, limitations, recommendation, overall summary, and recording disposition; keep analysis read-only unless recording is explicitly delegated; if recording is delegated, persist atomically only through the deterministic repository recorder; and report unavailable, stale, malformed, or failed outcomes without partial writes or invented state.
+
+Provider-neutral instructions:
+- Resolve capability:scope:trade-journal/thesis-underwriting through the published Registry Lock and use its governed output as underwriting context; reference that Capability without copying or redefining its contract.
+- Require an explicit thesis ID, thesis type, assessment request, and source. Thesis lifecycle status is context only and never an information gate.
+- Load the current target through the repository recorder's read-only target mode and bind the assessment to the exact thesis ID, thesis type, articulation ID, articulation version, and complete active signal-ID set.
+- Carry source provenance as an existing promoted main_claims ID when available; otherwise require source title and type, content SHA-256, and stable URL, file label, observed time, or published time when available. Never create or duplicate a claim.
+- Assess each resolution statement in its underwriting context. Ticker and keyword overlap may assist retrieval only; every non-neutral result requires direct semantic bearing on the statement.
+- Use only neutral, strengthening, confirmed, weakening, or invalidated in thesis-centric polarity. For invalidation signals, receding risk is strengthening, growing risk is weakening, a cleared falsification condition is confirmed, and a triggered invalidation condition is invalidated.
+- Return one assessment for every bound signal, including neutral results, with statement, type, importance, confidence, semantic bearing, evidence summary, findings, short quotations, limitations, and advisory recommendation, plus an overall summary and recording disposition.
+- Analysis is read-only by default. When recording is explicitly requested, send the complete envelope only to scripts/ops/record-belief-evidence-assessment.ts --stdin; its serializable transaction revalidates the target immediately before the accepted writes.
+- The maximum write set is one qualitative signal_data_snapshots row per targeted signal, one existing-claim claim_signal_evidences link per non-neutral result when a promoted provenance-bearing claim exists, one batch audit record, and one thesis-level signal_evidence_received journal record per non-neutral result.
+- Never change thesis or signal status or confidence, create or configure signals, create claims, alter claim-thesis links, create or resolve Decision Items, mutate strategies or positions, place trades, author explicit_details, invoke retired configure-signal behavior, or use an ad-hoc database write.
+- Treat an unknown thesis, absent current underwriting, incomplete provenance, malformed result, changed target, unavailable prerequisite, or non-zero recorder result as unavailable or failed with no partial success.
+
+Provider Adapter `belief-evidence-assessment-codex` (current):
+
+## Codex Provider Adapter
+
+1. Require an explicit macro or asset thesis ID, thesis type, assessment request, source, and recording disposition. Resolve `capability:scope:trade-journal/thesis-underwriting` through the published Registry Lock and use that governed Capability as context; do not copy or redefine its contract. Thesis lifecycle status is context only, not an information gate.
+2. From the Trade Journal root, use the repository command runner for `npx tsx scripts/ops/record-belief-evidence-assessment.ts --target --thesis-id <uuid> --thesis-type <macro|asset>`. If it returns unavailable, stop. Bind the result to the exact `{ thesisId, thesisType, articulationId, articulationVersion, signalIds }`, use the returned articulation and complete signal context, and use only repository read helpers for additional linked claims, observations, prior evidence, rebuttals, assumptions, timeframe, or notes.
+3. Read the supplied content with Codex's available file or web tools and preserve source provenance. Use an existing promoted `main_claims.id` when supplied; otherwise include source title/type, content SHA-256, and stable URL, file label, observed time, or published time when available. This adapter must not create a claim or duplicate an existing claim.
+4. Assess every bound resolution statement. Ticker or keyword overlap may assist retrieval only and cannot determine direction. A non-neutral result requires direct semantic bearing; thematic adjacency, scheduled events without outcomes, missing evidence, or multi-step inference stays neutral with explicit limitations.
+5. Use thesis-centric polarity: `strengthening` and `confirmed` mean the thesis strengthened; `weakening` and `invalidated` mean it weakened. For an invalidation signal, receding risk is `strengthening`, growing risk is `weakening`, a definitively cleared falsification condition is `confirmed`, and a triggered invalidation condition is `invalidated`. Use hard outcomes conservatively.
+6. Return one result per bound signal, including neutral results, with statement, type, importance, assessment, confidence, semantic bearing, evidence summary, findings, short quotations, limitations, and advisory recommendation, plus an overall summary and recording disposition. Recommendations are not owner decisions.
+7. Unless recording was explicitly requested or delegated, analysis is read-only and the result must say recording was not requested. When recording was explicitly requested, pipe the exact envelope once to `npx tsx scripts/ops/record-belief-evidence-assessment.ts --stdin`. Treat sandbox or network denial, a stale target, unavailable prerequisite, malformed envelope, or non-zero result as failed with no partial success.
+
+The recorder is the sole mutation boundary. This adapter must not use ad-hoc SQL or Drizzle writes, temporary write scripts, generic provider connectors, or generic journal helpers; must not invoke `scripts/ops/update-entity-status.ts`; must not invoke `scripts/ops/resolve-decision.ts`; must not create or configure a signal; and has no thesis-confidence, signal-status, Decision Item, claim-linkage, strategy, position, trade, scheduler, credential, or operational-cutover authority.
+
 ### capability:scope:trade-journal/belief-maintenance 1.0.0
 
 Intent: Maintain Trade Journal belief records in bounded passes while reserving genuine investment judgment for explicit Decision Items.
