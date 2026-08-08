@@ -343,8 +343,8 @@
         "state": "current",
         "as_of": "2026-08-08",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:2b4a4f22e7e73dd3028bc7132d34e1020cc87a11d466da0bcc32a9aaaac1ff9a",
-        "adapter_digest": "sha256:d338152d7ad061866dba7960c83643334f190ff0d2e33ebc531e3a67ad64f0da",
+        "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
+        "adapter_digest": "sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
         "reason": "Exact current evidence is bound to belief-evidence-assessment 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
