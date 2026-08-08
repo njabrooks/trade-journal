@@ -34,7 +34,7 @@ function fakeDatabase(responses: unknown[][], fromTables: unknown[]) {
 }
 
 describe('claims-synthesis production database adapter', () => {
-  it('uses only bounded repository reads and cannot expose a mutation channel', async () => {
+  it('uses only complete repository reads and cannot expose a mutation channel', async () => {
     const fromTables: unknown[] = [];
     const source = {
       insightId: '22222222-2222-4222-8222-222222222222',
@@ -52,20 +52,12 @@ describe('claims-synthesis production database adapter', () => {
       title: 'Existing',
       category: 'asset_specific',
       claim: 'Claim',
-      evidence: ['Evidence'],
-      reasoning: null,
-      backing: null,
-      qualifier: 'medium',
-      rebuttal: ['Counter'],
-      timeHorizon: 'medium_term',
-      relevantTickers: ['TSM'],
       status: 'complete',
       sourceInsightId: source.insightId,
       sourceClaimId: 'claim-1',
     };
     const db = fakeDatabase([
       [source],
-      [exact],
       [exact],
       [{
         id: '44444444-4444-4444-8444-444444444444',
@@ -94,7 +86,6 @@ describe('claims-synthesis production database adapter', () => {
     ]);
     expect(fromTables).toEqual([
       researchInsights,
-      mainClaims,
       mainClaims,
       macroTheses,
       assetTheses,

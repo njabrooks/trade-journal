@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { eq, gt, inArray } from 'drizzle-orm';
 import type { db as productionDb } from './db.js';
 import {
   assetTheses,
@@ -24,13 +24,6 @@ const claimSelection = {
   title: mainClaims.title,
   category: mainClaims.category,
   claim: mainClaims.claim,
-  evidence: mainClaims.evidence,
-  reasoning: mainClaims.reasoning,
-  backing: mainClaims.backing,
-  qualifier: mainClaims.qualifier,
-  rebuttal: mainClaims.rebuttal,
-  timeHorizon: mainClaims.timeHorizon,
-  relevantTickers: mainClaims.relevantTickers,
   status: mainClaims.status,
   sourceInsightId: mainClaims.sourceInsightId,
   sourceClaimId: mainClaims.sourceClaimId,
@@ -45,15 +38,6 @@ function mapClaim(row: Record<string, unknown>): ClaimRow | null {
     title: String(row.title),
     category: row.category,
     claim: String(row.claim),
-    evidence: Array.isArray(row.evidence) ? row.evidence.filter((item): item is string => typeof item === 'string') : [],
-    reasoning: typeof row.reasoning === 'string' ? row.reasoning : null,
-    backing: typeof row.backing === 'string' ? row.backing : null,
-    qualifier: typeof row.qualifier === 'string' ? row.qualifier : null,
-    rebuttal: Array.isArray(row.rebuttal) ? row.rebuttal.filter((item): item is string => typeof item === 'string') : [],
-    timeHorizon: typeof row.timeHorizon === 'string' ? row.timeHorizon : null,
-    relevantTickers: Array.isArray(row.relevantTickers)
-      ? row.relevantTickers.filter((item): item is string => typeof item === 'string')
-      : [],
     status: String(row.status),
     sourceInsightId: typeof row.sourceInsightId === 'string' ? row.sourceInsightId : null,
     sourceClaimId: typeof row.sourceClaimId === 'string' ? row.sourceClaimId : null,
@@ -82,38 +66,30 @@ export function createClaimsSynthesisReadRepository(db: Database): ClaimsSynthes
       return rows[0] ?? null;
     },
 
-    async loadMainClaims(source) {
-      const sourceClaimIds = ((source.claimsStructure as { main_claims?: Array<{ id?: unknown }> } | null)
-        ?.main_claims ?? [])
-        .map((claim) => claim.id)
-        .filter((id): id is string => typeof id === 'string' && id.length > 0);
-      const exactRows = sourceClaimIds.length === 0
-        ? []
-        : await db
+    async loadMainClaims() {
+      const byId = new Map<string, ClaimRow>();
+      let cursor: string | null = null;
+      for (;;) {
+        const query = db
           .select(claimSelection)
           .from(mainClaims)
-          .where(and(
-            eq(mainClaims.sourceInsightId, source.insightId),
-            inArray(mainClaims.sourceClaimId, sourceClaimIds),
-          ))
-          .orderBy(mainClaims.id);
-      const catalogRows = await db
-        .select(claimSelection)
-        .from(mainClaims)
-        .where(inArray(mainClaims.status, ['draft', 'active']))
-        .orderBy(desc(mainClaims.updatedAt), mainClaims.id)
-        .limit(250);
-      const byId = new Map<string, ClaimRow>();
-      for (const raw of [...exactRows, ...catalogRows]) {
-        const claim = mapClaim(raw as Record<string, unknown>);
-        if (claim) byId.set(claim.id, claim);
+          .orderBy(mainClaims.id)
+          .limit(250);
+        const catalogRows: Array<Record<string, unknown>> = cursor
+          ? await query.where(gt(mainClaims.id, cursor))
+          : await query;
+        for (const raw of catalogRows) {
+          const claim = mapClaim(raw as Record<string, unknown>);
+          if (claim) byId.set(claim.id, claim);
+        }
+        if (catalogRows.length < 250) break;
+        cursor = String(catalogRows[catalogRows.length - 1].id);
       }
       return [...byId.values()].sort((left, right) => left.id.localeCompare(right.id));
     },
 
     async loadActiveTheses(): Promise<ClaimsSynthesisThesisTarget[]> {
-      const [macroRows, assetRows] = await Promise.all([
-        db
+      const macroRows = await db
           .select({
             id: macroTheses.id,
             title: macroTheses.title,
@@ -123,8 +99,8 @@ export function createClaimsSynthesisReadRepository(db: Database): ClaimsSynthes
           })
           .from(macroTheses)
           .where(inArray(macroTheses.status, ['developing', 'monitoring']))
-          .orderBy(macroTheses.id),
-        db
+          .orderBy(macroTheses.id);
+      const assetRows = await db
           .select({
             id: assetTheses.id,
             title: assetTheses.title,
@@ -136,8 +112,7 @@ export function createClaimsSynthesisReadRepository(db: Database): ClaimsSynthes
           .from(assetTheses)
           .leftJoin(underlyings, eq(assetTheses.underlyingId, underlyings.id))
           .where(inArray(assetTheses.status, ['developing', 'monitoring']))
-          .orderBy(assetTheses.id),
-      ]);
+          .orderBy(assetTheses.id);
       return [
         ...macroRows.map((row) => ({ ...row, type: 'macro' as const, ticker: null })),
         ...assetRows.map((row) => ({ ...row, type: 'asset' as const })),

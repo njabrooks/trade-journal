@@ -26,9 +26,11 @@ export interface ClaimsSynthesisSource {
   claims: ClaimsSynthesisSourceClaim[];
 }
 
-export interface ClaimsSynthesisMainClaim
-  extends Omit<ClaimsSynthesisSourceClaim, 'sourceClaimId'> {
+export interface ClaimsSynthesisMainClaim {
   id: string;
+  title: string;
+  category: 'macro' | 'asset_specific';
+  claim: string;
   status: string;
   sourceInsightId: string | null;
   sourceClaimId: string | null;
@@ -157,9 +159,25 @@ function uuidAt(value: unknown, path: string): string {
   return result;
 }
 
-function claimAt(value: unknown, index: number): ClaimsSynthesisSourceClaim {
-  const path = `source.claims[${index}]`;
+function nullableUuidAt(value: unknown, path: string): string | null {
+  if (value === null) return null;
+  return uuidAt(value, path);
+}
+
+const CLAIM_KEYS = [
+  'sourceClaimId', 'title', 'category', 'claim', 'evidence', 'reasoning', 'backing',
+  'qualifier', 'rebuttal', 'timeHorizon', 'relevantTickers',
+];
+
+function claimAt(
+  value: unknown,
+  index: number,
+  collection = 'source.claims',
+  extraAllowed: string[] = [],
+): ClaimsSynthesisSourceClaim {
+  const path = `${collection}[${index}]`;
   const claim = objectAt(value, path);
+  assertAllowedKeys(claim, path, [...CLAIM_KEYS, ...extraAllowed]);
   const category = stringAt(claim.category, `${path}.category`);
   if (category !== 'macro' && category !== 'asset_specific') {
     fail(`${path}.category`, 'must be macro or asset_specific');
@@ -192,6 +210,10 @@ export function validateClaimsSynthesisSource(value: unknown): ClaimsSynthesisSo
   if (!/^sha256:[0-9a-f]{64}$/i.test(contentSha256)) {
     fail('source.contentSha256', 'must be a SHA-256 digest');
   }
+  const claims = source.claims.map((claim, index) => claimAt(claim, index));
+  if (new Set(claims.map((claim) => claim.sourceClaimId)).size !== claims.length) {
+    fail('source.claims.sourceClaimId', 'must be unique within the insight');
+  }
   return {
     authority: 'scope:notes',
     artifactId: uuidAt(source.artifactId, 'source.artifactId'),
@@ -201,8 +223,88 @@ export function validateClaimsSynthesisSource(value: unknown): ClaimsSynthesisSo
     sourceUrl: nullableStringAt(source.sourceUrl, 'source.sourceUrl'),
     contentSha256,
     observedAt: nullableStringAt(source.observedAt, 'source.observedAt'),
-    claims: source.claims.map(claimAt),
+    claims,
   };
+}
+
+function mainClaimAt(value: unknown, index: number): Omit<ClaimsSynthesisMainClaim, 'provenanceMatch'> {
+  const path = `context.existingMainClaims[${index}]`;
+  const claim = objectAt(value, path);
+  assertAllowedKeys(claim, path, [
+    'id', 'title', 'category', 'claim', 'status', 'sourceInsightId', 'sourceClaimId',
+    'provenanceMatch',
+  ]);
+  const category = stringAt(claim.category, `${path}.category`);
+  if (category !== 'macro' && category !== 'asset_specific') {
+    fail(`${path}.category`, 'must be macro or asset_specific');
+  }
+  if (claim.provenanceMatch !== 'exact' && claim.provenanceMatch !== 'none') {
+    fail(`${path}.provenanceMatch`, 'must be exact or none');
+  }
+  return {
+    id: uuidAt(claim.id, `${path}.id`),
+    title: stringAt(claim.title, `${path}.title`),
+    category,
+    claim: stringAt(claim.claim, `${path}.claim`),
+    status: stringAt(claim.status, `${path}.status`),
+    sourceInsightId: nullableUuidAt(claim.sourceInsightId, `${path}.sourceInsightId`),
+    sourceClaimId: nullableStringAt(claim.sourceClaimId, `${path}.sourceClaimId`),
+  };
+}
+
+function thesisAt(value: unknown, index: number): ClaimsSynthesisThesisTarget {
+  const path = `context.thesisTargets[${index}]`;
+  const thesis = objectAt(value, path);
+  assertAllowedKeys(thesis, path, [
+    'id', 'type', 'title', 'description', 'direction', 'status', 'ticker',
+  ]);
+  if (thesis.type !== 'macro' && thesis.type !== 'asset') {
+    fail(`${path}.type`, 'must be macro or asset');
+  }
+  if (thesis.status !== 'developing' && thesis.status !== 'monitoring') {
+    fail(`${path}.status`, 'must be developing or monitoring');
+  }
+  return {
+    id: uuidAt(thesis.id, `${path}.id`),
+    type: thesis.type,
+    title: stringAt(thesis.title, `${path}.title`),
+    description: nullableStringAt(thesis.description, `${path}.description`),
+    direction: nullableStringAt(thesis.direction, `${path}.direction`),
+    status: thesis.status,
+    ticker: nullableStringAt(thesis.ticker, `${path}.ticker`),
+  };
+}
+
+export function validateClaimsSynthesisContext(value: unknown): ClaimsSynthesisContext {
+  const context = objectAt(value, 'context');
+  assertAllowedKeys(context, 'context', [
+    'contractVersion', 'source', 'sourceEvidence', 'existingMainClaims', 'thesisTargets',
+  ]);
+  if (context.contractVersion !== '1.0.0') fail('context.contractVersion', 'must be 1.0.0');
+  const sourceHeader = objectAt(context.source, 'context.source');
+  assertAllowedKeys(sourceHeader, 'context.source', [
+    'authority', 'artifactId', 'insightId', 'title', 'sourceType', 'sourceUrl',
+    'contentSha256', 'observedAt',
+  ]);
+  const sourceEvidence = arrayAt(context.sourceEvidence, 'context.sourceEvidence', 25);
+  const source = validateClaimsSynthesisSource({ ...sourceHeader, claims: sourceEvidence });
+  const existingValues = arrayAt(context.existingMainClaims, 'context.existingMainClaims', 100000);
+  const existingMainClaims = existingValues.map(mainClaimAt);
+  if (new Set(existingMainClaims.map((claim) => claim.id)).size !== existingMainClaims.length) {
+    fail('context.existingMainClaims', 'must contain unique claim IDs');
+  }
+  const thesisValues = arrayAt(context.thesisTargets, 'context.thesisTargets', 300);
+  const theses = thesisValues.map(thesisAt);
+  if (new Set(theses.map((thesis) => thesis.id)).size !== theses.length) {
+    fail('context.thesisTargets', 'must contain unique thesis IDs');
+  }
+  const rebuilt = buildClaimsSynthesisContext(source, { existingMainClaims, theses });
+  const suppliedProvenance = existingValues.map((value, index) =>
+    objectAt(value, `context.existingMainClaims[${index}]`).provenanceMatch);
+  if (rebuilt.existingMainClaims.some((claim, index) => claim.provenanceMatch !== suppliedProvenance[index])) {
+    fail('context.existingMainClaims.provenanceMatch', 'must match deterministic source provenance');
+  }
+  return rebuilt;
 }
 
 function canonicalize(value: unknown): unknown {
@@ -274,6 +376,7 @@ export function validateClaimsSynthesisResult(
   const sourceIds = new Set(context.sourceEvidence.map((claim) => claim.sourceClaimId));
   const evidence = arrayAt(result.sourceEvidence, 'result.sourceEvidence', 25).map((item, index) => {
     const row = objectAt(item, `result.sourceEvidence[${index}]`);
+    assertAllowedKeys(row, `result.sourceEvidence[${index}]`, ['insightId', 'sourceClaimId']);
     const insightId = uuidAt(row.insightId, `result.sourceEvidence[${index}].insightId`);
     const sourceClaimId = stringAt(row.sourceClaimId, `result.sourceEvidence[${index}].sourceClaimId`);
     if (insightId !== context.source.insightId || !sourceIds.has(sourceClaimId)) {
@@ -293,6 +396,9 @@ export function validateClaimsSynthesisResult(
   const knownMainClaimIds = new Set(context.existingMainClaims.map((claim) => claim.id));
   const existing = arrayAt(result.existingMainClaims, 'result.existingMainClaims', 25).map((item, index) => {
     const row = objectAt(item, `result.existingMainClaims[${index}]`);
+    assertAllowedKeys(row, `result.existingMainClaims[${index}]`, [
+      'sourceClaimId', 'mainClaimId', 'disposition',
+    ]);
     const sourceClaimId = stringAt(row.sourceClaimId, `result.existingMainClaims[${index}].sourceClaimId`);
     const mainClaimId = uuidAt(row.mainClaimId, `result.existingMainClaims[${index}].mainClaimId`);
     if (row.disposition !== 'reuse_exact_provenance') {
@@ -311,13 +417,21 @@ export function validateClaimsSynthesisResult(
     25,
   ).map((item, index) => {
     const row = objectAt(item, `result.synthesizedInvestmentClaims[${index}]`);
+    assertAllowedKeys(row, `result.synthesizedInvestmentClaims[${index}]`, [
+      ...CLAIM_KEYS, 'ref', 'synthesisRationale',
+    ]);
     const sourceClaimId = stringAt(row.sourceClaimId, `result.synthesizedInvestmentClaims[${index}].sourceClaimId`);
     if (exactBySourceId.has(sourceClaimId)) {
       fail(`result.synthesizedInvestmentClaims[${index}]`, 'exact provenance exists and must be reused');
     }
     const sourceClaim = context.sourceEvidence.find((claim) => claim.sourceClaimId === sourceClaimId);
     if (!sourceClaim) fail(`result.synthesizedInvestmentClaims[${index}]`, 'references unknown source evidence');
-    const parsed = claimAt(row, index);
+    const parsed = claimAt(
+      row,
+      index,
+      'result.synthesizedInvestmentClaims',
+      ['ref', 'synthesisRationale'],
+    );
     if (parsed.qualifier !== sourceClaim.qualifier) {
       fail(`result.synthesizedInvestmentClaims[${index}].qualifier`, 'must preserve the source qualifier');
     }
@@ -347,6 +461,9 @@ export function validateClaimsSynthesisResult(
   const thesisById = new Map(context.thesisTargets.map((thesis) => [thesis.id, thesis]));
   const ambiguities = arrayAt(result.ambiguities, 'result.ambiguities', 25).map((item, index) => {
     const row = objectAt(item, `result.ambiguities[${index}]`);
+    assertAllowedKeys(row, `result.ambiguities[${index}]`, [
+      'sourceClaimId', 'kind', 'candidateMainClaimIds', 'candidateThesisIds', 'reason',
+    ]);
     const sourceClaimId = stringAt(row.sourceClaimId, `result.ambiguities[${index}].sourceClaimId`);
     if (!sourceIds.has(sourceClaimId)) fail(`result.ambiguities[${index}]`, 'references unknown source evidence');
     if (!['semantic_match', 'claim_distinction', 'thesis_bearing'].includes(String(row.kind))) {
@@ -389,6 +506,10 @@ export function validateClaimsSynthesisResult(
 
   const thesisMappings = arrayAt(result.thesisMappings, 'result.thesisMappings', 50).map((item, index) => {
     const row = objectAt(item, `result.thesisMappings[${index}]`);
+    assertAllowedKeys(row, `result.thesisMappings[${index}]`, [
+      'sourceClaimId', 'mainClaimRef', 'thesisId', 'thesisType', 'relationship',
+      'confidence', 'rationale',
+    ]);
     const sourceClaimId = stringAt(row.sourceClaimId, `result.thesisMappings[${index}].sourceClaimId`);
     if (!sourceIds.has(sourceClaimId)) {
       fail(`result.thesisMappings[${index}]`, 'references unknown source evidence');
@@ -433,6 +554,9 @@ export function validateClaimsSynthesisResult(
 
   const recommendations = arrayAt(result.recommendations, 'result.recommendations', 25).map((item, index) => {
     const row = objectAt(item, `result.recommendations[${index}]`);
+    assertAllowedKeys(row, `result.recommendations[${index}]`, [
+      'sourceClaimId', 'action', 'rationale',
+    ]);
     const sourceClaimId = stringAt(row.sourceClaimId, `result.recommendations[${index}].sourceClaimId`);
     if (!sourceIds.has(sourceClaimId)) fail(`result.recommendations[${index}]`, 'references unknown source evidence');
     if (!['reuse_existing_claim', 'synthesize_investment_claim', 'defer_ambiguous', 'no_investment_claim'].includes(String(row.action))) {
@@ -449,6 +573,22 @@ export function validateClaimsSynthesisResult(
     || new Set(recommendations.map((recommendation) => recommendation.sourceClaimId)).size !== sourceIds.size
   ) {
     fail('result.recommendations', 'must cover every source claim exactly once');
+  }
+  for (const sourceClaimId of sourceIds) {
+    const recommendation = recommendations.find((item) => item.sourceClaimId === sourceClaimId);
+    const expectedAction = ambiguousSourceIds.has(sourceClaimId)
+      ? 'defer_ambiguous'
+      : existing.some((claim) => claim.sourceClaimId === sourceClaimId)
+        ? 'reuse_existing_claim'
+        : synthesized.some((claim) => claim.sourceClaimId === sourceClaimId)
+          ? 'synthesize_investment_claim'
+          : 'no_investment_claim';
+    if (recommendation?.action !== expectedAction) {
+      fail(
+        `result.recommendations.${sourceClaimId}.action`,
+        `must be ${expectedAction} for the validated disposition`,
+      );
+    }
   }
 
   return {

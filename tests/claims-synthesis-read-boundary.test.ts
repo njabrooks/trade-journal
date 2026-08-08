@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  digestClaimsSynthesisContext,
+} from '../src/lib/intelligence/claimsSynthesis.js';
+import {
   prepareClaimsSynthesisContext,
   type ClaimsSynthesisReadRepository,
+  validatePreparedClaimsSynthesisContext,
 } from '../src/lib/intelligence/claimsSynthesisReadBoundary.js';
 
 const INSIGHT_ID = '22222222-2222-4222-8222-222222222222';
@@ -75,6 +79,20 @@ describe('claims-synthesis repository read boundary', () => {
           rebuttal: ['Demand could fall before the new capacity is commissioned.'],
         }],
       });
+      expect(validatePreparedClaimsSynthesisContext(prepared)).toEqual(prepared.context);
+      expect(() => validatePreparedClaimsSynthesisContext({
+        ...prepared,
+        context: {
+          ...prepared.context,
+          source: { ...prepared.context.source, title: 'Drifted source' },
+        },
+      })).toThrow(/prepared context digest/i);
+      const emptyContext = { ...prepared.context, sourceEvidence: [] };
+      expect(() => validatePreparedClaimsSynthesisContext({
+        ...prepared,
+        contextDigest: digestClaimsSynthesisContext(emptyContext),
+        context: emptyContext,
+      })).toThrow(/at least one claim/i);
     }
     expect(calls).toEqual([`source:${INSIGHT_ID}`, `claims:${INSIGHT_ID}`, 'theses']);
   });
@@ -119,5 +137,32 @@ describe('claims-synthesis repository read boundary', () => {
       reason: 'source_unavailable',
     });
     expect(result).toHaveProperty('detail', 'Research artifact does not carry Notes/Tana authority provenance');
+  });
+
+  it('classifies malformed source claims as source-unavailable before reading repository state', async () => {
+    let repositoryReads = 0;
+    const malformed = repository({
+      async loadSource() {
+        const source = await repository().loadSource(INSIGHT_ID);
+        return source ? {
+          ...source,
+          claimsStructure: { main_claims: [{ id: 'claim-1', claim: 'Incomplete claim' }] },
+        } : null;
+      },
+      async loadMainClaims() {
+        repositoryReads++;
+        return [];
+      },
+      async loadActiveTheses() {
+        repositoryReads++;
+        return [];
+      },
+    });
+
+    await expect(prepareClaimsSynthesisContext(INSIGHT_ID, malformed)).resolves.toMatchObject({
+      status: 'unavailable',
+      reason: 'source_unavailable',
+    });
+    expect(repositoryReads).toBe(0);
   });
 });

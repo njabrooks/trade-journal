@@ -21,6 +21,15 @@ function digest(path: string): string {
   return `sha256:${createHash('sha256').update(read(path)).digest('hex')}`;
 }
 
+function inventoryEntry(path: string, id: string): Record<string, unknown> {
+  const inventory = JSON.parse(readFileSync(resolve(process.cwd(), path), 'utf8')) as {
+    entries: Array<Record<string, unknown>>;
+  };
+  const entry = inventory.entries.find((candidate) => candidate.id === id);
+  if (!entry) throw new Error(`Missing inventory entry ${id}`);
+  return entry;
+}
+
 describe('claims-synthesis Capability', () => {
   it('publishes the exact provenance, distinction, ambiguity, and zero-write contract', () => {
     const capability = readJson('capability-package.json');
@@ -94,6 +103,34 @@ describe('claims-synthesis Capability', () => {
       ...fixture.output,
       recommendations: fixture.output.recommendations.slice(0, 2),
     })).toThrow(/every source claim exactly once/i);
+    expect(() => validateClaimsSynthesisResult(fixture.context, {
+      ...fixture.output,
+      recommendations: fixture.output.recommendations.map((recommendation, index) =>
+        index === 0 ? { ...recommendation, action: 'no_investment_claim' } : recommendation),
+    })).toThrow(/must be reuse_existing_claim/i);
+    expect(() => validateClaimsSynthesisResult(fixture.context, {
+      ...fixture.output,
+      recommendations: fixture.output.recommendations.map((recommendation, index) =>
+        index === 2 ? { ...recommendation, action: 'synthesize_investment_claim' } : recommendation),
+    })).toThrow(/must be defer_ambiguous/i);
+  });
+
+  it.each([
+    'sourceEvidence',
+    'existingMainClaims',
+    'synthesizedInvestmentClaims',
+    'thesisMappings',
+    'ambiguities',
+    'recommendations',
+  ])('refuses nested authority-expanding fields in %s', (collection) => {
+    const fixture = readJson('../../tests/fixtures/claims-synthesis-adapter-equivalence.json') as {
+      context: Parameters<typeof validateClaimsSynthesisResult>[0];
+      output: Record<string, unknown>;
+    };
+    const output = structuredClone(fixture.output) as Record<string, unknown>;
+    const rows = output[collection] as Array<Record<string, unknown>>;
+    rows[0].directApiMutation = { requested: true };
+    expect(() => validateClaimsSynthesisResult(fixture.context, output)).toThrow(/unsupported fields/i);
   });
 
   it('binds both exact adapters to complete current evidence', () => {
@@ -106,6 +143,33 @@ describe('claims-synthesis Capability', () => {
       expect(evidence.support_state).toBe('current');
       expect(Object.values(results).every(({ status }) => status === 'passed')).toBe(true);
     }
+  });
+
+  it('makes unattended eligibility conditional on the bespoke zero-write ambiguity boundary', () => {
+    const interactive = inventoryEntry(
+      'docs/agents/provider-adapters/interactive-inventory.json',
+      'interactive-claude-synthesize-claims',
+    );
+    const headless = inventoryEntry(
+      'docs/agents/provider-adapters/headless-inventory.json',
+      'headless-codex-synthesize-claims',
+    );
+    expect(interactive).toMatchObject({
+      source: { path: 'capabilities/claims-synthesis/adapters/claude.md' },
+      packaging: 'governed-provider-adapter',
+      invocation: { unattended_eligibility: 'conditional' },
+      authority_and_write_scope: { writes: expect.stringContaining('None') },
+    });
+    expect(headless).toMatchObject({
+      source: { path: 'capabilities/claims-synthesis/adapters/codex.md' },
+      packaging: 'governed-provider-adapter',
+      execution_contract: {
+        class: 'bespoke',
+        preamble_path: '.claude/skills/synthesize-claims/HEADLESS_PREAMBLE.md',
+      },
+      invocation: { unattended_eligibility: 'conditional' },
+      authority_and_write_scope: { writes: expect.stringContaining('None') },
+    });
   });
 
   governanceIt('validates the exact package through the accepted public Workspace CLI', () => {

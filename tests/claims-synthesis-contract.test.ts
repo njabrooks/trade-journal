@@ -47,6 +47,13 @@ describe('claims-synthesis source contract', () => {
     });
   });
 
+  it('refuses duplicate source-claim provenance within one Notes insight', () => {
+    expect(() => validateClaimsSynthesisSource({
+      ...sourceInput,
+      claims: [sourceInput.claims[0], { ...sourceInput.claims[0] }],
+    })).toThrow(/sourceClaimId.*unique/i);
+  });
+
   it('keeps source evidence, existing main claims, and thesis targets in distinct context collections', () => {
     const context = buildClaimsSynthesisContext(sourceInput, {
       existingMainClaims: [{
@@ -54,13 +61,6 @@ describe('claims-synthesis source contract', () => {
         title: 'Foundry scarcity persists',
         category: 'asset_specific',
         claim: 'Leading-edge foundry capacity remains structurally scarce.',
-        evidence: ['Committed orders exceed available capacity.'],
-        reasoning: 'Capacity additions take years.',
-        backing: 'Historical foundry construction cycles.',
-        qualifier: 'high',
-        rebuttal: ['A demand recession could loosen capacity.'],
-        timeHorizon: 'medium_term',
-        relevantTickers: ['TSM'],
         status: 'active',
         sourceInsightId: '22222222-2222-4222-8222-222222222222',
         sourceClaimId: 'claim-1',
@@ -100,13 +100,6 @@ describe('claims-synthesis source contract', () => {
         title: 'Foundry scarcity persists',
         category: 'asset_specific',
         claim: 'Leading-edge foundry capacity remains structurally scarce.',
-        evidence: ['Committed orders exceed available capacity.'],
-        reasoning: 'Capacity additions take years.',
-        backing: 'Historical foundry construction cycles.',
-        qualifier: 'high',
-        rebuttal: ['A demand recession could loosen capacity.'],
-        timeHorizon: 'medium_term',
-        relevantTickers: ['TSM'],
         status: 'active',
         sourceInsightId: '22222222-2222-4222-8222-222222222222',
         sourceClaimId: 'claim-1',

@@ -21,7 +21,10 @@ import {
   validateClaimsSynthesisResult,
   type ClaimsSynthesisContext,
 } from '../src/lib/intelligence/claimsSynthesis.js';
-import { prepareClaimsSynthesisContext } from '../src/lib/intelligence/claimsSynthesisReadBoundary.js';
+import {
+  prepareClaimsSynthesisContext,
+  validatePreparedClaimsSynthesisContext,
+} from '../src/lib/intelligence/claimsSynthesisReadBoundary.js';
 
 const HELP = `claims-synthesis (read-only)
 
@@ -63,12 +66,7 @@ async function readJson(path: string): Promise<unknown> {
 }
 
 function contextFrom(value: unknown): ClaimsSynthesisContext {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error('context file must contain a claims-synthesis context object');
-  }
-  const record = value as Record<string, unknown>;
-  const context = record.status === 'ready' && record.context ? record.context : value;
-  return context as ClaimsSynthesisContext;
+  return validatePreparedClaimsSynthesisContext(value);
 }
 
 async function main(): Promise<void> {

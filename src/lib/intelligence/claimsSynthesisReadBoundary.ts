@@ -3,6 +3,8 @@ import {
   buildClaimsSynthesisContext,
   createUnavailableClaimsSynthesisResult,
   digestClaimsSynthesisContext,
+  validateClaimsSynthesisContext,
+  validateClaimsSynthesisSource,
   type ClaimsSynthesisContext,
   type ClaimsSynthesisMainClaim,
   type ClaimsSynthesisThesisTarget,
@@ -52,13 +54,28 @@ export type PreparedClaimsSynthesis =
   }
   | ClaimsSynthesisUnavailableResult;
 
-function stringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === 'string');
-}
-
-function nullableString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value : null;
+export function validatePreparedClaimsSynthesisContext(value: unknown): ClaimsSynthesisContext {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Prepared claims-synthesis context must be an object');
+  }
+  const prepared = value as Record<string, unknown>;
+  const unexpected = Object.keys(prepared).filter((key) => ![
+    'contractVersion', 'status', 'contextDigest', 'context',
+  ].includes(key));
+  if (unexpected.length) {
+    throw new Error(`Prepared claims-synthesis context contains unsupported fields: ${unexpected.join(', ')}`);
+  }
+  if (prepared.contractVersion !== '1.0.0' || prepared.status !== 'ready') {
+    throw new Error('Prepared claims-synthesis context must have ready version 1.0.0 status');
+  }
+  if (!prepared.context || typeof prepared.context !== 'object' || Array.isArray(prepared.context)) {
+    throw new Error('Prepared claims-synthesis context is missing its context object');
+  }
+  const context = validateClaimsSynthesisContext(prepared.context);
+  if (prepared.contextDigest !== digestClaimsSynthesisContext(context)) {
+    throw new Error('Prepared context digest does not match the exact context bytes');
+  }
+  return context;
 }
 
 function isNotesOwned(metadata: unknown): boolean {
@@ -91,13 +108,13 @@ function sourceInput(row: ClaimsSynthesisSourceRow): unknown {
       title: claim.title,
       category: claim.category,
       claim: claim.claim,
-      evidence: stringArray(claim.evidence),
-      reasoning: nullableString(claim.reasoning),
-      backing: nullableString(claim.backing),
-      qualifier: nullableString(claim.qualifier),
-      rebuttal: stringArray(claim.rebuttal),
-      timeHorizon: nullableString(claim.time_horizon),
-      relevantTickers: stringArray(claim.relevant_tickers).map((ticker) => ticker.toUpperCase()),
+      evidence: claim.evidence,
+      reasoning: claim.reasoning,
+      backing: claim.backing,
+      qualifier: claim.qualifier,
+      rebuttal: claim.rebuttal,
+      timeHorizon: claim.time_horizon,
+      relevantTickers: claim.relevant_tickers,
     })),
   };
 }
@@ -125,16 +142,14 @@ export async function prepareClaimsSynthesisContext(
 
   let input: unknown;
   try {
-    input = sourceInput(source);
+    input = validateClaimsSynthesisSource(sourceInput(source));
   } catch (error) {
     return createUnavailableClaimsSynthesisResult('source_unavailable', errorDetail(error));
   }
 
   try {
-    const [existingMainClaims, theses] = await Promise.all([
-      repository.loadMainClaims(source),
-      repository.loadActiveTheses(),
-    ]);
+    const existingMainClaims = await repository.loadMainClaims(source);
+    const theses = await repository.loadActiveTheses();
     const context = buildClaimsSynthesisContext(input, { existingMainClaims, theses });
     return {
       contractVersion: '1.0.0',
