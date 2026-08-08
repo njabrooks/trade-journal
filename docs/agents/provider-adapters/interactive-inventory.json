@@ -383,8 +383,8 @@
         "state": "current",
         "as_of": "2026-08-07",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:21d8ba9a2dbdf4c08d92c888425f2ccb430fb40bb55300677b514a78e81e3a30",
-        "adapter_digest": "sha256:fec2080b66f2e687996ab054f03f697297cbfe57e75ca4f7712bb1b1f5fd1842",
+        "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+        "adapter_digest": "sha256:58ec39a1d27c3a184e5cc7624ba4e95ffcf96a289318352555f2e1826ddd490d",
         "reason": "Exact current evidence is bound to thesis-underwriting 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {

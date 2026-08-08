@@ -187,7 +187,7 @@
       "authority": "scope:trade-journal",
       "dependencies": [],
       "id": "capability:scope:trade-journal/thesis-underwriting",
-      "package_digest": "sha256:21d8ba9a2dbdf4c08d92c888425f2ccb430fb40bb55300677b514a78e81e3a30",
+      "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -210,8 +210,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/thesis-underwriting",
-        "release_reference": "e6338cbd01ab844d9a978cc02c9b694145327dd1",
-        "revision": "e6338cbd01ab844d9a978cc02c9b694145327dd1"
+        "release_reference": "d139934716d654b8608a1d591f96de572aefa467",
+        "revision": "d139934716d654b8608a1d591f96de572aefa467"
       }
     }
   ],
@@ -219,6 +219,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:a55bafbda92aceb5cc83dd996a0317e8c228b916b67012dae3c7633afb141cfa",
+  "registry_digest": "sha256:da85a44c9052968386e33762f24d664781b9d13ccf8f680ae7449135e083452e",
   "schema_version": "1.0.0"
 }

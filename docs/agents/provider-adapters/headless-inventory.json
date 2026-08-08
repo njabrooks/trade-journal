@@ -493,8 +493,8 @@
         "state": "current",
         "as_of": "2026-08-07",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:21d8ba9a2dbdf4c08d92c888425f2ccb430fb40bb55300677b514a78e81e3a30",
-        "adapter_digest": "sha256:d1510f9f4b8d6562c319dc62ebc1e7c2267221ede026ca48493b988d614bd040",
+        "package_digest": "sha256:de419b2f068c31343cf0267e208d0594ac72bd61eb3276b2b61bccf1fc73fccb",
+        "adapter_digest": "sha256:f5067026d7a81aa37de1d1ddc78d9c80511112b6e28e59f15851ed033b887a45",
         "reason": "Exact current evidence is bound to thesis-underwriting 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {

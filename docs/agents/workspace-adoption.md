@@ -100,7 +100,7 @@ Registry Lock and generated staging outputs include all five Capabilities. Live 
 invocations remain unchanged pending the explicit approvals required by #49, #51, #53, #54, and #56.
 
 Issue #57 adds the source-owned thesis-underwriting Capability at immutable revision
-`e6338cbd01ab844d9a978cc02c9b694145327dd1`. Its exact Claude and Codex adapters preserve the living-underwriting
+`d139934716d654b8608a1d591f96de572aefa467`. Its exact Claude and Codex adapters preserve the living-underwriting
 contract—versioned articulation, provenance-bearing linked claims, rebuttal-derived qualitative signals, and no
 thesis-status mutation—while remaining a staged discovery surface. Its eligible-environment evidence is limited
 to a non-mutating articulation-command preflight; no provider invocation, database write, scheduler, or discovery
