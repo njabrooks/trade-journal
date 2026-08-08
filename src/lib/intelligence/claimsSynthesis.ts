@@ -377,16 +377,31 @@ export function validateClaimsSynthesisResult(
   const ambiguousSourceIds = new Set(ambiguities.map((row) => row.sourceClaimId));
   const synthesizedRefs = new Set(synthesized.map((claim) => claim.ref));
   const reusedRefs = new Set(existing.map((claim) => claim.mainClaimId));
+  if (reusedRefs.size !== existing.length) {
+    fail('result.existingMainClaims', 'must resolve each source claim at most once');
+  }
+  if (synthesizedRefs.size !== synthesized.length) {
+    fail('result.synthesizedInvestmentClaims', 'must resolve each source claim at most once');
+  }
+  const resolvedRefBySource = new Map<string, string>();
+  for (const claim of existing) resolvedRefBySource.set(claim.sourceClaimId, claim.mainClaimId);
+  for (const claim of synthesized) resolvedRefBySource.set(claim.sourceClaimId, claim.ref);
 
   const thesisMappings = arrayAt(result.thesisMappings, 'result.thesisMappings', 50).map((item, index) => {
     const row = objectAt(item, `result.thesisMappings[${index}]`);
     const sourceClaimId = stringAt(row.sourceClaimId, `result.thesisMappings[${index}].sourceClaimId`);
+    if (!sourceIds.has(sourceClaimId)) {
+      fail(`result.thesisMappings[${index}]`, 'references unknown source evidence');
+    }
     if (ambiguousSourceIds.has(sourceClaimId)) {
       fail(`result.thesisMappings[${index}]`, 'ambiguous source evidence must not have thesis mappings');
     }
     const mainClaimRef = stringAt(row.mainClaimRef, `result.thesisMappings[${index}].mainClaimRef`);
     if (!reusedRefs.has(mainClaimRef) && !synthesizedRefs.has(mainClaimRef)) {
       fail(`result.thesisMappings[${index}].mainClaimRef`, 'must reference a reused or synthesized investment claim');
+    }
+    if (resolvedRefBySource.get(sourceClaimId) !== mainClaimRef) {
+      fail(`result.thesisMappings[${index}].mainClaimRef`, 'must resolve the same source claim as the mapping');
     }
     const thesisId = uuidAt(row.thesisId, `result.thesisMappings[${index}].thesisId`);
     const thesis = thesisById.get(thesisId);
@@ -429,6 +444,12 @@ export function validateClaimsSynthesisResult(
       rationale: stringAt(row.rationale, `result.recommendations[${index}].rationale`),
     };
   });
+  if (
+    recommendations.length !== sourceIds.size
+    || new Set(recommendations.map((recommendation) => recommendation.sourceClaimId)).size !== sourceIds.size
+  ) {
+    fail('result.recommendations', 'must cover every source claim exactly once');
+  }
 
   return {
     contractVersion: '1.0.0',

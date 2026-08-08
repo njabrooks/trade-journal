@@ -77,6 +77,25 @@ describe('claims-synthesis Capability', () => {
     expect(outcomes[0]).toEqual(outcomes[1]);
   });
 
+  it('refuses cross-wired claim mappings and incomplete per-source recommendations', () => {
+    const fixture = readJson('../../tests/fixtures/claims-synthesis-adapter-equivalence.json') as {
+      context: Parameters<typeof validateClaimsSynthesisResult>[0];
+      output: Record<string, unknown> & {
+        thesisMappings: Array<Record<string, unknown>>;
+        recommendations: Array<Record<string, unknown>>;
+      };
+    };
+    expect(() => validateClaimsSynthesisResult(fixture.context, {
+      ...fixture.output,
+      thesisMappings: fixture.output.thesisMappings.map((mapping, index) =>
+        index === 0 ? { ...mapping, sourceClaimId: 'claim-2' } : mapping),
+    })).toThrow(/same source claim/i);
+    expect(() => validateClaimsSynthesisResult(fixture.context, {
+      ...fixture.output,
+      recommendations: fixture.output.recommendations.slice(0, 2),
+    })).toThrow(/every source claim exactly once/i);
+  });
+
   it('binds both exact adapters to complete current evidence', () => {
     const packageDigest = digest('capability-package.json');
     for (const provider of ['claude', 'codex']) {
