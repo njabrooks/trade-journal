@@ -229,7 +229,7 @@
         }
       ],
       "id": "capability:scope:trade-journal/research-publication",
-      "package_digest": "sha256:ed8b759515cc4955df912598b6a68b4b0ddbbf3db57a5e76185f3d3aafee29da",
+      "package_digest": "sha256:337b3cd8c45fab3d8af5c45eb6455257bd557e9c399ebc6907dadc1feaa1e74d",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -252,8 +252,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/research-publication",
-        "release_reference": "19def9306ed94cc279a78cf8b479c69279397cc8",
-        "revision": "19def9306ed94cc279a78cf8b479c69279397cc8"
+        "release_reference": "e1f9a67f676895c3ba15e02bd0b824f3a129cdab",
+        "revision": "e1f9a67f676895c3ba15e02bd0b824f3a129cdab"
       }
     },
     {
@@ -325,6 +325,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:471515a81bdab294035f76554a34d33826da9955045d9fe54d242ca8866c628f",
+  "registry_digest": "sha256:34c9a12da2aa3276210bc1a22201c08edf9f3172ccf3fc1ccd8d3073389116f8",
   "schema_version": "1.0.0"
 }
