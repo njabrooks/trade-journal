@@ -228,6 +228,14 @@ describe('research-publication contract', () => {
     ]);
   });
 
+  it('refuses duplicate logical relationship candidates before authorization', () => {
+    const result = synthesisResult();
+    result.thesisMappings.push({ ...result.thesisMappings[0] });
+    expect(() => buildResearchPublication(context, result)).toThrow(
+      'Duplicate governed relationship candidate',
+    );
+  });
+
   it('accepts only a short-lived digest-bound user decision naming exact claims and relationships', () => {
     const prepared = buildResearchPublication(context, synthesisResult());
     const authorization = {

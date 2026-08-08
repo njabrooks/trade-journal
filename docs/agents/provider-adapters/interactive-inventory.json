@@ -567,7 +567,7 @@
         "state": "current",
         "as_of": "2026-08-08",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:c377049d5011a000c2b0d39625bb129841d5f0ac7fe4297d7a4a70b58bc82610",
+        "package_digest": "sha256:da0148b289c422cdbab90905b00bf03f767f201c5d193f5ec2411b77ef99d8f6",
         "adapter_digest": "sha256:bd963ae249d123183632c5c09bd878b2979d99149d4e8815a9bcbb1c24e58134",
         "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Claude adapter."
       },

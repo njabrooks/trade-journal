@@ -114,7 +114,10 @@ export interface PublicationAuditRecord {
       candidate: ResearchPublicationClaimCandidate;
       publishedClaim: PublicationClaimRecord;
     }>;
-    acceptedRelationships: ResearchPublicationRelationshipCandidate[];
+    acceptedRelationships: Array<{
+      candidate: ResearchPublicationRelationshipCandidate;
+      publishedMapping: PublicationMappingRecord;
+    }>;
     permittedWriteSurface: PreparedResearchPublication['permittedWriteSurface'];
   };
   recordedAt: Date;
@@ -278,7 +281,9 @@ async function resolveRelationship(
     candidate.thesisType,
   );
   if (existing) {
-    if (existing.mappingType !== candidate.relationship || existing.confidence !== candidate.confidence) {
+    if (existing.mappingType !== candidate.relationship
+      || existing.confidence !== candidate.confidence
+      || existing.notes !== candidate.rationale) {
       throw new ResearchPublicationRecordingError(
         'relationship_conflict',
         `Claim ${mainClaimId} already has a conflicting governed relationship to thesis ${candidate.thesisId}`,
@@ -433,6 +438,7 @@ export async function recordResearchPublication(
     const selectedRelationships = envelope.prepared.relationshipCandidates.filter(({ relationshipId }) =>
       acceptedRelationships.has(relationshipId));
     const relationships: PublishedResearchResult['relationships'] = [];
+    const acceptedRelationshipSnapshots: PublicationAuditRecord['snapshot']['acceptedRelationships'] = [];
     let createdRelationshipCount = 0;
     for (const candidate of selectedRelationships) {
       const mainClaimId = claimIds.get(candidate.mainClaimRef);
@@ -453,6 +459,7 @@ export async function recordResearchPublication(
         relationship: candidate.relationship,
         disposition: resolution.disposition,
       });
+      acceptedRelationshipSnapshots.push({ candidate, publishedMapping: resolution.record });
     }
 
     const result: StoredPublishedResearchResult = {
@@ -488,7 +495,7 @@ export async function recordResearchPublication(
       claimsSynthesis,
       authorization,
       acceptedClaims: acceptedClaimSnapshots,
-      acceptedRelationships: selectedRelationships,
+      acceptedRelationships: acceptedRelationshipSnapshots,
       permittedWriteSurface: envelope.prepared.permittedWriteSurface,
     };
     const audit = await transaction.insertJournalEntry({

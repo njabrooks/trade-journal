@@ -348,6 +348,13 @@ export function buildResearchPublication(
   if (claimCandidates.length === 0 || relationshipCandidates.length === 0) {
     throw new Error('Research publication has no unambiguous thesis-related claims ready for authorization');
   }
+  const relationshipIds = new Set<string>();
+  for (const candidate of relationshipCandidates) {
+    if (relationshipIds.has(candidate.relationshipId)) {
+      throw new Error(`Duplicate governed relationship candidate ${candidate.relationshipId}`);
+    }
+    relationshipIds.add(candidate.relationshipId);
+  }
 
   const withoutDigest: Omit<PreparedResearchPublication, 'publicationDigest'> = {
     contractVersion: '1.0.0',

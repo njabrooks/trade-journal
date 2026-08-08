@@ -195,7 +195,10 @@ describe('governed research-publication recorder', () => {
           }),
         ]),
         acceptedRelationships: expect.arrayContaining([
-          expect.objectContaining({ rationale: 'Causal foundation.' }),
+          expect.objectContaining({
+            candidate: expect.objectContaining({ rationale: 'Causal foundation.' }),
+            publishedMapping: expect.objectContaining({ notes: 'Causal foundation.' }),
+          }),
         ]),
       },
     });
@@ -310,6 +313,27 @@ describe('governed research-publication recorder', () => {
       { prepared: input.prepared, authorization },
       { store, now: new Date('2026-08-08T10:01:00.000Z') },
     )).rejects.toMatchObject({ code: 'stale_input' });
+    expect(store.writeLog).toEqual([]);
+  });
+
+  it('refuses reuse when a stored relationship has different rationale notes', async () => {
+    const input = fixture();
+    const store = new MemoryStore(input.context);
+    store.mappings.set(`${EXISTING_CLAIM_ID}:asset:${TSM_THESIS_ID}`, {
+      id: '77777777-7777-4777-8777-777777777777',
+      mainClaimId: EXISTING_CLAIM_ID,
+      thesisId: TSM_THESIS_ID,
+      thesisType: 'asset',
+      mappingType: 'supports',
+      confidence: 'medium',
+      mappedBy: 'research-publication',
+      notes: 'A different historical rationale.',
+    });
+
+    await expect(recordResearchPublication(
+      { prepared: input.prepared, authorization: input.authorization },
+      { store, now: new Date('2026-08-08T10:01:00.000Z') },
+    )).rejects.toMatchObject({ code: 'relationship_conflict' });
     expect(store.writeLog).toEqual([]);
   });
 
