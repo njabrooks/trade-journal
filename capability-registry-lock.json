@@ -72,6 +72,38 @@
     {
       "approved_version": "1.0.0",
       "authority": "scope:trade-journal",
+      "dependencies": [],
+      "id": "capability:scope:trade-journal/claims-synthesis",
+      "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "claims-synthesis-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-08"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "claims-synthesis-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-08"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/claims-synthesis",
+        "release_reference": "df1a2e3ed5860a0495f4461d747a06ea26d09aca",
+        "revision": "df1a2e3ed5860a0495f4461d747a06ea26d09aca"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
       "dependencies": [
         {
           "id": "capability:scope:trade-journal/belief-maintenance",
@@ -256,6 +288,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:235e690e415668ab7b0917acb60451bc63df1cc4f50c24046ea2429f5d9e7cca",
+  "registry_digest": "sha256:0c42cf5a5a835eb609d2f57a7ab3d7fec86f48f685281f14cc22bec6a5b96222",
   "schema_version": "1.0.0"
 }

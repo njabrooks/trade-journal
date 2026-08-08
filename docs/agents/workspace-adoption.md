@@ -43,8 +43,8 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares seven Trade Journal-owned
-packages: portfolio snapshot, belief maintenance, thesis observation, thesis underwriting, belief evidence assessment,
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares eight Trade Journal-owned
+packages: portfolio snapshot, belief maintenance, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
 portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
 remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry.
@@ -53,8 +53,8 @@ establish Adapter Conformance; only exact W1-bound evidence upgrades an inventor
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-08`, seven locked
-Capabilities make 18 inventory entries generation eligible while the whole-file Claude and Codex outputs
+generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-08`, eight locked
+Capabilities make 20 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers.
 
@@ -114,6 +114,18 @@ bearing, thesis-centric invalidation polarity, and neutral completeness while re
 status, Decision Item, claim creation, signal configuration, strategy, position, trade, scheduler, or cutover
 authority. Its environmental evidence is a non-mutating recorder preflight; no provider or live database write
 was invoked.
+
+Issue #62 adds the source-owned claims-synthesis Capability at immutable revision
+`df1a2e3ed5860a0495f4461d747a06ea26d09aca`. It prepares one Notes-owned provenance-bearing research handoff
+through deterministic repository reads and makes source evidence, exact existing claims, distinct synthesized
+investment claims, and proposed thesis mappings structurally explicit. Exact provenance forces reuse across
+claim lifecycle states; developing and monitoring theses remain eligible by direct semantic bearing; ambiguity
+prevents mappings; and exact Claude/Codex adapters expose no promotion, linkage, status, Decision Item,
+strategy, position, trade, SQL, Supabase MCP, or API mutation authority. Its semantic evidence uses an exact-
+adapter-bound representative fixture; no live provider invocation, database mutation, scheduler, credential,
+active discovery, or cutover occurred. A read-only environmental preflight returned a 1.9 MB context covering
+four source claims, the complete current 2,146-claim identity catalog, and 73 eligible theses; this proves the
+boundary but not live-provider latency or context efficiency.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from

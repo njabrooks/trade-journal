@@ -57,8 +57,8 @@ source, checks `skill.json` and preamble packaging, and rejects missing, extra, 
 
 The inventory deliberately distinguishes packaging from readiness:
 
-- `assess-validation-evidence` and `build-core-argument` have bespoke authored headless contracts;
-- the other 34 projections have generic generated preambles, which are packaging baselines only; and
+- `assess-validation-evidence`, `build-core-argument`, and `synthesize-claims` have bespoke authored headless contracts;
+- the other 33 projections have generic generated preambles, which are packaging baselines only; and
 - `decisions` and `thesis` are mirrored for parity but remain ineligible for unattended execution.
 
 Five live provider-dependent launchd jobs are mapped with their current Claude provider, model, invocation,
@@ -83,11 +83,11 @@ and staged generated output bind it through W1. The remaining generic projection
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
 generation decision and the incremental J2 migration state. It covers all 73 inventoried entry points. The
-seven governed Capabilities now record 18 generation-eligible inventory entries and two whole-file governed
-staging outputs. The other 55 entries remain non-governed migration inputs or non-candidates with explicit
+eight governed Capabilities now record 20 generation-eligible inventory entries and two whole-file governed
+staging outputs. The other 53 entries remain non-governed migration inputs or non-candidates with explicit
 dispositions.
 
-The portfolio-snapshot, belief-maintenance, thesis-observation, thesis-underwriting, belief-evidence-assessment,
+The portfolio-snapshot, belief-maintenance, claims-synthesis, thesis-observation, thesis-underwriting, belief-evidence-assessment,
 portfolio-options-advice, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
 adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
 package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
@@ -150,3 +150,17 @@ provenance, thesis-centric polarity, neutral completeness, and direct semantic b
 and passes through one serializable repository recorder whose maximum write set is qualitative snapshots,
 existing-claim evidence links, and accepted journal audit. The package is staged only: no provider invocation,
 database-writing canary, scheduler, credential, or discovery cutover was authorized.
+
+## J2 claims-synthesis package
+
+Issue #62 governs interactive and conditionally unattended synthesis over one Notes-owned research handoff.
+Its deterministic repository boundary exposes approved reads only and keeps source evidence, existing main
+claims, synthesized investment claims, and proposed thesis mappings distinct. Exact source provenance forces
+reuse; semantic ambiguity prevents mappings; and both exact adapters are recommendation-only with an empty
+write set. The package is staged only: no provider invocation, database mutation, scheduler, credential,
+active discovery, or operational cutover was authorized.
+
+The read-only environmental preflight returned a 1.9 MB context for four source claims, the complete current
+2,146-claim identity catalog, and 73 eligible theses. That full catalog deliberately favors duplicate safety
+over prompt compactness. No live provider invocation proves the practical latency or context cost; any future
+retrieval optimization must remain governed and must not convert ticker or keyword overlap into semantic proof.

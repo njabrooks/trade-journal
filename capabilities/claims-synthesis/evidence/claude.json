@@ -1,0 +1,42 @@
+{
+  "capability_id": "capability:scope:trade-journal/claims-synthesis",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
+  "adapter_id": "claims-synthesis-claude",
+  "adapter_digest": "sha256:ffea868f3116dd820e11f0a9524e06d6bca225ad50de1f28a704559f69a48c40",
+  "support_state": "current",
+  "validated_at": "2026-08-08",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+    },
+    "complete-provenance-context": {
+      "status": "passed",
+      "method": "Repository behavioral tests exercise the production read adapter and prove Notes/Tana authority provenance, full Toulmin fields, source-content SHA-256, exact source identity, a complete lifecycle-inclusive main-claim catalog, and distinct source-evidence, main-claim, and developing/monitoring thesis collections"
+    },
+    "claim-distinction-and-reuse": {
+      "status": "passed",
+      "method": "Repository behavioral tests force exact provenance reuse across claim lifecycle states, refuse a duplicate synthesis, and require synthesized investment recommendations to retain source provenance, qualifier, and every counterargument"
+    },
+    "bounded-conservative-result": {
+      "status": "passed",
+      "method": "Repository contract tests enforce the exact context digest, collection bounds, five-mapping per-claim limit, distinct claim_identity and thesis_mapping ambiguity axes, coherent claim dispositions, no ambiguous mappings, conservative semantic references, and execution={mode:recommendation_only,writes:[]}"
+    },
+    "authority-boundary": {
+      "status": "passed",
+      "method": "The production repository adapter exposes reads only; CLI and exact-adapter tests refuse ad-hoc SQL, Supabase MCP and direct API writes, claim create/link/promote, status, Decision Item, signal, strategy, position, trade, and broader execution authority"
+    },
+    "provider-semantic-equivalence": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the exact Claude adapter with issue #62, parent #46, predecessor #47, CONTEXT.md, current Notes/Trade Journal provenance authority, loose-agent documentation, and the useful non-writing intent of the legacy synthesize-claims workflow; the shared representative output fixture is bound to exact adapter bytes and no live provider invocation is claimed",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/62",
+      "expires_at": "2026-09-07"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured repository runtime completed a live read-only preparation for one Notes-owned insight on 2026-08-08 (4 source claims, complete 2,146-claim identity catalog, 73 eligible theses, zero writes); behavioral and CLI proofs cover malformed source, database and environment unavailability, and stale prepared-context refusal without inferred state"
+    }
+  }
+}

@@ -2254,42 +2254,41 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/synthesize-claims/SKILL.md"
+        "path": "capabilities/claims-synthesis/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/synthesize-claims/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/synthesize-claims/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/synthesize-claims/HEADLESS_PREAMBLE.md",
+        "readiness": "The bespoke headless preamble preserves the exact recommendation-only result contract, explicit unavailable states, and zero-write genuine-judgment boundary."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/synthesize-claims/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Identifies mapping opportunities without silently promoting uncertain claims."
+        "rationale": "Eligible unattended only for bounded validated recommendations; ambiguity is preserved and the adapter has no write authority."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Audit claims and existing thesis hierarchy.",
-        "writes": "Synthesis recommendations; database writes require a separate governed step.",
-        "judgment": "Identifies mapping opportunities without silently promoting uncertain claims."
+        "reads": "One Notes-owned provenance-bearing research handoff, exact and active Trade Journal claims, and developing or monitoring macro and asset theses through the deterministic repository reader.",
+        "writes": "None; the result is recommendation-only with an explicitly empty write set.",
+        "judgment": "Distinguishes source evidence from investment claims and proposes semantic bearing; uncertain identity or thesis bearing remains explicit ambiguity."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Research claims and database read access."
+        "Remote database read access and an explicit Notes-owned research insight ID."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Older Supabase MCP assumptions require translation to repository helpers.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the bespoke headless mirror remains the active migration input until final discovery cutover.",
+        "No live provider invocation was used for semantic evidence; the representative result fixture is bound to the exact adapter bytes."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2297,19 +2296,30 @@
       "operational_risk": {
         "level": "low",
         "priority": null,
-        "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
+        "rationale": "No live scheduled consumer and no write authority; genuine ambiguity remains unresolved."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-08",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
+        "adapter_digest": "sha256:18ff6b767b4e501bbf97930ec803dedb787fe767b0ffc57f0b5cf4bed86f9a99",
+        "reason": "Exact current evidence is bound to claims-synthesis 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/synthesize-claims/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/claims-synthesis/capability-package.json",
+        "adapter_id": "claims-synthesis-codex",
+        "evidence_path": "capabilities/claims-synthesis/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
