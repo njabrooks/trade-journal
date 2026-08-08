@@ -1,0 +1,42 @@
+{
+  "capability_id": "capability:scope:trade-journal/claims-synthesis",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:283b6fc4bff716f341b475fd66c606a3b3aaec4cb5eebbd9412f01b2507400a1",
+  "adapter_id": "claims-synthesis-codex",
+  "adapter_digest": "sha256:d6f143c6396d5ede52340bab0ba669f8e1721b0af98c86eb5678480003d93161",
+  "support_state": "current",
+  "validated_at": "2026-08-08",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Provider Entry Point generation"
+    },
+    "complete-provenance-context": {
+      "status": "passed",
+      "method": "Repository behavioral tests exercise the production read adapter and prove Notes/Tana authority provenance, full Toulmin fields, source-content SHA-256, exact source identity, bounded repository reads, and distinct source-evidence, main-claim, and developing/monitoring thesis collections"
+    },
+    "claim-distinction-and-reuse": {
+      "status": "passed",
+      "method": "Repository behavioral tests force exact provenance reuse across claim lifecycle states, refuse a duplicate synthesis, and require synthesized investment recommendations to retain source provenance, qualifier, and every counterargument"
+    },
+    "bounded-conservative-result": {
+      "status": "passed",
+      "method": "Repository contract tests enforce the exact context digest, collection bounds, five-mapping per-claim limit, explicit ambiguity with no mapping, conservative semantic references, and execution={mode:recommendation_only,writes:[]}"
+    },
+    "authority-boundary": {
+      "status": "passed",
+      "method": "The production repository adapter exposes reads only; CLI and exact-adapter tests refuse ad-hoc SQL, Supabase MCP and direct API writes, claim create/link/promote, status, Decision Item, signal, strategy, position, trade, and broader execution authority"
+    },
+    "provider-semantic-equivalence": {
+      "status": "passed",
+      "reviewer": "J2 implementation review",
+      "method": "Compared the exact Codex adapter with issue #62, parent #46, predecessor #47, CONTEXT.md, current Notes/Trade Journal provenance authority, loose-agent documentation, and the useful non-writing intent of the legacy synthesize-claims workflow; the shared representative output fixture is bound to exact adapter bytes and no live provider invocation is claimed",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/62",
+      "expires_at": "2026-09-07"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured repository runtime completed the non-mutating claims-synthesis --help preflight on 2026-08-08; behavioral tests prove explicit source and database unavailability, and the CLI emits explicit environment unavailability without inferred state"
+    }
+  }
+}

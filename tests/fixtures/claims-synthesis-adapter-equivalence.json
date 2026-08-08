@@ -1,0 +1,206 @@
+{
+  "case": "exact provenance reuse, distinct investment synthesis, and conservative ambiguous thesis bearing",
+  "limitation": "No live provider invocation was performed; this representative output is cryptographically bound to the exact adapter byte streams and exercises the repository validator.",
+  "context": {
+    "contractVersion": "1.0.0",
+    "source": {
+      "authority": "scope:notes",
+      "artifactId": "11111111-1111-4111-8111-111111111111",
+      "insightId": "22222222-2222-4222-8222-222222222222",
+      "title": "Semiconductor capacity and demand",
+      "sourceType": "article",
+      "sourceUrl": "https://example.test/source",
+      "contentSha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observedAt": "2026-08-08T09:30:00.000Z"
+    },
+    "sourceEvidence": [
+      {
+        "sourceClaimId": "claim-1",
+        "title": "Leading-edge capacity remains constrained",
+        "category": "asset_specific",
+        "claim": "Leading-edge foundry capacity remains constrained through 2027.",
+        "evidence": ["Announced capacity is substantially pre-committed."],
+        "reasoning": "Long lead times prevent supply from responding quickly.",
+        "backing": "Foundry construction and qualification cycles span multiple years.",
+        "qualifier": "medium",
+        "rebuttal": ["Demand could fall before the new capacity is commissioned."],
+        "timeHorizon": "medium_term",
+        "relevantTickers": ["TSM"]
+      },
+      {
+        "sourceClaimId": "claim-2",
+        "title": "Power constraints alter data-centre economics",
+        "category": "asset_specific",
+        "claim": "Grid connection delays are lengthening data-centre deployment schedules.",
+        "evidence": ["Utilities reported multi-year interconnection queues."],
+        "reasoning": "Delayed power access postpones revenue-generating compute capacity.",
+        "backing": "Published utility interconnection queues.",
+        "qualifier": "low",
+        "rebuttal": ["On-site generation could shorten some deployment delays."],
+        "timeHorizon": "medium_term",
+        "relevantTickers": ["VRT"]
+      },
+      {
+        "sourceClaimId": "claim-3",
+        "title": "AI demand remains elevated",
+        "category": "asset_specific",
+        "claim": "AI infrastructure demand remains elevated.",
+        "evidence": ["Sector orders grew year over year."],
+        "reasoning": "Order growth indicates continued investment.",
+        "backing": "Supplier order reports.",
+        "qualifier": "medium",
+        "rebuttal": ["Orders may reflect double ordering."],
+        "timeHorizon": "short_term",
+        "relevantTickers": ["TSM"]
+      }
+    ],
+    "existingMainClaims": [
+      {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "title": "Foundry scarcity persists",
+        "category": "asset_specific",
+        "claim": "Leading-edge foundry capacity remains structurally scarce.",
+        "evidence": ["Committed orders exceed available capacity."],
+        "reasoning": "Capacity additions take years.",
+        "backing": "Historical foundry construction cycles.",
+        "qualifier": "high",
+        "rebuttal": ["A demand recession could loosen capacity."],
+        "timeHorizon": "medium_term",
+        "relevantTickers": ["TSM"],
+        "status": "complete",
+        "sourceInsightId": "22222222-2222-4222-8222-222222222222",
+        "sourceClaimId": "claim-1",
+        "provenanceMatch": "exact"
+      },
+      {
+        "id": "66666666-6666-4666-8666-666666666666",
+        "title": "AI capex remains elevated",
+        "category": "asset_specific",
+        "claim": "Hyperscaler AI capital expenditure remains elevated.",
+        "evidence": ["Published capital budgets rose."],
+        "reasoning": "Budgets indicate planned infrastructure spend.",
+        "backing": "Company filings.",
+        "qualifier": "medium",
+        "rebuttal": ["Capital budgets may be cut."],
+        "timeHorizon": "short_term",
+        "relevantTickers": ["TSM"],
+        "status": "active",
+        "sourceInsightId": null,
+        "sourceClaimId": null,
+        "provenanceMatch": "none"
+      }
+    ],
+    "thesisTargets": [
+      {
+        "id": "44444444-4444-4444-8444-444444444444",
+        "type": "asset",
+        "title": "Bullish TSM Capacity Pricing",
+        "description": "Scarce leading-edge capacity supports pricing power.",
+        "direction": "bullish",
+        "status": "monitoring",
+        "ticker": "TSM"
+      },
+      {
+        "id": "55555555-5555-4555-8555-555555555555",
+        "type": "asset",
+        "title": "Data-centre power bottlenecks",
+        "description": "Power availability constrains deployment and changes infrastructure economics.",
+        "direction": "bullish",
+        "status": "developing",
+        "ticker": "VRT"
+      }
+    ]
+  },
+  "output": {
+    "contractVersion": "1.0.0",
+    "contextDigest": "sha256:26db8c1e7305a09353a55602d001ba9e78859a9624d4464495c04aadf67ad64c",
+    "status": "ready",
+    "sourceEvidence": [
+      { "insightId": "22222222-2222-4222-8222-222222222222", "sourceClaimId": "claim-1" },
+      { "insightId": "22222222-2222-4222-8222-222222222222", "sourceClaimId": "claim-2" },
+      { "insightId": "22222222-2222-4222-8222-222222222222", "sourceClaimId": "claim-3" }
+    ],
+    "existingMainClaims": [
+      {
+        "sourceClaimId": "claim-1",
+        "mainClaimId": "33333333-3333-4333-8333-333333333333",
+        "disposition": "reuse_exact_provenance"
+      }
+    ],
+    "synthesizedInvestmentClaims": [
+      {
+        "ref": "synthesized:claim-2",
+        "sourceClaimId": "claim-2",
+        "title": "Power access delays defer data-centre revenue",
+        "category": "asset_specific",
+        "claim": "Grid interconnection delays defer revenue-generating data-centre deployments and increase the value of power-management capacity.",
+        "evidence": ["Utilities reported multi-year interconnection queues."],
+        "reasoning": "Delayed power access postpones revenue-generating compute capacity.",
+        "backing": "Published utility interconnection queues.",
+        "qualifier": "low",
+        "rebuttal": ["On-site generation could shorten some deployment delays."],
+        "timeHorizon": "medium_term",
+        "relevantTickers": ["VRT"],
+        "synthesisRationale": "This is a distinct investment assertion about revenue timing and infrastructure value, not a copy of the source observation."
+      }
+    ],
+    "thesisMappings": [
+      {
+        "sourceClaimId": "claim-1",
+        "mainClaimRef": "33333333-3333-4333-8333-333333333333",
+        "thesisId": "44444444-4444-4444-8444-444444444444",
+        "thesisType": "asset",
+        "relationship": "supports",
+        "confidence": "medium",
+        "rationale": "The constrained capacity directly bears on the thesis pricing mechanism."
+      },
+      {
+        "sourceClaimId": "claim-2",
+        "mainClaimRef": "synthesized:claim-2",
+        "thesisId": "55555555-5555-4555-8555-555555555555",
+        "thesisType": "asset",
+        "relationship": "foundation",
+        "confidence": "medium",
+        "rationale": "Grid delay is the causal bottleneck described by the thesis."
+      }
+    ],
+    "ambiguities": [
+      {
+        "sourceClaimId": "claim-3",
+        "kind": "claim_distinction",
+        "candidateMainClaimIds": ["66666666-6666-4666-8666-666666666666"],
+        "candidateThesisIds": ["44444444-4444-4444-8444-444444444444"],
+        "reason": "Ticker and thematic overlap do not establish whether the source assertion duplicates the existing capex claim or directly bears on foundry pricing."
+      }
+    ],
+    "recommendations": [
+      {
+        "sourceClaimId": "claim-1",
+        "action": "reuse_existing_claim",
+        "rationale": "The provenance pair is an exact deterministic match."
+      },
+      {
+        "sourceClaimId": "claim-2",
+        "action": "synthesize_investment_claim",
+        "rationale": "The distinct investable implication preserves the complete source qualifier and counterargument."
+      },
+      {
+        "sourceClaimId": "claim-3",
+        "action": "defer_ambiguous",
+        "rationale": "Genuine investment judgment is required before identity or thesis bearing can be asserted."
+      }
+    ],
+    "execution": { "mode": "recommendation_only", "writes": [] },
+    "limitations": [
+      "This is a recommendation-only result and no claim, mapping, thesis, Decision Item, strategy, position, or trade was mutated."
+    ]
+  },
+  "providers": {
+    "claude": {
+      "adapterDigest": "sha256:0e481fc1f4d6667bb7b1491e6392d01b76b26dbe5b568161eb832d60722d0894"
+    },
+    "codex": {
+      "adapterDigest": "sha256:d6f143c6396d5ede52340bab0ba669f8e1721b0af98c86eb5678480003d93161"
+    }
+  }
+}
