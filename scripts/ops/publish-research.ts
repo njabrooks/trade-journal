@@ -58,7 +58,7 @@ export interface PublicationMappingRecord {
   thesisType: 'macro' | 'asset';
   mappingType: 'supports' | 'refutes' | 'foundation';
   confidence: 'high' | 'medium' | 'low';
-  mappedBy: 'research-publication';
+  mappedBy: string;
   notes: string;
 }
 

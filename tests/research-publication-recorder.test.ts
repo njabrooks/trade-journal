@@ -337,6 +337,32 @@ describe('governed research-publication recorder', () => {
     expect(store.writeLog).toEqual([]);
   });
 
+  it('audits the actual writer of an exactly reused relationship', async () => {
+    const input = fixture();
+    const store = new MemoryStore(input.context);
+    store.mappings.set(`${EXISTING_CLAIM_ID}:asset:${TSM_THESIS_ID}`, {
+      id: '77777777-7777-4777-8777-777777777777',
+      mainClaimId: EXISTING_CLAIM_ID,
+      thesisId: TSM_THESIS_ID,
+      thesisType: 'asset',
+      mappingType: 'supports',
+      confidence: 'medium',
+      mappedBy: 'relate-research',
+      notes: 'Direct bearing.',
+    });
+
+    await recordResearchPublication(
+      { prepared: input.prepared, authorization: input.authorization },
+      { store, now: new Date('2026-08-08T10:01:00.000Z') },
+    );
+    const audit = store.audits.get(input.authorization.authorizationId);
+    expect(audit?.snapshot.acceptedRelationships).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        publishedMapping: expect.objectContaining({ mappedBy: 'relate-research' }),
+      }),
+    ]));
+  });
+
   it('rolls back every claim, mapping, and audit write after a partial failure', async () => {
     const input = fixture();
     const store = new MemoryStore(input.context);

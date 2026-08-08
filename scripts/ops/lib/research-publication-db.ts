@@ -183,7 +183,8 @@ export function createResearchPublicationDatabaseStore(db: Database): ResearchPu
             )).limit(1);
             if (!row) return null;
             if (!['supports', 'refutes', 'foundation'].includes(row.mappingType)
-              || !['high', 'medium', 'low'].includes(row.confidence ?? '')) {
+              || !['high', 'medium', 'low'].includes(row.confidence ?? '')
+              || typeof row.mappedBy !== 'string' || row.mappedBy.length === 0) {
               throw new Error(`Stored claim-thesis mapping ${row.id} has unsupported semantics`);
             }
             return {
@@ -193,7 +194,7 @@ export function createResearchPublicationDatabaseStore(db: Database): ResearchPu
               thesisType,
               mappingType: row.mappingType as PublicationMappingRecord['mappingType'],
               confidence: row.confidence as PublicationMappingRecord['confidence'],
-              mappedBy: 'research-publication',
+              mappedBy: row.mappedBy,
               notes: row.notes ?? '',
             };
           },
