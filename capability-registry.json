@@ -75,6 +75,21 @@
         "enabled": true,
         "working_tree": "."
       }
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-underwriting",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/thesis-underwriting",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "e6338cbd01ab844d9a978cc02c9b694145327dd1"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
     }
   ]
 }
