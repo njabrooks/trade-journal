@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   buildResearchPublication,
+  digestResearchPublication,
+  digestResearchPublicationAuditSnapshot,
   digestResearchPublicationAuthorization,
   RESEARCH_PUBLICATION_AUTHORIZATION_STATEMENT,
   type ResearchPublicationAuthorization,
@@ -182,11 +184,24 @@ describe('governed research-publication recorder', () => {
     expect(store.audits.get(input.authorization.authorizationId)).toMatchObject({
       actionType: 'research_publication_recorded', publicationDigest: input.prepared.publicationDigest,
       authorizationDigest: digestResearchPublicationAuthorization(input.authorization),
-      envelope: {
-        prepared: input.prepared,
+      snapshot: {
+        kind: 'research_publication_audit',
+        publicationDigest: input.prepared.publicationDigest,
         authorization: input.authorization,
+        acceptedClaims: expect.arrayContaining([
+          expect.objectContaining({
+            candidate: expect.objectContaining({ sourceClaimId: 'claim-2' }),
+            publishedClaim: expect.objectContaining({ sourceClaimId: 'claim-2', qualifier: 'medium' }),
+          }),
+        ]),
+        acceptedRelationships: expect.arrayContaining([
+          expect.objectContaining({ rationale: 'Causal foundation.' }),
+        ]),
       },
     });
+    const audit = store.audits.get(input.authorization.authorizationId);
+    expect(audit?.snapshot.claimsSynthesis).not.toHaveProperty('result');
+    expect(audit?.snapshotDigest).toBe(digestResearchPublicationAuditSnapshot(audit?.snapshot));
     expect(new Set(store.writeLog)).toEqual(new Set(['main_claims', 'claim_thesis_mappings', 'journal_entries']));
   });
 
@@ -237,6 +252,65 @@ describe('governed research-publication recorder', () => {
       disposition: 'reused',
     });
     expect(recorded.writes[0]).toEqual({ table: 'main_claims', operation: 'insert', count: 0 });
+  });
+
+  it('refuses a self-digested tampered candidate set on the concurrent-promotion path', async () => {
+    const input = fixture();
+    const proposed = input.prepared.claimCandidates.find(({ sourceClaimId }) => sourceClaimId === 'claim-2')?.proposedClaim;
+    if (!proposed) throw new Error('missing fixture proposal');
+    const current = structuredClone(input.context);
+    current.existingMainClaims.push({
+      id: '99999999-9999-4999-8999-999999999999', title: proposed.title,
+      category: proposed.category, claim: proposed.claim, status: 'draft', sourceInsightId: INSIGHT_ID,
+      sourceClaimId: 'claim-2', provenanceMatch: 'exact',
+    });
+    const prepared = structuredClone(input.prepared);
+    prepared.relationshipCandidates[1].rationale = 'Tampered ungoverned rationale.';
+    const withoutDigest = Object.fromEntries(
+      Object.entries(prepared).filter(([key]) => key !== 'publicationDigest'),
+    ) as Omit<typeof prepared, 'publicationDigest'>;
+    prepared.publicationDigest = digestResearchPublication(withoutDigest);
+    const authorization = {
+      ...input.authorization,
+      publicationDigest: prepared.publicationDigest,
+    };
+    const store = new MemoryStore(current);
+
+    await expect(recordResearchPublication(
+      { prepared, authorization },
+      { store, now: new Date('2026-08-08T10:01:00.000Z') },
+    )).rejects.toMatchObject({ code: 'invalid_input' });
+    expect(store.writeLog).toEqual([]);
+  });
+
+  it('refuses an incompatible provenance row for a claim the user did not accept', async () => {
+    const input = fixture();
+    const proposed = input.prepared.claimCandidates.find(({ sourceClaimId }) => sourceClaimId === 'claim-2')?.proposedClaim;
+    if (!proposed) throw new Error('missing fixture proposal');
+    const current = structuredClone(input.context);
+    current.existingMainClaims.push({
+      id: '99999999-9999-4999-8999-999999999999', title: proposed.title,
+      category: proposed.category, claim: proposed.claim, status: 'draft', sourceInsightId: INSIGHT_ID,
+      sourceClaimId: 'claim-2', provenanceMatch: 'exact',
+    });
+    const authorization = {
+      ...input.authorization,
+      acceptedClaimRefs: [EXISTING_CLAIM_ID],
+      acceptedRelationshipIds: [`relationship:claim-1:asset:${TSM_THESIS_ID}`],
+    };
+    const store = new MemoryStore(current);
+    store.claims.set('99999999-9999-4999-8999-999999999999', {
+      id: '99999999-9999-4999-8999-999999999999', title: proposed.title, category: proposed.category,
+      claim: proposed.claim, evidence: ['Conflicting evidence.'], reasoning: 'Conflicting reasoning.',
+      backing: null, qualifier: 'low', rebuttal: [], timeHorizon: null, relevantTickers: [], status: 'draft',
+      sourceInsightId: INSIGHT_ID, sourceClaimId: 'claim-2',
+    });
+
+    await expect(recordResearchPublication(
+      { prepared: input.prepared, authorization },
+      { store, now: new Date('2026-08-08T10:01:00.000Z') },
+    )).rejects.toMatchObject({ code: 'stale_input' });
+    expect(store.writeLog).toEqual([]);
   });
 
   it('rolls back every claim, mapping, and audit write after a partial failure', async () => {

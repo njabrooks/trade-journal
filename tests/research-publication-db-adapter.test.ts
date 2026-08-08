@@ -29,14 +29,15 @@ function mapping(): PublicationMappingInsert {
 }
 
 function audit(): PublicationAuditInsert {
-  const envelope = {} as PublicationAuditInsert['envelope'];
+  const snapshot = {} as PublicationAuditInsert['snapshot'];
   return {
     authorizationId: AUTHORIZATION_ID,
     authorizationDigest: `sha256:${'a'.repeat(64)}`,
     publicationDigest: `sha256:${'b'.repeat(64)}`,
     actionType: 'research_publication_recorded',
     recordedAt: new Date('2026-08-08T10:01:00.000Z'),
-    envelope,
+    snapshotDigest: `sha256:${'d'.repeat(64)}`,
+    snapshot,
     result: {
       status: 'published', authorizationId: AUTHORIZATION_ID, batchId: AUTHORIZATION_ID,
       publicationDigest: `sha256:${'b'.repeat(64)}`,
@@ -106,7 +107,7 @@ describe('research-publication production database adapter', () => {
     expect(committed[2].row).toMatchObject({
       objectType: 'claim', actionType: 'research_publication_recorded',
       skillInvoked: 'research-publication', source: 'user', batchId: AUTHORIZATION_ID,
-      metadata: { envelope: {} },
+      metadata: { snapshotDigest: `sha256:${'d'.repeat(64)}`, snapshot: {} },
     });
   });
 

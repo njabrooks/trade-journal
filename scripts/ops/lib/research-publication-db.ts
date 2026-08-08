@@ -6,9 +6,8 @@ import {
 } from '../../../src/db/schema.js';
 import { prepareClaimsSynthesisContext } from '../../../src/lib/intelligence/claimsSynthesisReadBoundary.js';
 import {
+  digestResearchPublicationAuditSnapshot,
   digestResearchPublicationAuthorization,
-  validatePreparedResearchPublication,
-  validateResearchPublicationAuthorization,
 } from '../../../src/lib/intelligence/researchPublication.js';
 import { createClaimsSynthesisReadRepository } from '../../lib/claims-synthesis-db.js';
 import type {
@@ -69,28 +68,21 @@ function auditRecord(row: { id: string; timestamp: Date; metadata: unknown }): P
     || typeof metadata.authorizationDigest !== 'string'
     || typeof metadata.publicationDigest !== 'string'
     || !metadata.result || typeof metadata.result !== 'object' || Array.isArray(metadata.result)
-    || !metadata.envelope || typeof metadata.envelope !== 'object' || Array.isArray(metadata.envelope)) {
+    || typeof metadata.snapshotDigest !== 'string'
+    || !metadata.snapshot || typeof metadata.snapshot !== 'object' || Array.isArray(metadata.snapshot)) {
     throw new Error(`Research publication audit ${row.id} is incomplete`);
   }
-  const envelope = metadata.envelope as Record<string, unknown>;
-  const prepared = validatePreparedResearchPublication(envelope.prepared);
-  const rawAuthorization = envelope.authorization as Record<string, unknown> | null;
-  const authorizedAt = rawAuthorization && typeof rawAuthorization.authorizedAt === 'string'
-    ? new Date(rawAuthorization.authorizedAt)
-    : new Date(Number.NaN);
-  const authorization = validateResearchPublicationAuthorization(
-    prepared,
-    envelope.authorization,
-    authorizedAt,
-  );
+  const snapshot = metadata.snapshot as PublicationAuditRecord['snapshot'];
+  const authorization = snapshot.authorization;
   if (metadata.authorizationId !== authorization.authorizationId
     || metadata.authorizationDigest !== digestResearchPublicationAuthorization(authorization)
-    || metadata.publicationDigest !== prepared.publicationDigest) {
-    throw new Error(`Research publication audit ${row.id} does not match its immutable envelope`);
+    || metadata.publicationDigest !== snapshot.publicationDigest
+    || metadata.snapshotDigest !== digestResearchPublicationAuditSnapshot(snapshot)) {
+    throw new Error(`Research publication audit ${row.id} does not match its immutable snapshot`);
   }
   const result = metadata.result as PublicationAuditRecord['result'];
   if (result.authorizationId !== authorization.authorizationId
-    || result.publicationDigest !== prepared.publicationDigest) {
+    || result.publicationDigest !== snapshot.publicationDigest) {
     throw new Error(`Research publication audit ${row.id} result does not match its authorization`);
   }
   return {
@@ -100,7 +92,8 @@ function auditRecord(row: { id: string; timestamp: Date; metadata: unknown }): P
     publicationDigest: metadata.publicationDigest,
     actionType: 'research_publication_recorded',
     result,
-    envelope: { prepared, authorization },
+    snapshotDigest: metadata.snapshotDigest,
+    snapshot,
     recordedAt: row.timestamp,
   };
 }
@@ -236,7 +229,8 @@ export function createResearchPublicationDatabaseStore(db: Database): ResearchPu
                 authorizationDigest: row.authorizationDigest,
                 publicationDigest: row.publicationDigest,
                 result: row.result,
-                envelope: row.envelope,
+                snapshotDigest: row.snapshotDigest,
+                snapshot: row.snapshot,
               },
               batchId: row.authorizationId,
               firstDetectedAt: row.recordedAt,

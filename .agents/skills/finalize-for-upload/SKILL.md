@@ -86,7 +86,7 @@ must:
 - use the exact statement emitted by the governed contract.
 
 Never infer, fabricate, broaden, self-authorize, or silently reuse a token for
-different bytes.
+different canonical JSON content.
 
 Validate without writes:
 

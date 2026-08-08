@@ -1,6 +1,7 @@
 import { pathToFileURL } from 'node:url';
 import {
   buildResearchPublication,
+  digestResearchPublicationAuditSnapshot,
   digestResearchPublicationAuthorization,
   validatePreparedResearchPublication,
   validateResearchPublicationAuthorization,
@@ -9,7 +10,10 @@ import {
   type ResearchPublicationClaimCandidate,
   type ResearchPublicationRelationshipCandidate,
 } from '../../src/lib/intelligence/researchPublication.js';
-import type { ClaimsSynthesisContext } from '../../src/lib/intelligence/claimsSynthesis.js';
+import {
+  digestClaimsSynthesisContext,
+  type ClaimsSynthesisContext,
+} from '../../src/lib/intelligence/claimsSynthesis.js';
 
 export type ResearchPublicationRecordingErrorCode =
   | 'invalid_input'
@@ -98,9 +102,20 @@ export interface PublicationAuditRecord {
   publicationDigest: string;
   actionType: 'research_publication_recorded';
   result: StoredPublishedResearchResult;
-  envelope: {
-    prepared: PreparedResearchPublication;
+  snapshotDigest: string;
+  snapshot: {
+    contractVersion: '1.0.0';
+    kind: 'research_publication_audit';
+    publicationDigest: string;
+    source: PreparedResearchPublication['source'];
+    claimsSynthesis: Omit<PreparedResearchPublication['claimsSynthesis'], 'result'>;
     authorization: ResearchPublicationAuthorization;
+    acceptedClaims: Array<{
+      candidate: ResearchPublicationClaimCandidate;
+      publishedClaim: PublicationClaimRecord;
+    }>;
+    acceptedRelationships: ResearchPublicationRelationshipCandidate[];
+    permittedWriteSurface: PreparedResearchPublication['permittedWriteSurface'];
   };
   recordedAt: Date;
 }
@@ -289,45 +304,41 @@ function restored(audit: PublicationAuditRecord): PublishedResearchResult {
   return { ...audit.result, journalEntryId: audit.id };
 }
 
-function sameJson(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
-
-function isCompatibleProvenancePromotion(
+function compatibleProvenanceBaseline(
   prepared: PreparedResearchPublication,
   current: ClaimsSynthesisContext,
-): boolean {
-  const original = prepared.claimsSynthesis.context;
-  if (!sameJson(current.source, original.source)
-    || !sameJson(current.sourceEvidence, original.sourceEvidence)
-    || !sameJson(current.thesisTargets, original.thesisTargets)) {
-    return false;
-  }
-
-  const currentById = new Map(current.existingMainClaims.map((claim) => [claim.id, claim]));
-  for (const claim of original.existingMainClaims) {
-    if (!sameJson(currentById.get(claim.id), claim)) return false;
-    currentById.delete(claim.id);
-  }
+  acceptedClaimRefs: ReadonlySet<string>,
+): ClaimsSynthesisContext | null {
   const createBySource = new Map(
     prepared.claimCandidates
       .filter((candidate) => candidate.disposition === 'create_main_claim')
       .map((candidate) => [candidate.sourceClaimId, candidate]),
   );
-  for (const claim of currentById.values()) {
+  const promotedIds = new Set<string>();
+  for (const claim of current.existingMainClaims) {
     const candidate = claim.sourceClaimId ? createBySource.get(claim.sourceClaimId) : undefined;
+    if (!candidate) continue;
     const proposal = candidate?.proposedClaim;
-    if (!candidate || !proposal
+    if (!acceptedClaimRefs.has(candidate.mainClaimRef)
+      || !proposal
       || claim.provenanceMatch !== 'exact'
       || claim.sourceInsightId !== prepared.source.insightId
       || claim.title !== proposal.title
       || claim.category !== proposal.category
       || claim.claim !== proposal.claim
       || claim.status !== 'draft') {
-      return false;
+      return null;
     }
+    promotedIds.add(claim.id);
   }
-  return currentById.size > 0;
+  if (promotedIds.size === 0) return null;
+  const baseline = {
+    ...current,
+    existingMainClaims: current.existingMainClaims.filter(({ id }) => !promotedIds.has(id)),
+  };
+  return digestClaimsSynthesisContext(baseline) === prepared.claimsSynthesis.contextDigest
+    ? baseline
+    : null;
 }
 
 function errorDetail(error: unknown): string {
@@ -349,8 +360,8 @@ export async function recordResearchPublication(
     if (recorded) {
       if (recorded.authorizationDigest !== authorizationDigest
         || recorded.publicationDigest !== envelope.prepared.publicationDigest
-        || digestResearchPublicationAuthorization(recorded.envelope.authorization) !== authorizationDigest
-        || recorded.envelope.prepared.publicationDigest !== envelope.prepared.publicationDigest) {
+        || digestResearchPublicationAuthorization(recorded.snapshot.authorization) !== authorizationDigest
+        || recorded.snapshot.publicationDigest !== envelope.prepared.publicationDigest) {
         throw new ResearchPublicationRecordingError(
           'authority_refused',
           'Authorization ID was already used for different canonical publication content',
@@ -374,29 +385,38 @@ export async function recordResearchPublication(
     if (!currentContext) {
       throw new ResearchPublicationRecordingError('stale_input', 'Current Notes-owned source is unavailable');
     }
-    let current: PreparedResearchPublication | null = null;
-    try {
-      current = buildResearchPublication(currentContext, envelope.prepared.claimsSynthesis.result);
-    } catch {
-      // A different authorized transaction may have promoted the same exact
-      // source claim since preparation. Accept only that narrow compatible
-      // delta; all other source/catalog changes remain stale.
+    const acceptedClaims = new Set(authorization.acceptedClaimRefs);
+    let validationContext = currentContext;
+    if (digestClaimsSynthesisContext(currentContext) !== envelope.prepared.claimsSynthesis.contextDigest) {
+      const baseline = compatibleProvenanceBaseline(envelope.prepared, currentContext, acceptedClaims);
+      if (!baseline) {
+        throw new ResearchPublicationRecordingError(
+          'stale_input',
+          'Repository source, promoted claims, or active thesis targets changed after preparation',
+        );
+      }
+      validationContext = baseline;
     }
-    if (current?.publicationDigest !== envelope.prepared.publicationDigest
-      && !isCompatibleProvenancePromotion(envelope.prepared, currentContext)) {
+    let expected: PreparedResearchPublication;
+    try {
+      expected = buildResearchPublication(validationContext, envelope.prepared.claimsSynthesis.result);
+    } catch (error) {
+      throw new ResearchPublicationRecordingError('invalid_input', errorDetail(error));
+    }
+    if (expected.publicationDigest !== envelope.prepared.publicationDigest) {
       throw new ResearchPublicationRecordingError(
-        'stale_input',
-        'Repository source, promoted claims, or active thesis targets changed after preparation',
+        'invalid_input',
+        'Prepared candidates are not the deterministic publication for their claims-synthesis input',
       );
     }
 
-    const acceptedClaims = new Set(authorization.acceptedClaimRefs);
     const acceptedRelationships = new Set(authorization.acceptedRelationshipIds);
     const selectedClaims = envelope.prepared.claimCandidates.filter(({ mainClaimRef }) =>
       acceptedClaims.has(mainClaimRef));
     const claimIds = new Map<string, string>();
     const claims: PublishedResearchResult['claims'] = [];
     let createdClaimCount = 0;
+    const acceptedClaimSnapshots: PublicationAuditRecord['snapshot']['acceptedClaims'] = [];
     for (const candidate of selectedClaims) {
       const resolution = await resolveClaim(transaction, envelope.prepared, candidate);
       if (resolution.disposition === 'created') createdClaimCount += 1;
@@ -407,6 +427,7 @@ export async function recordResearchPublication(
         mainClaimId: resolution.record.id,
         disposition: resolution.disposition,
       });
+      acceptedClaimSnapshots.push({ candidate, publishedClaim: resolution.record });
     }
 
     const selectedRelationships = envelope.prepared.relationshipCandidates.filter(({ relationshipId }) =>
@@ -451,13 +472,33 @@ export async function recordResearchPublication(
         { table: 'journal_entries', operation: 'insert', count: 1 },
       ],
     };
+    const claimsSynthesis = {
+      capabilityId: envelope.prepared.claimsSynthesis.capabilityId,
+      capabilityVersion: envelope.prepared.claimsSynthesis.capabilityVersion,
+      sourceRelease: envelope.prepared.claimsSynthesis.sourceRelease,
+      packageDigest: envelope.prepared.claimsSynthesis.packageDigest,
+      contextDigest: envelope.prepared.claimsSynthesis.contextDigest,
+      resultDigest: envelope.prepared.claimsSynthesis.resultDigest,
+    };
+    const snapshot: PublicationAuditRecord['snapshot'] = {
+      contractVersion: '1.0.0',
+      kind: 'research_publication_audit',
+      publicationDigest: envelope.prepared.publicationDigest,
+      source: envelope.prepared.source,
+      claimsSynthesis,
+      authorization,
+      acceptedClaims: acceptedClaimSnapshots,
+      acceptedRelationships: selectedRelationships,
+      permittedWriteSurface: envelope.prepared.permittedWriteSurface,
+    };
     const audit = await transaction.insertJournalEntry({
       authorizationId: authorization.authorizationId,
       authorizationDigest,
       publicationDigest: envelope.prepared.publicationDigest,
       actionType: 'research_publication_recorded',
       result,
-      envelope: { prepared: envelope.prepared, authorization },
+      snapshotDigest: digestResearchPublicationAuditSnapshot(snapshot),
+      snapshot,
       recordedAt: now,
     });
     return restored(audit);

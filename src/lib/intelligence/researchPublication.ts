@@ -59,7 +59,6 @@ export interface PreparedResearchPublication {
     sourceRelease: string;
     packageDigest: string;
     contextDigest: string;
-    context: ClaimsSynthesisContext;
     resultDigest: string;
     result: ClaimsSynthesisReadyResult;
   };
@@ -100,6 +99,10 @@ function canonicalize(value: unknown): unknown {
 
 function digest(value: unknown): string {
   return `sha256:${createHash('sha256').update(JSON.stringify(canonicalize(value))).digest('hex')}`;
+}
+
+export function digestResearchPublicationAuditSnapshot(value: unknown): string {
+  return digest(value);
 }
 
 function authorizationObject(value: unknown): Record<string, unknown> {
@@ -266,7 +269,7 @@ export function validatePreparedResearchPublication(
   if (publicationDigest !== digestResearchPublication(
     withoutDigest as Omit<PreparedResearchPublication, 'publicationDigest'>,
   )) {
-    throw new Error('Prepared research publication digest does not match its exact bytes');
+    throw new Error('Prepared research publication digest does not match its canonical JSON content');
   }
   return value as PreparedResearchPublication;
 }
@@ -356,7 +359,6 @@ export function buildResearchPublication(
       sourceRelease: CLAIMS_SYNTHESIS_SOURCE_RELEASE,
       packageDigest: CLAIMS_SYNTHESIS_PACKAGE_DIGEST,
       contextDigest: digestClaimsSynthesisContext(context),
-      context,
       resultDigest: digestClaimsSynthesisResult(result),
       result,
     },
