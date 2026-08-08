@@ -252,8 +252,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/research-publication",
-        "release_reference": "967179cc4bb6481b9e2ca5d5c68c6ae3b992429d",
-        "revision": "967179cc4bb6481b9e2ca5d5c68c6ae3b992429d"
+        "release_reference": "1c7c1d81916966cee8ed8e1fe7e4a6b46ee757bc",
+        "revision": "1c7c1d81916966cee8ed8e1fe7e4a6b46ee757bc"
       }
     },
     {
@@ -325,6 +325,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:79900232da5e54508a6da06ca02af36f61b4059113dcecf9c779899368444775",
+  "registry_digest": "sha256:c2c9fe2c28dd2e2c79d8a280dc5939029896a22c5d550a87f32043f863f67e45",
   "schema_version": "1.0.0"
 }
