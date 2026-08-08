@@ -1,0 +1,88 @@
+{
+  "id": "capability:scope:trade-journal/research-publication",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Publish explicitly accepted research claims and governed thesis relationships without duplicating Notes-owned provenance or expanding publication into investment-state authority.",
+  "contract": "Given a validated recommendation-only result from the Registry-resolved claims-synthesis Capability, re-read the complete current Notes-owned source and Trade Journal claim/thesis context; preserve the exact distinction between source evidence, synthesis recommendations, existing promoted claims, an explicit user publication decision, and governed claim-thesis relationships; deterministically prepare only unambiguous thesis-related candidates; require a short-lived user authorization token cryptographically bound to the exact prepared publication digest and naming every accepted claim and relationship; and, only through the purpose-built repository recorder, atomically reuse exact provenance claims, create accepted draft investment claims, create accepted claim-thesis relationships, and record one complete journal audit. Refuse unavailable, stale, malformed, ambiguous, conflicting, expired, or authority-expanding input without partial writes.",
+  "instructions": [
+    "Resolve capability:scope:trade-journal/claims-synthesis through the published Registry Lock and accept only its validated version 1.x recommendation-only result. Claims synthesis recommends; it never authorizes publication.",
+    "Require one explicit Trade Journal research insight ID and the exact claims-synthesis result. Prepare publication only through scripts/research-publication.ts --prepare --insight-id <uuid> --synthesis-result <file|->. The deterministic boundary re-reads approved repository state and exposes no write mode.",
+    "Preserve five distinct concepts: Notes-owned sourceEvidence, synthesizedRecommendations, existing or proposed Trade Journal claimCandidates, an explicit user authorization decision, and governed relationshipCandidates. Never collapse recommendation into authorization or relationship into claim identity.",
+    "Exact (sourceInsightId, sourceClaimId) provenance is identity. Reuse an existing provenance-bearing main_claims row; never duplicate it. A create candidate must preserve the source claim, evidence, reasoning, backing, qualifier, every rebuttal, time horizon, tickers, and synthesis rationale.",
+    "Exclude every claim-identity or thesis-bearing ambiguity from authorization candidates. Ticker and keyword overlap are retrieval hints only, not semantic proof. Publication requires an unambiguous claim resolution and at least one unambiguous developing-or-monitoring thesis relationship.",
+    "Present the bounded prepared result to the user. An interactive adapter may serialize only the user's explicit exact selection into a research_publication_authorization version 1.0.0 token. The token must be user-authorized, valid for no more than 24 hours, bind publicationDigest, name unique acceptedClaimRefs and acceptedRelationshipIds, include every and only claim used by an accepted relationship, and use the exact contract statement. Never infer, fabricate, broaden, or self-authorize a token.",
+    "Validate a supplied token without writes through scripts/research-publication.ts --validate-authorization <file|-> --publication <file>. Validation success is readiness, not publication.",
+    "When and only when the exact token records the current user's explicit publication decision, send the complete { prepared, authorization } envelope once to scripts/ops/publish-research.ts --stdin. This is the sole mutation boundary and provider adapters have no direct database authority.",
+    "The recorder uses one serializable transaction and an authorization lock; revalidates current source, claim, and thesis context; reuses exact or concurrently-created matching provenance claims; inserts only accepted new main_claims rows at draft status; reuses or inserts only accepted claim_thesis_mappings; inserts one research_publication_recorded journal_entries audit; and returns exact created/reused dispositions and write counts. Exact retries return the recorded result; changed authorization bytes or conflicting provenance/relationship state are refused.",
+    "The maximum tables are main_claims, claim_thesis_mappings, and journal_entries with the exact columns declared by the prepared result. Never write research_artifacts, research_insights, main_claim_evidence, theses, signals, Decision Items, strategies, positions, orders, or trades; never change entity or thesis status; never resolve a Decision Item; and never use ad-hoc SQL, Supabase MCP writes, direct API mutation, generic write helpers, temporary write scripts, legacy Obsidian paths, removed intelligence-report storage, triage systems, or views terminology.",
+    "Treat unavailable source/database/environment/provider state, incomplete provenance, malformed or stale digests, ambiguous candidates, missing or expired authorization, user non-acceptance, transaction failure, or audit failure as unavailable, refused, or failed with no partial success. Do not invoke a live provider or mutate production data to manufacture evidence.",
+    "Unattended execution is ineligible to authorize or publish because claim selection and thesis-bearing acceptance are genuine user judgment. Headless use may only prepare or validate and return authorization_required or unavailable with writes: []."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "publication-readiness",
+        "category": "behavioural",
+        "description": "The deterministic read boundary distinguishes source evidence, synthesis recommendations, promoted claims, authorization, and relationships and prepares only complete, current, unambiguous thesis-related candidates.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "provenance-and-authorization",
+        "category": "behavioural",
+        "description": "Exact Notes provenance forces reuse and publication requires a bounded short-lived user token for every and only accepted claims and relationships.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "atomic-recorder",
+        "category": "behavioural",
+        "description": "The serializable recorder revalidates current state, permits only exact accepted main claims, claim-thesis mappings, and one journal audit, is idempotent, and rolls back partial failure.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "authority-boundary",
+        "category": "behavioural",
+        "description": "Provider adapters have no direct database, generic write, status, Decision Item, thesis, signal, strategy, position, trade, scheduler, credential, or operational-cutover authority.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "provider-semantic-equivalence",
+        "category": "semantic",
+        "description": "The exact Claude and Codex adapters preserve Notes/Trade Journal authority, recommendation-versus-authorization meaning, conservative ambiguity, provenance reuse, transactional publication, and the genuine-judgment boundary.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The repository runtime can execute non-mutating help, preparation, and validation paths while missing source, database, provider, sandbox, or authorization prerequisites remain explicit unavailable or refused outcomes.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "research-publication-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "research-publication-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "capability:scope:trade-journal/claims-synthesis",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    }
+  ]
+}

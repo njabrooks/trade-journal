@@ -665,7 +665,7 @@
     },
     {
       "id": "headless-codex-finalize-for-upload",
-      "ability": "Publish finalized research artifacts into Trade Journal records.",
+      "ability": "Prepare and validate governed research-publication readiness while refusing unattended authorization or publication.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-publication",
@@ -675,42 +675,41 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/finalize-for-upload/SKILL.md"
+        "path": "capabilities/research-publication/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/finalize-for-upload/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/finalize-for-upload/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/finalize-for-upload/HEADLESS_PREAMBLE.md",
+        "readiness": "Bespoke preparation/validation contract explicitly forbids authorization-token creation and publication in unattended mode."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/finalize-for-upload/skill.json",
-        "unattended_eligibility": "conditional",
-        "rationale": "Classifies artifact type and performs authorized publication."
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Exact claim and thesis-bearing acceptance requires a current user's explicit judgment; unattended use may prepare or validate only."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Finalized research files and current schema.",
-        "writes": "Research artifacts, insights, theses, or views through existing upload paths.",
-        "judgment": "Classifies artifact type and performs authorized publication."
+        "reads": "One Notes-owned research insight, the complete current main-claim identity catalog, developing and monitoring macro/asset theses, and an exact validated claims-synthesis recommendation.",
+        "writes": "No unattended writes. Interactive authorized publication is bounded to main_claims, claim_thesis_mappings, and one journal_entries audit through scripts/ops/publish-research.ts.",
+        "judgment": "The current user must explicitly accept exact claim refs and relationship IDs; headless execution cannot create a token or invoke the recorder."
       },
       "prerequisites": [
-        "Codex headless runtime with repository access",
-        "Finalized artifact, schema verification, and database credentials."
+        "Codex headless runtime with repository access and the published Registry Lock",
+        "Complete Notes-owned provenance, validated claims-synthesis output, and current repository reads; authorization and publication are unavailable headlessly."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Older assumptions must be checked against the Tana-first architecture.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The bespoke preamble permits preparation and validation only; it cannot authorize or publish.",
+        "No live provider invocation or production write was used as evidence; active discovery and operational state remain unchanged."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -721,16 +720,27 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-08",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:ed8b759515cc4955df912598b6a68b4b0ddbbf3db57a5e76185f3d3aafee29da",
+        "adapter_digest": "sha256:84aafabae99ffd4950040eb41c4d2921bcc8a0b043cd252ad84f1d9736ff7129",
+        "reason": "Exact current evidence is bound to research-publication 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a preparation-only migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/finalize-for-upload/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-publication/capability-package.json",
+        "adapter_id": "research-publication-codex",
+        "evidence_path": "capabilities/research-publication/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {

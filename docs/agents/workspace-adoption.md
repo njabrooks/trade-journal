@@ -43,9 +43,9 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares eight Trade Journal-owned
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares nine Trade Journal-owned
 packages: portfolio snapshot, belief maintenance, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
-portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
+research publication, portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
 remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry.
 
@@ -53,8 +53,8 @@ establish Adapter Conformance; only exact W1-bound evidence upgrades an inventor
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-08`, eight locked
-Capabilities make 20 inventory entries generation eligible while the whole-file Claude and Codex outputs
+generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-08`, nine locked
+Capabilities make 22 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers.
 
@@ -126,6 +126,18 @@ adapter-bound representative fixture; no live provider invocation, database muta
 active discovery, or cutover occurred. A read-only environmental preflight returned a 1.9 MB context covering
 four source claims, the complete current 2,146-claim identity catalog, and 73 eligible theses; this proves the
 boundary but not live-provider latency or context efficiency.
+
+Issue #63 adds the source-owned research-publication Capability. It resolves the immutable claims-synthesis
+release as recommendation-only input, re-reads the complete current Notes-owned source and Trade Journal
+claim/thesis context, excludes claim-identity and thesis-bearing ambiguity, and requires a short-lived
+digest-bound user token naming every and only accepted claim and governed relationship. Its sole serializable
+recorder reuses exact provenance claims, creates accepted new claims only at draft status, creates or reuses
+accepted claim-thesis mappings, and records one complete journal audit in the same transaction. Exact retry is
+idempotent; stale input, conflicting provenance or relationships, malformed or expanded authority, expired
+authorization, and injected partial failure are refused without committed writes. Headless execution may
+prepare or validate but is ineligible to authorize or publish because candidate acceptance is genuine user
+judgment. Representative provider fixtures are bound to exact adapter bytes; no live provider invocation,
+production mutation, scheduler, credential, active discovery, or operational cutover occurred.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
