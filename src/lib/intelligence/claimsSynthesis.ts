@@ -98,6 +98,7 @@ export interface ClaimsSynthesisReadyResult {
   }>;
   ambiguities: Array<{
     sourceClaimId: string;
+    axis: 'claim_identity' | 'thesis_mapping';
     kind: 'semantic_match' | 'claim_distinction' | 'thesis_bearing';
     candidateMainClaimIds: string[];
     candidateThesisIds: string[];
@@ -462,12 +463,19 @@ export function validateClaimsSynthesisResult(
   const ambiguities = arrayAt(result.ambiguities, 'result.ambiguities', 25).map((item, index) => {
     const row = objectAt(item, `result.ambiguities[${index}]`);
     assertAllowedKeys(row, `result.ambiguities[${index}]`, [
-      'sourceClaimId', 'kind', 'candidateMainClaimIds', 'candidateThesisIds', 'reason',
+      'sourceClaimId', 'axis', 'kind', 'candidateMainClaimIds', 'candidateThesisIds', 'reason',
     ]);
     const sourceClaimId = stringAt(row.sourceClaimId, `result.ambiguities[${index}].sourceClaimId`);
     if (!sourceIds.has(sourceClaimId)) fail(`result.ambiguities[${index}]`, 'references unknown source evidence');
     if (!['semantic_match', 'claim_distinction', 'thesis_bearing'].includes(String(row.kind))) {
       fail(`result.ambiguities[${index}].kind`, 'is unsupported');
+    }
+    if (!['claim_identity', 'thesis_mapping'].includes(String(row.axis))) {
+      fail(`result.ambiguities[${index}].axis`, 'is unsupported');
+    }
+    const expectedAxis = row.kind === 'thesis_bearing' ? 'thesis_mapping' : 'claim_identity';
+    if (row.axis !== expectedAxis) {
+      fail(`result.ambiguities[${index}].axis`, `must be ${expectedAxis} for ${String(row.kind)}`);
     }
     const candidateMainClaimIds = stringArrayAt(
       row.candidateMainClaimIds,
@@ -485,13 +493,21 @@ export function validateClaimsSynthesisResult(
     }
     return {
       sourceClaimId,
+      axis: row.axis as ClaimsSynthesisReadyResult['ambiguities'][number]['axis'],
       kind: row.kind as ClaimsSynthesisReadyResult['ambiguities'][number]['kind'],
       candidateMainClaimIds,
       candidateThesisIds,
       reason: stringAt(row.reason, `result.ambiguities[${index}].reason`),
     };
   });
+  const ambiguityKeys = ambiguities.map((row) => `${row.sourceClaimId}:${row.axis}`);
+  if (new Set(ambiguityKeys).size !== ambiguityKeys.length) {
+    fail('result.ambiguities', 'must contain at most one ambiguity per source claim and axis');
+  }
   const ambiguousSourceIds = new Set(ambiguities.map((row) => row.sourceClaimId));
+  const claimIdentityAmbiguousSourceIds = new Set(
+    ambiguities.filter((row) => row.axis === 'claim_identity').map((row) => row.sourceClaimId),
+  );
   const synthesizedRefs = new Set(synthesized.map((claim) => claim.ref));
   const reusedRefs = new Set(existing.map((claim) => claim.mainClaimId));
   if (reusedRefs.size !== existing.length) {
@@ -503,6 +519,14 @@ export function validateClaimsSynthesisResult(
   const resolvedRefBySource = new Map<string, string>();
   for (const claim of existing) resolvedRefBySource.set(claim.sourceClaimId, claim.mainClaimId);
   for (const claim of synthesized) resolvedRefBySource.set(claim.sourceClaimId, claim.ref);
+  for (const sourceClaimId of claimIdentityAmbiguousSourceIds) {
+    if (resolvedRefBySource.has(sourceClaimId)) {
+      fail(
+        `result.ambiguities.${sourceClaimId}.claim_identity`,
+        'claim_identity ambiguity must not have a resolved claim',
+      );
+    }
+  }
 
   const thesisMappings = arrayAt(result.thesisMappings, 'result.thesisMappings', 50).map((item, index) => {
     const row = objectAt(item, `result.thesisMappings[${index}]`);

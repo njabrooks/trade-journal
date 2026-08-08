@@ -206,6 +206,7 @@ describe('claims-synthesis source contract', () => {
       synthesizedInvestmentClaims: [],
       ambiguities: [{
         sourceClaimId: 'claim-1',
+        axis: 'claim_identity',
         kind: 'semantic_match',
         candidateMainClaimIds: [],
         candidateThesisIds: ['44444444-4444-4444-8444-444444444444'],
@@ -233,6 +234,54 @@ describe('claims-synthesis source contract', () => {
         rationale: 'Ticker overlap.',
       }],
     })).toThrow(/ambiguous.*must not have thesis mappings/i);
+  });
+
+  it('separates claim-identity ambiguity from thesis-mapping ambiguity', () => {
+    const context = contextWithExistingClaim();
+    const base = {
+      contractVersion: '1.0.0',
+      contextDigest: digestClaimsSynthesisContext(context),
+      status: 'ready',
+      sourceEvidence: [{ insightId: sourceInput.insightId, sourceClaimId: 'claim-1' }],
+      existingMainClaims: [{
+        sourceClaimId: 'claim-1',
+        mainClaimId: '33333333-3333-4333-8333-333333333333',
+        disposition: 'reuse_exact_provenance',
+      }],
+      synthesizedInvestmentClaims: [],
+      thesisMappings: [],
+      recommendations: [{
+        sourceClaimId: 'claim-1',
+        action: 'defer_ambiguous',
+        rationale: 'The claim identity is deterministic, but thesis bearing requires judgment.',
+      }],
+      execution: { mode: 'recommendation_only', writes: [] },
+      limitations: [],
+    };
+
+    expect(validateClaimsSynthesisResult(context, {
+      ...base,
+      ambiguities: [{
+        sourceClaimId: 'claim-1',
+        axis: 'thesis_mapping',
+        kind: 'thesis_bearing',
+        candidateMainClaimIds: [],
+        candidateThesisIds: [],
+        reason: 'The exact claim is reusable, but its bearing on a thesis is uncertain.',
+      }],
+    }).existingMainClaims).toHaveLength(1);
+
+    expect(() => validateClaimsSynthesisResult(context, {
+      ...base,
+      ambiguities: [{
+        sourceClaimId: 'claim-1',
+        axis: 'claim_identity',
+        kind: 'semantic_match',
+        candidateMainClaimIds: ['33333333-3333-4333-8333-333333333333'],
+        candidateThesisIds: [],
+        reason: 'The claim identity is uncertain.',
+      }],
+    })).toThrow(/claim_identity.*must not have a resolved claim/i);
   });
 
   it('bounds provider recommendations and refuses every attempted execution write', () => {

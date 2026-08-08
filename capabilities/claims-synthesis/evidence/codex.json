@@ -1,9 +1,9 @@
 {
   "capability_id": "capability:scope:trade-journal/claims-synthesis",
   "capability_version": "1.0.0",
-  "package_digest": "sha256:283b6fc4bff716f341b475fd66c606a3b3aaec4cb5eebbd9412f01b2507400a1",
+  "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
   "adapter_id": "claims-synthesis-codex",
-  "adapter_digest": "sha256:d6f143c6396d5ede52340bab0ba669f8e1721b0af98c86eb5678480003d93161",
+  "adapter_digest": "sha256:18ff6b767b4e501bbf97930ec803dedb787fe767b0ffc57f0b5cf4bed86f9a99",
   "support_state": "current",
   "validated_at": "2026-08-08",
   "results": {
@@ -21,7 +21,7 @@
     },
     "bounded-conservative-result": {
       "status": "passed",
-      "method": "Repository contract tests enforce the exact context digest, collection bounds, five-mapping per-claim limit, explicit ambiguity with no mapping, conservative semantic references, and execution={mode:recommendation_only,writes:[]}"
+      "method": "Repository contract tests enforce the exact context digest, collection bounds, five-mapping per-claim limit, distinct claim_identity and thesis_mapping ambiguity axes, coherent claim dispositions, no ambiguous mappings, conservative semantic references, and execution={mode:recommendation_only,writes:[]}"
     },
     "authority-boundary": {
       "status": "passed",

@@ -19,8 +19,11 @@ mutation suggestions in the historical skill body below. In particular:
    legacy synthesis directories as authority.
 3. Exact provenance forces existing-claim reuse. Ticker and keyword overlap are
    retrieval hints only.
-4. Preserve uncertainty as an explicit ambiguity. Do not guess, promote, create,
-   link, mutate, or resolve any investment state.
+4. Preserve uncertainty as an explicit ambiguity with exactly one axis. Use
+   `claim_identity` for uncertain identity or distinction and return no claim
+   resolution; use `thesis_mapping` for uncertain relationship, direction, or
+   bearing and return no thesis mapping. Do not guess, promote, create, link,
+   mutate, or resolve any investment state.
 5. `execution` must remain `{ "mode": "recommendation_only", "writes": [] }`.
 
 ## Output contract

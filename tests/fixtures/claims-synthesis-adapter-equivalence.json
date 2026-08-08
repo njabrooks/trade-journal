@@ -153,6 +153,7 @@
     "ambiguities": [
       {
         "sourceClaimId": "claim-3",
+        "axis": "claim_identity",
         "kind": "claim_distinction",
         "candidateMainClaimIds": ["66666666-6666-4666-8666-666666666666"],
         "candidateThesisIds": ["44444444-4444-4444-8444-444444444444"],
@@ -183,10 +184,10 @@
   },
   "providers": {
     "claude": {
-      "adapterDigest": "sha256:0e481fc1f4d6667bb7b1491e6392d01b76b26dbe5b568161eb832d60722d0894"
+      "adapterDigest": "sha256:ffea868f3116dd820e11f0a9524e06d6bca225ad50de1f28a704559f69a48c40"
     },
     "codex": {
-      "adapterDigest": "sha256:d6f143c6396d5ede52340bab0ba669f8e1721b0af98c86eb5678480003d93161"
+      "adapterDigest": "sha256:18ff6b767b4e501bbf97930ec803dedb787fe767b0ffc57f0b5cf4bed86f9a99"
     }
   }
 }
