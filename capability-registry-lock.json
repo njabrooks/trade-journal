@@ -3,6 +3,43 @@
     {
       "approved_version": "1.0.0",
       "authority": "scope:trade-journal",
+      "dependencies": [
+        {
+          "id": "capability:scope:trade-journal/thesis-underwriting",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        }
+      ],
+      "id": "capability:scope:trade-journal/belief-evidence-assessment",
+      "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "belief-evidence-assessment-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-08"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "belief-evidence-assessment-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-08"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/belief-evidence-assessment",
+        "release_reference": "483f6ea79ffbbed6e9dfa2144964f02aa91fd038",
+        "revision": "483f6ea79ffbbed6e9dfa2144964f02aa91fd038"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
       "dependencies": [],
       "id": "capability:scope:trade-journal/belief-maintenance",
       "package_digest": "sha256:bd842e99b0a3c9b48b83d1f570235a32dc97fcf4036f34751248483889299d48",
@@ -215,10 +252,10 @@
       }
     }
   ],
-  "evidence_time": "2026-08-07",
+  "evidence_time": "2026-08-08",
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:da85a44c9052968386e33762f24d664781b9d13ccf8f680ae7449135e083452e",
+  "registry_digest": "sha256:235e690e415668ab7b0917acb60451bc63df1cc4f50c24046ea2429f5d9e7cca",
   "schema_version": "1.0.0"
 }

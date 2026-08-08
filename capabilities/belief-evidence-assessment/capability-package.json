@@ -1,0 +1,87 @@
+{
+  "id": "capability:scope:trade-journal/belief-evidence-assessment",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Assess provenance-bearing evidence against governed thesis underwriting without changing investment state or fabricating owner judgment.",
+  "contract": "Given an explicit macro or asset thesis identifier, an explicit assessment request, provenance-bearing evidence, and the Registry-resolved thesis-underwriting dependency, bind analysis to the latest versioned thesis articulation and its complete active, thesis-linked, auto-derived resolution-signal set as { thesisId, thesisType, articulationId, articulationVersion, signalIds }; return a thesis-centric assessment for every bound signal with source provenance, direct semantic bearing, findings, quotations, limitations, recommendation, overall summary, and recording disposition; keep analysis read-only unless recording is explicitly delegated; if recording is delegated, persist atomically only through the deterministic repository recorder; and report unavailable, stale, malformed, or failed outcomes without partial writes or invented state.",
+  "instructions": [
+    "Resolve capability:scope:trade-journal/thesis-underwriting through the published Registry Lock and use its governed output as underwriting context; reference that Capability without copying or redefining its contract.",
+    "Require an explicit thesis ID, thesis type, assessment request, and source. Thesis lifecycle status is context only and never an information gate.",
+    "Load the current target through the repository recorder's read-only target mode and bind the assessment to the exact thesis ID, thesis type, articulation ID, articulation version, and complete active signal-ID set; use its returned current articulation, active signals, full linked claims and observations with Toulmin and source content, prior signal evidence, rebuttals, assumptions, timeframe, and notes as the complete assessment surface.",
+    "Carry source provenance as an existing promoted main_claims ID when available; otherwise require source title and type, content SHA-256, and stable URL, file label, observed time, or published time when available. Never create or duplicate a claim.",
+    "Assess each resolution statement in its underwriting context. Ticker and keyword overlap may assist retrieval only; every non-neutral result requires direct semantic bearing on the statement.",
+    "Use only neutral, strengthening, confirmed, weakening, or invalidated in thesis-centric polarity. Every invalidation result must carry the recorder-enforced conditionEffect pair: risk_receding/strengthening, risk_growing/weakening, condition_cleared/confirmed, condition_triggered/invalidated, or no_bearing/neutral.",
+    "Return one assessment for every bound signal, including neutral results, with statement, type, importance, confidence, semantic bearing, evidence summary, findings, short quotations, limitations, and advisory recommendation, plus an overall summary and recording disposition.",
+    "Analysis is read-only by default. When recording is explicitly requested, send the complete envelope only to scripts/ops/record-belief-evidence-assessment.ts --stdin; its serializable transaction revalidates the target immediately before the accepted writes.",
+    "The maximum write set is one qualitative signal_data_snapshots row per targeted signal, one existing-claim claim_signal_evidences link per non-neutral result when a promoted provenance-bearing claim exists, one batch audit record, and one thesis-level signal_evidence_received journal record per non-neutral result.",
+    "Never change thesis or signal status or confidence, create or configure signals, create claims, alter claim-thesis links, create or resolve Decision Items, mutate strategies or positions, place trades, author explicit_details, invoke retired configure-signal behavior, or use an ad-hoc database write.",
+    "Treat an unknown thesis, absent current underwriting, incomplete provenance, malformed result, changed target, unavailable prerequisite, or non-zero recorder result as unavailable or failed with no partial success."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "Each exact provider adapter is present in the staged governed Provider Entry Point generated from this package.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "governed-target",
+        "category": "behavioural",
+        "description": "The adapters bind every assessment to the latest governed articulation and complete active thesis-linked resolution-signal set and refuse missing or stale targets.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "evidence-semantics-and-provenance",
+        "category": "behavioural",
+        "description": "The result preserves source provenance, direct semantic bearing, thesis-centric polarity including invalidation signals, neutral completeness, and promoted-claim reuse.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "deterministic-recorder",
+        "category": "behavioural",
+        "description": "The repository recorder revalidates the bound target and atomically permits only qualitative snapshots, existing-claim evidence links, batch audit, and thesis-level evidence journal records.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "authority-boundary",
+        "category": "behavioural",
+        "description": "Provider adapters have no direct database, claim creation, signal configuration, status, Decision Item, strategy, position, trade, scheduler, or runtime authority.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "neutral-semantics",
+        "category": "semantic",
+        "description": "Provider instructions preserve the governed underwriting dependency, assessment intent, thesis-centric meaning, conservative hard outcomes, and advisory-only judgment boundary.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The repository runtime can execute the recorder's non-mutating preflight; unavailable database, source, provider, sandbox, or network prerequisites remain explicit unavailable outcomes.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "belief-evidence-assessment-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "belief-evidence-assessment-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "capability:scope:trade-journal/thesis-underwriting",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    }
+  ]
+}

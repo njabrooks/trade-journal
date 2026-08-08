@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "inventory_kind": "headless",
-  "as_of": "2026-08-07",
+  "as_of": "2026-08-08",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "authority": "Repository-owned supporting inventory under Workspace Initiative #12, Wayfinder #1, migration decision #9, and accepted W1 #13. W1 remains authoritative only for its defined manifest and exact evidence contracts.",
   "entries": [
@@ -295,42 +295,41 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/assess-validation-evidence/SKILL.md"
+        "path": "capabilities/belief-evidence-assessment/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/assess-validation-evidence/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "bespoke",
         "preamble_path": ".claude/skills/assess-validation-evidence/HEADLESS_PREAMBLE.md",
-        "readiness": "Hand-authored parameters and output contract exist; exact W1 evidence is still unavailable."
+        "readiness": "The bespoke headless preamble remains a migration input; the exact governed adapter carries the target-bound delegated-assessment and recorder contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/assess-validation-evidence/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Classifies evidence against established signals without resolving investment decisions."
+        "rationale": "Classifies provenance-bearing evidence against a bound governed underwriting target without resolving investment decisions."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Research content, signals, and entity links.",
-        "writes": "Signal evidence snapshots through repository scripts.",
-        "judgment": "Classifies evidence against established signals without resolving investment decisions."
+        "reads": "The latest governed thesis articulation, its complete active linked resolution signals, provenance-bearing source content, and prior evidence.",
+        "writes": "Only target-bound qualitative snapshots, existing-claim evidence links, and accepted audit records through the deterministic repository recorder.",
+        "judgment": "Classifies direct semantic bearing in thesis-centric polarity under explicit delegation; recommendations remain advisory and no owner decision is created or resolved."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Database access through repository helpers and readable source content."
+        "Remote database access, readable provenance-bearing source content, explicit thesis and assessment parameters, explicit recording disposition, and the governed thesis-underwriting dependency."
       ],
       "limitations": [
-        "Bespoke contract improves invocation specificity but does not establish W1 conformance.",
-        "Two bespoke headless contracts exist, but no W1 Capability or adapter evidence is bound.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the bespoke headless mirror remains the active migration input until final discovery cutover.",
+        "No provider invocation or database-writing canary was authorized; unavailable inputs or a stale target must fail without writes."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -341,16 +340,27 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-08",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
+        "adapter_digest": "sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
+        "reason": "Exact current evidence is bound to belief-evidence-assessment 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/assess-validation-evidence/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-evidence-assessment/capability-package.json",
+        "adapter_id": "belief-evidence-assessment-codex",
+        "evidence_path": "capabilities/belief-evidence-assessment/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {

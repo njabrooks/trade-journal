@@ -2,6 +2,21 @@
   "version": "1.0.0",
   "capabilities": [
     {
+      "id": "capability:scope:trade-journal/belief-evidence-assessment",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/belief-evidence-assessment",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "483f6ea79ffbbed6e9dfa2144964f02aa91fd038"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/belief-maintenance",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",

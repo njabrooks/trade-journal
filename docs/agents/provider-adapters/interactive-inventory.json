@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "inventory_kind": "interactive",
-  "as_of": "2026-08-07",
+  "as_of": "2026-08-08",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "authority": "repository:njabrooks/trade-journal",
   "entries": [
@@ -231,46 +231,57 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/assess-validation-evidence/SKILL.md"
+        "path": "capabilities/belief-evidence-assessment/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/assess-validation-evidence",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Classifies evidence against established signals without resolving investment decisions."
+        "rationale": "Classifies provenance-bearing evidence against a bound governed underwriting target without resolving investment decisions."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Research content, signals, and entity links.",
-        "writes": "Signal evidence snapshots through repository scripts.",
-        "judgment": "Classifies evidence against established signals without resolving investment decisions."
+        "reads": "The latest governed thesis articulation, its complete active linked resolution signals, provenance-bearing source content, and prior evidence.",
+        "writes": "Only target-bound qualitative snapshots, existing-claim evidence links, and accepted audit records through the deterministic repository recorder.",
+        "judgment": "Classifies direct semantic bearing in thesis-centric polarity; recommendations remain advisory and no owner decision is created or resolved."
       },
       "prerequisites": [
         "Claude Code repository session",
-        "Database access through repository helpers and readable source content."
+        "Remote database access, readable provenance-bearing source content, an explicit thesis and assessment request, and the governed thesis-underwriting dependency."
       ],
       "limitations": [
-        "Two bespoke headless contracts exist, but no W1 Capability or adapter evidence is bound.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed adapter is staged; the authored Claude skill remains a migration input until final discovery cutover.",
+        "No provider invocation or database-writing canary was authorized; unavailable inputs or a stale target must fail without writes."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-08",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:a500733334c51f739511621d90bc53e0489137a3dedc3889264ccc05ea1a77df",
+        "adapter_digest": "sha256:9d68674236145e1217029ef723d481a05c7580d90559da8891f674b42c186d6c",
+        "reason": "Exact current evidence is bound to belief-evidence-assessment 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/assess-validation-evidence/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-evidence-assessment/capability-package.json",
+        "adapter_id": "belief-evidence-assessment-claude",
+        "evidence_path": "capabilities/belief-evidence-assessment/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {

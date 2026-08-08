@@ -43,9 +43,9 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares six Trade Journal-owned
-packages: portfolio snapshot, belief maintenance, thesis observation, thesis underwriting, portfolio options advice,
-and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares seven Trade Journal-owned
+packages: portfolio snapshot, belief maintenance, thesis observation, thesis underwriting, belief evidence assessment,
+portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
 remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry.
 
@@ -53,8 +53,8 @@ establish Adapter Conformance; only exact W1-bound evidence upgrades an inventor
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-07`, six locked
-Capabilities make 16 inventory entries generation eligible while the whole-file Claude and Codex outputs
+generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-08`, seven locked
+Capabilities make 18 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers.
 
@@ -106,6 +106,15 @@ thesis-status mutation—while remaining a staged discovery surface. Its eligibl
 to a non-mutating articulation-command preflight; no provider invocation, database write, scheduler, or discovery
 cutover occurred.
 
+Issue #58 adds the source-owned belief-evidence-assessment Capability at immutable revision
+`81475f476d0705bd7e502e2244b2fc2ce41e8c5d`. It resolves thesis-underwriting through the Registry, binds each
+assessment to the latest articulation and complete active linked signal set, and routes an explicitly requested
+recording through one deterministic serializable recorder. Exact adapters preserve provenance, direct semantic
+bearing, thesis-centric invalidation polarity, and neutral completeness while refusing broader database,
+status, Decision Item, claim creation, signal configuration, strategy, position, trade, scheduler, or cutover
+authority. Its environmental evidence is a non-mutating recorder preflight; no provider or live database write
+was invoked.
+
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar
@@ -119,7 +128,7 @@ issue `njabrooks/projects#31` continues to own any future replacement for that i
 
 CI evaluates Capability and Provider Entry Point freshness against the runner's current UTC date. The
 checked-in immutable Registry Lock remains independently reproducible at its recorded governed evidence date
-of `2026-08-07`; CI resolves a temporary present-day lock before clean-regeneration validation so current
+of `2026-08-08`; CI resolves a temporary present-day lock before clean-regeneration validation so current
 freshness is enforced without rewriting or making the published lock nondeterministic. A controlled public-CLI
 proof also evaluates evidence on `2026-09-06`, after its `2026-09-05` expiry, and requires the adapter to become
 `stale`, existing governed output validation to fail, regeneration to fail, and the absent target to remain

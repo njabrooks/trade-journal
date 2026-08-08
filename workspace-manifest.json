@@ -56,6 +56,10 @@
   },
   "owned_capabilities": [
     {
+      "id": "capability:scope:trade-journal/belief-evidence-assessment",
+      "path": "capabilities/belief-evidence-assessment/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/belief-maintenance",
       "path": "capabilities/belief-maintenance/capability-package.json"
     },
@@ -97,7 +101,7 @@
       "id": "headless-codex-assess-validation-evidence",
       "capability": "capability:scope:trade-journal/belief-evidence-assessment",
       "provider": "codex",
-      "path": ".agents/skills/assess-validation-evidence/SKILL.md"
+      "path": "capabilities/belief-evidence-assessment/adapters/codex.md"
     },
     {
       "id": "headless-codex-backfill-claims",
@@ -289,7 +293,7 @@
       "id": "interactive-claude-assess-validation-evidence",
       "capability": "capability:scope:trade-journal/belief-evidence-assessment",
       "provider": "claude",
-      "path": ".claude/skills/assess-validation-evidence/SKILL.md"
+      "path": "capabilities/belief-evidence-assessment/adapters/claude.md"
     },
     {
       "id": "interactive-claude-backfill-claims",

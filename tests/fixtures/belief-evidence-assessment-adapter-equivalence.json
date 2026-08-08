@@ -1,0 +1,26 @@
+{
+  "case": "invalidation risk receded after a regulator closed an investigation without enforcement",
+  "expected": {
+    "conditionEffect": "risk_receding",
+    "assessment": "strengthening",
+    "semanticBearing": "direct"
+  },
+  "providers": {
+    "claude": {
+      "adapterDigest": "sha256:9d68674236145e1217029ef723d481a05c7580d90559da8891f674b42c186d6c",
+      "output": {
+        "conditionEffect": "risk_receding",
+        "assessment": "strengthening",
+        "semanticBearing": "direct"
+      }
+    },
+    "codex": {
+      "adapterDigest": "sha256:0fb1750bc026e48370d4e0d193b0e90213974b87009731cc699f856c3d078adb",
+      "output": {
+        "conditionEffect": "risk_receding",
+        "assessment": "strengthening",
+        "semanticBearing": "direct"
+      }
+    }
+  }
+}
