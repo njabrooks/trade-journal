@@ -43,9 +43,9 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares ten Trade Journal-owned
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares eleven Trade Journal-owned
 packages: portfolio snapshot, belief maintenance, belief-research relation, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
-research publication, portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
+research publication, research pipeline, portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
 remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry.
 
@@ -53,8 +53,8 @@ establish Adapter Conformance; only exact W1-bound evidence upgrades an inventor
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-09`, ten locked
-Capabilities make 24 inventory entries generation eligible while the whole-file Claude and Codex outputs
+generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-09`, eleven locked
+Capabilities make 26 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers.
 
@@ -152,6 +152,19 @@ resolve decisions, mutate strategies or positions, or trade. The Codex preamble 
 eligible only for non-mutating preparation or validation. Representative output is cryptographically bound to
 exact adapter bytes; no live provider invocation, production write, scheduler, credential, active discovery, or
 operational cutover occurred.
+
+Issue #66 adds the source-owned research-pipeline aggregate Capability. It composes the Registry-locked
+claims-synthesis, research-publication, and belief-research-relation contracts through their existing validators;
+it neither reimplements stage semantics nor acquires their mutation authority. The complete provider-neutral
+lifecycle reports bounded `incomplete`, `unavailable`, `stale`, `refused`, `failed`, `judgment_required`, and
+`ready` stage outcomes with deterministic digest-bound retries and aggregate `writes: []`. Exact Claude and
+Codex aggregate adapters are staged through the existing pipeline-status inventory slots while all ten legacy
+entry points remain active and explicitly unmigrated pending #67 and #68. The aggregate may name only the
+stage-owned publication or relation recorder behind that stage's exact user-authorization boundary; it cannot
+invoke either recorder, create or publish claims, persist relations, change status, resolve Decision Items, or
+mutate schedulers, credentials, provider discovery, production data, theses, strategies, positions, or trades.
+No live provider invocation, production mutation, scheduler, credential, discovery, or operational cutover
+occurred.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from

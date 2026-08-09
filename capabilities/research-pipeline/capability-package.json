@@ -1,0 +1,94 @@
+{
+  "id": "capability:scope:trade-journal/research-pipeline",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Coordinate the Trade Journal research pipeline through one provider-neutral aggregate contract while retaining every legacy stage entry point during staged migration.",
+  "contract": "Given one explicit Trade Journal research insight and only exact results from the Registry-locked claims-synthesis, research-publication, and belief-research-relation Capabilities, return the complete ordered pipeline lifecycle with each stage outcome exactly incomplete, unavailable, stale, refused, failed, judgment_required, or ready. Notes/Tana owns capture, source material, and Toulmin extraction; Trade Journal owns promoted claims, research publication state, governed relationships, theses, unresolved Decision Items, and journal audit. Preserve provenance, Toulmin qualifiers and rebuttals, ambiguity, authorization, audit, idempotency, rollback, and write boundaries by composing the accepted stage validators rather than reimplementing them. Every legacy pipeline stage is explicitly unmigrated in this expand release and remains available through its active legacy entry point. The aggregate is deterministic, bounded, has no database authority, performs no writes, and may only name an exact purpose-built operation when the corresponding stage has produced an exact user-authorization boundary.",
+  "instructions": [
+    "Require one explicit research insight UUID. Describe an empty aggregate through scripts/research-pipeline.ts --describe --insight-id <uuid>; evaluate supplied exact stage material through scripts/research-pipeline.ts --evaluate <file|->; validate returned bytes through scripts/research-pipeline.ts --validate-result <file|->.",
+    "Use the exact ordered lifecycle: pipeline_status, idea_intake, thesis_formalization, unknown_mapping, research_preparation, unknown_research, evidence_synthesis, claims_synthesis, research_publication, belief_research_relation, thesis_expression, gate_decision, graduation.",
+    "Resolve claims-synthesis, research-publication, and belief-research-relation only through the published Registry Lock. Run their existing public read/result validators and preserve their exact digests; do not copy their validators, mutation semantics, or authorization rules into the aggregate.",
+    "Preserve exact (sourceInsightId, sourceClaimId) provenance, evidence, reasoning, backing, qualifier, every rebuttal, time horizon, ambiguity, relationship rationale, and audit context through the stage-owned contracts. Reuse provenance-bearing claims. Holdings, tickers, keywords, or provider recommendations are never semantic proof.",
+    "The aggregate execution is exactly aggregate_coordination_only with writes: []. It cannot create or publish a claim, persist a relationship, change status, create or resolve a Decision Item, mutate a thesis, signal, strategy, position, order, or trade, or use ad-hoc SQL, Supabase MCP writes, direct API mutation, generic writers, schedulers, credentials, provider discovery, or production-data evidence.",
+    "When research-publication returns its exact judgment boundary, report judgment_required and name only scripts/ops/publish-research.ts --stdin. When belief-research-relation returns its exact recording judgment boundary, report judgment_required and name only scripts/ops/record-belief-research-relation.ts --stdin. Never invoke either operation or create an authorization token from aggregate authority.",
+    "Represent missing stage material as incomplete; unavailable prerequisites as unavailable; digest or freshness mismatch as stale; policy, malformed authority, or user refusal as refused; provider or execution failure as failed; genuine unresolved user judgment as judgment_required; and a validated zero-write stage result as ready. Do not collapse partial progress into success.",
+    "Keep pipeline-status, stage-1-init-idea, stage-2-formalize-thesis, stage-3-map-unknowns, stage-4a-prep-desktop-research, stage-4a-research-unknown, stage-4b-synthesize-evidence, stage-5-express-thesis, advance-or-kill, and graduate-pipeline-idea active and explicitly unmigrated until issues #67 and #68 replace their boundaries. This package does not reinterpret their legacy behavior or certify them for unattended use.",
+    "Retry only canonically identical aggregate input. The aggregate digest is the retry key. A changed input, source digest, stage result, authorization boundary, package binding, or adapter binding is a new evaluation, not a retry.",
+    "Unattended use is conditional only for read-only describe, evaluate, and validate modes. Any legacy stage with genuine judgment or writes remains ineligible, and all authorization or persistence remains interactive and stage-owned."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-point",
+        "category": "structural",
+        "description": "Exact Claude and Codex aggregate adapters are present in staged governed Provider Entry Points while legacy discovery remains unchanged.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "aggregate-lifecycle",
+        "category": "behavioural",
+        "description": "The result contract is bounded, deterministic, ordered, digest-bound, zero-write, and explicitly reports incomplete, unavailable, stale, refused, failed, judgment_required, and ready outcomes.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "dependency-composition",
+        "category": "behavioural",
+        "description": "Claims synthesis, research publication, and belief-research relation are resolved through exact Registry-locked contracts and existing validators without duplicated semantics or mutation authority.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "authority-and-delegation",
+        "category": "behavioural",
+        "description": "The aggregate has no database or operational authority and can name only the exact stage-owned publication or relation recorder behind its existing user authorization boundary.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "legacy-coexistence",
+        "category": "behavioural",
+        "description": "All legacy pipeline entry points remain active, discovery is unchanged, and every unmigrated boundary and unattended limitation is explicit.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "provider-semantic-equivalence",
+        "category": "semantic",
+        "description": "Exact Claude and Codex adapters preserve lifecycle, authority, provenance, judgment, stage delegation, unmigrated limitations, and zero-write semantics.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-environment",
+        "category": "environmental",
+        "description": "The repository runtime executes read-only describe/evaluate/validate modes while missing, stale, refused, failed, or unmigrated prerequisites remain explicit without writes.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "research-pipeline-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "research-pipeline-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "capability:scope:trade-journal/claims-synthesis",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    },
+    {
+      "id": "capability:scope:trade-journal/research-publication",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    },
+    {
+      "id": "capability:scope:trade-journal/belief-research-relation",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    }
+  ]
+}

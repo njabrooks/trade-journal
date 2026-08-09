@@ -1003,7 +1003,7 @@
     },
     {
       "id": "interactive-claude-pipeline-status",
-      "ability": "Summarize current research-pipeline ideas and kill-log patterns.",
+      "ability": "Coordinate the provider-neutral research-pipeline aggregate while reporting all legacy stages honestly.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -1013,46 +1013,57 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/pipeline-status/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/pipeline-status",
-        "unattended_eligibility": "eligible",
-        "rationale": "Read-only status reporting."
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "unattended_eligibility": "conditional",
+        "rationale": "The aggregate is read-only, but genuine stage judgment and every accepted write remain interactive and stage-owned."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Pipeline files and kill log.",
-        "writes": "No writes.",
-        "judgment": "Read-only status reporting."
+        "reads": "One explicit research insight and exact validated results from the Registry-locked claims-synthesis, research-publication, and belief-research-relation Capabilities.",
+        "writes": "None; the aggregate always returns writes: [] and only names stage-owned recorders behind exact user authorization.",
+        "judgment": "Reports genuine judgment as judgment_required and never authorizes, resolves, or persists it."
       },
       "prerequisites": [
         "Claude Code repository session",
-        "Shared research workspace."
+        "Exact Registry Lock and any supplied governed stage inputs."
       ],
       "limitations": [
-        "Pipeline files may contain legacy paths or stale stage conventions.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed aggregate adapter is staged; the legacy pipeline-status skill remains active and all ten legacy stage boundaries are explicitly unmigrated.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-09",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:473656a200911f733209c54096dd26e92d64406dc44245bb7f6b7b61dc2b8f94",
+        "adapter_digest": "sha256:5b566c010b0b6a6d0f8552198eb3cae769d68184be1533b70d8a176e21f07589",
+        "reason": "Exact current evidence binds the research-pipeline 1.0.0 aggregate and Claude adapter while legacy stages remain unmigrated."
       },
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "The aggregate adapter is current and staged; retain every legacy pipeline entry point until issues #67 and #68 migrate stage boundaries."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/pipeline-status/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-claude",
+        "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
@@ -2361,7 +2372,7 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "Seven Claude adapters now have exact current evidence across five governed Capabilities; the other 30 interactive entries remain unavailable until their J2 dispositions are completed."
+      "detail": "Thirteen Claude adapters now have exact current evidence across eleven governed Capabilities; the other 24 interactive entries remain unavailable until their J2 dispositions are completed."
     },
     {
       "id": "curated-codex-routing-omissions",

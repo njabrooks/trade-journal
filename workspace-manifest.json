@@ -88,6 +88,10 @@
       "path": "capabilities/research-publication/capability-package.json"
     },
     {
+      "id": "capability:scope:trade-journal/research-pipeline",
+      "path": "capabilities/research-pipeline/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/thesis-observation",
       "path": "capabilities/thesis-observation/capability-package.json"
     },
@@ -179,7 +183,7 @@
       "id": "headless-codex-pipeline-status",
       "capability": "capability:scope:trade-journal/research-pipeline",
       "provider": "codex",
-      "path": ".agents/skills/pipeline-status/SKILL.md"
+      "path": "capabilities/research-pipeline/adapters/codex.md"
     },
     {
       "id": "headless-codex-portfolio-and-options-mcp",
@@ -371,7 +375,7 @@
       "id": "interactive-claude-pipeline-status",
       "capability": "capability:scope:trade-journal/research-pipeline",
       "provider": "claude",
-      "path": ".claude/skills/pipeline-status/SKILL.md"
+      "path": "capabilities/research-pipeline/adapters/claude.md"
     },
     {
       "id": "interactive-claude-portfolio-and-options-mcp",
@@ -544,7 +548,7 @@
       },
       "generation_eligibility": {
         "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
-        "eligible_adapters": 2,
+        "eligible_adapters": 26,
         "governed_outputs": [
           "docs/agents/provider-entry-points/staging/claude.md",
           "docs/agents/provider-entry-points/staging/codex.md"

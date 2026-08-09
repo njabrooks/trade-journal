@@ -1,0 +1,47 @@
+{
+  "capability_id": "capability:scope:trade-journal/research-pipeline",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:473656a200911f733209c54096dd26e92d64406dc44245bb7f6b7b61dc2b8f94",
+  "adapter_id": "research-pipeline-codex",
+  "adapter_digest": "sha256:5a0369892a9bc7c2b2ad57c95bbe5fdc3b5e8297219b94a43ba1b86f3eb32b50",
+  "support_state": "current",
+  "validated_at": "2026-08-09",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and staged Provider Entry Point generation preserve the exact aggregate adapter beside active legacy entry points."
+    },
+    "aggregate-lifecycle": {
+      "status": "passed",
+      "method": "Repository contract and CLI tests prove the complete ordered lifecycle, seven explicit outcomes, bounded structures, canonical digest retry, deterministic regeneration, and aggregate writes []."
+    },
+    "dependency-composition": {
+      "status": "passed",
+      "method": "Repository tests compose the accepted claims-synthesis, research-publication, and belief-research-relation validators and exact immutable bindings without copying stage validators."
+    },
+    "authority-and-delegation": {
+      "status": "passed",
+      "method": "Repository tests prove zero aggregate writes, authority-expansion refusal, and exact naming of only publish-research.ts or record-belief-research-relation.ts behind stage-owned user authorization."
+    },
+    "legacy-coexistence": {
+      "status": "passed",
+      "method": "Inventory, discovery, and contract tests prove all ten legacy pipeline entry points remain active and explicitly unmigrated while only the new aggregate adapter is governed."
+    },
+    "provider-semantic-equivalence": {
+      "status": "passed",
+      "reviewer": "Issue #66 implementation review",
+      "method": "Compared exact Claude and Codex aggregate adapters with issues #66 and #46, accepted #59/#62/#63 packages, repository authority, and current legacy pipeline inventory; no live provider invocation was used.",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/66",
+      "expires_at": "2026-09-08"
+    },
+    "eligible-environment": {
+      "status": "passed",
+      "method": "The configured repository runtime completed read-only describe, evaluate, validation, refusal, and deterministic retry tests; unavailable or unmigrated stages perform no writes."
+    }
+  },
+  "limitations": [
+    "No live provider invocation or production-data mutation was used for evidence.",
+    "All ten legacy deep-dive pipeline entry points remain unmigrated pending issues #67 and #68.",
+    "The aggregate is read-only and cannot authorize or invoke a stage recorder."
+  ]
+}

@@ -1264,7 +1264,7 @@
     },
     {
       "id": "headless-codex-pipeline-status",
-      "ability": "Summarize current research-pipeline ideas and kill-log patterns.",
+      "ability": "Coordinate the provider-neutral research-pipeline aggregate while reporting all legacy stages honestly.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -1274,42 +1274,42 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/pipeline-status/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/pipeline-status/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/pipeline-status/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The staged governed adapter is conditionally eligible only for read-only aggregate describe, evaluate, and validate modes; the generic legacy preamble remains an unmigrated packaging baseline."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/pipeline-status/skill.json",
-        "unattended_eligibility": "eligible",
-        "rationale": "Read-only status reporting."
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "unattended_eligibility": "conditional",
+        "rationale": "Only aggregate read-only modes are eligible; genuine stage judgment and every accepted write remain interactive and stage-owned."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Pipeline files and kill log.",
-        "writes": "No writes.",
-        "judgment": "Read-only status reporting."
+        "reads": "One explicit research insight and exact validated results from the Registry-locked claims-synthesis, research-publication, and belief-research-relation Capabilities.",
+        "writes": "None; the aggregate always returns writes: [] and cannot invoke a stage recorder.",
+        "judgment": "Reports genuine judgment as judgment_required and never authorizes, resolves, or persists it."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Shared research workspace."
+        "Exact Registry Lock and any supplied governed stage inputs."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Pipeline files may contain legacy paths or stale stage conventions.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The generic pipeline-status preamble remains a packaging baseline and is not evidence for the governed aggregate adapter.",
+        "All ten legacy stage boundaries remain active and explicitly unmigrated pending issues #67 and #68.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1317,19 +1317,30 @@
       "operational_risk": {
         "level": "low",
         "priority": null,
-        "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
+        "rationale": "No live scheduled consumer and no write authority; genuine judgment and stage persistence are prohibited."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-09",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:473656a200911f733209c54096dd26e92d64406dc44245bb7f6b7b61dc2b8f94",
+        "adapter_digest": "sha256:5a0369892a9bc7c2b2ad57c95bbe5fdc3b5e8297219b94a43ba1b86f3eb32b50",
+        "reason": "Exact current evidence binds the research-pipeline 1.0.0 aggregate and Codex adapter while legacy stages remain unmigrated."
       },
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "The aggregate adapter is current and staged; retain every legacy pipeline entry point until issues #67 and #68 migrate stage boundaries."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/pipeline-status/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-codex",
+        "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -2912,7 +2923,7 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "Seven Codex adapters now have exact current evidence across five governed Capabilities; the other 29 headless entries remain unavailable until their J2 dispositions are completed."
+      "detail": "Thirteen Codex adapters now have exact current evidence across eleven governed Capabilities; the other 23 headless entries remain unavailable until their J2 dispositions are completed."
     },
     {
       "id": "generic-contract-readiness",
