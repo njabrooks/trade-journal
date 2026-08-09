@@ -122,6 +122,21 @@
       }
     },
     {
+      "id": "capability:scope:trade-journal/research-pipeline",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/research-pipeline",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "7d7b10b3a3d978f808de3bcff186f9e9f313146c"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/thesis-observation",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",
