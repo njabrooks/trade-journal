@@ -1694,7 +1694,7 @@
     },
     {
       "id": "headless-codex-relate-research",
-      "ability": "Relate new investment claims to active theses by bearing.",
+      "ability": "Prepare and validate direct semantic-bearing recommendations while refusing unattended relation or Decision Item persistence.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/belief-research-relation",
@@ -1704,42 +1704,41 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/relate-research/SKILL.md"
+        "path": "capabilities/belief-research-relation/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/relate-research/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/relate-research/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/relate-research/HEADLESS_PREAMBLE.md",
+        "readiness": "Bespoke contract permits only repository-owned preparation and recommendation validation; authorization and every write remain ineligible."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/relate-research/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "May auto-link clear matches; ambiguous or refuting evidence becomes a decision."
+        "rationale": "Unattended use may prepare and validate only; exact relation and Decision Item persistence requires explicit current-user judgment."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Tana-promoted claims and active theses.",
-        "writes": "Clear claim links and Decision Items through governed scripts.",
-        "judgment": "May auto-link clear matches; ambiguous or refuting evidence becomes a decision."
+        "reads": "One complete Notes-owned research insight, the complete promoted-claim identity catalog, developing and monitoring thesis arguments, and existing governed relationships through approved repository helpers.",
+        "writes": "No unattended writes. Interactive authorized persistence is bounded to exact claim_thesis_mappings, unresolved Decision Item journal_entries, and one journal audit through scripts/ops/record-belief-research-relation.ts.",
+        "judgment": "Headless execution must preserve explicit ambiguity and cannot create authorization, persist a link or Decision Item, or resolve judgment."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Trade Journal database helpers and Notes-owned claim provenance."
+        "Published Registry Lock, complete Notes-owned provenance, current repository reads, and supplied recommendation-only provider output; authorization and persistence are unavailable headlessly."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Cross-repository source availability and ambiguity constrain unattended execution.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The bespoke preamble permits preparation and validation only and forbids authorization or persistence.",
+        "No live provider invocation or production write was used as evidence; active discovery and operational state remain unchanged."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1750,16 +1749,27 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-09",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:b5ff8f5a7111576fd3d1527c668c40f0ab7a54e50df4f767db71e11a5b53cf86",
+        "adapter_digest": "sha256:95a47ae063407fec87fb24cb634089093f8b0b7c6da7921c7702a7de1561bf35",
+        "reason": "Exact current evidence is bound to belief-research-relation 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the canonical headless mirror as a preparation-only migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/relate-research/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-research-relation/capability-package.json",
+        "adapter_id": "belief-research-relation-codex",
+        "evidence_path": "capabilities/belief-research-relation/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {

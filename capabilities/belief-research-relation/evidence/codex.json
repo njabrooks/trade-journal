@@ -1,0 +1,19 @@
+{
+  "capability_id": "capability:scope:trade-journal/belief-research-relation",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:b5ff8f5a7111576fd3d1527c668c40f0ab7a54e50df4f767db71e11a5b53cf86",
+  "adapter_id": "belief-research-relation-codex",
+  "adapter_digest": "sha256:95a47ae063407fec87fb24cb634089093f8b0b7c6da7921c7702a7de1561bf35",
+  "support_state": "current",
+  "validated_at": "2026-08-09",
+  "results": {
+    "adapter-entry-point": { "status": "passed", "method": "Accepted Workspace CLI Capability validation and byte-identical staged Provider Entry Point generation" },
+    "repository-read-contract": { "status": "passed", "method": "Repository behavioral tests prove complete Notes-owned Toulmin input, exact promoted-claim identity, developing and monitoring thesis arguments, existing relationships, deterministic digests, approved reads only, and unavailable, malformed, stale, or authority-ambiguous refusal" },
+    "semantic-bearing-and-provenance": { "status": "passed", "method": "Repository contract tests prove exact provenance reuse regardless of lifecycle status, duplicate and ambiguous identity refusal, bounded complete coverage, exact anchors, and explicit rejection of holdings, ticker overlap, keyword overlap, and provider recommendation as semantic proof" },
+    "decision-boundary": { "status": "passed", "method": "Repository contract and recorder tests prove claim-identity and thesis-bearing ambiguity remains explicit, authorized Decision Items are inserted unresolved with resolution null, and no Decision Item can be silently resolved" },
+    "atomic-recorder": { "status": "passed", "method": "Repository recorder and production-adapter tests prove exact two-table routing, user-only authorization, serializable transaction and lock, current-state revalidation, exact relationship reuse, idempotent retry, safe race retry, complete digest-bound audit, and rollback after injected partial failure" },
+    "authority-boundary": { "status": "passed", "method": "Repository CLI, contract, adapter, and recorder tests prove refusal of main-claim creation, status or Decision Item resolution, strategies, positions, trades, direct APIs, Supabase MCP, ad-hoc SQL, generic writes, schedulers, credentials, provider discovery, and active cutover" },
+    "provider-semantic-equivalence": { "status": "passed", "reviewer": "Issue #59 implementation review", "method": "Compared the exact Codex adapter with issue #59, parent #46, predecessor #47, accepted claims-synthesis and research-publication contracts, CONTEXT.md, canonical relate-research intent, and Notes/Trade Journal authority; representative output was used without live provider invocation and is bound to exact adapter bytes", "evidence_link": "https://github.com/njabrooks/trade-journal/issues/59", "expires_at": "2026-09-08" },
+    "eligible-environment": { "status": "passed", "method": "The configured repository runtime completed non-mutating CLI help, focused preparation/refusal validation, controlled-memory transaction tests, and production-adapter routing tests on 2026-08-09; missing database, source, provider, authorization, or sandbox prerequisites remain explicit unavailable or refused outcomes" }
+  }
+}
