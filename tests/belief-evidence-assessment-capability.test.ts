@@ -9,6 +9,7 @@ const capabilityRoot = resolve(
   'capabilities/belief-evidence-assessment',
 );
 const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
+const workspaceEvidenceTime = process.env.WORKSPACE_EVIDENCE_TIME ?? '2026-08-09';
 const governanceIt = workspaceRoot ? it : it.skip;
 
 function read(path: string): string {
@@ -81,7 +82,7 @@ describe('belief-evidence-assessment Capability', () => {
         'capability',
         'capabilities/belief-evidence-assessment',
         '--evidence-time',
-        '2026-08-08',
+        workspaceEvidenceTime,
         '--format',
         'json',
       ],
@@ -100,7 +101,7 @@ describe('belief-evidence-assessment Capability', () => {
         '--mode',
         'published',
         '--evidence-time',
-        '2026-08-08',
+        workspaceEvidenceTime,
         '--format',
         'json',
       ],

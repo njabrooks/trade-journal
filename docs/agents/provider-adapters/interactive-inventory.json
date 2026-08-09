@@ -1338,7 +1338,7 @@
     },
     {
       "id": "interactive-claude-relate-research",
-      "ability": "Relate new investment claims to active theses by bearing.",
+      "ability": "Prepare, authorize, and record exact existing-claim relationships to developing or monitoring theses by direct semantic bearing.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/belief-research-relation",
@@ -1348,47 +1348,58 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/relate-research/SKILL.md"
+        "path": "capabilities/belief-research-relation/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/relate-research",
-        "unattended_eligibility": "conditional",
-        "rationale": "May auto-link clear matches; ambiguous or refuting evidence becomes a decision."
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Exact relation and Decision Item persistence requires a current user's explicit judgment; preparation remains non-mutating."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Tana-promoted claims and active theses.",
-        "writes": "Clear claim links and Decision Items through governed scripts.",
-        "judgment": "May auto-link clear matches; ambiguous or refuting evidence becomes a decision."
+        "reads": "One complete Notes-owned research insight, the complete promoted-claim identity catalog, developing and monitoring thesis arguments, and existing governed relationships through approved repository helpers.",
+        "writes": "Only exact accepted claim_thesis_mappings, unresolved Decision Item journal_entries, and one journal audit through scripts/ops/record-belief-research-relation.ts under a short-lived user token.",
+        "judgment": "The user must explicitly accept exact relation and Decision Item IDs; the adapter cannot infer semantic bearing, fabricate authority, or resolve a Decision Item."
       },
       "prerequisites": [
         "Claude Code repository session",
-        "Trade Journal database helpers and Notes-owned claim provenance."
+        "Published Registry Lock, complete Notes-owned provenance, current repository reads, validated provider output, and explicit user authorization for persistence."
       ],
       "limitations": [
-        "Cross-repository source availability and ambiguity constrain unattended execution.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "Unattended execution cannot authorize or persist relationships or Decision Items.",
+        "No live provider invocation or production write was used as evidence; active discovery and operational state remain unchanged."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent",
         "/maintenance orchestrator, including scripts/cron/maintenance.sh"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-09",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:cb22d7d213b258674df7990a78c75362a9a271def943929a8ee01636f53406f8",
+        "adapter_digest": "sha256:f6b73f31596b71532b45d4a37512b3251ec615053ff2e7bc1b974df75126994a",
+        "reason": "Exact current evidence is bound to belief-research-relation 1.0.0 and the governed Claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the canonical interactive skill as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/relate-research/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/belief-research-relation/capability-package.json",
+        "adapter_id": "belief-research-relation-claude",
+        "evidence_path": "capabilities/belief-research-relation/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {

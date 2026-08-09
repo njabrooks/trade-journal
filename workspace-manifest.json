@@ -64,6 +64,10 @@
       "path": "capabilities/belief-maintenance/capability-package.json"
     },
     {
+      "id": "capability:scope:trade-journal/belief-research-relation",
+      "path": "capabilities/belief-research-relation/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/claims-synthesis",
       "path": "capabilities/claims-synthesis/capability-package.json"
     },
@@ -211,7 +215,7 @@
       "id": "headless-codex-relate-research",
       "capability": "capability:scope:trade-journal/belief-research-relation",
       "provider": "codex",
-      "path": ".agents/skills/relate-research/SKILL.md"
+      "path": "capabilities/belief-research-relation/adapters/codex.md"
     },
     {
       "id": "headless-codex-stage-1-init-idea",
@@ -403,7 +407,7 @@
       "id": "interactive-claude-relate-research",
       "capability": "capability:scope:trade-journal/belief-research-relation",
       "provider": "claude",
-      "path": ".claude/skills/relate-research/SKILL.md"
+      "path": "capabilities/belief-research-relation/adapters/claude.md"
     },
     {
       "id": "interactive-claude-stage-1-init-idea",

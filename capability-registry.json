@@ -32,6 +32,21 @@
       }
     },
     {
+      "id": "capability:scope:trade-journal/belief-research-relation",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/belief-research-relation",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "d26eb40ff3a56d32decb8d96e3a65276bd4d18d1"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/claims-synthesis",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",

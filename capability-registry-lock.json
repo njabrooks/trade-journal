@@ -72,6 +72,47 @@
     {
       "approved_version": "1.0.0",
       "authority": "scope:trade-journal",
+      "dependencies": [
+        {
+          "id": "capability:scope:trade-journal/claims-synthesis",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        },
+        {
+          "id": "capability:scope:trade-journal/research-publication",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        }
+      ],
+      "id": "capability:scope:trade-journal/belief-research-relation",
+      "package_digest": "sha256:cb22d7d213b258674df7990a78c75362a9a271def943929a8ee01636f53406f8",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "belief-research-relation-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-09"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "belief-research-relation-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-09"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/belief-research-relation",
+        "release_reference": "d26eb40ff3a56d32decb8d96e3a65276bd4d18d1",
+        "revision": "d26eb40ff3a56d32decb8d96e3a65276bd4d18d1"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
       "dependencies": [],
       "id": "capability:scope:trade-journal/claims-synthesis",
       "package_digest": "sha256:33b24164d37a548e5b5683694c375f724f5e8c756d7a366d48ca923c4461d942",
@@ -321,10 +362,10 @@
       }
     }
   ],
-  "evidence_time": "2026-08-08",
+  "evidence_time": "2026-08-09",
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:c2c9fe2c28dd2e2c79d8a280dc5939029896a22c5d550a87f32043f863f67e45",
+  "registry_digest": "sha256:64918cc205bf542e7ab9981da315bebf04cabfe214a848fae7da3ddb05133bcf",
   "schema_version": "1.0.0"
 }

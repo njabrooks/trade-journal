@@ -8,6 +8,7 @@ import { digestClaimsSynthesisContext } from '../src/lib/intelligence/claimsSynt
 
 const capabilityRoot = resolve(process.cwd(), 'capabilities/research-publication');
 const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
+const workspaceEvidenceTime = process.env.WORKSPACE_EVIDENCE_TIME ?? '2026-08-09';
 const governanceIt = workspaceRoot ? it : it.skip;
 
 function read(path: string): string {
@@ -169,7 +170,7 @@ describe('research-publication Capability', () => {
   governanceIt('validates the exact package through the accepted public Workspace CLI', () => {
     const report = JSON.parse(spawnSync('./workspace', [
       'validate', 'capability', 'capabilities/research-publication',
-      '--evidence-time', '2026-08-08', '--format', 'json',
+      '--evidence-time', workspaceEvidenceTime, '--format', 'json',
     ], {
       cwd: process.cwd(), encoding: 'utf8',
       env: { ...process.env, WORKSPACE_REPOSITORY_ROOT: workspaceRoot },

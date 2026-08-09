@@ -9,6 +9,7 @@ const capabilityRoot = resolve(
   "capabilities/thesis-underwriting",
 );
 const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
+const workspaceEvidenceTime = process.env.WORKSPACE_EVIDENCE_TIME ?? "2026-08-09";
 const governanceIt = workspaceRoot ? it : it.skip;
 
 function read(path: string): string {
@@ -97,7 +98,7 @@ describe("thesis-underwriting Capability", () => {
           "capability",
           "capabilities/thesis-underwriting",
           "--evidence-time",
-          "2026-08-08",
+          workspaceEvidenceTime,
           "--format",
           "json",
         ],
@@ -118,7 +119,7 @@ describe("thesis-underwriting Capability", () => {
           "--mode",
           "published",
           "--evidence-time",
-          "2026-08-08",
+          workspaceEvidenceTime,
           "--format",
           "json",
         ],
