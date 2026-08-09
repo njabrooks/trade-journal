@@ -301,8 +301,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/research-pipeline",
-        "release_reference": "7d7b10b3a3d978f808de3bcff186f9e9f313146c",
-        "revision": "7d7b10b3a3d978f808de3bcff186f9e9f313146c"
+        "release_reference": "5588a1c272f800493d8b4da1e87de3aeba0b1ea0",
+        "revision": "5588a1c272f800493d8b4da1e87de3aeba0b1ea0"
       }
     },
     {
@@ -411,6 +411,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:cb0c9eaba216f03033cfb8b48a542fe15f49f5325a8e820b5ffdccff9f85afff",
+  "registry_digest": "sha256:2cafa920b31975018e4c1e066f6fcb3e9b8faae5e7b4fab84a575faf26a1d9e0",
   "schema_version": "1.0.0"
 }

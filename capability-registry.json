@@ -129,7 +129,7 @@
       "approved_version": "1.0.0",
       "release": {
         "source": ".",
-        "revision": "7d7b10b3a3d978f808de3bcff186f9e9f313146c"
+        "revision": "5588a1c272f800493d8b4da1e87de3aeba0b1ea0"
       },
       "development": {
         "enabled": true,

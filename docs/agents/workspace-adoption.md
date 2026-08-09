@@ -154,7 +154,7 @@ exact adapter bytes; no live provider invocation, production write, scheduler, c
 operational cutover occurred.
 
 Issue #66 adds the source-owned research-pipeline aggregate Capability at immutable revision
-`7d7b10b3a3d978f808de3bcff186f9e9f313146c`. It composes the Registry-locked
+`5588a1c272f800493d8b4da1e87de3aeba0b1ea0`. It composes the Registry-locked
 claims-synthesis, research-publication, and belief-research-relation contracts through their existing validators;
 it neither reimplements stage semantics nor acquires their mutation authority. The complete provider-neutral
 lifecycle reports bounded `incomplete`, `unavailable`, `stale`, `refused`, `failed`, `judgment_required`, and
