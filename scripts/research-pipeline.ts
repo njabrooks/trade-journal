@@ -30,7 +30,7 @@ function argument(args: string[], option: string): string {
   return value;
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   if (args.length === 0 || args.includes('--help')) {
     process.stdout.write(HELP);
@@ -58,9 +58,7 @@ function main(): void {
   throw new Error('Exactly one of --describe, --evaluate, or --validate-result is required');
 }
 
-try {
-  main();
-} catch (error) {
+main().catch((error: unknown) => {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
-}
+});

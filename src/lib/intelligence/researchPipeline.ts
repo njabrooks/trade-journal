@@ -51,6 +51,9 @@ const GOVERNED_DEPENDENCIES = new Map<ResearchPipelineStage, string>([
   ['research_publication', 'capability:scope:trade-journal/research-publication'],
   ['belief_research_relation', 'capability:scope:trade-journal/belief-research-relation'],
 ]);
+const MAX_DETAIL_LENGTH = 1000;
+const MAX_LIMITATION_LENGTH = 500;
+const MAX_LIMITATIONS_TOTAL_LENGTH = 4000;
 
 export interface ResearchPipelineAggregateInput {
   insightId: string;
@@ -161,8 +164,9 @@ function validateDependencyInput(
   const status = dependency.status;
   if (status === 'unavailable' || status === 'stale' || status === 'refused' || status === 'failed') {
     exactKeys(dependency, path, ['status', 'detail']);
-    if (typeof dependency.detail !== 'string' || dependency.detail.length === 0) {
-      throw new Error(`${path}.detail must be a non-empty string`);
+    if (typeof dependency.detail !== 'string' || dependency.detail.length === 0
+      || dependency.detail.length > MAX_DETAIL_LENGTH) {
+      throw new Error(`${path}.detail must be a bounded non-empty string`);
     }
     return;
   }
@@ -236,7 +240,8 @@ export function validateResearchPipelineAggregateResult(
     || result.stageOutcomes.length !== RESEARCH_PIPELINE_STAGE_ORDER.length) {
     throw new Error('result.stageOutcomes must contain the complete bounded lifecycle');
   }
-  result.stageOutcomes.forEach((candidate, index) => {
+  const stageOutcomeValues = result.stageOutcomes as unknown[];
+  stageOutcomeValues.forEach((candidate, index) => {
     const stage = objectAt(candidate, `result.stageOutcomes[${index}]`);
     const allowed = [
       'stage', 'status', 'migration', 'capabilityId', 'detail', 'writes', 'delegatedWrite',
@@ -248,6 +253,10 @@ export function validateResearchPipelineAggregateResult(
     }
     if (!RESEARCH_PIPELINE_OUTCOME_STATUSES.has(stage.status as ResearchPipelineOutcomeStatus)) {
       throw new Error(`result.stageOutcomes[${index}].status is unsupported`);
+    }
+    if (typeof stage.detail !== 'string' || stage.detail.length === 0
+      || stage.detail.length > MAX_DETAIL_LENGTH) {
+      throw new Error(`result.stageOutcomes[${index}].detail must be bounded and non-empty`);
     }
     const expectedCapabilityId = GOVERNED_DEPENDENCIES.get(stage.stage as ResearchPipelineStage) ?? null;
     if (stage.capabilityId !== expectedCapabilityId
@@ -282,6 +291,33 @@ export function validateResearchPipelineAggregateResult(
         || delegated.requiresExactUserAuthorization !== true) {
         throw new Error(`result.stageOutcomes[${index}].delegatedWrite expands aggregate authority`);
       }
+      if (stage.status !== 'judgment_required') {
+        throw new Error(`result.stageOutcomes[${index}] delegation requires judgment_required`);
+      }
+    }
+    const hasBinding = stage.binding !== undefined;
+    const hasDelegation = stage.delegatedWrite !== null;
+    if (!expectedCapabilityId) {
+      if (stage.status !== 'incomplete' || hasBinding || hasDelegation) {
+        throw new Error(`result.stageOutcomes[${index}] must honestly report an unmigrated stage`);
+      }
+    } else if (stage.stage === 'claims_synthesis') {
+      if ((stage.status === 'ready') !== hasBinding || hasDelegation
+        || stage.status === 'judgment_required') {
+        throw new Error(`result.stageOutcomes[${index}] has an invalid claims-synthesis state`);
+      }
+    } else if (stage.stage === 'research_publication') {
+      if (stage.status === 'ready'
+        || (stage.status === 'judgment_required') !== (hasBinding && hasDelegation)
+        || (stage.status !== 'judgment_required' && (hasBinding || hasDelegation))) {
+        throw new Error(`result.stageOutcomes[${index}] has an invalid research-publication state`);
+      }
+    } else if (stage.stage === 'belief_research_relation') {
+      const resolved = stage.status === 'ready' || stage.status === 'judgment_required';
+      if (resolved !== hasBinding
+        || (stage.status === 'judgment_required') !== hasDelegation) {
+        throw new Error(`result.stageOutcomes[${index}] has an invalid belief-research-relation state`);
+      }
     }
   });
   const execution = objectAt(result.execution, 'result.execution');
@@ -291,8 +327,18 @@ export function validateResearchPipelineAggregateResult(
   }
   emptyWrites(execution.writes, 'result.execution');
   if (!Array.isArray(result.limitations) || result.limitations.length > 12
-    || !result.limitations.every((limitation) => typeof limitation === 'string' && limitation.length > 0)) {
+    || !result.limitations.every((limitation) => typeof limitation === 'string'
+      && limitation.length > 0 && limitation.length <= MAX_LIMITATION_LENGTH)
+    || result.limitations.reduce((total, limitation) => total + (limitation as string).length, 0)
+      > MAX_LIMITATIONS_TOTAL_LENGTH) {
     throw new Error('result.limitations must be a bounded non-empty string array');
+  }
+  const derivedStatus = (['failed', 'refused', 'stale', 'unavailable'] as const)
+    .find((status) => stageOutcomeValues.some((outcome) => (
+      objectAt(outcome, 'result.stageOutcome').status === status
+    ))) ?? 'incomplete';
+  if (result.status !== derivedStatus) {
+    throw new Error('result.status does not match the derived aggregate status');
   }
   const expectedDigest = digest({
     contractVersion: '1.0.0',
@@ -397,9 +443,15 @@ export function buildResearchPipelineAggregate(
   const relation = input.dependencies.beliefResearchRelation;
   if (relation && (relation.status === 'ready' || relation.status === 'judgment_required')) {
     const outcome = byStage.get('belief_research_relation')!;
-    try {
+    if (!claims || claims.status !== 'ready' || byStage.get('claims_synthesis')!.status !== 'ready') {
+      outcome.detail = 'Blocked until the exact claims-synthesis dependency is ready.';
+    } else try {
       const context = validateBeliefResearchRelationContext(relation.context);
       const validated = validateBeliefResearchRelationResult(context, relation.result);
+      if (digest({ source: context.source, sourceEvidence: context.sourceEvidence })
+        !== digest({ source: claims.context.source, sourceEvidence: claims.context.sourceEvidence })) {
+        throw new Error('belief-research-relation provenance and Toulmin source digest is stale');
+      }
       outcome.status = relation.status;
       outcome.detail = relation.status === 'ready'
         ? 'The exact Registry-locked belief-research-relation result is valid and recommendation-only.'

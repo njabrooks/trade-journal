@@ -58,14 +58,15 @@ describe('research-pipeline aggregate contract', () => {
       context: ClaimsSynthesisContext;
       claimsSynthesisResult: ClaimsSynthesisReadyResult;
     };
-    publication.claimsSynthesisResult.contextDigest = digestClaimsSynthesisContext(publication.context);
-
     const relation = fixture('belief-research-relation-adapter-equivalence.json') as {
       context: BeliefResearchRelationContext & {
         thesisTargets: Array<{ argument: Record<string, unknown> }>;
       };
       result: BeliefResearchRelationReadyResult;
     };
+    publication.context.source = structuredClone(relation.context.source);
+    publication.context.sourceEvidence = structuredClone(relation.context.sourceEvidence);
+    publication.claimsSynthesisResult.contextDigest = digestClaimsSynthesisContext(publication.context);
     const argument = relation.context.thesisTargets[0].argument;
     argument.digest = digest({
       coreArgument: argument.coreArgument,
@@ -175,6 +176,27 @@ describe('research-pipeline aggregate contract', () => {
       execution: { mode: 'aggregate_coordination_only', writes: ['main_claims'] },
     })).toThrow(/writes must be empty/i);
 
+    expect(() => validateResearchPipelineAggregateResult({
+      ...result,
+      status: 'ready',
+    })).toThrow(/derived aggregate status/i);
+
+    const forgedDelegation = structuredClone(result);
+    const publication = forgedDelegation.stageOutcomes.find(({ stage }) => stage === 'research_publication')!;
+    publication.status = 'ready';
+    publication.delegatedWrite = {
+      capabilityId: 'capability:scope:trade-journal/research-publication',
+      operation: 'scripts/ops/publish-research.ts --stdin',
+      requiresExactUserAuthorization: true,
+    };
+    forgedDelegation.aggregateDigest = digest({
+      contractVersion: '1.0.0', insightId: forgedDelegation.insightId,
+      stageOutcomes: forgedDelegation.stageOutcomes,
+    });
+    forgedDelegation.retry.key = forgedDelegation.aggregateDigest;
+    expect(() => validateResearchPipelineAggregateResult(forgedDelegation))
+      .toThrow(/delegation requires judgment_required/i);
+
     expect(() => validateResearchPipelineAggregateInput({
       insightId: result.insightId,
       dependencies: {},
@@ -186,6 +208,57 @@ describe('research-pipeline aggregate contract', () => {
         claimsSynthesis: { status: 'ready', context: {}, result: {}, publish: true },
       },
     })).toThrow(/unsupported fields/i);
+    expect(() => validateResearchPipelineAggregateInput({
+      insightId: result.insightId,
+      dependencies: {
+        claimsSynthesis: { status: 'failed', detail: 'x'.repeat(1001) },
+      },
+    })).toThrow(/bounded non-empty string/i);
+
+    const unbounded = structuredClone(result);
+    unbounded.stageOutcomes[0].detail = 'x'.repeat(1001);
+    unbounded.aggregateDigest = digest({
+      contractVersion: '1.0.0', insightId: unbounded.insightId,
+      stageOutcomes: unbounded.stageOutcomes,
+    });
+    unbounded.retry.key = unbounded.aggregateDigest;
+    expect(() => validateResearchPipelineAggregateResult(unbounded)).toThrow(/detail must be bounded/i);
+  });
+
+  it('refuses provenance or Toulmin drift between composed governed stages', () => {
+    const publication = fixture('research-publication-adapter-equivalence.json') as {
+      context: ClaimsSynthesisContext;
+      claimsSynthesisResult: ClaimsSynthesisReadyResult;
+    };
+    publication.claimsSynthesisResult.contextDigest = digestClaimsSynthesisContext(publication.context);
+    const relation = fixture('belief-research-relation-adapter-equivalence.json') as {
+      context: BeliefResearchRelationContext & { thesisTargets: Array<{ argument: Record<string, unknown> }> };
+      result: BeliefResearchRelationReadyResult;
+    };
+    const argument = relation.context.thesisTargets[0].argument;
+    argument.digest = digest({
+      coreArgument: argument.coreArgument, keyAssumptions: argument.keyAssumptions,
+      keyDrivers: argument.keyDrivers, source: argument.source,
+    });
+    relation.result.contextDigest = digestBeliefResearchRelationContext(
+      validateBeliefResearchRelationContext(relation.context),
+    );
+
+    const result = buildResearchPipelineAggregate({
+      insightId: publication.context.source.insightId,
+      dependencies: {
+        claimsSynthesis: { status: 'ready', context: publication.context, result: publication.claimsSynthesisResult },
+        researchPublication: {
+          status: 'judgment_required', context: publication.context,
+          claimsSynthesisResult: publication.claimsSynthesisResult,
+        },
+        beliefResearchRelation: { status: 'ready', context: relation.context, result: relation.result },
+      },
+    });
+
+    expect(result.stageOutcomes.find(({ stage }) => stage === 'belief_research_relation')).toMatchObject({
+      status: 'stale', delegatedWrite: null,
+    });
   });
 
   it('refuses publication material that is not the exact validated claims-synthesis output', () => {
