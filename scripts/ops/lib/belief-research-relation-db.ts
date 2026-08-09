@@ -47,7 +47,7 @@ function mappingRecord(
 }
 
 function decisionRecord(row: {
-  id: string; objectId: string; objectTitle: string | null; metadata: unknown;
+  id: string; objectType: string; objectId: string; objectTitle: string | null; metadata: unknown;
   status: string | null; timestamp: Date;
 }): BeliefResearchRelationDecisionRecord {
   if (!row.metadata || typeof row.metadata !== 'object' || Array.isArray(row.metadata)) {
@@ -59,9 +59,13 @@ function decisionRecord(row: {
     || row.status !== 'active') {
     throw new Error(`Decision Item ${row.id} is not an unresolved governed packet`);
   }
+  if (!['claim', 'macro_thesis', 'asset_thesis'].includes(row.objectType)) {
+    throw new Error(`Decision Item ${row.id} has unsupported object authority`);
+  }
   return {
     id: row.id, decisionId: metadata.decisionId, actionType: 'decision_required',
-    objectType: 'claim', objectId: row.objectId, objectTitle: row.objectTitle ?? '',
+    objectType: row.objectType as BeliefResearchRelationDecisionRecord['objectType'],
+    objectId: row.objectId, objectTitle: row.objectTitle ?? '',
     packet, metadata, status: 'active', recordedAt: row.timestamp,
   };
 }
@@ -166,7 +170,8 @@ export function createBeliefResearchRelationDatabaseStore(db: Database): BeliefR
               },
               async loadDecisionItem(decisionId) {
                 const rows = await raw.select({
-                  id: journalEntries.id, objectId: journalEntries.objectId,
+                  id: journalEntries.id, objectType: journalEntries.objectType,
+                  objectId: journalEntries.objectId,
                   objectTitle: journalEntries.objectTitle, metadata: journalEntries.metadata,
                   status: journalEntries.status, timestamp: journalEntries.timestamp,
                 }).from(journalEntries).where(and(
@@ -178,7 +183,7 @@ export function createBeliefResearchRelationDatabaseStore(db: Database): BeliefR
               },
               async insertDecisionItem(row) {
                 const [inserted] = await raw.insert(journalEntries).values({
-                  timestamp: row.recordedAt, objectType: 'claim', objectId: row.objectId,
+                  timestamp: row.recordedAt, objectType: row.objectType, objectId: row.objectId,
                   objectTitle: row.objectTitle, actionType: 'decision_required',
                   actionDescription: row.packet.why_raised, skillInvoked: 'belief-research-relation',
                   newState: { decision: row.packet }, rationale: row.packet.why_raised,
@@ -191,7 +196,7 @@ export function createBeliefResearchRelationDatabaseStore(db: Database): BeliefR
               },
               async insertAuditEntry(row) {
                 const firstClaimId = row.snapshot.acceptedRelationships[0]?.recordedMapping.mainClaimId
-                  ?? row.snapshot.surfacedDecisions[0]?.decisionItem.objectId;
+                  ?? row.snapshot.surfacedDecisions[0]?.candidate.candidateMainClaimIds[0];
                 if (!firstClaimId) throw new Error('Belief-research relation audit requires a claim anchor');
                 const [inserted] = await raw.insert(journalEntries).values({
                   timestamp: row.recordedAt, objectType: 'claim', objectId: firstClaimId,

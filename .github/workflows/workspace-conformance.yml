@@ -25,7 +25,9 @@ on:
       - "tests/belief-evidence-assessment-recorder.test.ts"
       - "tests/claims-synthesis-*.test.ts"
       - "tests/research-publication-*.test.ts"
+      - "tests/belief-research-relation-*.test.ts"
       - "src/lib/intelligence/researchPublication*.ts"
+      - "src/lib/intelligence/beliefResearchRelation*.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -60,7 +62,9 @@ on:
       - "tests/belief-evidence-assessment-recorder.test.ts"
       - "tests/claims-synthesis-*.test.ts"
       - "tests/research-publication-*.test.ts"
+      - "tests/belief-research-relation-*.test.ts"
       - "src/lib/intelligence/researchPublication*.ts"
+      - "src/lib/intelligence/beliefResearchRelation*.ts"
       - "AGENTS.md"
       - "CLAUDE.md"
       - "CONTEXT.md"
@@ -81,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      WORKSPACE_LOCK_EVIDENCE_TIME: "2026-08-08"
+      WORKSPACE_LOCK_EVIDENCE_TIME: "2026-08-09"
       WORKSPACE_REPOSITORY_ROOT: ${{ github.workspace }}/.workspace-standard
     steps:
       - name: Check out Trade Journal

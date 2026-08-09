@@ -172,7 +172,7 @@ describe('belief-research-relation contract', () => {
             connection: 'TSM appears in both records.',
           },
         }],
-      } as never)).toThrow(/direct semantic-bearing proof/i);
+      } as never)).toThrow(/direct[_ -]semantic/i);
     }
   });
 
@@ -185,7 +185,7 @@ describe('belief-research-relation contract', () => {
       sourceEvidence: [{ insightId: INSIGHT_ID, sourceClaimId: 'claim-1' }],
       relations: [{
         relationId: `relation:claim-1:asset:${DEVELOPING_THESIS_ID}`,
-        sourceClaimId: 'claim-1', mainClaimRef: 'synthesized:claim-1',
+        sourceClaimId: 'claim-1', mainClaimRef: '77777777-7777-4777-8777-777777777777',
         claimDisposition: 'publication_required' as const, thesisId: DEVELOPING_THESIS_ID,
         thesisType: 'asset' as const, relationship: 'supports' as const, confidence: 'high' as const,
         rationale: 'Invented duplicate.',
@@ -238,7 +238,7 @@ describe('belief-research-relation contract', () => {
       sourceEvidence: [{ insightId: INSIGHT_ID, sourceClaimId: 'claim-1' }],
       relations: [{
         relationId: `relation:claim-1:asset:${DEVELOPING_THESIS_ID}`,
-        sourceClaimId: 'claim-1', mainClaimRef: 'authority-approved:claim-1',
+        sourceClaimId: 'claim-1', mainClaimRef: '77777777-7777-4777-8777-777777777777',
         claimDisposition: 'publication_required', thesisId: DEVELOPING_THESIS_ID, thesisType: 'asset',
         relationship: 'supports', confidence: 'high', rationale: 'Not yet published.',
         bearingProof: { kind: 'direct_semantic_bearing', claimAnchor: input.source.claims[0].claim,
@@ -272,10 +272,53 @@ describe('belief-research-relation contract', () => {
       ...base, relations: [relation, { ...relation, relationId: `${relation.relationId}:duplicate` }],
     })).toThrow(/duplicate logical relationship/i);
     expect(() => validateBeliefResearchRelationResult(context, {
+      ...base,
+      relations: [relation, {
+        ...relation, relationId: relation.relationId, thesisId: MONITORING_THESIS_ID,
+        thesisType: 'macro',
+        bearingProof: {
+          ...relation.bearingProof,
+          thesisAnchor: input.repository.theses[1].argument.coreArgument,
+        },
+      }],
+    })).toThrow(/relationId.*unique/i);
+    expect(() => validateBeliefResearchRelationResult(context, {
       ...base, relations: Array.from({ length: 6 }, (_, index) => ({
-        ...relation, relationId: `${relation.relationId}:${index}`, thesisId: `${index}`,
+        ...relation, relationId: `${relation.relationId}:${index}`,
       })),
     })).toThrow(/five-relations-per-claim|five relations per source claim/i);
+  });
+
+  it('uses closed runtime schemas and refuses malformed or authority-expanding provider output', () => {
+    const input = fixture(); const context = buildBeliefResearchRelationContext(input.source, input.repository);
+    const valid = {
+      contractVersion: '1.0.0', contextDigest: digestBeliefResearchRelationContext(context), status: 'ready',
+      sourceEvidence: [{ insightId: INSIGHT_ID, sourceClaimId: 'claim-1' }],
+      relations: [{
+        relationId: `relation:claim-1:asset:${DEVELOPING_THESIS_ID}`,
+        sourceClaimId: 'claim-1', mainClaimRef: CLAIM_ID, claimDisposition: 'reuse_exact_provenance',
+        thesisId: DEVELOPING_THESIS_ID, thesisType: 'asset', relationship: 'supports', confidence: 'high',
+        rationale: 'Direct causal bearing.', bearingProof: {
+          kind: 'direct_semantic_bearing', claimAnchor: input.source.claims[0].claim,
+          thesisAnchor: input.repository.theses[0].argument.coreArgument,
+          connection: 'Scarcity is the governed thesis premise.',
+        },
+      }], ambiguities: [], deferred: [], unrelated: [],
+      execution: { mode: 'recommendation_only', writes: [] }, limitations: [],
+    };
+    expect(() => validateBeliefResearchRelationResult(context, { ...valid, sql: 'UPDATE theses' }))
+      .toThrow(/unsupported fields.*sql/i);
+    expect(() => validateBeliefResearchRelationResult(context, {
+      ...valid, relations: [{ ...valid.relations[0], relationship: 'neutral' }],
+    })).toThrow(/relationship.*supports.*refutes.*foundation/i);
+    expect(() => validateBeliefResearchRelationResult(context, {
+      ...valid, relations: [{ ...valid.relations[0], rationale: '' }],
+    })).toThrow(/rationale.*non-empty/i);
+    expect(() => validateBeliefResearchRelationResult(context, {
+      ...valid, relations: [{ ...valid.relations[0], bearingProof: {
+        ...valid.relations[0].bearingProof, connection: '', sql: 'UPDATE',
+      } }],
+    })).toThrow(/bearingProof.*unsupported fields|connection.*non-empty/i);
   });
 
   it('requires complete bounded coverage and rejects ambiguous bearing that is silently linked', () => {
@@ -339,6 +382,75 @@ describe('belief-research-relation contract', () => {
       ...buildBeliefResearchRelationContext(input.source, input.repository),
       sourceEvidence: [{ ...input.source.claims[0], qualifier: undefined }],
     })).toThrow(/qualifier/i);
+    const validContext = buildBeliefResearchRelationContext(input.source, input.repository);
+    expect(() => validateBeliefResearchRelationContext({
+      ...validContext, contractVersion: '9.9.9', sql: 'UPDATE theses',
+    })).toThrow(/unsupported fields|version/i);
+    expect(() => validateBeliefResearchRelationContext({
+      ...validContext,
+      claimResolutions: [{
+        sourceClaimId: 'different-source-claim',
+        disposition: 'reuse_exact_provenance',
+        mainClaimId: CLAIM_ID,
+      }],
+    })).toThrow(/resolution|source claim/i);
+  });
+
+  it('surfaces canonical unresolved decisions for tentative and refuting semantic relations', () => {
+    const input = fixture();
+    const context = buildBeliefResearchRelationContext(input.source, input.repository);
+    const relation = {
+      relationId: `relation:claim-1:asset:${DEVELOPING_THESIS_ID}`,
+      sourceClaimId: 'claim-1', mainClaimRef: CLAIM_ID,
+      claimDisposition: 'reuse_exact_provenance' as const, thesisId: DEVELOPING_THESIS_ID,
+      thesisType: 'asset' as const, relationship: 'supports' as const, confidence: 'medium' as const,
+      rationale: 'Direct but qualified causal bearing.', bearingProof: {
+        kind: 'direct_semantic_bearing' as const, claimAnchor: input.source.claims[0].claim,
+        thesisAnchor: input.repository.theses[0].argument.coreArgument,
+        connection: 'Scarcity is the thesis premise, subject to the source qualifier.',
+      },
+    };
+    const base = {
+      contractVersion: '1.0.0' as const, contextDigest: digestBeliefResearchRelationContext(context),
+      status: 'ready' as const, sourceEvidence: [{ insightId: INSIGHT_ID, sourceClaimId: 'claim-1' }],
+      ambiguities: [], deferred: [], unrelated: [],
+      execution: { mode: 'recommendation_only' as const, writes: [] as [] }, limitations: [],
+    };
+    const tentative = prepareBeliefResearchRelationRecording(
+      context, validateBeliefResearchRelationResult(context, { ...base, relations: [relation] }),
+    );
+    expect(tentative.relationCandidates).toHaveLength(1);
+    expect(tentative.decisionCandidates).toEqual([
+      expect.objectContaining({
+        relationId: relation.relationId,
+        decisionType: 'confirm_claim_link', axis: 'tentative_relation',
+        objectType: 'asset_thesis', objectId: DEVELOPING_THESIS_ID,
+      }),
+    ]);
+    expect(() => validateBeliefResearchRelationRecordingAuthorization(tentative, {
+      contractVersion: '1.0.0', type: 'belief_research_relation_authorization',
+      authorizationId: '77777777-7777-4777-8777-777777777777', authorizedBy: 'user',
+      authorizedAt: '2026-08-09T09:00:00.000Z', expiresAt: '2026-08-09T10:00:00.000Z',
+      recordingDigest: tentative.recordingDigest,
+      acceptedRelationIds: [relation.relationId], acceptedDecisionIds: [],
+      statement: tentative.authorization.statement,
+    }, new Date('2026-08-09T09:01:00.000Z'))).toThrow(/required Decision Item|must also accept/i);
+
+    const refutingRelation = {
+      ...relation, relationship: 'refutes' as const, confidence: 'high' as const,
+      relationId: `${relation.relationId}:refutes`,
+    };
+    const refuting = prepareBeliefResearchRelationRecording(
+      context, validateBeliefResearchRelationResult(context, { ...base, relations: [refutingRelation] }),
+    );
+    expect(refuting.relationCandidates).toHaveLength(1);
+    expect(refuting.decisionCandidates).toEqual([
+      expect.objectContaining({
+        relationId: refutingRelation.relationId,
+        decisionType: 'review_refuting_claim', axis: 'refuting_evidence',
+        objectType: 'asset_thesis', objectId: DEVELOPING_THESIS_ID,
+      }),
+    ]);
   });
 
   it('prepares only exact reusable relationship writes and user-only authorization', () => {

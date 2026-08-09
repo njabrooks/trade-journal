@@ -83,12 +83,13 @@ and staged generated output bind it through W1. The remaining generic projection
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
 generation decision and the incremental J2 migration state. It covers all 73 inventoried entry points. The
-eight governed Capabilities now record 20 generation-eligible inventory entries and two whole-file governed
-staging outputs. The other 53 entries remain non-governed migration inputs or non-candidates with explicit
+ten governed Capabilities now record 24 generation-eligible inventory entries and two whole-file governed
+staging outputs. The other 49 entries remain non-governed migration inputs or non-candidates with explicit
 dispositions.
 
-The portfolio-snapshot, belief-maintenance, claims-synthesis, thesis-observation, thesis-underwriting, belief-evidence-assessment,
-portfolio-options-advice, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
+The portfolio-snapshot, belief-maintenance, belief-research-relation, claims-synthesis, research-publication,
+thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice, and
+morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
 adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
 package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
 neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live

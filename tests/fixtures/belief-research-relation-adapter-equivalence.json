@@ -1,8 +1,8 @@
 {
   "limitation": "No live provider invocation was performed. This representative result is validated against repository contract code and cryptographically bound to the exact adapter bytes.",
   "providers": {
-    "claude": { "adapterDigest": "sha256:d8ba2120597fba19a0a2460fe5971143d9e969bb91446f768466c0295148df5c" },
-    "codex": { "adapterDigest": "sha256:95a47ae063407fec87fb24cb634089093f8b0b7c6da7921c7702a7de1561bf35" }
+    "claude": { "adapterDigest": "sha256:e48c5beb7c7ac47bbcb9252d1edfdbae4a83f925b61314fe56d3ad6792ced6d8" },
+    "codex": { "adapterDigest": "sha256:1ddba0da4387e6f433349dda5f54adeb6ebb92308181b690720e6b1968bcd419" }
   },
   "context": {
     "contractVersion": "1.0.0",
@@ -18,11 +18,11 @@
     },
     "sourceEvidence": [{
       "sourceClaimId": "claim-1",
-      "title": "Foundry scarcity",
+      "title": "Foundry scarcity is easing",
       "category": "asset_specific",
-      "claim": "Leading-edge foundry capacity remains constrained.",
-      "evidence": ["Capacity is pre-committed."],
-      "reasoning": "Long lead times prevent rapid supply response.",
+      "claim": "Leading-edge foundry capacity constraints are easing.",
+      "evidence": ["New capacity is entering service ahead of demand."],
+      "reasoning": "Supply growth is outpacing incremental reservations.",
       "backing": "Construction schedules.",
       "qualifier": "medium",
       "rebuttal": ["Demand could fall."],
@@ -31,9 +31,9 @@
     }],
     "mainClaimCatalog": [{
       "id": "33333333-3333-4333-8333-333333333333",
-      "title": "Foundry scarcity",
+      "title": "Foundry scarcity is easing",
       "category": "asset_specific",
-      "claim": "Leading-edge foundry capacity remains constrained.",
+      "claim": "Leading-edge foundry capacity constraints are easing.",
       "status": "complete",
       "sourceInsightId": "22222222-2222-4222-8222-222222222222",
       "sourceClaimId": "claim-1"
@@ -76,14 +76,14 @@
       "claimDisposition": "reuse_exact_provenance",
       "thesisId": "44444444-4444-4444-8444-444444444444",
       "thesisType": "asset",
-      "relationship": "supports",
+      "relationship": "refutes",
       "confidence": "high",
-      "rationale": "The capacity constraint directly supports the pricing-power premise.",
+      "rationale": "The observed easing directly refutes the pricing-power premise.",
       "bearingProof": {
         "kind": "direct_semantic_bearing",
-        "claimAnchor": "Leading-edge foundry capacity remains constrained.",
+        "claimAnchor": "Leading-edge foundry capacity constraints are easing.",
         "thesisAnchor": "TSM retains pricing power while leading-edge capacity is scarce.",
-        "connection": "Persistent scarcity is the causal mechanism for durable pricing power."
+        "connection": "The source directly contradicts the scarcity mechanism required by the thesis."
       }
     }],
     "ambiguities": [],
@@ -96,9 +96,9 @@
     "status": "authorization_required",
     "mainClaimId": "33333333-3333-4333-8333-333333333333",
     "thesisStatus": "monitoring",
-    "relationship": "supports",
+    "relationship": "refutes",
     "writeTables": ["claim_thesis_mappings", "journal_entries"],
-    "decisionCount": 0,
+    "decisionCount": 1,
     "execution": { "mode": "authorization_required", "writes": [] }
   }
 }

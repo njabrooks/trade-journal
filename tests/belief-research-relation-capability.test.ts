@@ -45,6 +45,7 @@ describe('belief-research-relation Capability', () => {
     for (const text of [
       'developing and monitoring', 'direct semantic proof', 'never duplicate',
       'unresolved Decision Item', 'short-lived exact user authorization',
+      'every refuting relation', 'tentative supporting or foundational relation',
       'claim_thesis_mappings', 'journal audit',
     ]) expect(contract).toContain(text);
   });
@@ -66,6 +67,8 @@ describe('belief-research-relation Capability', () => {
         'Holdings are not an information gate',
         'Ticker overlap, keyword overlap, and provider recommendation are never semantic proof',
         'Do not silently link an ambiguous claim',
+        'Every refuting relation must also surface an unresolved `review_refuting_claim` Decision Item',
+        'Medium- or low-confidence supporting or foundational relations must also surface an unresolved `confirm_claim_link` Decision Item',
         'scripts/ops/record-belief-research-relation.ts --stdin',
         'unresolved `decision_required` `journal_entries` with `resolution: null`',
         'must not create or mutate `main_claims`',

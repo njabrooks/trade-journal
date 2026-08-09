@@ -48,7 +48,7 @@ export interface BeliefResearchRelationDecisionRecord {
   id: string;
   decisionId: string;
   actionType: 'decision_required';
-  objectType: 'claim';
+  objectType: 'claim' | 'macro_thesis' | 'asset_thesis';
   objectId: string;
   objectTitle: string;
   packet: DecisionPacket;
@@ -204,7 +204,7 @@ function decisionInsert(
   recordedAt: Date,
 ): BeliefResearchRelationDecisionInsert {
   const packet = buildDecisionPacket({
-    decision_type: 'confirm_claim_link',
+    decision_type: candidate.decisionType,
     why_raised: candidate.reason,
     related_objects: [
       ...candidate.candidateMainClaimIds.map((id) => ({ type: 'claim' as const, id, role: 'candidate_claim' })),
@@ -217,18 +217,24 @@ function decisionInsert(
       insightId: prepared.source.insightId,
       sourceClaimId: candidate.sourceClaimId,
       ambiguityAxis: candidate.axis,
+      relationId: candidate.relationId,
       candidateMainClaimIds: candidate.candidateMainClaimIds,
       candidateThesisIds: candidate.candidateThesisIds,
       recordingDigest: prepared.recordingDigest,
     },
-    recommended_actions: [
-      { action: 'confirm_link', label: 'Confirm a governed claim-thesis link' },
-      { action: 'dismissed', label: 'Leave unrelated' },
-    ],
+    recommended_actions: candidate.decisionType === 'review_refuting_claim'
+      ? [
+          { action: 'review_evidence', label: 'Review the refuting evidence' },
+          { action: 'dismissed', label: 'Dismiss after explicit review' },
+        ]
+      : [
+          { action: 'confirm_link', label: 'Confirm a governed claim-thesis link' },
+          { action: 'dismissed', label: 'Leave unrelated' },
+        ],
   });
   return {
     decisionId: candidate.decisionId,
-    actionType: 'decision_required', objectType: 'claim', objectId: candidate.objectId,
+    actionType: 'decision_required', objectType: candidate.objectType, objectId: candidate.objectId,
     objectTitle: `Research bearing requires judgment: ${candidate.sourceClaimId}`,
     packet,
     metadata: {
@@ -295,15 +301,16 @@ export async function recordBeliefResearchRelation(
 ): Promise<RecordedBeliefResearchRelation> {
   const envelope = parseEnvelope(input);
   const id = authorizationId(envelope.authorization);
+  const incomingAuthorizationDigest = digestBeliefResearchRelationAuthorization(envelope.authorization);
   const now = dependencies.now ?? new Date();
   return dependencies.store.transaction(async (transaction) => {
     await transaction.acquireAuthorizationLock(id);
     const prior = await transaction.loadRecordedOperation(id);
     if (prior) {
       if (prior.recordingDigest !== envelope.prepared.recordingDigest
-        || prior.authorizationDigest !== digestBeliefResearchRelationAuthorization(
-          prior.snapshot.authorization,
-        )) {
+        || prior.authorizationDigest !== incomingAuthorizationDigest
+        || digestBeliefResearchRelationAuthorization(prior.snapshot.authorization)
+          !== incomingAuthorizationDigest) {
         throw new BeliefResearchRelationRecordingError(
           'authority_refused', `Authorization ${id} is already bound to different bytes`,
         );
@@ -366,11 +373,21 @@ export async function recordBeliefResearchRelation(
       }
     }
     for (const candidate of acceptedDecisions) {
-      const claim = await transaction.loadClaimById(candidate.objectId);
-      if (!claim) {
-        throw new BeliefResearchRelationRecordingError(
-          'stale_input', `Decision Item claim anchor ${candidate.objectId} is unavailable`,
-        );
+      for (const claimId of candidate.candidateMainClaimIds) {
+        const claim = await transaction.loadClaimById(claimId);
+        if (!claim) {
+          throw new BeliefResearchRelationRecordingError(
+            'stale_input', `Decision Item claim candidate ${claimId} is unavailable`,
+          );
+        }
+      }
+      if (candidate.objectType === 'claim') {
+        const claim = await transaction.loadClaimById(candidate.objectId);
+        if (!claim) {
+          throw new BeliefResearchRelationRecordingError(
+            'stale_input', `Decision Item claim anchor ${candidate.objectId} is unavailable`,
+          );
+        }
       }
       for (const thesisCandidate of candidate.candidateTheses) {
         const thesis = await transaction.loadThesisById(thesisCandidate.id, thesisCandidate.type);

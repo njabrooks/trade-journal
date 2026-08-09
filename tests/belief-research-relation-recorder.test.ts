@@ -191,6 +191,42 @@ describe('governed belief-research relation recorder', () => {
     ]));
   });
 
+  it('records refuting evidence with a thesis-anchored unresolved review Decision Item', async () => {
+    const input = fixture();
+    const refutingResult = validateBeliefResearchRelationResult(input.context, {
+      ...input.result,
+      relations: input.result.relations.map((relation) => ({
+        ...relation, relationship: 'refutes' as const,
+        rationale: 'The evidence directly refutes the governed pricing-power premise.',
+      })),
+    });
+    const prepared = prepareBeliefResearchRelationRecording(input.context, refutingResult);
+    const authorization = {
+      ...input.authorization,
+      recordingDigest: prepared.recordingDigest,
+      acceptedRelationIds: prepared.relationCandidates.map(({ relationId }) => relationId),
+      acceptedDecisionIds: prepared.decisionCandidates.map(({ decisionId }) => decisionId),
+    };
+    const store = new MemoryStore(input.context);
+    await recordBeliefResearchRelation(
+      { prepared, authorization },
+      { store, now: new Date('2026-08-09T09:01:00.000Z') },
+    );
+    expect([...store.decisions.values()]).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        objectType: 'asset_thesis', objectId: THESIS_ID, status: 'active',
+        packet: expect.objectContaining({ decision_type: 'review_refuting_claim', resolution: null }),
+      }),
+    ]));
+    expect([...store.audits.values()][0].snapshot.surfacedDecisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        candidate: expect.objectContaining({
+          axis: 'refuting_evidence', relationId: input.result.relations[0].relationId,
+        }),
+      }),
+    ]));
+  });
+
   it('is idempotent for the exact authorization and safe existing relationships/decisions', async () => {
     const input = fixture(); const store = new MemoryStore(input.context);
     const first = await recordBeliefResearchRelation(
@@ -215,6 +251,21 @@ describe('governed belief-research relation recorder', () => {
       { store: retryStore, now: new Date('2026-08-09T09:01:00.000Z') },
     );
     expect(recorded.relationships[0].disposition).toBe('reused');
+  });
+
+  it('refuses a reused authorization identity when the incoming accepted subset changes', async () => {
+    const input = fixture(); const store = new MemoryStore(input.context);
+    await recordBeliefResearchRelation(
+      { prepared: input.prepared, authorization: input.authorization },
+      { store, now: new Date('2026-08-09T09:01:00.000Z') },
+    );
+    const writes = [...store.writes];
+    await expect(recordBeliefResearchRelation({
+      prepared: input.prepared,
+      authorization: { ...input.authorization, acceptedDecisionIds: [] },
+    }, { store, now: new Date('2026-08-09T09:02:00.000Z') }))
+      .rejects.toMatchObject({ code: 'authority_refused' });
+    expect(store.writes).toEqual(writes);
   });
 
   it('refuses stale identity, thesis state, conflicts, expired or enlarged authority without writes', async () => {

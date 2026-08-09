@@ -1752,8 +1752,8 @@
         "state": "current",
         "as_of": "2026-08-09",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:b5ff8f5a7111576fd3d1527c668c40f0ab7a54e50df4f767db71e11a5b53cf86",
-        "adapter_digest": "sha256:95a47ae063407fec87fb24cb634089093f8b0b7c6da7921c7702a7de1561bf35",
+        "package_digest": "sha256:0be64df91c95e7ebff6eeef6ad51501757cea762ddcdc53b92584928bd7bf830",
+        "adapter_digest": "sha256:1ddba0da4387e6f433349dda5f54adeb6ebb92308181b690720e6b1968bcd419",
         "reason": "Exact current evidence is bound to belief-research-relation 1.0.0 and the governed Codex adapter."
       },
       "j2_disposition": {

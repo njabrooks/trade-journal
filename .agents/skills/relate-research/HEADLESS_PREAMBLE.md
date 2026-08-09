@@ -24,7 +24,9 @@ Run from `/Users/home-hub/projects/trade-journal`.
 The boundary reads only approved repository state. It accepts developing and monitoring theses. Holdings,
 ticker overlap, keyword overlap, and provider recommendations are never semantic proof. Exact Notes provenance
 must be reused; it must never be duplicated. Preserve Toulmin qualifiers and rebuttals and return explicit
-`claim_identity` or `thesis_bearing` ambiguity rather than making a judgment.
+`claim_identity` or `thesis_bearing` ambiguity rather than making a judgment. Preserve honest relationship
+confidence: every refuting relation requires unresolved `review_refuting_claim`, while tentative supporting or
+foundational relations require unresolved `confirm_claim_link` during interactive governed preparation.
 
 ## Forbidden unattended authority
 
