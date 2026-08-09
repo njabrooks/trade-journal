@@ -83,7 +83,7 @@
         }
       ],
       "id": "capability:scope:trade-journal/belief-research-relation",
-      "package_digest": "sha256:b5ff8f5a7111576fd3d1527c668c40f0ab7a54e50df4f767db71e11a5b53cf86",
+      "package_digest": "sha256:0be64df91c95e7ebff6eeef6ad51501757cea762ddcdc53b92584928bd7bf830",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -106,8 +106,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/belief-research-relation",
-        "release_reference": "56855ac2fbbd0908f4f4d4196654190a23ed1eb4",
-        "revision": "56855ac2fbbd0908f4f4d4196654190a23ed1eb4"
+        "release_reference": "e666388c176b19410a02c19ab1f8e4ef29ee9363",
+        "revision": "e666388c176b19410a02c19ab1f8e4ef29ee9363"
       }
     },
     {
@@ -366,6 +366,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:a09260d96198be64f26c452f2a7f777abc8d2f114901f6c039d8d9568d7b2e78",
+  "registry_digest": "sha256:20d0d9a727715bf460e6f4682a4e8f05b5cf064e1126e5492a944af6d405fafe",
   "schema_version": "1.0.0"
 }

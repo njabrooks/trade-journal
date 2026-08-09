@@ -39,7 +39,7 @@
       "approved_version": "1.0.0",
       "release": {
         "source": ".",
-        "revision": "56855ac2fbbd0908f4f4d4196654190a23ed1eb4"
+        "revision": "e666388c176b19410a02c19ab1f8e4ef29ee9363"
       },
       "development": {
         "enabled": true,
