@@ -1,7 +1,7 @@
 {
   "kind": "ProviderAdapterGenerationEligibility",
   "schema_version": "1.0.0",
-  "as_of": "2026-08-08",
+  "as_of": "2026-08-09",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
   "generation_eligible_count": 24,

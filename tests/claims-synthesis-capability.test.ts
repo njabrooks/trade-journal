@@ -7,6 +7,7 @@ import { validateClaimsSynthesisResult } from '../src/lib/intelligence/claimsSyn
 
 const capabilityRoot = resolve(process.cwd(), 'capabilities/claims-synthesis');
 const workspaceRoot = process.env.WORKSPACE_REPOSITORY_ROOT;
+const workspaceEvidenceTime = process.env.WORKSPACE_EVIDENCE_TIME ?? '2026-08-09';
 const governanceIt = workspaceRoot ? it : it.skip;
 
 function read(path: string): string {
@@ -178,7 +179,7 @@ describe('claims-synthesis Capability', () => {
       'capability',
       'capabilities/claims-synthesis',
       '--evidence-time',
-      '2026-08-08',
+      workspaceEvidenceTime,
       '--format',
       'json',
     ], {
