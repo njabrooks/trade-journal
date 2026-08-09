@@ -43,8 +43,8 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares nine Trade Journal-owned
-packages: portfolio snapshot, belief maintenance, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares ten Trade Journal-owned
+packages: portfolio snapshot, belief maintenance, belief-research relation, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
 research publication, portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
 remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry.
@@ -53,8 +53,8 @@ establish Adapter Conformance; only exact W1-bound evidence upgrades an inventor
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-08`, nine locked
-Capabilities make 22 inventory entries generation eligible while the whole-file Claude and Codex outputs
+generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-09`, ten locked
+Capabilities make 24 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers.
 
@@ -139,6 +139,20 @@ prepare or validate but is ineligible to authorize or publish because candidate 
 judgment. Representative provider fixtures are bound to exact adapter bytes; no live provider invocation,
 production mutation, scheduler, credential, active discovery, or operational cutover occurred.
 
+Issue #59 adds the source-owned belief-research-relation Capability at immutable revision
+`56855ac2fbbd0908f4f4d4196654190a23ed1eb4`. Its deterministic repository boundary preserves complete
+Notes-owned Toulmin evidence, the complete promoted-claim identity catalog, developing and monitoring thesis
+arguments, and existing relationships. Exact provenance is reused regardless of lifecycle state; an unpromoted
+claim is deferred to the Registry-resolved research-publication Capability. Holdings, tickers, keywords, and
+provider recommendations are explicitly rejected as semantic proof. Exact Claude/Codex adapters require direct
+claim-to-argument bearing and preserve explicit claim-identity or thesis-bearing ambiguity. Persistence requires
+a short-lived exact user token and one serializable recorder limited to `claim_thesis_mappings`, unresolved
+`decision_required` journal rows, and one complete digest-bound audit; it cannot create claims, change status,
+resolve decisions, mutate strategies or positions, or trade. The Codex preamble is bespoke and conditionally
+eligible only for non-mutating preparation or validation. Representative output is cryptographically bound to
+exact adapter bytes; no live provider invocation, production write, scheduler, credential, active discovery, or
+operational cutover occurred.
+
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar
@@ -152,7 +166,7 @@ issue `njabrooks/projects#31` continues to own any future replacement for that i
 
 CI evaluates Capability and Provider Entry Point freshness against the runner's current UTC date. The
 checked-in immutable Registry Lock remains independently reproducible at its recorded governed evidence date
-of `2026-08-08`; CI resolves a temporary present-day lock before clean-regeneration validation so current
+of `2026-08-09`; CI resolves a temporary present-day lock before clean-regeneration validation so current
 freshness is enforced without rewriting or making the published lock nondeterministic. A controlled public-CLI
 proof also evaluates evidence on `2026-09-06`, after its `2026-09-05` expiry, and requires the adapter to become
 `stale`, existing governed output validation to fail, regeneration to fail, and the absent target to remain

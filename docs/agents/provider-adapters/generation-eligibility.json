@@ -4,7 +4,7 @@
   "as_of": "2026-08-08",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
-  "generation_eligible_count": 22,
+  "generation_eligible_count": 24,
   "governed_outputs": [
     "docs/agents/provider-entry-points/staging/claude.md",
     "docs/agents/provider-entry-points/staging/codex.md"
@@ -774,7 +774,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/relate-research/SKILL.md"
+        "path": "capabilities/belief-research-relation/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -784,21 +784,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-09",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:b5ff8f5a7111576fd3d1527c668c40f0ab7a54e50df4f767db71e11a5b53cf86",
+        "adapter_digest": "sha256:95a47ae063407fec87fb24cb634089093f8b0b7c6da7921c7702a7de1561bf35",
+        "reason": "Exact current evidence is bound to belief-research-relation 1.0.0 and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the canonical headless mirror as a preparation-only migration input until final discovery cutover."
       }
     },
     {
@@ -1937,7 +1934,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/relate-research/SKILL.md"
+        "path": "capabilities/belief-research-relation/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1947,21 +1944,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-09",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:b5ff8f5a7111576fd3d1527c668c40f0ab7a54e50df4f767db71e11a5b53cf86",
+        "adapter_digest": "sha256:d8ba2120597fba19a0a2460fe5971143d9e969bb91446f768466c0295148df5c",
+        "reason": "Exact current evidence is bound to belief-research-relation 1.0.0 and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the canonical interactive skill as a migration input until final discovery cutover."
       }
     },
     {
