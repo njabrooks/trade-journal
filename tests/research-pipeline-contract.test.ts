@@ -323,4 +323,30 @@ describe('research-pipeline aggregate contract', () => {
     expect(result.status).toBe(status);
     expect(result.execution.writes).toEqual([]);
   });
+
+  it('bounds mapped stage-validator diagnostics and emits a self-validating result', () => {
+    const publication = fixture('research-publication-adapter-equivalence.json') as {
+      context: ClaimsSynthesisContext;
+      claimsSynthesisResult: ClaimsSynthesisReadyResult;
+    };
+    publication.claimsSynthesisResult.contextDigest = digestClaimsSynthesisContext(publication.context);
+    const expanded = publication.claimsSynthesisResult as unknown as Record<string, unknown>;
+    for (let index = 0; index < 300; index += 1) {
+      expanded[`genericWriteAuthority${String(index).padStart(3, '0')}`] = true;
+    }
+
+    const result = buildResearchPipelineAggregate({
+      insightId: publication.context.source.insightId,
+      dependencies: {
+        claimsSynthesis: {
+          status: 'ready', context: publication.context, result: publication.claimsSynthesisResult,
+        },
+      },
+    });
+    const stage = result.stageOutcomes.find(({ stage: name }) => name === 'claims_synthesis')!;
+    expect(stage.status).toBe('refused');
+    expect(stage.detail.length).toBeLessThanOrEqual(1000);
+    expect(stage.detail).toContain('truncated; sha256:');
+    expect(validateResearchPipelineAggregateResult(result)).toEqual(result);
+  });
 });

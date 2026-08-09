@@ -148,7 +148,11 @@ function emptyWrites(value: unknown, path: string): asserts value is [] {
 }
 
 function mapValidationError(error: unknown): Pick<ResearchPipelineStageOutcome, 'status' | 'detail'> {
-  const detail = error instanceof Error ? error.message : String(error);
+  const rawDetail = error instanceof Error ? error.message : String(error);
+  const suffix = `… [truncated; ${digest(rawDetail)}]`;
+  const detail = rawDetail.length <= MAX_DETAIL_LENGTH
+    ? rawDetail
+    : `${rawDetail.slice(0, MAX_DETAIL_LENGTH - suffix.length)}${suffix}`;
   return {
     status: /digest|stale|expired/i.test(detail) ? 'stale' : 'refused',
     detail,
