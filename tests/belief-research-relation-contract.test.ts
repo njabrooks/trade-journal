@@ -3,10 +3,13 @@ import {
   buildBeliefResearchRelationContext,
   createUnavailableBeliefResearchRelationResult,
   digestBeliefResearchRelationContext,
+  digestBeliefResearchRelationRecording,
+  digestBeliefResearchRelationResult,
   prepareBeliefResearchRelationRecording,
   validateBeliefResearchRelationContext,
   validateBeliefResearchRelationRecordingAuthorization,
   validateBeliefResearchRelationResult,
+  validatePreparedBeliefResearchRelationRecording,
   type BeliefResearchRelationRepositorySnapshot,
   type BeliefResearchRelationSource,
 } from '../src/lib/intelligence/beliefResearchRelation.js';
@@ -492,6 +495,49 @@ describe('belief-research-relation contract', () => {
       acceptedDecisionIds: [],
       statement: prepared.authorization.statement,
     }, new Date('2026-08-09T09:01:00.000Z'))).toThrow(/only the user/i);
+  });
+
+  it('refuses self-digested malformed prepared bytes before authorization readiness', () => {
+    const input = fixture();
+    const context = buildBeliefResearchRelationContext(input.source, input.repository);
+    const result = validateBeliefResearchRelationResult(context, {
+      contractVersion: '1.0.0', contextDigest: digestBeliefResearchRelationContext(context), status: 'ready',
+      sourceEvidence: [{ insightId: INSIGHT_ID, sourceClaimId: 'claim-1' }],
+      relations: [{
+        relationId: `relation:claim-1:asset:${DEVELOPING_THESIS_ID}`,
+        sourceClaimId: 'claim-1', mainClaimRef: CLAIM_ID,
+        claimDisposition: 'reuse_exact_provenance', thesisId: DEVELOPING_THESIS_ID,
+        thesisType: 'asset', relationship: 'refutes', confidence: 'high',
+        rationale: 'Directly refutes the thesis premise.', bearingProof: {
+          kind: 'direct_semantic_bearing', claimAnchor: input.source.claims[0].claim,
+          thesisAnchor: input.repository.theses[0].argument.coreArgument,
+          connection: 'Direct contradiction.',
+        },
+      }], ambiguities: [], deferred: [], unrelated: [],
+      execution: { mode: 'recommendation_only', writes: [] }, limitations: [],
+    });
+    const valid = prepareBeliefResearchRelationRecording(context, result);
+    const malformed = structuredClone(valid) as typeof valid & { result: typeof valid.result & { sql?: string } };
+    malformed.result.sql = 'UPDATE theses';
+    malformed.resultDigest = digestBeliefResearchRelationResult(malformed.result);
+    const { recordingDigest: ignored, ...withoutDigest } = malformed;
+    void ignored;
+    malformed.recordingDigest = digestBeliefResearchRelationRecording(withoutDigest);
+    expect(() => validatePreparedBeliefResearchRelationRecording(malformed)).toThrow(/unsupported fields.*sql/i);
+
+    const divergent = structuredClone(valid);
+    divergent.relationCandidates[0].relationship = 'supports';
+    divergent.relationCandidates[0].confidence = 'medium';
+    divergent.decisionCandidates[0] = {
+      ...divergent.decisionCandidates[0],
+      decisionId: `decision:confirm_claim_link:${divergent.relationCandidates[0].relationId}`,
+      decisionType: 'confirm_claim_link', axis: 'tentative_relation', reason: 'Arbitrary replacement.',
+    };
+    const { recordingDigest: discarded, ...divergentWithoutDigest } = divergent;
+    void discarded;
+    divergent.recordingDigest = digestBeliefResearchRelationRecording(divergentWithoutDigest);
+    expect(() => validatePreparedBeliefResearchRelationRecording(divergent))
+      .toThrow(/deterministic derivation|does not equal/i);
   });
 
   it('returns provider-neutral unavailable states without write authority', () => {

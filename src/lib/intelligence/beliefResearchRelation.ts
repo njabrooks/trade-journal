@@ -143,6 +143,7 @@ export interface PreparedBeliefResearchRelationRecording {
   contextDigest: string;
   resultDigest: string;
   result: BeliefResearchRelationReadyResult;
+  context: BeliefResearchRelationContext;
   source: BeliefResearchRelationContext['source'];
   relationCandidates: Array<BeliefResearchRelationReadyResult['relations'][number] & {
     mainClaimId: string;
@@ -821,6 +822,7 @@ export function prepareBeliefResearchRelationRecording(
     contextDigest: digestBeliefResearchRelationContext(context),
     resultDigest: digestBeliefResearchRelationResult(result),
     result,
+    context,
     source: context.source,
     relationCandidates,
     decisionCandidates,
@@ -861,7 +863,7 @@ export function validatePreparedBeliefResearchRelationRecording(
   const prepared = value as PreparedBeliefResearchRelationRecording;
   const allowed = [
     'contractVersion', 'status', 'recordingDigest', 'contextDigest', 'resultDigest',
-    'source', 'result', 'relationCandidates', 'decisionCandidates', 'exclusions', 'authorization',
+    'source', 'context', 'result', 'relationCandidates', 'decisionCandidates', 'exclusions', 'authorization',
     'permittedWriteSurface', 'forbiddenAuthority', 'execution',
   ];
   const unsupported = Object.keys(prepared).filter((key) => !allowed.includes(key));
@@ -869,6 +871,14 @@ export function validatePreparedBeliefResearchRelationRecording(
   if (prepared.contractVersion !== '1.0.0' || prepared.status !== 'authorization_required') {
     fail('Prepared recording must use authorization-required version 1.0.0');
   }
+  const context = validateBeliefResearchRelationContext(prepared.context);
+  if (prepared.contextDigest !== digestBeliefResearchRelationContext(context)) {
+    fail('Prepared recording context digest does not match exact validated context bytes');
+  }
+  if (digest(prepared.source) !== digest(context.source)) {
+    fail('Prepared recording source does not match its validated context');
+  }
+  const validatedResult = validateBeliefResearchRelationResult(context, prepared.result);
   if (prepared.execution?.mode !== 'authorization_required' || prepared.execution.writes.length !== 0) {
     fail('Prepared recording must not contain writes');
   }
@@ -1031,6 +1041,10 @@ export function validatePreparedBeliefResearchRelationRecording(
   if (prepared.recordingDigest !== digestBeliefResearchRelationRecording(withoutDigest)) {
     fail('Prepared recording digest does not match exact prepared bytes');
   }
+  const expected = prepareBeliefResearchRelationRecording(context, validatedResult);
+  if (digest(prepared) !== digest(expected)) {
+    fail('Prepared recording does not equal deterministic derivation from its validated context and result');
+  }
   return prepared;
 }
 
@@ -1052,6 +1066,7 @@ export function validateBeliefResearchRelationRecordingAuthorization(
   value: unknown,
   now = new Date(),
 ): BeliefResearchRelationRecordingAuthorization {
+  validatePreparedBeliefResearchRelationRecording(prepared);
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail('Recording authorization must be an object');
   const auth = value as Record<string, unknown>;
   const allowed = [
