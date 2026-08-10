@@ -548,7 +548,7 @@
       },
       "generation_eligibility": {
         "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
-        "eligible_adapters": 26,
+        "eligible_adapters": 44,
         "governed_outputs": [
           "docs/agents/provider-entry-points/staging/claude.md",
           "docs/agents/provider-entry-points/staging/codex.md"
