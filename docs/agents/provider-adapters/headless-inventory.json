@@ -789,9 +789,9 @@
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Local launchd state, profiles, and gateway status.",
-        "writes": "Can pause, resume, or switch the live gateway profile.",
-        "judgment": "Operational control can interrupt market-data access and requires deliberate user intent."
+        "reads": "No reads permitted by the unavailable headless refusal.",
+        "writes": "No writes or gateway operations permitted.",
+        "judgment": "No unattended operational judgment permitted."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",

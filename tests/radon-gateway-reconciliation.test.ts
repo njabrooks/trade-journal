@@ -124,6 +124,11 @@ describe("Radon-owned IBKR gateway reconciliation", () => {
       invocation: {
         unattended_eligibility: "ineligible",
       },
+      authority_and_write_scope: {
+        reads: "No reads permitted by the unavailable headless refusal.",
+        writes: "No writes or gateway operations permitted.",
+        judgment: "No unattended operational judgment permitted.",
+      },
     });
   });
 
@@ -182,5 +187,12 @@ describe("Radon-owned IBKR gateway reconciliation", () => {
     expect(workflow.match(/tests\/radon-gateway-reconciliation\.test\.ts/g)).toHaveLength(
       3,
     );
+
+    const inventoryGuide = readFileSync(
+      resolve(process.cwd(), "docs/agents/provider-adapters/README.md"),
+      "utf8",
+    );
+    expect(inventoryGuide).toContain("`gateway` and `visser-scan`");
+    expect(inventoryGuide).toContain("other 19 projections");
   });
 });
