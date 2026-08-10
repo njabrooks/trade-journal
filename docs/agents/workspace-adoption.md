@@ -56,7 +56,8 @@ headless inventory entries. The accepted J1 state at governed evidence date `202
 generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-10`, eleven locked
 Capabilities make 44 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
-bridge remain migration inputs until their separately governed cutovers.
+bridge remain migration inputs until their separately governed cutovers, except for the twenty research-pipeline
+paths contracted by #69 to protective tombstones with exact governed replacements.
 
 The controlled refusal harness was executed in human and JSON modes against a clean detached Workspace
 checkout at accepted revision `2b6ea3e02ff5ba114b0f91dd779c4afb26181358`:
@@ -190,6 +191,22 @@ is preserved as `refused`. All ten legacy persistence entry points, mirrors, and
 unchanged and rollback-capable. Notes/Tana retains capture, source-material, and Toulmin authority. No stage or
 aggregate acquires scheduler, credential, production-data, status, Decision Item resolution, signal, strategy,
 position, order, trade, generic-write, or database authority. Issue #69 contraction is not started.
+
+Issue #69 contracts the superseded research-pipeline surface and publishes Capability `1.3.0` from immutable
+source revision `6216690f163fdc1dc30d15d3b369ea65f72eee8c`. The ten former Claude procedures and ten
+headless projections retain their existing discovery paths as non-executable protective tombstones; each names
+one exact governed CLI stage, returns or requires zero writes, and preserves unavailable, refusal, provenance,
+idempotency, and genuine-judgment semantics. Active repository consumers now route to the governed CLI, while
+the machine-local Codex bridge continues to resolve safely through the retained paths. Historical instructions
+remain recoverable from accepted pre-contraction merge `051c1c57c9dd447c930e4352262d6c4cd6f90fe2` and
+rollback requires only a repository revert followed by deterministic publication regeneration. The published
+Registry Lock digest is `sha256:58babef231b541dc839a4ece1459baffc2d47c417931c6c02c21e96bd97c6177`;
+staged Claude and Codex outputs are respectively
+`sha256:b7a10894ba9dd414af6c8e74b0cf893ffb105a3b8cf3df7d05d42f76875dc1da` and
+`sha256:73834444be7332fcd1f06c02bf1a9abdfcfdc14921759ab53fbcb8113275371e`. No scheduler,
+credential, production-data, status, Decision Item resolution, signal, strategy, position, order, trade,
+generic database-write, Notes/Tana-write, Radon, #70 disposition, or final #76 discovery-cutover authority was
+used or acquired.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from

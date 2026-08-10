@@ -261,7 +261,7 @@
       }
     },
     {
-      "approved_version": "1.2.0",
+      "approved_version": "1.3.0",
       "authority": "scope:trade-journal",
       "dependencies": [
         {
@@ -282,7 +282,7 @@
         }
       ],
       "id": "capability:scope:trade-journal/research-pipeline",
-      "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+      "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -305,8 +305,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/research-pipeline",
-        "release_reference": "c65315b3faed66f3adc1b917df61b8e9122b4f0d",
-        "revision": "c65315b3faed66f3adc1b917df61b8e9122b4f0d"
+        "release_reference": "6216690f163fdc1dc30d15d3b369ea65f72eee8c",
+        "revision": "6216690f163fdc1dc30d15d3b369ea65f72eee8c"
       }
     },
     {
@@ -415,6 +415,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:ef5191f8f693838f555799dd1e453dae22c3b1c3617575c0a278f77aac52fbe5",
+  "registry_digest": "sha256:e3c24fbde3205f20e1cbfcb81799dc24bb3bb31cb034a1654aa422c9e506663e",
   "schema_version": "1.0.0"
 }
