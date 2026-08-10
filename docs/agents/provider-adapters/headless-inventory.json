@@ -26,9 +26,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/advance-or-kill/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/advance-or-kill/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -42,7 +42,7 @@
       },
       "authority_and_write_scope": {
         "reads": "The exact ready thesis-expression result and preserved Notes/Tana provenance.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "The user records or overrides act, watch, or discard with an exact audit."
       },
       "prerequisites": [
@@ -50,9 +50,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -65,14 +65,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write advance-or-kill result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-advance-or-kill."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -844,9 +844,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/graduate-pipeline-idea/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/graduate-pipeline-idea/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -860,7 +860,7 @@
       },
       "authority_and_write_scope": {
         "reads": "The exact ready final gate, provenance references, and Registry-locked dependency states.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "The user accepts the final disposition and any separately governed persistence."
       },
       "prerequisites": [
@@ -868,9 +868,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -883,14 +883,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write graduate-pipeline-idea result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-graduate-pipeline-idea."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1304,9 +1304,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/pipeline-status/HEADLESS_PREAMBLE.md",
-        "readiness": "The staged governed adapter is conditionally eligible only for read-only pipeline-status and aggregate describe, evaluate, and validate modes with exact supplied input; the generic legacy preamble remains rollback packaging only."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/pipeline-status/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -1320,7 +1320,7 @@
       },
       "authority_and_write_scope": {
         "reads": "One explicit research insight, supplied coordination records, and exact governed stage and dependency results.",
-        "writes": "None; the aggregate always returns writes: [] and cannot invoke a stage recorder.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "Reports genuine judgment as judgment_required and never authorizes, resolves, or persists it."
       },
       "prerequisites": [
@@ -1328,9 +1328,9 @@
         "Exact Registry Lock and any supplied governed stage inputs."
       ],
       "limitations": [
-        "The governed pipeline-status and aggregate boundaries are staged while the legacy pipeline-status skill remains active for rollback-capable persistence.",
-        "All ten legacy stage boundaries remain active and unchanged; active discovery is unchanged until issue #69 is explicitly authorized.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1343,14 +1343,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 aggregate, all ten zero-write stages, and codex adapter."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-pipeline-status."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The aggregate and all ten #67/#68 stage-result boundaries are governed; retain legacy persistence and discovery until issue #69 is explicitly authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1825,9 +1825,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/stage-1-init-idea/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed adapter is current, but this stage remains unattended-ineligible because exact user judgment is required; the generic legacy preamble remains rollback packaging only."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/stage-1-init-idea/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -1841,7 +1841,7 @@
       },
       "authority_and_write_scope": {
         "reads": "Exact Notes/Tana source provenance, Toulmin claim, and explicit user selection and classification.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "The user selects the idea and chooses its thesis classification."
       },
       "prerequisites": [
@@ -1849,9 +1849,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied user judgment."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1864,14 +1864,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-1-init-idea result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-1-init-idea."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1906,9 +1906,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/stage-2-formalize-thesis/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed adapter is current, but this stage remains unattended-ineligible because exact user judgment is required; the generic legacy preamble remains rollback packaging only."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/stage-2-formalize-thesis/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -1922,7 +1922,7 @@
       },
       "authority_and_write_scope": {
         "reads": "The exact ready idea-intake result and preserved Notes/Tana provenance.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "The user accepts advance, hold, or kill at the formalization gate."
       },
       "prerequisites": [
@@ -1930,9 +1930,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied user judgment."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1945,14 +1945,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-2-formalize-thesis result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-2-formalize-thesis."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1987,9 +1987,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/stage-3-map-unknowns/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed adapter is current, but this stage remains unattended-ineligible because exact user judgment is required; the generic legacy preamble remains rollback packaging only."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/stage-3-map-unknowns/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -2003,7 +2003,7 @@
       },
       "authority_and_write_scope": {
         "reads": "The exact ready thesis-formalization result and preserved Notes/Tana provenance.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "The user accepts advance, kill, or archive at the unknown-mapping gate."
       },
       "prerequisites": [
@@ -2011,9 +2011,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied user judgment."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2026,14 +2026,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-3-map-unknowns result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-3-map-unknowns."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2068,9 +2068,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/stage-4a-prep-desktop-research/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/stage-4a-prep-desktop-research/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -2084,7 +2084,7 @@
       },
       "authority_and_write_scope": {
         "reads": "The exact accepted formalized thesis and unknown-mapping results.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "The user selected the research scope upstream; this boundary adds no judgment."
       },
       "prerequisites": [
@@ -2092,9 +2092,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2107,14 +2107,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4a-prep-desktop-research result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-prep-desktop-research."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2149,9 +2149,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/stage-4a-research-unknown/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/stage-4a-research-unknown/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -2165,7 +2165,7 @@
       },
       "authority_and_write_scope": {
         "reads": "The portable research brief and explicit HTTPS source material.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "Provider assessment remains analysis; downstream synthesis and user gates retain decision authority."
       },
       "prerequisites": [
@@ -2173,9 +2173,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2188,14 +2188,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4a-research-unknown result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-research-unknown."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2230,9 +2230,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/stage-4b-synthesize-evidence/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/stage-4b-synthesize-evidence/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -2246,7 +2246,7 @@
       },
       "authority_and_write_scope": {
         "reads": "The exact accepted unknown map and source-linked research results.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "Provider confidence and recommendation remain analysis; the user controls stage entry and final disposition."
       },
       "prerequisites": [
@@ -2254,9 +2254,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2269,14 +2269,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4b-synthesize-evidence result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4b-synthesize-evidence."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -2311,9 +2311,9 @@
       },
       "packaging": "governed-provider-adapter",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/stage-5-express-thesis/HEADLESS_PREAMBLE.md",
-        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/stage-5-express-thesis/HEADLESS_PREAMBLE.md",
+        "readiness": "The protective tombstone preamble refuses legacy execution; unattended eligibility applies only through the exact staged governed adapter and its declared zero-write modes."
       },
       "invocation": {
         "mode": "headless",
@@ -2327,7 +2327,7 @@
       },
       "authority_and_write_scope": {
         "reads": "The exact evidence-synthesis result and audited user Stage 5 entry decision.",
-        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "writes": "None; the governed stage or aggregate returns writes: [], and the protective tombstone cannot execute persistence.",
         "judgment": "The user authorizes Stage 5 entry and separately decides act, watch, or discard."
       },
       "prerequisites": [
@@ -2335,9 +2335,9 @@
         "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "The governed boundary returns a stage result only and does not persist files or database state.",
-        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
-        "No live provider invocation or production-data mutation was used for semantic evidence."
+        "The governed boundary returns a deterministic stage or aggregate result only and does not persist files or database state.",
+        "The former legacy discovery path is a protective tombstone with an exact governed replacement and no execution authority.",
+        "Historical rollback is available from accepted pre-contraction revision 051c1c57c9dd447c930e4352262d6c4cd6f90fe2; no live provider invocation or production-data mutation was used for evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2350,14 +2350,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-5-express-thesis result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-5-express-thesis."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",

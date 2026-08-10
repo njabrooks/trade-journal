@@ -1,5 +1,5 @@
 {
   "name": "pipeline-status",
-  "description": "View the status of all active pipeline ideas. Shows current stage, confidence, age, and status for each idea. Also summarizes the kill log to identify patterns.",
+  "description": "Protective tombstone for the contracted legacy pipeline-status procedure. Produce the governed zero-write pipeline-status result.",
   "instructions": "SKILL.md"
 }

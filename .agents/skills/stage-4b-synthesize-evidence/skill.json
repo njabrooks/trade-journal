@@ -1,5 +1,5 @@
 {
   "name": "stage-4b-synthesize-evidence",
-  "description": "Stage 4B - Consolidate research files and synthesize findings into belief update with posterior confidence. Completes Stage 4 Evidence Resolution.",
+  "description": "Protective tombstone for the contracted legacy stage-4b-synthesize-evidence procedure. Produce the governed zero-write evidence-synthesis result.",
   "instructions": "SKILL.md"
 }

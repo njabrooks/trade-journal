@@ -43,16 +43,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write advance-or-kill result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-advance-or-kill."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -397,16 +397,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write graduate-pipeline-idea result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-graduate-pipeline-idea."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -585,16 +585,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 aggregate, all ten zero-write stages, and codex adapter."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-pipeline-status."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The aggregate and all ten #67/#68 stage-result boundaries are governed; retain legacy persistence and discovery until issue #69 is explicitly authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -807,16 +807,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-1-init-idea result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-1-init-idea."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -837,16 +837,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-2-formalize-thesis result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-2-formalize-thesis."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -867,16 +867,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-3-map-unknowns result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-3-map-unknowns."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -897,16 +897,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4a-prep-desktop-research result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-prep-desktop-research."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -927,16 +927,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4a-research-unknown result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-research-unknown."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -957,16 +957,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4b-synthesize-evidence result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4b-synthesize-evidence."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -987,16 +987,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-5-express-thesis result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-5-express-thesis."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -1173,16 +1173,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write advance-or-kill result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-advance-or-kill."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -1527,16 +1527,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write graduate-pipeline-idea result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-graduate-pipeline-idea."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -1715,16 +1715,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 aggregate, all ten zero-write stages, and claude adapter."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-pipeline-status."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The aggregate and all ten #67/#68 stage-result boundaries are governed; retain legacy persistence and discovery until issue #69 is explicitly authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -1937,16 +1937,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write stage-1-init-idea result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-1-init-idea."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -1967,16 +1967,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write stage-2-formalize-thesis result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-2-formalize-thesis."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -1997,16 +1997,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write stage-3-map-unknowns result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-3-map-unknowns."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -2027,16 +2027,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write stage-4a-prep-desktop-research result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4a-prep-desktop-research."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -2057,16 +2057,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write stage-4a-research-unknown result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4a-research-unknown."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -2087,16 +2087,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write stage-4b-synthesize-evidence result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4b-synthesize-evidence."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {
@@ -2117,16 +2117,16 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.2.0",
-        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
-        "adapter_digest": "sha256:e93603a66172a2a39ae2e3bac221619f5049b001ce6f9fecbf611d36b564b248",
-        "reason": "Exact current evidence binds the research-pipeline 1.2.0 claude adapter and its zero-write stage-5-express-thesis result boundary."
+        "capability_version": "1.3.0",
+        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
+        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-5-express-thesis."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+        "rationale": "The governed replacement is authoritative; the former legacy path is retained only as a protective tombstone with explicit rollback provenance."
       }
     },
     {

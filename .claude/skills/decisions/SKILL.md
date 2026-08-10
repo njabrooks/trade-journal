@@ -117,7 +117,7 @@ what latent work remains — so the next context knows where to pick up.
 | `link_strategy_to_thesis` | link strategy→thesis (built-in handler) |
 | `resolve_proxy_underlying` | create-underlying + `parent_underlying_id` (built-in handler) |
 | `classify_exposure` | `update-entity-status` (tactical vs belief) |
-| `run_deep_dive` | stage-1…5 → `graduate-pipeline-idea` |
+| `run_deep_dive` | governed `research-pipeline` stages through `npx tsx scripts/research-pipeline.ts` (zero-write results; any accepted persistence stays with the separately governed recorder) |
 
 ## Common mistakes
 1. ❌ Auto-resolving a packet without the user's pick — they exist *because* they need judgment.
