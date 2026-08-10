@@ -53,8 +53,8 @@ establish Adapter Conformance; only exact W1-bound evidence upgrades an inventor
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the J2 evidence date `2026-08-09`, eleven locked
-Capabilities make 26 inventory entries generation eligible while the whole-file Claude and Codex outputs
+generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-10`, eleven locked
+Capabilities make 32 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers.
 
@@ -167,6 +167,19 @@ mutate schedulers, credentials, provider discovery, production data, theses, str
 No live provider invocation, production mutation, scheduler, credential, discovery, or operational cutover
 occurred.
 
+Issue #67 advances the research-pipeline Capability to `1.1.0` at immutable source revision
+`c0d8a0c41f9fdb7a814e550ca48a6ec4b4a1d161`. It adds independently invocable, deterministic, zero-write
+results for pipeline status, user-selected idea intake, audited thesis formalization, and audited unknown
+mapping, then composes those exact results into the accepted #66 aggregate. Notes/Tana remains authoritative
+for capture, source material, and Toulmin extraction. Exact source digests, qualifier, rebuttals, ambiguities,
+prior-stage identity, and user decision identity/time are preserved. Stage 3 follows only an explicit Stage 2
+advance and enforces ranked decision impact, resolvability, priced-in state, clear kill conditions, asymmetric
+research payoff, and the exact advance/kill/archive decision. The four legacy persistence entry points and
+active discovery remain unchanged and rollback-capable. Research preparation, unknown research, evidence
+synthesis, thesis expression, gate decision, and graduation remain explicitly unmigrated for #68. Neither a
+stage result nor the aggregate can write, change status, create or resolve a Decision Item, use scheduler or
+credential authority, touch production data, or mutate a strategy, position, order, or trade.
+
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar
@@ -180,7 +193,7 @@ issue `njabrooks/projects#31` continues to own any future replacement for that i
 
 CI evaluates Capability and Provider Entry Point freshness against the runner's current UTC date. The
 checked-in immutable Registry Lock remains independently reproducible at its recorded governed evidence date
-of `2026-08-09`; CI resolves a temporary present-day lock before clean-regeneration validation so current
+of `2026-08-10`; CI resolves a temporary present-day lock before clean-regeneration validation so current
 freshness is enforced without rewriting or making the published lock nondeterministic. A controlled public-CLI
 proof also evaluates evidence on `2026-09-06`, after its `2026-09-05` expiry, and requires the adapter to become
 `stale`, existing governed output validation to fail, regeneration to fail, and the absent target to remain
