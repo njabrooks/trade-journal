@@ -93,7 +93,7 @@ Filter the Signal Sheet + Final_Ranking for:
 Split output into: **(a) names where we already have a thesis** — the data is
 entry-timing evidence, note the thesis status/direction alongside; **(b) fresh
 names with no thesis** — candidate ideas; if one interests the user, the path
-is `/stage-1-init-idea` or `/thesis`, not this skill. Use the Earnings Calendar
+is the governed research-pipeline `--idea-intake` stage or `/thesis`, not this skill. Use the Earnings Calendar
 sheet to flag any candidate reporting within ~14 days (binary-event risk on new
 entries). Note theme-level breadth from Theme Summary (which themes are
 confirming vs weak) as context for the AI-complex macro theses.
@@ -158,4 +158,4 @@ Chemicals & Materials · Energy & Infrastructure · Macro Satellites.
 4. **Mode B table** (book): ticker, our position/thesis, label, exhaustion,
    suggested action shape with concrete strike anchor level.
 5. **Theme breadth** one-liner + anything week-over-week if a prior file existed.
-6. **Follow-up offers** (advisor / ibkr-quote / thesis / stage-1) — offers, not actions.
+6. **Follow-up offers** (advisor / ibkr-quote / thesis / governed research-pipeline `--idea-intake`) — offers, not actions.

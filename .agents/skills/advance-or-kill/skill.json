@@ -1,5 +1,5 @@
 {
   "name": "advance-or-kill",
-  "description": "Gate evaluation skill for any pipeline stage. Evaluates whether an idea should advance, hold, or be killed. Handles kill log creation and idea archival.",
+  "description": "Protective tombstone for the contracted legacy advance-or-kill procedure. Produce the governed zero-write final gate result while preserving genuine user judgment.",
   "instructions": "SKILL.md"
 }

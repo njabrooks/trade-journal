@@ -205,7 +205,8 @@ moves stay conversational. Two moves have concrete tools:
   It dedupes per object (won't double-post). Use this **only** for genuine decisions — everything else
   stays in chat. Valid `decision-type` values: see `src/lib/types/decisions.ts`.
 
-Pointers (don't run): deep research = the `stage-1…5` pipeline skills; new source capture = `/tana-inbox`.
+Pointers (don't run): deep research = the governed `scripts/research-pipeline.ts` CLI followed only by
+separately authorized recorders; new source capture = `/tana-inbox`.
 
 ## Step 5 — Worked query recipes (D5 — capabilities, not features)
 

@@ -418,7 +418,7 @@ export function buildPipelineStatusResult(value: unknown): PipelineStatusResult 
     execution: { mode: 'stage_result_only', writes: [] },
     limitations: [
       'The status result reads supplied coordination records only and does not mutate the shared research workspace.',
-      'Legacy pipeline discovery and persistence remain active and unchanged during issue #67 coexistence.',
+      'The former pipeline-status entry point is a non-executable protective tombstone; use research-pipeline --pipeline-status.',
     ],
   });
 }
@@ -474,7 +474,7 @@ export function buildIdeaIntakeResult(value: unknown): IdeaIntakeResult {
     limitations: [
       'Notes/Tana remains authoritative for capture, source material, and Toulmin extraction.',
       'This result does not create a pipeline directory, thesis, journal entry, status change, or Decision Item.',
-      'Legacy persistence remains available through the unchanged stage-1 entry point during coexistence.',
+      'The former stage-1 entry point is a non-executable protective tombstone; use research-pipeline --idea-intake.',
     ],
   });
 }
@@ -592,7 +592,7 @@ export function buildThesisFormalizationResult(value: unknown): ThesisFormalizat
     limitations: [
       'The gate recommendation is provider analysis; only an explicit user decision can make the stage ready.',
       'This result does not write stage files, mutate a thesis, change status, or create or resolve a Decision Item.',
-      'Legacy persistence remains available through the unchanged stage-2 entry point during coexistence.',
+      'The former stage-2 entry point is a non-executable protective tombstone; use research-pipeline --thesis-formalization.',
     ],
   });
 }
@@ -738,7 +738,7 @@ export function buildUnknownMappingResult(value: unknown): UnknownMappingResult 
     limitations: [
       'The gate recommendation is provider analysis; only an explicit user decision can make the stage ready.',
       'This result does not perform research, write stage files, mutate a thesis, or create or resolve a Decision Item.',
-      'Legacy persistence remains available through the unchanged stage-3 entry point during coexistence.',
+      'The former stage-3 entry point is a non-executable protective tombstone; use research-pipeline --unknown-mapping.',
     ],
   });
 }

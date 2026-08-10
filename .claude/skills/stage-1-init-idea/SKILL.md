@@ -1,280 +1,36 @@
 ---
 name: stage-1-init-idea
-description: Initialize a new pipeline idea from a claim (audit file) or transcript. Creates the idea directory structure with _meta.yaml and stage-1-triage.md. Use this to begin tracking an idea through the research playbook stages.
-allowed-tools: Read, Write, Bash, Skill
+description: "Protective tombstone for the contracted legacy stage-1-init-idea procedure. Produce the governed zero-write idea-intake result."
+allowed-tools: Read, Bash
 ---
 
-# Initialize Pipeline Idea
-
-## Purpose
-
-Create a new pipeline idea from either:
-1. **An existing audit file** - Select a promising main claim that has already been extracted
-2. **A raw transcript** - Run `/process-transcript` first, then select a claim
-
-This skill creates the idea directory structure and initializes tracking for progression through the research playbook stages.
-
-## Workflow
-
-```
-Input: Audit file path + claim number OR Transcript file path
-  |
-  v
-1. If transcript: Run /process-transcript to create audit
-2. Read audit file and list main claims with novelty scores
-3. User selects claim to advance
-4. Validate novelty score >= 0.6 (warn if below, allow override)
-5. Create idea directory: pipeline/idea-XXX-{slug}/
-6. Create _meta.yaml with Stage 1 complete
-7. Create stage-1-triage.md with claim details
-  |
-  v
-Output: Initialized idea ready for Stage 2 (/formalize-thesis)
-```
-
-## Instructions
-
-When the user asks to initialize an idea:
-- "Init idea from audit file X, claim Y"
-- "Start pipeline for this claim"
-- "Create idea from transcript X"
-
-### Step 1: Determine Input Type
-
-**If audit file provided**:
-- Read the audit file
-- Skip to Step 3
-
-**If transcript file provided**:
-- Inform user that you'll run `/process-transcript` first
-- Call the `process-transcript` skill: `/process-transcript {transcript_path}`
-- After audit is created, proceed to Step 2
-
-### Step 2: Read Audit and List Claims
-
-Read the audit file and extract all main claims with their key metadata:
-
-```
-Main Claims Available for Pipeline:
-
-ID    | Title                                | Novelty | Type              | Category
-------|--------------------------------------|---------|-------------------|----------
-1     | AI agents will replace apps by 2026  | 0.72    | thesis_candidate  | macro
-2     | NVIDIA margin pressure from custom   | 0.45    | view_candidate    | asset_specific
-3     | Enterprise AI adoption accelerating  | 0.38    | thesis_candidate  | macro
-...
-
-Claims with novelty >= 0.6 are recommended for pipeline advancement.
-Claims below 0.6 can still be advanced with user override.
-
-Which claim would you like to advance? (Enter claim number)
-```
-
-### Step 3: Validate and Get User Selection
-
-After user selects a claim:
-
-1. **If novelty >= 0.6**: Proceed normally
-2. **If novelty < 0.6**: Warn the user:
-   ```
-   Warning: Claim {N} has novelty score {X}, below the recommended threshold of 0.6.
-
-   Low novelty claims may:
-   - Already be priced into markets
-   - Lack differentiated insight
-   - Have lower potential alpha
-
-   Do you want to proceed anyway? (y/n)
-   ```
-
-### Step 4: Generate Idea ID and Slug
-
-Determine the next idea ID by scanning existing pipeline directories:
-
-```bash
-ls /Users/njb/Desktop/trade-journal/research-workspace/pipeline/ | grep "^idea-" | sort -V | tail -1
-```
-
-- If no existing ideas: Start with `idea-001`
-- Otherwise: Increment from highest existing ID
-
-Generate slug from claim title:
-- Lowercase
-- Replace spaces with hyphens
-- Remove special characters
-- Truncate to ~30 chars
-- Example: "AI agents will replace apps by 2026" → "ai-agents-replace-apps-2026"
-
-### Step 5: Create Directory Structure
-
-```bash
-mkdir -p /Users/njb/Desktop/trade-journal/research-workspace/pipeline/idea-{XXX}-{slug}
-```
-
-### Step 6: Create _meta.yaml
-
-Create the metadata file with initial state:
-
-```yaml
-# Pipeline Idea Metadata
-idea_id: "idea-{XXX}"
-title: "{Full claim title}"
-slug: "{slug}"
-
-# Progression State
-current_stage: 1
-status: active
-
-# Source Reference
-source_claim_id: "claim-{N}"
-source_audit: "{path to audit file}"
-
-# Confidence Tracking
-confidence: {novelty_score}
-confidence_history:
-  - stage: 1
-    value: {novelty_score}
-    date: "{today ISO date}"
-    note: "Novelty score from forensic extraction"
-
-# Stage History
-stage_history:
-  - stage: 1
-    started_at: "{ISO timestamp}"
-    completed_at: "{ISO timestamp}"
-    decision: advance
-    note: "Claim selected from audit. Novelty: {score}, mechanism plausible."
-
-# Timestamps
-created_at: "{ISO timestamp}"
-updated_at: "{ISO timestamp}"
-```
-
-### Step 7: Create stage-1-triage.md
-
-Copy the full claim details from the audit into the Stage 1 file:
-
-```markdown
----
-stage: 1
-title: "Signal Triage"
-source_audit: "{audit file path}"
-source_claim_id: "claim-{N}"
-created_at: "{ISO timestamp}"
----
-
-# Stage 1: Signal Triage
-
-## Selected Claim
-
-{Copy the FULL claim structure from the audit, including:}
-
-### Claim {N}: {Title}
-
-**Level**: main
-**Type**: {thesis_candidate | view_candidate}
-**Category**: {macro | asset_specific}
-**Tickers**: {list}
-**Time Horizon**: {long_term | medium_term | short_term}
-**Qualifier**: {high | medium | low | exploratory}
-**Novelty Score**: {0.0-1.0}
-**Consensus View**: {what market currently assumes}
-
-**Claim**:
-{The claim text}
-
-**Evidence**:
-{List all evidence with timestamps}
-
-**Reasoning**:
-{Why evidence supports claim}
-
-**Backing**:
-{Theoretical/historical support}
-
-**Rebuttal**:
-{Counter-arguments}
-
-**Supporting Evidence Claims**: {list}
-**Rebutting Evidence Claims**: {list}
-
----
-
-## Gate Assessment
-
-**Decision**: advance
-**Rationale**: Claim selected for pipeline advancement. Novelty score {X} {meets threshold | below threshold but user override approved}. Mechanism is {plausible | needs validation}.
-
----
-
-## Next Step
-
-Run `/formalize-thesis pipeline/idea-{XXX}-{slug}` to proceed to Stage 2: Theme Formalisation.
-```
-
-### Step 8: Create Draft Thesis in Database
-
-Create a draft thesis entity in the Trade Journal database so the idea is visible in the UI from Stage 1.
-Determine thesis type from the claim's category (macro → macro thesis, asset_specific → asset thesis).
-
-For macro theses:
-```bash
-cd trade-journal && npx tsx scripts/ops/create-macro-thesis.ts \
-  --title "{claim title}" \
-  --description "{claim text}" \
-  --thesis-type "{secular|cyclical|structural — infer from claim}" \
-  --direction "{bullish|bearish|neutral — infer from claim}" \
-  --confidence exploratory \
-  --pipeline-stage 1 \
-  --pipeline-idea-ref "idea-{XXX}-{slug}"
-```
-
-For asset theses:
-```bash
-cd trade-journal && npx tsx scripts/ops/create-asset-thesis.ts \
-  --ticker "{ticker}" \
-  --title "{claim title}" \
-  --description "{claim text}" \
-  --direction "{bullish|bearish|neutral}" \
-  --confidence exploratory \
-  --pipeline-stage 1 \
-  --pipeline-idea-ref "idea-{XXX}-{slug}"
-```
-
-Record the returned thesis ID in `_meta.yaml` by adding a `linked_thesis_id` field:
-```yaml
-linked_thesis_id: "{returned uuid}"
-linked_thesis_type: "macro"  # or "asset"
-```
-
-### Step 9: Confirm Creation
-
-Output confirmation:
-
-```
-Idea initialized successfully!
-
-  ID: idea-{XXX}
-  Title: {title}
-  Location: research-workspace/pipeline/idea-{XXX}-{slug}/
-
-  Files created:
-  - _meta.yaml (tracking metadata)
-  - stage-1-triage.md (claim details)
-
-  DB entity created:
-  - {macro|asset} thesis: {id} (status: draft, pipeline_stage: 1)
-
-  Current stage: 1 (Signal Triage) - COMPLETE
-  Confidence: {novelty_score}
-
-Next step: Run `/formalize-thesis pipeline/idea-{XXX}-{slug}` to proceed to Stage 2.
-```
-
-## Notes
-
-- This skill does NOT perform Stage 2 work - it only initializes the idea
-- If the audit file doesn't have novelty_score or consensus_view fields, warn the user that the audit was created before the enhancement
-- The pipeline directory is `research-workspace/pipeline/` (project-local, not Obsidian vault)
-- Ideas can be initialized from any audit file, including older ones
-- The draft thesis entity gives the idea visibility in the UI from early stages; it will be promoted through the lifecycle as the pipeline progresses
+# Stage 1 Idea Intake — Protective Tombstone
+
+The legacy provider-specific procedure at this discovery path was contracted by issue #69 after the complete
+research-pipeline 1.2.0 expansion was accepted at merge
+`051c1c57c9dd447c930e4352262d6c4cd6f90fe2`. This file remains only as a protective historical tombstone so
+existing discovery links fail safely and identify the exact governed replacement.
+
+## Governed replacement
+
+- Capability: `capability:scope:trade-journal/research-pipeline`
+- Current contraction release: `1.3.0`
+- Provider adapter: `capabilities/research-pipeline/adapters/{claude|codex}.md`
+- Governed discovery output: `docs/agents/provider-entry-points/staging/{claude|codex}.md`
+- Public command: `npx tsx scripts/research-pipeline.ts --idea-intake <file|->`
+- Validation: `npx tsx scripts/research-pipeline.ts --validate-stage-result <file|->`
+
+The replacement returns `execution: { mode: "stage_result_only", writes: [] }`. Preserve exact Notes/Tana
+provenance, prior-stage digests, unavailable/refusal states, idempotency, and genuine user judgment as required
+by the Registry-locked Capability. Aggregate coordination also remains zero-write.
+
+## Refusal and history
+
+Do not execute the removed legacy procedure, reconstruct its file or database writes, use ad-hoc SQL, invoke a
+generic writer, change status, resolve a Decision Item, configure a signal, mutate a thesis, strategy, position,
+order, or trade, or treat this tombstone as unattended persistence authority. If required inputs, source access,
+or the eligible environment are absent, return the governed `unavailable` or `refused` result without writes.
+
+Historical instructions remain recoverable from Git at the accepted pre-contraction revision above. Rollback is
+a repository revert to that revision followed by deterministic Registry Lock and generated-output regeneration;
+there is no production-data, scheduler, credential, or cross-repository rollback step.

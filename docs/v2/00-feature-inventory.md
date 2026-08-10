@@ -169,10 +169,12 @@ Evidence: pages still render live data; human flow stopped mid-April. The API su
 
 ---
 
-## 10. Stage-Gated Research Pipeline (`research-workspace/`, stage-1…5 skills)
+## 10. Governed Research Pipeline (`scripts/research-pipeline.ts`)
 
 Evidence: 7 idea directories; last touched Mar 25 (idea-007). Skills all still installed.
-**Q:** Still believe in the stage-gate model? Options: keep as-is (it's file-based, zero runtime cost), or fold its best part (advance-or-kill discipline) into the thesis lifecycle and drop the parallel structure.
+The former file-based stage skill family is contracted to protective tombstones. The governed CLI preserves
+the stage-gate and advance-or-kill discipline as deterministic zero-write results; separately authorized
+recorders own any accepted persistence.
 
 ---
 

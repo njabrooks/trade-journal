@@ -152,8 +152,9 @@ describe('research-pipeline aggregate contract', () => {
       .toHaveLength(0);
     expect(first.stageOutcomes.every(({ writes }) => writes.length === 0)).toBe(true);
     expect(first.limitations).toContain(
-      'All ten pipeline stage results coexist with unchanged, rollback-capable legacy persistence entry points.',
+      'All ten legacy persistence entry points are non-executable protective tombstones mapped to these governed stage results.',
     );
+    expect(first.limitations.join(' ')).not.toMatch(/legacy .*remain(?:s)? active|legacy persistence remains|coexist with unchanged/i);
   });
 
   it('composes the exact governed stage validators and delegates judgment-bound writes', () => {

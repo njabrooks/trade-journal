@@ -1,5 +1,5 @@
 {
   "name": "graduate-pipeline-idea",
-  "description": "Formal handoff from pipeline idea files to Trade Journal database entities. Creates or updates thesis, links claims, creates signals via /build-core-argument, and updates pipeline state. Use after Stage 4B synthesis or Stage 5 expression.",
+  "description": "Protective tombstone for the contracted legacy graduate-pipeline-idea procedure. Produce the governed zero-write, provenance-bound graduation handoff.",
   "instructions": "SKILL.md"
 }

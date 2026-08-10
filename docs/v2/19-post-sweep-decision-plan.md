@@ -142,7 +142,7 @@ landed. **Important mechanism caveat:**
   feature and may already propose a `cluster_claims_to_thesis` packet from the *current* unframed
   asset-thesis pool (e.g. an advanced-packaging cluster if ASML/MRVL/ENTG read as unframed).
 - For clusters with **no tradeable underlying / no asset thesis**, develop manually:
-  `scripts/ops/create-macro-thesis.ts` (draft) → optionally run the stage-1…5 pipeline → create/link
+  `scripts/ops/create-macro-thesis.ts` (draft) → optionally run the governed zero-write research-pipeline CLI → create/link only through separately authorized recorders
   claims → `/build-core-argument`. The dropped-claim evidence lives in Tana; pull it back via
   `/relate-research` *after* the thesis exists (it links to any active thesis).
 

@@ -1,15 +1,15 @@
 {
   "capability_id": "capability:scope:trade-journal/research-pipeline",
-  "capability_version": "1.2.0",
-  "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+  "capability_version": "1.3.1",
+  "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
   "adapter_id": "research-pipeline-codex",
-  "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+  "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
   "support_state": "current",
   "validated_at": "2026-08-10",
   "results": {
     "adapter-entry-point": {
       "status": "passed",
-      "method": "Accepted Workspace CLI Capability validation and staged Provider Entry Point generation preserve the exact aggregate adapter beside active legacy entry points."
+      "method": "Accepted Workspace CLI Capability validation and staged Provider Entry Point generation preserve the exact aggregate adapter while all former legacy discovery paths are non-executable protective tombstones."
     },
     "intake-formalization-stages": {
       "status": "passed",
@@ -27,15 +27,15 @@
       "status": "passed",
       "method": "Repository tests prove zero aggregate writes, authority-expansion refusal, and exact naming of only publish-research.ts or record-belief-research-relation.ts behind stage-owned user authorization."
     },
-    "legacy-coexistence": {
+    "legacy-contraction": {
       "status": "passed",
-      "method": "Inventory, discovery, and contract tests prove all ten legacy persistence inputs remain active and rollback-capable while governed stage results coexist and issue #69 remains separate."
+      "method": "Public contraction tests prove all ten former Claude procedures and ten headless projections retain discovery and exact governed replacements as non-executable, zero-write tombstones; declared runtime metadata, skill consumers, decision runbooks, operating-model guidance, and inventory records route only to the governed CLI and separately authorized recorders."
     },
     "provider-semantic-equivalence": {
       "status": "passed",
-      "reviewer": "Issue #68 implementation review",
-      "method": "Compared exact Claude and Codex adapters with issues #68/#46, accepted #47/#66/#67, immutable 1.1.0 input, locked dependencies, Notes/Tana authority, current loose-agent semantics, and legacy pipeline inventory; no live provider or production data was used.",
-      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/68",
+      "reviewer": "Issue #69 fixed-point Standards and Spec review",
+      "method": "Compared exact Claude and Codex adapters and declared public consumers with issues #69/#46, accepted #47/#66-#68, immutable 1.2.0 input, locked dependencies, Notes/Tana authority, current loose-agent semantics, every legacy consumer, and the tombstone rollback boundary; review findings were repaired without live provider or production-data use.",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/69",
       "expires_at": "2026-09-09"
     },
     "eligible-environment": {
@@ -49,7 +49,7 @@
   },
   "limitations": [
     "No live provider invocation or production-data mutation was used for evidence.",
-    "Legacy persistence for all ten stage boundaries remains active; active discovery is unchanged and rollback-capable.",
+    "Former legacy discovery paths remain only as protective tombstones; rollback to the accepted pre-contraction revision is explicit and no tombstone can execute persistence.",
     "The aggregate and stage results are read-only and cannot authorize or invoke a recorder, status change, Decision Item resolution, strategy, position, order, or trade."
   ]
 }

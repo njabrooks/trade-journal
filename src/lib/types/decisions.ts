@@ -101,7 +101,7 @@ export const DECISION_RUNBOOKS: Record<DecisionType, string> = {
   frame_asset_under_macro: 'link asset→macro',
   classify_macro_link: 'link asset→macro',
   weakening_signal_action: '/thesis-review health',
-  run_deep_dive: 'stage-1…5 → graduate-pipeline-idea',
+  run_deep_dive: 'research-pipeline CLI → separately authorized recorders',
   link_strategy_to_thesis: 'link-strategies-to-theses',
   re_underwrite_due: '/thesis <X> re-underwrite (new evidence since last version)',
 };

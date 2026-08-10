@@ -544,7 +544,7 @@ export function buildResearchPipelineAggregate(
       capabilityId,
       detail: capabilityId
         ? 'No validated Registry-locked stage result was supplied.'
-        : 'This legacy stage remains active but is not migrated by issue #67.',
+        : 'No governed Capability binding exists for this stage.',
       writes: [],
       delegatedWrite: null,
     };
@@ -1030,9 +1030,9 @@ export function buildResearchPipelineAggregate(
     execution: { mode: 'aggregate_coordination_only', writes: [] },
     retry: { deterministic: true, key: aggregateDigest },
     limitations: [
-      'All ten pipeline stage results coexist with unchanged, rollback-capable legacy persistence entry points.',
+      'All ten legacy persistence entry points are non-executable protective tombstones mapped to these governed stage results.',
       'Research and expression stages are deterministic zero-write results; unavailable external prerequisites remain explicit.',
-      'Active legacy pipeline discovery remains unchanged.',
+      'Historical legacy instructions are recoverable only from the accepted pre-contraction Git revision.',
       'The aggregate has no database, scheduler, credential, provider-discovery, strategy, position, or trade authority.',
     ],
   };

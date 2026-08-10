@@ -1,5 +1,5 @@
 {
   "name": "stage-4a-research-unknown",
-  "description": "Stage 4A - Research a single unknown using one of three tracks (falsification, validation, analogues). Appends findings to stage-4-evidence.md.",
+  "description": "Protective tombstone for the contracted legacy stage-4a-research-unknown procedure. Produce the governed zero-write unknown-research result with explicit source-availability semantics.",
   "instructions": "SKILL.md"
 }

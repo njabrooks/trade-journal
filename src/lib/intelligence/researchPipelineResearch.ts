@@ -459,7 +459,7 @@ export function buildResearchPreparationResult(value: unknown): ResearchPreparat
       'This portable brief does not require or imply a particular provider or runtime.',
       'Notes/Tana remains authoritative for capture, source material, and Toulmin extraction.',
       'This result does not perform research, write a pipeline file, or mutate any Trade Journal entity.',
-      'The unchanged stage-4a preparation entry point remains the rollback-capable persistence path.',
+      'The former stage-4a preparation entry point is a non-executable protective tombstone; use research-pipeline --research-preparation.',
     ],
   });
 }
@@ -534,7 +534,7 @@ export function buildUnknownResearchResult(value: unknown): UnknownResearchResul
         'Research prerequisites are explicitly unavailable; no evidence or partial success is fabricated.',
         'Retry only when the declared prerequisite becomes available, using the exact same preparation result.',
         'This result does not create a research file, claim, relationship, thesis update, or Decision Item.',
-        'The unchanged stage-4a research entry point remains the rollback-capable persistence path.',
+        'The former stage-4a research entry point is a non-executable protective tombstone; use research-pipeline --unknown-research.',
       ],
     });
   }
@@ -571,7 +571,7 @@ export function buildUnknownResearchResult(value: unknown): UnknownResearchResul
       'The result validates supplied research evidence and does not claim an unavailable provider or environment succeeded.',
       'Source URLs and provider analysis do not transfer Notes/Tana capture authority or prove thesis bearing by themselves.',
       'This result does not create a research file, claim, relationship, thesis update, or Decision Item.',
-      'The unchanged stage-4a research entry point remains the rollback-capable persistence path.',
+      'The former stage-4a research entry point is a non-executable protective tombstone; use research-pipeline --unknown-research.',
     ],
   });
 }
@@ -732,7 +732,7 @@ export function buildEvidenceSynthesisResult(value: unknown): EvidenceSynthesisR
       'The evidence gate is a recommendation-only result and does not record or resolve user judgment.',
       'Contradictions and unresolved unknowns remain explicit; missing research is not represented as completed evidence.',
       'This result does not write stage files, change confidence or thesis status, or create signals or Decision Items.',
-      'The unchanged stage-4b synthesis entry point remains the rollback-capable persistence path.',
+      'The former stage-4b synthesis entry point is a non-executable protective tombstone; use research-pipeline --evidence-synthesis.',
     ],
   });
 }
@@ -838,7 +838,7 @@ export function buildThesisExpressionResult(value: unknown): ThesisExpressionRes
       'Expression candidates and action are analytical recommendations; only the user may decide whether to act, watch, or discard.',
       'Sizing inputs deliberately exclude a position size, quantity, order, or allocation instruction.',
       'This result does not create a thesis, strategy, position, order, trade, status change, signal, or Decision Item.',
-      'The unchanged stage-5 expression entry point remains the rollback-capable persistence path.',
+      'The former stage-5 expression entry point is a non-executable protective tombstone; use research-pipeline --thesis-expression.',
     ],
   });
 }
@@ -881,7 +881,7 @@ export function buildGateDecisionResult(value: unknown): GateDecisionResult {
       'The provider recommendation is not a decision; only an explicit audited user choice makes this result ready.',
       'The user may override act, watch, or discard when the rationale and audit remain explicit.',
       'This result does not write pipeline state, change thesis status, resolve a Decision Item, or place or stage a trade.',
-      'The unchanged advance-or-kill entry point remains the rollback-capable persistence path.',
+      'The former advance-or-kill entry point is a non-executable protective tombstone; use research-pipeline --gate-decision.',
     ],
   });
 }
@@ -1071,7 +1071,7 @@ export function buildGraduationResult(value: unknown): GraduationResult {
     handoff: structuredClone(handoff),
     execution: { mode: 'stage_result_only', writes: [] },
     limitations: [
-      'Graduation is a provenance-bound handoff plan only; legacy persistence remains separately user-invoked and rollback-capable.',
+      'Graduation is a provenance-bound zero-write handoff; the former persistence entry point is a protective tombstone and historical bytes remain recoverable from Git.',
       'Exact provenance-bearing claims must be reused through their governed publication and relation capabilities.',
       'Underwriting derives resolution from rebuttals; it does not configure signals or promote lifecycle status.',
       'This result has no thesis, status, Decision Item, strategy, position, order, trade, database, scheduler, or credential authority.',

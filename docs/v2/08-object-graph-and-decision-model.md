@@ -78,7 +78,7 @@ research lands, run digest + signal derivation. (B6 builds detection + the Tana-
 this formalizes the full cycle.)
 
 ### 3.5 Deep-dive integration (escalation, not default)
-The five-stage research pipeline (`stage-1…5`) is an **escalation path**, not a replacement
+The governed research-pipeline CLI is an **escalation path**, not a replacement
 for the lightweight propagation loop:
 - use it when a gap is **important, ambiguous, or position-relevant**;
 - let it **graduate** into thesis updates, claims, signals, or strategy expression;

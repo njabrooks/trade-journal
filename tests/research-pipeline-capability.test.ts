@@ -5,6 +5,20 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const root = resolve(process.cwd(), 'capabilities/research-pipeline');
+const repositoryRoot = process.cwd();
+
+const contractedLegacyEntries = {
+  'pipeline-status': '--pipeline-status',
+  'stage-1-init-idea': '--idea-intake',
+  'stage-2-formalize-thesis': '--thesis-formalization',
+  'stage-3-map-unknowns': '--unknown-mapping',
+  'stage-4a-prep-desktop-research': '--research-preparation',
+  'stage-4a-research-unknown': '--unknown-research',
+  'stage-4b-synthesize-evidence': '--evidence-synthesis',
+  'stage-5-express-thesis': '--thesis-expression',
+  'advance-or-kill': '--gate-decision',
+  'graduate-pipeline-idea': '--graduation',
+} as const;
 
 function read(path: string): string {
   return readFileSync(resolve(root, path), 'utf8');
@@ -24,7 +38,7 @@ describe('research-pipeline Capability', () => {
     expect(capability).toMatchObject({
       id: 'capability:scope:trade-journal/research-pipeline',
       authority: 'scope:trade-journal',
-      version: '1.2.0',
+      version: '1.3.1',
       dependencies: [
         { id: 'capability:scope:trade-journal/claims-synthesis', version_constraint: '>=1.0.0 <2.0.0' },
         { id: 'capability:scope:trade-journal/research-publication', version_constraint: '>=1.0.0 <2.0.0' },
@@ -35,10 +49,10 @@ describe('research-pipeline Capability', () => {
     const contract = String(capability.contract);
     for (const text of [
       'Notes/Tana owns capture, source material, and Toulmin extraction',
-      'All ten legacy',
-      'rollback-capable',
+      'protective tombstones',
+      'rollback remains available',
       'judgment_required',
-      'No stage or aggregate has scheduler',
+      'No stage, aggregate, or tombstone has scheduler',
     ]) expect(contract).toContain(text);
   });
 
@@ -69,9 +83,9 @@ describe('research-pipeline Capability', () => {
         'belief-research-relation',
         'scripts/ops/publish-research.ts --stdin',
         'scripts/ops/record-belief-research-relation.ts --stdin',
-        'All ten legacy entry points',
-        'rollback-capable',
-        'issue #69 contraction',
+        'protective tombstones',
+        'Historical rollback is available',
+        'must not execute the removed legacy procedure',
         'must not use ad-hoc SQL, Supabase MCP writes, direct API mutation, generic writes',
         'must not change status, resolve a Decision Item, configure signals, mutate a strategy or position, or place or stage an order or trade',
       ]) expect(adapter).toContain(text);
@@ -137,17 +151,20 @@ describe('research-pipeline Capability', () => {
     });
   });
 
-  it('binds exact package and adapter bytes to current evidence without claiming legacy contraction', () => {
+  it('binds exact package and adapter bytes to current contraction evidence', () => {
     for (const provider of ['claude', 'codex']) {
       const evidence = readJson(`evidence/${provider}.json`);
       expect(evidence.package_digest).toBe(fileDigest('capability-package.json'));
       expect(evidence.adapter_digest).toBe(fileDigest(`adapters/${provider}.md`));
       expect(evidence.support_state).toBe('current');
-      expect(String(evidence.limitations)).toContain('Legacy persistence for all ten stage boundaries remains active');
+      expect(String(evidence.limitations)).toContain('protective tombstones');
+      expect(evidence.results).toEqual(expect.objectContaining({
+        'legacy-contraction': expect.objectContaining({ status: 'passed' }),
+      }));
     }
   });
 
-  it('reconciles exact aggregate adapters into both inventories without replacing legacy discovery', () => {
+  it('contracts every legacy discovery path to an exact governed zero-write tombstone', () => {
     const pairs = [
       ['interactive-inventory.json', 'interactive-claude-pipeline-status', 'claude'],
       ['headless-inventory.json', 'headless-codex-pipeline-status', 'codex'],
@@ -188,23 +205,65 @@ describe('research-pipeline Capability', () => {
           : `.agents/skills/${legacyName}/SKILL.md`,
       }));
       expect(entry.evidence).toEqual(expect.objectContaining({ state: 'current' }));
+      expect(entry.j2_disposition).toEqual(expect.objectContaining({
+        action: 'migrate',
+        rationale: expect.stringContaining('protective tombstone'),
+      }));
       expect(entry.governed_binding).toEqual(expect.objectContaining({
         package_path: 'capabilities/research-pipeline/capability-package.json',
       }));
+
+      const flag = contractedLegacyEntries[legacyName as keyof typeof contractedLegacyEntries];
+      const tombstone = readFileSync(resolve(process.cwd(), provider === 'claude'
+        ? `.claude/skills/${legacyName}/SKILL.md`
+        : `.agents/skills/${legacyName}/SKILL.md`), 'utf8');
+      for (const text of [
+        'Protective Tombstone',
+        'capability:scope:trade-journal/research-pipeline',
+        'npx tsx scripts/research-pipeline.ts',
+        flag,
+        'writes: []',
+        'Do not execute the removed legacy procedure',
+        '051c1c57c9dd447c930e4352262d6c4cd6f90fe2',
+      ]) expect(tombstone).toContain(text);
+      expect(tombstone).not.toMatch(/\b(UPDATE|INSERT|DELETE)\s+[a-z_]/);
     }
-    expect(readFileSync(resolve(process.cwd(), '.claude/skills/pipeline-status/SKILL.md'), 'utf8'))
-      .toContain('Pipeline Status');
-    expect(readFileSync(resolve(process.cwd(), '.agents/skills/pipeline-status/SKILL.md'), 'utf8'))
-      .toContain('Pipeline Status');
-    for (const stage of [
-      'stage-1-init-idea', 'stage-2-formalize-thesis', 'stage-3-map-unknowns',
-      'stage-4a-prep-desktop-research', 'stage-4a-research-unknown', 'stage-4b-synthesize-evidence',
-      'stage-5-express-thesis', 'advance-or-kill', 'graduate-pipeline-idea',
-    ]) {
-      expect(readFileSync(resolve(process.cwd(), `.claude/skills/${stage}/SKILL.md`), 'utf8').length)
-        .toBeGreaterThan(0);
-      expect(readFileSync(resolve(process.cwd(), `.agents/skills/${stage}/SKILL.md`), 'utf8').length)
-        .toBeGreaterThan(0);
+
+    for (const legacyName of Object.keys(contractedLegacyEntries)) {
+      const preamble = readFileSync(resolve(
+        process.cwd(), `.agents/skills/${legacyName}/HEADLESS_PREAMBLE.md`,
+      ), 'utf8');
+      expect(preamble).toContain('PROTECTIVE TOMBSTONE');
+      expect(preamble).toContain('Do not execute the removed legacy procedure');
+      expect(preamble).toContain('writes: []');
+    }
+  });
+
+  it('keeps declared public consumers and result metadata off the contracted legacy routes', () => {
+    const consumers = [
+      'src/lib/types/decisions.ts',
+      'src/lib/intelligence/researchPipeline.ts',
+      'src/lib/intelligence/researchPipelineIntake.ts',
+      'src/lib/intelligence/researchPipelineResearch.ts',
+      '.claude/skills/decisions/SKILL.md',
+      '.agents/skills/decisions/SKILL.md',
+      '.claude/skills/thesis/SKILL.md',
+      '.agents/skills/thesis/SKILL.md',
+      '.claude/skills/visser-scan/SKILL.md',
+      '.agents/skills/visser-scan/SKILL.md',
+      'docs/v2/09-claim-signal-propagation-operating-model.md',
+    ];
+    for (const consumer of consumers) {
+      const contents = readFileSync(resolve(repositoryRoot, consumer), 'utf8');
+      expect(contents, consumer).not.toMatch(
+        /stage-1…5|graduate-pipeline-idea|legacy .*remain(?:s)? active|legacy persistence remains|coexist with unchanged/i,
+      );
+    }
+    const runbook = readFileSync(resolve(repositoryRoot, 'src/lib/types/decisions.ts'), 'utf8');
+    expect(runbook).toContain('research-pipeline CLI → separately authorized recorders');
+    for (const consumer of consumers.filter((path) => path.includes('/skills/'))) {
+      expect(readFileSync(resolve(repositoryRoot, consumer), 'utf8'), consumer)
+        .toContain('research-pipeline');
     }
   });
 });
