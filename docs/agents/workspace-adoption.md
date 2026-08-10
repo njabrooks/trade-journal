@@ -192,18 +192,21 @@ unchanged and rollback-capable. Notes/Tana retains capture, source-material, and
 aggregate acquires scheduler, credential, production-data, status, Decision Item resolution, signal, strategy,
 position, order, trade, generic-write, or database authority. Issue #69 contraction is not started.
 
-Issue #69 contracts the superseded research-pipeline surface and publishes Capability `1.3.0` from immutable
-source revision `6216690f163fdc1dc30d15d3b369ea65f72eee8c`. The ten former Claude procedures and ten
+Issue #69 contracts the superseded research-pipeline surface and publishes Capability `1.3.1` from immutable
+source revision `6b0615dea287d112ce190b1e749b6ff85b9b0750`. The ten former Claude procedures and ten
 headless projections retain their existing discovery paths as non-executable protective tombstones; each names
 one exact governed CLI stage, returns or requires zero writes, and preserves unavailable, refusal, provenance,
 idempotency, and genuine-judgment semantics. Active repository consumers now route to the governed CLI, while
 the machine-local Codex bridge continues to resolve safely through the retained paths. Historical instructions
 remain recoverable from accepted pre-contraction merge `051c1c57c9dd447c930e4352262d6c4cd6f90fe2` and
-rollback requires only a repository revert followed by deterministic publication regeneration. The published
-Registry Lock digest is `sha256:58babef231b541dc839a4ece1459baffc2d47c417931c6c02c21e96bd97c6177`;
+rollback requires only a repository revert followed by deterministic publication regeneration. The patch
+release supersedes the initial 1.3.0 publication after fixed-point Standards and Spec review found stale
+coexistence language in public result metadata and active consumers; declared consumers now route only to the
+governed CLI and separately authorized recorders. The published Registry Lock digest is
+`sha256:815d4028d0097dd7572d4ea3f50f9bebfba9e587d7f8563de87a39feb79be8f5`;
 staged Claude and Codex outputs are respectively
-`sha256:b7a10894ba9dd414af6c8e74b0cf893ffb105a3b8cf3df7d05d42f76875dc1da` and
-`sha256:73834444be7332fcd1f06c02bf1a9abdfcfdc14921759ab53fbcb8113275371e`. No scheduler,
+`sha256:105b824aa910f76975d3b3c46cc61a210409f0d833a373e8a315e7b45fc2fc06` and
+`sha256:edf86b0e7e0304fd4392b3d81b4369d78a396989744aeb16060ae93766b1cb56`. No scheduler,
 credential, production-data, status, Decision Item resolution, signal, strategy, position, order, trade,
 generic database-write, Notes/Tana-write, Radon, #70 disposition, or final #76 discovery-cutover authority was
 used or acquired.

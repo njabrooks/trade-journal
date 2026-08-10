@@ -329,7 +329,7 @@ Provider Adapter `portfolio-snapshot-claude` (current):
 
 This adapter is read-only. Its authority ends at presenting the returned snapshot; it does not mutate Trade Journal state or place trades.
 
-### capability:scope:trade-journal/research-pipeline 1.3.0
+### capability:scope:trade-journal/research-pipeline 1.3.1
 
 Intent: Provide provider-neutral, zero-write results across research-pipeline intake, research, evidence synthesis, thesis expression, user gates, and graduation planning while composing the ordered aggregate and contracting superseded legacy procedures to rollback-capable protective tombstones.
 
