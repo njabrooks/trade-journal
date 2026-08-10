@@ -43,10 +43,10 @@
   `.claude/skills/` by `scripts/ops/generate-agents-mirror.ts` and kept honest by
   `scripts/ops/check-codex-parity.ts` (run after any skill change, then `git add .agents`). Current at all 36
   skills. For interactive work, read the canonical `.claude/skills/` source — the mirror is headless-only.
-  - **NOTE — before relying on Codex for a headless CRON job:** 20 per-skill preambles are a *generic
+  - **NOTE — before relying on Codex for a headless CRON job:** 19 per-skill preambles are a *generic
     baseline*. Five executable workflows have bespoke contracts (`assess-validation-evidence`,
     `build-core-argument`, `finalize-for-upload`, `relate-research`, and `synthesize-claims`), while the ten
-    contracted research-pipeline paths and deferred `visser-scan` have bespoke refusal preambles. Give any
+    contracted research-pipeline paths plus deferred `visser-scan` and unavailable `gateway` have bespoke refusal preambles. Give any
     other target skill a **bespoke `HEADLESS_PREAMBLE.md`** with a parameter list and concrete JSON output
     contract; the generator preserves bespoke preambles once written. `decisions`/`thesis` are
     interactive-only — not meant for unattended cron.
