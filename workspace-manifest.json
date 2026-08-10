@@ -193,13 +193,13 @@
     },
     {
       "id": "headless-codex-process-note",
-      "capability": "capability:scope:notes/toulmin-extraction",
+      "capability": "capability:scope:notes/content-processing",
       "provider": "codex",
       "path": ".agents/skills/process-note/SKILL.md"
     },
     {
       "id": "headless-codex-process-transcript",
-      "capability": "capability:scope:notes/toulmin-extraction",
+      "capability": "capability:scope:notes/content-processing",
       "provider": "codex",
       "path": ".agents/skills/process-transcript/SKILL.md"
     },
@@ -385,13 +385,13 @@
     },
     {
       "id": "interactive-claude-process-note",
-      "capability": "capability:scope:notes/toulmin-extraction",
+      "capability": "capability:scope:notes/content-processing",
       "provider": "claude",
       "path": ".claude/skills/process-note/SKILL.md"
     },
     {
       "id": "interactive-claude-process-transcript",
-      "capability": "capability:scope:notes/toulmin-extraction",
+      "capability": "capability:scope:notes/content-processing",
       "provider": "claude",
       "path": ".claude/skills/process-transcript/SKILL.md"
     },
@@ -548,7 +548,7 @@
       },
       "generation_eligibility": {
         "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
-        "eligible_adapters": 44,
+        "eligible_adapters": 48,
         "governed_outputs": [
           "docs/agents/provider-entry-points/staging/claude.md",
           "docs/agents/provider-entry-points/staging/codex.md"

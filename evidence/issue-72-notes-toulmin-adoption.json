@@ -1,0 +1,97 @@
+{
+  "kind": "NotesToulminAdoption",
+  "schema_version": "1.0.0",
+  "issue": "njabrooks/trade-journal#72",
+  "recorded_at": "2026-08-10",
+  "fixed_point": "6291b10bbd6bbda21d8c8a013b826ae7afd0ba37",
+  "accepted_predecessor": {
+    "issue": "njabrooks/trade-journal#47",
+    "accepted_repair_merge_revision": "abcedb11576bffde647ce6855ce9d3e0163483b3"
+  },
+  "workspace_authority": {
+    "repository": "github:njabrooks/projects",
+    "accepted_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358"
+  },
+  "notes_authority": {
+    "repository": "github:njabrooks/notes",
+    "release_issue": "njabrooks/notes#37",
+    "accepted_default_branch_revision": "596556cea1e84b064f334b640bb30d78a2a06fbf",
+    "immutable_release_revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e",
+    "release_lock_digest": "sha256:b06a7cc3a802b05b2d367a369321b437c77e800cb0aef0968d033f199a2cb530",
+    "registry_lock_digest": "sha256:c4f19962da152a54f86a6b2228f5d69f30982a2f4c75596e84a5cf2aa4c98c30",
+    "capability_id": "capability:scope:notes/content-processing",
+    "capability_version": "0.2.0",
+    "package_digest": "sha256:cbc56e1e943cfdfc2585592b4284e2640ce53ac0aaad9325913a5de78224881f",
+    "provider_adapters": {
+      "claude": {
+        "id": "notes-content-processing-claude",
+        "digest": "sha256:60fefe2dd5fff691582166fde0655d8c58155b7cfe956405aa320f19df3c9511"
+      },
+      "codex": {
+        "id": "notes-content-processing-codex",
+        "digest": "sha256:0e8460c2e6948fdff9b45862f26be6e251520909db678ba938c8691ea513eac0"
+      }
+    },
+    "dependency_bindings": [
+      {
+        "id": "capability:scope:notes/tana-client",
+        "version": "0.2.0",
+        "version_constraint": ">=0.2.0 <1.0.0",
+        "package_digest": "sha256:02f53b445a4629a3baf31730a244590d7de003afd6c840980e5657bff80e98d9",
+        "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e"
+      },
+      {
+        "id": "capability:scope:notes/pdf-transcript",
+        "version": "0.2.0",
+        "version_constraint": ">=0.2.0 <1.0.0",
+        "package_digest": "sha256:af8335cf5022c0e709e4fa755096fbfff5c5b4d0e6920fbba601aa1b532e2f3b",
+        "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e"
+      }
+    ]
+  },
+  "trade_journal_binding": {
+    "registry": "capability-registry.json",
+    "lock": "capability-registry-lock.json",
+    "lock_digest": "sha256:9d43104a3d54e7d4f87c71f3d08bba0acc290a93ae1d1b1f8ab5b80f25cfdaae",
+    "generation_eligible_entries": 48,
+    "replaced_projections": [
+      "interactive-claude-process-note",
+      "interactive-claude-process-transcript",
+      "headless-codex-process-note",
+      "headless-codex-process-transcript"
+    ],
+    "staged_outputs": {
+      "claude": "sha256:77b295ab2ae1ddf480b0a82c5adff4b64c0c56f446f9057b20c0ed515bae0871",
+      "codex": "sha256:af49e83651ca9feac70661e21c7cbf9af2841bdb7f55494602958e5a456a2ea5"
+    },
+    "legacy_paths_retained_as_migration_inputs": true,
+    "disposition": "replace-staged"
+  },
+  "operational_evidence": {
+    "live_tana_execution": "unavailable-not-exercised",
+    "reason": "Accepted recording fixtures prove the immutable package boundary but do not claim provider, Tana, scheduler, credential, or Trade Journal runtime availability.",
+    "production_writes": 0,
+    "external_writes": 0,
+    "live_interactive_consumer_present": true,
+    "live_headless_consumer_present": false,
+    "live_scheduled_consumer_present": false
+  },
+  "authority_boundaries": {
+    "notes": "capture-source-material-thinking-and-toulmin-extraction",
+    "trade_journal": "promoted-investment-entities-only"
+  },
+  "rollback": {
+    "status": "available",
+    "method": "Revert the Trade Journal adoption commit and deterministically regenerate the Registry Lock and staged Provider Entry Points; the accepted Notes release and legacy migration inputs remain immutable."
+  },
+  "scope_confirmation": {
+    "notes_worktree_mutated": false,
+    "active_discovery_changed": false,
+    "scheduler_changed": false,
+    "runtime_credential_used": false,
+    "ci_source_acquisition_credential_required": true,
+    "database_write": false,
+    "trade_authority_acquired": false,
+    "successor_work_started": false
+  }
+}

@@ -2,6 +2,51 @@
   "version": "1.0.0",
   "capabilities": [
     {
+      "id": "capability:scope:notes/content-processing",
+      "authority": "scope:notes",
+      "repository": "github:njabrooks/notes",
+      "package_path": "capabilities/content-processing",
+      "approved_version": "0.2.0",
+      "release": {
+        "source": ".notes-source",
+        "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": ".notes-source"
+      }
+    },
+    {
+      "id": "capability:scope:notes/pdf-transcript",
+      "authority": "scope:notes",
+      "repository": "github:njabrooks/notes",
+      "package_path": "capabilities/pdf-transcript",
+      "approved_version": "0.2.0",
+      "release": {
+        "source": ".notes-source",
+        "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": ".notes-source"
+      }
+    },
+    {
+      "id": "capability:scope:notes/tana-client",
+      "authority": "scope:notes",
+      "repository": "github:njabrooks/notes",
+      "package_path": "capabilities/tana-client",
+      "approved_version": "0.2.0",
+      "release": {
+        "source": ".notes-source",
+        "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": ".notes-source"
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/belief-evidence-assessment",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",

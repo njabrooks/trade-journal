@@ -1439,11 +1439,16 @@
       "ability": "Extract Toulmin claims from general notes.",
       "candidate_capability": {
         "status": "candidate",
-        "id": "capability:scope:notes/toulmin-extraction",
+        "id": "capability:scope:notes/content-processing",
         "authority": "scope:notes"
       },
       "provider": "codex",
       "source": {
+        "ownership": "repository:njabrooks/notes",
+        "location_class": "external-bridge",
+        "path": "github:njabrooks/notes@04ea4f13d40a7c868ce43490d2a7e3ac440a026e:capabilities/content-processing/adapters/codex.md"
+      },
+      "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".agents/skills/process-note/SKILL.md"
@@ -1453,35 +1458,35 @@
         "location_class": "repository",
         "path": ".claude/skills/process-note/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/process-note/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The exact Notes adapter is current, but live Tana operation remains unavailable and the legacy projection remains only a migration input."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/process-note/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Extraction and structuring; publication remains separate."
+        "rationale": "Notes-owned classification and extraction are staged; Trade Journal publication remains separately governed."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "User-supplied note content.",
-        "writes": "Structured claim files in the research workspace.",
-        "judgment": "Extraction and structuring; publication remains separate."
+        "reads": "Notes-owned base content and preserved source provenance through the immutable Notes package.",
+        "writes": "Only Notes-owned base-content records through the declared Tana client dependency when an eligible runtime is separately available; no Trade Journal investment-entity writes.",
+        "judgment": "Classification and generic claim extraction remain with Notes; investment promotion and thesis linkage remain separate Trade Journal operations."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Shared Notes research workspace and source content."
+        "Exact immutable Notes content-processing 0.2.0 release and dependencies.",
+        "TANA_API_TOKEN and an eligible Tana runtime for any live Notes write."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Notes/Tana now owns capture and extraction authority; this repository entry is a migration input.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The former Trade Journal process-note projection and generic preamble remain only as rollback-capable migration inputs until final discovery cutover.",
+        "Recorded conformance proves the immutable package boundary but does not claim live Tana, provider, scheduler, credential, or Trade Journal availability."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1492,16 +1497,22 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "0.2.0",
+        "package_digest": "sha256:cbc56e1e943cfdfc2585592b4284e2640ce53ac0aaad9325913a5de78224881f",
+        "adapter_digest": "sha256:0e8460c2e6948fdff9b45862f26be6e251520909db678ba938c8691ea513eac0",
+        "reason": "Accepted Notes evidence binds the exact immutable content-processing package and Codex adapter; live Tana operation remains unavailable and unclaimed."
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
+      },
+      "federated_binding": {
+        "registry_path": "capability-registry.json",
+        "lock_path": "capability-registry-lock.json",
+        "capability_id": "capability:scope:notes/content-processing",
+        "adapter_id": "notes-content-processing-codex"
       }
     },
     {
@@ -1509,11 +1520,16 @@
       "ability": "Extract forensic Toulmin claims from research transcripts.",
       "candidate_capability": {
         "status": "candidate",
-        "id": "capability:scope:notes/toulmin-extraction",
+        "id": "capability:scope:notes/content-processing",
         "authority": "scope:notes"
       },
       "provider": "codex",
       "source": {
+        "ownership": "repository:njabrooks/notes",
+        "location_class": "external-bridge",
+        "path": "github:njabrooks/notes@04ea4f13d40a7c868ce43490d2a7e3ac440a026e:capabilities/content-processing/adapters/codex.md"
+      },
+      "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".agents/skills/process-transcript/SKILL.md"
@@ -1523,35 +1539,35 @@
         "location_class": "repository",
         "path": ".claude/skills/process-transcript/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/process-transcript/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The exact Notes adapter is current, but live Tana operation remains unavailable and the legacy projection remains only a migration input."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/process-transcript/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Extraction and classification; investment promotion remains governed separately."
+        "rationale": "Notes-owned classification and extraction are staged; investment promotion remains separately governed."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "User-supplied transcript content.",
-        "writes": "Structured research artifacts in the shared workspace.",
-        "judgment": "Extraction and classification; investment promotion remains governed separately."
+        "reads": "Notes-owned base content and preserved transcript provenance through the immutable Notes package.",
+        "writes": "Only Notes-owned base-content records through the declared Tana client dependency when an eligible runtime is separately available; no Trade Journal investment-entity writes.",
+        "judgment": "Classification and generic claim extraction remain with Notes; investment promotion and thesis linkage remain separate Trade Journal operations."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Shared Notes research workspace and transcript content."
+        "Exact immutable Notes content-processing 0.2.0 release and dependencies.",
+        "TANA_API_TOKEN and an eligible Tana runtime for any live Notes write."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Notes/Tana now owns capture and extraction authority; legacy paths may remain.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The former Trade Journal process-transcript projection and generic preamble remain only as rollback-capable migration inputs until final discovery cutover.",
+        "Recorded conformance proves the immutable package boundary but does not claim live Tana, provider, scheduler, credential, or Trade Journal availability."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1562,16 +1578,22 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "0.2.0",
+        "package_digest": "sha256:cbc56e1e943cfdfc2585592b4284e2640ce53ac0aaad9325913a5de78224881f",
+        "adapter_digest": "sha256:0e8460c2e6948fdff9b45862f26be6e251520909db678ba938c8691ea513eac0",
+        "reason": "Accepted Notes evidence binds the exact immutable content-processing package and Codex adapter; live Tana operation remains unavailable and unclaimed."
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
+      },
+      "federated_binding": {
+        "registry_path": "capability-registry.json",
+        "lock_path": "capability-registry-lock.json",
+        "capability_id": "capability:scope:notes/content-processing",
+        "adapter_id": "notes-content-processing-codex"
       }
     },
     {

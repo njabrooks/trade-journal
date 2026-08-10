@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,6 +81,17 @@ function safeRepositoryPath(value: string): boolean {
 
 function fileDigest(path: string): string {
   return `sha256:${createHash('sha256').update(readFileSync(path)).digest('hex')}`;
+}
+
+function bytesDigest(bytes: Buffer): string {
+  return `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+}
+
+function gitObject(repository: string, revision: string, path: string): Buffer {
+  return execFileSync('git', ['-C', repository, 'show', `${revision}:${path}`], {
+    encoding: 'buffer',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
 }
 
 function exactFields(
@@ -179,6 +191,7 @@ function validateEntry(
   }
   const hasMigrationInput = isObject(value.migration_input);
   const hasGovernedBinding = isObject(value.governed_binding);
+  const hasFederatedBinding = isObject(value.federated_binding);
   exactFields(
     value,
     [
@@ -198,6 +211,7 @@ function validateEntry(
       'j2_disposition',
       ...(hasMigrationInput ? ['migration_input'] : []),
       ...(hasGovernedBinding ? ['governed_binding'] : []),
+      ...(hasFederatedBinding ? ['federated_binding'] : []),
       ...(inventoryKind === 'headless'
         ? ['authored_source', 'execution_contract', 'operational_risk']
         : []),
@@ -408,12 +422,12 @@ function validateEntry(
         ),
       );
     }
-    if (evidence.state === 'current' && !hasGovernedBinding) {
+    if (evidence.state === 'current' && !hasGovernedBinding && !hasFederatedBinding) {
       diagnostics.push(
         diagnostic(
           'TJ-INV-016',
-          `${path}/governed_binding`,
-          'current evidence requires an exact governed binding.',
+          path,
+          'current evidence requires an exact local or federated governed binding.',
         ),
       );
     }
@@ -521,6 +535,155 @@ function validateEntry(
           ),
         );
       }
+    }
+  }
+
+  if (hasFederatedBinding) {
+    const binding = value.federated_binding as JsonObject;
+    const bindingPath = `${path}/federated_binding`;
+    exactFields(
+      binding,
+      ['registry_path', 'lock_path', 'capability_id', 'adapter_id'],
+      bindingPath,
+      'TJ-INV-017',
+      diagnostics,
+    );
+    requireStrings(
+      binding,
+      ['registry_path', 'lock_path', 'capability_id', 'adapter_id'],
+      bindingPath,
+      'TJ-INV-017',
+      diagnostics,
+    );
+
+    const registryPath = binding.registry_path;
+    const lockPath = binding.lock_path;
+    if (
+      nonempty(registryPath) &&
+      nonempty(lockPath) &&
+      safeRepositoryPath(registryPath) &&
+      safeRepositoryPath(lockPath) &&
+      existsSync(join(REPO_ROOT, registryPath)) &&
+      existsSync(join(REPO_ROOT, lockPath))
+    ) {
+      try {
+        const registry = JSON.parse(
+          readFileSync(join(REPO_ROOT, registryPath), 'utf8'),
+        ) as JsonObject;
+        const lock = JSON.parse(
+          readFileSync(join(REPO_ROOT, lockPath), 'utf8'),
+        ) as JsonObject;
+        const registryEntry = (Array.isArray(registry.capabilities)
+          ? registry.capabilities.filter(isObject)
+          : []
+        ).find((entry) => entry.id === binding.capability_id);
+        const lockedEntry = (Array.isArray(lock.capabilities)
+          ? lock.capabilities.filter(isObject)
+          : []
+        ).find((entry) => entry.id === binding.capability_id);
+        if (!registryEntry || !lockedEntry) throw new Error('missing Registry or Lock entry');
+
+        const release = isObject(registryEntry.release) ? registryEntry.release : {};
+        const lockedSource = isObject(lockedEntry.source) ? lockedEntry.source : {};
+        if (!nonempty(release.source) || !safeRepositoryPath(release.source)) {
+          throw new Error('unsafe release source');
+        }
+        if (!nonempty(release.revision) || !nonempty(registryEntry.package_path)) {
+          throw new Error('incomplete release binding');
+        }
+        const sourceRepository = resolve(dirname(join(REPO_ROOT, registryPath)), release.source);
+        const packageJsonPath = `${registryEntry.package_path}/capability-package.json`;
+        const packageBytes = gitObject(sourceRepository, release.revision, packageJsonPath);
+        const capabilityPackage = JSON.parse(packageBytes.toString('utf8')) as JsonObject;
+        const packageAdapters = Array.isArray(capabilityPackage.provider_adapters)
+          ? capabilityPackage.provider_adapters.filter(isObject)
+          : [];
+        const packageAdapter = packageAdapters.find(
+          (adapter) => adapter.id === binding.adapter_id,
+        );
+        if (!packageAdapter || !nonempty(packageAdapter.source) || !nonempty(packageAdapter.evidence)) {
+          throw new Error('missing package adapter');
+        }
+
+        const adapterPath = `${registryEntry.package_path}/${packageAdapter.source}`;
+        const evidencePath = `${registryEntry.package_path}/${packageAdapter.evidence}`;
+        const adapterBytes = gitObject(sourceRepository, release.revision, adapterPath);
+        const adapterEvidence = JSON.parse(
+          gitObject(sourceRepository, release.revision, evidencePath).toString('utf8'),
+        ) as JsonObject;
+        const lockedAdapters = Array.isArray(lockedEntry.provider_adapters)
+          ? lockedEntry.provider_adapters.filter(isObject)
+          : [];
+        const lockedAdapter = lockedAdapters.find(
+          (adapter) => adapter.id === binding.adapter_id,
+        );
+        const inventoryEvidence = isObject(value.evidence) ? value.evidence : {};
+        const candidate = isObject(value.candidate_capability)
+          ? value.candidate_capability
+          : {};
+        const inventorySource = isObject(value.source) ? value.source : {};
+        const expectedSource = `${registryEntry.repository}@${release.revision}:${adapterPath}`;
+        const expectedOwnership = nonempty(registryEntry.repository)
+          ? registryEntry.repository.replace(/^github:/, 'repository:')
+          : null;
+
+        if (
+          binding.capability_id !== candidate.id ||
+          candidate.authority !== registryEntry.authority ||
+          registryEntry.authority !== lockedEntry.authority ||
+          registryEntry.repository !== lockedEntry.repository ||
+          registryEntry.approved_version !== lockedEntry.approved_version ||
+          release.revision !== lockedSource.revision ||
+          release.revision !== lockedSource.release_reference ||
+          registryEntry.package_path !== lockedSource.package_path ||
+          capabilityPackage.id !== binding.capability_id ||
+          capabilityPackage.authority !== registryEntry.authority ||
+          capabilityPackage.version !== registryEntry.approved_version ||
+          JSON.stringify(capabilityPackage.dependencies ?? []) !==
+            JSON.stringify(lockedEntry.dependencies ?? []) ||
+          !packageAdapter ||
+          packageAdapter.provider !== value.provider ||
+          !lockedAdapter ||
+          lockedAdapter.provider !== value.provider ||
+          lockedAdapter.source !== packageAdapter.source ||
+          lockedAdapter.evidence !== packageAdapter.evidence ||
+          lockedAdapter.state !== adapterEvidence.support_state ||
+          lockedAdapter.validated_at !== adapterEvidence.validated_at ||
+          inventoryEvidence.state !== adapterEvidence.support_state ||
+          inventoryEvidence.state !== lockedAdapter.state ||
+          inventoryEvidence.as_of !== adapterEvidence.validated_at ||
+          inventorySource.ownership !== expectedOwnership ||
+          inventorySource.location_class !== 'external-bridge' ||
+          inventorySource.path !== expectedSource ||
+          adapterEvidence.adapter_id !== binding.adapter_id ||
+          adapterEvidence.capability_id !== binding.capability_id ||
+          adapterEvidence.capability_version !== registryEntry.approved_version ||
+          inventoryEvidence.capability_version !== registryEntry.approved_version ||
+          inventoryEvidence.package_digest !== lockedEntry.package_digest ||
+          inventoryEvidence.package_digest !== adapterEvidence.package_digest ||
+          inventoryEvidence.package_digest !== bytesDigest(packageBytes) ||
+          inventoryEvidence.adapter_digest !== adapterEvidence.adapter_digest ||
+          inventoryEvidence.adapter_digest !== bytesDigest(adapterBytes)
+        ) {
+          throw new Error('federated values do not match');
+        }
+      } catch {
+        diagnostics.push(
+          diagnostic(
+            'TJ-INV-017',
+            bindingPath,
+            'Federated binding must resolve the exact Registry/Lock Capability Package, Provider Adapter, evidence record, dependencies, revision, and digests.',
+          ),
+        );
+      }
+    } else {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-017',
+          bindingPath,
+          'Federated Registry and Lock paths must resolve in the repository.',
+        ),
+      );
     }
   }
 

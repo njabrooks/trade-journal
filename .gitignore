@@ -84,3 +84,6 @@ tmp/
 
 # Ephemeral accepted Workspace Standard checkout used by local/CI validation
 /.workspace-standard/
+
+# Ephemeral exact Notes checkout used to resolve federated Capability releases
+/.notes-source/
