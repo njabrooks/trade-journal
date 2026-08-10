@@ -1,0 +1,112 @@
+{
+  "kind": "RadonGatewayReconciliation",
+  "schema_version": "1.0.0",
+  "issue": "njabrooks/trade-journal#73",
+  "recorded_at": "2026-08-10",
+  "accepted_predecessor": {
+    "issue": "njabrooks/trade-journal#47",
+    "latest_repair_merge": "abcedb11576bffde647ce6855ce9d3e0163483b3"
+  },
+  "fixed_point": "ee2547e47be0da3e5f759f7ebba4d5edc8a3f34a",
+  "disposition": "retained-unavailable",
+  "rationale": "Radon remains Capability Authority, but its reviewed immutable default-branch revision publishes no gateway-control Capability Package, Registry release, or exact Adapter Conformance evidence. Trade Journal therefore retains its bounded interactive migration input, refuses unattended gateway control, and does not infer current support from local files, credentials, connectivity, or gateway state.",
+  "trade_journal_worktree": {
+    "revision": "ee2547e47be0da3e5f759f7ebba4d5edc8a3f34a",
+    "stable_before_edit": true
+  },
+  "radon_authority": {
+    "repository": "github:njabrooks/radon",
+    "immutable_review_revision": "0e88af93c31471c093dbd61bc80c386ab8da38de",
+    "capability_id": "capability:scope:radon/ibkr-gateway-control",
+    "accepted_package": "unavailable",
+    "capability_version": null,
+    "package_digest": null,
+    "adapter_digest": null,
+    "evidence": "unavailable"
+  },
+  "radon_review": {
+    "remote_revision_tree_inspected": true,
+    "capability_package_present": false,
+    "capability_registry_present": false,
+    "adapter_conformance_evidence_present": false,
+    "repository_work_items_selecting_a_release": [],
+    "local_worktree_state": "unstable-with-unrelated-user-changes-read-only",
+    "local_worktree_mutated": false
+  },
+  "operational_boundary": {
+    "capability_authority": "scope:radon",
+    "gateway_manager": "radon-ibc-launchd",
+    "trade_journal_client_id_range": "20-49",
+    "interactive_control_retained": true,
+    "headless_control_eligible": false,
+    "live_gateway_state": "unavailable-not-inferred",
+    "credential_state": "unavailable-not-inspected",
+    "gateway_operation_changed": false
+  },
+  "migration_inputs": {
+    "interactive_claude": {
+      "path": ".claude/skills/gateway/SKILL.md",
+      "sha256": "04a83eee5d6adb94e1aba83f5610f9528f8730ddb635d265de78c1d1e3a4dd02",
+      "lifecycle": "active-interactive-only"
+    },
+    "headless_codex": {
+      "path": ".agents/skills/gateway/SKILL.md",
+      "sha256": "86bb334c649d860a3ff2f3ff03ebc44877ccbd305161b3100f070f6ec01dbeea",
+      "unattended_eligibility": "ineligible"
+    },
+    "authored_headless_refusal": {
+      "path": ".claude/skills/gateway/HEADLESS_PREAMBLE.md",
+      "sha256": "f488b2d7e6f8010bfd310bc7b0cf7aedd107cbe1538b3875cc485f7b42bd02f7",
+      "execution_contract": "bespoke-zero-read-zero-write-unavailable-refusal"
+    },
+    "mirrored_headless_refusal": {
+      "path": ".agents/skills/gateway/HEADLESS_PREAMBLE.md",
+      "sha256": "f488b2d7e6f8010bfd310bc7b0cf7aedd107cbe1538b3875cc485f7b42bd02f7",
+      "execution_contract": "bespoke-zero-read-zero-write-unavailable-refusal"
+    },
+    "gateway_controller": {
+      "path": "scripts/ops/gateway.sh",
+      "sha256": "7c5f7fbf8ce5057c5c516f262202b720ff2a87867db978e57d9d0d0330eb1e33",
+      "lifecycle": "retained-unchanged"
+    }
+  },
+  "governed_outputs": {
+    "registry_changed": false,
+    "registry_sha256": "65001f14dd03520f72d55b166944d587e02626790c2c2636f3fedb6b7cd9b0e2",
+    "lock_changed": false,
+    "lock_sha256": "9d43104a3d54e7d4f87c71f3d08bba0acc290a93ae1d1b1f8ab5b80f25cfdaae",
+    "generation_eligible_gateway_projections": 0,
+    "staged_claude_sha256": "77b295ab2ae1ddf480b0a82c5adff4b64c0c56f446f9057b20c0ed515bae0871",
+    "staged_codex_sha256": "af49e83651ca9feac70661e21c7cbf9af2841bdb7f55494602958e5a456a2ea5"
+  },
+  "validation": {
+    "workspace_repository_conformance": "passed-human-json-and-authenticated-live-tracker",
+    "credential_free_tracker_negative_case": "passed-unavailable-credentials-unavailable",
+    "capability_validation": "14-locked-capabilities-passed-human-and-json",
+    "registry_lock_validation": "passed-published-human-json-byte-identical-reproduction",
+    "provider_entry_point_validation": "passed-2-unchanged-staged-outputs-human-json",
+    "inventory_validation": "passed-73-entries-48-generation-eligible",
+    "mirror_parity": "passed-36-of-36",
+    "provider_entry_point_refusal": "passed-ws-entry-005-byte-identical-no-write",
+    "evidence_freshness_refusal": "passed-stale-rejected-no-write",
+    "focused_governance_tests": "195-passed-6-skipped",
+    "full_tests": "601-passed-6-skipped",
+    "typecheck": "passed",
+    "issue_scoped_eslint": "passed",
+    "repository_eslint": "pre-existing-unscoped-baseline-9440-errors-70502-warnings-in-old-worktrees-and-generated-artifacts",
+    "production_build": "unavailable-hung-during-next-optimization-and-was-interrupted",
+    "managed_service_restart_and_smoke": "passed-http-200"
+  },
+  "scope_confirmation": {
+    "radon_worktree_mutated": false,
+    "gateway_operation_invoked": false,
+    "credentials_read": false,
+    "active_discovery_changed": false,
+    "scheduler_changed": false,
+    "database_write": false,
+    "status_or_decision_item_changed": false,
+    "trade_authority_acquired": false,
+    "successor_work_started": false
+  },
+  "rollback_and_provenance": "The interactive gateway controller, Radon-managed operation, Registry, Lock, staged outputs, and active discovery remain unchanged. Revert the issue #73 inventory, refusal-preamble, test, and receipt commit to restore the previous generic headless wrapper and pre-review inventory metadata. Historical bytes remain in Git."
+}

@@ -774,9 +774,9 @@
       },
       "packaging": "generated-headless-projection",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/gateway/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/gateway/HEADLESS_PREAMBLE.md",
+        "readiness": "Protective zero-read/zero-write unavailable refusal only; it grants no gateway-control authority."
       },
       "invocation": {
         "mode": "headless",
@@ -789,16 +789,16 @@
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Local launchd state, profiles, and gateway status.",
-        "writes": "Can pause, resume, or switch the live gateway profile.",
-        "judgment": "Operational control can interrupt market-data access and requires deliberate user intent."
+        "reads": "No reads permitted by the unavailable headless refusal.",
+        "writes": "No writes or gateway operations permitted.",
+        "judgment": "No unattended operational judgment permitted."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
         "Eligible Home Hub host, Radon installation, IBC, and IBKR credentials."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
+        "Bespoke preamble refuses every gateway read and operational action while Adapter Conformance is unavailable.",
         "Machine-local, credential-sensitive, and unavailable in CI.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
@@ -812,15 +812,15 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-10",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       },
       "j2_disposition": {
         "action": "retain-temporarily",
-        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+        "rationale": "Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
       }
     },
     {

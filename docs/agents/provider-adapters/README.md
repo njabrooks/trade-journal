@@ -61,8 +61,8 @@ The inventory deliberately distinguishes packaging from readiness:
 - five executable workflows (`assess-validation-evidence`, `build-core-argument`, `finalize-for-upload`,
   `relate-research`, and `synthesize-claims`) have bespoke authored headless contracts;
 - ten contracted research-pipeline paths have bespoke refusal preambles that name their exact governed CLI replacement;
-- deferred `visser-scan` has a bespoke zero-write unavailable/refusal preamble;
-- the other 20 projections have generic generated preambles, which are packaging baselines only; and
+- `gateway` and `visser-scan` have bespoke zero-read/zero-write unavailable refusal preambles;
+- the other 19 projections have generic generated preambles, which are packaging baselines only; and
 - `decisions` and `thesis` are mirrored for parity but remain ineligible for unattended execution.
 
 `visser-scan` is also explicitly ineligible for unattended execution. Issue #70 replaces its unsafe generic
@@ -71,6 +71,13 @@ pull-only manual procedure as a non-governed migration input. Both projections r
 source files, mirror parity, and the presence of Notes-owned data do not establish Adapter Conformance. The
 reviewed authority, source age, migration-input digests, consumer absence, and scope are recorded in
 `evidence/issue-70-market-research-scan-disposition.json`.
+
+`gateway` is likewise ineligible for unattended execution. Issue #73 retains its interactive controller as an
+unchanged non-governed migration input, while the headless projection refuses every read, credential access,
+and gateway operation because Radon publishes no accepted immutable gateway-control package or exact Adapter
+Conformance evidence. The reviewed Radon revision, controller and preamble digests, client-id boundary,
+unavailable operational state, rollback, and scope are recorded in
+`evidence/issue-73-radon-gateway-reconciliation.json`.
 
 Five live provider-dependent launchd jobs are mapped with their current Claude provider, model, invocation,
 schedule, read/write boundary, machine-local environment, timeout, locking, failure observability, downstream

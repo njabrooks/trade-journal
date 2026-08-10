@@ -363,20 +363,20 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-10",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
         "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       ],
       "j2_disposition": {
         "action": "retain-temporarily",
-        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+        "rationale": "Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
       }
     },
     {
@@ -1487,20 +1487,20 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-10",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       },
       "generation_eligible": false,
       "ineligibility_reasons": [
         "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "Radon publishes no accepted immutable gateway-control Capability Package or exact Adapter Conformance evidence at the reviewed revision."
       ],
       "j2_disposition": {
         "action": "retain-temporarily",
-        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+        "rationale": "Retain the bounded non-governed gateway boundary until Radon publishes an accepted immutable package; do not infer support from connectivity or local files."
       }
     },
     {

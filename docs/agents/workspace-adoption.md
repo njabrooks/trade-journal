@@ -244,6 +244,17 @@ CI acquires the private immutable Notes revision with the read-only
 `NOTES_REPOSITORY_DEPLOY_KEY`; the workflow fails explicitly before validation when that repository secret is
 unavailable. This acquisition credential grants no Notes write or runtime/Tana authority.
 
+Issue #73 reconciles the two gateway-control projections against Radon's immutable default-branch revision
+`0e88af93c31471c093dbd61bc80c386ab8da38de`. Radon publishes no accepted gateway-control Capability Package,
+Registry release, or exact Adapter Conformance evidence at that revision, so both projections remain honestly
+`unavailable` with null Capability, package, and adapter bindings. The existing interactive controller is
+retained unchanged as a non-governed migration input; the Codex projection now has a bespoke deterministic
+zero-read/zero-write refusal and remains ineligible for unattended execution. Radon retains gateway and IBC
+authority, Trade Journal retains client IDs 20–49, and live gateway or credential state is not inferred from
+connectivity. The Registry, Lock, staged outputs, active discovery, scheduler, gateway operation, and Radon
+worktree remain unchanged. Exact inspected input digests, unavailable evidence, rollback, and scope confirmation
+are recorded in `evidence/issue-73-radon-gateway-reconciliation.json`.
+
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar
