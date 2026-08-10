@@ -149,7 +149,7 @@ Per event (08 §3.1, expanded): trigger → deterministic automation → agent r
 | **Thesis thin/gap detected** | `find-research-gaps` (monitoring, 0–2 claims) | worklist | Tana-first pull → relate-research; if still thin, propose specific sources | `develop_thin_thesis` | link existing claims **or** `decision_required` |
 | **Refuting claim linked** | relate-research | — | (already judged) | `review_refuting_claim` | `claim_thesis_mappings` (`refutes`) + decision |
 | **Asset↔macro framing detected** | coverage report / relate-research note | — | suggest macro(s) + `related`/`gated_by` | `frame_asset_under_macro` · `classify_macro_link` | `asset_thesis_related_macro_theses` on resolve |
-| **Deep-dive graduates** | `graduate-pipeline-idea` (user-approved) | — | creates/updates thesis, claims, signals, expression | `run_deep_dive` (to launch) | thesis/claims/signals/strategy writes |
+| **Deep-dive graduates** | governed `research-pipeline --graduation` result (user-approved) | — | zero-write provenance-bound handoff only | `run_deep_dive` (to launch) | no direct write; separately authorized recorders own any thesis/claim persistence |
 
 ---
 
@@ -168,7 +168,7 @@ Every `decision_type`, with the agent runbook that resolves it and the **write t
 | `frame_asset_under_macro` | coverage report / relate-research | asset thesis | link helper | link to macro(s) · stand alone | `asset_thesis_related_macro_theses` (`related`) |
 | `classify_macro_link` | framing detection | asset↔macro edge | link helper | `related` · `gated_by` · none | `relationship_type`; if `gated_by` → compositional signal |
 | `weakening_signal_action` | health pass (weakening/invalidated) | thesis | `/thesis-review` health; user | revise signal · act on position · hold/monitor | journal; optional status/position note |
-| `run_deep_dive` | research-gap escalation (user-approved) | thesis | `stage-1…5` → `graduate-pipeline-idea` | launch deep-dive · light pass only | pipeline artifacts → thesis/claims/signals |
+| `run_deep_dive` | research-gap escalation (user-approved) | thesis | governed `scripts/research-pipeline.ts` CLI → separately authorized recorders | launch deep-dive · light pass only | zero-write pipeline result; separately authorized recorders capture accepted artifacts |
 | `link_strategy_to_thesis` | auto-link miss (rare) | strategy | `link-strategies-to-theses` | link to thesis · create · mark tactical | `strategies.asset_thesis_id` |
 
 These 11 are the complete set. New work introduces **no new decision *mechanism*** — only new `decision_type` values on the one packet.

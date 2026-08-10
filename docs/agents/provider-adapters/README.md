@@ -57,8 +57,10 @@ source, checks `skill.json` and preamble packaging, and rejects missing, extra, 
 
 The inventory deliberately distinguishes packaging from readiness:
 
-- `assess-validation-evidence`, `build-core-argument`, and `synthesize-claims` have bespoke authored headless contracts;
-- the other 33 projections have generic generated preambles, which are packaging baselines only; and
+- five executable workflows (`assess-validation-evidence`, `build-core-argument`, `finalize-for-upload`,
+  `relate-research`, and `synthesize-claims`) have bespoke authored headless contracts;
+- ten contracted research-pipeline paths have bespoke refusal preambles that name their exact governed CLI replacement;
+- the other 21 projections have generic generated preambles, which are packaging baselines only; and
 - `decisions` and `thesis` are mirrored for parity but remain ineligible for unattended execution.
 
 Five live provider-dependent launchd jobs are mapped with their current Claude provider, model, invocation,

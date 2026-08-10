@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const root = resolve(process.cwd(), 'capabilities/research-pipeline');
+const repositoryRoot = process.cwd();
 
 const contractedLegacyEntries = {
   'pipeline-status': '--pipeline-status',
@@ -37,7 +38,7 @@ describe('research-pipeline Capability', () => {
     expect(capability).toMatchObject({
       id: 'capability:scope:trade-journal/research-pipeline',
       authority: 'scope:trade-journal',
-      version: '1.3.0',
+      version: '1.3.1',
       dependencies: [
         { id: 'capability:scope:trade-journal/claims-synthesis', version_constraint: '>=1.0.0 <2.0.0' },
         { id: 'capability:scope:trade-journal/research-publication', version_constraint: '>=1.0.0 <2.0.0' },
@@ -235,6 +236,34 @@ describe('research-pipeline Capability', () => {
       expect(preamble).toContain('PROTECTIVE TOMBSTONE');
       expect(preamble).toContain('Do not execute the removed legacy procedure');
       expect(preamble).toContain('writes: []');
+    }
+  });
+
+  it('keeps declared public consumers and result metadata off the contracted legacy routes', () => {
+    const consumers = [
+      'src/lib/types/decisions.ts',
+      'src/lib/intelligence/researchPipeline.ts',
+      'src/lib/intelligence/researchPipelineIntake.ts',
+      'src/lib/intelligence/researchPipelineResearch.ts',
+      '.claude/skills/decisions/SKILL.md',
+      '.agents/skills/decisions/SKILL.md',
+      '.claude/skills/thesis/SKILL.md',
+      '.agents/skills/thesis/SKILL.md',
+      '.claude/skills/visser-scan/SKILL.md',
+      '.agents/skills/visser-scan/SKILL.md',
+      'docs/v2/09-claim-signal-propagation-operating-model.md',
+    ];
+    for (const consumer of consumers) {
+      const contents = readFileSync(resolve(repositoryRoot, consumer), 'utf8');
+      expect(contents, consumer).not.toMatch(
+        /stage-1…5|graduate-pipeline-idea|legacy .*remain(?:s)? active|legacy persistence remains|coexist with unchanged/i,
+      );
+    }
+    const runbook = readFileSync(resolve(repositoryRoot, 'src/lib/types/decisions.ts'), 'utf8');
+    expect(runbook).toContain('research-pipeline CLI → separately authorized recorders');
+    for (const consumer of consumers.filter((path) => path.includes('/skills/'))) {
+      expect(readFileSync(resolve(repositoryRoot, consumer), 'utf8'), consumer)
+        .toContain('research-pipeline');
     }
   });
 });

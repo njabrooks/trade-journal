@@ -43,10 +43,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-advance-or-kill."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-advance-or-kill."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -397,10 +397,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-graduate-pipeline-idea."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-graduate-pipeline-idea."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -585,10 +585,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-pipeline-status."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-pipeline-status."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -807,10 +807,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-1-init-idea."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-1-init-idea."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -837,10 +837,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-2-formalize-thesis."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-2-formalize-thesis."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -867,10 +867,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-3-map-unknowns."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-3-map-unknowns."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -897,10 +897,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-prep-desktop-research."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-prep-desktop-research."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -927,10 +927,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-research-unknown."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4a-research-unknown."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -957,10 +957,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4b-synthesize-evidence."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-4b-synthesize-evidence."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -987,10 +987,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:746ca82d4717d721c30377cb023585dc4c94689e93c1a0118b37942053388a53",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-5-express-thesis."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 codex adapter, its zero-write boundary, and the protective tombstone for headless-codex-stage-5-express-thesis."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -1173,10 +1173,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-advance-or-kill."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-advance-or-kill."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -1527,10 +1527,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-graduate-pipeline-idea."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-graduate-pipeline-idea."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -1715,10 +1715,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-pipeline-status."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-pipeline-status."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -1937,10 +1937,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-1-init-idea."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-1-init-idea."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -1967,10 +1967,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-2-formalize-thesis."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-2-formalize-thesis."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -1997,10 +1997,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-3-map-unknowns."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-3-map-unknowns."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -2027,10 +2027,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4a-prep-desktop-research."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4a-prep-desktop-research."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -2057,10 +2057,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4a-research-unknown."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4a-research-unknown."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -2087,10 +2087,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4b-synthesize-evidence."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-4b-synthesize-evidence."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
@@ -2117,10 +2117,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.3.0",
-        "package_digest": "sha256:e5336d548034a1e56a5038e01ee14186ad745745a992b5cf59b99ec1fa992674",
+        "capability_version": "1.3.1",
+        "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
-        "reason": "Exact current evidence binds the research-pipeline 1.3.0 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-5-express-thesis."
+        "reason": "Exact current evidence binds the research-pipeline 1.3.1 claude adapter, its zero-write boundary, and the protective tombstone for interactive-claude-stage-5-express-thesis."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
