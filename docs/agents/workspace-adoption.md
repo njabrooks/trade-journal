@@ -212,8 +212,9 @@ generic database-write, Notes/Tana-write, Radon, #70 disposition, or final #76 d
 used or acquired.
 
 Issue #70 resolves the market-research-scan candidate as `deferred-unavailable`. The existing `/visser-scan`
-procedure remains a pull-only, manual, non-governed migration input; its generic Codex headless projection is
-explicitly ineligible for unattended execution and has no live operational consumer. Notes retains authority
+procedure remains a pull-only, manual, non-governed migration input; its Codex headless projection now has a
+bespoke zero-write unavailable/refusal contract, is explicitly ineligible for unattended execution, and has no
+live operational consumer. Notes retains authority
 over the external Visser source files, which were reviewed read-only at Notes revision
 `32cd510b75b8edea69de7f2cfb540c50934cb3f0`; the newest tracked source set is dated `2026-07-17` and the
 existing procedure's greater-than-ten-day staleness warning remains mandatory. Both inventory entries keep

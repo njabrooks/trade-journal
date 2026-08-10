@@ -2168,8 +2168,8 @@
       "invocation": {
         "mode": "interactive",
         "entry_point": "/visser-scan",
-        "unattended_eligibility": "conditional",
-        "rationale": "Produces pull-only opportunity and risk suggestions."
+        "unattended_eligibility": "ineligible",
+        "rationale": "Manual pull-only analysis may surface suggestions but requires interactive judgment and explicit confirmation for any separately authorized follow-up."
       },
       "lifecycle": {
         "status": "active",

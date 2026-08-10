@@ -2702,9 +2702,9 @@
       },
       "packaging": "generated-headless-projection",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/visser-scan/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/visser-scan/HEADLESS_PREAMBLE.md",
+        "readiness": "Protective zero-write unavailable/refusal contract only; it is not execution or operational-readiness authority."
       },
       "invocation": {
         "mode": "headless",
@@ -2726,7 +2726,7 @@
         "Notes repository data and Trade Journal read access."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
+        "Bespoke preamble refuses headless execution and every read or write because Adapter Conformance is unavailable.",
         "Machine-local file dependency; absent from curated Codex routing.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],

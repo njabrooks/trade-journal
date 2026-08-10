@@ -135,6 +135,10 @@ describe('Provider Adapter inventory validation', () => {
     ) as Record<string, unknown>;
 
     expect(interactiveEntry.packaging).toBe('authored-provider-entry-point');
+    expect(interactiveEntry.invocation).toMatchObject({
+      mode: 'interactive',
+      unattended_eligibility: 'ineligible',
+    });
     expect(interactiveEntry.evidence).toMatchObject({
       state: 'unavailable',
       capability_version: null,
@@ -152,6 +156,12 @@ describe('Provider Adapter inventory validation', () => {
     expect(headlessEntry.invocation).toMatchObject({
       mode: 'headless',
       unattended_eligibility: 'ineligible',
+    });
+    expect(headlessEntry.execution_contract).toEqual({
+      class: 'bespoke',
+      preamble_path: '.claude/skills/visser-scan/HEADLESS_PREAMBLE.md',
+      readiness:
+        'Protective zero-write unavailable/refusal contract only; it is not execution or operational-readiness authority.',
     });
     expect(headlessEntry.operational_consumers).toEqual([
       'No live operational consumer; current repository automation does not invoke this Codex projection.',
@@ -185,7 +195,20 @@ describe('Provider Adapter inventory validation', () => {
       if (input.preamble_path) {
         expect(input.preamble_sha256).toBe(sha256(String(input.preamble_path)));
       }
+      if (input.authored_preamble_path) {
+        expect(input.authored_preamble_sha256).toBe(
+          sha256(String(input.authored_preamble_path)),
+        );
+      }
     }
+    expect(
+      readFileSync(
+        resolve(process.cwd(), '.agents/skills/visser-scan/HEADLESS_PREAMBLE.md'),
+        'utf8',
+      ),
+    ).toContain(
+      'Do not execute the Visser scan procedure, query Trade Journal, read Notes data, browse, or write anything.',
+    );
   });
 
   it('reports a stable coverage diagnostic when a headless projection is omitted', () => {

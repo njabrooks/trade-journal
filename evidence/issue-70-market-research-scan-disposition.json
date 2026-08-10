@@ -9,7 +9,7 @@
   },
   "fixed_point": "9b46b5b9e4c16a46a22664c7e704ee66156bff1e",
   "disposition": "deferred-unavailable",
-  "rationale": "Preserve the existing pull-only manual Visser scan as a non-governed migration input, while keeping the generic Codex headless projection ineligible. Source-file presence, mirror parity, and machine-local data do not prove current Adapter Conformance, and no scheduler or live operational consumer exists.",
+  "rationale": "Preserve the existing pull-only manual Visser scan as a non-governed migration input, while binding the Codex headless projection to a bespoke zero-write unavailable/refusal contract. Source-file presence, mirror parity, and machine-local data do not prove current Adapter Conformance, and no scheduler or live operational consumer exists.",
   "governed_adapter_published": false,
   "manual_consumer_present": true,
   "live_operational_consumer_present": false,
@@ -43,9 +43,11 @@
     "headless_codex": {
       "path": ".agents/skills/visser-scan/SKILL.md",
       "sha256": "c893cd82731f9a98924b3c987647c331f2ab8175ff1122f2be626e505a1c719c",
+      "authored_preamble_path": ".claude/skills/visser-scan/HEADLESS_PREAMBLE.md",
+      "authored_preamble_sha256": "00fe177380a59fdbf419c0cd5cda7229a8a5384c8eb51366eb81fc5351b47b13",
       "preamble_path": ".agents/skills/visser-scan/HEADLESS_PREAMBLE.md",
-      "preamble_sha256": "46e98f9cb01d39d241885ae85677797df4fb800776158a83f89452af08e8c3de",
-      "execution_contract": "generic-baseline-only",
+      "preamble_sha256": "00fe177380a59fdbf419c0cd5cda7229a8a5384c8eb51366eb81fc5351b47b13",
+      "execution_contract": "bespoke-zero-write-unavailable-refusal",
       "unattended_eligibility": "ineligible",
       "writes": []
     },
