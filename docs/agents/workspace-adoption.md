@@ -54,7 +54,7 @@ establish Adapter Conformance; only exact W1-bound evidence upgrades an inventor
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
 generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-10`, eleven locked
-Capabilities make 32 inventory entries generation eligible while the whole-file Claude and Codex outputs
+Capabilities make 44 inventory entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers.
 
@@ -179,6 +179,17 @@ active discovery remain unchanged and rollback-capable. Research preparation, un
 synthesis, thesis expression, gate decision, and graduation remain explicitly unmigrated for #68. Neither a
 stage result nor the aggregate can write, change status, create or resolve a Decision Item, use scheduler or
 credential authority, touch production data, or mutate a strategy, position, order, or trade.
+
+Issue #68 advances the research-pipeline Capability to `1.2.0` at immutable source revision
+`c65315b3faed66f3adc1b917df61b8e9122b4f0d`. It adds independently invocable zero-write results for portable
+research preparation, multi-track unknown research with explicit unavailable outcomes, all-unknown evidence
+synthesis, thesis expression without sizing or trade authority, the audited advance-or-kill gate, and
+provenance-bound graduation. Graduation binds exact claim identity and reuse to a validated claims-synthesis
+context and result, then remains `judgment_required` until the user accepts the exact handoff digest; a decline
+is preserved as `refused`. All ten legacy persistence entry points, mirrors, and active discovery remain
+unchanged and rollback-capable. Notes/Tana retains capture, source-material, and Toulmin authority. No stage or
+aggregate acquires scheduler, credential, production-data, status, Decision Item resolution, signal, strategy,
+position, order, trade, generic-write, or database authority. Issue #69 contraction is not started.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
