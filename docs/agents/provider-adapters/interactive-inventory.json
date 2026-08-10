@@ -2193,15 +2193,15 @@
       ],
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-10",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "File presence, mirror parity, and machine-local Notes data do not establish current Adapter Conformance."
       },
       "j2_disposition": {
         "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "rationale": "Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support."
       }
     },
     {

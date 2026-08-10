@@ -1,0 +1,81 @@
+{
+  "kind": "MarketResearchScanDisposition",
+  "schema_version": "1.0.0",
+  "issue": "njabrooks/trade-journal#70",
+  "recorded_at": "2026-08-10",
+  "accepted_predecessor": {
+    "issue": "njabrooks/trade-journal#47",
+    "latest_repair_merge": "abcedb11576bffde647ce6855ce9d3e0163483b3"
+  },
+  "fixed_point": "9b46b5b9e4c16a46a22664c7e704ee66156bff1e",
+  "disposition": "deferred-unavailable",
+  "rationale": "Preserve the existing pull-only manual Visser scan as a non-governed migration input, while keeping the generic Codex headless projection ineligible. Source-file presence, mirror parity, and machine-local data do not prove current Adapter Conformance, and no scheduler or live operational consumer exists.",
+  "governed_adapter_published": false,
+  "manual_consumer_present": true,
+  "live_operational_consumer_present": false,
+  "active_discovery_changed": false,
+  "notes_authority": "repository:njabrooks/notes",
+  "trade_journal_authority": "scope:trade-journal",
+  "authority_boundaries": {
+    "notes": "Owns the external Visser source files; reviewed read-only and not modified.",
+    "trade_journal": "Owns only the pull-only analysis procedure and its provider inventory disposition.",
+    "machine_local": "Credentials, provider sessions, source arrival, and live prices are environmental prerequisites, not repository guarantees."
+  },
+  "trade_journal_worktree": {
+    "revision": "9b46b5b9e4c16a46a22664c7e704ee66156bff1e",
+    "stable_before_edit": true
+  },
+  "notes_source": {
+    "revision": "32cd510b75b8edea69de7f2cfb540c50934cb3f0",
+    "worktree_mutated": false,
+    "source_path": "jordi-visser/",
+    "latest_source_data_as_of": "2026-07-17",
+    "latest_source_data_was_stale_at_review": true,
+    "staleness_rule": "The manual procedure must warn when source data is more than 10 days old and require live-price rechecking before action."
+  },
+  "migration_inputs": {
+    "interactive_claude": {
+      "path": ".claude/skills/visser-scan/SKILL.md",
+      "sha256": "d7a5e78a9757dcccdb141ab7d043047aaf78c7cdad267fa46b5a7fa6352f7864",
+      "lifecycle": "active-manual-only",
+      "writes": []
+    },
+    "headless_codex": {
+      "path": ".agents/skills/visser-scan/SKILL.md",
+      "sha256": "c893cd82731f9a98924b3c987647c331f2ab8175ff1122f2be626e505a1c719c",
+      "preamble_path": ".agents/skills/visser-scan/HEADLESS_PREAMBLE.md",
+      "preamble_sha256": "46e98f9cb01d39d241885ae85677797df4fb800776158a83f89452af08e8c3de",
+      "execution_contract": "generic-baseline-only",
+      "unattended_eligibility": "ineligible",
+      "writes": []
+    },
+    "extractor": {
+      "path": ".claude/skills/visser-scan/scripts/extract_office.py",
+      "sha256": "927dc6e559f5a7cfb805f1a668353d9736f9bd8d1d029bb124969fa343305d5f"
+    }
+  },
+  "consumer_review": {
+    "manual_discovery": "docs/v2/22-options-surface-field-guide.md",
+    "curated_codex_routing": "absent",
+    "repository_scheduler_reference": "absent",
+    "installed_launchd_reference": "absent",
+    "live_operational_consumer": "absent"
+  },
+  "adapter_conformance": {
+    "state": "unavailable",
+    "capability_version": null,
+    "package_digest": null,
+    "adapter_digest": null,
+    "reason": "No accepted market-research-scan Capability Package or complete exact-adapter structural, behavioural, semantic, and environmental evidence is published."
+  },
+  "scope_confirmation": {
+    "scheduler_changed": false,
+    "credentials_used": false,
+    "production_data_read": false,
+    "database_write": false,
+    "status_or_decision_item_changed": false,
+    "trade_authority_acquired": false,
+    "successor_work_started": false
+  },
+  "rollback_and_provenance": "The manual migration input and active discovery remain unchanged. Revert the issue #70 inventory and receipt commit to restore the prior generic defer metadata; historical source bytes remain in Git."
+}
