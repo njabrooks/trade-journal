@@ -114,6 +114,9 @@ discovery is unchanged. Exact conformance does not claim live Tana, provider, sc
 headless execution availability; existing interactive consumers remain explicit, and no Trade Journal
 investment-write authority is granted.
 
+CI requires the read-only `NOTES_REPOSITORY_DEPLOY_KEY` to materialize the exact private source revision. A
+missing key is an unavailable source-acquisition state and fails before any conformance result is accepted.
+
 The accepted W1 no-write boundary is exercised separately against a clean checkout at the pinned revision:
 
 ```console

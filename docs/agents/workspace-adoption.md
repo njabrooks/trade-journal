@@ -240,6 +240,10 @@ their rollback-capable legacy discovery paths. The fixed point, accepted Notes r
 dependency bindings, zero-write evidence, rollback boundary, and scope confirmation are recorded in
 `evidence/issue-72-notes-toulmin-adoption.json`.
 
+CI acquires the private immutable Notes revision with the read-only
+`NOTES_REPOSITORY_DEPLOY_KEY`; the workflow fails explicitly before validation when that repository secret is
+unavailable. This acquisition credential grants no Notes write or runtime/Tana authority.
+
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar

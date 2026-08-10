@@ -109,6 +109,15 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
 
+      - name: Require the read-only Notes source acquisition key
+        env:
+          NOTES_REPOSITORY_DEPLOY_KEY: ${{ secrets.NOTES_REPOSITORY_DEPLOY_KEY }}
+        run: |
+          if [ -z "$NOTES_REPOSITORY_DEPLOY_KEY" ]; then
+            echo "::error::NOTES_REPOSITORY_DEPLOY_KEY is required to read the private immutable Notes release."
+            exit 1
+          fi
+
       - name: Check out the accepted immutable Notes release
         uses: actions/checkout@v4
         with:
