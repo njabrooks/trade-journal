@@ -211,6 +211,19 @@ credential, production-data, status, Decision Item resolution, signal, strategy,
 generic database-write, Notes/Tana-write, Radon, #70 disposition, or final #76 discovery-cutover authority was
 used or acquired.
 
+Issue #70 resolves the market-research-scan candidate as `deferred-unavailable`. The existing `/visser-scan`
+procedure remains a pull-only, manual, non-governed migration input; its Codex headless projection now has a
+bespoke zero-write unavailable/refusal contract, is explicitly ineligible for unattended execution, and has no
+live operational consumer. Notes retains authority
+over the external Visser source files, which were reviewed read-only at Notes revision
+`32cd510b75b8edea69de7f2cfb540c50934cb3f0`; the newest tracked source set is dated `2026-07-17` and the
+existing procedure's greater-than-ten-day staleness warning remains mandatory. Both inventory entries keep
+`unavailable` evidence with null Capability, package, and adapter bindings because file presence, mirror
+parity, and machine-local data do not prove current support. No Capability Package, Registry or Lock change,
+generated output, discovery cutover, scheduler, credential, provider invocation, production-data access,
+database write, status change, Decision Item resolution, or trade authority is included. Exact inspected input
+digests and scope evidence are in `evidence/issue-70-market-research-scan-disposition.json`.
+
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar

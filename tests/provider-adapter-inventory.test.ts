@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -11,6 +12,10 @@ const headlessInventoryPath = resolve(
   process.cwd(),
   'docs/agents/provider-adapters/headless-inventory.json',
 );
+const marketResearchDispositionPath = resolve(
+  process.cwd(),
+  'evidence/issue-70-market-research-scan-disposition.json',
+);
 
 function readInventory(): Record<string, unknown> {
   return JSON.parse(readFileSync(inventoryPath, 'utf8')) as Record<string, unknown>;
@@ -18,6 +23,10 @@ function readInventory(): Record<string, unknown> {
 
 function readHeadlessInventory(): Record<string, unknown> {
   return JSON.parse(readFileSync(headlessInventoryPath, 'utf8')) as Record<string, unknown>;
+}
+
+function sha256(path: string): string {
+  return createHash('sha256').update(readFileSync(resolve(process.cwd(), path))).digest('hex');
 }
 
 describe('Provider Adapter inventory validation', () => {
@@ -110,6 +119,96 @@ describe('Provider Adapter inventory validation', () => {
 
   it('accepts the checked-in exhaustive headless inventory', () => {
     expect(validateInventory(readHeadlessInventory())).toEqual([]);
+  });
+
+  it('keeps the market research scan explicitly deferred without inventing operational support', () => {
+    const interactive = readInventory();
+    const headless = readHeadlessInventory();
+    const interactiveEntry = (
+      interactive.entries as Array<Record<string, unknown>>
+    ).find((entry) => entry.id === 'interactive-claude-visser-scan')!;
+    const headlessEntry = (
+      headless.entries as Array<Record<string, unknown>>
+    ).find((entry) => entry.id === 'headless-codex-visser-scan')!;
+    const disposition = JSON.parse(
+      readFileSync(marketResearchDispositionPath, 'utf8'),
+    ) as Record<string, unknown>;
+
+    expect(interactiveEntry.packaging).toBe('authored-provider-entry-point');
+    expect(interactiveEntry.invocation).toMatchObject({
+      mode: 'interactive',
+      unattended_eligibility: 'ineligible',
+    });
+    expect(interactiveEntry.evidence).toMatchObject({
+      state: 'unavailable',
+      capability_version: null,
+      package_digest: null,
+      adapter_digest: null,
+      reason:
+        'File presence, mirror parity, and machine-local Notes data do not establish current Adapter Conformance.',
+    });
+    expect(interactiveEntry.j2_disposition).toEqual({
+      action: 'defer',
+      rationale:
+        'Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support.',
+    });
+
+    expect(headlessEntry.invocation).toMatchObject({
+      mode: 'headless',
+      unattended_eligibility: 'ineligible',
+    });
+    expect(headlessEntry.execution_contract).toEqual({
+      class: 'bespoke',
+      preamble_path: '.claude/skills/visser-scan/HEADLESS_PREAMBLE.md',
+      readiness:
+        'Protective zero-write unavailable/refusal contract only; it is not execution or operational-readiness authority.',
+    });
+    expect(headlessEntry.operational_consumers).toEqual([
+      'No live operational consumer; current repository automation does not invoke this Codex projection.',
+    ]);
+    expect(headlessEntry.evidence).toEqual(interactiveEntry.evidence);
+    expect(headlessEntry.j2_disposition).toEqual(interactiveEntry.j2_disposition);
+
+    expect(disposition).toMatchObject({
+      kind: 'MarketResearchScanDisposition',
+      issue: 'njabrooks/trade-journal#70',
+      disposition: 'deferred-unavailable',
+      governed_adapter_published: false,
+      manual_consumer_present: true,
+      live_operational_consumer_present: false,
+      active_discovery_changed: false,
+      notes_authority: 'repository:njabrooks/notes',
+      trade_journal_authority: 'scope:trade-journal',
+      notes_source: {
+        latest_source_data_as_of: '2026-07-17',
+        latest_source_data_was_stale_at_review: true,
+        worktree_mutated: false,
+      },
+    });
+
+    const migrationInputs = disposition.migration_inputs as Record<
+      string,
+      Record<string, unknown>
+    >;
+    for (const input of Object.values(migrationInputs)) {
+      expect(input.sha256).toBe(sha256(String(input.path)));
+      if (input.preamble_path) {
+        expect(input.preamble_sha256).toBe(sha256(String(input.preamble_path)));
+      }
+      if (input.authored_preamble_path) {
+        expect(input.authored_preamble_sha256).toBe(
+          sha256(String(input.authored_preamble_path)),
+        );
+      }
+    }
+    expect(
+      readFileSync(
+        resolve(process.cwd(), '.agents/skills/visser-scan/HEADLESS_PREAMBLE.md'),
+        'utf8',
+      ),
+    ).toContain(
+      'Do not execute the Visser scan procedure, query Trade Journal, read Notes data, browse, or write anything.',
+    );
   });
 
   it('reports a stable coverage diagnostic when a headless projection is omitted', () => {

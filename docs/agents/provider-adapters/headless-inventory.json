@@ -2702,15 +2702,15 @@
       },
       "packaging": "generated-headless-projection",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/visser-scan/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/visser-scan/HEADLESS_PREAMBLE.md",
+        "readiness": "Protective zero-write unavailable/refusal contract only; it is not execution or operational-readiness authority."
       },
       "invocation": {
         "mode": "headless",
         "entry_point": ".agents/skills/visser-scan/skill.json",
-        "unattended_eligibility": "conditional",
-        "rationale": "Produces pull-only opportunity and risk suggestions."
+        "unattended_eligibility": "ineligible",
+        "rationale": "The generic projection has no bounded unattended contract or operational consumer."
       },
       "lifecycle": {
         "status": "active",
@@ -2726,7 +2726,7 @@
         "Notes repository data and Trade Journal read access."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
+        "Bespoke preamble refuses headless execution and every read or write because Adapter Conformance is unavailable.",
         "Machine-local file dependency; absent from curated Codex routing.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
@@ -2740,15 +2740,15 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-10",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "File presence, mirror parity, and machine-local Notes data do not establish current Adapter Conformance."
       },
       "j2_disposition": {
         "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "rationale": "Keep only the existing pull-only manual boundary as a non-governed migration input; do not route, schedule, or represent it as current support."
       }
     }
   ],

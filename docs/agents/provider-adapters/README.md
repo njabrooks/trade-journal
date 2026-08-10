@@ -60,8 +60,16 @@ The inventory deliberately distinguishes packaging from readiness:
 - five executable workflows (`assess-validation-evidence`, `build-core-argument`, `finalize-for-upload`,
   `relate-research`, and `synthesize-claims`) have bespoke authored headless contracts;
 - ten contracted research-pipeline paths have bespoke refusal preambles that name their exact governed CLI replacement;
-- the other 21 projections have generic generated preambles, which are packaging baselines only; and
+- deferred `visser-scan` has a bespoke zero-write unavailable/refusal preamble;
+- the other 20 projections have generic generated preambles, which are packaging baselines only; and
 - `decisions` and `thesis` are mirrored for parity but remain ineligible for unattended execution.
+
+`visser-scan` is also explicitly ineligible for unattended execution. Issue #70 replaces its unsafe generic
+headless baseline with a bespoke zero-write unavailable/refusal contract and retains only the existing
+pull-only manual procedure as a non-governed migration input. Both projections remain `unavailable`; local
+source files, mirror parity, and the presence of Notes-owned data do not establish Adapter Conformance. The
+reviewed authority, source age, migration-input digests, consumer absence, and scope are recorded in
+`evidence/issue-70-market-research-scan-disposition.json`.
 
 Five live provider-dependent launchd jobs are mapped with their current Claude provider, model, invocation,
 schedule, read/write boundary, machine-local environment, timeout, locking, failure observability, downstream
