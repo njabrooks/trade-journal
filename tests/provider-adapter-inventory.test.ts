@@ -40,12 +40,15 @@ describe('Provider Adapter inventory validation', () => {
   it('does not accept current evidence without exact binding fields', () => {
     const inventory = readInventory();
     const entries = inventory.entries as Array<Record<string, unknown>>;
-    const evidence = entries[0].evidence as Record<string, unknown>;
+    const index = entries.findIndex((entry) => (
+      (entry.evidence as Record<string, unknown>).state === 'unavailable'
+    ));
+    const evidence = entries[index].evidence as Record<string, unknown>;
     evidence.state = 'current';
 
     expect(validateInventory(inventory)).toContainEqual({
       requirement: 'TJ-INV-010',
-      path: '/entries/0/evidence',
+      path: `/entries/${index}/evidence`,
       message: 'current evidence requires exact version and digests.',
     });
   });

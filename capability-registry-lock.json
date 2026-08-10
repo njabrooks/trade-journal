@@ -261,7 +261,7 @@
       }
     },
     {
-      "approved_version": "1.1.0",
+      "approved_version": "1.2.0",
       "authority": "scope:trade-journal",
       "dependencies": [
         {
@@ -275,10 +275,14 @@
         {
           "id": "capability:scope:trade-journal/belief-research-relation",
           "version_constraint": ">=1.0.0 <2.0.0"
+        },
+        {
+          "id": "capability:scope:trade-journal/thesis-underwriting",
+          "version_constraint": ">=1.0.0 <2.0.0"
         }
       ],
       "id": "capability:scope:trade-journal/research-pipeline",
-      "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+      "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -301,8 +305,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/research-pipeline",
-        "release_reference": "c0d8a0c41f9fdb7a814e550ca48a6ec4b4a1d161",
-        "revision": "c0d8a0c41f9fdb7a814e550ca48a6ec4b4a1d161"
+        "release_reference": "c65315b3faed66f3adc1b917df61b8e9122b4f0d",
+        "revision": "c65315b3faed66f3adc1b917df61b8e9122b4f0d"
       }
     },
     {
@@ -411,6 +415,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:51bb513ce4fd85756baf83f86b7ee3c8e6871e1176ced74b398945137b553ab9",
+  "registry_digest": "sha256:ef5191f8f693838f555799dd1e453dae22c3b1c3617575c0a278f77aac52fbe5",
   "schema_version": "1.0.0"
 }

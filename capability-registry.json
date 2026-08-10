@@ -126,10 +126,10 @@
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",
       "package_path": "capabilities/research-pipeline",
-      "approved_version": "1.1.0",
+      "approved_version": "1.2.0",
       "release": {
         "source": ".",
-        "revision": "c0d8a0c41f9fdb7a814e550ca48a6ec4b4a1d161"
+        "revision": "c65315b3faed66f3adc1b917df61b8e9122b4f0d"
       },
       "development": {
         "enabled": true,

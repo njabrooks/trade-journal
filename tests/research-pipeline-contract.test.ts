@@ -147,12 +147,12 @@ describe('research-pipeline aggregate contract', () => {
     expect(first.stageOutcomes.filter(({ migration }) => migration === 'governed_dependency'))
       .toHaveLength(3);
     expect(first.stageOutcomes.filter(({ migration }) => migration === 'governed_stage'))
-      .toHaveLength(4);
+      .toHaveLength(10);
     expect(first.stageOutcomes.filter(({ migration }) => migration === 'legacy_unmigrated'))
-      .toHaveLength(6);
+      .toHaveLength(0);
     expect(first.stageOutcomes.every(({ writes }) => writes.length === 0)).toBe(true);
     expect(first.limitations).toContain(
-      'The four issue #67 stage results coexist with unchanged, rollback-capable legacy persistence entry points.',
+      'All ten pipeline stage results coexist with unchanged, rollback-capable legacy persistence entry points.',
     );
   });
 
@@ -304,7 +304,7 @@ describe('research-pipeline aggregate contract', () => {
       requiresExactUserAuthorization: true,
     };
     forgedDelegation.aggregateDigest = digest({
-      contractVersion: '1.1.0', insightId: forgedDelegation.insightId,
+      contractVersion: '1.2.0', insightId: forgedDelegation.insightId,
       stageOutcomes: forgedDelegation.stageOutcomes,
     });
     forgedDelegation.retry.key = forgedDelegation.aggregateDigest;
@@ -332,7 +332,7 @@ describe('research-pipeline aggregate contract', () => {
     const unbounded = structuredClone(result);
     unbounded.stageOutcomes[0].detail = 'x'.repeat(1001);
     unbounded.aggregateDigest = digest({
-      contractVersion: '1.1.0', insightId: unbounded.insightId,
+      contractVersion: '1.2.0', insightId: unbounded.insightId,
       stageOutcomes: unbounded.stageOutcomes,
     });
     unbounded.retry.key = unbounded.aggregateDigest;

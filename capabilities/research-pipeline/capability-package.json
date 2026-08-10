@@ -1,20 +1,20 @@
 {
   "id": "capability:scope:trade-journal/research-pipeline",
   "authority": "scope:trade-journal",
-  "version": "1.1.0",
-  "intent": "Provide provider-neutral, zero-write results for research-pipeline status, user-selected idea intake, thesis formalization, and unknown mapping while composing them into the existing coordination-only aggregate and retaining rollback-capable legacy persistence.",
-  "contract": "Given one explicit Trade Journal research insight, return an independently invocable, deterministic, bounded, zero-write result for pipeline_status, idea_intake, thesis_formalization, or unknown_mapping, or compose exact stage results with Registry-locked claims-synthesis, research-publication, and belief-research-relation results into the ordered aggregate lifecycle. Notes/Tana owns capture, source material, and Toulmin extraction. Trade Journal stage results preserve exact provenance, evidence, reasoning, backing, qualifier, every rebuttal, time horizon, ambiguity, audit context, idempotency, and genuine user judgment without persisting anything. Formalization and unknown-mapping recommendations remain judgment_required until the user records the exact gate decision. The aggregate remains coordination-only and zero-write. Existing legacy file and database persistence, mirrors, and active discovery remain unchanged and rollback-capable. Research preparation, unknown research, evidence synthesis, thesis expression, gate decision, and graduation are explicitly unmigrated for issue #68. No stage or aggregate has scheduler, credential, production-data, strategy, position, trade, status, Decision Item resolution, generic write, or database authority.",
+  "version": "1.2.0",
+  "intent": "Provide provider-neutral, zero-write results across research-pipeline intake, research, evidence synthesis, thesis expression, user gates, and graduation planning while composing the ordered aggregate and retaining rollback-capable legacy persistence.",
+  "contract": "Given one explicit Trade Journal research insight, return independently invocable, deterministic, bounded, zero-write results for pipeline_status, idea_intake, thesis_formalization, unknown_mapping, research_preparation, unknown_research, evidence_synthesis, thesis_expression, gate_decision, or graduation, or compose exact stage results with Registry-locked claims-synthesis, research-publication, belief-research-relation, and thesis-underwriting dependencies into the ordered aggregate lifecycle. Notes/Tana owns capture, source material, and Toulmin extraction. Trade Journal stage results preserve exact provenance, source-linked evidence, reasoning, backing, qualifier, every rebuttal, time horizon, contradictions, ambiguity, audit context, idempotency, and genuine user judgment without persisting anything. Research preparation is portable and provider-neutral; unavailable research remains unavailable; evidence synthesis retains unresolved contradictions; expression provides no position size or trade instruction; gate recommendations remain judgment_required until the user records an audited decision; graduation is a provenance-bound handoff plan that remains judgment_required until the user accepts its exact digest, preserves decline as refused, proposes initial lifecycle developing, and has no persistence or status authority. The aggregate remains coordination-only and zero-write. All ten legacy file and database persistence entry points, mirrors, and active discovery remain unchanged and rollback-capable. No stage or aggregate has scheduler, credential, production-data, status, Decision Item resolution, signal configuration, strategy, position, order, trade, generic write, or database authority.",
   "instructions": [
-    "Require one explicit research insight UUID. Build the four stage results through scripts/research-pipeline.ts --pipeline-status, --idea-intake, --thesis-formalization, or --unknown-mapping with <file|-> input; validate stage bytes with --validate-stage-result. Describe, evaluate, and validate the aggregate through --describe, --evaluate, and --validate-result.",
+    "Require one explicit research insight UUID. Build the ten stage results through scripts/research-pipeline.ts --pipeline-status, --idea-intake, --thesis-formalization, --unknown-mapping, --research-preparation, --unknown-research, --evidence-synthesis, --thesis-expression, --gate-decision, or --graduation with <file|-> input; validate stage bytes with --validate-stage-result. Describe, evaluate, and validate the aggregate through --describe, --evaluate, and --validate-result.",
     "Use the exact ordered lifecycle: pipeline_status, idea_intake, thesis_formalization, unknown_mapping, research_preparation, unknown_research, evidence_synthesis, claims_synthesis, research_publication, belief_research_relation, thesis_expression, gate_decision, graduation.",
-    "Validate and compose pipeline_status, idea_intake, thesis_formalization, and unknown_mapping through the package-owned stage-result validator. Resolve claims-synthesis, research-publication, and belief-research-relation only through the published Registry Lock. Preserve exact digests; do not copy stage or dependency validators into the aggregate.",
+    "Validate and compose all ten package-owned stages through their stage-result validators. Resolve claims-synthesis, research-publication, belief-research-relation, and thesis-underwriting only through the published Registry Lock. Preserve exact digests; do not copy stage or dependency validators into the aggregate.",
     "Preserve exact (sourceInsightId, sourceClaimId) provenance, evidence, reasoning, backing, qualifier, every rebuttal, time horizon, ambiguity, relationship rationale, and digest-bound user judgment audit (decision ID, actor ID, recorded-at time) through the stage-owned contracts. Reuse provenance-bearing claims. Holdings, tickers, keywords, or provider recommendations are never semantic proof.",
-    "Every #67 stage result uses execution mode stage_result_only with writes: []. The aggregate uses aggregate_coordination_only with writes: []. Neither can create files, publish claims, persist relationships, change status, create or resolve Decision Items, mutate theses, signals, strategies, positions, orders, or trades, or use ad-hoc SQL, Supabase MCP writes, direct API mutation, generic writers, schedulers, credentials, provider discovery, or production-data evidence.",
+    "Every stage result uses execution mode stage_result_only with writes: []. The aggregate uses aggregate_coordination_only with writes: []. Neither can create files, publish claims, persist relationships, change status, create or resolve Decision Items, mutate theses or signals, configure signals, mutate strategies, positions, orders, or trades, or use ad-hoc SQL, Supabase MCP writes, direct API mutation, generic writers, schedulers, credentials, provider discovery, or production-data evidence.",
     "When research-publication returns its exact judgment boundary, report judgment_required and name only scripts/ops/publish-research.ts --stdin. When belief-research-relation returns its exact recording judgment boundary, report judgment_required and name only scripts/ops/record-belief-research-relation.ts --stdin. Never invoke either operation or create an authorization token from aggregate authority.",
-    "Represent missing stage material as incomplete; unavailable prerequisites as unavailable; digest or freshness mismatch as stale; policy, malformed authority, or user refusal as refused; provider or execution failure as failed; genuine unresolved user judgment as judgment_required; and a validated zero-write stage result as ready. Unknown mapping may follow only an explicit user advance from formalization. Advance unknown mapping only when a high-impact, externally resolvable, not-fully-priced unknown has a clear kill condition and asymmetric research payoff; require kill for no decisive unknowns, all-priced-in unknowns, or a thesis that cannot be researched; otherwise archive. Do not collapse partial progress into success.",
-    "Keep pipeline-status, stage-1-init-idea, stage-2-formalize-thesis, and stage-3-map-unknowns active as rollback-capable legacy persistence entry points while their governed zero-write result boundaries coexist. Keep stage-4a-prep-desktop-research, stage-4a-research-unknown, stage-4b-synthesize-evidence, stage-5-express-thesis, advance-or-kill, and graduate-pipeline-idea active and explicitly unmigrated for issue #68. Do not change active discovery.",
+    "Represent missing stage material as incomplete; unavailable prerequisites as unavailable; digest or freshness mismatch as stale; policy, malformed authority, or user refusal as refused; provider or execution failure as failed; genuine unresolved user judgment as judgment_required; and a validated zero-write stage result as ready. Research uses at least two independent source domains and explicit HTTPS citations. Evidence synthesis requires exact unknown coverage, retains contradictions, and derives advance, hold, kill, or modify from decision-critical resolution and posterior confidence. Expression requires an audited user entry decision, recommends no position size, and leaves act, watch, or discard to the final user gate. Graduation reuses exact provenance, depends on locked governed capabilities, and prepares only a developing thesis handoff; monitoring remains expression-cascade derived. Do not collapse partial progress into success.",
+    "Keep all ten legacy entry points active as rollback-capable persistence paths while their governed zero-write result boundaries coexist. Do not modify .claude or .agents discovery, remove tombstones, or begin the issue #69 contraction.",
     "Retry only canonically identical aggregate input. The aggregate digest is the retry key. A changed input, source digest, stage result, authorization boundary, package binding, or adapter binding is a new evaluation, not a retry.",
-    "Unattended use is conditional only for read-only pipeline status and aggregate describe, evaluate, and validation modes with exact supplied input. Idea selection, thesis classification, formalization gates, unknown-map gates, every legacy persistence path, and every accepted write remain interactive and ineligible."
+    "Unattended use is conditional only for read-only pipeline status, portable preparation, validation of explicitly supplied evidence, and aggregate describe, evaluate, and validation modes. Provider research may run only with declared source access and must report unavailable environments honestly. Idea selection, thesis classification, every user gate, graduation acceptance, every legacy persistence path, and every accepted write remain interactive and ineligible."
   ],
   "conformance": {
     "evidence_validity_days": 30,
@@ -23,6 +23,12 @@
         "id": "intake-formalization-stages",
         "category": "behavioural",
         "description": "Four independently invocable stage-result contracts preserve Notes/Tana provenance and Toulmin semantics, require exact user judgment, reject inferred bearing and writes, and bind deterministic stage chaining.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "research-expression-stages",
+        "category": "behavioural",
+        "description": "Six independently invocable research, synthesis, expression, gate, and graduation results preserve source provenance, multi-track source diversity, all-unknown coverage, contradictions, genuine judgment, no-size/no-trade behavior, exact claim-resolution bindings, dependency availability, and exact zero-write chaining.",
         "evidence_type": "automated"
       },
       {
@@ -40,7 +46,7 @@
       {
         "id": "dependency-composition",
         "category": "behavioural",
-        "description": "Claims synthesis, research publication, and belief-research relation are resolved through exact Registry-locked contracts and existing validators without duplicated semantics or mutation authority.",
+        "description": "Claims synthesis, research publication, belief-research relation, and thesis underwriting are resolved through exact Registry-locked contracts and existing validators without duplicated semantics or mutation authority.",
         "evidence_type": "automated"
       },
       {
@@ -52,19 +58,19 @@
       {
         "id": "legacy-coexistence",
         "category": "behavioural",
-        "description": "Legacy persistence for the four #67 boundaries remains active and rollback-capable, active discovery is unchanged, and the six #68 boundaries and unattended limitations remain explicit.",
+        "description": "Legacy persistence for all ten stage boundaries remains active and rollback-capable, active discovery is unchanged, and issue #69 contraction remains separate.",
         "evidence_type": "automated"
       },
       {
         "id": "provider-semantic-equivalence",
         "category": "semantic",
-        "description": "Exact Claude and Codex adapters preserve lifecycle, authority, provenance, judgment, stage delegation, unmigrated limitations, and zero-write semantics.",
+        "description": "Exact Claude and Codex adapters preserve lifecycle, authority, provenance, source and environment limits, judgment, stage delegation, coexistence, and zero-write semantics.",
         "evidence_type": "human"
       },
       {
         "id": "eligible-environment",
         "category": "environmental",
-        "description": "The repository runtime executes read-only describe/evaluate/validate modes while missing, stale, refused, failed, or unmigrated prerequisites remain explicit without writes.",
+        "description": "The repository runtime executes read-only stage, describe, evaluate, and validate modes while missing, stale, refused, failed, or unavailable prerequisites remain explicit without writes.",
         "evidence_type": "automated"
       }
     ]
@@ -94,6 +100,10 @@
     },
     {
       "id": "capability:scope:trade-journal/belief-research-relation",
+      "version_constraint": ">=1.0.0 <2.0.0"
+    },
+    {
+      "id": "capability:scope:trade-journal/thesis-underwriting",
       "version_constraint": ">=1.0.0 <2.0.0"
     }
   ]

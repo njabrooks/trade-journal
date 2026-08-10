@@ -7,7 +7,7 @@
   "entries": [
     {
       "id": "headless-codex-advance-or-kill",
-      "ability": "Evaluate a research-pipeline gate and record advance, hold, or kill outcomes.",
+      "ability": "Return a zero-write final research gate with explicit user act, watch, or discard judgment.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -17,42 +17,42 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/advance-or-kill/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/advance-or-kill/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/advance-or-kill/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/advance-or-kill/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "ineligible",
-        "rationale": "Makes a genuine investment-research gate decision with the user."
+        "rationale": "The final investment-research disposition is genuine user judgment."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Pipeline files and evidence.",
-        "writes": "Pipeline state, kill log, and archived idea files.",
-        "judgment": "Makes a genuine investment-research gate decision with the user."
+        "reads": "The exact ready thesis-expression result and preserved Notes/Tana provenance.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "The user records or overrides act, watch, or discard with an exact audit."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Shared research workspace and current pipeline idea."
+        "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Must not make an unattended kill or advancement decision.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -63,16 +63,27 @@
         "rationale": "Contains judgment or interactive control boundaries and is not a live scheduled consumer."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write advance-or-kill result boundary."
       },
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/advance-or-kill/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-codex",
+        "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -350,8 +361,7 @@
       "j2_disposition": {
         "action": "migrate",
         "rationale": "The governed adapter is current and staged; retain the bespoke headless mirror as a migration input until final discovery cutover."
-      }
-      ,
+      },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
@@ -815,7 +825,7 @@
     },
     {
       "id": "headless-codex-graduate-pipeline-idea",
-      "ability": "Handoff a researched pipeline idea into Trade Journal entities.",
+      "ability": "Prepare a zero-write, provenance-bound thesis graduation handoff.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -825,42 +835,42 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/graduate-pipeline-idea/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/graduate-pipeline-idea/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/graduate-pipeline-idea/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/graduate-pipeline-idea/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "ineligible",
-        "rationale": "Formal investment-research gate with material database effects."
+        "rationale": "Graduation acceptance and every eventual persistence action remain user-controlled."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Pipeline evidence and existing investment entities.",
-        "writes": "Theses, claim links, articulations, and pipeline state through governed workflows.",
-        "judgment": "Formal investment-research gate with material database effects."
+        "reads": "The exact ready final gate, provenance references, and Registry-locked dependency states.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "The user accepts the final disposition and any separately governed persistence."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Completed research stages, user approval, and database access."
+        "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Must not infer the final handoff decision unattended.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -871,16 +881,27 @@
         "rationale": "Contains judgment or interactive control boundaries and is not a live scheduled consumer."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write graduate-pipeline-idea result boundary."
       },
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/graduate-pipeline-idea/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-codex",
+        "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -1308,7 +1329,7 @@
       ],
       "limitations": [
         "The governed pipeline-status and aggregate boundaries are staged while the legacy pipeline-status skill remains active for rollback-capable persistence.",
-        "Six issue #68 stage boundaries remain active and explicitly unmigrated; active discovery is unchanged.",
+        "All ten legacy stage boundaries remain active and unchanged; active discovery is unchanged until issue #69 is explicitly authorized.",
         "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
@@ -1322,14 +1343,14 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.1.0",
-        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
-        "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
-        "reason": "Exact current evidence binds the research-pipeline 1.1.0 aggregate, four zero-write stages, and codex adapter."
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 aggregate, all ten zero-write stages, and codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The aggregate and four #67 stage-result boundaries are governed; retain legacy persistence and discovery until an explicitly authorized cutover."
+        "rationale": "The aggregate and all ten #67/#68 stage-result boundaries are governed; retain legacy persistence and discovery until issue #69 is explicitly authorized."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1843,10 +1864,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.1.0",
-        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
-        "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
-        "reason": "Exact current evidence binds the research-pipeline 1.1.0 codex adapter and its zero-write stage-1-init-idea result boundary."
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-1-init-idea result boundary."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -1924,10 +1945,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.1.0",
-        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
-        "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
-        "reason": "Exact current evidence binds the research-pipeline 1.1.0 codex adapter and its zero-write stage-2-formalize-thesis result boundary."
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-2-formalize-thesis result boundary."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2005,10 +2026,10 @@
       "evidence": {
         "state": "current",
         "as_of": "2026-08-10",
-        "capability_version": "1.1.0",
-        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
-        "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
-        "reason": "Exact current evidence binds the research-pipeline 1.1.0 codex adapter and its zero-write stage-3-map-unknowns result boundary."
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-3-map-unknowns result boundary."
       },
       "j2_disposition": {
         "action": "migrate",
@@ -2028,7 +2049,7 @@
     },
     {
       "id": "headless-codex-stage-4a-prep-desktop-research",
-      "ability": "Prepare a provider-specific prompt for Claude Desktop Deep Research.",
+      "ability": "Produce a portable provider-neutral research brief for one accepted unknown and track.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -2038,42 +2059,42 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/stage-4a-prep-desktop-research/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/stage-4a-prep-desktop-research/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/stage-4a-prep-desktop-research/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/stage-4a-prep-desktop-research/skill.json",
-        "unattended_eligibility": "ineligible",
-        "rationale": "Packages user-selected research scope."
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "unattended_eligibility": "conditional",
+        "rationale": "Deterministic preparation is read-only after the user-selected unknown and track."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Pipeline context and selected unknowns.",
-        "writes": "A prompt artifact for an external Claude Desktop workflow.",
-        "judgment": "Packages user-selected research scope."
+        "reads": "The exact accepted formalized thesis and unknown-mapping results.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "The user selected the research scope upstream; this boundary adds no judgment."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Completed stage three and Claude Desktop access."
+        "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Hard provider dependency and manual cross-surface handoff.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2084,21 +2105,32 @@
         "rationale": "Contains judgment or interactive control boundaries and is not a live scheduled consumer."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4a-prep-desktop-research result boundary."
       },
       "j2_disposition": {
-        "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-4a-prep-desktop-research/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-codex",
+        "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
       "id": "headless-codex-stage-4a-research-unknown",
-      "ability": "Research one mapped unknown using web sources.",
+      "ability": "Return source-diverse, citation-bound zero-write research for one mapped unknown.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -2108,42 +2140,42 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/stage-4a-research-unknown/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/stage-4a-research-unknown/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/stage-4a-research-unknown/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/stage-4a-research-unknown/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Research synthesis under a user-selected track."
+        "rationale": "Research may run only with declared source access and honest unavailable behavior."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Mapped unknown, web sources, and pipeline context.",
-        "writes": "Evidence appended to stage-four files.",
-        "judgment": "Research synthesis under a user-selected track."
+        "reads": "The portable research brief and explicit HTTPS source material.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "Provider assessment remains analysis; downstream synthesis and user gates retain decision authority."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "WebSearch/WebFetch and shared research workspace."
+        "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Source quality and web availability require review.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2154,21 +2186,32 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4a-research-unknown result boundary."
       },
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-4a-research-unknown/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-codex",
+        "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
       "id": "headless-codex-stage-4b-synthesize-evidence",
-      "ability": "Synthesize accumulated research into a belief update.",
+      "ability": "Return a zero-write evidence synthesis with contradictions, unknown resolution, and a derived gate recommendation.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -2178,42 +2221,42 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/stage-4b-synthesize-evidence/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/stage-4b-synthesize-evidence/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/stage-4b-synthesize-evidence/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/stage-4b-synthesize-evidence/skill.json",
-        "unattended_eligibility": "ineligible",
-        "rationale": "Updates investment belief and confidence with the user."
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "unattended_eligibility": "conditional",
+        "rationale": "Synthesis is recommendation-only and every user gate remains separate."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Stage-four evidence files.",
-        "writes": "Stage-four synthesis and posterior confidence.",
-        "judgment": "Updates investment belief and confidence with the user."
+        "reads": "The exact accepted unknown map and source-linked research results.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "Provider confidence and recommendation remain analysis; the user controls stage entry and final disposition."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Completed evidence collection and user review."
+        "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Posterior confidence is genuine investment judgment.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2224,21 +2267,32 @@
         "rationale": "Contains judgment or interactive control boundaries and is not a live scheduled consumer."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-4b-synthesize-evidence result boundary."
       },
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-4b-synthesize-evidence/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-codex",
+        "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
       "id": "headless-codex-stage-5-express-thesis",
-      "ability": "Translate conviction into positioning and sizing inputs.",
+      "ability": "Return zero-write value-chain, expression-risk, and sizing inputs without a position size or trade instruction.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -2248,42 +2302,42 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/stage-5-express-thesis/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/stage-5-express-thesis/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/stage-5-express-thesis/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The governed zero-write adapter is current; the generic legacy preamble remains rollback packaging only and does not broaden unattended eligibility."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/stage-5-express-thesis/skill.json",
-        "unattended_eligibility": "ineligible",
-        "rationale": "Positioning and sizing require explicit user judgment."
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
+        "unattended_eligibility": "conditional",
+        "rationale": "Analysis may run only after an audited user Stage 5 entry decision; final action remains user judgment."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Synthesized thesis, portfolio context, and constraints.",
-        "writes": "Stage-five expression plan only.",
-        "judgment": "Positioning and sizing require explicit user judgment."
+        "reads": "The exact evidence-synthesis result and audited user Stage 5 entry decision.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "The user authorizes Stage 5 entry and separately decides act, watch, or discard."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Completed stage four and current portfolio context."
+        "Exact current research-pipeline package and adapter plus explicitly supplied, authority-valid inputs."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Must not create or size a live position unattended.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -2294,16 +2348,27 @@
         "rationale": "Contains judgment or interactive control boundaries and is not a live scheduled consumer."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.2.0",
+        "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
+        "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
+        "reason": "Exact current evidence binds the research-pipeline 1.2.0 codex adapter and its zero-write stage-5-express-thesis result boundary."
       },
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until issue #69 contraction is separately authorized."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/stage-5-express-thesis/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-codex",
+        "evidence_path": "capabilities/research-pipeline/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {

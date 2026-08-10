@@ -1,9 +1,9 @@
 {
   "capability_id": "capability:scope:trade-journal/research-pipeline",
-  "capability_version": "1.1.0",
-  "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+  "capability_version": "1.2.0",
+  "package_digest": "sha256:ab7b0178a385f46f098511fcdc15f2be816859fb42b91eceb14c92570ca1bb90",
   "adapter_id": "research-pipeline-codex",
-  "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
+  "adapter_digest": "sha256:7db338c5b2ff07a318600d92d673d6d06fcaeba65f9ff5009ff077d7740ac834",
   "support_state": "current",
   "validated_at": "2026-08-10",
   "results": {
@@ -13,15 +13,15 @@
     },
     "intake-formalization-stages": {
       "status": "passed",
-      "method": "Focused TDD proves four independently invocable zero-write results, deterministic digests, exact provenance and Toulmin preservation, genuine user gates, stale-chain refusal, and no inferred semantic bearing."
+      "method": "Regression TDD preserves the four immutable 1.1.0 zero-write seams, deterministic digests, exact provenance and Toulmin semantics, genuine user gates, stale-chain refusal, and no inferred bearing."
     },
     "aggregate-lifecycle": {
       "status": "passed",
-      "method": "Repository contract and CLI tests prove the complete ordered lifecycle, four governed stage results, six honest #68 limitations, seven explicit outcomes, canonical retry, and aggregate writes []."
+      "method": "Repository contract and CLI tests prove the complete ordered lifecycle, ten governed stage results, seven explicit outcomes, exact stage chaining, canonical retry, and aggregate writes []."
     },
     "dependency-composition": {
       "status": "passed",
-      "method": "Repository tests compose the accepted claims-synthesis, research-publication, and belief-research-relation validators and exact immutable bindings without copying stage validators."
+      "method": "Repository tests compose accepted claims-synthesis, research-publication, belief-research-relation, and thesis-underwriting bindings without copying or broadening their contracts."
     },
     "authority-and-delegation": {
       "status": "passed",
@@ -29,23 +29,27 @@
     },
     "legacy-coexistence": {
       "status": "passed",
-      "method": "Inventory, discovery, and contract tests prove legacy persistence and discovery remain active and rollback-capable while six #68 boundaries remain explicitly unmigrated."
+      "method": "Inventory, discovery, and contract tests prove all ten legacy persistence inputs remain active and rollback-capable while governed stage results coexist and issue #69 remains separate."
     },
     "provider-semantic-equivalence": {
       "status": "passed",
-      "reviewer": "Issue #67 implementation review",
-      "method": "Compared exact Claude and Codex adapters with issues #67/#46, accepted #47/#66, immutable dependency packages, Notes/Tana authority, and current legacy pipeline inventory; no live provider invocation was used.",
-      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/67",
+      "reviewer": "Issue #68 implementation review",
+      "method": "Compared exact Claude and Codex adapters with issues #68/#46, accepted #47/#66/#67, immutable 1.1.0 input, locked dependencies, Notes/Tana authority, current loose-agent semantics, and legacy pipeline inventory; no live provider or production data was used.",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/68",
       "expires_at": "2026-09-09"
     },
     "eligible-environment": {
       "status": "passed",
-      "method": "The configured repository runtime completed read-only describe, evaluate, validation, refusal, and deterministic retry tests; unavailable or unmigrated stages perform no writes."
+      "method": "The configured repository runtime completed read-only stage, describe, evaluate, validation, refusal, and deterministic retry tests; unavailable external prerequisites perform no writes."
+    },
+    "research-expression-stages": {
+      "status": "passed",
+      "method": "Focused TDD proves six independently invocable zero-write results for portable preparation, source-diverse research, contradiction-preserving synthesis, no-size expression, audited final judgment, and provenance-bound graduation with unavailable-dependency refusal."
     }
   },
   "limitations": [
     "No live provider invocation or production-data mutation was used for evidence.",
-    "Legacy persistence for the four #67 boundaries remains active; six later stages remain unmigrated for issue #68.",
-    "The aggregate is read-only and cannot authorize or invoke a stage recorder."
+    "Legacy persistence for all ten stage boundaries remains active; active discovery is unchanged and rollback-capable.",
+    "The aggregate and stage results are read-only and cannot authorize or invoke a recorder, status change, Decision Item resolution, strategy, position, order, or trade."
   ]
 }
