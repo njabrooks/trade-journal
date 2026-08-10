@@ -46,9 +46,9 @@
   - **NOTE — before relying on Codex for a headless CRON job:** 21 per-skill preambles are a *generic
     baseline*. Five executable workflows have bespoke contracts (`assess-validation-evidence`,
     `build-core-argument`, `finalize-for-upload`, `relate-research`, and `synthesize-claims`), while the ten
-    contracted research-pipeline paths have bespoke refusal preambles that point to the governed CLI. Give any other
-    target skill a **bespoke `HEADLESS_PREAMBLE.md`** (param list + concrete JSON output contract) like those
-    bespoke workflow a concrete contract like those five; the generator preserves bespoke preambles once written. `decisions`/`thesis` are
+    contracted research-pipeline paths have bespoke refusal preambles that point to the governed CLI. Give any
+    other target skill a **bespoke `HEADLESS_PREAMBLE.md`** with a parameter list and concrete JSON output
+    contract; the generator preserves bespoke preambles once written. `decisions`/`thesis` are
     interactive-only — not meant for unattended cron.
 
 ## The system today (post-2026-06 prune)
