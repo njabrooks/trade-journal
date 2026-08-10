@@ -38,7 +38,7 @@ describe("Provider Adapter generation eligibility", () => {
 
     expect(validateEligibility(artifact)).toEqual([]);
     expect(artifact.outcome).toBe("eligible-adapters-present");
-    expect(artifact.generation_eligible_count).toBe(32);
+    expect(artifact.generation_eligible_count).toBe(44);
     expect(artifact.governed_outputs).toEqual([
       "docs/agents/provider-entry-points/staging/claude.md",
       "docs/agents/provider-entry-points/staging/codex.md",
@@ -68,12 +68,15 @@ describe("Provider Adapter generation eligibility", () => {
   it("rejects an evidence upgrade that is not present in the source inventory", () => {
     const artifact = readArtifact();
     const entries = artifact.entries as Array<Record<string, unknown>>;
-    const evidence = entries[0].evidence as Record<string, unknown>;
+    const entry = entries.find((candidate) => (
+      (candidate.evidence as Record<string, unknown>).state === "unavailable"
+    ))!;
+    const evidence = entry.evidence as Record<string, unknown>;
     evidence.state = "current";
 
     expect(validateEligibility(artifact)).toContainEqual({
       requirement: "TJ-GEN-004",
-      path: `/entries/${String(entries[0].inventory_entry)}`,
+      path: `/entries/${String(entry.inventory_entry)}`,
       message:
         "Eligibility entry must match its deterministic inventory projection.",
     });

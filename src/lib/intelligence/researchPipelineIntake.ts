@@ -297,7 +297,7 @@ function oneOf<T extends string>(value: unknown, path: string, accepted: readonl
   }
 }
 
-function validateSource(value: unknown, path: string): ResearchPipelineSource {
+export function validateResearchPipelineSource(value: unknown, path: string): ResearchPipelineSource {
   const source = objectAt(value, path);
   exactKeys(source, path, ['authority', 'insightId', 'claimId', 'contentSha256']);
   if (source.authority !== 'scope:notes') throw new Error(`${path}.authority must be scope:notes`);
@@ -426,7 +426,7 @@ export function buildPipelineStatusResult(value: unknown): PipelineStatusResult 
 function validateIdeaIntakeInput(value: unknown): IdeaIntakeInput {
   const input = objectAt(value, 'ideaIntakeInput');
   exactKeys(input, 'ideaIntakeInput', ['source', 'claim', 'selection', 'idea', 'thesisClassification']);
-  validateSource(input.source, 'ideaIntakeInput.source');
+  validateResearchPipelineSource(input.source, 'ideaIntakeInput.source');
   validateToulminClaim(input.claim, 'ideaIntakeInput.claim');
   const selection = objectAt(input.selection, 'ideaIntakeInput.selection');
   exactKeys(selection, 'ideaIntakeInput.selection', [
@@ -543,7 +543,7 @@ function validateThesisPayload(
 function validateFormalizationInput(value: unknown): ThesisFormalizationInput {
   const input = objectAt(value, 'thesisFormalizationInput');
   exactKeys(input, 'thesisFormalizationInput', ['source', 'previousStage', 'thesis', 'gate']);
-  const source = validateSource(input.source, 'thesisFormalizationInput.source');
+  const source = validateResearchPipelineSource(input.source, 'thesisFormalizationInput.source');
   let previous: ResearchPipelineIntakeResult;
   try {
     previous = validateResearchPipelineIntakeResult(input.previousStage);
@@ -660,7 +660,7 @@ function validateUnknownMappingInput(value: unknown): UnknownMappingInput {
   exactKeys(input, 'unknownMappingInput', [
     'source', 'previousStage', 'unknowns', 'researchPlan', 'assessment', 'gate',
   ]);
-  const source = validateSource(input.source, 'unknownMappingInput.source');
+  const source = validateResearchPipelineSource(input.source, 'unknownMappingInput.source');
   let previous: ResearchPipelineIntakeResult;
   try {
     previous = validateResearchPipelineIntakeResult(input.previousStage);
@@ -776,7 +776,7 @@ export function validateResearchPipelineIntakeResult(value: unknown): ResearchPi
     });
   } else if (stage === 'thesis_formalization') {
     exactKeys(result, 'result', [...common, 'source', 'previousStageDigest', 'thesis', 'gate']);
-    validateSource(result.source, 'result.source');
+    validateResearchPipelineSource(result.source, 'result.source');
     if (typeof result.previousStageDigest !== 'string' || !DIGEST_PATTERN.test(result.previousStageDigest)) {
       throw new Error('result.previousStageDigest must be a sha256 digest');
     }
@@ -787,7 +787,7 @@ export function validateResearchPipelineIntakeResult(value: unknown): ResearchPi
     exactKeys(result, 'result', [
       ...common, 'source', 'previousStageDigest', 'unknowns', 'researchPlan', 'assessment', 'gate',
     ]);
-    validateSource(result.source, 'result.source');
+    validateResearchPipelineSource(result.source, 'result.source');
     if (typeof result.previousStageDigest !== 'string' || !DIGEST_PATTERN.test(result.previousStageDigest)) {
       throw new Error('result.previousStageDigest must be a sha256 digest');
     }

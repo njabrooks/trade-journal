@@ -24,17 +24,18 @@ describe('research-pipeline Capability', () => {
     expect(capability).toMatchObject({
       id: 'capability:scope:trade-journal/research-pipeline',
       authority: 'scope:trade-journal',
-      version: '1.1.0',
+      version: '1.2.0',
       dependencies: [
         { id: 'capability:scope:trade-journal/claims-synthesis', version_constraint: '>=1.0.0 <2.0.0' },
         { id: 'capability:scope:trade-journal/research-publication', version_constraint: '>=1.0.0 <2.0.0' },
         { id: 'capability:scope:trade-journal/belief-research-relation', version_constraint: '>=1.0.0 <2.0.0' },
+        { id: 'capability:scope:trade-journal/thesis-underwriting', version_constraint: '>=1.0.0 <2.0.0' },
       ],
     });
     const contract = String(capability.contract);
     for (const text of [
       'Notes/Tana owns capture, source material, and Toulmin extraction',
-      'explicitly unmigrated',
+      'All ten legacy',
       'rollback-capable',
       'judgment_required',
       'No stage or aggregate has scheduler',
@@ -57,16 +58,22 @@ describe('research-pipeline Capability', () => {
         '--idea-intake',
         '--thesis-formalization',
         '--unknown-mapping',
+        '--research-preparation',
+        '--unknown-research',
+        '--evidence-synthesis',
+        '--thesis-expression',
+        '--gate-decision',
+        '--graduation',
         'claims-synthesis',
         'research-publication',
         'belief-research-relation',
         'scripts/ops/publish-research.ts --stdin',
         'scripts/ops/record-belief-research-relation.ts --stdin',
-        'Legacy `pipeline-status`',
+        'All ten legacy entry points',
         'rollback-capable',
-        'remain explicitly unmigrated for issue #68',
+        'issue #69 contraction',
         'must not use ad-hoc SQL, Supabase MCP writes, direct API mutation, generic writes',
-        'must not change status, resolve a Decision Item, mutate a strategy or position, or place or stage a trade',
+        'must not change status, resolve a Decision Item, configure signals, mutate a strategy or position, or place or stage an order or trade',
       ]) expect(adapter).toContain(text);
     }
   });
@@ -79,6 +86,8 @@ describe('research-pipeline Capability', () => {
     expect(help.stdout).toContain('research-pipeline (read-only aggregate)');
     for (const option of [
       '--pipeline-status', '--idea-intake', '--thesis-formalization', '--unknown-mapping',
+      '--research-preparation', '--unknown-research', '--evidence-synthesis',
+      '--thesis-expression', '--gate-decision', '--graduation',
       '--validate-stage-result',
     ]) expect(help.stdout).toContain(option);
     expect(help.stdout).toContain('There is intentionally no apply, publish, relation, status, decision, strategy, position, trade');
@@ -128,13 +137,13 @@ describe('research-pipeline Capability', () => {
     });
   });
 
-  it('binds exact package and adapter bytes to current evidence without claiming migrated legacy stages', () => {
+  it('binds exact package and adapter bytes to current evidence without claiming legacy contraction', () => {
     for (const provider of ['claude', 'codex']) {
       const evidence = readJson(`evidence/${provider}.json`);
       expect(evidence.package_digest).toBe(fileDigest('capability-package.json'));
       expect(evidence.adapter_digest).toBe(fileDigest(`adapters/${provider}.md`));
       expect(evidence.support_state).toBe('current');
-      expect(String(evidence.limitations)).toContain('unmigrated');
+      expect(String(evidence.limitations)).toContain('Legacy persistence for all ten stage boundaries remains active');
     }
   });
 
@@ -148,6 +157,18 @@ describe('research-pipeline Capability', () => {
       ['headless-inventory.json', 'headless-codex-stage-1-init-idea', 'codex'],
       ['headless-inventory.json', 'headless-codex-stage-2-formalize-thesis', 'codex'],
       ['headless-inventory.json', 'headless-codex-stage-3-map-unknowns', 'codex'],
+      ['interactive-inventory.json', 'interactive-claude-stage-4a-prep-desktop-research', 'claude'],
+      ['interactive-inventory.json', 'interactive-claude-stage-4a-research-unknown', 'claude'],
+      ['interactive-inventory.json', 'interactive-claude-stage-4b-synthesize-evidence', 'claude'],
+      ['interactive-inventory.json', 'interactive-claude-stage-5-express-thesis', 'claude'],
+      ['interactive-inventory.json', 'interactive-claude-advance-or-kill', 'claude'],
+      ['interactive-inventory.json', 'interactive-claude-graduate-pipeline-idea', 'claude'],
+      ['headless-inventory.json', 'headless-codex-stage-4a-prep-desktop-research', 'codex'],
+      ['headless-inventory.json', 'headless-codex-stage-4a-research-unknown', 'codex'],
+      ['headless-inventory.json', 'headless-codex-stage-4b-synthesize-evidence', 'codex'],
+      ['headless-inventory.json', 'headless-codex-stage-5-express-thesis', 'codex'],
+      ['headless-inventory.json', 'headless-codex-advance-or-kill', 'codex'],
+      ['headless-inventory.json', 'headless-codex-graduate-pipeline-idea', 'codex'],
     ] as const;
     for (const [inventoryName, entryId, provider] of pairs) {
       const inventory = JSON.parse(readFileSync(resolve(
@@ -175,7 +196,11 @@ describe('research-pipeline Capability', () => {
       .toContain('Pipeline Status');
     expect(readFileSync(resolve(process.cwd(), '.agents/skills/pipeline-status/SKILL.md'), 'utf8'))
       .toContain('Pipeline Status');
-    for (const stage of ['stage-1-init-idea', 'stage-2-formalize-thesis', 'stage-3-map-unknowns']) {
+    for (const stage of [
+      'stage-1-init-idea', 'stage-2-formalize-thesis', 'stage-3-map-unknowns',
+      'stage-4a-prep-desktop-research', 'stage-4a-research-unknown', 'stage-4b-synthesize-evidence',
+      'stage-5-express-thesis', 'advance-or-kill', 'graduate-pipeline-idea',
+    ]) {
       expect(readFileSync(resolve(process.cwd(), `.claude/skills/${stage}/SKILL.md`), 'utf8').length)
         .toBeGreaterThan(0);
       expect(readFileSync(resolve(process.cwd(), `.agents/skills/${stage}/SKILL.md`), 'utf8').length)
