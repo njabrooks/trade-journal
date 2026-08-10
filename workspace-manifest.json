@@ -225,19 +225,19 @@
       "id": "headless-codex-stage-1-init-idea",
       "capability": "capability:scope:trade-journal/research-pipeline",
       "provider": "codex",
-      "path": ".agents/skills/stage-1-init-idea/SKILL.md"
+      "path": "capabilities/research-pipeline/adapters/codex.md"
     },
     {
       "id": "headless-codex-stage-2-formalize-thesis",
       "capability": "capability:scope:trade-journal/research-pipeline",
       "provider": "codex",
-      "path": ".agents/skills/stage-2-formalize-thesis/SKILL.md"
+      "path": "capabilities/research-pipeline/adapters/codex.md"
     },
     {
       "id": "headless-codex-stage-3-map-unknowns",
       "capability": "capability:scope:trade-journal/research-pipeline",
       "provider": "codex",
-      "path": ".agents/skills/stage-3-map-unknowns/SKILL.md"
+      "path": "capabilities/research-pipeline/adapters/codex.md"
     },
     {
       "id": "headless-codex-stage-4a-prep-desktop-research",
@@ -417,19 +417,19 @@
       "id": "interactive-claude-stage-1-init-idea",
       "capability": "capability:scope:trade-journal/research-pipeline",
       "provider": "claude",
-      "path": ".claude/skills/stage-1-init-idea/SKILL.md"
+      "path": "capabilities/research-pipeline/adapters/claude.md"
     },
     {
       "id": "interactive-claude-stage-2-formalize-thesis",
       "capability": "capability:scope:trade-journal/research-pipeline",
       "provider": "claude",
-      "path": ".claude/skills/stage-2-formalize-thesis/SKILL.md"
+      "path": "capabilities/research-pipeline/adapters/claude.md"
     },
     {
       "id": "interactive-claude-stage-3-map-unknowns",
       "capability": "capability:scope:trade-journal/research-pipeline",
       "provider": "claude",
-      "path": ".claude/skills/stage-3-map-unknowns/SKILL.md"
+      "path": "capabilities/research-pipeline/adapters/claude.md"
     },
     {
       "id": "interactive-claude-stage-4a-prep-desktop-research",

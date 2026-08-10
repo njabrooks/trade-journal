@@ -24,7 +24,7 @@ describe('research-pipeline Capability', () => {
     expect(capability).toMatchObject({
       id: 'capability:scope:trade-journal/research-pipeline',
       authority: 'scope:trade-journal',
-      version: '1.0.0',
+      version: '1.1.0',
       dependencies: [
         { id: 'capability:scope:trade-journal/claims-synthesis', version_constraint: '>=1.0.0 <2.0.0' },
         { id: 'capability:scope:trade-journal/research-publication', version_constraint: '>=1.0.0 <2.0.0' },
@@ -35,9 +35,9 @@ describe('research-pipeline Capability', () => {
     for (const text of [
       'Notes/Tana owns capture, source material, and Toulmin extraction',
       'explicitly unmigrated',
-      'incomplete, unavailable, stale, refused, failed, judgment_required, or ready',
-      'purpose-built operation',
-      'no database authority',
+      'rollback-capable',
+      'judgment_required',
+      'No stage or aggregate has scheduler',
     ]) expect(contract).toContain(text);
   });
 
@@ -50,15 +50,22 @@ describe('research-pipeline Capability', () => {
     expect(normalize(claude)).toBe(normalize(codex));
     for (const adapter of [claude, codex]) {
       for (const text of [
-        'scripts/research-pipeline.ts --describe',
-        'scripts/research-pipeline.ts --evaluate',
+        'scripts/research-pipeline.ts',
+        '--describe',
+        '--evaluate',
+        '--pipeline-status',
+        '--idea-intake',
+        '--thesis-formalization',
+        '--unknown-mapping',
         'claims-synthesis',
         'research-publication',
         'belief-research-relation',
         'scripts/ops/publish-research.ts --stdin',
         'scripts/ops/record-belief-research-relation.ts --stdin',
-        'Legacy stage entry points remain active',
-        'must not use ad-hoc SQL, Supabase MCP writes, direct API mutation, or generic writes',
+        'Legacy `pipeline-status`',
+        'rollback-capable',
+        'remain explicitly unmigrated for issue #68',
+        'must not use ad-hoc SQL, Supabase MCP writes, direct API mutation, generic writes',
         'must not change status, resolve a Decision Item, mutate a strategy or position, or place or stage a trade',
       ]) expect(adapter).toContain(text);
     }
@@ -70,6 +77,10 @@ describe('research-pipeline Capability', () => {
     });
     expect(help.status).toBe(0);
     expect(help.stdout).toContain('research-pipeline (read-only aggregate)');
+    for (const option of [
+      '--pipeline-status', '--idea-intake', '--thesis-formalization', '--unknown-mapping',
+      '--validate-stage-result',
+    ]) expect(help.stdout).toContain(option);
     expect(help.stdout).toContain('There is intentionally no apply, publish, relation, status, decision, strategy, position, trade');
     for (const option of ['--sql', '--supabase-mcp-write', '--api-mutate', '--scheduler', '--credentials', '--trade']) {
       const refused = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/research-pipeline.ts', option], {
@@ -78,6 +89,43 @@ describe('research-pipeline Capability', () => {
       expect(refused.status).toBe(1);
       expect(refused.stderr).toContain(`Unsupported option ${option}`);
     }
+    const ambiguous = spawnSync(process.execPath, [
+      '--import', 'tsx', 'scripts/research-pipeline.ts',
+      '--describe', '--insight-id', '11111111-1111-4111-8111-111111111111', '--pipeline-status', '-',
+    ], {
+      cwd: process.cwd(), encoding: 'utf8', env: { ...process.env, DATABASE_URL_POOLER: '' }, input: '{}',
+    });
+    expect(ambiguous.status).toBe(1);
+    expect(ambiguous.stderr).toContain('Exactly one read-only stage');
+    const stray = spawnSync(process.execPath, [
+      '--import', 'tsx', 'scripts/research-pipeline.ts', '--pipeline-status', '-', 'write-anyway',
+    ], {
+      cwd: process.cwd(), encoding: 'utf8', env: { ...process.env, DATABASE_URL_POOLER: '' }, input: '{}',
+    });
+    expect(stray.status).toBe(1);
+    expect(stray.stderr).toContain('Unsupported positional argument write-anyway');
+    const describeStray = spawnSync(process.execPath, [
+      '--import', 'tsx', 'scripts/research-pipeline.ts', '--describe',
+      '--insight-id', '11111111-1111-4111-8111-111111111111', 'write-anyway',
+    ], { cwd: process.cwd(), encoding: 'utf8', env: { ...process.env, DATABASE_URL_POOLER: '' } });
+    expect(describeStray.status).toBe(1);
+    expect(describeStray.stderr).toContain('Unsupported positional argument write-anyway');
+
+    const pipelineStatus = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'scripts/research-pipeline.ts', '--pipeline-status', '-'],
+      {
+        cwd: process.cwd(), encoding: 'utf8', env: { ...process.env, DATABASE_URL_POOLER: '' },
+        input: JSON.stringify({
+          targetInsightId: '11111111-1111-4111-8111-111111111111',
+          asOf: '2026-08-10T08:00:00.000Z', ideas: [], kills: [],
+        }),
+      },
+    );
+    expect(pipelineStatus.status).toBe(0);
+    expect(JSON.parse(pipelineStatus.stdout)).toMatchObject({
+      stage: 'pipeline_status', status: 'ready', execution: { mode: 'stage_result_only', writes: [] },
+    });
   });
 
   it('binds exact package and adapter bytes to current evidence without claiming migrated legacy stages', () => {
@@ -94,6 +142,12 @@ describe('research-pipeline Capability', () => {
     const pairs = [
       ['interactive-inventory.json', 'interactive-claude-pipeline-status', 'claude'],
       ['headless-inventory.json', 'headless-codex-pipeline-status', 'codex'],
+      ['interactive-inventory.json', 'interactive-claude-stage-1-init-idea', 'claude'],
+      ['interactive-inventory.json', 'interactive-claude-stage-2-formalize-thesis', 'claude'],
+      ['interactive-inventory.json', 'interactive-claude-stage-3-map-unknowns', 'claude'],
+      ['headless-inventory.json', 'headless-codex-stage-1-init-idea', 'codex'],
+      ['headless-inventory.json', 'headless-codex-stage-2-formalize-thesis', 'codex'],
+      ['headless-inventory.json', 'headless-codex-stage-3-map-unknowns', 'codex'],
     ] as const;
     for (const [inventoryName, entryId, provider] of pairs) {
       const inventory = JSON.parse(readFileSync(resolve(
@@ -103,10 +157,14 @@ describe('research-pipeline Capability', () => {
       expect(entry.source).toEqual(expect.objectContaining({
         path: `capabilities/research-pipeline/adapters/${provider}.md`,
       }));
+      const legacyName = entryId.replace(
+        provider === 'claude' ? 'interactive-claude-' : 'headless-codex-',
+        '',
+      );
       expect(entry.migration_input).toEqual(expect.objectContaining({
         path: provider === 'claude'
-          ? '.claude/skills/pipeline-status/SKILL.md'
-          : '.agents/skills/pipeline-status/SKILL.md',
+          ? `.claude/skills/${legacyName}/SKILL.md`
+          : `.agents/skills/${legacyName}/SKILL.md`,
       }));
       expect(entry.evidence).toEqual(expect.objectContaining({ state: 'current' }));
       expect(entry.governed_binding).toEqual(expect.objectContaining({
@@ -117,5 +175,11 @@ describe('research-pipeline Capability', () => {
       .toContain('Pipeline Status');
     expect(readFileSync(resolve(process.cwd(), '.agents/skills/pipeline-status/SKILL.md'), 'utf8'))
       .toContain('Pipeline Status');
+    for (const stage of ['stage-1-init-idea', 'stage-2-formalize-thesis', 'stage-3-map-unknowns']) {
+      expect(readFileSync(resolve(process.cwd(), `.claude/skills/${stage}/SKILL.md`), 'utf8').length)
+        .toBeGreaterThan(0);
+      expect(readFileSync(resolve(process.cwd(), `.agents/skills/${stage}/SKILL.md`), 'utf8').length)
+        .toBeGreaterThan(0);
+    }
   });
 });
