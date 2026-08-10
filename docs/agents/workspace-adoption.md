@@ -47,14 +47,17 @@ The accepted J1 manifest declared no owned Capability Packages. J2 now declares 
 packages: portfolio snapshot, belief maintenance, belief-research relation, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
 research publication, research pipeline, portfolio options advice, and morning attention brief. Archived, retired, and deprecated non-candidates plus the external machine-local Codex bridge
 remain visible in a namespaced extension. Rich inventory validity, mirror parity, and file presence do not
-establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry.
+establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry. The federated Registry
+also resolves three Notes-owned packages from their accepted immutable release without declaring them owned by
+Trade Journal.
 
 ## Generation eligibility and refusal
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 73 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-10`, eleven locked
-Capabilities make 44 inventory entries generation eligible while the whole-file Claude and Codex outputs
+generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-10`, fourteen
+locked Capabilities—eleven Trade Journal-owned packages plus three Notes-owned packages—make 48 inventory
+entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/`, and the machine-local
 bridge remain migration inputs until their separately governed cutovers, except for the twenty research-pipeline
 paths contracted by #69 to protective tombstones with exact governed replacements.
@@ -223,6 +226,19 @@ parity, and machine-local data do not prove current support. No Capability Packa
 generated output, discovery cutover, scheduler, credential, provider invocation, production-data access,
 database write, status change, Decision Item resolution, or trade authority is included. Exact inspected input
 digests and scope evidence are in `evidence/issue-70-market-research-scan-disposition.json`.
+
+Issue #72 replaces the four legacy `process-note` and `process-transcript` inventory projections with exact
+federated bindings to Notes content-processing `0.2.0` at immutable revision
+`04ea4f13d40a7c868ce43490d2a7e3ac440a026e`. Its Registry/Lock dependencies bind the same release's
+`tana-client` and `pdf-transcript` packages. The former Trade Journal procedures remain unchanged as explicit,
+rollback-capable migration inputs; active discovery is reserved for #76. Notes retains capture, thinking, base
+content, provenance, and generic Toulmin extraction authority. Trade Journal retains only separately promoted
+investment entities and does not acquire a Tana or investment-write path through this adoption. Exact package
+and adapter conformance is current, but live provider, Tana, scheduler, credential, and headless execution
+availability was not exercised and remains explicitly unavailable. Existing interactive consumers remain on
+their rollback-capable legacy discovery paths. The fixed point, accepted Notes revisions and digests,
+dependency bindings, zero-write evidence, rollback boundary, and scope confirmation are recorded in
+`evidence/issue-72-notes-toulmin-adoption.json`.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from

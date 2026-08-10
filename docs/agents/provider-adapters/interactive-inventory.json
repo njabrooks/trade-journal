@@ -1148,53 +1148,65 @@
       "ability": "Extract Toulmin claims from general notes.",
       "candidate_capability": {
         "status": "candidate",
-        "id": "capability:scope:notes/toulmin-extraction",
+        "id": "capability:scope:notes/content-processing",
         "authority": "scope:notes"
       },
       "provider": "claude",
       "source": {
+        "ownership": "repository:njabrooks/notes",
+        "location_class": "external-bridge",
+        "path": "github:njabrooks/notes@04ea4f13d40a7c868ce43490d2a7e3ac440a026e:capabilities/content-processing/adapters/claude.md"
+      },
+      "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/process-note/SKILL.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/process-note",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Extraction and structuring; publication remains separate."
+        "rationale": "Notes-owned classification and extraction are staged; Trade Journal publication remains separately governed."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "User-supplied note content.",
-        "writes": "Structured claim files in the research workspace.",
-        "judgment": "Extraction and structuring; publication remains separate."
+        "reads": "Notes-owned base content and preserved source provenance through the immutable Notes package.",
+        "writes": "Only Notes-owned base-content records through the declared Tana client dependency when an eligible runtime is separately available; no Trade Journal investment-entity writes.",
+        "judgment": "Classification and generic claim extraction remain with Notes; investment promotion and thesis linkage remain separate Trade Journal operations."
       },
       "prerequisites": [
         "Claude Code repository session",
-        "Shared Notes research workspace and source content."
+        "Exact immutable Notes content-processing 0.2.0 release and dependencies.",
+        "TANA_API_TOKEN and an eligible Tana runtime for any live Notes write."
       ],
       "limitations": [
-        "Notes/Tana now owns capture and extraction authority; this repository entry is a migration input.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The former Trade Journal process-note procedure remains only as a rollback-capable migration input until final discovery cutover.",
+        "Recorded conformance proves the immutable package boundary but does not claim live Tana, provider, scheduler, credential, or Trade Journal availability."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "0.2.0",
+        "package_digest": "sha256:cbc56e1e943cfdfc2585592b4284e2640ce53ac0aaad9325913a5de78224881f",
+        "adapter_digest": "sha256:60fefe2dd5fff691582166fde0655d8c58155b7cfe956405aa320f19df3c9511",
+        "reason": "Accepted Notes evidence binds the exact immutable content-processing package and Claude adapter; live Tana operation remains unavailable and unclaimed."
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
+      },
+      "federated_binding": {
+        "registry_path": "capability-registry.json",
+        "lock_path": "capability-registry-lock.json",
+        "capability_id": "capability:scope:notes/content-processing",
+        "adapter_id": "notes-content-processing-claude"
       }
     },
     {
@@ -1202,53 +1214,65 @@
       "ability": "Extract forensic Toulmin claims from research transcripts.",
       "candidate_capability": {
         "status": "candidate",
-        "id": "capability:scope:notes/toulmin-extraction",
+        "id": "capability:scope:notes/content-processing",
         "authority": "scope:notes"
       },
       "provider": "claude",
       "source": {
+        "ownership": "repository:njabrooks/notes",
+        "location_class": "external-bridge",
+        "path": "github:njabrooks/notes@04ea4f13d40a7c868ce43490d2a7e3ac440a026e:capabilities/content-processing/adapters/claude.md"
+      },
+      "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/process-transcript/SKILL.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/process-transcript",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Extraction and classification; investment promotion remains governed separately."
+        "rationale": "Notes-owned classification and extraction are staged; investment promotion remains separately governed."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "User-supplied transcript content.",
-        "writes": "Structured research artifacts in the shared workspace.",
-        "judgment": "Extraction and classification; investment promotion remains governed separately."
+        "reads": "Notes-owned base content and preserved transcript provenance through the immutable Notes package.",
+        "writes": "Only Notes-owned base-content records through the declared Tana client dependency when an eligible runtime is separately available; no Trade Journal investment-entity writes.",
+        "judgment": "Classification and generic claim extraction remain with Notes; investment promotion and thesis linkage remain separate Trade Journal operations."
       },
       "prerequisites": [
         "Claude Code repository session",
-        "Shared Notes research workspace and transcript content."
+        "Exact immutable Notes content-processing 0.2.0 release and dependencies.",
+        "TANA_API_TOKEN and an eligible Tana runtime for any live Notes write."
       ],
       "limitations": [
-        "Notes/Tana now owns capture and extraction authority; legacy paths may remain.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The former Trade Journal process-transcript procedure remains only as a rollback-capable migration input until final discovery cutover.",
+        "Recorded conformance proves the immutable package boundary but does not claim live Tana, provider, scheduler, credential, or Trade Journal availability."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "0.2.0",
+        "package_digest": "sha256:cbc56e1e943cfdfc2585592b4284e2640ce53ac0aaad9325913a5de78224881f",
+        "adapter_digest": "sha256:60fefe2dd5fff691582166fde0655d8c58155b7cfe956405aa320f19df3c9511",
+        "reason": "Accepted Notes evidence binds the exact immutable content-processing package and Claude adapter; live Tana operation remains unavailable and unclaimed."
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "rationale": "Replace the legacy Trade Journal projection with the Registry-locked Notes-owned content-processing adapter without transferring capture or extraction authority."
+      },
+      "federated_binding": {
+        "registry_path": "capability-registry.json",
+        "lock_path": "capability-registry-lock.json",
+        "capability_id": "capability:scope:notes/content-processing",
+        "adapter_id": "notes-content-processing-claude"
       }
     },
     {

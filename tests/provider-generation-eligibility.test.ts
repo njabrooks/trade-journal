@@ -38,7 +38,7 @@ describe("Provider Adapter generation eligibility", () => {
 
     expect(validateEligibility(artifact)).toEqual([]);
     expect(artifact.outcome).toBe("eligible-adapters-present");
-    expect(artifact.generation_eligible_count).toBe(44);
+    expect(artifact.generation_eligible_count).toBe(48);
     expect(artifact.governed_outputs).toEqual([
       "docs/agents/provider-entry-points/staging/claude.md",
       "docs/agents/provider-entry-points/staging/codex.md",

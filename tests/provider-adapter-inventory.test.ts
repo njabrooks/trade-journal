@@ -79,6 +79,57 @@ describe('Provider Adapter inventory validation', () => {
     });
   });
 
+  it('rejects a federated adapter digest that drifts from its immutable source revision', () => {
+    const inventory = readInventory();
+    const entries = inventory.entries as Array<Record<string, unknown>>;
+    const processNote = entries.find(
+      (entry) => entry.id === 'interactive-claude-process-note',
+    );
+    const evidence = processNote?.evidence as Record<string, unknown>;
+    evidence.adapter_digest = 'sha256:drifted';
+
+    expect(validateInventory(inventory)).toContainEqual({
+      requirement: 'TJ-INV-017',
+      path: `/entries/${entries.indexOf(processNote!)}/federated_binding`,
+      message:
+        'Federated binding must resolve the exact Registry/Lock Capability Package, Provider Adapter, evidence record, dependencies, revision, and digests.',
+    });
+  });
+
+  it('rejects federated ownership metadata that drifts from the Registry authority', () => {
+    const inventory = readInventory();
+    const entries = inventory.entries as Array<Record<string, unknown>>;
+    const processNote = entries.find(
+      (entry) => entry.id === 'interactive-claude-process-note',
+    );
+    const source = processNote?.source as Record<string, unknown>;
+    source.ownership = 'repository:attacker/fake';
+
+    expect(validateInventory(inventory)).toContainEqual({
+      requirement: 'TJ-INV-017',
+      path: `/entries/${entries.indexOf(processNote!)}/federated_binding`,
+      message:
+        'Federated binding must resolve the exact Registry/Lock Capability Package, Provider Adapter, evidence record, dependencies, revision, and digests.',
+    });
+  });
+
+  it('rejects a fabricated federated evidence date', () => {
+    const inventory = readInventory();
+    const entries = inventory.entries as Array<Record<string, unknown>>;
+    const processNote = entries.find(
+      (entry) => entry.id === 'interactive-claude-process-note',
+    );
+    const evidence = processNote?.evidence as Record<string, unknown>;
+    evidence.as_of = '2099-01-01';
+
+    expect(validateInventory(inventory)).toContainEqual({
+      requirement: 'TJ-INV-017',
+      path: `/entries/${entries.indexOf(processNote!)}/federated_binding`,
+      message:
+        'Federated binding must resolve the exact Registry/Lock Capability Package, Provider Adapter, evidence record, dependencies, revision, and digests.',
+    });
+  });
+
   it('rejects unknown categorical values that could bypass source validation', () => {
     const inventory = readInventory();
     const entries = inventory.entries as Array<Record<string, unknown>>;

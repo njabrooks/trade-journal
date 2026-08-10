@@ -114,6 +114,82 @@ If proposed work contradicts an existing ADR, surface the conflict explicitly ra
 
 ## Locked Capabilities
 
+### capability:scope:notes/content-processing 0.2.0
+
+Intent: Process acquired base content into source-grounded classifications, summaries, topics, claims, and explicit downstream handoffs without absorbing Policy Content or external record authority.
+
+Contract: Content processing preserves acquired provenance and transcript order, uses deterministic ingestion for unattended execution, limits provider judgment to declared classification and extraction stages, creates only base-content records, and keeps every Tana and cross-repository write boundary explicit.
+
+Provider-neutral instructions:
+- Use scripts/tana-content-ingest.py as the canonical unattended processor for base Tana Content Graph records; retain process-inbox Provider Adapters only as bounded manual projections and tana-process-inbox only as a non-canonical fallback.
+- Discover only the base content type with tag extensions explicitly excluded, preserve source URL, author, source role, kind, category, transcript order, classifications, topics, themes, tickers, summaries, and source-to-claim linkage.
+- Treat policy as classification metadata only in this base workflow: policy-shaped assertions remain generic claims, and Policy Content, Policy Claim, Policy Recommendation, and Policy Decision creation stays outside this Capability.
+- Keep Tana writes within the tana-client dependency and preserve retries by leaving or restoring failed work to Backlog rather than representing partial processing as Done.
+- Treat Trade Journal promotion, signal evidence, and claim-to-thesis linking as explicit external-authority operations requiring their own repository, credentials, and workflow authorization; packaging does not broaden or transfer those writes.
+- Resolve the Notes package root from the executable location, obtain Tana credentials only from TANA_API_TOKEN, and require TRADE_JOURNAL_ROOT for explicitly authorised Trade Journal operations; never discover a sibling working tree or embedded credential.
+- Conformance fixtures and dry runs must not call production Tana, mutate schedules or credentials, write live external records, or report an unavailable runtime as successful.
+
+Provider Adapter `notes-content-processing-claude` (current):
+
+# Claude constraints
+
+- Read `.claude/skills/process-inbox/SKILL.md` and inspect `scripts/tana-content-ingest.py` before content-processing work.
+- Use `scripts/tana-content-ingest.py` for unattended base-content processing. Treat `.claude/skills/tana-process-inbox/SKILL.md` only as the declared non-canonical manual fallback.
+- Keep Claude judgment within the existing classification, extraction, summary, and assessment stages; mechanical discovery, routing, writes, and retry transitions remain deterministic.
+- Preserve acquired transcript order, provenance, classification, topics, summaries, generic claim boundaries, and explicit exclusion of Policy Content extensions.
+- Trade Journal promotion and the provider-specific `/relate-research` handoff remain external-authority operations. Missing credentials, runtime, MCP access, or repository availability is unavailable evidence and never authorizes a substitute write.
+- Published execution resolves from immutable package bytes, requires `TANA_API_TOKEN` for Tana access and `TRADE_JOURNAL_ROOT` for separately authorised Trade Journal operations, and never discovers a sibling checkout.
+
+### capability:scope:notes/pdf-transcript 0.2.0
+
+Intent: Produce source-faithful, auditable PDF transcripts and deterministic Tana-ready working payloads without weakening the boundary between repository evidence and Tana content authority.
+
+Contract: PDF extraction is deterministic and audit-producing; Markdown-to-Tana conversion is a separate hierarchy-preserving stage; provider adapters may not substitute flattened writes or claim unavailable environmental checks as passing.
+
+Provider-neutral instructions:
+- Run scripts/pdf-to-md-transcript.py first and retain the structured Markdown transcript and extraction audit as the evidence layer.
+- Preserve headings, questions, lists, footnotes, labelled reconstructions, layout-sensitive regions, figure assets, source page count, and extraction metadata without visible page-break markers by default.
+- Run scripts/md-to-tana-transcript.py only as a separate second stage and verify its audit before any external write.
+- Resolve scripts and default output locations from the immutable package root; an optional NOTES_TANA_OUTPUT_DIR may select the Tana payload destination without changing released bytes.
+- Import structured payloads only through import_tana_paste or an equivalent hierarchy-preserving Input API operation; never downgrade to flat set_field_content append behavior.
+- When a required tool or external import surface is unavailable, report it as unavailable and stop at the last validated artifact.
+
+Provider Adapter `notes-pdf-transcript-claude` (current):
+
+# Claude constraints
+
+- Read and obey `.claude/skills/pdf-to-md-tana-transcript/SKILL.md` completely before processing a PDF transcript.
+- Execute the provider-neutral package contract through `scripts/pdf-to-md-transcript.py` and `scripts/md-to-tana-transcript.py`; do not replace deterministic extraction with an LLM-only transcript.
+- Treat Claude runtime, filesystem, and MCP permission failures as unavailable evidence, never as successful checks.
+- Preserve the workflow's Tana write boundary. Use `import_tana_paste` or an equivalent hierarchy-preserving Input API operation; never use `set_field_content(..., mode="append")` for structured transcripts.
+- If structured import is unavailable, stop after generating and auditing the Tana payload and hand it to the user without downgrading the workflow.
+- Published execution resolves sibling scripts from the immutable package root; `NOTES_TANA_OUTPUT_DIR` may select only the output location and never changes released bytes.
+
+### capability:scope:notes/tana-client 0.2.0
+
+Intent: Expose reusable Tana client operations with explicit read, write, and destructive scopes while preserving Tana Content Graph authority.
+
+Contract: Adapters execute declared Tana operations but never become data authorities; reads, flat field writes, structured imports, reference-preserving moves, and destructive cleanup/rollback remain distinct; unenumerated destructive behavior is denied.
+
+Provider-neutral instructions:
+- Treat Tana as the canonical Content Graph and the repository as engineering authority for client contracts and audit evidence.
+- Read operations are limited to search_nodes, read_node, get_children, and declared schema discovery.
+- Write operations include bounded get_or_create_calendar_node resolution and distinguish hierarchy-preserving import_tana_paste, flat set_field_content, option-field updates, and reference-preserving move_node operations.
+- move_node is denied by default and permitted only when an owning workflow declares the exact existing node and exact workflow-owned destination, requires keepSourceReference=true, and preserves the source reference.
+- Destructive operations are denied by default; trash_node is permitted only for the exact source cleanup target after successful writes, the exact newly created incomplete node during a declared rollback, or an exact untagged field-value sibling after a declared replacement reference is confirmed. Tagged or otherwise unowned siblings must be retained.
+- Report unavailable connectors, credentials, or localhost services as unavailable; never infer conformance from provider presence.
+
+Provider Adapter `notes-tana-client-claude` (current):
+
+# Claude constraints
+
+- Read the applicable `.claude/skills/` workflow completely before invoking the configured Tana MCP connector.
+- Keep MCP calls inside the workflow's declared read, write, and destructive scopes.
+- Require declared write scope for `get_or_create_calendar_node`. Keep `import_tana_paste`, `set_field_content`, and `set_field_option` semantically distinct; do not flatten structured content.
+- Deny `move_node` unless the selected workflow names the exact existing node and workflow-owned destination and requires `keepSourceReference=true`.
+- Require an exact workflow-owned target before `trash_node`; field-value cleanup may remove only exact untagged siblings after the replacement reference is confirmed. Retain tagged or otherwise unowned siblings and deny every unenumerated destructive action.
+- Treat MCP permission, credential, runtime, or localhost failures as unavailable evidence.
+
 ### capability:scope:trade-journal/belief-evidence-assessment 1.0.0
 
 Intent: Assess provenance-bearing evidence against governed thesis underwriting without changing investment state or fabricating owner judgment.

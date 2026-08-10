@@ -45,9 +45,10 @@ Lifecycle and evidence state are independent. For example, an adapter may be ope
 Adapter Conformance evidence is `unavailable`. A generic or mirrored entry point may also be `ineligible` for
 unattended judgment. File presence, parity, and historical execution never upgrade evidence to `current`.
 
-Cross-repository candidate Capabilities keep their external authority. Notes owns Toulmin extraction and
-Radon owns IBKR gateway/quote infrastructure; this inventory references those authorities instead of copying
-their contracts into Trade Journal.
+Cross-repository candidate Capabilities keep their external authority. Notes owns content processing,
+including generic Toulmin extraction, and Radon owns IBKR gateway/quote infrastructure; this inventory
+references those authorities instead of copying their contracts into Trade Journal. Federated bindings are
+checked through the authored Registry, immutable Lock, and exact source revision.
 
 ## Headless inventory
 
@@ -93,9 +94,10 @@ and staged generated output bind it through W1. The remaining generic projection
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
 generation decision and the incremental J2 migration state. It covers all 73 inventoried entry points. The
-ten governed Capabilities now record 24 generation-eligible inventory entries and two whole-file governed
-staging outputs. The other 49 entries remain non-governed migration inputs or non-candidates with explicit
-dispositions.
+fourteen locked Capabilities now record 48 generation-eligible inventory entries and two whole-file governed
+staging outputs. Eleven packages are Trade Journal-owned; the three Notes-owned content-processing dependency
+packages remain external. The other 25 entries remain non-governed migration inputs or non-candidates with
+explicit dispositions.
 
 The portfolio-snapshot, belief-maintenance, belief-research-relation, claims-synthesis, research-publication,
 thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice, and
@@ -105,6 +107,12 @@ package covers the maintenance, thesis-review, and claim-backfill inventory entr
 neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live
 or final discovery cutover. File presence, mirror parity, generic packaging, or historical execution cannot
 upgrade any remaining adapter.
+
+The four `process-note` and `process-transcript` projections instead bind to Notes content-processing `0.2.0`
+at one immutable Notes revision. Their legacy repository paths remain explicit migration inputs and active
+discovery is unchanged. Exact conformance does not claim live Tana, provider, scheduler, credential, or
+headless execution availability; existing interactive consumers remain explicit, and no Trade Journal
+investment-write authority is granted.
 
 The accepted W1 no-write boundary is exercised separately against a clean checkout at the pinned revision:
 

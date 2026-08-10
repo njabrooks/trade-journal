@@ -1,6 +1,111 @@
 {
   "capabilities": [
     {
+      "approved_version": "0.2.0",
+      "authority": "scope:notes",
+      "dependencies": [
+        {
+          "id": "capability:scope:notes/tana-client",
+          "version_constraint": ">=0.2.0 <1.0.0"
+        },
+        {
+          "id": "capability:scope:notes/pdf-transcript",
+          "version_constraint": ">=0.2.0 <1.0.0"
+        }
+      ],
+      "id": "capability:scope:notes/content-processing",
+      "package_digest": "sha256:cbc56e1e943cfdfc2585592b4284e2640ce53ac0aaad9325913a5de78224881f",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "notes-content-processing-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-10"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "notes-content-processing-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-10"
+        }
+      ],
+      "repository": "github:njabrooks/notes",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/content-processing",
+        "release_reference": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e",
+        "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e"
+      }
+    },
+    {
+      "approved_version": "0.2.0",
+      "authority": "scope:notes",
+      "dependencies": [],
+      "id": "capability:scope:notes/pdf-transcript",
+      "package_digest": "sha256:af8335cf5022c0e709e4fa755096fbfff5c5b4d0e6920fbba601aa1b532e2f3b",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "notes-pdf-transcript-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-10"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "notes-pdf-transcript-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-10"
+        }
+      ],
+      "repository": "github:njabrooks/notes",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/pdf-transcript",
+        "release_reference": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e",
+        "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e"
+      }
+    },
+    {
+      "approved_version": "0.2.0",
+      "authority": "scope:notes",
+      "dependencies": [],
+      "id": "capability:scope:notes/tana-client",
+      "package_digest": "sha256:02f53b445a4629a3baf31730a244590d7de003afd6c840980e5657bff80e98d9",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "notes-tana-client-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-07"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "notes-tana-client-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-07"
+        }
+      ],
+      "repository": "github:njabrooks/notes",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/tana-client",
+        "release_reference": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e",
+        "revision": "04ea4f13d40a7c868ce43490d2a7e3ac440a026e"
+      }
+    },
+    {
       "approved_version": "1.0.0",
       "authority": "scope:trade-journal",
       "dependencies": [
@@ -415,6 +520,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:e37319d677bccb0ffada9bef89bdc606b00c8bf78c43acc9cb68d3effe4d571e",
+  "registry_digest": "sha256:65001f14dd03520f72d55b166944d587e02626790c2c2636f3fedb6b7cd9b0e2",
   "schema_version": "1.0.0"
 }
