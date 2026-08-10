@@ -19,6 +19,13 @@ import {
   type BeliefResearchRelationContext,
   type BeliefResearchRelationReadyResult,
 } from '../src/lib/intelligence/beliefResearchRelation.js';
+import {
+  buildIdeaIntakeResult,
+  buildPipelineStatusResult,
+  buildThesisFormalizationResult,
+  buildUnknownMappingResult,
+  digestResearchPipelineIntakeValue,
+} from '../src/lib/intelligence/researchPipelineIntake.js';
 
 function fixture(name: string): Record<string, unknown> {
   return JSON.parse(readFileSync(resolve(process.cwd(), 'tests/fixtures', name), 'utf8')) as Record<string, unknown>;
@@ -26,6 +33,100 @@ function fixture(name: string): Record<string, unknown> {
 
 function digest(value: unknown): string {
   return `sha256:${createHash('sha256').update(JSON.stringify(value)).digest('hex')}`;
+}
+
+function intakeStageChain() {
+  const insightId = '22222222-2222-4222-8222-222222222222';
+  const source = {
+    authority: 'scope:notes' as const,
+    insightId,
+    claimId: 'claim-67',
+    contentSha256: `sha256:${'7'.repeat(64)}`,
+  };
+  const pipelineStatus = buildPipelineStatusResult({
+    targetInsightId: insightId,
+    asOf: '2026-08-10T08:00:00.000Z',
+    ideas: [],
+    kills: [],
+  });
+  const ideaIntake = buildIdeaIntakeResult({
+    source,
+    claim: {
+      claim: 'Grid demand can arrive before new copper mine supply.',
+      evidence: ['Mine development lead times remain long.'],
+      reasoning: 'Demand and supply have different delivery timelines.',
+      backing: 'Permitting and construction constrain mine commissioning.',
+      qualifier: 'medium',
+      rebuttals: ['Substitution can reduce copper intensity.'],
+      timeHorizon: 'medium_term',
+      ambiguities: ['Grid capital plans may slip.'],
+    },
+    selection: {
+      selectedBy: 'user', noveltyScore: 0.8, noveltyOverrideRationale: null,
+      rationale: 'The timing mismatch is decision-critical.',
+      audit: { decisionId: 'decision-intake-67', actorId: 'user', recordedAt: '2026-08-10T08:01:00.000Z' },
+    },
+    idea: { ideaId: 'idea-067', title: 'Copper timing gap', slug: 'copper-timing-gap', confidence: 0.6 },
+    thesisClassification: {
+      chosenBy: 'user', kind: 'asset', direction: 'bullish', thesisType: null, underlyingTicker: 'COPPER',
+    },
+  });
+  const thesisFormalization = buildThesisFormalizationResult({
+    source,
+    previousStage: ideaIntake,
+    thesis: {
+      coreThesis: 'Copper prices rise before 2029 as grid demand outpaces commissioned mine supply.',
+      primaryEconomicDriver: 'The timing gap between grid orders and commissioned mine supply.',
+      valueChainImpact: 'Existing miners gain pricing power while equipment manufacturers face input inflation.',
+      beneficiaries: [{ name: 'Existing miners', rationale: 'They own commissioned supply.' }],
+      victims: [{ name: 'Equipment makers', rationale: 'Their copper input costs rise.' }],
+      failureModes: [
+        { title: 'Demand slows', category: 'structural', description: 'Grid orders fall.', indicators: ['Orders decline.'] },
+        { title: 'Supply accelerates', category: 'structural', description: 'Mines arrive early.', indicators: ['Commissioning rises.'] },
+        { title: 'Margins fail', category: 'execution', description: 'Costs absorb prices.', indicators: ['Margins contract.'] },
+        { title: 'Deficit is late', category: 'timing', description: 'Deficit follows 2029.', indicators: ['Inventories remain high.'] },
+        { title: 'Substitution scales', category: 'external', description: 'Aluminium replaces copper.', indicators: ['Copper intensity falls.'] },
+      ],
+      qualifier: 'medium',
+      rebuttals: ['Substitution can reduce copper intensity.'],
+      ambiguities: ['Grid capital plans may slip.', 'Order announcements may not become builds.'],
+    },
+    gate: {
+      recommendation: 'advance', decision: 'advance', decidedBy: 'user', rationale: 'Accepted by the owner.',
+      audit: { decisionId: 'decision-formalize-67', actorId: 'user', recordedAt: '2026-08-10T08:02:00.000Z' },
+    },
+  });
+  const unknownMapping = buildUnknownMappingResult({
+    source,
+    previousStage: thesisFormalization,
+    unknowns: [1, 2, 3].map((number) => ({
+      id: `unknown-${number}`,
+      question: `Decision-critical question ${number}?`,
+      impact: number === 1 ? 'high' as const : 'medium' as const,
+      resolutionType: 'empirical' as const,
+      externallyResolvable: 'yes' as const,
+      killCondition: `Kill condition ${number}.`,
+      convictionIncreaseCondition: `Conviction condition ${number}.`,
+      recommendedSources: [`Primary source ${number}`],
+      estimatedEffortHours: number,
+      researchQueries: [`Research query ${number}.`],
+      ambiguities: [],
+      pricedIn: number === 2 ? 'partially' as const : 'no' as const,
+    })),
+    researchPlan: {
+      priority: ['unknown-1', 'unknown-2', 'unknown-3'], totalEstimatedEffortHours: 6,
+      recommendedApproach: 'Research the foundational unknown first.',
+    },
+    assessment: {
+      decisiveUnknownsExist: true, allUnknownsPricedIn: false,
+      thesisExternallyResearchable: true, researchPayoff: 'asymmetric',
+    },
+    gate: {
+      recommendation: 'advance', decision: null, decidedBy: null,
+      rationale: 'The owner must accept the plan.', audit: null,
+    },
+  });
+  return { insightId, pipelineStatus, ideaIntake, thesisFormalization, unknownMapping };
 }
 
 describe('research-pipeline aggregate contract', () => {
@@ -45,15 +146,18 @@ describe('research-pipeline aggregate contract', () => {
     expect(first.stageOutcomes.map(({ stage }) => stage)).toEqual(RESEARCH_PIPELINE_STAGE_ORDER);
     expect(first.stageOutcomes.filter(({ migration }) => migration === 'governed_dependency'))
       .toHaveLength(3);
+    expect(first.stageOutcomes.filter(({ migration }) => migration === 'governed_stage'))
+      .toHaveLength(4);
     expect(first.stageOutcomes.filter(({ migration }) => migration === 'legacy_unmigrated'))
-      .toHaveLength(RESEARCH_PIPELINE_STAGE_ORDER.length - 3);
+      .toHaveLength(6);
     expect(first.stageOutcomes.every(({ writes }) => writes.length === 0)).toBe(true);
     expect(first.limitations).toContain(
-      'Legacy stage entry points remain active and are explicitly unmigrated in this expand release.',
+      'The four issue #67 stage results coexist with unchanged, rollback-capable legacy persistence entry points.',
     );
   });
 
   it('composes the exact governed stage validators and delegates judgment-bound writes', () => {
+    const intake = intakeStageChain();
     const publication = fixture('research-publication-adapter-equivalence.json') as {
       context: ClaimsSynthesisContext;
       claimsSynthesisResult: ClaimsSynthesisReadyResult;
@@ -81,6 +185,10 @@ describe('research-pipeline aggregate contract', () => {
     const result = buildResearchPipelineAggregate({
       insightId: '22222222-2222-4222-8222-222222222222',
       dependencies: {
+        pipelineStatus: { status: 'ready', result: intake.pipelineStatus },
+        ideaIntake: { status: 'ready', result: intake.ideaIntake },
+        thesisFormalization: { status: 'ready', result: intake.thesisFormalization },
+        unknownMapping: { status: 'judgment_required', result: intake.unknownMapping },
         claimsSynthesis: {
           status: 'ready',
           context: publication.context,
@@ -100,6 +208,12 @@ describe('research-pipeline aggregate contract', () => {
     });
 
     const outcomes = Object.fromEntries(result.stageOutcomes.map((outcome) => [outcome.stage, outcome]));
+    expect(outcomes.pipeline_status).toMatchObject({ status: 'ready', migration: 'governed_stage' });
+    expect(outcomes.idea_intake).toMatchObject({ status: 'ready', migration: 'governed_stage' });
+    expect(outcomes.thesis_formalization).toMatchObject({ status: 'ready', migration: 'governed_stage' });
+    expect(outcomes.unknown_mapping).toMatchObject({
+      status: 'judgment_required', migration: 'governed_stage', delegatedWrite: null,
+    });
     expect(outcomes.claims_synthesis).toMatchObject({ status: 'ready', delegatedWrite: null });
     expect(outcomes.research_publication).toMatchObject({
       status: 'judgment_required',
@@ -190,7 +304,7 @@ describe('research-pipeline aggregate contract', () => {
       requiresExactUserAuthorization: true,
     };
     forgedDelegation.aggregateDigest = digest({
-      contractVersion: '1.0.0', insightId: forgedDelegation.insightId,
+      contractVersion: '1.1.0', insightId: forgedDelegation.insightId,
       stageOutcomes: forgedDelegation.stageOutcomes,
     });
     forgedDelegation.retry.key = forgedDelegation.aggregateDigest;
@@ -218,7 +332,7 @@ describe('research-pipeline aggregate contract', () => {
     const unbounded = structuredClone(result);
     unbounded.stageOutcomes[0].detail = 'x'.repeat(1001);
     unbounded.aggregateDigest = digest({
-      contractVersion: '1.0.0', insightId: unbounded.insightId,
+      contractVersion: '1.1.0', insightId: unbounded.insightId,
       stageOutcomes: unbounded.stageOutcomes,
     });
     unbounded.retry.key = unbounded.aggregateDigest;
@@ -259,6 +373,44 @@ describe('research-pipeline aggregate contract', () => {
     expect(result.stageOutcomes.find(({ stage }) => stage === 'belief_research_relation')).toMatchObject({
       status: 'stale', delegatedWrite: null,
     });
+  });
+
+  it('refuses provenance or rebuttal drift across the new intake and formalization chain', () => {
+    const intake = intakeStageChain();
+    const forged = structuredClone(intake.thesisFormalization);
+    forged.thesis.rebuttals = ['A replacement rebuttal.'];
+    const { stageDigest: _ignored, ...digestInput } = forged;
+    void _ignored;
+    forged.stageDigest = digestResearchPipelineIntakeValue(digestInput);
+
+    const result = buildResearchPipelineAggregate({
+      insightId: intake.insightId,
+      dependencies: {
+        ideaIntake: { status: 'ready', result: intake.ideaIntake },
+        thesisFormalization: { status: 'ready', result: forged },
+      },
+    });
+
+    expect(result.stageOutcomes.find(({ stage }) => stage === 'idea_intake')?.status).toBe('ready');
+    expect(result.stageOutcomes.find(({ stage }) => stage === 'thesis_formalization')).toMatchObject({
+      status: 'stale', binding: undefined, delegatedWrite: null,
+    });
+  });
+
+  it('keeps malformed governed stage material bounded as refused', () => {
+    const intake = intakeStageChain();
+    const malformed = { ...intake.thesisFormalization, thesis: null };
+    const result = buildResearchPipelineAggregate({
+      insightId: intake.insightId,
+      dependencies: {
+        ideaIntake: { status: 'ready', result: intake.ideaIntake },
+        thesisFormalization: { status: 'ready', result: malformed as never },
+      },
+    });
+    expect(result.stageOutcomes.find(({ stage }) => stage === 'thesis_formalization')).toMatchObject({
+      status: 'refused', delegatedWrite: null, writes: [],
+    });
+    expect(validateResearchPipelineAggregateResult(result)).toEqual(result);
   });
 
   it('refuses publication material that is not the exact validated claims-synthesis output', () => {
@@ -322,6 +474,18 @@ describe('research-pipeline aggregate contract', () => {
     expect(result.stageOutcomes.find(({ stage }) => stage === 'research_publication')?.status).toBe('incomplete');
     expect(result.status).toBe(status);
     expect(result.execution.writes).toEqual([]);
+  });
+
+  it('classifies malformed digest authority as refused rather than stale', () => {
+    const intake = intakeStageChain();
+    const malformed = structuredClone(intake.ideaIntake) as unknown as Record<string, unknown>;
+    (malformed.source as Record<string, unknown>).contentSha256 = 'bad';
+    const result = buildResearchPipelineAggregate({
+      insightId: intake.insightId,
+      dependencies: { ideaIntake: { status: 'ready', result: malformed as never } },
+    });
+    expect(result.stageOutcomes.find(({ stage }) => stage === 'idea_intake')?.status).toBe('refused');
+    expect(validateResearchPipelineAggregateResult(result)).toEqual(result);
   });
 
   it('bounds mapped stage-validator diagnostics and emits a self-validating result', () => {

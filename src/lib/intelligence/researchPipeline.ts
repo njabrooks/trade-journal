@@ -19,6 +19,14 @@ import {
   type BeliefResearchRelationContext,
   type BeliefResearchRelationReadyResult,
 } from './beliefResearchRelation.js';
+import {
+  digestResearchPipelineIntakeValue,
+  validateResearchPipelineIntakeResult,
+  type IdeaIntakeResult,
+  type PipelineStatusResult,
+  type ThesisFormalizationResult,
+  type UnknownMappingResult,
+} from './researchPipelineIntake.js';
 
 export const RESEARCH_PIPELINE_STAGE_ORDER = [
   'pipeline_status',
@@ -46,6 +54,12 @@ export type ResearchPipelineOutcomeStatus =
   | 'judgment_required'
   | 'ready';
 
+const GOVERNED_STAGES = new Map<ResearchPipelineStage, string>([
+  ['pipeline_status', 'capability:scope:trade-journal/research-pipeline'],
+  ['idea_intake', 'capability:scope:trade-journal/research-pipeline'],
+  ['thesis_formalization', 'capability:scope:trade-journal/research-pipeline'],
+  ['unknown_mapping', 'capability:scope:trade-journal/research-pipeline'],
+]);
 const GOVERNED_DEPENDENCIES = new Map<ResearchPipelineStage, string>([
   ['claims_synthesis', 'capability:scope:trade-journal/claims-synthesis'],
   ['research_publication', 'capability:scope:trade-journal/research-publication'],
@@ -58,6 +72,22 @@ const MAX_LIMITATIONS_TOTAL_LENGTH = 4000;
 export interface ResearchPipelineAggregateInput {
   insightId: string;
   dependencies: {
+    pipelineStatus?: ResearchPipelineNonReadyDependency | {
+      status: 'ready';
+      result: PipelineStatusResult;
+    };
+    ideaIntake?: ResearchPipelineNonReadyDependency | {
+      status: 'ready';
+      result: IdeaIntakeResult;
+    };
+    thesisFormalization?: ResearchPipelineNonReadyDependency | {
+      status: 'ready' | 'judgment_required';
+      result: ThesisFormalizationResult;
+    };
+    unknownMapping?: ResearchPipelineNonReadyDependency | {
+      status: 'ready' | 'judgment_required';
+      result: UnknownMappingResult;
+    };
     claimsSynthesis?: ResearchPipelineNonReadyDependency | {
       status: 'ready';
       context: ClaimsSynthesisContext;
@@ -90,7 +120,7 @@ export interface ResearchPipelineDelegatedWrite {
 export interface ResearchPipelineStageOutcome {
   stage: ResearchPipelineStage;
   status: ResearchPipelineOutcomeStatus;
-  migration: 'governed_dependency' | 'legacy_unmigrated';
+  migration: 'governed_stage' | 'governed_dependency' | 'legacy_unmigrated';
   capabilityId: string | null;
   detail: string;
   binding?: {
@@ -103,7 +133,7 @@ export interface ResearchPipelineStageOutcome {
 }
 
 export interface ResearchPipelineAggregateResult {
-  contractVersion: '1.0.0';
+  contractVersion: '1.1.0';
   status: ResearchPipelineOutcomeStatus;
   aggregateDigest: string;
   insightId: string;
@@ -154,7 +184,7 @@ function mapValidationError(error: unknown): Pick<ResearchPipelineStageOutcome, 
     ? rawDetail
     : `${rawDetail.slice(0, MAX_DETAIL_LENGTH - suffix.length)}${suffix}`;
   return {
-    status: /digest|stale|expired/i.test(detail) ? 'stale' : 'refused',
+    status: /does not match|mismatch|stale|expired/i.test(detail) ? 'stale' : 'refused',
     detail,
   };
 }
@@ -189,6 +219,22 @@ function validateDependencyInput(
   throw new Error(`${path}.status is unsupported`);
 }
 
+function validateStageDependencyInput(
+  value: unknown,
+  path: string,
+  acceptedStatuses: readonly ('ready' | 'judgment_required')[],
+): void {
+  const dependency = objectAt(value, path);
+  if (['unavailable', 'stale', 'refused', 'failed'].includes(String(dependency.status))) {
+    validateDependencyInput(value, path, 'ready');
+    return;
+  }
+  if (!acceptedStatuses.includes(dependency.status as 'ready' | 'judgment_required')) {
+    throw new Error(`${path}.status is unsupported`);
+  }
+  exactKeys(dependency, path, ['status', 'result']);
+}
+
 export function validateResearchPipelineAggregateInput(
   value: unknown,
 ): ResearchPipelineAggregateInput {
@@ -199,10 +245,33 @@ export function validateResearchPipelineAggregateInput(
     throw new Error('input.insightId must be a UUID');
   }
   const dependencies = objectAt(input.dependencies, 'input.dependencies');
-  const allowedDependencies = ['claimsSynthesis', 'researchPublication', 'beliefResearchRelation'];
+  const allowedDependencies = [
+    'pipelineStatus', 'ideaIntake', 'thesisFormalization', 'unknownMapping',
+    'claimsSynthesis', 'researchPublication', 'beliefResearchRelation',
+  ];
   const unsupported = Object.keys(dependencies).filter((key) => !allowedDependencies.includes(key));
   if (unsupported.length) {
     throw new Error(`input.dependencies contains unsupported fields: ${unsupported.join(', ')}`);
+  }
+  if (dependencies.pipelineStatus !== undefined) {
+    validateStageDependencyInput(dependencies.pipelineStatus, 'input.dependencies.pipelineStatus', ['ready']);
+  }
+  if (dependencies.ideaIntake !== undefined) {
+    validateStageDependencyInput(dependencies.ideaIntake, 'input.dependencies.ideaIntake', ['ready']);
+  }
+  if (dependencies.thesisFormalization !== undefined) {
+    validateStageDependencyInput(
+      dependencies.thesisFormalization,
+      'input.dependencies.thesisFormalization',
+      ['ready', 'judgment_required'],
+    );
+  }
+  if (dependencies.unknownMapping !== undefined) {
+    validateStageDependencyInput(
+      dependencies.unknownMapping,
+      'input.dependencies.unknownMapping',
+      ['ready', 'judgment_required'],
+    );
   }
   if (dependencies.claimsSynthesis !== undefined) {
     validateDependencyInput(dependencies.claimsSynthesis, 'input.dependencies.claimsSynthesis', 'ready');
@@ -232,7 +301,7 @@ export function validateResearchPipelineAggregateResult(
     'contractVersion', 'status', 'aggregateDigest', 'insightId', 'stageOutcomes',
     'execution', 'retry', 'limitations',
   ]);
-  if (result.contractVersion !== '1.0.0') throw new Error('result.contractVersion must be 1.0.0');
+  if (result.contractVersion !== '1.1.0') throw new Error('result.contractVersion must be 1.1.0');
   if (!RESEARCH_PIPELINE_OUTCOME_STATUSES.has(result.status as ResearchPipelineOutcomeStatus)) {
     throw new Error('result.status is unsupported');
   }
@@ -262,9 +331,13 @@ export function validateResearchPipelineAggregateResult(
       || stage.detail.length > MAX_DETAIL_LENGTH) {
       throw new Error(`result.stageOutcomes[${index}].detail must be bounded and non-empty`);
     }
-    const expectedCapabilityId = GOVERNED_DEPENDENCIES.get(stage.stage as ResearchPipelineStage) ?? null;
-    if (stage.capabilityId !== expectedCapabilityId
-      || stage.migration !== (expectedCapabilityId ? 'governed_dependency' : 'legacy_unmigrated')) {
+    const governedStageId = GOVERNED_STAGES.get(stage.stage as ResearchPipelineStage);
+    const governedDependencyId = GOVERNED_DEPENDENCIES.get(stage.stage as ResearchPipelineStage);
+    const expectedCapabilityId = governedStageId ?? governedDependencyId ?? null;
+    const expectedMigration = governedStageId
+      ? 'governed_stage'
+      : governedDependencyId ? 'governed_dependency' : 'legacy_unmigrated';
+    if (stage.capabilityId !== expectedCapabilityId || stage.migration !== expectedMigration) {
       throw new Error(`result.stageOutcomes[${index}] has an invalid capability binding`);
     }
     if (stage.binding !== undefined) {
@@ -304,6 +377,13 @@ export function validateResearchPipelineAggregateResult(
     if (!expectedCapabilityId) {
       if (stage.status !== 'incomplete' || hasBinding || hasDelegation) {
         throw new Error(`result.stageOutcomes[${index}] must honestly report an unmigrated stage`);
+      }
+    } else if (governedStageId) {
+      const resolved = stage.status === 'ready' || stage.status === 'judgment_required';
+      if (resolved !== hasBinding || hasDelegation
+        || ((stage.stage === 'pipeline_status' || stage.stage === 'idea_intake')
+          && stage.status === 'judgment_required')) {
+        throw new Error(`result.stageOutcomes[${index}] has an invalid governed-stage state`);
       }
     } else if (stage.stage === 'claims_synthesis') {
       if ((stage.status === 'ready') !== hasBinding || hasDelegation
@@ -345,7 +425,7 @@ export function validateResearchPipelineAggregateResult(
     throw new Error('result.status does not match the derived aggregate status');
   }
   const expectedDigest = digest({
-    contractVersion: '1.0.0',
+    contractVersion: '1.1.0',
     insightId: result.insightId,
     stageOutcomes: result.stageOutcomes,
   });
@@ -369,21 +449,123 @@ export function buildResearchPipelineAggregate(
 ): ResearchPipelineAggregateResult {
   validateResearchPipelineAggregateInput(input);
   const stageOutcomes: ResearchPipelineStageOutcome[] = RESEARCH_PIPELINE_STAGE_ORDER.map((stage) => {
-    const capabilityId = GOVERNED_DEPENDENCIES.get(stage) ?? null;
+    const governedStageId = GOVERNED_STAGES.get(stage);
+    const governedDependencyId = GOVERNED_DEPENDENCIES.get(stage);
+    const capabilityId = governedStageId ?? governedDependencyId ?? null;
     return {
       stage,
       status: 'incomplete',
-      migration: capabilityId ? 'governed_dependency' : 'legacy_unmigrated',
+      migration: governedStageId
+        ? 'governed_stage'
+        : governedDependencyId ? 'governed_dependency' : 'legacy_unmigrated',
       capabilityId,
       detail: capabilityId
         ? 'No validated Registry-locked stage result was supplied.'
-        : 'This legacy stage remains active but is not migrated in the expand release.',
+        : 'This legacy stage remains active but is not migrated by issue #67.',
       writes: [],
       delegatedWrite: null,
     };
   });
 
   const byStage = new Map(stageOutcomes.map((outcome) => [outcome.stage, outcome]));
+
+  const composeStage = (
+    dependencyName: 'pipelineStatus' | 'ideaIntake' | 'thesisFormalization' | 'unknownMapping',
+    expectedStage: 'pipeline_status' | 'idea_intake' | 'thesis_formalization' | 'unknown_mapping',
+  ): void => {
+    const dependency = input.dependencies[dependencyName];
+    const outcome = byStage.get(expectedStage)!;
+    if (!dependency) return;
+    if (dependency.status === 'unavailable' || dependency.status === 'stale'
+      || dependency.status === 'refused' || dependency.status === 'failed') {
+      Object.assign(outcome, { status: dependency.status, detail: dependency.detail });
+      return;
+    }
+    if (!('result' in dependency)) throw new Error(`${dependencyName} is missing its stage result`);
+    try {
+      const validated = validateResearchPipelineIntakeResult(dependency.result);
+      if (validated.stage !== expectedStage || validated.status !== dependency.status) {
+        throw new Error(`${dependencyName} status or stage does not match its validated result`);
+      }
+      const sourceInsightId = validated.stage === 'pipeline_status'
+        ? validated.targetInsightId
+        : validated.source.insightId;
+      if (sourceInsightId !== input.insightId) {
+        throw new Error(`${dependencyName} source insight is stale for the aggregate insightId`);
+      }
+      outcome.status = validated.status;
+      outcome.detail = validated.status === 'judgment_required'
+        ? 'The exact zero-write stage result is valid; an explicit user gate decision is still required.'
+        : 'The exact zero-write Registry-locked stage result is valid.';
+      outcome.binding = {
+        sourceInsightId,
+        contextDigest: validated.stage === 'pipeline_status'
+          ? digestResearchPipelineIntakeValue(validated.targetInsightId)
+          : validated.stage === 'idea_intake'
+            ? digestResearchPipelineIntakeValue(validated.source)
+            : validated.previousStageDigest,
+        resultDigest: validated.stageDigest,
+      };
+    } catch (error) {
+      Object.assign(outcome, mapValidationError(error));
+    }
+  };
+
+  composeStage('pipelineStatus', 'pipeline_status');
+  composeStage('ideaIntake', 'idea_intake');
+  composeStage('thesisFormalization', 'thesis_formalization');
+  composeStage('unknownMapping', 'unknown_mapping');
+
+  const intake = input.dependencies.ideaIntake;
+  const formalization = input.dependencies.thesisFormalization;
+  const formalizationOutcome = byStage.get('thesis_formalization')!;
+  if (formalization && 'result' in formalization && (formalizationOutcome.status === 'ready'
+    || formalizationOutcome.status === 'judgment_required')) {
+    const outcome = formalizationOutcome;
+    if (!intake || intake.status !== 'ready' || byStage.get('idea_intake')!.status !== 'ready') {
+      Object.assign(outcome, {
+        status: 'stale', binding: undefined,
+        detail: 'The formalization stage requires the exact ready idea-intake result in this aggregate.',
+      });
+    } else if (formalization.result.previousStageDigest !== intake.result.stageDigest
+      || digestResearchPipelineIntakeValue(formalization.result.source)
+        !== digestResearchPipelineIntakeValue(intake.result.source)
+      || intake.result.claim.rebuttals.some(
+        (rebuttal) => !formalization.result.thesis.rebuttals.includes(rebuttal),
+      )
+      || formalization.result.thesis.qualifier !== intake.result.claim.qualifier
+      || intake.result.claim.ambiguities.some(
+        (ambiguity) => !formalization.result.thesis.ambiguities.includes(ambiguity),
+      )) {
+      Object.assign(outcome, {
+        status: 'stale', binding: undefined,
+        detail: 'The formalization provenance, rebuttals, or previousStageDigest is stale for the supplied idea-intake result.',
+      });
+    }
+  }
+  const unknownMapping = input.dependencies.unknownMapping;
+  const unknownOutcome = byStage.get('unknown_mapping')!;
+  if (unknownMapping && 'result' in unknownMapping
+    && (unknownOutcome.status === 'ready' || unknownOutcome.status === 'judgment_required')) {
+    const outcome = unknownOutcome;
+    if (!formalization || formalization.status !== 'ready'
+      || formalizationOutcome.status !== 'ready') {
+      Object.assign(outcome, {
+        status: 'stale', binding: undefined,
+        detail: 'The unknown-mapping stage requires the exact ready thesis-formalization result in this aggregate.',
+      });
+    } else if (formalization.result.gate.decision !== 'advance'
+      || formalization.result.gate.decidedBy !== 'user'
+      || unknownMapping.result.previousStageDigest !== formalization.result.stageDigest
+      || digestResearchPipelineIntakeValue(unknownMapping.result.source)
+        !== digestResearchPipelineIntakeValue(formalization.result.source)) {
+      Object.assign(outcome, {
+        status: 'stale', binding: undefined,
+        detail: 'The unknown-mapping advance decision, provenance, or previousStageDigest is stale for the supplied thesis-formalization result.',
+      });
+    }
+  }
+
   const claims = input.dependencies.claimsSynthesis;
   if (claims && claims.status === 'ready') {
     const outcome = byStage.get('claims_synthesis')!;
@@ -492,7 +674,7 @@ export function buildResearchPipelineAggregate(
     }
   }
   const digestInput = {
-    contractVersion: '1.0.0',
+    contractVersion: '1.1.0',
     insightId: input.insightId,
     stageOutcomes,
   };
@@ -500,7 +682,7 @@ export function buildResearchPipelineAggregate(
   const terminalStatus = (['failed', 'refused', 'stale', 'unavailable'] as const)
     .find((status) => stageOutcomes.some((outcome) => outcome.status === status));
   return {
-    contractVersion: '1.0.0',
+    contractVersion: '1.1.0',
     status: terminalStatus ?? 'incomplete',
     aggregateDigest,
     insightId: input.insightId,
@@ -508,7 +690,9 @@ export function buildResearchPipelineAggregate(
     execution: { mode: 'aggregate_coordination_only', writes: [] },
     retry: { deterministic: true, key: aggregateDigest },
     limitations: [
-      'Legacy stage entry points remain active and are explicitly unmigrated in this expand release.',
+      'The four issue #67 stage results coexist with unchanged, rollback-capable legacy persistence entry points.',
+      'Research preparation, unknown research, evidence synthesis, thesis expression, gate decision, and graduation remain explicitly unmigrated for issue #68.',
+      'Active legacy pipeline discovery remains unchanged.',
       'The aggregate has no database, scheduler, credential, provider-discovery, strategy, position, or trade authority.',
     ],
   };

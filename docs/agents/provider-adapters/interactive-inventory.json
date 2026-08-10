@@ -271,7 +271,8 @@
       "j2_disposition": {
         "action": "migrate",
         "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
-      },
+      }
+      ,
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
@@ -401,8 +402,7 @@
       "j2_disposition": {
         "action": "migrate",
         "rationale": "The governed adapter is current and staged; retain the authored workflow as a migration input until final discovery cutover."
-      }
-      ,
+      },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
@@ -1003,7 +1003,7 @@
     },
     {
       "id": "interactive-claude-pipeline-status",
-      "ability": "Coordinate the provider-neutral research-pipeline aggregate while reporting all legacy stages honestly.",
+      "ability": "Produce a deterministic zero-write pipeline-status result and coordinate the provider-neutral aggregate.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -1027,7 +1027,7 @@
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "One explicit research insight and exact validated results from the Registry-locked claims-synthesis, research-publication, and belief-research-relation Capabilities.",
+        "reads": "One explicit research insight, supplied coordination records, and exact governed stage and dependency results.",
         "writes": "None; the aggregate always returns writes: [] and only names stage-owned recorders behind exact user authorization.",
         "judgment": "Reports genuine judgment as judgment_required and never authorizes, resolves, or persists it."
       },
@@ -1036,7 +1036,8 @@
         "Exact Registry Lock and any supplied governed stage inputs."
       ],
       "limitations": [
-        "The governed aggregate adapter is staged; the legacy pipeline-status skill remains active and all ten legacy stage boundaries are explicitly unmigrated.",
+        "The governed pipeline-status and aggregate boundaries are staged while the legacy pipeline-status skill remains active for rollback-capable persistence.",
+        "Six issue #68 stage boundaries remain active and explicitly unmigrated; active discovery is unchanged.",
         "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
@@ -1044,15 +1045,15 @@
       ],
       "evidence": {
         "state": "current",
-        "as_of": "2026-08-09",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:473656a200911f733209c54096dd26e92d64406dc44245bb7f6b7b61dc2b8f94",
-        "adapter_digest": "sha256:5b566c010b0b6a6d0f8552198eb3cae769d68184be1533b70d8a176e21f07589",
-        "reason": "Exact current evidence binds the research-pipeline 1.0.0 aggregate and Claude adapter while legacy stages remain unmigrated."
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:5cd4e9e54ec9e64d3740926d508b2b2fa1c764814b6dd9935ad4b7fc176729a9",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 aggregate, four zero-write stages, and claude adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The aggregate adapter is current and staged; retain every legacy pipeline entry point until issues #67 and #68 migrate stage boundaries."
+        "rationale": "The aggregate and four #67 stage-result boundaries are governed; retain legacy persistence and discovery until an explicitly authorized cutover."
       },
       "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
@@ -1415,7 +1416,7 @@
     },
     {
       "id": "interactive-claude-stage-1-init-idea",
-      "ability": "Create the initial research-pipeline idea structure.",
+      "ability": "Produce a provenance-preserving, user-selected, zero-write idea-intake result.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -1423,53 +1424,65 @@
       },
       "provider": "claude",
       "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": "capabilities/research-pipeline/adapters/claude.md"
+      },
+      "packaging": "governed-provider-adapter",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Idea selection and thesis classification require genuine user judgment."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "Exact Notes/Tana source provenance, Toulmin claim, and explicit user selection and classification.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "The user selects the idea and chooses its thesis classification."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Exact current research-pipeline package and adapter plus explicitly supplied user judgment."
+      ],
+      "limitations": [
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:5cd4e9e54ec9e64d3740926d508b2b2fa1c764814b6dd9935ad4b7fc176729a9",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 claude adapter and its zero-write stage-1-init-idea result boundary."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+      },
+      "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/stage-1-init-idea/SKILL.md"
       },
-      "packaging": "authored-provider-entry-point",
-      "invocation": {
-        "mode": "interactive",
-        "entry_point": "/stage-1-init-idea",
-        "unattended_eligibility": "ineligible",
-        "rationale": "Starts a user-chosen research idea."
-      },
-      "lifecycle": {
-        "status": "active",
-        "protective_tombstone": false
-      },
-      "authority_and_write_scope": {
-        "reads": "A user-selected claim or transcript.",
-        "writes": "Pipeline idea directory and stage-one triage file.",
-        "judgment": "Starts a user-chosen research idea."
-      },
-      "prerequisites": [
-        "Claude Code repository session",
-        "Shared research workspace and explicit idea selection."
-      ],
-      "limitations": [
-        "Should not invent investment ideas unattended.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
-      ],
-      "operational_consumers": [
-        "Interactive Trade Journal maintainer or delegated agent"
-      ],
-      "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      },
-      "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-claude",
+        "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
       "id": "interactive-claude-stage-2-formalize-thesis",
-      "ability": "Formalize a pipeline idea into a falsifiable thesis.",
+      "ability": "Produce a falsifiable, zero-write thesis-formalization result with explicit failure modes.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -1477,53 +1490,65 @@
       },
       "provider": "claude",
       "source": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": "capabilities/research-pipeline/adapters/claude.md"
+      },
+      "packaging": "governed-provider-adapter",
+      "invocation": {
+        "mode": "interactive",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
+        "unattended_eligibility": "ineligible",
+        "rationale": "Thesis framing, failure modes, and the gate decision require genuine user judgment."
+      },
+      "lifecycle": {
+        "status": "active",
+        "protective_tombstone": false
+      },
+      "authority_and_write_scope": {
+        "reads": "The exact ready idea-intake result and preserved Notes/Tana provenance.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "The user accepts advance, hold, or kill at the formalization gate."
+      },
+      "prerequisites": [
+        "Claude Code repository session",
+        "Exact current research-pipeline package and adapter plus explicitly supplied user judgment."
+      ],
+      "limitations": [
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
+      ],
+      "operational_consumers": [
+        "Interactive Trade Journal maintainer or delegated agent"
+      ],
+      "evidence": {
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:5cd4e9e54ec9e64d3740926d508b2b2fa1c764814b6dd9935ad4b7fc176729a9",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 claude adapter and its zero-write stage-2-formalize-thesis result boundary."
+      },
+      "j2_disposition": {
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+      },
+      "migration_input": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/stage-2-formalize-thesis/SKILL.md"
       },
-      "packaging": "authored-provider-entry-point",
-      "invocation": {
-        "mode": "interactive",
-        "entry_point": "/stage-2-formalize-thesis",
-        "unattended_eligibility": "ineligible",
-        "rationale": "Collaborative thesis formulation and failure-mode judgment."
-      },
-      "lifecycle": {
-        "status": "active",
-        "protective_tombstone": false
-      },
-      "authority_and_write_scope": {
-        "reads": "Stage-one idea material.",
-        "writes": "Stage-two thesis file.",
-        "judgment": "Collaborative thesis formulation and failure-mode judgment."
-      },
-      "prerequisites": [
-        "Claude Code repository session",
-        "Existing pipeline idea and user engagement."
-      ],
-      "limitations": [
-        "Investment framing requires genuine judgment.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
-      ],
-      "operational_consumers": [
-        "Interactive Trade Journal maintainer or delegated agent"
-      ],
-      "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      },
-      "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-claude",
+        "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {
       "id": "interactive-claude-stage-3-map-unknowns",
-      "ability": "Map decision-critical unknowns and research value.",
+      "ability": "Produce a zero-write map of decision-critical unknowns and a research plan.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/research-pipeline",
@@ -1533,46 +1558,58 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/stage-3-map-unknowns/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/claude.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "/stage-3-map-unknowns",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "ineligible",
-        "rationale": "Determines whether further research is worthwhile."
+        "rationale": "Research priority and the gate decision require genuine user judgment."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Formalized thesis and current evidence.",
-        "writes": "Stage-three unknown map.",
-        "judgment": "Determines whether further research is worthwhile."
+        "reads": "The exact ready thesis-formalization result and preserved Notes/Tana provenance.",
+        "writes": "None; the governed stage result always returns writes: []. Legacy persistence remains separately active.",
+        "judgment": "The user accepts advance, kill, or archive at the unknown-mapping gate."
       },
       "prerequisites": [
         "Claude Code repository session",
-        "Completed stage two and user engagement."
+        "Exact current research-pipeline package and adapter plus explicitly supplied user judgment."
       ],
       "limitations": [
-        "Research-priority decisions should not be fabricated unattended.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed boundary returns a stage result only and does not persist files or database state.",
+        "The legacy skill remains active as the rollback-capable persistence entry point and active discovery is unchanged.",
+        "No live provider invocation or production-data mutation was used for semantic evidence."
       ],
       "operational_consumers": [
         "Interactive Trade Journal maintainer or delegated agent"
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:5cd4e9e54ec9e64d3740926d508b2b2fa1c764814b6dd9935ad4b7fc176729a9",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 claude adapter and its zero-write stage-3-map-unknowns result boundary."
       },
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".claude/skills/stage-3-map-unknowns/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/research-pipeline/capability-package.json",
+        "adapter_id": "research-pipeline-claude",
+        "evidence_path": "capabilities/research-pipeline/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       }
     },
     {

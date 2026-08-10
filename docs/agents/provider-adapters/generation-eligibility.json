@@ -1,10 +1,10 @@
 {
   "kind": "ProviderAdapterGenerationEligibility",
   "schema_version": "1.0.0",
-  "as_of": "2026-08-09",
+  "as_of": "2026-08-10",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
-  "generation_eligible_count": 26,
+  "generation_eligible_count": 32,
   "governed_outputs": [
     "docs/agents/provider-entry-points/staging/claude.md",
     "docs/agents/provider-entry-points/staging/codex.md"
@@ -590,17 +590,17 @@
       },
       "evidence": {
         "state": "current",
-        "as_of": "2026-08-09",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:473656a200911f733209c54096dd26e92d64406dc44245bb7f6b7b61dc2b8f94",
-        "adapter_digest": "sha256:5a0369892a9bc7c2b2ad57c95bbe5fdc3b5e8297219b94a43ba1b86f3eb32b50",
-        "reason": "Exact current evidence binds the research-pipeline 1.0.0 aggregate and Codex adapter while legacy stages remain unmigrated."
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 aggregate, four zero-write stages, and codex adapter."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The aggregate adapter is current and staged; retain every legacy pipeline entry point until issues #67 and #68 migrate stage boundaries."
+        "rationale": "The aggregate and four #67 stage-result boundaries are governed; retain legacy persistence and discovery until an explicitly authorized cutover."
       }
     },
     {
@@ -801,7 +801,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/stage-1-init-idea/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -811,21 +811,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 codex adapter and its zero-write stage-1-init-idea result boundary."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
       }
     },
     {
@@ -834,7 +831,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/stage-2-formalize-thesis/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -844,21 +841,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 codex adapter and its zero-write stage-2-formalize-thesis result boundary."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
       }
     },
     {
@@ -867,7 +861,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/stage-3-map-unknowns/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -877,21 +871,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:9e278c2d2aa4204a9254f9caf1a1c1d8338f068a6304a0fe24a8e65839b516ed",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 codex adapter and its zero-write stage-3-map-unknowns result boundary."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
       }
     },
     {
@@ -1747,17 +1738,17 @@
       },
       "evidence": {
         "state": "current",
-        "as_of": "2026-08-09",
-        "capability_version": "1.0.0",
-        "package_digest": "sha256:473656a200911f733209c54096dd26e92d64406dc44245bb7f6b7b61dc2b8f94",
-        "adapter_digest": "sha256:5b566c010b0b6a6d0f8552198eb3cae769d68184be1533b70d8a176e21f07589",
-        "reason": "Exact current evidence binds the research-pipeline 1.0.0 aggregate and Claude adapter while legacy stages remain unmigrated."
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:5cd4e9e54ec9e64d3740926d508b2b2fa1c764814b6dd9935ad4b7fc176729a9",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 aggregate, four zero-write stages, and claude adapter."
       },
       "generation_eligible": true,
       "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "The aggregate adapter is current and staged; retain every legacy pipeline entry point until issues #67 and #68 migrate stage boundaries."
+        "rationale": "The aggregate and four #67 stage-result boundaries are governed; retain legacy persistence and discovery until an explicitly authorized cutover."
       }
     },
     {
@@ -1958,7 +1949,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/stage-1-init-idea/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1968,21 +1959,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:5cd4e9e54ec9e64d3740926d508b2b2fa1c764814b6dd9935ad4b7fc176729a9",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 claude adapter and its zero-write stage-1-init-idea result boundary."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
       }
     },
     {
@@ -1991,7 +1979,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/stage-2-formalize-thesis/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -2001,21 +1989,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:5cd4e9e54ec9e64d3740926d508b2b2fa1c764814b6dd9935ad4b7fc176729a9",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 claude adapter and its zero-write stage-2-formalize-thesis result boundary."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
       }
     },
     {
@@ -2024,7 +2009,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/stage-3-map-unknowns/SKILL.md"
+        "path": "capabilities/research-pipeline/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -2034,21 +2019,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-10",
+        "capability_version": "1.1.0",
+        "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
+        "adapter_digest": "sha256:5cd4e9e54ec9e64d3740926d508b2b2fa1c764814b6dd9935ad4b7fc176729a9",
+        "reason": "Exact current evidence binds the research-pipeline 1.1.0 claude adapter and its zero-write stage-3-map-unknowns result boundary."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
-        "action": "defer",
-        "rationale": "Defer behind live operational adapters while preserving explicit lifecycle and judgment limits."
+        "action": "migrate",
+        "rationale": "Stage-result generation is governed while legacy persistence remains active and rollback-capable until an explicitly authorized cutover."
       }
     },
     {

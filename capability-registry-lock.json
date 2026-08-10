@@ -261,7 +261,7 @@
       }
     },
     {
-      "approved_version": "1.0.0",
+      "approved_version": "1.1.0",
       "authority": "scope:trade-journal",
       "dependencies": [
         {
@@ -278,7 +278,7 @@
         }
       ],
       "id": "capability:scope:trade-journal/research-pipeline",
-      "package_digest": "sha256:473656a200911f733209c54096dd26e92d64406dc44245bb7f6b7b61dc2b8f94",
+      "package_digest": "sha256:e817dd09a9186abc3af98ea3f9f46e1e6d3e4ad6357d4e4bdb35d598e66bfc95",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -286,7 +286,7 @@
           "provider": "claude",
           "source": "adapters/claude.md",
           "state": "current",
-          "validated_at": "2026-08-09"
+          "validated_at": "2026-08-10"
         },
         {
           "evidence": "evidence/codex.json",
@@ -294,15 +294,15 @@
           "provider": "codex",
           "source": "adapters/codex.md",
           "state": "current",
-          "validated_at": "2026-08-09"
+          "validated_at": "2026-08-10"
         }
       ],
       "repository": "github:njabrooks/trade-journal",
       "source": {
         "development_digest": null,
         "package_path": "capabilities/research-pipeline",
-        "release_reference": "54f7ddec11e8c6018b7f47f8b7d05bfaf186d6b1",
-        "revision": "54f7ddec11e8c6018b7f47f8b7d05bfaf186d6b1"
+        "release_reference": "c0d8a0c41f9fdb7a814e550ca48a6ec4b4a1d161",
+        "revision": "c0d8a0c41f9fdb7a814e550ca48a6ec4b4a1d161"
       }
     },
     {
@@ -407,10 +407,10 @@
       }
     }
   ],
-  "evidence_time": "2026-08-09",
+  "evidence_time": "2026-08-10",
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:0be2b1d245d742c57697fdd8403e84c4738887c6352d4514b91a6a0a3e0025cb",
+  "registry_digest": "sha256:51bb513ce4fd85756baf83f86b7ee3c8e6871e1176ced74b398945137b553ab9",
   "schema_version": "1.0.0"
 }
