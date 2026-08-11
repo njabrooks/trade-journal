@@ -277,7 +277,7 @@ staged governed Provider Entry Points are unchanged because no governed bytes ch
 digests, rollback, and scope are recorded in `evidence/issue-75-non-candidate-dispositions.json`.
 
 Issue #71 publishes workflow-discovery `1.0.0` from immutable Trade Journal revision
-`101aa75990c8793b85147bfdc3101e10668df4c9`. The provider-neutral contract selects from the validated
+`2de6d0b2c7ffe9bc04d8c7d2fde97101524dd1df`. The provider-neutral contract selects from the validated
 repository inventory and delegates to the selected provider's exact locked adapter or an honestly unavailable retained
 repository source; it does not copy or execute workflow procedures. `AGENTS.md` provides repository-native
 activation, and the parity/pre-commit gate now validates only repository-owned discovery and mirror state.

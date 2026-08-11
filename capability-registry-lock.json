@@ -543,8 +543,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/workflow-discovery",
-        "release_reference": "101aa75990c8793b85147bfdc3101e10668df4c9",
-        "revision": "101aa75990c8793b85147bfdc3101e10668df4c9"
+        "release_reference": "2de6d0b2c7ffe9bc04d8c7d2fde97101524dd1df",
+        "revision": "2de6d0b2c7ffe9bc04d8c7d2fde97101524dd1df"
       }
     }
   ],
@@ -552,6 +552,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:e52fd9981e68c3e22d6fd4d89185b6f429090c687d15ff14640096a1aab5897b",
+  "registry_digest": "sha256:326de032dd59d12aab98af183883448b729750344350a3bc8b2e84b1732e4053",
   "schema_version": "1.0.0"
 }

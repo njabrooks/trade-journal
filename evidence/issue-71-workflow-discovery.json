@@ -9,7 +9,7 @@
     "merge_revision": "abcedb11576bffde647ce6855ce9d3e0163483b3"
   },
   "fixed_point": "223c9ebe67c04c7dd09ef53acf306d6e2f6eb07b",
-  "release_revision": "101aa75990c8793b85147bfdc3101e10668df4c9",
+  "release_revision": "2de6d0b2c7ffe9bc04d8c7d2fde97101524dd1df",
   "evidence_date": "2026-08-11",
   "authority": {
     "work_items": "github:njabrooks/trade-journal",
@@ -29,7 +29,7 @@
     "execution_authority": "none-discovery-only"
   },
   "published_artifacts": {
-    "registry_lock": "sha256:509cc916a0ff96274d659a866928f146bebe0f38336479ea734eca136a3d82cb",
+    "registry_lock": "sha256:1a946348e75311bbbf420c1f68034b8f456386e2ff0bc937ef530d654bdc73fb",
     "claude_staging": "sha256:f593a19e804054d4d698d7c7bdf5379673077ad23b3f1d969c901b35f86c3de6",
     "codex_staging": "sha256:f6125a25beb665185e2098d3e3616517fcb764c180ded80333270d3694ed4d30",
     "interactive_inventory": "sha256:9491802af41b84cbdd22223b197cdde66dd65860029d5fa83bb93d1364033916",
