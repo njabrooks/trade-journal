@@ -157,7 +157,7 @@
     "mirror_parity": "passed-36-of-36",
     "provider_entry_point_refusal": "passed-ws-entry-005-byte-identical-no-write",
     "evidence_freshness_refusal": "passed-stale-rejected-no-write",
-    "focused_governance_tests": "201-passed-6-skipped",
+    "focused_governance_tests": "207-passed-at-published-lock-evidence-time",
     "full_tests": "607-passed-6-skipped",
     "typecheck": "passed",
     "issue_scoped_eslint": "passed",
