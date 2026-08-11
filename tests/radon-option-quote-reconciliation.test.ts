@@ -162,8 +162,9 @@ describe("Radon-owned IBKR option quote reconciliation", () => {
         lifecycle: "retained-unchanged-separate-ingestion-path",
       },
       contract_qualification: {
+        path: "scripts/lib/ibkr_option_quote_boundary.py",
         owner: "scope:radon",
-        lifecycle: "retained-inside-requested-contract-quote-helpers",
+        lifecycle: "separate-requested-contract-adapter-boundary",
       },
       gateway_control: {
         path: "scripts/ops/gateway.sh",
@@ -171,11 +172,11 @@ describe("Radon-owned IBKR option quote reconciliation", () => {
       },
       requested_structure_quote: {
         path: "scripts/ibkr-option-quote.py",
-        lifecycle: "retained-unchanged-interactive-migration-input",
+        lifecycle: "repaired-unavailable-and-client-id-boundary",
       },
       requested_contract_batch_quote: {
         path: "scripts/ibkr-quote-contracts.py",
-        lifecycle: "retained-unchanged-machine-readable-migration-input",
+        lifecycle: "repaired-structured-unavailable-boundary",
       },
       legacy_client_portal_quote: {
         path: "scripts/ibkr-option-quote.ts",
@@ -192,9 +193,20 @@ describe("Radon-owned IBKR option quote reconciliation", () => {
     }
 
     expect(read("scripts/ingest-ibkr-chains.py")).toContain("reqSecDefOptParams");
-    expect(read("scripts/ibkr-option-quote.py")).not.toContain("reqSecDefOptParams");
-    expect(read("scripts/ibkr-quote-contracts.py")).not.toContain("reqSecDefOptParams");
+    for (const quoteHelper of [
+      read("scripts/ibkr-option-quote.py"),
+      read("scripts/ibkr-quote-contracts.py"),
+    ]) {
+      expect(quoteHelper).toContain("qualify_requested_option");
+      expect(quoteHelper).not.toContain("qualifyContracts");
+      expect(quoteHelper).not.toContain("reqSecDefOptParams");
+    }
     expect(read("scripts/ibkr-option-quote.ts")).toContain("DEPRECATED (2026-07-10)");
+
+    const interactiveSkill = read(".claude/skills/ibkr-quote/SKILL.md");
+    expect(interactiveSkill).not.toContain("scripts/ops/gateway.sh resume");
+    expect(interactiveSkill).not.toContain("lsof -i :4001");
+    expect(interactiveSkill).toContain("separate `/gateway` workflow");
   });
 
   it("declares unavailable gateway and market data without attempting either headlessly", () => {

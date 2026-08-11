@@ -13,34 +13,7 @@ Fetch live (or delayed) bid/ask/IV for any multi-leg options structure via IB Ga
 - **Python venv with ib_insync** at `/Users/home-hub/projects/radon/.venv/bin/python3` (shared with Radon)
 - **Market data subscription** (live data) OR accept delayed data (~15 min lag)
 
-## Step 1: Check Gateway Status
-
-Run this first to see if the gateway is already up:
-
-```bash
-lsof -i :4001 2>/dev/null | head -3
-```
-
-If you see a `JavaAppli` process listening on port 4001 → Gateway is running, skip to Step 3.
-
-If nothing is listening → Gateway needs to be started (Step 2).
-
-## Step 2: Start IB Gateway (if needed)
-
-The gateway is IBC-managed (launchd `local.ibc-gateway`, docs/v2/21) — do NOT
-launch the app by hand:
-
-```bash
-scripts/ops/gateway.sh resume
-```
-
-It polls port 4001 for up to 4 minutes. If the weekly token has lapsed the user
-gets an IBKR 2FA prompt on their phone — tell them to approve it. If it stays
-down, `scripts/ops/gateway.sh status` + the `/gateway` skill are the recovery
-path. (Do not confuse this with the legacy Client Portal gateway on 5001 —
-that being down is normal.)
-
-## Step 3: Parse the User's Request
+## Step 1: Parse the User's Request
 
 Collect from the conversation:
 
@@ -69,20 +42,25 @@ Multiple legs separated by commas. Ratios use `x2`, `x3` etc.
 - Butterfly: `"BUY 55C 20260821, SELL 60C 20260821 x2, BUY 65C 20260821"`
 - Risk reversal + fly overlay: `"BUY 49C 20260821, BUY 55C 20260821, SELL 60C 20260821 x2, SELL 36P 20260821"`
 
-## Step 4: Run the Quote Script
+## Step 2: Run the Quote Script
 
 ```bash
 cd /Users/home-hub/projects/trade-journal && /Users/home-hub/projects/radon/.venv/bin/python3 scripts/ibkr-option-quote.py <TICKER> "<LEGS>"
 ```
 
 The script will:
-1. Connect to IB Gateway on port 4001 (falls back to TWS on 7496)
+1. Connect read-only to IB Gateway on port 4001 (falls back to TWS on 7496) using Trade Journal client ID 33
 2. Qualify each option contract (resolve conId)
 3. Fetch market data (live if subscribed, delayed otherwise)
 4. Display per-leg bid/ask/mid/last/IV
 5. Compute combo net price using proper cross-fields (ask on buys, bid on sells)
 
-## Step 5: Present Results
+The quote boundary does not inspect, start, resume, pause, or otherwise manage the gateway. If the script returns
+`UNAVAILABLE: gateway-unavailable`, report that result and stop. Gateway lifecycle recovery belongs to the
+separate `/gateway` workflow and requires its own deliberate invocation. If the script returns
+`UNAVAILABLE: market-data-unavailable-or-contract-unqualified`, do not present a complete combo price.
+
+## Step 3: Present Results
 
 Format the output as:
 

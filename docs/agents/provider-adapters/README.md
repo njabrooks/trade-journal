@@ -80,7 +80,8 @@ unavailable operational state, rollback, and scope are recorded in
 `evidence/issue-73-radon-gateway-reconciliation.json`.
 
 `ibkr-quote` is also ineligible for unattended execution. Issue #74 retains the requested-structure and
-requested-contract quote helpers as unchanged non-governed migration inputs, while the headless projection
+requested-contract quote helpers as non-governed migration inputs while repairing their assigned client IDs,
+structured unavailable outcomes, and separation from gateway lifecycle control. The headless projection
 refuses gateway inspection or operation, contract qualification, and market-data requests because Radon
 publishes no accepted immutable option-quote package or exact Adapter Conformance evidence. Bulk-chain
 ingestion, requested-contract qualification, gateway control, and quote presentation remain explicit and

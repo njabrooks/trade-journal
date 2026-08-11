@@ -12,12 +12,15 @@ Leg format: ACTION STRIKE[C|P] EXPIRY [xQTY]
 
 import sys
 import re
-import time
 
 # Use Radon's venv which has ib_insync
 sys.path.insert(0, "/Users/home-hub/projects/radon/.venv/lib/python3.14/site-packages")
 
-from ib_insync import IB, Option, util
+from lib.ibkr_option_quote_boundary import (  # noqa: E402
+    INTERACTIVE_QUOTE_CLIENT_ID,
+    positive_number,
+    qualify_requested_option,
+)
 
 
 def parse_legs(text):
@@ -39,17 +42,35 @@ def parse_legs(text):
     return legs
 
 
+def connect_quote_gateway(ib):
+    """Connect for quotes without acquiring gateway lifecycle authority."""
+    for port in (4001, 7496):
+        try:
+            ib.connect(
+                "127.0.0.1",
+                port,
+                clientId=INTERACTIVE_QUOTE_CLIENT_ID,
+                timeout=20,
+            )
+            return True, None
+        except Exception:
+            continue
+    return False, "gateway-unavailable"
+
+
 def main():
+    from ib_insync import IB, Option  # noqa: E402
+
     if len(sys.argv) < 3:
         print("Usage: python3 scripts/ibkr-option-quote.py TICKER \"BUY 49C 20260821, SELL 60C 20260821 x2, ...\"")
-        sys.exit(1)
+        return 1
 
     ticker = sys.argv[1].upper()
     legs = parse_legs(sys.argv[2])
 
     if not legs:
         print("No valid legs parsed")
-        sys.exit(1)
+        return 1
 
     print(f"\nIBKR Live Quote: {ticker}")
     print(f"Legs: {len(legs)}")
@@ -60,16 +81,11 @@ def main():
     ib = IB()
     print(f"\nConnecting to IB Gateway...")
 
-    try:
-        ib.connect("127.0.0.1", 4001, clientId=95)  # clientId 95 = standalone script range
-    except ConnectionRefusedError:
-        try:
-            print("  Port 4001 failed, trying TWS on 7496...")
-            ib.connect("127.0.0.1", 7496, clientId=95)
-        except ConnectionRefusedError:
-            print("  Could not connect to IB Gateway (4001) or TWS (7496)")
-            print("  Make sure IB Gateway is running and logged in")
-            sys.exit(1)
+    connected, unavailable_reason = connect_quote_gateway(ib)
+    if not connected:
+        print(f"  UNAVAILABLE: {unavailable_reason}")
+        print("  Gateway lifecycle recovery belongs to the separate /gateway workflow")
+        return 2
 
     print(f"  Connected: {ib.managedAccounts()}")
 
@@ -85,35 +101,32 @@ def main():
     # Build option contracts
     contracts = []
     for l in legs:
-        c = Option(
-            symbol=ticker,
-            lastTradeDateOrContractMonth=l["expiry"],
-            strike=l["strike"],
-            right=l["right"],
-            exchange="SMART",
-            currency="USD",
+        request = {
+            "ticker": ticker,
+            "expiry": l["expiry"],
+            "strike": l["strike"],
+            "right": l["right"],
+        }
+        contract, reason = qualify_requested_option(
+            ib,
+            request,
+            Option,
         )
-        contracts.append((l, c))
-
-    # Qualify contracts (resolve conids)
-    print(f"\nQualifying {len(contracts)} contracts...")
-    raw_contracts = [c for _, c in contracts]
-    qualified = ib.qualifyContracts(*raw_contracts)
-
-    for i, (leg, _) in enumerate(contracts):
-        q = qualified[i] if i < len(qualified) else None
-        if q and q.conId:
-            print(f"  {leg['action']} {leg['qty']}x {leg['strike']}{leg['right']} → conId={q.conId}")
-            contracts[i] = (leg, q)
+        contracts.append((l, contract))
+        if contract is not None:
+            print(f"  {l['action']} {l['qty']}x {l['strike']}{l['right']} → conId={contract.conId}")
         else:
-            print(f"  {leg['action']} {leg['qty']}x {leg['strike']}{leg['right']} → NOT FOUND")
+            print(f"  {l['action']} {l['qty']}x {l['strike']}{l['right']} → UNAVAILABLE: {reason}")
 
     # Request market data
     print(f"\nFetching live quotes...")
     tickers_map = {}
     for leg, contract in contracts:
-        if contract.conId:
-            t = ib.reqMktData(contract, "", False, False)
+        if contract is not None and contract.conId:
+            try:
+                t = ib.reqMktData(contract, "", False, False)
+            except Exception:
+                continue
             tickers_map[contract.conId] = (leg, contract, t)
 
     # Wait for data to populate
@@ -129,21 +142,21 @@ def main():
     net_bid = 0  # cost to BUY the combo
     net_ask = 0
     net_mid = 0
-    all_have_quotes = True
+    all_have_quotes = len(tickers_map) == len(contracts)
 
     for leg, contract, ticker_data in tickers_map.values():
         # Try live first, fall back to delayed
-        bid = ticker_data.bid if ticker_data.bid > 0 else None
-        ask = ticker_data.ask if ticker_data.ask > 0 else None
-        last = ticker_data.last if ticker_data.last > 0 else None
+        bid = positive_number(ticker_data.bid)
+        ask = positive_number(ticker_data.ask)
+        last = positive_number(ticker_data.last)
 
         # Delayed data fields
-        if bid is None and hasattr(ticker_data, 'delayedBid') and ticker_data.delayedBid > 0:
-            bid = ticker_data.delayedBid
-        if ask is None and hasattr(ticker_data, 'delayedAsk') and ticker_data.delayedAsk > 0:
-            ask = ticker_data.delayedAsk
-        if last is None and hasattr(ticker_data, 'delayedLast') and ticker_data.delayedLast > 0:
-            last = ticker_data.delayedLast
+        if bid is None and hasattr(ticker_data, 'delayedBid'):
+            bid = positive_number(ticker_data.delayedBid)
+        if ask is None and hasattr(ticker_data, 'delayedAsk'):
+            ask = positive_number(ticker_data.delayedAsk)
+        if last is None and hasattr(ticker_data, 'delayedLast'):
+            last = positive_number(ticker_data.delayedLast)
 
         mid = (bid + ask) / 2 if bid is not None and ask is not None else None
 
@@ -185,14 +198,15 @@ def main():
         per_ct = abs(net_mid) * 100
         print(f"  Per contract: ${per_ct:.0f} | 30 contracts: ${per_ct * 30:,.0f}")
     else:
-        print("\n  Some quotes unavailable — market may be closed or contracts not found")
+        print("\n  UNAVAILABLE: market-data-unavailable-or-contract-unqualified")
 
     # Cancel market data
     for _, _, t in tickers_map.values():
         ib.cancelMktData(t.contract)
 
     ib.disconnect()
+    return 0 if all_have_quotes else 2
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -9,7 +9,7 @@
   },
   "fixed_point": "b1107701bce30ec78bf067c05f07e97b37624cf2",
   "disposition": "retained-unavailable",
-  "rationale": "Radon remains Capability Authority, but its reviewed immutable default-branch revision publishes no option-quote Capability Package, Registry release, exact Adapter Conformance evidence, or release-selecting Work Item. Trade Journal therefore retains its bounded interactive requested-contract quote migration input, refuses unattended quote execution, and does not infer current support from local files, gateway connectivity, market-data availability, or historical quote output.",
+  "rationale": "Radon remains Capability Authority, but its reviewed immutable default-branch revision publishes no option-quote Capability Package, Registry release, exact Adapter Conformance evidence, or release-selecting Work Item. Trade Journal therefore retains and repairs only its bounded requested-contract consumer boundary, refuses unattended quote execution, and does not infer current support from local files, gateway connectivity, market-data availability, or historical quote output.",
   "trade_journal_worktree": {
     "revision": "b1107701bce30ec78bf067c05f07e97b37624cf2",
     "stable_before_edit": true
@@ -50,8 +50,9 @@
       "lifecycle": "retained-unchanged-separate-ingestion-path"
     },
     "contract_qualification": {
+      "path": "scripts/lib/ibkr_option_quote_boundary.py",
       "owner": "scope:radon",
-      "lifecycle": "retained-inside-requested-contract-quote-helpers"
+      "lifecycle": "separate-requested-contract-adapter-boundary"
     },
     "gateway_control": {
       "path": "scripts/ops/gateway.sh",
@@ -61,12 +62,12 @@
     "requested_structure_quote": {
       "path": "scripts/ibkr-option-quote.py",
       "owner": "scope:radon",
-      "lifecycle": "retained-unchanged-interactive-migration-input"
+      "lifecycle": "repaired-unavailable-and-client-id-boundary"
     },
     "requested_contract_batch_quote": {
       "path": "scripts/ibkr-quote-contracts.py",
       "owner": "scope:radon",
-      "lifecycle": "retained-unchanged-machine-readable-migration-input"
+      "lifecycle": "repaired-structured-unavailable-boundary"
     },
     "legacy_client_portal_quote": {
       "path": "scripts/ibkr-option-quote.ts",
@@ -83,13 +84,18 @@
   "migration_inputs": {
     "interactive_claude": {
       "path": ".claude/skills/ibkr-quote/SKILL.md",
-      "sha256": "59a5768c03cd1fcb6f70f83b4310076f6ae151301a724735a10f49ab9b55f319",
-      "lifecycle": "active-interactive-only"
+      "sha256": "784a5cc8a9591dad371f0411fafe5c0b7bcadd10bfbdecf3a06240323cd46605",
+      "lifecycle": "active-interactive-only-repaired"
     },
     "headless_codex": {
       "path": ".agents/skills/ibkr-quote/SKILL.md",
-      "sha256": "a1ff4182754feb3a2bdef2f7a3fc7d5d8dfa0d02e8da52e167c0f5020337b1aa",
+      "sha256": "acc8b3dd5f0b24046e47903ae3665df8a86991e628d4353330790b9c33d33325",
       "unattended_eligibility": "ineligible"
+    },
+    "headless_metadata": {
+      "path": ".agents/skills/ibkr-quote/skill.json",
+      "sha256": "def38c60302e80a1930a670c895c20bdc98f7d8bd5aab6020aaf5d966211e246",
+      "lifecycle": "deterministically-generated-metadata"
     },
     "authored_headless_refusal": {
       "path": ".claude/skills/ibkr-quote/HEADLESS_PREAMBLE.md",
@@ -103,13 +109,18 @@
     },
     "human_quote_helper": {
       "path": "scripts/ibkr-option-quote.py",
-      "sha256": "dade9d463ffa5b0d1c358e78f03477f6f7fde8e41f48bd86db47d0b5840884b4",
-      "lifecycle": "retained-unchanged"
+      "sha256": "2314e30b7b8a1b8375909ab490685e58f4efa7974c97110126c2ba93b51b1411",
+      "lifecycle": "repaired-client-id-and-unavailable-boundary"
     },
     "machine_quote_helper": {
       "path": "scripts/ibkr-quote-contracts.py",
-      "sha256": "cc67a7bb0f5ce9413db2f2cd9aa45e86489ff1bcf5c47d310ceed24817d9d009",
-      "lifecycle": "retained-unchanged"
+      "sha256": "f452f765a47e971755cac92d5e979ec1e07330f3df3b6422c4282c1cc07556db",
+      "lifecycle": "repaired-structured-unavailable-boundary"
+    },
+    "requested_contract_boundary": {
+      "path": "scripts/lib/ibkr_option_quote_boundary.py",
+      "sha256": "a47ffae0cda08caba6dd11661d8deef0bad378636456d72a436f37a24e1763c5",
+      "lifecycle": "new-adapter-mechanics-seam"
     },
     "legacy_client_portal_helper": {
       "path": "scripts/ibkr-option-quote.ts",
@@ -146,8 +157,8 @@
     "mirror_parity": "passed-36-of-36",
     "provider_entry_point_refusal": "passed-ws-entry-005-byte-identical-no-write",
     "evidence_freshness_refusal": "passed-stale-rejected-no-write",
-    "focused_governance_tests": "200-passed-6-skipped",
-    "full_tests": "606-passed-6-skipped",
+    "focused_governance_tests": "201-passed-6-skipped",
+    "full_tests": "607-passed-6-skipped",
     "typecheck": "passed",
     "issue_scoped_eslint": "passed",
     "repository_eslint": "passed",
@@ -166,5 +177,5 @@
     "trade_authority_acquired": false,
     "successor_work_started": false
   },
-  "rollback_and_provenance": "The interactive quote skill, quote helpers, bulk-chain path, gateway controller, Registry, Lock, staged outputs, active discovery, and live provider state remain unchanged. Revert the issue #74 inventory, refusal-preamble, test, documentation, and receipt commit to restore the previous generic headless wrapper and pre-review inventory metadata. Historical bytes remain in Git."
+  "rollback_and_provenance": "The bulk-chain path, gateway controller, Registry, Lock, staged outputs, active discovery, and live provider state remain unchanged. Revert the issue #74 commits to restore the fixed-point quote helpers, combined interactive gateway instructions, generic headless wrapper, and pre-review inventory metadata. Historical bytes remain in Git."
 }
