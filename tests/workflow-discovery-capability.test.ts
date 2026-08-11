@@ -18,31 +18,38 @@ function digest(path: string): string {
 }
 
 describe("workflow-discovery Capability", () => {
-  it("binds the exact Codex adapter to the source-owned package", () => {
-    const evidence = readJson("evidence/codex.json");
+  it("binds both exact adapters to the source-owned package", () => {
+    for (const provider of ["claude", "codex"]) {
+      const evidence = readJson(`evidence/${provider}.json`);
 
-    expect(evidence.package_digest).toBe(digest("capability-package.json"));
-    expect(evidence.adapter_digest).toBe(digest("adapters/codex.md"));
-    expect(evidence.support_state).toBe("current");
+      expect(evidence.package_digest).toBe(digest("capability-package.json"));
+      expect(evidence.adapter_digest).toBe(digest(`adapters/${provider}.md`));
+      expect(evidence.support_state).toBe("current");
+    }
   });
 
   it("routes through repository authority without copying workflow semantics", () => {
-    const adapter = read("adapters/codex.md");
+    for (const provider of ["claude", "codex"]) {
+      const adapter = read(`adapters/${provider}.md`);
 
-    expect(adapter).toContain("docs/agents/provider-adapters/interactive-inventory.json");
-    expect(adapter).toContain("capability-registry-lock.json");
-    expect(adapter).toContain("use its exact `codex` Provider Adapter");
-    expect(adapter).toContain("Read the exact `.claude/skills/<name>/SKILL.md` body");
-    expect(adapter).toContain("Never route historical evidence");
+      expect(adapter).toContain("docs/agents/provider-adapters/interactive-inventory.json");
+      expect(adapter).toContain("capability-registry-lock.json");
+      expect(adapter).toContain(`use its exact \`${provider}\` Provider Adapter`);
+      expect(adapter).toContain("`.claude/skills/<name>/SKILL.md`");
+      expect(adapter).toContain("Never route historical evidence");
+    }
   });
 
   it("keeps discovery separate from workflow execution and machine state", () => {
-    const adapter = read("adapters/codex.md");
+    for (const provider of ["claude", "codex"]) {
+      const adapter = read(`adapters/${provider}.md`);
+      expect(adapter).toContain("Discovery is read-only");
+      expect(adapter).toContain("must not execute the selected workflow");
+    }
 
-    expect(adapter).toContain("Discovery is read-only");
-    expect(adapter).toContain("must not execute the selected workflow");
-    expect(adapter).toContain("bridge is optional bootstrap");
-    expect(adapter).toContain("is not owned by this repository");
-    expect(adapter).toContain("is not Adapter Conformance evidence");
+    const codex = read("adapters/codex.md");
+    expect(codex).toContain("bridge is optional bootstrap");
+    expect(codex).toContain("is not owned by this repository");
+    expect(codex).toContain("is not Adapter Conformance evidence");
   });
 });

@@ -20,7 +20,7 @@
       {
         "id": "adapter-entry-point",
         "category": "structural",
-        "description": "The exact Codex adapter is exposed through the governed provider projection.",
+        "description": "The exact Claude and Codex adapters are exposed through their governed provider projections.",
         "evidence_type": "automated"
       },
       {
@@ -50,6 +50,12 @@
     ]
   },
   "provider_adapters": [
+    {
+      "id": "workflow-discovery-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
     {
       "id": "workflow-discovery-codex",
       "provider": "codex",
