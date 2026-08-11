@@ -535,3 +535,34 @@ Provider Adapter `thesis-underwriting-claude` (current):
 6. Report missing database access, an unknown thesis, incomplete evidence, malformed input, or non-zero command results as unavailable or failed. Preserve the returned articulation identifier, signal count, and audit outcome.
 
 This adapter may write a new versioned articulation, derived resolution signals, consumed candidate-signal dispositions, and their resulting audit history. It must not change thesis status, must not invoke `scripts/ops/update-entity-status.ts`, must not invoke `scripts/ops/resolve-decision.ts`, must not write ad hoc SQL, and has no order, trade, execution, or scheduler authority.
+
+### capability:scope:trade-journal/workflow-discovery 1.0.0
+
+Intent: Route an interactive Trade Journal request to the authoritative current workflow source without executing the workflow or duplicating its semantics.
+
+Contract: Given an interactive request in a Trade Journal checkout, identify the applicable workflow from the validated repository inventory, report ambiguity or unavailable support honestly, and return the exact governed adapter or retained repository-authored migration input that owns the workflow procedure; discovery itself performs no provider, database, investment, tracker, scheduler, or cross-repository operation.
+
+Provider-neutral instructions:
+- Treat GitHub Issues as Work Item authority, Trade Journal repository guidance as repository authority, and the validated interactive inventory as the workflow catalog.
+- Match the request against inventory ability, Capability identity, lifecycle, prerequisites, limitations, and write scope; ask for clarification when more than one materially different workflow remains plausible.
+- For current evidence, resolve the requested provider's exact adapter through the immutable Registry Lock and governed binding rather than copying instructions into the discovery layer.
+- For unavailable evidence, route only to an active repository-authored migration input in an eligible interactive environment, preserve every stated limitation, and never describe that route as governed or unattended support.
+- Route an explicitly requested protective tombstone only to its refusal boundary; never rediscover archived historical evidence as an executable workflow.
+- Apply provider-specific tool translation from the repository's provider guidance without changing the selected workflow's semantic, authority, write, or judgment boundaries.
+- Keep discovery read-only. Execution of a selected workflow is a separate step and requires the user authority, environmental prerequisites, and safeguards declared by that workflow.
+- When installed, treat the machine-local bridge as an active legacy discovery router whose curated routing may compete with the governed inventory. Prefer repository-native governed routing, surface the legacy limitation, and never treat bridge presence, contents, or parity as repository-owned semantics or Adapter Conformance evidence.
+
+Provider Adapter `workflow-discovery-claude` (current):
+
+## Claude Provider Adapter
+
+1. Confirm the request is interactive and rooted in the Trade Journal checkout. Read `CONTEXT.md`, `CLAUDE.md`, and the applicable repository guidance before routing.
+2. Use `docs/agents/provider-adapters/interactive-inventory.json` as the exhaustive workflow catalog. Match the request against each entry's ability, Capability identity, lifecycle, prerequisites, limitations, and authority/write scope. If materially different candidates remain, ask the user to choose; do not guess across authority or write boundaries.
+3. For a selected entry with current evidence, resolve the Capability through `capability-registry-lock.json` and use its exact `claude` Provider Adapter. Do not substitute a Codex adapter, a legacy skill body, or prose copied into this discovery adapter.
+4. For a selected entry with unavailable evidence, route only when it has an active repository-authored source or migration input and the interactive environment satisfies its prerequisites. Invoke or read the exact `.claude/skills/<name>/SKILL.md` source and state that the workflow is not governed or eligible for unattended execution.
+5. If an explicitly named entry is a protective tombstone, return its refusal boundary. Never route historical evidence under `docs/archive/provider-adapters/` as an executable workflow.
+6. Return the selected inventory id, Capability id or non-candidate state, exact source path, evidence state, limitations, and unmet prerequisites before any later workflow execution begins.
+
+Discovery is read-only and must not execute the selected workflow, call a provider, query or mutate a database, alter investment state, resolve user judgment, update GitHub, change a scheduler, or write across a repository boundary. A later workflow invocation remains subject to its own user authority and safeguards.
+
+Claude's repository-authored `CLAUDE.md`, `.claude/skills/`, and SessionStart hooks are provider packaging, not a transfer of semantic authority. The validated inventory and exact selected source remain authoritative for routing and execution boundaries.

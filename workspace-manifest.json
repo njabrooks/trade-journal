@@ -98,6 +98,10 @@
     {
       "id": "capability:scope:trade-journal/thesis-underwriting",
       "path": "capabilities/thesis-underwriting/capability-package.json"
+    },
+    {
+      "id": "capability:scope:trade-journal/workflow-discovery",
+      "path": "capabilities/workflow-discovery/capability-package.json"
     }
   ],
   "provider_adapters": [
@@ -484,6 +488,18 @@
       "capability": "capability:scope:trade-journal/market-research-scan",
       "provider": "claude",
       "path": ".claude/skills/visser-scan/SKILL.md"
+    },
+    {
+      "id": "interactive-claude-workflow-discovery",
+      "capability": "capability:scope:trade-journal/workflow-discovery",
+      "provider": "claude",
+      "path": "capabilities/workflow-discovery/adapters/claude.md"
+    },
+    {
+      "id": "interactive-codex-trade-journal-bridge",
+      "capability": "capability:scope:trade-journal/workflow-discovery",
+      "provider": "codex",
+      "path": "capabilities/workflow-discovery/adapters/codex.md"
     }
   ],
   "relationships": {
@@ -530,14 +546,15 @@
     "trade-journal.provider-inventory": {
       "interactive": {
         "artifact": "docs/agents/provider-adapters/interactive-inventory.json",
-        "repository_owned_entries": 36,
-        "external_entries": [
+        "repository_owned_entries": 38,
+        "machine_local_discovery": [
           {
-            "id": "interactive-codex-trade-journal-bridge",
+            "id": "codex-trade-journal-bridge",
             "provider": "codex",
             "ownership": "machine-local:home-hub",
             "path": "~/.codex/skills/trade-journal-workflows/SKILL.md",
-            "evidence_state": "unavailable"
+            "authority": "active-legacy-competing-router-with-unavailable-evidence",
+            "repository_gate": false
           }
         ]
       },
@@ -548,14 +565,14 @@
       },
       "generation_eligibility": {
         "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
-        "eligible_adapters": 48,
+        "eligible_adapters": 50,
         "governed_outputs": [
           "docs/agents/provider-entry-points/staging/claude.md",
           "docs/agents/provider-entry-points/staging/codex.md"
         ],
         "refusal_proof": "scripts/ops/prove-provider-entry-point-refusal.ts"
       },
-      "manifest_adapter_declarations": 64,
+      "manifest_adapter_declarations": 66,
       "non_candidate_projections": [
         {
           "id": "interactive-claude-archived-deep-dive",
@@ -640,7 +657,7 @@
   },
   "deviations": "none",
   "validation_evidence": {
-    "as_of": "2026-08-06",
+    "as_of": "2026-08-11",
     "records": [
       {
         "id": "j1-execution-gate",
@@ -671,6 +688,16 @@
         "id": "portfolio-snapshot-capability",
         "method": "accepted-workspace-cli-capability-conformance",
         "path": "capabilities/portfolio-snapshot/capability-package.json"
+      },
+      {
+        "id": "workflow-discovery-capability",
+        "method": "accepted-workspace-cli-capability-conformance",
+        "path": "capabilities/workflow-discovery/capability-package.json"
+      },
+      {
+        "id": "issue-71-workflow-discovery",
+        "method": "authority-boundary-and-deterministic-publication-receipt",
+        "path": "evidence/issue-71-workflow-discovery.json"
       },
       {
         "id": "published-capability-registry-lock",
