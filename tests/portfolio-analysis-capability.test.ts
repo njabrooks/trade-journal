@@ -2,6 +2,11 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import {
+  validatePortfolioAnalysisResult,
+  type PortfolioAnalysisContext,
+  type PortfolioAnalysisResult,
+} from '../src/lib/portfolioAnalysis.js';
 
 const capabilityRoot = resolve(process.cwd(), 'capabilities/portfolio-analysis');
 const fixturePath = resolve(process.cwd(), 'tests/fixtures/portfolio-analysis-adapter-equivalence.json');
@@ -72,24 +77,20 @@ describe('portfolio-analysis Capability', () => {
   it('binds equivalent observable analysis requirements to the exact adapters', () => {
     const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
       limitation: string;
-      dependencyResults: {
-        portfolioSnapshot: Record<string, unknown>;
-        optionsAnalyses: Array<Record<string, unknown>>;
-      };
-      observableRequirements: string[];
-      expectedStatus: string;
-      expectedWrites: unknown[];
+      context: PortfolioAnalysisContext;
+      result: PortfolioAnalysisResult;
+      providers: Record<string, { adapterDigest: string }>;
     };
 
     expect(fixture.limitation).toContain('No live Claude or Codex provider invocation is claimed');
-    expect(fixture.dependencyResults.portfolioSnapshot.snapshotDate).toBe('2026-08-11');
-    expect(fixture.dependencyResults.optionsAnalyses).toHaveLength(1);
-    expect(fixture.observableRequirements).toHaveLength(7);
-    expect(fixture.expectedStatus).toBe('completed');
-    expect(fixture.expectedWrites).toEqual([]);
+    expect(fixture.context.portfolioSnapshot.result?.snapshotDate).toBe('2026-08-11');
+    expect(fixture.context.optionsAnalyses).toHaveLength(1);
 
-    for (const adapter of ['claude', 'codex']) {
+    const outputs: PortfolioAnalysisResult[] = [];
+    for (const adapter of ['claude', 'codex'] as const) {
       const body = read(`adapters/${adapter}.md`);
+      expect(fixture.providers[adapter].adapterDigest).toBe(digest(`adapters/${adapter}.md`));
+      outputs.push(validatePortfolioAnalysisResult(fixture.context, fixture.result));
       for (const field of [
         '`status`',
         '`focus`',
@@ -103,7 +104,53 @@ describe('portfolio-analysis Capability', () => {
       ]) {
         expect(body).toContain(field);
       }
+      expect(body).toContain('portfolio_options_context');
+      expect(body).toContain('scripts/portfolio-analysis.ts --validate-result');
     }
+    expect(outputs[0]).toEqual(outputs[1]);
+    expect(outputs[0]).toEqual(fixture.result);
+  });
+
+  it('rejects a completed option analysis without portfolio cross-reference evidence', () => {
+    const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
+      context: PortfolioAnalysisContext;
+      result: PortfolioAnalysisResult;
+    };
+    const candidate = structuredClone(fixture.result);
+    candidate.observations = candidate.observations.filter(
+      ({ kind }) => kind !== 'portfolio_options_context',
+    );
+
+    expect(() => validatePortfolioAnalysisResult(fixture.context, candidate)).toThrow(
+      /lacks portfolio cross-reference evidence/,
+    );
+  });
+
+  it('rejects unsupported evidence, changed dependency results, and write-capable outcomes', () => {
+    const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
+      context: PortfolioAnalysisContext;
+      result: PortfolioAnalysisResult;
+    };
+
+    const unsupportedEvidence = structuredClone(fixture.result);
+    unsupportedEvidence.observations[0].evidence[0].value = 0.2;
+    expect(() => validatePortfolioAnalysisResult(fixture.context, unsupportedEvidence)).toThrow(
+      /evidence value does not match/,
+    );
+
+    const changedResults = structuredClone(fixture.result);
+    changedResults.optionsAnalyses = [];
+    expect(() => validatePortfolioAnalysisResult(fixture.context, changedResults)).toThrow(
+      /options outcomes were recalculated/,
+    );
+
+    const writeCapableContext = structuredClone(fixture.context);
+    writeCapableContext.optionsAnalyses[0].outcome.persistence = { requested: true };
+    const writeCapableResult = structuredClone(fixture.result);
+    writeCapableResult.optionsAnalyses = structuredClone(writeCapableContext.optionsAnalyses);
+    expect(() => validatePortfolioAnalysisResult(writeCapableContext, writeCapableResult)).toThrow(
+      /persistence must be forced off/,
+    );
   });
 
   it('preserves the read-only and unavailable-dependency boundary', () => {

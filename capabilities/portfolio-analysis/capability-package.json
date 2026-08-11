@@ -11,6 +11,8 @@
     "For each explicit options request, resolve options-vol-analysis >=1.0.0 <2.0.0 with persistence forced false. Preserve each complete dependency envelope and its canonical analyzer result without recalculation, reordering, omission, or replacement.",
     "Treat options analyzer marketPrice values as per-share Black-Scholes values at listed implied volatility, not executable quotes. A listed option contract normally represents 100 shares; do not infer or recommend a contract count from portfolio holdings, cash, or margin.",
     "Return one result with status, focus, the complete portfolio snapshot or null, evidence-grounded observations, the ordered options-analysis outcomes, unavailableDependencies, limitations, errors, and writes. Every observation must name exact dependency fields supporting it.",
+    "For every completed options-analysis outcome, include at least one portfolio_options_context observation that cites exact fields from both the portfolio snapshot and that options outcome, so the structure is evaluated against the book rather than appended as standalone market analysis.",
+    "Validate the complete result through the repository's deterministic portfolio-analysis result validator before returning it.",
     "If portfolio-snapshot is unavailable or fails, return unavailable or failed with no portfolio observations and do not invoke options-vol-analysis. If an options dependency is refused, unavailable, or fails after a valid snapshot, return partial while preserving the portfolio result and the exact dependency outcome.",
     "Do not use a generic database or market-data connector, ad hoc SQL, retained gateway or quote helpers, or provider training knowledge as a substitute for either governed dependency.",
     "This Capability is read-only. It must not persist a volatility report, mutate portfolio or belief state, resolve user judgment, operate Radon infrastructure, qualify a contract, fabricate a quote, size or recommend an order quantity, or place, route, preview, stage, or modify an order or trade."
@@ -33,7 +35,7 @@
       {
         "id": "observable-analysis-equivalence",
         "category": "behavioural",
-        "description": "A digest-bound representative fixture and exact-adapter comparison require both providers to expose the same grounded portfolio observations, ordered options outcomes, freshness, limitations, unavailable dependencies, and zero writes without claiming a live provider invocation.",
+        "description": "A digest-bound representative result is executed through the production validator for both exact adapters and requires the same grounded portfolio observations, cross-context option analysis, ordered outcomes, freshness, limitations, unavailable dependencies, and zero writes without claiming a live provider invocation.",
         "evidence_type": "automated"
       },
       {
