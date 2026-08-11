@@ -61,8 +61,8 @@ The inventory deliberately distinguishes packaging from readiness:
 - five executable workflows (`assess-validation-evidence`, `build-core-argument`, `finalize-for-upload`,
   `relate-research`, and `synthesize-claims`) have bespoke authored headless contracts;
 - ten contracted research-pipeline paths have bespoke refusal preambles that name their exact governed CLI replacement;
-- `gateway` and `visser-scan` have bespoke zero-read/zero-write unavailable refusal preambles;
-- the other 19 projections have generic generated preambles, which are packaging baselines only; and
+- `gateway`, `ibkr-quote`, and `visser-scan` have bespoke zero-read/zero-write unavailable refusal preambles;
+- the other 18 projections have generic generated preambles, which are packaging baselines only; and
 - `decisions` and `thesis` are mirrored for parity but remain ineligible for unattended execution.
 
 `visser-scan` is also explicitly ineligible for unattended execution. Issue #70 replaces its unsafe generic
@@ -78,6 +78,16 @@ and gateway operation because Radon publishes no accepted immutable gateway-cont
 Conformance evidence. The reviewed Radon revision, controller and preamble digests, client-id boundary,
 unavailable operational state, rollback, and scope are recorded in
 `evidence/issue-73-radon-gateway-reconciliation.json`.
+
+`ibkr-quote` is also ineligible for unattended execution. Issue #74 retains the requested-structure and
+requested-contract quote helpers as non-governed migration inputs while repairing their assigned client IDs,
+structured unavailable outcomes, and separation from gateway lifecycle control. The headless projection
+refuses gateway inspection or operation, contract qualification, and market-data requests because Radon
+publishes no accepted immutable option-quote package or exact Adapter Conformance evidence. Bulk-chain
+ingestion, requested-contract qualification, gateway control, and quote presentation remain explicit and
+separate; missing gateway or market data is unavailable, never a current conformance result. Exact input
+digests, Radon revision, limitations, rollback, and scope are recorded in
+`evidence/issue-74-radon-option-quote-reconciliation.json`.
 
 Five live provider-dependent launchd jobs are mapped with their current Claude provider, model, invocation,
 schedule, read/write boundary, machine-local environment, timeout, locking, failure observability, downstream

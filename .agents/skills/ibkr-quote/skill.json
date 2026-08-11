@@ -1,5 +1,5 @@
 {
   "name": "ibkr-quote",
-  "description": "Get live (or delayed) IBKR option quotes for a multi-leg structure. Use to price-check combos, verify vol curve analysis against real market prices, or spot-check a position before executing. Handles starting the IB Gateway if not already running.",
+  "description": "Get live (or delayed) IBKR option quotes for a multi-leg structure. Use to price-check combos, verify vol curve analysis against real market prices, or spot-check a position before executing. Reports unavailable gateway or market data without changing gateway lifecycle state.",
   "instructions": "SKILL.md"
 }

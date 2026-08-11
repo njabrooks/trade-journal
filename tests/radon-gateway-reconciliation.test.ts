@@ -192,7 +192,7 @@ describe("Radon-owned IBKR gateway reconciliation", () => {
       resolve(process.cwd(), "docs/agents/provider-adapters/README.md"),
       "utf8",
     );
-    expect(inventoryGuide).toContain("`gateway` and `visser-scan`");
-    expect(inventoryGuide).toContain("other 19 projections");
+    expect(inventoryGuide).toContain("`gateway`, `ibkr-quote`, and `visser-scan`");
+    expect(inventoryGuide).toContain("other 18 projections");
   });
 });
