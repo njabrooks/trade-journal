@@ -98,6 +98,24 @@ class MarketDataWaitUnavailableIB(NoMarketDataIB):
         raise RuntimeError("market data wait unavailable")
 
 
+class ManagedAccountsUnavailableIB(NoMarketDataIB):
+    def managedAccounts(self):
+        raise RuntimeError("session unavailable")
+
+
+class QuoteReadUnavailableTicker(NoMarketDataTicker):
+    @property
+    def bid(self):
+        raise RuntimeError("quote read unavailable")
+
+
+class QuoteReadUnavailableIB(NoMarketDataIB):
+    def reqMktData(self, option, _ticks, _snapshot, _regulatory_snapshot):
+        ticker = QuoteReadUnavailableTicker()
+        ticker.contract = option
+        return ticker
+
+
 REQUESTS = [
     {"ticker": "IBIT", "expiry": "20260821", "strike": 49, "right": "C"}
 ]
@@ -207,6 +225,22 @@ class IbkrOptionQuoteBoundaryTests(unittest.TestCase):
 
     def test_interactive_quote_translates_market_data_wait_failure_to_unavailable(self):
         fake = MarketDataWaitUnavailableIB()
+        exit_code, output = self.run_interactive_main(fake)
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("UNAVAILABLE: market-data-unavailable-or-contract-unqualified", output)
+        self.assertTrue(fake.disconnected)
+
+    def test_interactive_quote_translates_session_read_failure_to_unavailable(self):
+        fake = ManagedAccountsUnavailableIB()
+        exit_code, output = self.run_interactive_main(fake)
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("UNAVAILABLE: market-data-unavailable-or-contract-unqualified", output)
+        self.assertTrue(fake.disconnected)
+
+    def test_interactive_quote_always_cleans_up_after_quote_read_failure(self):
+        fake = QuoteReadUnavailableIB()
         exit_code, output = self.run_interactive_main(fake)
 
         self.assertEqual(exit_code, 2)

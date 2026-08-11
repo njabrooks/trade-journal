@@ -51,7 +51,7 @@ cd /Users/home-hub/projects/trade-journal && /Users/home-hub/projects/radon/.ven
 The script will:
 1. Connect read-only to IB Gateway on port 4001 (falls back to TWS on 7496) using Trade Journal client ID 33
 2. Qualify each option contract (resolve conId)
-3. Fetch market data (live if subscribed, delayed otherwise)
+3. Fetch live market data by default, or delayed data only when deliberately invoked with `--delayed`
 4. Display per-leg bid/ask/mid/last/IV
 5. Compute combo net price using proper cross-fields (ask on buys, bid on sells)
 

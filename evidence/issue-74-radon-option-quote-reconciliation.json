@@ -84,12 +84,12 @@
   "migration_inputs": {
     "interactive_claude": {
       "path": ".claude/skills/ibkr-quote/SKILL.md",
-      "sha256": "968f19043fa7ecf08809c5fe187fb88893c36f91f7597440f177cacc5259198a",
+      "sha256": "6f68308bff45f06243e0e23bbdb00d36d0f93382f5aa4538b2cb4794eaa17b53",
       "lifecycle": "active-interactive-only-repaired"
     },
     "headless_codex": {
       "path": ".agents/skills/ibkr-quote/SKILL.md",
-      "sha256": "63404767f555b425dbc5ada9b6cbf73327caa6d3125b50f001d735aad2c1f70a",
+      "sha256": "bd0308603959fc143670cad80d6d9167e11a672b3b6ece5d4774a3e974a6ddfd",
       "unattended_eligibility": "ineligible"
     },
     "headless_metadata": {
@@ -109,7 +109,7 @@
     },
     "human_quote_helper": {
       "path": "scripts/ibkr-option-quote.py",
-      "sha256": "526c137e138a925d494ffcdd0c5c277f736ecafad5cf3022ef6332774b15e8f7",
+      "sha256": "e73617e0cd2f475e64dbf6604cf4041c62a85929c340b26d0dbdbd9869341b26",
       "lifecycle": "repaired-client-id-and-unavailable-boundary"
     },
     "machine_quote_helper": {
