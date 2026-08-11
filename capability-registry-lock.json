@@ -342,7 +342,7 @@
         }
       ],
       "id": "capability:scope:trade-journal/portfolio-analysis",
-      "package_digest": "sha256:96af3645abb0558ad9cf0057c32435a0e4fbdc8f9bdf16996614586bf2d46eba",
+      "package_digest": "sha256:5bf06252b1442c960f3f2f9d190e26b47cf09f9f3393f72f55e1013cc4ebab10",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -365,8 +365,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/portfolio-analysis",
-        "release_reference": "c576240e5c356b58db5528cb26fb934006343b36",
-        "revision": "c576240e5c356b58db5528cb26fb934006343b36"
+        "release_reference": "548fc84a0720c439e40c281715a302b7c07673c4",
+        "revision": "548fc84a0720c439e40c281715a302b7c07673c4"
       }
     },
     {
@@ -625,6 +625,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:c50f9067e4264ac61b29ee23bd64e3a96caa23699d774c81e405e15f083b46a9",
+  "registry_digest": "sha256:0aaf09ac25ab823a5822a39e403169ad6b4790f2234d8516da2b934143ca2fa2",
   "schema_version": "1.0.0"
 }

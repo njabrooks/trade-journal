@@ -273,7 +273,7 @@ describe('portfolio-analysis Capability', () => {
     ) as Record<string, Record<string, unknown>>;
 
     expect(receipt.fixed_point).toBe('91422545e8104ad80d70781ed9fecc0b7702f49b');
-    expect(receipt.release_revision).toBe('21c93624141faf0abe1b33846f3c1bbf0b60a618');
+    expect(receipt.release_revision).toBe('548fc84a0720c439e40c281715a302b7c07673c4');
 
     const dependencies = receipt.dependencies as unknown as Array<Record<string, unknown>>;
     expect(dependencies.map(({ id }) => id)).toEqual([

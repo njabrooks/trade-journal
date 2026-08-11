@@ -279,7 +279,7 @@ write, credential, scheduler, gateway, quote, order, or trade authority. Exact a
 in `evidence/issue-64-options-vol-analysis.json`.
 
 Issue #65 adds the source-owned portfolio-analysis Capability at immutable revision
-`c576240e5c356b58db5528cb26fb934006343b36`. It composes the Registry-locked portfolio-snapshot and
+`548fc84a0720c439e40c281715a302b7c07673c4`. It composes the Registry-locked portfolio-snapshot and
 options-vol-analysis dependencies instead of generic Supabase or market-data connectors. Exact Claude and Codex
 adapters preserve complete dependency results and reported freshness, require every observation to cite exact
 returned fields, force volatility-report persistence off, and report missing snapshot, market-data, or quote

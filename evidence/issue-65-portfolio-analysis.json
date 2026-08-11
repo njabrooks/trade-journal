@@ -18,7 +18,7 @@
     }
   ],
   "fixed_point": "91422545e8104ad80d70781ed9fecc0b7702f49b",
-  "release_revision": "c576240e5c356b58db5528cb26fb934006343b36",
+  "release_revision": "548fc84a0720c439e40c281715a302b7c07673c4",
   "evidence_date": "2026-08-11",
   "authority": {
     "work_items": "github:njabrooks/trade-journal",
@@ -30,10 +30,10 @@
   "capability": {
     "id": "capability:scope:trade-journal/portfolio-analysis",
     "version": "1.0.0",
-    "package_digest": "sha256:96af3645abb0558ad9cf0057c32435a0e4fbdc8f9bdf16996614586bf2d46eba",
+    "package_digest": "sha256:5bf06252b1442c960f3f2f9d190e26b47cf09f9f3393f72f55e1013cc4ebab10",
     "adapters": {
-      "claude": "sha256:5f1b6457dde6def6d5a7fb9e1a5b5b2bc82cc60aad429eed268418b5ef51819e",
-      "codex": "sha256:d485cdfed649a8826a373173bd38f42dcd2dcc6ade80a4f95c7d4d4f98c26924"
+      "claude": "sha256:9d93c809f56b723a6a130ece295395ebcbceab752a7b5b423acadf264452a7ac",
+      "codex": "sha256:38685a8964aed739d7c6454bb33531330f077b08c27b58004a382931cc02b230"
     }
   },
   "dependencies": [
@@ -56,11 +56,13 @@
   ],
   "observable_equivalence": {
     "fixture": "tests/fixtures/portfolio-analysis-adapter-equivalence.json",
-    "fixture_digest": "sha256:fc2e7210a336d104e4801dfc705625ea2b80512d102cf9bcf2ab741040730e90",
+    "fixture_digest": "sha256:bd7e241a71530223bdc93aa0dfcbfd4311c4b7b96329772423abb8a6b6e1809d",
     "exact_adapter_semantics_equivalent": true,
     "live_provider_invocation_claimed": false,
     "complete_dependency_results_preserved": true,
     "observations_require_exact_field_evidence": true,
+    "completed_options_require_portfolio_cross_reference": true,
+    "production_validator_executed_for_both_adapters": true,
     "options_persistence_forced_off": true,
     "writes": []
   },
@@ -77,23 +79,35 @@
     "rollback": "Legacy inputs remain byte-unchanged and discoverable until the separately authorized final discovery cutover."
   },
   "published_artifacts": {
-    "registry_lock": "sha256:875e1a17dc62dd4efbe5a9dbe5760d4528ef31f7d42cebaf687780dfa132761a",
-    "claude_staging": "sha256:da2b671aef24091b3b1f1ba15b536fd397b69243247065f7c17f0334e0e7a0b6",
-    "codex_staging": "sha256:1d58420178e0bc61df1be0484231919ae9ef85a044c7007d0ce77d1844d62a77",
-    "interactive_inventory": "sha256:43553da223a3ab659030306eb5c5d04269f495099f6b1201fc18eae380737f43",
-    "headless_inventory": "sha256:c28b15fbcbda2b4f03ab90d2e61445fce8eb403ff2f2cec78685140a22188221",
-    "generation_eligibility": "sha256:a7b5fac66aec47cac051cf714e545c5df678dad81b00c36f4ea37332fc84594e",
+    "registry_lock": "sha256:f056ea20aa96bd174f60b70a9e9d97a1bcc4ccdb486fe00c04ae34249fa67490",
+    "claude_staging": "sha256:eed4862362c0f58dea878337a240fa97b784efe4d196a861c20b2fa3456a3b8d",
+    "codex_staging": "sha256:93d999ce476b3fda44eea97b36e403acb06142ddf6a08fbde9b04cd8ff236fe5",
+    "interactive_inventory": "sha256:07026af58457f3a023687a9d6b22c90fb9c9dc384e2d63170c1a651abb7af48c",
+    "headless_inventory": "sha256:688c28f8617613fbfa4db88e078d2b9a4904367c971a8c63b4ea1acf7b9a3844",
+    "generation_eligibility": "sha256:8a81e413a103f399a0d160ad0feb31e46553fe8f136b4e9fd603683d12ea3064",
     "inventory_entries": 74,
     "generation_eligible_entries": 54
   },
   "reviews": {
     "fixed_point": "91422545e8104ad80d70781ed9fecc0b7702f49b",
     "standards": {
-      "outcome": "pending",
+      "outcome": "clean-after-repair",
+      "reviewed_release": "548fc84a0720c439e40c281715a302b7c07673c4",
+      "resolved_findings": [
+        "Runtime-validate complete dependency contexts and strict evidence paths.",
+        "Constrain quote verification to exact request-dependent governed shapes.",
+        "Require exact ordered deduplicated unavailable-dependency projection."
+      ],
       "remaining_findings": []
     },
     "spec": {
-      "outcome": "pending",
+      "outcome": "clean-after-repair",
+      "reviewed_release": "548fc84a0720c439e40c281715a302b7c07673c4",
+      "resolved_findings": [
+        "Execute a digest-bound representative composite result through the production validator.",
+        "Require portfolio/options cross-context evidence for every completed options outcome.",
+        "Validate truthful refused outcomes with both dependencies not invoked."
+      ],
       "remaining_findings": []
     }
   },
@@ -105,14 +119,14 @@
     "inventory_and_generation_eligibility": "passed-74-entries-54-generation-eligible",
     "mirror_parity": "passed-33-of-33",
     "unavailable_and_stale_refusal_proofs": "passed-no-write",
-    "focused_governance_tests": "passed-33",
-    "full_tests": "passed-628-with-6-skipped",
+    "focused_governance_tests": "passed-39",
+    "full_tests": "passed-634-with-6-skipped",
     "typecheck": "passed",
     "issue_scoped_eslint": "passed",
-    "repository_eslint": "pre-existing-machine-local-worktree-and-generated-artifact-traversal-remained-in-progress-and-was-terminated-after-90-seconds",
+    "repository_eslint": "passed",
     "production_build": "passed-next-build-webpack-with-network-enabled-database-prerender",
     "managed_service_restart": "passed-com.tradej",
-    "http_smoke": "passed-http-200-dashboard-portfolio-105776-bytes"
+    "http_smoke": "passed-http-200-dashboard-portfolio-105784-bytes"
   },
   "scope_confirmation": {
     "active_discovery_changed": false,
