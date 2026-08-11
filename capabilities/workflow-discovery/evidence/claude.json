@@ -1,7 +1,7 @@
 {
   "capability_id": "capability:scope:trade-journal/workflow-discovery",
   "capability_version": "1.0.0",
-  "package_digest": "sha256:d9ca9b499592f86cba3a9d46f37d20a693e59c91f7e19953d48a03b122f546ad",
+  "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
   "adapter_id": "workflow-discovery-claude",
   "adapter_digest": "sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
   "support_state": "current",
