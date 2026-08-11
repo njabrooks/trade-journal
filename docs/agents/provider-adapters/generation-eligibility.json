@@ -4,7 +4,7 @@
   "as_of": "2026-08-11",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "outcome": "eligible-adapters-present",
-  "generation_eligible_count": 52,
+  "generation_eligible_count": 54,
   "governed_outputs": [
     "docs/agents/provider-entry-points/staging/claude.md",
     "docs/agents/provider-entry-points/staging/codex.md"
@@ -600,7 +600,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/portfolio-and-options-mcp/SKILL.md"
+        "path": "capabilities/portfolio-analysis/adapters/codex.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -610,21 +610,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-11",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:5bf06252b1442c960f3f2f9d190e26b47cf09f9f3393f72f55e1013cc4ebab10",
+        "adapter_digest": "sha256:38685a8964aed739d7c6454bb33531330f077b08c27b58004a382931cc02b230",
+        "reason": "Exact current evidence binds portfolio-analysis 1.0.0, its two governed dependencies, the representative observable-equivalence fixture, and the governed Codex adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input until final discovery cutover."
       }
     },
     {
@@ -1721,7 +1718,7 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/portfolio-and-options-mcp/SKILL.md"
+        "path": "capabilities/portfolio-analysis/adapters/claude.md"
       },
       "lifecycle_status": "active",
       "capability": {
@@ -1731,21 +1728,18 @@
         "reason": null
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-11",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:5bf06252b1442c960f3f2f9d190e26b47cf09f9f3393f72f55e1013cc4ebab10",
+        "adapter_digest": "sha256:9d93c809f56b723a6a130ece295395ebcbceab752a7b5b423acadf264452a7ac",
+        "reason": "Exact current evidence binds portfolio-analysis 1.0.0, its two governed dependencies, the representative observable-equivalence fixture, and the governed Claude adapter."
       },
-      "generation_eligible": false,
-      "ineligibility_reasons": [
-        "No complete current evidence with exact Capability and adapter bindings is available.",
-        "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
-      ],
+      "generation_eligible": true,
+      "ineligibility_reasons": [],
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input until final discovery cutover."
       }
     },
     {

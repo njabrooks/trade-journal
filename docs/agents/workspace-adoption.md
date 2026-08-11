@@ -43,9 +43,9 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares thirteen Trade Journal-owned
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares fourteen Trade Journal-owned
 packages: portfolio snapshot, belief maintenance, belief-research relation, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
-research publication, research pipeline, portfolio options advice, options volatility analysis, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded as an active legacy competing router with unavailable conformance evidence. Rich inventory validity, mirror parity, and file presence do not
+research publication, research pipeline, portfolio options advice, options volatility analysis, portfolio analysis, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded as an active legacy competing router with unavailable conformance evidence. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry. The federated Registry
 also resolves three Notes-owned packages from their accepted immutable release without declaring them owned by
 Trade Journal.
@@ -54,8 +54,8 @@ Trade Journal.
 
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 74 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
-generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-11`, fifteen
-locked Capabilities—thirteen Trade Journal-owned packages plus three Notes-owned packages—make 52 inventory
+generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-11`, seventeen
+locked Capabilities—fourteen Trade Journal-owned packages plus three Notes-owned packages—make 54 inventory
 entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `.claude/skills/`, and `.agents/skills/` remain migration inputs until their
 separately governed cutovers, except for the twenty research-pipeline
@@ -276,7 +276,17 @@ fabricates market data. Persistence is off by default and, only when explicitly 
 analysis, is bounded to the existing single-report recorder. Digest-bound fixtures establish cross-provider
 equivalence; a separate read-only production-data probe exercised the eligible database-backed analyzer with no
 write, credential, scheduler, gateway, quote, order, or trade authority. Exact artifacts and scope are recorded
-in `evidence/issue-64-options-vol-analysis.json`. Successor issue #65 is unchanged.
+in `evidence/issue-64-options-vol-analysis.json`.
+
+Issue #65 adds the source-owned portfolio-analysis Capability at immutable revision
+`548fc84a0720c439e40c281715a302b7c07673c4`. It composes the Registry-locked portfolio-snapshot and
+options-vol-analysis dependencies instead of generic Supabase or market-data connectors. Exact Claude and Codex
+adapters preserve complete dependency results and reported freshness, require every observation to cite exact
+returned fields, force volatility-report persistence off, and report missing snapshot, market-data, or quote
+support explicitly. The representative equivalence fixture binds observable portfolio and option-analysis
+requirements to exact adapter bytes without claiming a live provider invocation. Legacy discovery inputs remain
+unchanged and rollback-capable until the final cutover; no scheduler, database write, gateway, executable quote,
+contract qualification, sizing, order, or trade authority is added.
 
 Issue #75 resolves all eight archived, retired, or deprecated non-candidate records. The three obsolete Claude
 procedures and their three generated Codex projections are removed from active discovery and retained byte-for-

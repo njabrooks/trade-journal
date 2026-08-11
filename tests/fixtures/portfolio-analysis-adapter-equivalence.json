@@ -1,0 +1,149 @@
+{
+  "limitation": "No live Claude or Codex provider invocation is claimed; this representative composite result is executed through the production validator and bound to the exact adapter bytes and accepted governed dependency behavior.",
+  "context": {
+    "requestStatus": "accepted",
+    "focus": "Assess FIXT concentration, current option exposure, and one explicit bullish structure analysis.",
+    "portfolioSnapshot": {
+      "status": "completed",
+      "result": {
+        "snapshotDate": "2026-08-11",
+        "nav": 1000000,
+        "totalCashUsd": 200000,
+        "totalAbsNotional": 1100000,
+        "leverageRatio": 1.1,
+        "ownerBreakdown": [{ "owner": "TTC", "nav": 1000000 }],
+        "underlyingBreakdown": [
+          {
+            "ticker": "FIXT",
+            "positionCount": 2,
+            "totalMarketValueUsd": 150000,
+            "totalAbsNotionalUsd": 150000,
+            "pctNav": 0.15,
+            "positions": [
+              { "symbol": "FIXT", "assetClass": "STK", "quantity": 1000, "marketValueUsd": 100000, "unrealizedPnl": 12000, "account": "TTC_IBKR", "owner": "TTC" },
+              { "symbol": "FIXT 270115P00080000", "assetClass": "OPT", "quantity": -5, "marketValueUsd": 50000, "unrealizedPnl": 3000, "expiry": "2027-01-15", "strike": 80, "optionRight": "P", "side": "SHORT", "account": "TTC_IBKR", "owner": "TTC" }
+            ]
+          }
+        ],
+        "strategies": [],
+        "unlinkedPositions": [],
+        "cashBreakdown": [{ "currency": "USD", "source": "ibkr_flex", "balance": 200000, "balanceUsd": 200000, "account": "TTC_IBKR" }]
+      },
+      "unavailableInputs": [],
+      "errors": []
+    },
+    "optionsAnalyses": [
+      {
+        "request": {
+          "ticker": "FIXT",
+          "direction": "bullish",
+          "targetBase": 120,
+          "targetHigh": 140,
+          "horizonMonths": 6,
+          "downsideFloor": 80,
+          "quoteVerification": true
+        },
+        "outcome": {
+          "status": "completed",
+          "analysis": {
+            "context": { "ticker": "FIXT", "spot": 100, "dataSource": "database" },
+            "strategies": [{ "name": "2027-01-15 120/140C, -80P", "marketPrice": -1.25 }]
+          },
+          "quoteVerification": {
+            "status": "unavailable",
+            "reason": "Radon publishes no accepted immutable option-quote Capability Package or current Adapter Conformance evidence."
+          },
+          "persistence": { "requested": false, "status": "not_requested", "reportId": null },
+          "writes": [],
+          "unavailableInputs": ["capability:scope:radon/ibkr-option-quote"],
+          "errors": []
+        }
+      }
+    ]
+  },
+  "result": {
+    "status": "completed",
+    "focus": "Assess FIXT concentration, current option exposure, and one explicit bullish structure analysis.",
+    "portfolioSnapshot": {
+      "snapshotDate": "2026-08-11",
+      "nav": 1000000,
+      "totalCashUsd": 200000,
+      "totalAbsNotional": 1100000,
+      "leverageRatio": 1.1,
+      "ownerBreakdown": [{ "owner": "TTC", "nav": 1000000 }],
+      "underlyingBreakdown": [
+        {
+          "ticker": "FIXT",
+          "positionCount": 2,
+          "totalMarketValueUsd": 150000,
+          "totalAbsNotionalUsd": 150000,
+          "pctNav": 0.15,
+          "positions": [
+            { "symbol": "FIXT", "assetClass": "STK", "quantity": 1000, "marketValueUsd": 100000, "unrealizedPnl": 12000, "account": "TTC_IBKR", "owner": "TTC" },
+            { "symbol": "FIXT 270115P00080000", "assetClass": "OPT", "quantity": -5, "marketValueUsd": 50000, "unrealizedPnl": 3000, "expiry": "2027-01-15", "strike": 80, "optionRight": "P", "side": "SHORT", "account": "TTC_IBKR", "owner": "TTC" }
+          ]
+        }
+      ],
+      "strategies": [],
+      "unlinkedPositions": [],
+      "cashBreakdown": [{ "currency": "USD", "source": "ibkr_flex", "balance": 200000, "balanceUsd": 200000, "account": "TTC_IBKR" }]
+    },
+    "observations": [
+      {
+        "kind": "exposure",
+        "statement": "FIXT represents 15% of portfolio NAV.",
+        "evidence": [
+          { "dependency": "portfolio-snapshot", "path": "underlyingBreakdown[0].pctNav", "value": 0.15 }
+        ]
+      },
+      {
+        "kind": "portfolio_options_context",
+        "statement": "The analyzed bullish structure sits alongside 1,000 FIXT shares and five short 80 puts; -1.25 is a theoretical per-share value, not an executable quote.",
+        "evidence": [
+          { "dependency": "portfolio-snapshot", "path": "underlyingBreakdown[0].positions[0].quantity", "value": 1000 },
+          { "dependency": "portfolio-snapshot", "path": "underlyingBreakdown[0].positions[1].quantity", "value": -5 },
+          { "dependency": "options-vol-analysis", "path": "[0].outcome.analysis.strategies[0].marketPrice", "value": -1.25 }
+        ]
+      }
+    ],
+    "optionsAnalyses": [
+      {
+        "request": {
+          "ticker": "FIXT",
+          "direction": "bullish",
+          "targetBase": 120,
+          "targetHigh": 140,
+          "horizonMonths": 6,
+          "downsideFloor": 80,
+          "quoteVerification": true
+        },
+        "outcome": {
+          "status": "completed",
+          "analysis": {
+            "context": { "ticker": "FIXT", "spot": 100, "dataSource": "database" },
+            "strategies": [{ "name": "2027-01-15 120/140C, -80P", "marketPrice": -1.25 }]
+          },
+          "quoteVerification": {
+            "status": "unavailable",
+            "reason": "Radon publishes no accepted immutable option-quote Capability Package or current Adapter Conformance evidence."
+          },
+          "persistence": { "requested": false, "status": "not_requested", "reportId": null },
+          "writes": [],
+          "unavailableInputs": ["capability:scope:radon/ibkr-option-quote"],
+          "errors": []
+        }
+      }
+    ],
+    "unavailableDependencies": ["capability:scope:radon/ibkr-option-quote"],
+    "limitations": [
+      "Snapshot date is 2026-08-11.",
+      "Executable quote verification is unavailable because no governed Radon quote dependency exists."
+    ],
+    "errors": [],
+    "writes": []
+  },
+  "providers": {
+    "claude": { "adapterDigest": "sha256:9d93c809f56b723a6a130ece295395ebcbceab752a7b5b423acadf264452a7ac" },
+    "codex": { "adapterDigest": "sha256:38685a8964aed739d7c6454bb33531330f077b08c27b58004a382931cc02b230" }
+  }
+}

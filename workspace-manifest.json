@@ -80,6 +80,10 @@
       "path": "capabilities/options-vol-analysis/capability-package.json"
     },
     {
+      "id": "capability:scope:trade-journal/portfolio-analysis",
+      "path": "capabilities/portfolio-analysis/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/portfolio-options-advice",
       "path": "capabilities/portfolio-options-advice/capability-package.json"
     },
@@ -197,7 +201,7 @@
       "id": "headless-codex-portfolio-and-options-mcp",
       "capability": "capability:scope:trade-journal/portfolio-analysis",
       "provider": "codex",
-      "path": ".agents/skills/portfolio-and-options-mcp/SKILL.md"
+      "path": "capabilities/portfolio-analysis/adapters/codex.md"
     },
     {
       "id": "headless-codex-process-note",
@@ -389,7 +393,7 @@
       "id": "interactive-claude-portfolio-and-options-mcp",
       "capability": "capability:scope:trade-journal/portfolio-analysis",
       "provider": "claude",
-      "path": ".claude/skills/portfolio-and-options-mcp/SKILL.md"
+      "path": "capabilities/portfolio-analysis/adapters/claude.md"
     },
     {
       "id": "interactive-claude-process-note",
@@ -697,6 +701,16 @@
         "id": "options-vol-analysis-capability",
         "method": "accepted-workspace-cli-capability-conformance",
         "path": "capabilities/options-vol-analysis/capability-package.json"
+      },
+      {
+        "id": "portfolio-analysis-capability",
+        "method": "accepted-workspace-cli-capability-conformance",
+        "path": "capabilities/portfolio-analysis/capability-package.json"
+      },
+      {
+        "id": "issue-65-portfolio-analysis",
+        "method": "dependency-composition-observable-equivalence-and-zero-write-receipt",
+        "path": "evidence/issue-65-portfolio-analysis.json"
       },
       {
         "id": "issue-64-options-vol-analysis",

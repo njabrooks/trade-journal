@@ -1370,7 +1370,7 @@
     },
     {
       "id": "headless-codex-portfolio-and-options-mcp",
-      "ability": "Analyze portfolio and options through Claude.ai connector assumptions.",
+      "ability": "Analyze governed portfolio snapshots and optional volatility analysis without mutation.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/portfolio-analysis",
@@ -1380,6 +1380,11 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
+        "path": "capabilities/portfolio-analysis/adapters/codex.md"
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
         "path": ".agents/skills/portfolio-and-options-mcp/SKILL.md"
       },
       "authored_source": {
@@ -1387,35 +1392,36 @@
         "location_class": "repository",
         "path": ".claude/skills/portfolio-and-options-mcp/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/portfolio-and-options-mcp/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The legacy generic preamble remains a migration input; the exact governed Codex adapter is current, read-only, and staged for final discovery cutover."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/portfolio-and-options-mcp/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Analyzes exposures and structures for the user."
+        "rationale": "Read-only portfolio interpretation with explicit inputs and optional bounded options analysis."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Portfolio and options data through Supabase and Massive connector semantics.",
-        "writes": "Read-only analysis; no DDL or trade execution.",
-        "judgment": "Analyzes exposures and structures for the user."
+        "reads": "Only Registry-locked portfolio-snapshot and options-vol-analysis results.",
+        "writes": "None; options persistence is forced off and no quote, order, or trade operation is permitted.",
+        "judgment": "Evidence-grounded interpretation from explicit inputs; no user-decision resolution or order sizing."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Claude.ai connector environment with read-only Supabase and market-data access."
+        "Current portfolio-snapshot dependency and, when requested, current options-vol-analysis dependency."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Connector-era assumptions conflict with repository script precedence and are unavailable in many runtimes.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "Generic legacy preamble is a migration baseline, not an independent operational-readiness claim.",
+        "Snapshot quality depends on reported upstream ingestion freshness.",
+        "Executable quote verification remains unavailable while Radon publishes no accepted immutable option-quote Capability.",
+        "The governed Provider Entry Point is staged; the legacy headless projection remains a rollback-capable migration input until final discovery cutover."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -1426,16 +1432,22 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-11",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:5bf06252b1442c960f3f2f9d190e26b47cf09f9f3393f72f55e1013cc4ebab10",
+        "adapter_digest": "sha256:38685a8964aed739d7c6454bb33531330f077b08c27b58004a382931cc02b230",
+        "reason": "Exact current evidence binds portfolio-analysis 1.0.0, its two governed dependencies, the representative observable-equivalence fixture, and the governed Codex adapter."
+      },
+      "governed_binding": {
+        "package_path": "capabilities/portfolio-analysis/capability-package.json",
+        "adapter_id": "portfolio-analysis-codex",
+        "evidence_path": "capabilities/portfolio-analysis/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input until final discovery cutover."
       }
     },
     {
@@ -3047,12 +3059,12 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "Twenty-five headless inventory entries have current evidence. Of eleven unavailable entries, seven await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
+      "detail": "Twenty-six headless inventory entries have current evidence. Of ten unavailable entries, six await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
     },
     {
       "id": "generic-contract-readiness",
       "classification": "execution-contract",
-      "detail": "Fourteen current projections have generic packaging baselines; nineteen have bespoke contracts, including ten governed research-pipeline tombstones and four unavailable or retired safety refusals. Three additional non-candidate records are historical evidence only outside active discovery."
+      "detail": "Fifteen current projections have generic packaging baselines; nineteen have bespoke contracts, including ten governed research-pipeline tombstones and four unavailable or retired safety refusals. Three additional non-candidate records are historical evidence only outside active discovery."
     },
     {
       "id": "live-jobs-still-claude",
