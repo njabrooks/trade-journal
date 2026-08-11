@@ -167,22 +167,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/archived-deep-dive/SKILL.md"
+        "path": "docs/archive/provider-adapters/issue-75/codex/archived-deep-dive/SKILL.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/archived-deep-dive/SKILL.md"
+        "path": "docs/archive/provider-adapters/issue-75/claude/archived-deep-dive/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "historical-evidence",
       "execution_contract": {
         "class": "generic",
-        "preamble_path": ".agents/skills/archived-deep-dive/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "preamble_path": "docs/archive/provider-adapters/issue-75/codex/archived-deep-dive/HEADLESS_PREAMBLE.md",
+        "readiness": "Archived bytes are historical evidence only; no execution contract remains active."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/archived-deep-dive/skill.json",
+        "entry_point": "None; archived bytes are historical evidence only.",
         "unattended_eligibility": "ineligible",
         "rationale": "Obsolete collaborative workflow."
       },
@@ -191,21 +191,19 @@
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Archived research inputs.",
-        "writes": "Archived workflow files only if deliberately invoked.",
-        "judgment": "Obsolete collaborative workflow."
+        "reads": "Historical evidence only; not an executable workflow.",
+        "writes": "No writes permitted.",
+        "judgment": "No current judgment authority."
       },
       "prerequisites": [
-        "Codex headless runtime with repository access",
-        "Explicit historical-use request."
+        "Repository history access only."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Archived and not advertised as current support.",
+        "Archived outside active Claude and Codex discovery.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
       "operational_consumers": [
-        "No live operational consumer; current repository automation does not invoke this Codex projection."
+        "None; historical evidence only."
       ],
       "operational_risk": {
         "level": "medium",
@@ -214,15 +212,15 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-11",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       },
       "j2_disposition": {
         "action": "retire",
-        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -236,22 +234,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/archived-generate-summary/SKILL.md"
+        "path": "docs/archive/provider-adapters/issue-75/codex/archived-generate-summary/SKILL.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/archived-generate-summary/SKILL.md"
+        "path": "docs/archive/provider-adapters/issue-75/claude/archived-generate-summary/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "historical-evidence",
       "execution_contract": {
         "class": "generic",
-        "preamble_path": ".agents/skills/archived-generate-summary/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "preamble_path": "docs/archive/provider-adapters/issue-75/codex/archived-generate-summary/HEADLESS_PREAMBLE.md",
+        "readiness": "Archived bytes are historical evidence only; no execution contract remains active."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/archived-generate-summary/skill.json",
+        "entry_point": "None; archived bytes are historical evidence only.",
         "unattended_eligibility": "ineligible",
         "rationale": "Obsolete synthesis workflow."
       },
@@ -260,21 +258,19 @@
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Historical asset-thesis claims.",
-        "writes": "Legacy summary output if deliberately invoked.",
-        "judgment": "Obsolete synthesis workflow."
+        "reads": "Historical evidence only; not an executable workflow.",
+        "writes": "No writes permitted.",
+        "judgment": "No current judgment authority."
       },
       "prerequisites": [
-        "Codex headless runtime with repository access",
-        "Explicit historical-use request."
+        "Repository history access only."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Archived and not advertised as current support.",
+        "Archived outside active Claude and Codex discovery.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
       "operational_consumers": [
-        "No live operational consumer; current repository automation does not invoke this Codex projection."
+        "None; historical evidence only."
       ],
       "operational_risk": {
         "level": "medium",
@@ -283,15 +279,15 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-11",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       },
       "j2_disposition": {
         "action": "retire",
-        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -552,11 +548,11 @@
         "location_class": "repository",
         "path": ".claude/skills/configure-signal/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "protective-tombstone",
       "execution_contract": {
-        "class": "generic",
-        "preamble_path": ".agents/skills/configure-signal/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "class": "bespoke",
+        "preamble_path": ".claude/skills/configure-signal/HEADLESS_PREAMBLE.md",
+        "readiness": "Protective no-read/no-write refusal contract only; it is not an operational adapter."
       },
       "invocation": {
         "mode": "headless",
@@ -565,11 +561,11 @@
         "rationale": "Prevents unsafe revival of hand-configured signals."
       },
       "lifecycle": {
-        "status": "retired",
+        "status": "tombstone",
         "protective_tombstone": true
       },
       "authority_and_write_scope": {
-        "reads": "Retirement notice only.",
+        "reads": "Retirement notice only; no data access permitted.",
         "writes": "No writes permitted.",
         "judgment": "Prevents unsafe revival of hand-configured signals."
       },
@@ -578,12 +574,12 @@
         "None; do not invoke as an active workflow."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
+        "Bespoke preamble refuses every read, provider call, and write.",
         "Manual signal configuration conflicts with the loose-agent model.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
       "operational_consumers": [
-        "No live operational consumer; current repository automation does not invoke this Codex projection."
+        "Safety boundary only; no operational consumer."
       ],
       "operational_risk": {
         "level": "medium",
@@ -592,15 +588,15 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-11",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "Protective retirement tombstone only; it is not a current Capability or operational adapter."
       },
       "j2_disposition": {
-        "action": "retain-temporarily",
-        "rationale": "Keep the current boundary until J2 supplies an accepted replacement and operational evidence."
+        "action": "retire",
+        "rationale": "Retire the procedure permanently while retaining this no-read/no-write tombstone to prevent unsafe revival."
       }
     },
     {
@@ -1225,22 +1221,22 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/paperclip-backlog/SKILL.md"
+        "path": "docs/archive/provider-adapters/issue-75/codex/paperclip-backlog/SKILL.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".claude/skills/paperclip-backlog/SKILL.md"
+        "path": "docs/archive/provider-adapters/issue-75/claude/paperclip-backlog/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "historical-evidence",
       "execution_contract": {
         "class": "generic",
-        "preamble_path": ".agents/skills/paperclip-backlog/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "preamble_path": "docs/archive/provider-adapters/issue-75/codex/paperclip-backlog/HEADLESS_PREAMBLE.md",
+        "readiness": "Archived bytes are historical evidence only; no execution contract remains active."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/paperclip-backlog/skill.json",
+        "entry_point": "None; archived bytes are historical evidence only.",
         "unattended_eligibility": "ineligible",
         "rationale": "Obsolete backlog authority."
       },
@@ -1249,21 +1245,19 @@
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Deprecated backlog material.",
-        "writes": "No current authoritative writes.",
-        "judgment": "Obsolete backlog authority."
+        "reads": "Historical evidence only; not an executable workflow.",
+        "writes": "No writes permitted.",
+        "judgment": "No current judgment authority."
       },
       "prerequisites": [
-        "Codex headless runtime with repository access",
-        "Explicit historical-use request."
+        "Repository history access only."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Paperclip is not the canonical Trade Journal backlog.",
+        "Archived outside active Claude and Codex discovery; GitHub is the Work Item authority.",
         "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
       ],
       "operational_consumers": [
-        "No live operational consumer; current repository automation does not invoke this Codex projection."
+        "None; historical evidence only."
       ],
       "operational_risk": {
         "level": "medium",
@@ -1272,15 +1266,15 @@
       },
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-04",
+        "as_of": "2026-08-11",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "reason": "Final disposition is historical evidence only; this non-candidate has no current Capability or operational adapter."
       },
       "j2_disposition": {
         "action": "retire",
-        "rationale": "Remove or retain only as historical evidence under a separately approved migration."
+        "rationale": "Removed from active discovery and retained only as repository history under issue #75."
       }
     },
     {
@@ -2775,8 +2769,8 @@
     }
   ],
   "mirror_diagnostic": {
-    "source_count": 36,
-    "projection_count": 36,
+    "source_count": 33,
+    "projection_count": 33,
     "missing": [],
     "stale": [],
     "supporting_tooling": "scripts/ops/check-codex-parity.ts"
@@ -3043,12 +3037,12 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "Thirteen Codex adapters now have exact current evidence across eleven governed Capabilities; the other 23 headless entries remain unavailable until their J2 dispositions are completed."
+      "detail": "Twenty-four headless inventory entries have current evidence. Of twelve unavailable entries, eight await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
     },
     {
       "id": "generic-contract-readiness",
       "classification": "execution-contract",
-      "detail": "Thirty-four generated preambles are generic packaging baselines. Only assess-validation-evidence and build-core-argument have bespoke authored headless contracts."
+      "detail": "Fourteen current projections have generic packaging baselines; nineteen have bespoke contracts, including ten governed research-pipeline tombstones and four unavailable or retired safety refusals. Three additional non-candidate records are historical evidence only outside active discovery."
     },
     {
       "id": "live-jobs-still-claude",

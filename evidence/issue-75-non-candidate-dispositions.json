@@ -1,0 +1,165 @@
+{
+  "kind": "NonCandidateEntryPointDisposition",
+  "schema_version": "1.0.0",
+  "issue": "njabrooks/trade-journal#75",
+  "recorded_at": "2026-08-11",
+  "fixed_point": "4f11aff896b6767a66f23b84b95c69fa62cd10d2",
+  "accepted_blocker": {
+    "issue": "njabrooks/trade-journal#47",
+    "repair_merge": "abcedb11576bffde647ce6855ce9d3e0163483b3"
+  },
+  "inventory_entries_reconciled": 8,
+  "final_dispositions": {
+    "historical_evidence_only": [
+      "interactive-claude-archived-deep-dive",
+      "interactive-claude-archived-generate-summary",
+      "interactive-claude-paperclip-backlog",
+      "headless-codex-archived-deep-dive",
+      "headless-codex-archived-generate-summary",
+      "headless-codex-paperclip-backlog"
+    ],
+    "protective_tombstone": [
+      "interactive-claude-configure-signal",
+      "headless-codex-configure-signal"
+    ]
+  },
+  "archived_bytes": [
+    {
+      "old_path": ".claude/skills/archived-deep-dive/SKILL.md",
+      "path": "docs/archive/provider-adapters/issue-75/claude/archived-deep-dive/SKILL.md",
+      "sha256": "dfb5c81c5589121304289ee858eb1fe3957416df8f969d6b069e460a7c6dd47e"
+    },
+    {
+      "old_path": ".claude/skills/archived-deep-dive/skill.json",
+      "path": "docs/archive/provider-adapters/issue-75/claude/archived-deep-dive/skill.json",
+      "sha256": "aeb6fd799a64e6fd5acbeb0345bea40f683718013281d5daf1861e937c8d9f45"
+    },
+    {
+      "old_path": ".claude/skills/archived-generate-summary/SKILL.md",
+      "path": "docs/archive/provider-adapters/issue-75/claude/archived-generate-summary/SKILL.md",
+      "sha256": "693432a4f19cd0e1159b59ef7ab27cc51a7aec74c9ce872c47ae5061a146c472"
+    },
+    {
+      "old_path": ".claude/skills/archived-generate-summary/skill.json",
+      "path": "docs/archive/provider-adapters/issue-75/claude/archived-generate-summary/skill.json",
+      "sha256": "8bc20ab8e47f4e2a98eca613136badf518a3b4c8ba602473a9ff8488c472973c"
+    },
+    {
+      "old_path": ".claude/skills/paperclip-backlog/SKILL.md",
+      "path": "docs/archive/provider-adapters/issue-75/claude/paperclip-backlog/SKILL.md",
+      "sha256": "68f3a6855eb69492715a5c90568040d3caebe23c21095b4ca251a4206f71c334"
+    },
+    {
+      "old_path": ".agents/skills/archived-deep-dive/HEADLESS_PREAMBLE.md",
+      "path": "docs/archive/provider-adapters/issue-75/codex/archived-deep-dive/HEADLESS_PREAMBLE.md",
+      "sha256": "97cd07f667fb51878dfa2773cd353c09910d61c951e7cc1ba3cbc1d4700d1248"
+    },
+    {
+      "old_path": ".agents/skills/archived-deep-dive/SKILL.md",
+      "path": "docs/archive/provider-adapters/issue-75/codex/archived-deep-dive/SKILL.md",
+      "sha256": "170e8f7fa5770ed71dd25b18bfdd2b8b70161412b040349cb563afc239ad88dc"
+    },
+    {
+      "old_path": ".agents/skills/archived-deep-dive/skill.json",
+      "path": "docs/archive/provider-adapters/issue-75/codex/archived-deep-dive/skill.json",
+      "sha256": "be903a48718eddfb1fbe441a5cf7afcadf900b449d3ec9a5a0c4daa73b11215f"
+    },
+    {
+      "old_path": ".agents/skills/archived-generate-summary/HEADLESS_PREAMBLE.md",
+      "path": "docs/archive/provider-adapters/issue-75/codex/archived-generate-summary/HEADLESS_PREAMBLE.md",
+      "sha256": "c94e74210f0be9a0cf10096e4ffee03cbf3df9fb0eb6f7248fdb01bf6a92ac24"
+    },
+    {
+      "old_path": ".agents/skills/archived-generate-summary/SKILL.md",
+      "path": "docs/archive/provider-adapters/issue-75/codex/archived-generate-summary/SKILL.md",
+      "sha256": "2c06e279b2ce9b720c81ac03d8d98c0942f0acb41858a99ec2402a6dc85d8d85"
+    },
+    {
+      "old_path": ".agents/skills/archived-generate-summary/skill.json",
+      "path": "docs/archive/provider-adapters/issue-75/codex/archived-generate-summary/skill.json",
+      "sha256": "f3d10e33b1ade9cbd71924d2afc9eed0801e2467ebaf7962a5d3fcc55cef0e19"
+    },
+    {
+      "old_path": ".agents/skills/paperclip-backlog/HEADLESS_PREAMBLE.md",
+      "path": "docs/archive/provider-adapters/issue-75/codex/paperclip-backlog/HEADLESS_PREAMBLE.md",
+      "sha256": "78d9186978d456732f4468cf21fea462a8866a8ef504eca893be64280b6e25d9"
+    },
+    {
+      "old_path": ".agents/skills/paperclip-backlog/SKILL.md",
+      "path": "docs/archive/provider-adapters/issue-75/codex/paperclip-backlog/SKILL.md",
+      "sha256": "d703c96a28bb49eaef3664e8e42e09943ad755e631a77c01ddd3dffe936ea158"
+    },
+    {
+      "old_path": ".agents/skills/paperclip-backlog/skill.json",
+      "path": "docs/archive/provider-adapters/issue-75/codex/paperclip-backlog/skill.json",
+      "sha256": "e8eb25e1c7a11cc26c023021bfae3690095af03d3ad6eb049158dbcd6b9d6d38"
+    }
+  ],
+  "protective_tombstone_bytes": {
+    "claude_skill": {
+      "path": ".claude/skills/configure-signal/SKILL.md",
+      "sha256": "17c4a1240e01aaf0bc3bec16e1b8c39d522f5b597a42f5199b407a4aa0a3112c"
+    },
+    "claude_headless_refusal": {
+      "path": ".claude/skills/configure-signal/HEADLESS_PREAMBLE.md",
+      "sha256": "b6a277e0f7801431b75f32c97a46b9b51f1b0d73405116833b8693d839eb6245"
+    },
+    "codex_skill": {
+      "path": ".agents/skills/configure-signal/SKILL.md",
+      "sha256": "c56220c2284beb6f0802280b03a21996ac6325981ccf901bb7ee48cb0c199d01"
+    },
+    "codex_headless_refusal": {
+      "path": ".agents/skills/configure-signal/HEADLESS_PREAMBLE.md",
+      "sha256": "b6a277e0f7801431b75f32c97a46b9b51f1b0d73405116833b8693d839eb6245"
+    }
+  },
+  "inventory_artifacts": {
+    "interactive_sha256": "f0cecfae1e6e78231e3cf8f9dff475a4e2ad2edf005b6ff5de767870edc89584",
+    "headless_sha256": "51a5126f0f74b595ea0e8c1a9e57afc1897acb0d1c2594b6468427aa417d4bbe",
+    "generation_eligibility_sha256": "ed583756f668ed18979b96d8e8467c64850ae8409b584f89edc0aa0770bd7e9b"
+  },
+  "governed_artifacts": {
+    "changed": false,
+    "published_lock_sha256": "9d43104a3d54e7d4f87c71f3d08bba0acc290a93ae1d1b1f8ab5b80f25cfdaae",
+    "staged_claude_sha256": "77b295ab2ae1ddf480b0a82c5adff4b64c0c56f446f9057b20c0ed515bae0871",
+    "staged_codex_sha256": "af49e83651ca9feac70661e21c7cbf9af2841bdb7f55494602958e5a456a2ea5"
+  },
+  "validation": {
+    "inventory_entries": 73,
+    "generation_eligible_entries": 48,
+    "active_claude_discovery_paths": 33,
+    "active_codex_projections": 33,
+    "focused_issue_tests": "5 passed",
+    "focused_governance_tests": "206 passed, 6 skipped",
+    "full_vitest": "612 passed, 6 skipped",
+    "python_unittest": "10 passed",
+    "typescript": "passed",
+    "issue_scoped_eslint": "passed",
+    "repository_eslint": "passed",
+    "production_build": "passed with the pre-existing package.json webpack override; the managed service was restarted and returned HTTP content",
+    "repository_conformance": "conformant with zero deviations",
+    "live_tracker": "passed",
+    "credential_free_tracker": "unavailable with WS-TRK-001 as required",
+    "capabilities": "all 11 Trade Journal-owned Capability packages valid at 2026-08-11",
+    "published_lock": "valid and byte-identical at governed evidence time 2026-08-10",
+    "current_evidence_lock": "resolved and valid at 2026-08-11",
+    "provider_entry_points": "valid with unchanged staged digests",
+    "unavailable_support_refusal": "passed with WS-ENTRY-005, byte-identical diagnostics, and no output",
+    "expired_evidence_refusal": "passed with stale state, byte-identical Lock reproduction, and no output"
+  },
+  "worktree_scope": {
+    "stable_affected_paths_before_edit": true,
+    "unrelated_package_json_change_preserved_and_excluded": true,
+    "other_repositories_mutated": false,
+    "active_discovery_entries_removed": 6,
+    "protective_tombstones_retained": 2,
+    "scheduler_changed": false,
+    "credentials_used": false,
+    "provider_or_live_data_accessed": false,
+    "database_write": false,
+    "status_or_decision_item_changed": false,
+    "trade_authority_acquired": false,
+    "successor_work_started": false
+  },
+  "rollback": "Revert the issue #75 commit to restore the three obsolete Claude directories, their three generated Codex projections, and the prior configure-signal bytes and inventory metadata. No external or operational state requires rollback."
+}

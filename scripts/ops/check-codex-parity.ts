@@ -43,9 +43,9 @@ const INVENTORY = join(BRIDGE_DIR, 'references', 'claude-inventory.md');
 const WORKFLOW_MAP = join(BRIDGE_DIR, 'references', 'workflow-map.md');
 const BRIDGE_SKILL = join(BRIDGE_DIR, 'SKILL.md');
 
-// Skills intentionally absent from the CURATED docs (workflow-map / SKILL.md) — archived,
-// retired, or deprecated skills still belong in the exhaustive inventory but need no routing.
-const RETIRED_OR_DEPRECATED = new Set(['configure-signal', 'paperclip-backlog']);
+// Skills intentionally absent from the CURATED docs. The retained configure-signal path is a
+// protective retirement tombstone; obsolete historical records live outside active discovery.
+const RETIRED_OR_DEPRECATED = new Set(['configure-signal']);
 const isArchived = (name: string) => name.startsWith('archived-');
 // Pipeline stages are conventionally referenced as a range ("stage-1…5"), not individually —
 // exclude them from curated-coverage expectations to avoid crying wolf on intentional grouping.
@@ -53,9 +53,9 @@ const isPipelineStage = (name: string) => name.startsWith('stage-');
 const isCuratedExpected = (name: string) =>
   !isArchived(name) && !RETIRED_OR_DEPRECATED.has(name) && !isPipelineStage(name);
 
-// Skills that were removed/renamed — add a name here when you delete a skill dir, so the check
-// fails until every bridge file stops referencing it. (Empty today: retired/archived skills
-// still have live dirs, so the forward gate already covers them.)
+// Skills that were removed/renamed from every repository and bridge history — add a name here so
+// the check fails until every bridge file stops referencing it. Issue #75 historical records are
+// intentionally still present in the exhaustive bridge inventory, so they do not belong here.
 const KNOWN_REMOVED_SKILLS: string[] = [];
 
 function parseArgs(argv: string[]): Record<string, boolean> {
