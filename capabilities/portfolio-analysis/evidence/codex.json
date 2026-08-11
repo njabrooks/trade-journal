@@ -1,9 +1,9 @@
 {
   "capability_id": "capability:scope:trade-journal/portfolio-analysis",
   "capability_version": "1.0.0",
-  "package_digest": "sha256:7386f778ad6b09de95ff0ba3b44a969317eb327a715cbb9263fb8cbdfaca92e4",
+  "package_digest": "sha256:849a525b88c80ffeb20aaf4819c71b06fbe82c0825fae5a216cb10c2dc722289",
   "adapter_id": "portfolio-analysis-codex",
-  "adapter_digest": "sha256:18346786f6f205fe7baf5ccf0efe823fe4f71035a642579d94b845f091592bd9",
+  "adapter_digest": "sha256:422e7558df27970d3e4d5cde8d8f99ce799ce3b54a74d572b2f5bea0f14e900d",
   "support_state": "current",
   "validated_at": "2026-08-11",
   "results": {

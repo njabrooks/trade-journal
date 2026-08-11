@@ -1,9 +1,10 @@
 type JsonObject = Record<string, unknown>;
 
 export interface PortfolioAnalysisContext {
+  requestStatus: 'accepted' | 'refused';
   focus: string;
   portfolioSnapshot: {
-    status: 'completed' | 'unavailable' | 'failed';
+    status: 'completed' | 'unavailable' | 'failed' | 'not_invoked';
     result: JsonObject | null;
     unavailableInputs: string[];
     errors: string[];
@@ -61,7 +62,7 @@ function equal(left: unknown, right: unknown): boolean {
 }
 
 function resolvePath(root: unknown, path: string): unknown {
-  if (!path || !/^\[?\d*\]?(?:\.?[A-Za-z][A-Za-z0-9_]*|\[\d+\])*$/.test(path)) {
+  if (!/^(?:[A-Za-z][A-Za-z0-9_]*|\[\d+\])(?:\.[A-Za-z][A-Za-z0-9_]*|\[\d+\])*$/.test(path)) {
     throw new Error(`Unsupported evidence path: ${path}`);
   }
   const segments = path.match(/[A-Za-z][A-Za-z0-9_]*|\d+/g) ?? [];
@@ -78,9 +79,138 @@ function resolvePath(root: unknown, path: string): unknown {
   return current;
 }
 
+function validateOptionsRequest(request: unknown, index: number): asserts request is JsonObject {
+  if (!isObject(request)) throw new Error(`options request ${index} must be an object`);
+  const allowedFields = new Set([
+    'ticker',
+    'direction',
+    'targetBase',
+    'targetHigh',
+    'horizonMonths',
+    'downsideFloor',
+    'horizonRange',
+    'riskFreeRate',
+    'snapshotDate',
+    'persist',
+    'notes',
+    'quoteVerification',
+  ]);
+  if (Object.keys(request).some((field) => !allowedFields.has(field))) {
+    throw new Error(`options request ${index} has unsupported fields`);
+  }
+  if (typeof request.ticker !== 'string' || !request.ticker.trim()) {
+    throw new Error(`options request ${index} ticker must be non-empty`);
+  }
+  if (request.direction !== 'bullish' && request.direction !== 'bearish') {
+    throw new Error(`options request ${index} direction is unsupported`);
+  }
+  for (const field of ['targetBase', 'targetHigh', 'horizonMonths', 'downsideFloor']) {
+    if (typeof request[field] !== 'number' || !Number.isFinite(request[field])) {
+      throw new Error(`options request ${index} ${field} must be finite`);
+    }
+  }
+  if (request.persist !== undefined && request.persist !== false) {
+    throw new Error(`options request ${index} persistence must be forced off`);
+  }
+}
+
+function validateOptionsOutcome(outcome: unknown, index: number): asserts outcome is JsonObject {
+  if (!isObject(outcome)) throw new Error(`options outcome ${index} must be an object`);
+  exactFields(
+    outcome,
+    ['status', 'analysis', 'quoteVerification', 'persistence', 'writes', 'unavailableInputs', 'errors'],
+    `options outcome ${index}`,
+  );
+  if (!['completed', 'unavailable', 'refused', 'failed'].includes(String(outcome.status))) {
+    throw new Error(`options outcome ${index} status is unsupported`);
+  }
+  if (outcome.status === 'completed' ? !isObject(outcome.analysis) : outcome.analysis !== null) {
+    throw new Error(`options outcome ${index} analysis does not match status`);
+  }
+  if (!isObject(outcome.quoteVerification) || typeof outcome.quoteVerification.status !== 'string') {
+    throw new Error(`options outcome ${index} quoteVerification is invalid`);
+  }
+  if (!isObject(outcome.persistence)) {
+    throw new Error(`options outcome ${index} persistence is invalid`);
+  }
+  exactFields(
+    outcome.persistence,
+    ['requested', 'status', 'reportId'],
+    `options outcome ${index} persistence`,
+  );
+  if (
+    outcome.persistence.requested !== false ||
+    outcome.persistence.status !== 'not_requested' ||
+    outcome.persistence.reportId !== null
+  ) {
+    throw new Error('composed options persistence must be forced off');
+  }
+  if (!Array.isArray(outcome.writes) || outcome.writes.length !== 0) {
+    throw new Error('composed options analysis must have zero writes');
+  }
+  stringArray(outcome.unavailableInputs, `options outcome ${index} unavailableInputs`);
+  stringArray(outcome.errors, `options outcome ${index} errors`);
+}
+
+function validateContext(context: unknown): asserts context is PortfolioAnalysisContext {
+  if (!isObject(context)) throw new Error('context must be an object');
+  exactFields(context, ['requestStatus', 'focus', 'portfolioSnapshot', 'optionsAnalyses'], 'context');
+  if (context.requestStatus !== 'accepted' && context.requestStatus !== 'refused') {
+    throw new Error('requestStatus is unsupported');
+  }
+  if (typeof context.focus !== 'string') {
+    throw new Error('focus must be a string');
+  }
+  if (context.requestStatus === 'accepted' && !context.focus.trim()) {
+    throw new Error('focus must be non-empty');
+  }
+  if (!isObject(context.portfolioSnapshot)) {
+    throw new Error('portfolioSnapshot context must be an object');
+  }
+  exactFields(
+    context.portfolioSnapshot,
+    ['status', 'result', 'unavailableInputs', 'errors'],
+    'portfolioSnapshot context',
+  );
+  if (!['completed', 'unavailable', 'failed', 'not_invoked'].includes(String(context.portfolioSnapshot.status))) {
+    throw new Error('portfolioSnapshot context status is unsupported');
+  }
+  if (
+    context.portfolioSnapshot.status === 'completed'
+      ? !isObject(context.portfolioSnapshot.result)
+      : context.portfolioSnapshot.result !== null
+  ) {
+    throw new Error('portfolioSnapshot context result does not match status');
+  }
+  stringArray(context.portfolioSnapshot.unavailableInputs, 'portfolioSnapshot unavailableInputs');
+  stringArray(context.portfolioSnapshot.errors, 'portfolioSnapshot errors');
+  if (!Array.isArray(context.optionsAnalyses) || context.optionsAnalyses.length > 5) {
+    throw new Error('optionsAnalyses must contain at most five items');
+  }
+  if (
+    context.requestStatus === 'refused' &&
+    (context.portfolioSnapshot.status !== 'not_invoked' || context.optionsAnalyses.length !== 0)
+  ) {
+    throw new Error('refused request must not invoke dependencies');
+  }
+  if (context.requestStatus === 'accepted' && context.portfolioSnapshot.status === 'not_invoked') {
+    throw new Error('accepted request must invoke portfolio-snapshot');
+  }
+  if (context.portfolioSnapshot.status !== 'completed' && context.optionsAnalyses.length !== 0) {
+    throw new Error('options analysis cannot run without a completed portfolio snapshot');
+  }
+  context.optionsAnalyses.forEach((item, index) => {
+    if (!isObject(item)) throw new Error(`options analysis ${index} must be an object`);
+    exactFields(item, ['request', 'outcome'], `options analysis ${index}`);
+    validateOptionsRequest(item.request, index);
+    validateOptionsOutcome(item.outcome, index);
+  });
+}
+
 function expectedStatus(context: PortfolioAnalysisContext): PortfolioAnalysisResult['status'] {
+  if (context.requestStatus === 'refused') return 'refused';
   if (context.portfolioSnapshot.status !== 'completed') {
-    return context.portfolioSnapshot.status;
+    return context.portfolioSnapshot.status as 'unavailable' | 'failed';
   }
   const incompleteOption = context.optionsAnalyses.some(
     ({ outcome }) => outcome.status !== 'completed',
@@ -89,10 +219,10 @@ function expectedStatus(context: PortfolioAnalysisContext): PortfolioAnalysisRes
 }
 
 export function validatePortfolioAnalysisResult(
-  context: PortfolioAnalysisContext,
+  context: unknown,
   candidate: unknown,
 ): PortfolioAnalysisResult {
-  if (!context.focus.trim()) throw new Error('focus must be non-empty');
+  validateContext(context);
   if (!isObject(candidate)) throw new Error('result must be an object');
   exactFields(candidate, [
     'status',
@@ -135,13 +265,6 @@ export function validatePortfolioAnalysisResult(
         if (typeof input === 'string') requiredUnavailable.add(input);
       }
     }
-    if (!Array.isArray(outcome.writes) || outcome.writes.length !== 0) {
-      throw new Error('composed options analysis must have zero writes');
-    }
-    const persistence = outcome.persistence;
-    if (isObject(persistence) && persistence.requested !== false) {
-      throw new Error('composed options persistence must be forced off');
-    }
   }
   for (const dependency of requiredUnavailable) {
     if (!unavailableDependencies.includes(dependency)) {
@@ -154,7 +277,7 @@ export function validatePortfolioAnalysisResult(
   }
   if (context.portfolioSnapshot.status !== 'completed') {
     if (candidate.observations.length !== 0 || context.optionsAnalyses.length !== 0) {
-      throw new Error('unavailable portfolio snapshot must stop analysis');
+      throw new Error('non-completed portfolio snapshot must stop analysis');
     }
     return candidate as PortfolioAnalysisResult;
   }

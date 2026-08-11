@@ -145,12 +145,81 @@ describe('portfolio-analysis Capability', () => {
     );
 
     const writeCapableContext = structuredClone(fixture.context);
-    writeCapableContext.optionsAnalyses[0].outcome.persistence = { requested: true };
+    writeCapableContext.optionsAnalyses[0].outcome.persistence = {
+      ...writeCapableContext.optionsAnalyses[0].outcome.persistence as Record<string, unknown>,
+      requested: true,
+    };
     const writeCapableResult = structuredClone(fixture.result);
     writeCapableResult.optionsAnalyses = structuredClone(writeCapableContext.optionsAnalyses);
     expect(() => validatePortfolioAnalysisResult(writeCapableContext, writeCapableResult)).toThrow(
       /persistence must be forced off/,
     );
+  });
+
+  it('rejects unvalidated dependency contexts and incomplete option envelopes', () => {
+    const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
+      context: PortfolioAnalysisContext;
+      result: PortfolioAnalysisResult;
+    };
+
+    const invalidStatus = structuredClone(fixture.context) as unknown as {
+      portfolioSnapshot: { status: string };
+    };
+    invalidStatus.portfolioSnapshot.status = 'bogus';
+    expect(() => validatePortfolioAnalysisResult(invalidStatus, fixture.result)).toThrow(
+      /context status is unsupported/,
+    );
+
+    const incompleteOutcome = structuredClone(fixture.context) as unknown as {
+      optionsAnalyses: Array<{ outcome: Record<string, unknown> }>;
+    };
+    delete incompleteOutcome.optionsAnalyses[0].outcome.quoteVerification;
+    expect(() => validatePortfolioAnalysisResult(incompleteOutcome, fixture.result)).toThrow(
+      /options outcome 0 has unsupported or missing fields/,
+    );
+  });
+
+  it('rejects malformed and root-only evidence paths', () => {
+    const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
+      context: PortfolioAnalysisContext;
+      result: PortfolioAnalysisResult;
+    };
+
+    for (const path of [']', '[]', '.underlyingBreakdown', '']) {
+      const candidate = structuredClone(fixture.result);
+      candidate.observations[0].evidence[0].path = path;
+      candidate.observations[0].evidence[0].value = fixture.result.portfolioSnapshot;
+      expect(() => validatePortfolioAnalysisResult(fixture.context, candidate)).toThrow(
+        /Unsupported evidence path/,
+      );
+    }
+  });
+
+  it('validates refusal envelopes without invoking either dependency', () => {
+    const context: PortfolioAnalysisContext = {
+      requestStatus: 'refused',
+      focus: '',
+      portfolioSnapshot: {
+        status: 'not_invoked',
+        result: null,
+        unavailableInputs: [],
+        errors: [],
+      },
+      optionsAnalyses: [],
+    };
+    const result: PortfolioAnalysisResult = {
+      status: 'refused',
+      focus: '',
+      portfolioSnapshot: null,
+      observations: [],
+      optionsAnalyses: [],
+      unavailableDependencies: [],
+      limitations: [],
+      errors: ['A non-empty focus is required.'],
+      writes: [],
+    };
+
+    expect(validatePortfolioAnalysisResult(context, result)).toEqual(result);
   });
 
   it('preserves the read-only and unavailable-dependency boundary', () => {
@@ -175,7 +244,7 @@ describe('portfolio-analysis Capability', () => {
     ) as Record<string, Record<string, unknown>>;
 
     expect(receipt.fixed_point).toBe('91422545e8104ad80d70781ed9fecc0b7702f49b');
-    expect(receipt.release_revision).toBe('c576240e5c356b58db5528cb26fb934006343b36');
+    expect(receipt.release_revision).toBe('6360ea08038730a645bbc14669035a6b43abb86e');
 
     const dependencies = receipt.dependencies as unknown as Array<Record<string, unknown>>;
     expect(dependencies.map(({ id }) => id)).toEqual([
