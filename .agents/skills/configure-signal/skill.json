@@ -1,5 +1,5 @@
 {
   "name": "configure-signal",
-  "description": "[RETIRED 2026-06-19 — do not invoke] Manual signal/threshold configuration is retired under the loose-agent model (docs/v2/10 §6/§9). Signals are now the synthesized resolution section of a thesis's living underwriting, auto-derived by /build-core-argument from the linked claims' own rebuttals — never hand-wired. Kept only as a tombstone; the dormant explicit_details + collect-signal-data wiring survives for rare hard thresholds.",
+  "description": "[PROTECTIVE TOMBSTONE — do not invoke] Manual signal and threshold configuration is retired under the loose-agent model. Signals are derived by build-core-argument from linked claims and rebuttals.",
   "instructions": "SKILL.md"
 }

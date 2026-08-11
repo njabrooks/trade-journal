@@ -268,6 +268,15 @@ Lock, staged output, active discovery, scheduler, database, or Radon worktree st
 digests, limitations, unavailable behavior, rollback, and scope are recorded in
 `evidence/issue-74-radon-option-quote-reconciliation.json`.
 
+Issue #75 resolves all eight archived, retired, or deprecated non-candidate records. The three obsolete Claude
+procedures and their three generated Codex projections are removed from active discovery and retained byte-for-
+byte only under `docs/archive/provider-adapters/issue-75/`. The interactive and headless `configure-signal`
+paths remain as matching deterministic no-read/no-write protective tombstones so remembered invocations cannot
+revive manual threshold configuration. All eight retain `not-candidate`, `unavailable`, null Capability/package/
+adapter bindings, no operational consumer, and final `retire` dispositions. The published Registry Lock and
+staged governed Provider Entry Points are unchanged because no governed bytes changed. Fixed point, exact
+digests, rollback, and scope are recorded in `evidence/issue-75-non-candidate-dispositions.json`.
+
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision
 `be091a981fcac066102005e1512d845de362b7a0`. The real deterministic bundle emits timestamped freshness from
 the thesis-observation, maintenance, and options-advice cron outcomes plus portfolio, decision, and calendar

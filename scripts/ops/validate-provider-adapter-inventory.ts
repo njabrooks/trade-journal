@@ -50,6 +50,8 @@ const PACKAGING = new Set([
   'external-interactive-bridge',
   'generated-headless-projection',
   'governed-provider-adapter',
+  'historical-evidence',
+  'protective-tombstone',
 ]);
 const LOCATION_CLASSES = new Set(['repository', 'external-bridge']);
 const INVOCATION_MODES = new Set(['interactive', 'headless', 'scheduled']);
@@ -702,6 +704,99 @@ function validateEntry(
     }
   }
 
+  const candidate = isObject(value.candidate_capability)
+    ? value.candidate_capability
+    : null;
+  if (candidate?.status === 'not-candidate') {
+    const protective = isObject(lifecycle) && lifecycle.protective_tombstone === true;
+    const expectedPackaging = protective ? 'protective-tombstone' : 'historical-evidence';
+    const sourcePath = isObject(value.source) ? value.source.path : null;
+    const consumers = value.operational_consumers;
+
+    if (value.packaging !== expectedPackaging) {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-018',
+          `${path}/packaging`,
+          `Non-candidate final disposition must use ${expectedPackaging} packaging.`,
+        ),
+      );
+    }
+    if (protective && (!isObject(lifecycle) || lifecycle.status !== 'tombstone')) {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-018',
+          `${path}/lifecycle/status`,
+          'A retained protective boundary must use tombstone lifecycle status.',
+        ),
+      );
+    }
+    if (
+      !protective &&
+      (!nonempty(sourcePath) ||
+        !sourcePath.startsWith('docs/archive/provider-adapters/issue-75/'))
+    ) {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-018',
+          `${path}/source/path`,
+          'A non-protective non-candidate must resolve only as issue #75 historical evidence.',
+        ),
+      );
+    }
+    if (
+      isObject(invocation) &&
+      invocation.unattended_eligibility !== 'ineligible'
+    ) {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-018',
+          `${path}/invocation/unattended_eligibility`,
+          'Non-candidates must remain ineligible for unattended execution.',
+        ),
+      );
+    }
+    if (!isObject(scope) || scope.writes !== 'No writes permitted.') {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-018',
+          `${path}/authority_and_write_scope/writes`,
+          'Non-candidates must grant no write authority.',
+        ),
+      );
+    }
+    const expectedConsumers = protective
+      ? ['Safety boundary only; no operational consumer.']
+      : ['None; historical evidence only.'];
+    if (JSON.stringify(consumers) !== JSON.stringify(expectedConsumers)) {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-018',
+          `${path}/operational_consumers`,
+          'Non-candidates must declare no operational consumer.',
+        ),
+      );
+    }
+    if (!isObject(evidence) || evidence.state !== 'unavailable') {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-018',
+          `${path}/evidence/state`,
+          'Non-candidates must retain honest unavailable evidence.',
+        ),
+      );
+    }
+    if (!isObject(disposition) || disposition.action !== 'retire') {
+      diagnostics.push(
+        diagnostic(
+          'TJ-INV-018',
+          `${path}/j2_disposition/action`,
+          'Non-candidate final disposition must be retire.',
+        ),
+      );
+    }
+  }
+
   if (inventoryKind === 'headless') {
     validateRepositorySource(value.authored_source, `${path}/authored_source`, 'TJ-HEAD-003', diagnostics);
 
@@ -961,6 +1056,7 @@ function validateHeadlessCoverage(inventory: JsonObject, diagnostics: Diagnostic
         : (entry.source as JsonObject).path,
     )
     .filter(nonempty)
+    .filter((path) => path.startsWith('.agents/skills/'))
     .sort();
   const missing = expected.filter((path) => !declared.includes(path));
   const extra = declared.filter((path) => !expected.includes(path));
@@ -971,6 +1067,7 @@ function validateHeadlessCoverage(inventory: JsonObject, diagnostics: Diagnostic
 
   for (const [index, rawEntry] of entries.entries()) {
     if (!isObject(rawEntry) || !isObject(rawEntry.source) || !isObject(rawEntry.authored_source) || !isObject(rawEntry.execution_contract)) continue;
+    if (rawEntry.packaging === 'historical-evidence') continue;
     const sourcePath = isObject(rawEntry.migration_input)
       ? rawEntry.migration_input.path
       : rawEntry.source.path;

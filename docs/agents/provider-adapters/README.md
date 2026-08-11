@@ -30,7 +30,7 @@ Adapter Conformance. The accepted Workspace CLI remains authoritative for those 
 
 `interactive-inventory.json` contains:
 
-- all 36 repository-authored Claude skill entry points;
+- all 36 repository-origin Claude records: 33 discovery paths and three issue #75 historical-only records;
 - the external machine-local interactive Codex bridge as a separate adapter;
 - repository and external discovery surfaces;
 - all four Claude `SessionStart` hooks;
@@ -52,9 +52,10 @@ checked through the authored Registry, immutable Lock, and exact source revision
 
 ## Headless inventory
 
-`headless-inventory.json` contains all 36 repository-owned `.agents/skills/` projections and links each one
-back to its authored `.claude/skills/` authority. The validator compares each generated body with its authored
-source, checks `skill.json` and preamble packaging, and rejects missing, extra, duplicate, or stale mirrors.
+`headless-inventory.json` contains 33 repository-owned `.agents/skills/` projections plus three issue #75
+historical-only records, preserving the exhaustive 36-entry provider history. The validator compares each live
+generated body with its authored `.claude/skills/` authority, checks `skill.json` and preamble packaging, and
+rejects missing, extra, duplicate, or stale mirrors.
 
 The inventory deliberately distinguishes packaging from readiness:
 
@@ -62,8 +63,18 @@ The inventory deliberately distinguishes packaging from readiness:
   `relate-research`, and `synthesize-claims`) have bespoke authored headless contracts;
 - ten contracted research-pipeline paths have bespoke refusal preambles that name their exact governed CLI replacement;
 - `gateway`, `ibkr-quote`, and `visser-scan` have bespoke zero-read/zero-write unavailable refusal preambles;
-- the other 18 projections have generic generated preambles, which are packaging baselines only; and
+- `configure-signal` has a bespoke no-read/no-write protective retirement tombstone;
+- the other 14 projections have generic generated preambles, which are packaging baselines only; and
 - `decisions` and `thesis` are mirrored for parity but remain ineligible for unattended execution.
+
+Issue #75 gives all eight non-candidate records their final disposition. The interactive and headless
+`archived-deep-dive`, `archived-generate-summary`, and `paperclip-backlog` bytes are outside active discovery
+under `docs/archive/provider-adapters/issue-75/` and have no consumer or write authority. The two
+`configure-signal` records remain discoverable only as matching deterministic retirement tombstones, because
+removing that boundary could revive forbidden manual signal configuration. All eight remain `not-candidate`,
+`unavailable`, generation-ineligible, and unbound to any Capability, Registry release, or operational adapter.
+Exact byte preservation, fixed point, unchanged governed-output digests, rollback, and scope are recorded in
+`evidence/issue-75-non-candidate-dispositions.json`.
 
 `visser-scan` is also explicitly ineligible for unattended execution. Issue #70 replaces its unsafe generic
 headless baseline with a bespoke zero-write unavailable/refusal contract and retains only the existing
