@@ -76,6 +76,10 @@
       "path": "capabilities/morning-attention-brief/capability-package.json"
     },
     {
+      "id": "capability:scope:trade-journal/options-vol-analysis",
+      "path": "capabilities/options-vol-analysis/capability-package.json"
+    },
+    {
       "id": "capability:scope:trade-journal/portfolio-options-advice",
       "path": "capabilities/portfolio-options-advice/capability-package.json"
     },
@@ -115,7 +119,7 @@
       "id": "headless-codex-analyze-vol-curve",
       "capability": "capability:scope:trade-journal/options-vol-analysis",
       "provider": "codex",
-      "path": ".agents/skills/analyze-vol-curve/SKILL.md"
+      "path": "capabilities/options-vol-analysis/adapters/codex.md"
     },
     {
       "id": "headless-codex-assess-validation-evidence",
@@ -307,7 +311,7 @@
       "id": "interactive-claude-analyze-vol-curve",
       "capability": "capability:scope:trade-journal/options-vol-analysis",
       "provider": "claude",
-      "path": ".claude/skills/analyze-vol-curve/SKILL.md"
+      "path": "capabilities/options-vol-analysis/adapters/claude.md"
     },
     {
       "id": "interactive-claude-assess-validation-evidence",
@@ -565,7 +569,7 @@
       },
       "generation_eligibility": {
         "artifact": "docs/agents/provider-adapters/generation-eligibility.json",
-        "eligible_adapters": 50,
+        "eligible_adapters": 52,
         "governed_outputs": [
           "docs/agents/provider-entry-points/staging/claude.md",
           "docs/agents/provider-entry-points/staging/codex.md"
@@ -688,6 +692,16 @@
         "id": "portfolio-snapshot-capability",
         "method": "accepted-workspace-cli-capability-conformance",
         "path": "capabilities/portfolio-snapshot/capability-package.json"
+      },
+      {
+        "id": "options-vol-analysis-capability",
+        "method": "accepted-workspace-cli-capability-conformance",
+        "path": "capabilities/options-vol-analysis/capability-package.json"
+      },
+      {
+        "id": "issue-64-options-vol-analysis",
+        "method": "authority-boundary-deterministic-equivalence-and-read-only-live-data-receipt",
+        "path": "evidence/issue-64-options-vol-analysis.json"
       },
       {
         "id": "workflow-discovery-capability",

@@ -44,6 +44,10 @@ function digest(path: string): string {
   return digestText(read(path));
 }
 
+function repositoryDigest(path: string): string {
+  return digestText(readFileSync(resolve(process.cwd(), path), "utf8"));
+}
+
 function loadFixture(): Fixture {
   return JSON.parse(readFileSync(fixturePath, "utf8")) as Fixture;
 }
@@ -130,6 +134,15 @@ describe("options-vol-analysis Capability", () => {
   });
 
   it("keeps report persistence explicit and Radon quote authority separate", () => {
+    const saver = readFileSync(
+      resolve(process.cwd(), "scripts/vol-curve-save-report.ts"),
+      "utf8",
+    );
+
+    expect(saver).toContain("args.includes('--stdin')");
+    expect(saver).toContain(".insert(schema.volCurveReports)");
+    expect(saver.match(/\.insert\(/g)).toHaveLength(1);
+
     for (const provider of ["claude", "codex"]) {
       const adapter = read(`adapters/${provider}.md`);
 
@@ -147,5 +160,78 @@ describe("options-vol-analysis Capability", () => {
       expect(adapter).not.toMatch(/scripts\/ibkr-option-quote\.py/);
       expect(adapter).not.toMatch(/scripts\/ibkr-quote-contracts\.py/);
     }
+  });
+
+  it("records exact deterministic, live-data, publication, and scope evidence", () => {
+    const receipt = JSON.parse(
+      readFileSync(
+        resolve(
+          process.cwd(),
+          "evidence/issue-64-options-vol-analysis.json",
+        ),
+        "utf8",
+      ),
+    ) as Record<string, Record<string, unknown>>;
+
+    expect(receipt.fixed_point).toBe(
+      "337acbb74f8988f9742d2126f2615f149811795c",
+    );
+    expect(receipt.release_revision).toBe(
+      "a165aacc7991946dcb2cc5983790fc22c09a3663",
+    );
+
+    const equivalence = receipt.deterministic_equivalence;
+    expect(equivalence.fixture_digest).toBe(
+      repositoryDigest("tests/fixtures/options-vol-analysis.json"),
+    );
+    expect(equivalence.claude_and_codex_results_equivalent).toBe(true);
+    expect(equivalence.writes).toEqual([]);
+
+    const liveProbe = receipt.eligible_live_data_probe;
+    expect(liveProbe.classification).toBe(
+      "separate-read-only-environmental-evidence",
+    );
+    expect(liveProbe.persistence_requested).toBe(false);
+    expect(liveProbe.writes).toEqual([]);
+    expect(liveProbe.radon_invoked).toBe(false);
+    expect(liveProbe.quote_verification).toMatchObject({
+      status: "unavailable",
+    });
+
+    const artifacts = receipt.published_artifacts;
+    expect(artifacts.registry_lock).toBe(
+      repositoryDigest("capability-registry-lock.json"),
+    );
+    expect(artifacts.claude_staging).toBe(
+      repositoryDigest("docs/agents/provider-entry-points/staging/claude.md"),
+    );
+    expect(artifacts.codex_staging).toBe(
+      repositoryDigest("docs/agents/provider-entry-points/staging/codex.md"),
+    );
+    expect(artifacts.interactive_inventory).toBe(
+      repositoryDigest(
+        "docs/agents/provider-adapters/interactive-inventory.json",
+      ),
+    );
+    expect(artifacts.headless_inventory).toBe(
+      repositoryDigest("docs/agents/provider-adapters/headless-inventory.json"),
+    );
+    expect(artifacts.generation_eligibility).toBe(
+      repositoryDigest(
+        "docs/agents/provider-adapters/generation-eligibility.json",
+      ),
+    );
+
+    expect(receipt.scope_confirmation).toMatchObject({
+      active_discovery_changed: false,
+      scheduler_or_credential_changed: false,
+      gateway_inspected_or_operated: false,
+      executable_quote_requested_or_fabricated: false,
+      contract_qualification_invoked: false,
+      database_write: false,
+      status_or_decision_item_changed: false,
+      strategy_position_order_or_trade_authority: false,
+      github_issue_65_started_or_modified: false,
+    });
   });
 });

@@ -299,6 +299,38 @@
     {
       "approved_version": "1.0.0",
       "authority": "scope:trade-journal",
+      "dependencies": [],
+      "id": "capability:scope:trade-journal/options-vol-analysis",
+      "package_digest": "sha256:6c0ef068f8bd35b75cf936718574532594860756d5fa4c13414e1f3452ebc20d",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "options-vol-analysis-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-11"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "options-vol-analysis-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-11"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/options-vol-analysis",
+        "release_reference": "a165aacc7991946dcb2cc5983790fc22c09a3663",
+        "revision": "a165aacc7991946dcb2cc5983790fc22c09a3663"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
       "dependencies": [
         {
           "id": "capability:scope:trade-journal/portfolio-snapshot",
@@ -552,6 +584,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:326de032dd59d12aab98af183883448b729750344350a3bc8b2e84b1732e4053",
+  "registry_digest": "sha256:a51c396b6e0fa160c9d0030cfa18dca99872ea36542e7855e1e652acce714dd0",
   "schema_version": "1.0.0"
 }

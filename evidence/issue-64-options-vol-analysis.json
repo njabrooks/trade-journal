@@ -1,0 +1,136 @@
+{
+  "kind": "OptionsVolAnalysisAdoption",
+  "schema_version": "1.0.0",
+  "issue": "njabrooks/trade-journal#64",
+  "parent": "njabrooks/trade-journal#46",
+  "accepted_blocker": {
+    "issue": "njabrooks/trade-journal#47",
+    "state": "closed",
+    "acceptance_pr": "njabrooks/trade-journal#86",
+    "merge_revision": "abcedb11576bffde647ce6855ce9d3e0163483b3"
+  },
+  "accepted_radon_reconciliations": [
+    {
+      "issue": "njabrooks/trade-journal#73",
+      "acceptance_pr": "njabrooks/trade-journal#101",
+      "merge_revision": "b1107701bce30ec78bf067c05f07e97b37624cf2",
+      "boundary": "Radon retains gateway control; no live gateway state is inferred or operated."
+    },
+    {
+      "issue": "njabrooks/trade-journal#74",
+      "acceptance_pr": "njabrooks/trade-journal#102",
+      "merge_revision": "4f11affdf50c5d12b9d139a924e936e7a386f6f8",
+      "boundary": "Radon retains option-quote authority; no accepted immutable quote package or current Adapter Conformance evidence exists."
+    }
+  ],
+  "fixed_point": "337acbb74f8988f9742d2126f2615f149811795c",
+  "release_revision": "a165aacc7991946dcb2cc5983790fc22c09a3663",
+  "evidence_date": "2026-08-11",
+  "authority": {
+    "work_items": "github:njabrooks/trade-journal",
+    "analysis": "scope:trade-journal",
+    "gateway_and_executable_quotes": "scope:radon",
+    "radon_review_revision": "0e88af93c31471c093dbd61bc80c386ab8da38de",
+    "workspace_standard": "github:njabrooks/projects@2b6ea3e02ff5ba114b0f91dd779c4afb26181358"
+  },
+  "capability": {
+    "id": "capability:scope:trade-journal/options-vol-analysis",
+    "version": "1.0.0",
+    "package_digest": "sha256:6c0ef068f8bd35b75cf936718574532594860756d5fa4c13414e1f3452ebc20d",
+    "adapters": {
+      "claude": "sha256:23ea58b25be105d8d3ebcf4944abceb7d116f4ea14a51c2158147e27c3af28f3",
+      "codex": "sha256:27d4e39c1d6be2dba54e8d5bf5f7af23da866cc77a47ac3010faf850017a609f"
+    },
+    "analysis_entry_point": "npx tsx scripts/vol-curve-analyze.ts",
+    "optional_persistence_entry_point": "npx tsx scripts/vol-curve-save-report.ts --stdin"
+  },
+  "deterministic_equivalence": {
+    "fixture": "tests/fixtures/options-vol-analysis.json",
+    "fixture_digest": "sha256:9b4867236ce968956bb1cd48a7145ff07732619c21369a69293c1141bdcf6017",
+    "analysis_output_digest": "sha256:507b4d246e927594c2eb45a0788dda7180e244c711f08e3e078d697955caf31e",
+    "claude_and_codex_results_equivalent": true,
+    "result_recalculated_reordered_or_omitted": false,
+    "writes": []
+  },
+  "eligible_live_data_probe": {
+    "performed": true,
+    "classification": "separate-read-only-environmental-evidence",
+    "input": {
+      "ticker": "SPY",
+      "direction": "bullish",
+      "targetBase": 850,
+      "targetHigh": 900,
+      "horizonMonths": 6,
+      "horizonRange": 1,
+      "downsideFloor": 650,
+      "riskFreeRate": 0.045,
+      "snapshotDate": "2026-08-11"
+    },
+    "data_source": "database",
+    "spot": 772.885009765625,
+    "expiry_count": 1,
+    "contract_count": 156,
+    "strategy_count": 5,
+    "top_strategy": "2027-01-15 865/870C, -650P [credit]",
+    "output_digest": "sha256:2683e2bc786a0d7951ea101437178c213ee6dd7203d6cee1faad4d4dc67c3658",
+    "persistence_requested": false,
+    "writes": [],
+    "radon_invoked": false,
+    "quote_verification": {
+      "status": "unavailable",
+      "reason": "Radon publishes no accepted immutable option-quote Capability Package or current Adapter Conformance evidence."
+    }
+  },
+  "published_artifacts": {
+    "registry_lock": "sha256:7ba4d49f998f5d03fc48b79af14f5f27298b26379e928fa02f81a0f17495ff0e",
+    "claude_staging": "sha256:761b5d4b8a7b3841efb4b2fcf5e79f96874af813399a206d44b055d049b11512",
+    "codex_staging": "sha256:de42f47c4385c90b8ff17f27f9c4c704cba30ba00c4b848ab4426969a105d691",
+    "interactive_inventory": "sha256:86777eb352a82c6a2bd9ae6f119ef5fd6ea67c6ff7be5e724a95f8173048aa4f",
+    "headless_inventory": "sha256:1eb3090e7d59863bad1f1d001d2db3d47a7e3483d67528631d76a85f7c8146c8",
+    "generation_eligibility": "sha256:99f47e659cc8369136edbe8f1691bd9f1604487b77e48067b96f007432cadb20",
+    "inventory_entries": 74,
+    "generation_eligible_entries": 52
+  },
+  "reviews": {
+    "fixed_point": "337acbb74f8988f9742d2126f2615f149811795c",
+    "standards": {
+      "outcome": "clean-after-repair",
+      "repair": "Added exact receipt coverage for deterministic and live evidence, the purpose-built saver boundary, published artifact digests, and complete scope confirmation.",
+      "remaining_findings": []
+    },
+    "spec": {
+      "outcome": "clean",
+      "remaining_findings": []
+    }
+  },
+  "validation": {
+    "workspace_repository_conformance": "passed-human-and-json",
+    "credential_free_tracker_negative_case": "passed-unavailable-credentials-unavailable",
+    "all_governed_capabilities": "13-trade-journal-capabilities-passed-at-current-evidence-time",
+    "registry_lock": "passed-published-human-and-json",
+    "provider_entry_points": "passed-clean-regeneration-human-and-json",
+    "inventory_and_generation_eligibility": "passed-74-entries-52-generation-eligible",
+    "mirror_parity": "passed-33-of-33",
+    "unavailable_and_stale_refusal_proofs": "passed-no-write",
+    "focused_governance_tests": "passed",
+    "full_tests": "passed",
+    "typecheck": "passed",
+    "issue_scoped_eslint": "passed",
+    "repository_eslint": "pre-existing-baseline-unavailable-228-errors-outside-issue-64-changes",
+    "production_build": "passed-next-build-webpack",
+    "managed_service_restart": "passed-com.tradej",
+    "http_smoke": "passed-http-200-dashboard-portfolio"
+  },
+  "scope_confirmation": {
+    "active_discovery_changed": false,
+    "scheduler_or_credential_changed": false,
+    "gateway_inspected_or_operated": false,
+    "executable_quote_requested_or_fabricated": false,
+    "contract_qualification_invoked": false,
+    "database_write": false,
+    "status_or_decision_item_changed": false,
+    "strategy_position_order_or_trade_authority": false,
+    "github_issue_65_started_or_modified": false
+  },
+  "rollback": "Revert the issue #64 publication commits and deterministically regenerate the Registry Lock, generation eligibility projection, and staged Provider Entry Points at the preceding accepted evidence time. The unchanged legacy inputs and Radon-owned gateway and quote paths remain independently recoverable."
+}
