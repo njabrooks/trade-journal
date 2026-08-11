@@ -1,5 +1,9 @@
 type JsonObject = Record<string, unknown>;
 
+const RADON_QUOTE_CAPABILITY = 'capability:scope:radon/ibkr-option-quote';
+const RADON_QUOTE_UNAVAILABLE_REASON =
+  'Radon publishes no accepted immutable option-quote Capability Package or current Adapter Conformance evidence.';
+
 export interface PortfolioAnalysisContext {
   requestStatus: 'accepted' | 'refused';
   focus: string;
@@ -112,9 +116,31 @@ function validateOptionsRequest(request: unknown, index: number): asserts reques
   if (request.persist !== undefined && request.persist !== false) {
     throw new Error(`options request ${index} persistence must be forced off`);
   }
+  for (const field of ['horizonRange', 'riskFreeRate']) {
+    if (request[field] !== undefined && (
+      typeof request[field] !== 'number' || !Number.isFinite(request[field])
+    )) {
+      throw new Error(`options request ${index} ${field} must be finite`);
+    }
+  }
+  if (request.snapshotDate !== undefined && (
+    typeof request.snapshotDate !== 'string' || !request.snapshotDate.trim()
+  )) {
+    throw new Error(`options request ${index} snapshotDate must be non-empty`);
+  }
+  if (request.notes !== undefined && typeof request.notes !== 'string') {
+    throw new Error(`options request ${index} notes must be a string`);
+  }
+  if (request.quoteVerification !== undefined && typeof request.quoteVerification !== 'boolean') {
+    throw new Error(`options request ${index} quoteVerification must be boolean`);
+  }
 }
 
-function validateOptionsOutcome(outcome: unknown, index: number): asserts outcome is JsonObject {
+function validateOptionsOutcome(
+  outcome: unknown,
+  request: JsonObject,
+  index: number,
+): asserts outcome is JsonObject {
   if (!isObject(outcome)) throw new Error(`options outcome ${index} must be an object`);
   exactFields(
     outcome,
@@ -127,8 +153,29 @@ function validateOptionsOutcome(outcome: unknown, index: number): asserts outcom
   if (outcome.status === 'completed' ? !isObject(outcome.analysis) : outcome.analysis !== null) {
     throw new Error(`options outcome ${index} analysis does not match status`);
   }
-  if (!isObject(outcome.quoteVerification) || typeof outcome.quoteVerification.status !== 'string') {
+  if (!isObject(outcome.quoteVerification)) {
     throw new Error(`options outcome ${index} quoteVerification is invalid`);
+  }
+  if (request.quoteVerification === true) {
+    exactFields(outcome.quoteVerification, ['status', 'reason'], `options outcome ${index} quoteVerification`);
+    if (
+      outcome.quoteVerification.status !== 'unavailable' ||
+      outcome.quoteVerification.reason !== RADON_QUOTE_UNAVAILABLE_REASON
+    ) {
+      throw new Error(`options outcome ${index} quoteVerification must preserve Radon unavailability`);
+    }
+    const unavailableInputs = stringArray(
+      outcome.unavailableInputs,
+      `options outcome ${index} unavailableInputs`,
+    );
+    if (!unavailableInputs.includes(RADON_QUOTE_CAPABILITY)) {
+      throw new Error(`options outcome ${index} must identify unavailable Radon quote capability`);
+    }
+  } else {
+    exactFields(outcome.quoteVerification, ['status'], `options outcome ${index} quoteVerification`);
+    if (outcome.quoteVerification.status !== 'not_requested') {
+      throw new Error(`options outcome ${index} quoteVerification must be not_requested`);
+    }
   }
   if (!isObject(outcome.persistence)) {
     throw new Error(`options outcome ${index} persistence is invalid`);
@@ -203,7 +250,7 @@ function validateContext(context: unknown): asserts context is PortfolioAnalysis
     if (!isObject(item)) throw new Error(`options analysis ${index} must be an object`);
     exactFields(item, ['request', 'outcome'], `options analysis ${index}`);
     validateOptionsRequest(item.request, index);
-    validateOptionsOutcome(item.outcome, index);
+    validateOptionsOutcome(item.outcome, item.request, index);
   });
 }
 
@@ -266,10 +313,8 @@ export function validatePortfolioAnalysisResult(
       }
     }
   }
-  for (const dependency of requiredUnavailable) {
-    if (!unavailableDependencies.includes(dependency)) {
-      throw new Error(`missing unavailable dependency: ${dependency}`);
-    }
+  if (!equal(unavailableDependencies, [...requiredUnavailable])) {
+    throw new Error('unavailableDependencies must exactly match dependency outcomes');
   }
 
   if (!Array.isArray(candidate.observations)) {

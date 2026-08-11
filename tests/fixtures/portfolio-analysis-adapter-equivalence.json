@@ -143,7 +143,7 @@
     "writes": []
   },
   "providers": {
-    "claude": { "adapterDigest": "sha256:3ceb8ab30895e7d5b364eeb5b95b286f07031ee9d997bc165b554f1e77d0391f" },
-    "codex": { "adapterDigest": "sha256:422e7558df27970d3e4d5cde8d8f99ce799ce3b54a74d572b2f5bea0f14e900d" }
+    "claude": { "adapterDigest": "sha256:9d93c809f56b723a6a130ece295395ebcbceab752a7b5b423acadf264452a7ac" },
+    "codex": { "adapterDigest": "sha256:38685a8964aed739d7c6454bb33531330f077b08c27b58004a382931cc02b230" }
   }
 }

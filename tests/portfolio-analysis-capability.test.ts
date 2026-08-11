@@ -222,6 +222,35 @@ describe('portfolio-analysis Capability', () => {
     expect(validatePortfolioAnalysisResult(context, result)).toEqual(result);
   });
 
+  it('rejects fabricated quote authority and unsupported unavailability claims', () => {
+    const fixture = JSON.parse(readFileSync(fixturePath, 'utf8')) as {
+      context: PortfolioAnalysisContext;
+      result: PortfolioAnalysisResult;
+    };
+
+    const fabricatedQuote = structuredClone(fixture.context);
+    fabricatedQuote.optionsAnalyses[0].outcome.quoteVerification = {
+      status: 'completed',
+      executableQuote: 12.34,
+    };
+    const fabricatedQuoteResult = structuredClone(fixture.result);
+    fabricatedQuoteResult.optionsAnalyses = structuredClone(fabricatedQuote.optionsAnalyses);
+    expect(() => validatePortfolioAnalysisResult(fabricatedQuote, fabricatedQuoteResult)).toThrow(
+      /quoteVerification has unsupported or missing fields/,
+    );
+
+    for (const unavailableDependencies of [
+      ['capability:scope:radon/ibkr-option-quote', 'capability:scope:trade-journal/portfolio-snapshot'],
+      ['capability:scope:radon/ibkr-option-quote', 'capability:scope:radon/ibkr-option-quote'],
+    ]) {
+      const unsupported = structuredClone(fixture.result);
+      unsupported.unavailableDependencies = unavailableDependencies;
+      expect(() => validatePortfolioAnalysisResult(fixture.context, unsupported)).toThrow(
+        /must exactly match dependency outcomes/,
+      );
+    }
+  });
+
   it('preserves the read-only and unavailable-dependency boundary', () => {
     for (const provider of ['claude', 'codex']) {
       const adapter = read(`adapters/${provider}.md`);
@@ -244,7 +273,7 @@ describe('portfolio-analysis Capability', () => {
     ) as Record<string, Record<string, unknown>>;
 
     expect(receipt.fixed_point).toBe('91422545e8104ad80d70781ed9fecc0b7702f49b');
-    expect(receipt.release_revision).toBe('6360ea08038730a645bbc14669035a6b43abb86e');
+    expect(receipt.release_revision).toBe('21c93624141faf0abe1b33846f3c1bbf0b60a618');
 
     const dependencies = receipt.dependencies as unknown as Array<Record<string, unknown>>;
     expect(dependencies.map(({ id }) => id)).toEqual([
