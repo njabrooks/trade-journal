@@ -54,9 +54,10 @@ describe("workflow-discovery Capability", () => {
     }
 
     const codex = read("adapters/codex.md");
-    expect(codex).toContain("bridge is optional bootstrap");
+    expect(codex).toContain("bridge is an active legacy router");
+    expect(codex).toContain("may compete with this governed inventory route");
     expect(codex).toContain("is not owned by this repository");
-    expect(codex).toContain("is not Adapter Conformance evidence");
+    expect(codex).toContain("has unavailable Adapter Conformance evidence");
   });
 
   it("binds both interactive inventory entries and keeps the bridge non-gating", () => {
@@ -94,7 +95,7 @@ describe("workflow-discovery Capability", () => {
     }
 
     const bridge = inventory.discovery_surfaces.find(
-      (surface) => surface.id === "codex-bridge-bootstrap",
+      (surface) => surface.id === "codex-legacy-router",
     )!;
     expect(bridge).toMatchObject({
       location_class: "external-bridge",

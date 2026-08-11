@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "inventory_kind": "interactive",
-  "as_of": "2026-08-08",
+  "as_of": "2026-08-11",
   "accepted_workspace_revision": "2b6ea3e02ff5ba114b0f91dd779c4afb26181358",
   "authority": "repository:njabrooks/trade-journal",
   "entries": [
@@ -49,7 +49,7 @@
       ],
       "evidence": {
         "state": "current",
-  "as_of": "2026-08-11",
+        "as_of": "2026-08-10",
         "capability_version": "1.3.1",
         "package_digest": "sha256:5fe78a3a67c2ce2756c37cdc6052523012835d5068cc29992e98158dd591e039",
         "adapter_digest": "sha256:ae03a42715dbce27565cf772cff6f71c82ec8bf7f4fb6c3ef7f3cf017ff30fd5",
@@ -166,7 +166,7 @@
       ],
       "evidence": {
         "state": "unavailable",
-        "as_of": "2026-08-11",
+        "as_of": "2026-08-10",
         "capability_version": null,
         "package_digest": null,
         "adapter_digest": null,
@@ -2272,7 +2272,7 @@
         "state": "current",
         "as_of": "2026-08-11",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:d9ca9b499592f86cba3a9d46f37d20a693e59c91f7e19953d48a03b122f546ad",
+        "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
         "adapter_digest": "sha256:82ee574c9e1e4c2bce81a425775a5de45ba350350f8589c3f9ff60d8f945b82b",
         "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Claude adapter."
       },
@@ -2324,7 +2324,7 @@
       ],
       "limitations": [
         "The governed whole-file Provider Entry Point remains staged rather than installed globally.",
-        "The Home Hub bridge may bootstrap discovery when installed, but its external bytes are not repository authority or conformance evidence.",
+        "The installed Home Hub bridge remains an active legacy competing router whose external bytes are not repository authority or conformance evidence.",
         "A successfully discovered workflow may still be unavailable because its own evidence or environmental prerequisites are not current."
       ],
       "operational_consumers": [
@@ -2334,9 +2334,9 @@
         "state": "current",
         "as_of": "2026-08-11",
         "capability_version": "1.0.0",
-        "package_digest": "sha256:d9ca9b499592f86cba3a9d46f37d20a693e59c91f7e19953d48a03b122f546ad",
-        "adapter_digest": "sha256:66aee497b6952678b61fe82d16deb8f80b3e9ae6cfb00f68b40ec997a5f6ec58",
-        "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Codex adapter; the optional external bridge is not part of that evidence."
+        "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
+        "adapter_digest": "sha256:b39e462bd35a94522f912bfea7792918d55a08955759898708b2cc0e7be2a887",
+        "reason": "Exact current evidence binds repository-owned workflow-discovery 1.0.0 and its Codex adapter; the active legacy external router remains separately unavailable for Adapter Conformance."
       },
       "governed_binding": {
         "package_path": "capabilities/workflow-discovery/capability-package.json",
@@ -2346,7 +2346,7 @@
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Repository inventory and the exact governed adapter now own routing semantics; retain the machine-local bridge only as optional environmental bootstrap."
+        "rationale": "Repository inventory and exact governed adapters own routing authority; retain the unchanged machine-local bridge as an explicitly limited active legacy competing router with unavailable evidence."
       }
     }
   ],
@@ -2387,11 +2387,18 @@
       "coverage": "Whole-file governed staging output containing the locked workflow-discovery Capability and exact Codex adapter."
     },
     {
-      "id": "codex-bridge-bootstrap",
+      "id": "codex-exhaustive-inventory",
+      "provider": "codex",
+      "location_class": "repository",
+      "path": "docs/agents/provider-adapters/interactive-inventory.json",
+      "coverage": "Exhaustive index of 33 repository Claude discovery sources plus three issue #75 historical-only records, together with the governed workflow-discovery adapters."
+    },
+    {
+      "id": "codex-legacy-router",
       "provider": "codex",
       "location_class": "external-bridge",
       "path": "~/.codex/skills/trade-journal-workflows/SKILL.md",
-      "coverage": "Optional Home Hub activation bootstrap only; external bytes are neither repository semantics nor Adapter Conformance evidence."
+      "coverage": "Active legacy Home Hub router whose curated map can compete with governed routing; external bytes are non-gating and have unavailable Adapter Conformance evidence."
     }
   ],
   "session_hooks": [
@@ -2568,12 +2575,12 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "Twenty-six interactive inventory entries have current evidence. Of twelve unavailable entries, eight await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
+      "detail": "At issue #75 acceptance, Twenty-four interactive inventory entries have current evidence. Of thirteen unavailable entries, nine await J2 disposition and four non-candidates have completed final retire dispositions. After issue #71 adds two governed discovery adapters, the current totals are twenty-six current and twelve unavailable; the same four non-candidate dispositions remain unchanged."
     },
     {
-      "id": "external-codex-bootstrap",
+      "id": "external-codex-legacy-router",
       "classification": "environment",
-      "detail": "The optional Home Hub Codex bridge may activate repository discovery but is never read by repository parity gates or represented as semantic or Adapter Conformance authority."
+      "detail": "The installed Home Hub Codex bridge remains an active legacy competing router; it is never read by repository parity gates and its external bytes have unavailable semantic and Adapter Conformance authority."
     },
     {
       "id": "connector-era-assumptions",

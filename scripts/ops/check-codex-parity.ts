@@ -194,7 +194,7 @@ function main() {
       `repository discovery ........ ❌ ${inventoryDiagnostics.length} inventory diagnostic(s), ${inventoryMissing.length} missing skill(s), adapter ${discoveryAdapterMissing ? 'missing' : 'present'}`,
     );
   }
-  console.log('machine-local bridge ....... ℹ️  environmental bootstrap only (not checked; never gating)');
+  console.log('machine-local bridge ....... ℹ️  active legacy router (not checked; never gating)');
 
   if (!mirrorFound) {
     console.log('.agents/ mirror ............ ⊘ not present (skipped)');

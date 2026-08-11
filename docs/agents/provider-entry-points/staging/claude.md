@@ -550,7 +550,7 @@ Provider-neutral instructions:
 - Route an explicitly requested protective tombstone only to its refusal boundary; never rediscover archived historical evidence as an executable workflow.
 - Apply provider-specific tool translation from the repository's provider guidance without changing the selected workflow's semantic, authority, write, or judgment boundaries.
 - Keep discovery read-only. Execution of a selected workflow is a separate step and requires the user authority, environmental prerequisites, and safeguards declared by that workflow.
-- Treat a machine-local bridge as optional provider bootstrap only. Its presence, contents, or parity are environmental facts and are not repository-owned semantic or Adapter Conformance evidence.
+- When installed, treat the machine-local bridge as an active legacy discovery router whose curated routing may compete with the governed inventory. Prefer repository-native governed routing, surface the legacy limitation, and never treat bridge presence, contents, or parity as repository-owned semantics or Adapter Conformance evidence.
 
 Provider Adapter `workflow-discovery-claude` (current):
 

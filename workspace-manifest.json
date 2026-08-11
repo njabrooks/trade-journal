@@ -547,13 +547,13 @@
       "interactive": {
         "artifact": "docs/agents/provider-adapters/interactive-inventory.json",
         "repository_owned_entries": 38,
-        "environmental_bootstrap": [
+        "machine_local_discovery": [
           {
             "id": "codex-trade-journal-bridge",
             "provider": "codex",
             "ownership": "machine-local:home-hub",
             "path": "~/.codex/skills/trade-journal-workflows/SKILL.md",
-            "authority": "optional-bootstrap-only",
+            "authority": "active-legacy-competing-router-with-unavailable-evidence",
             "repository_gate": false
           }
         ]

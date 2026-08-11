@@ -155,6 +155,12 @@ describe('issue #75 non-candidate entry-point dispositions', () => {
       'Twenty-four interactive inventory entries have current evidence. Of thirteen unavailable entries, nine await J2 disposition and four non-candidates have completed final retire dispositions',
     );
     expect(
+      interactive.known_gaps.find((gap) => gap.id === 'no-exact-adapter-evidence')
+        ?.detail,
+    ).toContain(
+      'After issue #71 adds two governed discovery adapters, the current totals are twenty-six current and twelve unavailable; the same four non-candidate dispositions remain unchanged.',
+    );
+    expect(
       headless.known_gaps.find((gap) => gap.id === 'adapter-evidence-unavailable')
         ?.detail,
     ).toContain(
@@ -162,10 +168,10 @@ describe('issue #75 non-candidate entry-point dispositions', () => {
     );
     expect(
       interactive.entries.filter((entry) => entry.evidence.state === 'current'),
-    ).toHaveLength(24);
+    ).toHaveLength(26);
     expect(
       interactive.entries.filter((entry) => entry.evidence.state === 'unavailable'),
-    ).toHaveLength(13);
+    ).toHaveLength(12);
     expect(
       headless.entries.filter((entry) => entry.evidence.state === 'current'),
     ).toHaveLength(24);

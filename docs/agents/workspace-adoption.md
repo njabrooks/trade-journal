@@ -45,7 +45,7 @@ the exact canonical Work Item meaning during adoption.
 
 The accepted J1 manifest declared no owned Capability Packages. J2 now declares twelve Trade Journal-owned
 packages: portfolio snapshot, belief maintenance, belief-research relation, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
-research publication, research pipeline, portfolio options advice, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded only as optional environmental bootstrap. Rich inventory validity, mirror parity, and file presence do not
+research publication, research pipeline, portfolio options advice, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded as an active legacy competing router with unavailable conformance evidence. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry. The federated Registry
 also resolves three Notes-owned packages from their accepted immutable release without declaring them owned by
 Trade Journal.
@@ -277,12 +277,12 @@ staged governed Provider Entry Points are unchanged because no governed bytes ch
 digests, rollback, and scope are recorded in `evidence/issue-75-non-candidate-dispositions.json`.
 
 Issue #71 publishes workflow-discovery `1.0.0` from immutable Trade Journal revision
-`ecceceb16f892e4521f5ea6e6e153d641f328beb`. The provider-neutral contract selects from the validated
-repository inventory and delegates to an exact locked Codex adapter or an honestly unavailable retained
+`101aa75990c8793b85147bfdc3101e10668df4c9`. The provider-neutral contract selects from the validated
+repository inventory and delegates to the selected provider's exact locked adapter or an honestly unavailable retained
 repository source; it does not copy or execute workflow procedures. `AGENTS.md` provides repository-native
 activation, and the parity/pre-commit gate now validates only repository-owned discovery and mirror state.
-The existing Home Hub bridge remains usable as optional machine-local bootstrap, but its presence, absence,
-contents, and parity are never repository authority or Adapter Conformance evidence. No provider, database,
+The installed Home Hub bridge remains usable but is honestly recorded as an active legacy competing router;
+its presence, absence, contents, and parity are never repository authority and its conformance evidence is unavailable. No provider, database,
 investment, GitHub, scheduler, external repository, or machine-local bridge write is in scope.
 
 Issue #55's fixed-point review repair republishes the morning-attention-brief evidence at immutable revision

@@ -520,7 +520,7 @@
       "authority": "scope:trade-journal",
       "dependencies": [],
       "id": "capability:scope:trade-journal/workflow-discovery",
-      "package_digest": "sha256:d9ca9b499592f86cba3a9d46f37d20a693e59c91f7e19953d48a03b122f546ad",
+      "package_digest": "sha256:7d6e82ace6a60ccd997b47af759b5345783580eccb903007872c2f3c0f9bc5d6",
       "provider_adapters": [
         {
           "evidence": "evidence/claude.json",
@@ -543,8 +543,8 @@
       "source": {
         "development_digest": null,
         "package_path": "capabilities/workflow-discovery",
-        "release_reference": "ecceceb16f892e4521f5ea6e6e153d641f328beb",
-        "revision": "ecceceb16f892e4521f5ea6e6e153d641f328beb"
+        "release_reference": "101aa75990c8793b85147bfdc3101e10668df4c9",
+        "revision": "101aa75990c8793b85147bfdc3101e10668df4c9"
       }
     }
   ],
@@ -552,6 +552,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:6f3fc8453554ba37b70d7e4aef4862fb0b46a70da5e8767df5ecd5bda045b602",
+  "registry_digest": "sha256:e52fd9981e68c3e22d6fd4d89185b6f429090c687d15ff14640096a1aab5897b",
   "schema_version": "1.0.0"
 }
