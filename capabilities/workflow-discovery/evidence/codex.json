@@ -1,0 +1,34 @@
+{
+  "capability_id": "capability:scope:trade-journal/workflow-discovery",
+  "capability_version": "1.0.0",
+  "package_digest": "sha256:e3b9651720dd0759992dabd83bf2173b278424c6936b4956267a875656e4c46e",
+  "adapter_id": "workflow-discovery-codex",
+  "adapter_digest": "sha256:66aee497b6952678b61fe82d16deb8f80b3e9ae6cfb00f68b40ec997a5f6ec58",
+  "support_state": "current",
+  "validated_at": "2026-08-11",
+  "results": {
+    "adapter-entry-point": {
+      "status": "passed",
+      "method": "Accepted Workspace CLI Capability validation and clean staged Codex Provider Entry Point generation"
+    },
+    "inventory-routing": {
+      "status": "passed",
+      "method": "Repository contract tests verify inventory-first selection, exact Codex adapter resolution, limited migration-input fallback, and protective-tombstone routing"
+    },
+    "discovery-only-boundary": {
+      "status": "passed",
+      "method": "Repository contract tests verify the adapter declares no provider, database, investment, tracker, scheduler, or cross-repository operation"
+    },
+    "authority-preserving-semantics": {
+      "status": "passed",
+      "reviewer": "Issue #71 Spec review",
+      "method": "Compared the Codex adapter with the provider-neutral contract, repository-versus-machine authority boundary, accepted #47 migration spine, and issue #71 acceptance criteria",
+      "evidence_link": "https://github.com/njabrooks/trade-journal/issues/71",
+      "expires_at": "2026-09-10"
+    },
+    "eligible-interactive-environment": {
+      "status": "passed",
+      "method": "Repository-native AGENTS.md discovery resolved the governed adapter and the optional Home Hub bridge remained available only as environmental bootstrap on 2026-08-11"
+    }
+  }
+}

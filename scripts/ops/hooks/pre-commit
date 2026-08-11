@@ -1,5 +1,5 @@
 #!/bin/sh
-# Codex skill-bridge parity gate (canonical, version-controlled source for the git pre-commit hook).
+# Repository workflow-discovery parity gate (canonical source for the git pre-commit hook).
 #
 # Install (delegating shim in .git/hooks): the codex-interop-parity work created
 #   .git/hooks/pre-commit  ->  exec scripts/ops/hooks/pre-commit
@@ -11,16 +11,17 @@
 # commits are untouched. Applies to whoever commits in this tree — Claude or Codex.
 # Bypass (not recommended): git commit --no-verify
 
-# --bridge-only: block ONLY when a NEW skill is missing from the interactive bridge inventory (rare,
-# and a genuine interactive-Codex capability loss). Headless-mirror staleness prints as a warning but
+# --discovery-only: block when a skill is missing from the repository-owned interactive inventory.
+# Machine-local bridge contents are environmental and never gate repository commits. Headless-mirror
+# staleness prints as a warning but
 # does NOT block — routine skill-body edits shouldn't be taxed while the Codex cron fallback is "if and
 # when". Regenerate the mirror at your leisure (or before relying on Codex for cron): generate-agents-mirror.ts.
 if git diff --cached --name-only --diff-filter=ACMRD | grep -qE '^\.claude/skills/|^\.agents/skills/'; then
-  echo "[pre-commit] Codex skill surface changed — checking bridge parity…"
-  if ! npx tsx scripts/ops/check-codex-parity.ts --bridge-only; then
+  echo "[pre-commit] Codex skill surface changed — checking repository discovery parity…"
+  if ! npx tsx scripts/ops/check-codex-parity.ts --discovery-only; then
     echo ""
-    echo "[pre-commit] ✗ A skill is missing from the interactive Codex bridge (see report above)."
-    echo "             Add it to ~/.codex/skills/trade-journal-workflows/references/claude-inventory.md"
+    echo "[pre-commit] ✗ A skill is missing or invalid in the repository workflow inventory."
+    echo "             Update docs/agents/provider-adapters/interactive-inventory.json."
     echo "             Bypass (not recommended): git commit --no-verify"
     exit 1
   fi
