@@ -1100,7 +1100,7 @@
     },
     {
       "id": "interactive-claude-portfolio-and-options-mcp",
-      "ability": "Analyze portfolio and options through Claude.ai connector assumptions.",
+      "ability": "Analyze governed portfolio snapshots and optional volatility analysis without mutation.",
       "candidate_capability": {
         "status": "candidate",
         "id": "capability:scope:trade-journal/portfolio-analysis",
@@ -1110,45 +1110,58 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
+        "path": "capabilities/portfolio-analysis/adapters/claude.md"
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
         "path": ".claude/skills/portfolio-and-options-mcp/SKILL.md"
       },
-      "packaging": "authored-provider-entry-point",
+      "packaging": "governed-provider-adapter",
       "invocation": {
         "mode": "interactive",
-        "entry_point": "Claude.ai app skill discovery with Supabase and Massive connectors (not a Claude Code slash command)",
+        "entry_point": "docs/agents/provider-entry-points/staging/claude.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Analyzes exposures and structures for the user."
+        "rationale": "Read-only portfolio interpretation with optional bounded options analysis."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Portfolio and options data through Supabase and Massive connector semantics.",
-        "writes": "Read-only analysis; no DDL or trade execution.",
-        "judgment": "Analyzes exposures and structures for the user."
+        "reads": "Only Registry-locked portfolio-snapshot and options-vol-analysis results.",
+        "writes": "None; options persistence is forced off and no quote, order, or trade operation is permitted.",
+        "judgment": "Evidence-grounded interpretation for the user; no user-decision resolution or order sizing."
       },
       "prerequisites": [
-        "Claude.ai connector environment with read-only Supabase and market-data access."
+        "Claude repository session with access to the staged governed Provider Entry Point.",
+        "Current portfolio-snapshot dependency and, when requested, current options-vol-analysis dependency."
       ],
       "limitations": [
-        "Connector-era assumptions conflict with repository script precedence and are unavailable in many runtimes.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "Snapshot quality depends on reported upstream ingestion freshness.",
+        "Executable quote verification remains unavailable while Radon publishes no accepted immutable option-quote Capability.",
+        "The governed Provider Entry Point is staged; the legacy connector-era skill remains a rollback-capable migration input until final discovery cutover."
       ],
       "operational_consumers": [
-        "Interactive Claude.ai user; Claude Code is directed to pull-portfolio instead"
+        "Interactive Trade Journal maintainer; no live scheduled consumer."
       ],
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-11",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:96af3645abb0558ad9cf0057c32435a0e4fbdc8f9bdf16996614586bf2d46eba",
+        "adapter_digest": "sha256:5f1b6457dde6def6d5a7fb9e1a5b5b2bc82cc60aad429eed268418b5ef51819e",
+        "reason": "Exact current evidence binds portfolio-analysis 1.0.0, its two governed dependencies, the representative observable-equivalence fixture, and the governed Claude adapter."
+      },
+      "governed_binding": {
+        "package_path": "capabilities/portfolio-analysis/capability-package.json",
+        "adapter_id": "portfolio-analysis-claude",
+        "evidence_path": "capabilities/portfolio-analysis/evidence/claude.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/claude.md"
       },
       "j2_disposition": {
         "action": "replace",
-        "rationale": "Replace provider-specific or externally-owned assumptions at the correct Capability Authority."
+        "rationale": "The authority-correct governed Capability replaces connector-era assumptions; retain the legacy source only as an explicit migration input until final discovery cutover."
       }
     },
     {
@@ -2586,7 +2599,7 @@
     {
       "id": "no-exact-adapter-evidence",
       "classification": "evidence",
-      "detail": "At issue #75 acceptance, Twenty-four interactive inventory entries have current evidence. Of thirteen unavailable entries, nine await J2 disposition and four non-candidates have completed final retire dispositions. After issue #71 adds two governed discovery adapters and issue #64 governs options-vol-analysis, the current totals are twenty-seven current and eleven unavailable; the same four non-candidate dispositions remain unchanged."
+      "detail": "At issue #75 acceptance, Twenty-four interactive inventory entries have current evidence. Of thirteen unavailable entries, nine await J2 disposition and four non-candidates have completed final retire dispositions. After issues #71, #64, and #65 add governed workflow discovery, options-vol-analysis, and portfolio-analysis adapters, the current totals are twenty-eight current and ten unavailable; the same four non-candidate dispositions remain unchanged."
     },
     {
       "id": "external-codex-legacy-router",
@@ -2596,7 +2609,7 @@
     {
       "id": "connector-era-assumptions",
       "classification": "j2",
-      "detail": "portfolio-and-options-mcp and several skill bodies retain Claude.ai connector or provider-tool assumptions requiring authority-preserving translation."
+      "detail": "The former portfolio-and-options-mcp source remains only as an explicit rollback-capable migration input; its current governed adapter composes portfolio-snapshot and options-vol-analysis without connector assumptions. Several other skill bodies still require authority-preserving translation."
     },
     {
       "id": "slash-command-packaging",

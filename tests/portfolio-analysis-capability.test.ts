@@ -18,6 +18,12 @@ function digest(path: string): string {
   return `sha256:${createHash('sha256').update(read(path)).digest('hex')}`;
 }
 
+function repositoryDigest(path: string): string {
+  return `sha256:${createHash('sha256')
+    .update(readFileSync(resolve(process.cwd(), path), 'utf8'))
+    .digest('hex')}`;
+}
+
 function normalizeAdapter(adapter: string): string {
   return adapter
     .replace(/^## (Claude|Codex) Provider Adapter\n\n/, '')
@@ -111,6 +117,78 @@ describe('portfolio-analysis Capability', () => {
       expect(adapter).not.toMatch(/execute_sql|apply_migration|store_as=|query_data/);
       expect(adapter).not.toMatch(/scripts\/ibkr-option-quote\.py|scripts\/ibkr-quote-contracts\.py/);
     }
+  });
+
+  it('records exact dependency, publication, legacy, and scope evidence', () => {
+    const receipt = JSON.parse(
+      readFileSync(
+        resolve(process.cwd(), 'evidence/issue-65-portfolio-analysis.json'),
+        'utf8',
+      ),
+    ) as Record<string, Record<string, unknown>>;
+
+    expect(receipt.fixed_point).toBe('91422545e8104ad80d70781ed9fecc0b7702f49b');
+    expect(receipt.release_revision).toBe('c576240e5c356b58db5528cb26fb934006343b36');
+
+    const dependencies = receipt.dependencies as unknown as Array<Record<string, unknown>>;
+    expect(dependencies.map(({ id }) => id)).toEqual([
+      'capability:scope:trade-journal/portfolio-snapshot',
+      'capability:scope:trade-journal/options-vol-analysis',
+    ]);
+    expect(dependencies.every(({ unavailable_behavior }) =>
+      String(unavailable_behavior).includes('zero writes'))).toBe(true);
+
+    expect(receipt.observable_equivalence).toMatchObject({
+      fixture_digest: repositoryDigest(
+        'tests/fixtures/portfolio-analysis-adapter-equivalence.json',
+      ),
+      exact_adapter_semantics_equivalent: true,
+      live_provider_invocation_claimed: false,
+      complete_dependency_results_preserved: true,
+      observations_require_exact_field_evidence: true,
+      options_persistence_forced_off: true,
+      writes: [],
+    });
+
+    expect(receipt.published_artifacts).toMatchObject({
+      registry_lock: repositoryDigest('capability-registry-lock.json'),
+      claude_staging: repositoryDigest(
+        'docs/agents/provider-entry-points/staging/claude.md',
+      ),
+      codex_staging: repositoryDigest(
+        'docs/agents/provider-entry-points/staging/codex.md',
+      ),
+      interactive_inventory: repositoryDigest(
+        'docs/agents/provider-adapters/interactive-inventory.json',
+      ),
+      headless_inventory: repositoryDigest(
+        'docs/agents/provider-adapters/headless-inventory.json',
+      ),
+      generation_eligibility: repositoryDigest(
+        'docs/agents/provider-adapters/generation-eligibility.json',
+      ),
+      inventory_entries: 74,
+      generation_eligible_entries: 54,
+    });
+
+    expect(receipt.legacy_inventory_disposition).toMatchObject({
+      action: 'replace',
+      current_binding: 'governed-provider-adapter',
+      active_discovery_changed: false,
+    });
+    expect(receipt.scope_confirmation).toMatchObject({
+      active_discovery_changed: false,
+      legacy_inputs_changed: false,
+      scheduler_or_credential_changed: false,
+      generic_connector_invoked: false,
+      database_write: false,
+      volatility_report_persisted: false,
+      gateway_inspected_or_operated: false,
+      executable_quote_requested_or_fabricated: false,
+      contract_qualification_invoked: false,
+      status_or_decision_item_changed: false,
+      strategy_position_order_or_trade_authority: false,
+    });
   });
 
   it('binds both exact adapters to complete current evidence', () => {

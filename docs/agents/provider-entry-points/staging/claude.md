@@ -384,6 +384,39 @@ Default `persistence` to `{ "requested": false, "status": "not_requested", "repo
 
 This adapter has analysis authority only. It must not place, route, preview, stage, size, or modify an order or trade; operate IBKR gateway infrastructure; mutate portfolio, thesis, claim, signal, strategy, position, Decision Item, scheduler, or credential state; or use ad hoc SQL, a generic database connector, or any write path other than the explicit report saver.
 
+### capability:scope:trade-journal/portfolio-analysis 1.0.0
+
+Intent: Analyze current Trade Journal portfolio state and, when explicitly requested, place canonical options volatility analysis in portfolio context without acquiring connector, persistence, quote, sizing, or trade authority.
+
+Contract: Given an explicit portfolio question, optional account UUIDs, and up to five complete optional volatility-analysis requests, resolve the governed portfolio-snapshot and options-vol-analysis dependencies, preserve their complete results and reported freshness, return evidence-grounded observations about portfolio state and option structures, identify every refused or unavailable dependency explicitly, and perform no writes, executable quote operations, order sizing, or trade actions.
+
+Provider-neutral instructions:
+- Require a non-empty portfolio question. Accept optional account UUIDs and zero to five options-analysis requests containing every thesis input required by the governed options-vol-analysis Capability.
+- Resolve portfolio-snapshot >=1.0.0 <2.0.0 first and preserve its complete JSON result, including snapshot date, NAV, cash, leverage, owner and underlying breakdowns, strategies, unlinked positions, and cash balances.
+- Ground portfolio observations in exact returned snapshot fields. Preserve per-account and per-owner context, aggregate exposure through the returned parent-underlying groups, use marketValueUsd for portfolio value, distinguish option quantity from multiplier-adjusted commitment, and state stale or differing snapshot dates rather than implying wall-clock freshness.
+- For each explicit options request, resolve options-vol-analysis >=1.0.0 <2.0.0 with persistence forced false. Preserve each complete dependency envelope and its canonical analyzer result without recalculation, reordering, omission, or replacement.
+- Treat options analyzer marketPrice values as per-share Black-Scholes values at listed implied volatility, not executable quotes. A listed option contract normally represents 100 shares; do not infer or recommend a contract count from portfolio holdings, cash, or margin.
+- Return one result with status, focus, the complete portfolio snapshot or null, evidence-grounded observations, the ordered options-analysis outcomes, unavailableDependencies, limitations, errors, and writes. Every observation must name exact dependency fields supporting it.
+- If portfolio-snapshot is unavailable or fails, return unavailable or failed with no portfolio observations and do not invoke options-vol-analysis. If an options dependency is refused, unavailable, or fails after a valid snapshot, return partial while preserving the portfolio result and the exact dependency outcome.
+- Do not use a generic database or market-data connector, ad hoc SQL, retained gateway or quote helpers, or provider training knowledge as a substitute for either governed dependency.
+- This Capability is read-only. It must not persist a volatility report, mutate portfolio or belief state, resolve user judgment, operate Radon infrastructure, qualify a contract, fabricate a quote, size or recommend an order quantity, or place, route, preview, stage, or modify an order or trade.
+
+Provider Adapter `portfolio-analysis-claude` (current):
+
+## Claude Provider Adapter
+
+Accept one request with a non-empty `focus`, optional `accountIds` containing only account UUIDs, and `optionsAnalyses` containing zero to five requests. Each options request must provide `ticker`, `direction` (`bullish` or `bearish`), `targetBase`, `targetHigh`, `horizonMonths`, and `downsideFloor`, plus only the optional settings supported by `capability:scope:trade-journal/options-vol-analysis`. Ask for missing required inputs in an interactive request. Refuse any request for persistence, a recommended contract count, an order preview, or trade execution.
+
+Resolve `capability:scope:trade-journal/portfolio-snapshot` from the immutable Registry Lock and follow its exact Claude adapter. Request JSON and pass only the explicit account UUIDs. Preserve the complete snapshot result and its reported snapshot date. If the dependency is unavailable or fails, return `unavailable` or `failed`, set `portfolioSnapshot: null`, `observations: []`, `optionsAnalyses: []`, and `writes: []`, identify the dependency and reason, and do not invoke options analysis.
+
+Ground every portfolio observation in the returned snapshot. Each observation must include `kind`, `statement`, and one or more `evidence` items naming `dependency: "portfolio-snapshot"`, an exact JSON field path, and its exact returned value. Cover only what answers `focus`, using the returned NAV, cash, leverage, owner, parent-underlying, strategy, position, P&L, unlinked-position, and cash fields. Preserve account and owner distinctions. Use `marketValueUsd` for value and do not use deprecated notional fields. State reported dates and limitations; do not describe a snapshot as live when its date does not establish that.
+
+For each options request in input order, resolve `capability:scope:trade-journal/options-vol-analysis` from the same immutable Registry Lock and follow its exact Claude adapter with `persist: false`. Preserve the complete result envelope and `AnalysisOutput` without recalculation, reordering, omission, or replacement. Evidence-grounded option observations may reference exact `options-vol-analysis` fields, but must label analyzer `marketPrice` values as per-share Black-Scholes values at listed implied volatility, not executable quotes. A listed option contract normally represents 100 shares. Do not infer a contract count from holdings, cash, margin, or the user's question.
+
+Return exactly one object with `status` (`completed`, `partial`, `unavailable`, `refused`, or `failed`), `focus`, `portfolioSnapshot`, `observations`, ordered `optionsAnalyses`, `unavailableDependencies`, `limitations`, `errors`, and `writes`. A valid snapshot plus any refused, unavailable, or failed options dependency is `partial`; preserve both the snapshot and each exact dependency outcome. Do not substitute connector data, cached state, remembered positions, training knowledge, a fabricated chain, or a fabricated quote for an unavailable dependency.
+
+This adapter is read-only. It must not use Supabase MCP, Massive connector tooling, ad hoc SQL, `scripts/vol-curve-save-report.ts`, retained IBKR quote helpers, or any generic write path. It must not mutate portfolio, journal, thesis, claim, signal, strategy, position, Decision Item, scheduler, credential, gateway, contract, order, or trade state. `writes` is always `[]`.
+
 ### capability:scope:trade-journal/portfolio-options-advice 1.0.0
 
 Intent: Produce bounded, portfolio-aware options recommendations without acquiring trade-execution authority.

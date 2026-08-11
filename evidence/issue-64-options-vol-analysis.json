@@ -82,14 +82,14 @@
     }
   },
   "published_artifacts": {
-    "registry_lock": "sha256:7ba4d49f998f5d03fc48b79af14f5f27298b26379e928fa02f81a0f17495ff0e",
-    "claude_staging": "sha256:761b5d4b8a7b3841efb4b2fcf5e79f96874af813399a206d44b055d049b11512",
-    "codex_staging": "sha256:de42f47c4385c90b8ff17f27f9c4c704cba30ba00c4b848ab4426969a105d691",
-    "interactive_inventory": "sha256:86777eb352a82c6a2bd9ae6f119ef5fd6ea67c6ff7be5e724a95f8173048aa4f",
-    "headless_inventory": "sha256:1eb3090e7d59863bad1f1d001d2db3d47a7e3483d67528631d76a85f7c8146c8",
-    "generation_eligibility": "sha256:99f47e659cc8369136edbe8f1691bd9f1604487b77e48067b96f007432cadb20",
+    "registry_lock": "sha256:875e1a17dc62dd4efbe5a9dbe5760d4528ef31f7d42cebaf687780dfa132761a",
+    "claude_staging": "sha256:da2b671aef24091b3b1f1ba15b536fd397b69243247065f7c17f0334e0e7a0b6",
+    "codex_staging": "sha256:1d58420178e0bc61df1be0484231919ae9ef85a044c7007d0ce77d1844d62a77",
+    "interactive_inventory": "sha256:43553da223a3ab659030306eb5c5d04269f495099f6b1201fc18eae380737f43",
+    "headless_inventory": "sha256:c28b15fbcbda2b4f03ab90d2e61445fce8eb403ff2f2cec78685140a22188221",
+    "generation_eligibility": "sha256:a7b5fac66aec47cac051cf714e545c5df678dad81b00c36f4ea37332fc84594e",
     "inventory_entries": 74,
-    "generation_eligible_entries": 52
+    "generation_eligible_entries": 54
   },
   "reviews": {
     "fixed_point": "337acbb74f8988f9742d2126f2615f149811795c",
@@ -109,7 +109,7 @@
     "all_governed_capabilities": "13-trade-journal-capabilities-passed-at-current-evidence-time",
     "registry_lock": "passed-published-human-and-json",
     "provider_entry_points": "passed-clean-regeneration-human-and-json",
-    "inventory_and_generation_eligibility": "passed-74-entries-52-generation-eligible",
+    "inventory_and_generation_eligibility": "passed-74-entries-54-generation-eligible",
     "mirror_parity": "passed-33-of-33",
     "unavailable_and_stale_refusal_proofs": "passed-no-write",
     "focused_governance_tests": "passed",

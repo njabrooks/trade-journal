@@ -137,6 +137,21 @@
       }
     },
     {
+      "id": "capability:scope:trade-journal/portfolio-analysis",
+      "authority": "scope:trade-journal",
+      "repository": "github:njabrooks/trade-journal",
+      "package_path": "capabilities/portfolio-analysis",
+      "approved_version": "1.0.0",
+      "release": {
+        "source": ".",
+        "revision": "c576240e5c356b58db5528cb26fb934006343b36"
+      },
+      "development": {
+        "enabled": true,
+        "working_tree": "."
+      }
+    },
+    {
       "id": "capability:scope:trade-journal/portfolio-options-advice",
       "authority": "scope:trade-journal",
       "repository": "github:njabrooks/trade-journal",

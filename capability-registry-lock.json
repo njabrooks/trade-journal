@@ -335,6 +335,47 @@
         {
           "id": "capability:scope:trade-journal/portfolio-snapshot",
           "version_constraint": ">=1.0.0 <2.0.0"
+        },
+        {
+          "id": "capability:scope:trade-journal/options-vol-analysis",
+          "version_constraint": ">=1.0.0 <2.0.0"
+        }
+      ],
+      "id": "capability:scope:trade-journal/portfolio-analysis",
+      "package_digest": "sha256:96af3645abb0558ad9cf0057c32435a0e4fbdc8f9bdf16996614586bf2d46eba",
+      "provider_adapters": [
+        {
+          "evidence": "evidence/claude.json",
+          "id": "portfolio-analysis-claude",
+          "provider": "claude",
+          "source": "adapters/claude.md",
+          "state": "current",
+          "validated_at": "2026-08-11"
+        },
+        {
+          "evidence": "evidence/codex.json",
+          "id": "portfolio-analysis-codex",
+          "provider": "codex",
+          "source": "adapters/codex.md",
+          "state": "current",
+          "validated_at": "2026-08-11"
+        }
+      ],
+      "repository": "github:njabrooks/trade-journal",
+      "source": {
+        "development_digest": null,
+        "package_path": "capabilities/portfolio-analysis",
+        "release_reference": "c576240e5c356b58db5528cb26fb934006343b36",
+        "revision": "c576240e5c356b58db5528cb26fb934006343b36"
+      }
+    },
+    {
+      "approved_version": "1.0.0",
+      "authority": "scope:trade-journal",
+      "dependencies": [
+        {
+          "id": "capability:scope:trade-journal/portfolio-snapshot",
+          "version_constraint": ">=1.0.0 <2.0.0"
         }
       ],
       "id": "capability:scope:trade-journal/portfolio-options-advice",
@@ -584,6 +625,6 @@
   "kind": "CapabilityRegistryLock",
   "mode": "published",
   "publication_eligible": true,
-  "registry_digest": "sha256:a51c396b6e0fa160c9d0030cfa18dca99872ea36542e7855e1e652acce714dd0",
+  "registry_digest": "sha256:c50f9067e4264ac61b29ee23bd64e3a96caa23699d774c81e405e15f083b46a9",
   "schema_version": "1.0.0"
 }

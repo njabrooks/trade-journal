@@ -125,14 +125,14 @@ and staged generated output bind it through W1. The remaining generic projection
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
 generation decision and the incremental J2 migration state. It covers all 74 inventoried entry points. The
-sixteen locked Capabilities now record 52 generation-eligible inventory entries and two whole-file governed
-staging outputs. Thirteen packages are Trade Journal-owned; the three Notes-owned content-processing dependency
-packages remain external. The other 24 entries remain non-governed migration inputs or non-candidates with
+seventeen locked Capabilities now record 54 generation-eligible inventory entries and two whole-file governed
+staging outputs. Fourteen packages are Trade Journal-owned; the three Notes-owned content-processing dependency
+packages remain external. The other 22 entries remain non-governed migration inputs or non-candidates with
 explicit dispositions.
 
 The portfolio-snapshot, belief-maintenance, belief-research-relation, claims-synthesis, research-publication,
 thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice,
-options-vol-analysis, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
+options-vol-analysis, portfolio-analysis, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
 adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
 package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
 neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live
@@ -201,7 +201,15 @@ Black–Scholes-at-listed-IV model values from executable quotes, and expose Rad
 `unavailable` without calling gateway or quote helpers. Persistence remains an explicit, post-analysis opt-in
 through the existing single-report recorder. Deterministic fixture equivalence and a separately identified
 read-only eligible live-data probe are recorded in `evidence/issue-64-options-vol-analysis.json`; no active
-discovery, scheduler, gateway, quote, order, trade, or successor #65 scope is included.
+discovery, scheduler, gateway, quote, order, or trade scope is included.
+
+Issue #65 replaces the portfolio-and-options connector assumptions with the source-owned portfolio-analysis
+Capability. Its exact Claude and Codex adapters compose only the Registry-locked portfolio-snapshot and
+options-vol-analysis dependencies, preserve complete dependency results, ground observations in exact returned
+fields, force options persistence off, and expose snapshot or options unavailability explicitly. The legacy
+Claude skill and Codex mirror remain rollback-capable migration inputs until final discovery cutover. No active
+discovery, generic connector, scheduler, database write, gateway, executable quote, order sizing, or trade
+authority is added.
 
 ## J2 thesis-underwriting package
 
