@@ -352,6 +352,38 @@ When not in dry-run, persist only with `npx tsx scripts/ops/save-morning-brief.t
 
 This adapter is synthesis-only. It must not invoke any other write operation, write `journal_entries`, raise or resolve a Decision Item, save advisor recommendations, or mutate a thesis, claim, signal, strategy, position, or status.
 
+### capability:scope:trade-journal/options-vol-analysis 1.0.0
+
+Intent: Compare explicit thesis assumptions with an options volatility surface and rank bounded option structures without acquiring quote-infrastructure or trade-execution authority.
+
+Contract: Given an explicit ticker, direction, base and high target, horizon, downside floor, and optional analysis settings, run the canonical Trade Journal volatility-curve analyzer, preserve its complete result semantics, distinguish theoretical chain-derived values from executable quotes, optionally persist exactly one successful analysis report when explicitly requested, and return a machine-readable completed, unavailable, refused, or failed outcome without placing, staging, sizing, or modifying a trade.
+
+Provider-neutral instructions:
+- Require ticker, bullish or bearish direction, targetBase, targetHigh, horizonMonths, and downsideFloor. Accept horizonRange (default 2), riskFreeRate (default 0.045), and snapshotDate as the existing analyzer supports them.
+- Run the canonical Trade Journal analyzer in the repository root and preserve its context, thesis, expiries, volatility surface, term structure, volatility history and rank, narrative, and ranked strategies without provider-specific recalculation or reordering.
+- Treat Massive options data and stored Trade Journal chain snapshots as analysis inputs. If neither can supply a usable spot and chain for the requested horizon, return unavailable and write nothing.
+- Treat every marketPrice in the analysis as the analyzer's Black-Scholes value at listed implied volatility, not as an executable quote. Keep quote verification not-requested by default.
+- Radon remains the authority for IBKR gateway control, contract qualification, and executable option quotes. If quote verification is requested but the separately governed Radon quote Capability is unavailable, report quote verification as unavailable without inspecting or operating the gateway, calling retained quote helpers, inventing prices, or changing the analysis ranking.
+- Default persistence to false. Only an explicit persist=true on a completed analysis may invoke the purpose-built report saver, insert exactly one vol_curve_reports row, and return its report identifier; refused, failed, or unavailable analysis writes nothing.
+- Return one envelope containing status, the unmodified analysis or null, quoteVerification, persistence, writes, unavailableInputs, and errors. Preserve per-share result units and identify that one listed option contract normally represents 100 shares.
+- This Capability provides analysis only. It must never place, route, preview, stage, size, or modify an order or trade, operate the IBKR gateway, alter portfolio or belief state, or imply that a ranked structure is a user decision.
+
+Provider Adapter `options-vol-analysis-claude` (current):
+
+## Claude Provider Adapter
+
+Accept one explicit analysis request with `ticker`, `direction` (`bullish` or `bearish`), `targetBase`, `targetHigh`, `horizonMonths`, `downsideFloor`, optional `horizonRange` (default `2`), optional `riskFreeRate` (default `0.045`), optional `snapshotDate`, `persist` (default `false`), optional `notes`, and `quoteVerification` (default `false`). In an interactive request, ask for a missing required thesis input; do not infer a target, horizon, downside floor, or permission to persist.
+
+From the Trade Journal root, run the canonical analyzer exactly once with `npx tsx scripts/vol-curve-analyze.ts --ticker <ticker> --direction <direction> --target-base <targetBase> --target-high <targetHigh> --horizon-months <horizonMonths> --horizon-range <horizonRange> --downside-floor <downsideFloor> --risk-free-rate <riskFreeRate>` and append `--snapshot-date <snapshotDate>` only when supplied. Capture stdout as the complete `AnalysisOutput`; do not recompute, reorder, omit, or replace its `context`, `thesis`, `expiries`, `volSurface`, `termStructure`, `volHistory`, `volRank`, `narrative`, or `strategies` values. Market prices are per-share Black-Scholes values at listed implied volatility, not executable quotes; a listed contract normally represents 100 shares.
+
+Return exactly one JSON envelope with `status` (`completed`, `unavailable`, `refused`, or `failed`), `analysis` (the complete analyzer output or `null`), `quoteVerification`, `persistence`, `writes`, `unavailableInputs`, and `errors`. Missing or malformed thesis inputs are `refused`. Missing Massive and stored-chain coverage, spot, database access, credentials, or network access is `unavailable`. An unexpected non-zero analyzer result is `failed`. Every non-completed result has `analysis: null`, no persistence attempt, and `writes: []`.
+
+Set `quoteVerification.status` to `not_requested` unless explicitly requested. Radon owns `capability:scope:radon/ibkr-option-quote`, gateway lifecycle, contract qualification, and executable quote semantics. Because that separately governed Capability has no current accepted package or eligible conformance evidence, a request for verification returns `quoteVerification.status: unavailable` with the authority reason. Do not inspect or operate the gateway, invoke retained IBKR quote helpers, invent a quote, or alter the analyzer ranking.
+
+Default `persistence` to `{ "requested": false, "status": "not_requested", "reportId": null }`. Only after a completed analysis and explicit `persist: true`, pipe the exact analysis JSON to `npx tsx scripts/vol-curve-save-report.ts --stdin`, adding the supplied notes through that script's documented notes argument when present. A successful save returns exactly one `vol_curve_reports` insert in `writes` and its identifier in `persistence.reportId`. If saving fails, return `failed` and do not claim a write.
+
+This adapter has analysis authority only. It must not place, route, preview, stage, size, or modify an order or trade; operate IBKR gateway infrastructure; mutate portfolio, thesis, claim, signal, strategy, position, Decision Item, scheduler, or credential state; or use ad hoc SQL, a generic database connector, or any write path other than the explicit report saver.
+
 ### capability:scope:trade-journal/portfolio-options-advice 1.0.0
 
 Intent: Produce bounded, portfolio-aware options recommendations without acquiring trade-execution authority.

@@ -125,14 +125,14 @@ and staged generated output bind it through W1. The remaining generic projection
 
 `generation-eligibility.json` is the deterministic projection of both inventories into J1's governed
 generation decision and the incremental J2 migration state. It covers all 74 inventoried entry points. The
-fifteen locked Capabilities now record 50 generation-eligible inventory entries and two whole-file governed
-staging outputs. Twelve packages are Trade Journal-owned; the three Notes-owned content-processing dependency
+sixteen locked Capabilities now record 52 generation-eligible inventory entries and two whole-file governed
+staging outputs. Thirteen packages are Trade Journal-owned; the three Notes-owned content-processing dependency
 packages remain external. The other 24 entries remain non-governed migration inputs or non-candidates with
 explicit dispositions.
 
 The portfolio-snapshot, belief-maintenance, belief-research-relation, claims-synthesis, research-publication,
-thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice, and
-morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
+thesis-observation, thesis-underwriting, belief-evidence-assessment, portfolio-options-advice,
+options-vol-analysis, and morning-attention-brief adapters are `current` because they bind to source-owned Capability version `1.0.0`, exact package and
 adapter digests, complete current evidence, and the immutable published Registry Lock. The belief-maintenance
 package covers the maintenance, thesis-review, and claim-backfill inventory entries through one provider-
 neutral boundary. Governed outputs stay under the staging discovery surface until a separately approved live
@@ -194,6 +194,14 @@ sensing-only, recommendation-only/no-trade, and synthesis-only write boundaries.
 cover the maintenance worklist, Tier-1 observation bundle, both options modes, and deterministic morning
 bundle. No scheduler, launchd definition, active root/provider discovery file, database state, or live provider
 invocation changes in these governance slices.
+
+Issue #64 governs the options-vol-analysis boundary separately from portfolio options advice. Both exact
+adapters invoke the existing Trade Journal volatility analyzer, preserve its complete result, distinguish
+Black–Scholes-at-listed-IV model values from executable quotes, and expose Radon quote verification as
+`unavailable` without calling gateway or quote helpers. Persistence remains an explicit, post-analysis opt-in
+through the existing single-report recorder. Deterministic fixture equivalence and a separately identified
+read-only eligible live-data probe are recorded in `evidence/issue-64-options-vol-analysis.json`; no active
+discovery, scheduler, gateway, quote, order, trade, or successor #65 scope is included.
 
 ## J2 thesis-underwriting package
 

@@ -98,42 +98,41 @@
       "source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
-        "path": ".agents/skills/analyze-vol-curve/SKILL.md"
+        "path": "capabilities/options-vol-analysis/adapters/codex.md"
       },
       "authored_source": {
         "ownership": "repository:njabrooks/trade-journal",
         "location_class": "repository",
         "path": ".claude/skills/analyze-vol-curve/SKILL.md"
       },
-      "packaging": "generated-headless-projection",
+      "packaging": "governed-provider-adapter",
       "execution_contract": {
         "class": "generic",
         "preamble_path": ".agents/skills/analyze-vol-curve/HEADLESS_PREAMBLE.md",
-        "readiness": "Generated baseline packaging only; it is not evidence of unattended operational readiness."
+        "readiness": "The generic headless mirror remains a migration input; the exact governed adapter carries the explicit-input, no-inferred-judgment, opt-in persistence, and unavailable-quote contract for staged discovery."
       },
       "invocation": {
         "mode": "headless",
-        "entry_point": ".agents/skills/analyze-vol-curve/skill.json",
+        "entry_point": "docs/agents/provider-entry-points/staging/codex.md",
         "unattended_eligibility": "conditional",
-        "rationale": "Applies a documented optimization framework; trade judgment remains with the user."
+        "rationale": "Runs deterministic analysis only from complete explicit inputs; trade judgment remains with the user and persistence remains opt-in."
       },
       "lifecycle": {
         "status": "active",
         "protective_tombstone": false
       },
       "authority_and_write_scope": {
-        "reads": "Options-chain data, thesis assumptions, and portfolio context.",
-        "writes": "Analysis reports when explicitly requested.",
-        "judgment": "Applies a documented optimization framework; trade judgment remains with the user."
+        "reads": "Explicit thesis assumptions plus current Massive or stored Trade Journal options-chain and volatility data.",
+        "writes": "At most one vol_curve_reports row through the purpose-built report saver when persist=true is explicit.",
+        "judgment": "Applies the canonical analysis framework and returns rankings from explicit inputs; no user judgment, trade, or sizing authority is acquired."
       },
       "prerequisites": [
         "Codex headless runtime with repository access",
-        "Options-chain data and current thesis assumptions."
+        "Complete explicit thesis inputs, usable Massive or stored Trade Journal options-chain data, and explicit persistence disposition."
       ],
       "limitations": [
-        "Generic preamble is a packaging baseline, not an operational-readiness claim.",
-        "Market data availability and model assumptions are environment-dependent.",
-        "No evidence is bound to an exact W1 Capability version, package digest, and adapter digest."
+        "The governed Provider Entry Point is staged; the generic headless mirror remains the active migration input until final discovery cutover.",
+        "Analysis values are chain-derived model values, not executable quotes; the separately governed Radon quote Capability remains unavailable."
       ],
       "operational_consumers": [
         "No live operational consumer; current repository automation does not invoke this Codex projection."
@@ -144,16 +143,27 @@
         "rationale": "No live scheduled consumer; assess during J2 after higher-risk operational adapters."
       },
       "evidence": {
-        "state": "unavailable",
-        "as_of": "2026-08-04",
-        "capability_version": null,
-        "package_digest": null,
-        "adapter_digest": null,
-        "reason": "No source-owned W1 Capability Package and exact Adapter Conformance evidence currently bind this entry point."
+        "state": "current",
+        "as_of": "2026-08-11",
+        "capability_version": "1.0.0",
+        "package_digest": "sha256:6c0ef068f8bd35b75cf936718574532594860756d5fa4c13414e1f3452ebc20d",
+        "adapter_digest": "sha256:27d4e39c1d6be2dba54e8d5bf5f7af23da866cc77a47ac3010faf850017a609f",
+        "reason": "Exact current evidence binds the options-vol-analysis 1.0.0 package, deterministic fixture, eligible no-write data probe, and governed Codex adapter."
       },
       "j2_disposition": {
         "action": "migrate",
-        "rationale": "Migrate the provider packaging in J2 without changing the underlying Trade Journal workflow semantics."
+        "rationale": "The governed adapter is current and staged; retain the generic headless mirror as a migration input until final discovery cutover."
+      },
+      "migration_input": {
+        "ownership": "repository:njabrooks/trade-journal",
+        "location_class": "repository",
+        "path": ".agents/skills/analyze-vol-curve/SKILL.md"
+      },
+      "governed_binding": {
+        "package_path": "capabilities/options-vol-analysis/capability-package.json",
+        "adapter_id": "options-vol-analysis-codex",
+        "evidence_path": "capabilities/options-vol-analysis/evidence/codex.json",
+        "staged_entry_point": "docs/agents/provider-entry-points/staging/codex.md"
       }
     },
     {
@@ -3037,7 +3047,7 @@
     {
       "id": "adapter-evidence-unavailable",
       "classification": "evidence",
-      "detail": "Twenty-four headless inventory entries have current evidence. Of twelve unavailable entries, eight await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
+      "detail": "Twenty-five headless inventory entries have current evidence. Of eleven unavailable entries, seven await J2 disposition and four non-candidates have completed final retire dispositions under issue #75."
     },
     {
       "id": "generic-contract-readiness",

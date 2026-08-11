@@ -43,9 +43,9 @@ uses the accepted native-first hierarchy/dependency policy. The five canonical l
 live labels; unrelated labels remain a namespaced extension. The live `needs-triage` description was aligned to
 the exact canonical Work Item meaning during adoption.
 
-The accepted J1 manifest declared no owned Capability Packages. J2 now declares twelve Trade Journal-owned
+The accepted J1 manifest declared no owned Capability Packages. J2 now declares thirteen Trade Journal-owned
 packages: portfolio snapshot, belief maintenance, belief-research relation, claims synthesis, thesis observation, thesis underwriting, belief evidence assessment,
-research publication, research pipeline, portfolio options advice, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded as an active legacy competing router with unavailable conformance evidence. Rich inventory validity, mirror parity, and file presence do not
+research publication, research pipeline, portfolio options advice, options volatility analysis, morning attention brief, and workflow discovery. Archived, retired, and deprecated non-candidates remain visible in a namespaced extension; the machine-local Codex bridge is recorded as an active legacy competing router with unavailable conformance evidence. Rich inventory validity, mirror parity, and file presence do not
 establish Adapter Conformance; only exact W1-bound evidence upgrades an inventory entry. The federated Registry
 also resolves three Notes-owned packages from their accepted immutable release without declaring them owned by
 Trade Journal.
@@ -55,7 +55,7 @@ Trade Journal.
 `docs/agents/provider-adapters/generation-eligibility.json` deterministically projects all 74 interactive and
 headless inventory entries. The accepted J1 state at governed evidence date `2026-08-04` recorded zero
 generation-eligible adapters and no governed outputs. At the current J2 evidence date `2026-08-11`, fifteen
-locked Capabilities—twelve Trade Journal-owned packages plus three Notes-owned packages—make 50 inventory
+locked Capabilities—thirteen Trade Journal-owned packages plus three Notes-owned packages—make 52 inventory
 entries generation eligible while the whole-file Claude and Codex outputs
 remain staged. Existing `CLAUDE.md`, `.claude/skills/`, and `.agents/skills/` remain migration inputs until their
 separately governed cutovers, except for the twenty research-pipeline
@@ -266,6 +266,17 @@ Portal fallback remain separately identified. No live gateway, contract, market-
 Lock, staged output, active discovery, scheduler, database, or Radon worktree state was changed or inferred. Exact
 digests, limitations, unavailable behavior, rollback, and scope are recorded in
 `evidence/issue-74-radon-option-quote-reconciliation.json`.
+
+Issue #64 adds the source-owned options-vol-analysis Capability at immutable revision
+`a165aacc7991946dcb2cc5983790fc22c09a3663`. Its exact Claude and Codex adapters delegate to the existing
+Trade Journal volatility-curve analyzer and preserve the complete deterministic result without recalculation,
+reordering, or omission. The contract distinguishes modelled prices from executable quotes, reports Radon quote
+verification as honestly `unavailable`, and never inspects or operates the gateway, qualifies contracts, or
+fabricates market data. Persistence is off by default and, only when explicitly requested after completed
+analysis, is bounded to the existing single-report recorder. Digest-bound fixtures establish cross-provider
+equivalence; a separate read-only production-data probe exercised the eligible database-backed analyzer with no
+write, credential, scheduler, gateway, quote, order, or trade authority. Exact artifacts and scope are recorded
+in `evidence/issue-64-options-vol-analysis.json`. Successor issue #65 is unchanged.
 
 Issue #75 resolves all eight archived, retired, or deprecated non-candidate records. The three obsolete Claude
 procedures and their three generated Codex projections are removed from active discovery and retained byte-for-

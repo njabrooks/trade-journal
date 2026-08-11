@@ -158,26 +158,26 @@ describe('issue #75 non-candidate entry-point dispositions', () => {
       interactive.known_gaps.find((gap) => gap.id === 'no-exact-adapter-evidence')
         ?.detail,
     ).toContain(
-      'After issue #71 adds two governed discovery adapters, the current totals are twenty-six current and twelve unavailable; the same four non-candidate dispositions remain unchanged.',
+      'After issue #71 adds two governed discovery adapters and issue #64 governs options-vol-analysis, the current totals are twenty-seven current and eleven unavailable; the same four non-candidate dispositions remain unchanged.',
     );
     expect(
       headless.known_gaps.find((gap) => gap.id === 'adapter-evidence-unavailable')
         ?.detail,
     ).toContain(
-      'Twenty-four headless inventory entries have current evidence. Of twelve unavailable entries, eight await J2 disposition and four non-candidates have completed final retire dispositions',
+      'Twenty-five headless inventory entries have current evidence. Of eleven unavailable entries, seven await J2 disposition and four non-candidates have completed final retire dispositions',
     );
     expect(
       interactive.entries.filter((entry) => entry.evidence.state === 'current'),
-    ).toHaveLength(26);
+    ).toHaveLength(27);
     expect(
       interactive.entries.filter((entry) => entry.evidence.state === 'unavailable'),
-    ).toHaveLength(12);
+    ).toHaveLength(11);
     expect(
       headless.entries.filter((entry) => entry.evidence.state === 'current'),
-    ).toHaveLength(24);
+    ).toHaveLength(25);
     expect(
       headless.entries.filter((entry) => entry.evidence.state === 'unavailable'),
-    ).toHaveLength(12);
+    ).toHaveLength(11);
   });
 
   it('keeps configure-signal only as an exact no-read/no-write protective tombstone', () => {

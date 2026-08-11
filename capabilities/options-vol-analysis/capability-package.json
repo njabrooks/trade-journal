@@ -1,0 +1,67 @@
+{
+  "id": "capability:scope:trade-journal/options-vol-analysis",
+  "authority": "scope:trade-journal",
+  "version": "1.0.0",
+  "intent": "Compare explicit thesis assumptions with an options volatility surface and rank bounded option structures without acquiring quote-infrastructure or trade-execution authority.",
+  "contract": "Given an explicit ticker, direction, base and high target, horizon, downside floor, and optional analysis settings, run the canonical Trade Journal volatility-curve analyzer, preserve its complete result semantics, distinguish theoretical chain-derived values from executable quotes, optionally persist exactly one successful analysis report when explicitly requested, and return a machine-readable completed, unavailable, refused, or failed outcome without placing, staging, sizing, or modifying a trade.",
+  "instructions": [
+    "Require ticker, bullish or bearish direction, targetBase, targetHigh, horizonMonths, and downsideFloor. Accept horizonRange (default 2), riskFreeRate (default 0.045), and snapshotDate as the existing analyzer supports them.",
+    "Run the canonical Trade Journal analyzer in the repository root and preserve its context, thesis, expiries, volatility surface, term structure, volatility history and rank, narrative, and ranked strategies without provider-specific recalculation or reordering.",
+    "Treat Massive options data and stored Trade Journal chain snapshots as analysis inputs. If neither can supply a usable spot and chain for the requested horizon, return unavailable and write nothing.",
+    "Treat every marketPrice in the analysis as the analyzer's Black-Scholes value at listed implied volatility, not as an executable quote. Keep quote verification not-requested by default.",
+    "Radon remains the authority for IBKR gateway control, contract qualification, and executable option quotes. If quote verification is requested but the separately governed Radon quote Capability is unavailable, report quote verification as unavailable without inspecting or operating the gateway, calling retained quote helpers, inventing prices, or changing the analysis ranking.",
+    "Default persistence to false. Only an explicit persist=true on a completed analysis may invoke the purpose-built report saver, insert exactly one vol_curve_reports row, and return its report identifier; refused, failed, or unavailable analysis writes nothing.",
+    "Return one envelope containing status, the unmodified analysis or null, quoteVerification, persistence, writes, unavailableInputs, and errors. Preserve per-share result units and identify that one listed option contract normally represents 100 shares.",
+    "This Capability provides analysis only. It must never place, route, preview, stage, size, or modify an order or trade, operate the IBKR gateway, alter portfolio or belief state, or imply that a ranked structure is a user decision."
+  ],
+  "conformance": {
+    "evidence_validity_days": 30,
+    "requirements": [
+      {
+        "id": "adapter-entry-points",
+        "category": "structural",
+        "description": "Exact Claude and Codex adapters expose the complete input, result-envelope, and opt-in persistence contracts through governed provider projections.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "deterministic-analysis-equivalence",
+        "category": "behavioural",
+        "description": "Both adapters invoke the same canonical analyzer and a digest-bound deterministic chain fixture produces byte-equivalent complete analysis results.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "persistence-and-unavailable-boundary",
+        "category": "behavioural",
+        "description": "Persistence is explicit and limited to one successful analysis report; missing analysis data, malformed input, and unavailable quote verification cannot produce a report or any other write.",
+        "evidence_type": "automated"
+      },
+      {
+        "id": "authority-preserving-semantics",
+        "category": "semantic",
+        "description": "Provider instructions preserve Trade Journal analysis semantics and distinguish theoretical chain-derived values from Radon-owned gateway control, qualification, and executable quotes without adding trade authority.",
+        "evidence_type": "human"
+      },
+      {
+        "id": "eligible-live-data-environment",
+        "category": "environmental",
+        "description": "An eligible environment can produce a bounded no-write analysis from current Massive or stored chain data, while missing market data, credentials, network access, database access, or separately governed quote support is reported truthfully and never fabricated.",
+        "evidence_type": "automated"
+      }
+    ]
+  },
+  "provider_adapters": [
+    {
+      "id": "options-vol-analysis-claude",
+      "provider": "claude",
+      "source": "adapters/claude.md",
+      "evidence": "evidence/claude.json"
+    },
+    {
+      "id": "options-vol-analysis-codex",
+      "provider": "codex",
+      "source": "adapters/codex.md",
+      "evidence": "evidence/codex.json"
+    }
+  ],
+  "dependencies": []
+}
